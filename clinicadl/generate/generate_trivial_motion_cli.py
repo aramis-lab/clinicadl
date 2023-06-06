@@ -11,7 +11,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.use_uncropped_image
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @click.option(
     "--translation",
@@ -39,7 +39,7 @@ def cli(
     preprocessing,
     participants_tsv,
     use_uncropped_image,
-    acq_label,
+    tracer,
     suvr_reference_region,
     motion_type,
     translation,
@@ -58,7 +58,7 @@ def cli(
         preprocessing=preprocessing,
         output_dir=generated_caps_directory,
         uncropped_image=use_uncropped_image,
-        acq_label=acq_label,
+        tracer=tracer,
         suvr_reference_region=suvr_reference_region,
         translation=translation,
         rotation=rotation,

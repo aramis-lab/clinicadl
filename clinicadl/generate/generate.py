@@ -666,7 +666,7 @@ def generate_motion_dataset(
     preprocessing: str = "t1-linear",
     multi_cohort: bool = False,
     uncropped_image: bool = False,
-    acq_label: str = "fdg",
+    tracer: str = "fdg",
     suvr_reference_region: str = "pons",
     translation: List = [2, 4],
     rotation: List = [2, 4],
@@ -684,7 +684,7 @@ def generate_motion_dataset(
         preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
         multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
+        tracer: name of the tracer when using `pet-linear` preprocessing.
         suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
     Returns:
         Folder structure where images are stored in CAPS format.
@@ -720,7 +720,7 @@ def generate_motion_dataset(
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
-        preprocessing, uncropped_image, acq_label, suvr_reference_region
+        preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
     for data_idx in range(len(data_df)):
