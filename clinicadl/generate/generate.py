@@ -724,7 +724,6 @@ def generate_motion_dataset(
     )
 
     for data_idx in range(len(data_df)):
-
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
