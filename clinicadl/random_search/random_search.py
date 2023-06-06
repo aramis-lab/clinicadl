@@ -7,7 +7,6 @@ from clinicadl.random_search.random_search_utils import get_space_dict, random_s
 from clinicadl.train import train
 
 
-
 def launch_search(launch_directory: Path, job_name):
     if not (launch_directory / "random_search.toml").is_file():
         raise FileNotFoundError(

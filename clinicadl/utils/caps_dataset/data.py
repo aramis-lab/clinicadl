@@ -112,7 +112,6 @@ class CapsDataset(Dataset):
         return len(self.df) * self.elem_per_image
 
     @staticmethod
-
     def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
         from clinica.utils.inputs import check_caps_folder
 
@@ -1143,7 +1142,6 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
         test_df["cohort"] = "single"
 
     return test_df
-
 
 
 def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
