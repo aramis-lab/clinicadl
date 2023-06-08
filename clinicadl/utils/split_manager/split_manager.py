@@ -125,10 +125,10 @@ class SplitManager:
         self, split, cohort_path: Path = None, cohort_diagnoses=None
     ):
         """Concatenated the diagnoses needed to form the train and validation sets."""
-
+        tmp_cohort_path = cohort_path if cohort_path is not None else self.tsv_path
         train_path, valid_path = self._get_tsv_paths(
-            cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
-            args=split,
+            tmp_cohort_path,
+            split,
         )
         logger.debug(f"Training data loaded at {train_path}")
         logger.debug(f"Validation data loaded at {valid_path}")
