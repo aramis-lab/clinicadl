@@ -30,7 +30,7 @@ class SingleSplit(SplitManager):
     def split_iterator(self):
         return range(1)
 
-    def _get_tsv_paths(self, cohort_path: Path):
+    def _get_tsv_paths(self, cohort_path: Path, *args):
         train_path = cohort_path
         valid_path = cohort_path
 
