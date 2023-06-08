@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import torch
+import torchio as tio
 import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
@@ -886,6 +887,97 @@ class GaussianSmoothing(object):
         return sample
 
 
+class RandomMotion(object):
+    """Applies a Random Motion"""
+
+    def __init__(self, translation, rotation, num_transforms):
+        self.rotation = rotation
+        self.translation = translation
+        self.num_transforms = num_transforms
+
+    def __call__(self, image):
+        motion = tio.RandomMotion(
+            degrees=self.rotation,
+            translation=self.translation,
+            num_transforms=self.num_transforms,
+        )
+        image = motion(image)
+
+        return image
+
+
+class RandomGhosting(object):
+    """Applies a Random Ghosting"""
+
+    def __init__(self, num_ghosts):
+        self.num_ghosts = num_ghosts
+
+    def __call__(self, image):
+        ghost = tio.RandomGhosting(num_ghosts=self.num_ghosts)
+        image = ghost(image)
+
+        return image
+
+
+class RandomSpike(object):
+    """Applies a Random Spike"""
+
+    def __init__(self, num_spikes, intensity):
+        self.num_spikes = num_spikes
+        self.intensity = intensity
+
+    def __call__(self, image):
+        spike = tio.RandomSpike(
+            num_spikes=self.num_spikes,
+            intensity=self.intensity,
+        )
+        image = spike(image)
+
+        return image
+
+
+class RandomBiasField(object):
+    """Applies a Random Bias Field"""
+
+    def __init__(self, coefficients):
+        self.coefficients = coefficients
+
+    def __call__(self, image):
+        bias_field = tio.RandomBiasField(coefficients=self.coefficients)
+        image = bias_field(image)
+
+        return image
+
+
+class RandomBlur(object):
+    """Applies a Random Blur"""
+
+    def __init__(self, std):
+        self.std = std
+
+    def __call__(self, image):
+        blur = tio.RandomBlur(std=self.std)
+        image = blur(image)
+
+        return image
+
+
+class RandomSwap(object):
+    """Applies a Random Swap"""
+
+    def __init__(self, patch_size, num_iterations):
+        self.patch_size = patch_size
+        self.num_iterations = num_iterations
+
+    def __call__(self, image):
+        swap = tio.RandomSwap(
+            patch_size=self.patch_size, num_iterations=self.num_iterations
+        )
+        image = swap(image)
+
+        return image
+
+
 class ToTensor(object):
     """Convert image type to Tensor and diagnosis to diagnosis code"""
 
@@ -961,6 +1053,12 @@ def get_transforms(
         "Erasing": transforms.RandomErasing(),
         "CropPad": RandomCropPad(10),
         "Smoothing": RandomSmoothing(),
+        "Motion": RandomMotion((2, 4), (2, 4), 2),
+        "Ghosting": RandomGhosting((4, 10)),
+        "Spike": RandomSpike(1, (1, 3)),
+        "BiasField": RandomBiasField(0.5),
+        "RandomBlur": RandomBlur((0, 2)),
+        "RandomSwap": RandomSwap(15, 100),
         "None": None,
     }
 
