@@ -730,18 +730,18 @@ def generate_motion_dataset(
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
-        trivial_image_nii_dir = (
+        motion_image_nii_dir = (
             output_dir
             / "subjects"
             / f"{participant_id}-RM{data_idx}"
             / session_id
             / preprocessing
         )
-        trivial_image_nii_filename = (
+        motion_image_nii_filename = (
             f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
         )
 
-        trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
+        motion_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         motion = tio.RandomMotion(
             degrees=(rotation[0], rotation[1]),
@@ -749,8 +749,8 @@ def generate_motion_dataset(
             num_transforms=num_transforms,
         )
 
-        trivial_image = motion(tio.ScalarImage(image_path))
-        trivial_image.save(trivial_image_nii_dir / trivial_image_nii_filename)
+        motion_image = motion(tio.ScalarImage(image_path))
+        motion_image.save(motion_image_nii_dir / motion_image_nii_filename)
 
         # Append row to output tsv
         row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
