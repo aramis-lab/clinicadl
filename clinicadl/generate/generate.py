@@ -5,7 +5,6 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 import tarfile
 from logging import getLogger
-from os.path import join
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -15,6 +14,7 @@ import pandas as pd
 import torch
 import torchio as tio
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
+from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
@@ -706,7 +706,6 @@ def generate_motion_dataset(
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
-
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
