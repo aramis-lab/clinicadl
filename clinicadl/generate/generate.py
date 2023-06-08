@@ -662,6 +662,7 @@ def generate_hypometabolic_dataset(
 def generate_motion_dataset(
     caps_directory: Path,
     output_dir: Path,
+    n_proc: int,
     tsv_path: Optional[str] = None,
     preprocessing: str = "t1-linear",
     multi_cohort: bool = False,
@@ -706,11 +707,6 @@ def generate_motion_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
-
-    cache_clinicadl.mkdir(parents=True, exist_ok=True)
-
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
@@ -723,7 +719,7 @@ def generate_motion_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    for data_idx in range(len(data_df)):
+    def create_motion_image(data_idx, output_df):
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
@@ -760,12 +756,22 @@ def generate_motion_dataset(
         # Append row to output tsv
         row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
         row_df = pd.DataFrame([row], columns=columns)
-        output_df = output_df.append(row_df)
+        output_df = pd.concat([output_df, row_df])
+
+        return output_df
+
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_motion_image)(data_idx, output_df)
+        for data_idx in range(len(data_df))
+    )
+    output_df = pd.DataFrame()
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
 
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
 
     logger.info(
-        f"Images corrupted with motion artefacts were generated at {trivial_image_nii_dir}"
+        f"Images corrupted with motion artefacts were generated at {output_dir}"
     )

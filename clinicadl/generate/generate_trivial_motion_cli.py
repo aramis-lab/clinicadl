@@ -8,6 +8,7 @@ from clinicadl.utils import cli_param
 @click.command(name="trivial_motion", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
+@cli_param.option.n_proc
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.use_uncropped_image
@@ -41,10 +42,10 @@ def cli(
     use_uncropped_image,
     tracer,
     suvr_reference_region,
-    motion_type,
     translation,
     rotation,
     num_transforms,
+    n_proc,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
@@ -63,6 +64,7 @@ def cli(
         translation=translation,
         rotation=rotation,
         num_transforms=num_transforms,
+        n_proc=n_proc,
     )
 
 
