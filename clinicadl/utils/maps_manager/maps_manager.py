@@ -221,7 +221,7 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
-        if split_list is None:
+        if not split_list:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -256,7 +256,7 @@ class MapsManager:
                 self.task_manager.generate_label_code(group_df, label)
 
             # Erase previous TSV files
-            if selection_metrics is None:
+            if not selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
                 split_selection_metrics = selection_metrics
@@ -473,7 +473,7 @@ class MapsManager:
                 f"Please choose in {method_dict.keys()}"
             )
 
-        if split_list is None:
+        if not split_list:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -521,7 +521,7 @@ class MapsManager:
                 num_workers=n_proc if n_proc is not None else self.n_proc,
             )
 
-            if selection_metrics is None:
+            if not selection_metrics:
                 selection_metrics = self._find_selection_metrics(split)
 
             for selection_metric in selection_metrics:
@@ -1259,7 +1259,7 @@ class MapsManager:
     ):
         """Computes the results on the image-level."""
 
-        if selection_metrics is None:
+        if not selection_metrics:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
@@ -1404,7 +1404,7 @@ class MapsManager:
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
         available_metrics = self._find_selection_metrics(split)
-        if selection_metric is None:
+        if not selection_metric:
             if len(available_metrics) > 1:
                 raise ClinicaDLArgumentError(
                     f"Several metrics are available for split {split}. "
