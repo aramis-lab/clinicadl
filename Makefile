@@ -86,4 +86,4 @@ install.doc: check.lock
 ## tests        : Run the unit tests
 .PHONY: test
 test: install
-	@$(POETRY) run python -m pytest -v test/unittests
+	@$(POETRY) run python -m pytest -v tests/unittests
