@@ -317,7 +317,7 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    if merged_tsv is None:
+    if not merged_tsv:
         merged_tsv = output_dir / "merged.tsv"
         if merged_tsv.is_file():
             logger.warning(
