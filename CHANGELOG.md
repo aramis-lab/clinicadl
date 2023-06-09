@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Changed default batch size to 8 for `clinicadl predict`
 * Changed VAEs main class
-* 
 
 ### New
 
@@ -31,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `--save_latent_space` option to `clinicadl train` and `clinicadl predict`.
 * Add `clinicadl generate trvial_motion`
 * Add Data augmentation with torchio
-* 
 
 
 
