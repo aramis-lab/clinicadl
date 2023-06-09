@@ -5,6 +5,34 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## ClinicaDL 1.4.0
+
+### Fixed
+
+* Fix `--diagnoses` and `--merged_tsv` option bug in `clinicadl get-labels`
+* Fix Pathlib bugs 
+* Fix `get_tsv_paths` function bug.
+* Fix a bug for which it was impossible to use predict without specifying the splits and selection metrics.
+
+### Changed
+
+* Changed default batch size to 8 for `clinicadl predict`
+* Changed VAEs main class
+
+### New
+
+* Add `--n_proc` option in `clinicadl generate` pipelines for parallelization.
+* Add `--split` to `clinicadl predict`
+* Add new VAE networks.
+* Add pytorch function to summarize
+* Add `--size_reduction` and `--size_reduction_factor` options to `clinicadl train`, `clinicadl predict` and `clinicadl interpret`.
+* Add SSIM2D, SSIM3D metrics for VAE.
+* Add `--save_latent_space` option to `clinicadl train` and `clinicadl predict`.
+* Add `clinicadl generate trvial_motion`
+* Add Data augmentation with torchio
+
+
+
 ## ClinicaDL 1.3.1
 
 ### Fixed
