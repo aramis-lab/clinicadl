@@ -1,9 +1,7 @@
 # coding: utf8
 
 import os
-from os.path import abspath
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -16,6 +14,7 @@ from tests.testing_tools import clean_folder, compare_folders
         "trivial_example",
         "shepplogan_example",
         "hypometabolic_example",
+        "trivial_motion_example",
     ]
 )
 def test_name(request):
@@ -89,6 +88,16 @@ def test_generate(cmdopt, tmp_path, test_name):
             str(output_folder),
             "--n_subjects",
             f"{n_subjects}",
+        ]
+    elif test_name == "trivial_motion_example":
+        output_folder = tmp_out_dir / test_name
+        test_input = [
+            "generate",
+            "trivial_motion",
+            data_caps_folder,
+            str(output_folder),
+            "--preprocessing",
+            "t1-linear",
         ]
 
     else:
