@@ -12,18 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix `--diagnoses` and `--merged_tsv` option bug in `clinicadl get-labels`
 * Fix Pathlib bugs 
 * Fix `get_tsv_paths` function bug.
+* Fix a bug for which it was impossible to use predict without specifying the splits and selection metrics.
 
 ### Changed
 
 * Changed default batch size to 8 for `clinicadl predict`
-* 
+* Changed VAEs main class
 * 
 
 ### New
 
-* Add `--n_proc`option in `clinicadl generate` pipelines for parallelization.
+* Add `--n_proc` option in `clinicadl generate` pipelines for parallelization.
 * Add `--split` to `clinicadl predict`
-* Add VAE network class.
+* Add new VAE networks.
 * Add pytorch function to summarize
 * Add `--size_reduction` and `--size_reduction_factor` options to `clinicadl train`, `clinicadl predict` and `clinicadl interpret`.
 * Add SSIM2D, SSIM3D metrics for VAE.
