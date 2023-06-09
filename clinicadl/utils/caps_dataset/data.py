@@ -1188,7 +1188,7 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
     return test_df
 
 
-def check_multi_cohort_tsv(tsv_df, purpose):
+def check_multi_cohort_tsv(tsv_df: pd.DataFrame, purpose: str) -> None:
     """
     Checks that a multi-cohort TSV file is valid.
 
@@ -1198,11 +1198,10 @@ def check_multi_cohort_tsv(tsv_df, purpose):
     Raises:
         ValueError: if the TSV file is badly formatted.
     """
+    mandatory_col = ("cohort", "diagnoses", "path")
     if purpose.upper() == "CAPS":
-        mandatory_col = {"cohort", "path"}
-    else:
-        mandatory_col = {"cohort", "path", "diagnoses"}
-    if not mandatory_col.issubset(tsv_df.columns.values):
+        mandatory_col = ("cohort", "path")
+    if not set(mandatory_col).issubset(tsv_df.columns.values):
         raise ClinicaDLTSVError(
             f"Columns of the TSV file used for {purpose} location must include {mandatory_col}"
         )
