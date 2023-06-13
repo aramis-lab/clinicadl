@@ -42,6 +42,7 @@ click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
 torchio = "^0.18.90"
+pythae = "^0.1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
