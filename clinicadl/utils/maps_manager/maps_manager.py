@@ -1,9 +1,11 @@
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime
+from glob import glob
 from logging import getLogger
-from pathlib import Path
+from os import listdir, makedirs, path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -23,19 +25,16 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.logger import setup_logging
-from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
-    change_path_to_str,
-    change_str_to_path,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-logger = getLogger("clinicadl.maps_manager")
+logger = getLogger("clinicadl")
 
 
 level_list: List[str] = ["warning", "info", "debug"]
@@ -45,22 +44,17 @@ level_list: List[str] = ["warning", "info", "debug"]
 class MapsManager:
     def __init__(
         self,
-        maps_path: Path,
+        maps_path: str,
         parameters: Dict[str, Any] = None,
         verbose: str = "info",
     ):
         """
-
-        Parameters
-        ----------
-        maps_path: str (path)
-            Path of the MAPS
-        parameters: Dict[str, Any]
-            Parameters of the training step. If given a new MAPS is created.
-        verbose: str
-            Logging level ("debug", "info", "warning")
+        Args:
+            maps_path: path of the MAPS
+            parameters: parameters of the training step. If given a new MAPS is created.
+            verbose: Logging level ("debug", "info", "warning")
         """
-        self.maps_path = maps_path.resolve()
+        self.maps_path = path.abspath(maps_path)
         if verbose is not None:
             if verbose not in level_list:
                 raise ValueError(f"verbose value {verbose} must be in {level_list}.")
@@ -68,13 +62,12 @@ class MapsManager:
 
         # Existing MAPS
         if parameters is None:
-            if not (maps_path / "maps.json").is_file():
+            if not path.exists(path.join(maps_path, "maps.json")):
                 raise MAPSError(
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
-            test_parameters = self.get_parameters()
-            self.parameters = change_str_to_path(test_parameters)
+            self.parameters = self.get_parameters()
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -82,25 +75,21 @@ class MapsManager:
 
         # Initiate MAPS
         else:
-            self._check_args(parameters)
-            parameters["tsv_path"] = Path(parameters["tsv_path"])
-
-            if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
+            if (
+                path.exists(maps_path) and not path.isdir(maps_path)  # Non-folder file
+            ) or (
+                path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
                 raise MAPSError(
                     f"You are trying to create a new MAPS at {maps_path} but "
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
                 )
-            (maps_path / "groups").mkdir(parents=True)
-
+            makedirs(path.join(self.maps_path, "groups"))
             logger.info(f"A new MAPS was created at {maps_path}")
-
+            self._check_args(parameters)
             self.write_parameters(self.maps_path, self.parameters)
-
             self._write_requirements_version()
-
             self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
@@ -130,8 +119,8 @@ class MapsManager:
 
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
-            split_path = self.maps_path / f"{self.split_name}-{split}"
-            if split_path.is_dir():
+            split_path = path.join(self.maps_path, f"{self.split_name}-{split}")
+            if path.exists(split_path):
                 if overwrite:
                     shutil.rmtree(split_path)
                 else:
@@ -148,6 +137,72 @@ class MapsManager:
         else:
             self._train_single(split_list, resume=False)
 
+    def train_pythae(self, split_list: List[int] = None):
+        """
+        Train using Pythae procedure
+        only works for single splits
+        """
+        from pythae.pipelines import TrainingPipeline
+
+        from clinicadl.utils.caps_dataset.data import PythaeCAPS
+
+        train_transforms, all_transforms = get_transforms(
+            normalize=self.normalize,
+            data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
+
+        split_manager = self._init_split_manager(split_list)
+        for split in split_manager.split_iterator():
+            logger.info(f"Training split {split}")
+
+            model_dir = path.join(self.maps_path, f"split-{split}", "best-loss")
+            if not path.exists(model_dir):
+                os.makedirs(model_dir)
+
+            seed_everything(self.seed, self.deterministic, self.compensation)
+
+            split_df_dict = split_manager[split]
+            train_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["train"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+            eval_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["validation"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+
+            # Import the model
+            clinicadl_model, _ = self._init_model(
+                split=split,
+                gpu=True,
+            )
+            model = clinicadl_model.model
+            config = clinicadl_model.get_trainer_config(
+                output_dir=model_dir,
+                num_epochs=self.epochs,
+                learning_rate=self.learning_rate,
+                batch_size=self.batch_size,
+            )
+            # Create Pythae Training Pipeline
+            pipeline = TrainingPipeline(training_config=config, model=model)
+
+            # Launch training
+            pipeline(
+                train_data=train_dataset,  # must be torch.Tensor or np.array
+                eval_data=eval_dataset,  # must be torch.Tensor or np.array
+            )
+            # Move saved model to the correct path in the MAPS
+            src = path.join(model_dir, "*_training_*/final_model/model.pt")
+            os.system(f"mv {src} {model_dir}")
+
     def resume(self, split_list: List[int] = None):
         """
         Resumes the training task for a defined list of splits.
@@ -163,7 +218,9 @@ class MapsManager:
         split_manager = self._init_split_manager(split_list)
 
         for split in split_manager.split_iterator():
-            if not (self.maps_path / f"{self.split_name}-{split}" / "tmp").is_dir():
+            if not path.exists(
+                path.join(self.maps_path, f"{self.split_name}-{split}", "tmp")
+            ):
                 missing_splits.append(split)
 
         if len(missing_splits) > 0:
@@ -180,8 +237,8 @@ class MapsManager:
     def predict(
         self,
         data_group: str,
-        caps_directory: Path = None,
-        tsv_path: Path = None,
+        caps_directory: str = None,
+        tsv_path: str = None,
         split_list: List[int] = None,
         selection_metrics: List[str] = None,
         multi_cohort: bool = False,
@@ -221,7 +278,7 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
-        if not split_list:
+        if split_list is None:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -239,6 +296,7 @@ class MapsManager:
                 diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
+
         criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
             data_group,
@@ -248,30 +306,30 @@ class MapsManager:
             overwrite,
             label=label,
         )
+
         for split in split_list:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(data_group, split)
+
             # Find label code if not given
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
 
             # Erase previous TSV files
-            if not selection_metrics:
+            if selection_metrics is None:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
                 split_selection_metrics = selection_metrics
             for selection in split_selection_metrics:
-                tsv_dir = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
-                    / f"best-{selection}"
-                    / data_group
+                tsv_pattern = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection}",
+                    data_group,
+                    f"{data_group}*.tsv",
                 )
-
-                tsv_pattern = f"{data_group}*.tsv"
-
-                for tsv_file in tsv_dir.glob(tsv_pattern):
-                    tsv_file.unlink()
+                for tsv_file in glob(tsv_pattern):
+                    os.remove(tsv_file)
 
             if self.multi_network:
                 for network in range(self.num_networks):
@@ -287,6 +345,7 @@ class MapsManager:
                         if label_code == "default"
                         else label_code,
                         cnn_index=network,
+                        for_pythae=True,
                     )
                     test_loader = DataLoader(
                         data_test,
@@ -306,33 +365,16 @@ class MapsManager:
                         gpu=gpu,
                         network=network,
                     )
-                    if save_tensor:
-                        logger.debug("Saving tensors")
-                        self._compute_output_tensors(
+                    if save_tensor or save_nifti or save_latent_tensor:
+                        self._save_model_output(
                             data_test,
                             data_group,
                             split,
                             selection_metrics,
+                            save_reconstruction_tensor=save_tensor,
+                            save_reconstruction_nifti=save_nifti,
+                            save_latent_tensor=save_latent_tensor,
                             gpu=gpu,
-                            network=network,
-                        )
-                    if save_nifti:
-                        self._compute_output_nifti(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            gpu=gpu,
-                            network=network,
-                        )
-                    if save_latent_tensor:
-                        self._compute_latent_tensors(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            gpu=gpu,
-                            network=network,
                         )
             else:
                 data_test = return_dataset(
@@ -346,6 +388,7 @@ class MapsManager:
                     label_code=self.label_code
                     if label_code == "default"
                     else label_code,
+                    for_pythae=True,
                 )
 
                 test_loader = DataLoader(
@@ -365,29 +408,15 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                 )
-                if save_tensor:
-                    logger.debug("Saving tensors")
-                    self._compute_output_tensors(
+                if save_tensor or save_nifti or save_latent_tensor:
+                    self._save_model_output(
                         data_test,
                         data_group,
                         split,
                         selection_metrics,
-                        gpu=gpu,
-                    )
-                if save_nifti:
-                    self._compute_output_nifti(
-                        data_test,
-                        data_group,
-                        split,
-                        selection_metrics,
-                        gpu=gpu,
-                    )
-                if save_latent_tensor:
-                    self._compute_latent_tensors(
-                        data_test,
-                        data_group,
-                        split,
-                        selection_metrics,
+                        save_reconstruction_tensor=save_tensor,
+                        save_reconstruction_nifti=save_nifti,
+                        save_latent_tensor=save_latent_tensor,
                         gpu=gpu,
                     )
 
@@ -398,8 +427,8 @@ class MapsManager:
         data_group,
         name,
         method,
-        caps_directory: Path = None,
-        tsv_path: Path = None,
+        caps_directory=None,
+        tsv_path=None,
         split_list=None,
         selection_metrics=None,
         multi_cohort=False,
@@ -412,55 +441,33 @@ class MapsManager:
         overwrite=False,
         overwrite_name=False,
         level=None,
-        save_nifti=False,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-
-        Parameters
-        ----------
-        data_group: str
-            Name of the data group interpreted.
-        name: str
-            Name of the interpretation procedure.
-        method: str
-            Method used for extraction (ex: gradients, grad-cam...).
-        caps_directory: str (Path)
-            Path to the CAPS folder. For more information please refer to
-            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-            Default will load the value of an existing data group.
-        tsv_path: str (Path)
-            Path to a TSV file containing the list of participants and sessions to test.
-            Default will load the DataFrame of an existing data group.
-        split_list: list of int
-            List of splits to interpret. Default perform interpretation on all splits available.
-        selection_metrics: list of str
-            List of selection metrics to interpret.
-            Default performs the interpretation on all selection metrics available.
-        multi_cohort: bool
-            If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses: list of str
-            List of diagnoses to load if tsv_path is a split_directory.
-            Default uses the same as in training step.
-        target_node: int
-            Node from which the interpretation is computed.
-        save_individual: bool
-            If True saves the individual map of each participant / session couple.
-        batch_size: int
-            If given, sets the value of batch_size, else use the same as in training step.
-        n_proc: int
-            If given, sets the value of num_workers, else use the same as in training step.
-        gpu: bool
-            If given, a new value for the device of the model will be computed.
-        overwrite: bool
-            If True erase the occurrences of data_group.
-        overwrite_name: bool
-            If True erase the occurrences of name.
-        level: int
-            Layer number in the convolutional part after which the feature map is chosen.
-        save_nifi : bool
-            If True, save the interpretation map in nifti format.
+        Args:
+            data_group (str): name of the data group interpreted.
+            name (str): name of the interpretation procedure.
+            method (str): method used for extraction (ex: gradients, grad-cam...).
+            caps_directory (str): path to the CAPS folder. For more information please refer to
+                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+                Default will load the value of an existing data group.
+            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
+                Default will load the DataFrame of an existing data group.
+            split_list (list[int]): list of splits to interpret. Default perform interpretation on all splits available.
+            selection_metrics (list[str]): list of selection metrics to interpret.
+                Default performs the interpretation on all selection metrics available.
+            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
+            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
+                Default uses the same as in training step.
+            target_node (int): Node from which the interpretation is computed.
+            save_individual (bool): If True saves the individual map of each participant / session couple.
+            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
+            n_proc (int): If given, sets the value of num_workers, else use the same as in training step.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            overwrite (bool): If True erase the occurrences of data_group.
+            overwrite_name (bool): If True erase the occurrences of name.
+            level (int): layer number in the convolutional part after which the feature map is chosen.
         """
 
         from torch.utils.data import DataLoader
@@ -473,7 +480,7 @@ class MapsManager:
                 f"Please choose in {method_dict.keys()}"
             )
 
-        if not split_list:
+        if split_list is None:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -521,20 +528,20 @@ class MapsManager:
                 num_workers=n_proc if n_proc is not None else self.n_proc,
             )
 
-            if not selection_metrics:
+            if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(split)
 
             for selection_metric in selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
-                results_path = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
-                    / f"best-{selection_metric}"
-                    / data_group
-                    / f"interpret-{name}"
+                results_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    f"interpret-{name}",
                 )
 
-                if (results_path).is_dir():
+                if path.exists(results_path):
                     if overwrite_name:
                         shutil.rmtree(results_path)
                     else:
@@ -542,7 +549,7 @@ class MapsManager:
                             f"Interpretation name {name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
-                results_path.mkdir(parents=True)
+                makedirs(results_path)
 
                 model, _ = self._init_model(
                     transfer_path=self.maps_path,
@@ -564,39 +571,18 @@ class MapsManager:
                         mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
-                            single_path = (
-                                results_path
-                                / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt"
+                            single_path = path.join(
+                                results_path,
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_"
+                                f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt[i], single_path)
-                            if save_nifti:
-                                import nibabel as nib
-                                from numpy import eye
-
-                                single_nifti_path = (
-                                    results_path
-                                    / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz"
-                                )
-
-                                output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
-                                nib.save(output_nii, single_nifti_path)
-
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
-
                     torch.save(
                         mode_map,
-                        results_path / f"mean_{self.mode}-{i}_map.pt",
+                        path.join(results_path, f"mean_{self.mode}-{i}_map.pt"),
                     )
-                    if save_nifti:
-                        import nibabel as nib
-                        from numpy import eye
-
-                        output_nii = nib.Nifti1Image(mode_map, eye(4))
-                        nib.save(
-                            output_nii,
-                            results_path / f"mean_{self.mode}-{i}_map.nii.gz",
-                        )
 
     ###################################
     # High-level functions templates  #
@@ -617,6 +603,7 @@ class MapsManager:
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
+
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -646,7 +633,9 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
+
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
+
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -714,16 +703,16 @@ class MapsManager:
             if resume:
                 training_logs = [
                     int(network_folder.split("-")[1])
-                    for network_folder in list(
-                        (
-                            self.maps_path
-                            / f"{self.split_name}-{split}"
-                            / "training_logs"
-                        ).iterdir()
+                    for network_folder in listdir(
+                        path.join(
+                            self.maps_path,
+                            f"{self.split_name}-{split}",
+                            "training_logs",
+                        )
                     )
                 ]
                 first_network = max(training_logs)
-                if not (self.maps_path / "tmp").is_dir():
+                if not path.exists(path.join(self.maps_path, "tmp")):
                     first_network += 1
                     resume = False
 
@@ -756,6 +745,7 @@ class MapsManager:
                 train_sampler = self.task_manager.generate_sampler(
                     data_train, self.sampler
                 )
+
                 train_loader = DataLoader(
                     data_train,
                     batch_size=self.batch_size,
@@ -833,7 +823,8 @@ class MapsManager:
 
         log_writer = LogWriter(
             self.maps_path,
-            self.task_manager.evaluation_metrics + ["loss"],
+            self.task_manager.evaluation_metrics
+            + ["loss", "recon_loss", "kl_loss"],  # to change
             split,
             resume=resume,
             beginning_epoch=beginning_epoch,
@@ -843,62 +834,58 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
-        profiler = self._init_profiler()
-
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
 
-            with profiler:
-                for i, data in enumerate(train_loader):
-                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    loss.backward()
+            for i, data in enumerate(train_loader):
 
-                    if (i + 1) % self.accumulation_steps == 0:
-                        step_flag = False
-                        optimizer.step()
-                        optimizer.zero_grad()
+                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                logger.debug(f"Train loss dictionnary {loss_dict}")
+                loss = loss_dict["loss"]
+                loss.backward()
 
-                        del loss
+                if (i + 1) % self.accumulation_steps == 0:
+                    step_flag = False
+                    optimizer.step()
+                    optimizer.zero_grad()
 
-                        # Evaluate the model only when no gradients are accumulated
-                        if (
-                            self.evaluation_steps != 0
-                            and (i + 1) % self.evaluation_steps == 0
-                        ):
-                            evaluation_flag = False
+                    del loss
 
-                            _, metrics_train = self.task_manager.test(
-                                model, train_loader, criterion
-                            )
-                            _, metrics_valid = self.task_manager.test(
-                                model, valid_loader, criterion
-                            )
+                    # Evaluate the model only when no gradients are accumulated
+                    if (
+                        self.evaluation_steps != 0
+                        and (i + 1) % self.evaluation_steps == 0
+                    ):
+                        evaluation_flag = False
 
-                            model.train()
-                            train_loader.dataset.train()
+                        _, metrics_train = self.task_manager.test(
+                            model, train_loader, criterion
+                        )
+                        _, metrics_valid = self.task_manager.test(
+                            model, valid_loader, criterion
+                        )
 
-                            log_writer.step(
-                                epoch,
-                                i,
-                                metrics_train,
-                                metrics_valid,
-                                len(train_loader),
-                            )
-                            logger.info(
-                                f"{self.mode} level training loss is {metrics_train['loss']} "
-                                f"at the end of iteration {i}"
-                            )
-                            logger.info(
-                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                                f"at the end of iteration {i}"
-                            )
+                        model.train()
+                        train_loader.dataset.train()
 
-                    profiler.step()
+                        log_writer.step(
+                            epoch,
+                            i,
+                            metrics_train,
+                            metrics_valid,
+                            len(train_loader),
+                        )
+                        logger.info(
+                            f"{self.mode} level training loss is {metrics_train['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+                        logger.info(
+                            f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                            f"at the end of iteration {i}"
+                        )
 
             # If no step has been performed, raise Exception
             if step_flag:
@@ -982,7 +969,7 @@ class MapsManager:
         )
 
         if self.task_manager.save_outputs:
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "train",
                 split,
@@ -990,7 +977,7 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "validation",
                 split,
@@ -1024,11 +1011,12 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-            log_dir = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
+
+            log_dir = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
             )
             self.write_description_log(
                 log_dir,
@@ -1045,15 +1033,16 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
-                logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
-                )
+                # logger.info(
+                #     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                # )
 
             # Replace here
             self._mode_level_to_tsv(
@@ -1094,19 +1083,22 @@ class MapsManager:
                 network=network,
             )
 
-            nifti_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-                / "nifti_images"
+            nifti_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
+                "nifti_images",
             )
-            nifti_path.mkdir(parents=True, exist_ok=True)
+            makedirs(nifti_path, exist_ok=True)
 
             nb_imgs = len(dataset)
             for i in range(nb_imgs):
                 data = dataset[i]
-                image = data["image"]
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
                 output = (
                     model.predict(image.unsqueeze(0).to(model.device))
                     .squeeze(0)
@@ -1121,15 +1113,18 @@ class MapsManager:
                 session_id = data["session_id"]
                 input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                 output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                nib.save(input_nii, nifti_path / input_filename)
-                nib.save(output_nii, nifti_path / output_filename)
+                nib.save(input_nii, path.join(nifti_path, input_filename))
+                nib.save(output_nii, path.join(nifti_path, output_filename))
 
-    def _compute_output_tensors(
+    def _save_model_output(
         self,
         dataset,
         data_group,
         split,
         selection_metrics,
+        save_reconstruction_tensor=True,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1156,14 +1151,35 @@ class MapsManager:
                 network=network,
             )
 
-            tensor_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-                / "tensors"
-            )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            if save_reconstruction_tensor:
+                tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "tensors",
+                )
+                makedirs(tensor_path, exist_ok=True)
+
+            if save_reconstruction_nifti:
+                nifti_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "nifti_images",
+                )
+                makedirs(nifti_path, exist_ok=True)
+
+            if save_latent_tensor:
+                latent_tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "latent_tensors",
+                )
+                makedirs(latent_tensor_path, exist_ok=True)
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
@@ -1172,82 +1188,44 @@ class MapsManager:
 
             for i in range(nb_modes):
                 data = dataset[i]
-                image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
-                )
+                image = data["data"]
+                data["data"] = data["data"].unsqueeze(0)
+                output = model.predict(data)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
-                input_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
-                )
-                output_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
-                )
-                torch.save(image, tensor_path / input_filename)
-                torch.save(output, tensor_path / output_filename)
-                logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-    def _compute_latent_tensors(
-        self,
-        dataset,
-        data_group,
-        split,
-        selection_metrics,
-        nb_images=None,
-        gpu=None,
-        network=None,
-    ):
-        """
-        Compute the output tensors and saves them in the MAPS.
+                if save_reconstruction_tensor:
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                    )
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                    )
+                    torch.save(image, path.join(tensor_path, input_filename))
+                    torch.save(reconstruction, path.join(tensor_path, output_filename))
+                    logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-        Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
-            data_group (str): name of the data group used for the task.
-            split (int): split number.
-            selection_metrics (list[str]): metrics used for model selection.
-            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-            )
+                if save_reconstruction_nifti:
+                    # Convert tensor to nifti image with appropriate affine
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(reconstruction[0].numpy(), eye(4))
+                    # Create file name according to participant and session id
+                    input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                    output_filename = (
+                        f"{participant_id}_{session_id}_image_output.nii.gz"
+                    )
+                    nib.save(input_nii, path.join(nifti_path, input_filename))
+                    nib.save(output_nii, path.join(nifti_path, output_filename))
 
-            tensor_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-                / "latent_tensors"
-            )
-            tensor_path.mkdir(parents=True, exist_ok=True)
-
-            if nb_images is None:  # Compute outputs for the whole data set
-                nb_modes = len(dataset)
-            else:
-                nb_modes = nb_images * dataset.elem_per_image
-
-            for i in range(nb_modes):
-                data = dataset[i]
-                image = data["image"]
-                logger.debug(f"Image for latent representation {image}")
-                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
-                latent = latent.squeeze(0).cpu()
-                participant_id = data["participant_id"]
-                session_id = data["session_id"]
-                mode_id = data[f"{self.mode}_id"]
-                output_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
-                )
-                torch.save(latent, tensor_path / output_filename)
+                if save_latent_tensor:
+                    latent = output["embedding"].squeeze(0).cpu()
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                    )
+                    torch.save(latent, path.join(latent_tensor_path, output_filename))
 
     def _ensemble_prediction(
         self,
@@ -1258,7 +1236,7 @@ class MapsManager:
     ):
         """Computes the results on the image-level."""
 
-        if not selection_metrics:
+        if selection_metrics is None:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
@@ -1293,14 +1271,16 @@ class MapsManager:
             "mode",
             "network_task",
         ]
+
         for arg in mandatory_arguments:
             if arg not in parameters:
                 raise ClinicaDLArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-        self.parameters = add_default_values(parameters)
-        self.parameters = change_str_to_path(parameters)
+
+        parameters = add_default_values(parameters)
+        self.parameters = parameters
         if self.parameters["gpu"]:
             check_gpu()
 
@@ -1370,8 +1350,9 @@ class MapsManager:
 
     def _check_split_wording(self):
         """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
+        from glob import glob
 
-        if len(list(self.maps_path.glob("fold-*"))) > 0:
+        if len(glob(path.join(self.maps_path, "fold-*"))) > 0:
             return "fold"
         else:
             return "split"
@@ -1379,31 +1360,30 @@ class MapsManager:
     def _find_splits(self):
         """Find which splits were trained in the MAPS."""
         return [
-            int(split.name.split("-")[1])
-            for split in list(self.maps_path.iterdir())
-            if split.name.startswith(f"{self.split_name}-")
+            int(split.split("-")[1])
+            for split in listdir(self.maps_path)
+            if split.startswith(f"{self.split_name}-")
         ]
 
     def _find_selection_metrics(self, split):
         """Find which selection metrics are available in MAPS for a given split."""
-
-        split_path = self.maps_path / f"{self.split_name}-{split}"
-        if not split_path.is_dir():
+        split_path = path.join(self.maps_path, f"{self.split_name}-{split}")
+        if not path.exists(split_path):
             raise MAPSError(
                 f"Training of split {split} was not performed."
                 f"Please execute maps_manager.train(split_list=[{split}])"
             )
 
         return [
-            metric.name.split("-")[1]
-            for metric in list(split_path.iterdir())
-            if metric.name[:5:] == "best-"
+            metric.split("-")[1]
+            for metric in listdir(split_path)
+            if metric[:5:] == "best-"
         ]
 
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
         available_metrics = self._find_selection_metrics(split)
-        if not selection_metric:
+        if selection_metric is None:
             if len(available_metrics) > 1:
                 raise ClinicaDLArgumentError(
                     f"Several metrics are available for split {split}. "
@@ -1431,7 +1411,7 @@ class MapsManager:
                 between the participant IDs in test_df and the ones used for training.
         """
         if data_group not in ["train", "validation"]:
-            train_path = self.maps_path / "groups" / "train+validation.tsv"
+            train_path = path.join(self.maps_path, "groups", "train+validation.tsv")
             train_df = pd.read_csv(train_path, sep="\t")
             participants_train = set(train_df.participant_id.values)
             participants_test = set(test_df.participant_id.values)
@@ -1471,25 +1451,25 @@ class MapsManager:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
-        group_dir = self.maps_path / "groups" / data_group
-        logger.debug(f"Group path {group_dir}")
-        if group_dir.is_dir():  # Data group already exists
+        group_path = path.join(self.maps_path, "groups", data_group)
+        logger.debug(f"Group path {group_path}")
+        if path.exists(group_path):  # Data group already exists
             if overwrite:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    shutil.rmtree(group_dir)
+                    shutil.rmtree(group_path)
                     split_list = self._find_splits()
                     for split in split_list:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
-                            results_path = (
-                                self.maps_path
-                                / f"{self.split_name}-{split}"
-                                / f"best-{selection}"
-                                / data_group
+                            results_path = path.join(
+                                self.maps_path,
+                                f"{self.split_name}-{split}",
+                                f"best-{selection}",
+                                data_group,
                             )
-                            if results_path.is_dir():
+                            if path.exists(results_path):
                                 shutil.rmtree(results_path)
             elif df is not None or caps_directory is not None:
                 raise ClinicaDLArgumentError(
@@ -1498,15 +1478,15 @@ class MapsManager:
                     f"To erase {data_group} please set overwrite to True."
                 )
 
-        if not group_dir.is_dir() and (
+        if not path.exists(group_path) and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
                 f"The data group {data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
-        elif (
-            not group_dir.is_dir()
+        elif not path.exists(
+            group_path
         ):  # Data group does not exist yet / was overwritten + all data is provided
             self._check_leakage(data_group, df)
             self._write_data_group(
@@ -1517,22 +1497,18 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path: Path, parameters, verbose=True):
-        from pathlib import PosixPath
-
+    def write_parameters(json_path, parameters, verbose=True):
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
-        json_path.mkdir(parents=True, exist_ok=True)
+        makedirs(json_path, exist_ok=True)
 
-        parameters = change_path_to_str(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
-        json_path = json_path / "maps.json"
+        json_path = path.join(json_path, "maps.json")
         if verbose:
             logger.info(f"Path of json file: {json_path}")
-        with json_path.open(mode="w") as f:
+        with open(json_path, "w") as f:
             f.write(json_data)
-        parameters = change_str_to_path(parameters)
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -1541,7 +1517,7 @@ class MapsManager:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
             )
-            with (self.maps_path / "environment.txt").open(mode="w") as file:
+            with open(path.join(self.maps_path, "environment.txt"), "w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
             logger.warning(
@@ -1561,22 +1537,22 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
+            transfer_train_path = path.join(
+                self.transfer_path, "groups", "train+validation.tsv"
+            )
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
+
         train_df.to_csv(
-            self.maps_path / "groups" / "train+validation.tsv", sep="\t", index=False
+            path.join(self.maps_path, "groups", "train+validation.tsv"),
+            sep="\t",
+            index=False,
         )
 
     def _write_data_group(
-        self,
-        data_group,
-        df,
-        caps_directory: Path = None,
-        multi_cohort: bool = None,
-        label=None,
+        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1588,8 +1564,8 @@ class MapsManager:
             caps_directory (str): caps_directory if different from the training caps_directory,
             multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
         """
-        group_path = self.maps_path / "groups" / data_group
-        group_path.mkdir(parents=True)
+        group_path = path.join(self.maps_path, "groups", data_group)
+        makedirs(group_path)
 
         columns = ["participant_id", "session_id", "cohort"]
         if self.label in df.columns.values:
@@ -1597,7 +1573,9 @@ class MapsManager:
         if label is not None and label in df.columns.values:
             columns += [label]
 
-        df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
+        df.to_csv(
+            path.join(group_path, "data.tsv"), sep="\t", columns=columns, index=False
+        )
         self.write_parameters(
             group_path,
             {
@@ -1617,18 +1595,16 @@ class MapsManager:
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]
-                group_path = (
-                    self.maps_path
-                    / "groups"
-                    / data_group
-                    / f"{self.split_name}-{split}"
+                group_path = path.join(
+                    self.maps_path, "groups", data_group, f"{self.split_name}-{split}"
                 )
-                group_path.mkdir(parents=True, exist_ok=True)
+                makedirs(group_path, exist_ok=True)
 
                 columns = ["participant_id", "session_id", "cohort"]
                 if self.label is not None:
                     columns.append(self.label)
-                df.to_csv(group_path / "data.tsv", sep="\t", columns=columns)
+
+                df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
                 self.write_parameters(
                     group_path,
                     {
@@ -1657,9 +1633,9 @@ class MapsManager:
             network: network number (multi-network framework).
             filename: name of the checkpoint file.
         """
-        checkpoint_dir = self.maps_path / f"{self.split_name}-{split}" / "tmp"
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_path = checkpoint_dir / filename
+        checkpoint_dir = path.join(self.maps_path, f"{self.split_name}-{split}", "tmp")
+        makedirs(checkpoint_dir, exist_ok=True)
+        checkpoint_path = path.join(checkpoint_dir, filename)
         torch.save(state, checkpoint_path)
 
         best_filename = "model.pth.tar"
@@ -1669,14 +1645,14 @@ class MapsManager:
         # Save model according to several metrics
         if metrics_dict is not None:
             for metric_name, metric_bool in metrics_dict.items():
-                metric_path = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
-                    / f"best-{metric_name}"
+                metric_path = path.join(
+                    self.maps_path, f"{self.split_name}-{split}", f"best-{metric_name}"
                 )
                 if metric_bool:
-                    metric_path.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(checkpoint_path, metric_path / best_filename)
+                    makedirs(metric_path, exist_ok=True)
+                    shutil.copyfile(
+                        checkpoint_path, path.join(metric_path, best_filename)
+                    )
 
     def _write_information(self):
         """
@@ -1702,7 +1678,7 @@ class MapsManager:
 
         file_name = "information.log"
 
-        with (self.maps_path / file_name).open(mode="w") as f:
+        with open(path.join(self.maps_path, file_name), "w") as f:
             f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
             f.write(f"- Path :\t{self.maps_path}\n\n")
             # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
@@ -1712,12 +1688,12 @@ class MapsManager:
 
     def _erase_tmp(self, split):
         """Erase checkpoints of the model and optimizer at the end of training."""
-        tmp_path = self.maps_path / f"{self.split_name}-{split}" / "tmp"
+        tmp_path = path.join(self.maps_path, f"{self.split_name}-{split}", "tmp")
         shutil.rmtree(tmp_path)
 
     @staticmethod
     def write_description_log(
-        log_dir: Path,
+        log_dir,
         data_group,
         caps_dict,
         df,
@@ -1731,9 +1707,9 @@ class MapsManager:
             caps_dict (dict[str, str]): Dictionary of the CAPS folders used for the task
             df (pd.DataFrame): DataFrame of the meta-data used for the task.
         """
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / "description.log"
-        with log_path.open(mode="w") as f:
+        makedirs(log_dir, exist_ok=True)
+        log_path = path.join(log_dir, "description.log")
+        with open(log_path, "w") as f:
             f.write(f"Prediction {data_group} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
             f.write(f"Number of participants: {df.participant_id.nunique()}\n")
@@ -1757,33 +1733,38 @@ class MapsManager:
             selection: the metrics on which the model was selected (BA, loss...)
             data_group: the name referring to the data group on which evaluation is performed.
         """
-        performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+        performance_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection}",
+            data_group,
         )
-        performance_dir.mkdir(parents=True, exist_ok=True)
-        performance_path = (
-            performance_dir / f"{data_group}_{self.mode}_level_prediction.tsv"
+
+        makedirs(performance_dir, exist_ok=True)
+        performance_path = path.join(
+            performance_dir, f"{data_group}_{self.mode}_level_prediction.tsv"
         )
-        if not performance_path.is_file():
+
+        if not path.exists(performance_path):
             results_df.to_csv(performance_path, index=False, sep="\t")
         else:
             results_df.to_csv(
                 performance_path, index=False, sep="\t", mode="a", header=False
             )
 
-        metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
+        metrics_path = path.join(
+            performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
+        )
         if metrics is not None:
-            if not metrics_path.is_file():
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
-                )
-            else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=False
-                )
+            # if not path.exists(metrics_path):
+            #     pd.DataFrame(metrics, index=[0]).to_csv(
+            #         metrics_path, index=False, sep="\t"
+            #     )
+            # else:
+            #     pd.DataFrame(metrics, index=[0]).to_csv(
+            #         metrics_path, index=False, sep="\t", mode="a", header=False
+            #     )
+            metrics.to_csv(metrics_path, sep="\t")
 
     def _ensemble_to_tsv(
         self,
@@ -1815,14 +1796,13 @@ class MapsManager:
             validation_dataset, split, selection, self.mode, verbose=False
         )
 
-        performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+        performance_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection}",
+            data_group,
         )
-
-        performance_dir.mkdir(parents=True, exist_ok=True)
+        makedirs(performance_dir, exist_ok=True)
 
         df_final, metrics = self.task_manager.ensemble_prediction(
             test_df,
@@ -1833,13 +1813,13 @@ class MapsManager:
 
         if df_final is not None:
             df_final.to_csv(
-                performance_dir / f"{data_group}_image_level_prediction.tsv",
+                path.join(performance_dir, f"{data_group}_image_level_prediction.tsv"),
                 index=False,
                 sep="\t",
             )
         if metrics is not None:
             pd.DataFrame(metrics, index=[0]).to_csv(
-                performance_dir / f"{data_group}_image_level_metrics.tsv",
+                path.join(performance_dir, f"{data_group}_image_level_metrics.tsv"),
                 index=False,
                 sep="\t",
             )
@@ -1866,26 +1846,28 @@ class MapsManager:
         )
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
-        performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+        performance_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection}",
+            data_group,
         )
         sub_df.to_csv(
-            performance_dir / f"{data_group}_image_level_prediction.tsv",
+            path.join(performance_dir, f"{data_group}_image_level_prediction.tsv"),
             index=False,
             sep="\t",
         )
         if use_labels:
             metrics_df = pd.read_csv(
-                performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv",
+                path.join(
+                    performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
+                ),
                 sep="\t",
             )
             if f"{self.mode}_id" in metrics_df:
                 del metrics_df[f"{self.mode}_id"]
             metrics_df.to_csv(
-                (performance_dir / f"{data_group}_image_level_metrics.tsv"),
+                path.join(performance_dir, f"{data_group}_image_level_metrics.tsv"),
                 index=False,
                 sep="\t",
             )
@@ -1895,7 +1877,7 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path: Path = None,
+        transfer_path=None,
         transfer_selection=None,
         split=None,
         resume=False,
@@ -1939,11 +1921,11 @@ class MapsManager:
         current_epoch = 0
 
         if resume:
-            checkpoint_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / "tmp"
-                / "checkpoint.pth.tar"
+            checkpoint_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                "tmp",
+                "checkpoint.pth.tar",
             )
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
@@ -1959,7 +1941,14 @@ class MapsManager:
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
             logger.debug(f"Transfer from {transfer_class}")
-            model.transfer_weights(transfer_state["model"], transfer_class)
+            if "model" in transfer_state.keys():
+                model.transfer_weights(transfer_state["model"], transfer_class)
+            elif "model_state_dict" in transfer_state.keys():
+                model.transfer_weights(
+                    transfer_state["model_state_dict"], transfer_class
+                )
+            else:
+                raise KeyError("Unknow key in model state dictionnary.")
 
         return model, current_epoch
 
@@ -1972,11 +1961,8 @@ class MapsManager:
         )
 
         if resume:
-            checkpoint_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / "tmp"
-                / "optimizer.pth.tar"
+            checkpoint_path = path.join(
+                self.maps_path, f"{self.split_name}-{split}", "tmp", "optimizer.pth.tar"
             )
             checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
             optimizer.load_state_dict(checkpoint_state["optimizer"])
@@ -2021,36 +2007,6 @@ class MapsManager:
                 f"Please choose between classification, regression and reconstruction."
             )
 
-    def _init_profiler(self):
-        if self.profiler:
-            from torch.profiler import (
-                ProfilerActivity,
-                profile,
-                schedule,
-                tensorboard_trace_handler,
-            )
-
-            time = datetime.now().strftime("%H:%M:%S")
-            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
-            # When ClinicaDL will be updated with Distributed Data Parallelism,
-            # the next line will be handy, to make sure all processes write in the same file
-            # dist.broadcast_object_list(filename, src=0)
-            profiler = profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
-                on_trace_ready=tensorboard_trace_handler(filename[0]),
-                profile_memory=True,
-                record_shapes=False,
-                with_stack=False,
-                with_flops=False,
-            )
-        else:
-            from contextlib import nullcontext
-
-            profiler = nullcontext()
-            profiler.step = lambda *args, **kwargs: None
-        return profiler
-
     ###############################
     # Getters                     #
     ###############################
@@ -2068,15 +2024,16 @@ class MapsManager:
             split (int): Index of the split used for training.
             selection_metric (str): Metric used for best weights selection.
         """
-        log_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
+        log_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection_metric}",
+            data_group,
         )
-        log_path = log_dir / "description.log"
-        with log_path.open(mode="r") as f:
+        log_path = path.join(log_dir, "description.log")
+        with open(log_path, "r") as f:
             content = f.read()
+            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None
@@ -2086,8 +2043,8 @@ class MapsManager:
         (list of participant_id / session_id + configuration parameters).
         split is only needed if data_group is train or validation.
         """
-        group_path = self.maps_path / "groups" / data_group
-        if not group_path.is_dir():
+        group_path = path.join(self.maps_path, "groups", data_group)
+        if not path.exists(group_path):
             raise MAPSError(
                 f"Data group {data_group} is not defined. "
                 f"Please run a prediction to create this data group."
@@ -2098,23 +2055,23 @@ class MapsManager:
                     f"Information on train or validation data can only be "
                     f"loaded if a split number is given"
                 )
-            elif not (group_path / f"{self.split_name}-{split}").is_dir():
+            elif not path.exists(path.join(group_path, f"{self.split_name}-{split}")):
                 raise MAPSError(
                     f"Split {split} is not available for data group {data_group}."
                 )
             else:
-                group_path = group_path / f"{self.split_name}-{split}"
+                group_path = path.join(group_path, f"{self.split_name}-{split}")
 
-        df = pd.read_csv(group_path / "data.tsv", sep="\t")
-        json_path = group_path / "maps.json"
-        with json_path.open(mode="r") as f:
+        df = pd.read_csv(path.join(group_path, "data.tsv"), sep="\t")
+        json_path = path.join(group_path, "maps.json")
+        with open(json_path, "r") as f:
             parameters = json.load(f)
-        parameters = change_str_to_path(parameters)
+
         return df, parameters
 
     def get_parameters(self):
         """Returns the training parameters dictionary."""
-        json_path = self.maps_path / "maps.json"
+        json_path = path.join(self.maps_path, "maps.json")
         return read_json(json_path)
 
     def get_model(
@@ -2166,19 +2123,26 @@ class MapsManager:
                     "Please precise the network number that must be loaded."
                 )
             else:
-                model_path = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
-                    / f"best-{selection_metric}"
-                    / f"network-{network}_model.pth.tar"
+                model_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    f"network-{network}_model.pth.tar",
                 )
         else:
-            model_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / "model.pth.tar"
+            model_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                "model.pth.tar",
             )
+            if not path.exists(model_path):
+                model_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    "model.pt",
+                )
 
         logger.info(
             f"Loading model trained for split {split} "
@@ -2188,7 +2152,7 @@ class MapsManager:
         return torch.load(model_path, map_location=map_location)
 
     def get_prediction(
-        self, data_group, split=0, selection_metric=None, mode="image", verbose=False
+        self, data_group, split=0, selection_metric=None, mode="image", verbose=True
     ):
         """
         Get the individual predictions for each participant corresponding to one group
@@ -2207,18 +2171,18 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
-        prediction_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
+        prediction_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection_metric}",
+            data_group,
         )
-        if not prediction_dir.is_dir():
+        if not path.exists(prediction_dir):
             raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
-            prediction_dir / f"{data_group}_{mode}_level_prediction.tsv",
+            path.join(prediction_dir, f"{data_group}_{mode}_level_prediction.tsv"),
             sep="\t",
         )
         df.set_index(["participant_id", "session_id"], inplace=True, drop=True)
@@ -2242,18 +2206,19 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
-        prediction_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
+        prediction_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection_metric}",
+            data_group,
         )
-        if not prediction_dir.is_dir():
+        if not path.exists(prediction_dir):
             raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
-            prediction_dir / f"{data_group}_{mode}_level_metrics.tsv", sep="\t"
+            path.join(prediction_dir, f"{data_group}_{mode}_level_metrics.tsv"),
+            sep="\t",
         )
         return df.to_dict("records")[0]
 
@@ -2288,20 +2253,22 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
-        map_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
-            / f"interpret-{name}"
+        map_dir = path.join(
+            self.maps_path,
+            f"{self.split_name}-{split}",
+            f"best-{selection_metric}",
+            data_group,
+            f"interpret-{name}",
         )
-        if not map_dir.is_dir():
+        if not path.exists(map_dir):
             raise MAPSError(
                 f"No prediction corresponding to data group {data_group} and "
                 f"interpretation {name} was found."
             )
         if participant_id is None and session_id is None:
-            map_pt = torch.load(map_dir / f"mean_{self.mode}-{mode_id}_map.pt")
+            map_pt = torch.load(
+                path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt")
+            )
         elif participant_id is None or session_id is None:
             raise ValueError(
                 f"To load the mean interpretation map, "
@@ -2310,6 +2277,9 @@ class MapsManager:
             )
         else:
             map_pt = torch.load(
-                map_dir / f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt"
+                path.join(
+                    map_dir,
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt",
+                )
             )
         return map_pt

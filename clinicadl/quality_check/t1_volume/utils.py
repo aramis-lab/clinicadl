@@ -1,7 +1,8 @@
 """
 Produces a tsv file to study all the nii files and perform the quality check.
 """
-
+import os
+from os import path
 from pathlib import Path
 
 import nibabel as nib
@@ -10,13 +11,13 @@ import pandas as pd
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 
 
-def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
-    if not output_dir.is_dir():
-        output_dir.mkdir(parents=True)
+def extract_metrics(caps_dir, output_dir, group_label):
+    if not path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # Load eyes segmentation
-    home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "segmentation"
+    home = str(Path.home())
+    cache_clinicadl = path.join(home, ".cache", "clinicadl", "segmentation")
     url_aramis = "https://aramislab.paris.inria.fr/files/data/template/"
     FILE1 = RemoteFileStructure(
         filename="eyes_segmentation.nii.gz",
@@ -24,12 +25,12 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
         checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
     )
 
-    if not cache_clinicadl.is_dir():
-        cache_clinicadl.mkdir(parents=True)
+    if not (path.exists(cache_clinicadl)):
+        os.makedirs(cache_clinicadl)
 
-    segmentation_file = cache_clinicadl / FILE1.filename
+    segmentation_file = path.join(cache_clinicadl, FILE1.filename)
 
-    if not segmentation_file.is_file():
+    if not (path.exists(segmentation_file)):
         try:
             segmentation_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
@@ -39,12 +40,12 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
     segmentation_np = segmentation_nii.get_fdata()
 
     # Get the GM template
-    template_path = (
-        caps_dir
-        / "groups"
-        / f"group-{group_label}"
-        / "t1"
-        / f"group-{group_label}_template.nii.gz"
+    template_path = path.join(
+        caps_dir,
+        "groups",
+        f"group-{group_label}",
+        "t1",
+        f"group-{group_label}_template.nii.gz",
     )
     template_nii = nib.load(template_path)
     template_np = template_nii.get_fdata()
@@ -52,7 +53,7 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
     template_segmentation_np = template_np * segmentation_np
 
     # Get the data
-    filename = output_dir / "QC_metrics.tsv"
+    filename = path.join(output_dir, "QC_metrics.tsv")
     columns = [
         "participant_id",
         "session_id",
@@ -60,29 +61,29 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
         "non_zero_percentage",
         "frontal_similarity",
     ]
-    results_df = pd.DataFrame(columns=columns)
+    results_df = pd.DataFrame()
 
-    subjects = list((caps_dir / "subjects").iterdir())
-    subjects = [subject for subject in subjects if str(subject)[:4:] == "sub-"]
+    subjects = os.listdir(path.join(caps_dir, "subjects"))
+    subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
     for subject in subjects:
-        subject_path = caps_dir / "subjects" / subject
-        sessions = list(subject_path.iterdir())
-        sessions = [session for session in sessions if str(session)[:4:] == "ses-"]
+        subject_path = path.join(caps_dir, "subjects", subject)
+        sessions = os.listdir(subject_path)
+        sessions = [session for session in sessions if session[:4:] == "ses-"]
         for session in sessions:
-            image_path = (
-                subject_path
-                / session
-                / "t1"
-                / "spm"
-                / "segmentation"
-                / "normalized_space"
-                / subject
+            image_path = path.join(
+                subject_path,
+                session,
+                "t1",
+                "spm",
+                "segmentation",
+                "normalized_space",
+                subject
                 + "_"
                 + session
-                + "_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+                + "_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz",
             )
 
-            if image_path.is_file():
+            if path.exists(image_path):
                 # GM analysis
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()

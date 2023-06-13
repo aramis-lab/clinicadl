@@ -1,6 +1,5 @@
 import click
 
-from .pet_linear.cli import cli as pet_linear_cli
 from .t1_linear.cli import cli as t1_linear_cli
 from .t1_volume.cli import cli as t1_volume_cli
 
@@ -23,7 +22,6 @@ def cli() -> None:
 
 cli.add_command(t1_linear_cli)
 cli.add_command(t1_volume_cli)
-cli.add_command(pet_linear_cli)
 
 if __name__ == "__main__":
     cli()

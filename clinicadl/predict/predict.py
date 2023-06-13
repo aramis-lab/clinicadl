@@ -1,5 +1,4 @@
 # coding: utf8
-from pathlib import Path
 from typing import List
 
 from clinicadl import MapsManager
@@ -7,10 +6,10 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def predict(
-    maps_dir: Path,
+    maps_dir: str,
     data_group: str,
-    caps_directory: Path,
-    tsv_path: Path,
+    caps_directory: str,
+    tsv_path: str,
     use_labels: bool = True,
     label: str = None,
     gpu: bool = True,
@@ -28,7 +27,6 @@ def predict(
     """
     This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
-
     Args:
         maps_dir: path to the MAPS.
         data_group: name of the data group tested.

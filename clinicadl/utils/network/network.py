@@ -7,7 +7,7 @@ from torch import nn
 
 
 class Network(nn.Module):
-    """Abstract Template for all networks used in ClinicaDL."""
+    """Abstract Template for all networks used in ClinicaDL"""
 
     def __init__(self, gpu=True):
         super(Network, self).__init__()
@@ -19,7 +19,7 @@ class Network(nn.Module):
 
         from numpy import argmax
 
-        logger = getLogger("clinicadl.networks")
+        logger = getLogger("clinicadl")
 
         if not gpu:
             return "cpu"
@@ -56,6 +56,7 @@ class Network(nn.Module):
     @staticmethod
     @abc.abstractmethod
     def get_input_size() -> str:
+
         """This static method is used for list_models command.
         Must return the shape of the input size expected (C@HxW or C@HxWxD) for each architecture.
         """

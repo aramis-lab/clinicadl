@@ -9,7 +9,6 @@ from clinicadl.utils import cli_param
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
-@cli_param.option.n_proc
 @click.option(
     "--mean",
     type=float,
@@ -23,7 +22,7 @@ from clinicadl.utils import cli_param
     help="Standard deviation of the gaussian noise added to synthetic images.",
 )
 @cli_param.option.use_uncropped_image
-@cli_param.option.tracer
+@cli_param.option.acq_label
 @cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
@@ -31,11 +30,10 @@ def cli(
     preprocessing,
     participants_tsv,
     n_subjects,
-    n_proc,
     mean,
     sigma,
     use_uncropped_image,
-    tracer,
+    acq_label,
     suvr_reference_region,
 ):
     """Addition of random gaussian noise to brain images.
@@ -52,11 +50,10 @@ def cli(
         tsv_path=participants_tsv,
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
-        n_proc=n_proc,
         mean=mean,
         sigma=sigma,
         uncropped_image=use_uncropped_image,
-        tracer=tracer,
+        acq_label=acq_label,
         suvr_reference_region=suvr_reference_region,
     )
 

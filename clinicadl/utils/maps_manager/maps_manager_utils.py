@@ -1,10 +1,10 @@
 import json
-from pathlib import Path
+import os
 from typing import Any, Dict
 
 import toml
 
-from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.extract.extract_utils import compute_folder_and_file_type
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -19,12 +19,18 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     task = user_dict["network_task"]
     # read default values
-    clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
-    config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
+    clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../../.."))
+    config_path = os.path.join(
+        clinicadl_root_dir,
+        "resources",
+        "config",
+        "train_config.toml",
+    )
     config_dict = toml.load(config_path)
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
+
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:
         for key in config_dict[section_name]:
@@ -40,7 +46,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     return user_dict
 
 
-def read_json(json_path: Path) -> Dict[str, Any]:
+def read_json(json_path: str) -> Dict[str, Any]:
     """
     Ensures retro-compatibility between the different versions of ClinicaDL.
 
@@ -50,7 +56,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     Returns:
         dictionary of training parameters.
     """
-    with json_path.open(mode="r") as f:
+    with open(json_path, "r") as f:
         parameters = json.load(f)
 
     # Types of retro-compatibility
@@ -99,7 +105,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
             "preprocessing",
             "use_uncropped_image",
             "prepare_dl" "custom_suffix",
-            "tracer",
+            "acq_label",
             "suvr_reference_region",
             "patch_size",
             "stride_size",
@@ -169,96 +175,4 @@ def remove_unused_tasks(
         if other_task.capitalize() in toml_dict:
             del toml_dict[other_task.capitalize()]
 
-    return toml_dict
-
-
-def change_str_to_path(
-    toml_dict: Dict[str, Dict[str, Any]]
-) -> Dict[str, Dict[str, Any]]:
-    """
-    For all paths in the dictionnary, it changes the type from str to pathlib.Path.
-
-    Paramaters
-    ----------
-    toml_dict: Dict[str, Dict[str, Any]]
-        Dictionary of options as written in a TOML file, with type(path)=str
-
-    Returns
-    -------
-        Updated TOML dictionary with type(path)=pathlib.Path
-    """
-    for key, value in toml_dict.items():
-        if type(value) == Dict:
-            for key2, value2 in value.items():
-                if (
-                    key2.endswith("tsv")
-                    or key2.endswith("dir")
-                    or key2.endswith("directory")
-                    or key2.endswith("path")
-                    or key2.endswith("json")
-                    or key2.endswith("location")
-                ):
-                    if value2 == "":
-                        toml_dict[value][key2] = False
-                    else:
-                        toml_dict[value][key2] = Path(value2)
-        else:
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if value == "":
-                    toml_dict[key] = False
-                else:
-                    toml_dict[key] = Path(value)
-    return toml_dict
-
-
-def change_path_to_str(
-    toml_dict: Dict[str, Dict[str, Any]]
-) -> Dict[str, Dict[str, Any]]:
-    """
-    For all paths in the dictionnary, it changes the type from pathlib.Path to str.
-
-    Paramaters
-    ----------
-    toml_dict: Dict[str, Dict[str, Any]]
-        Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
-
-    Returns
-    -------
-        Updated TOML dictionary with type(path)=str
-    """
-    for key, value in toml_dict.items():
-        if type(value) == Dict:
-            for key2, value2 in value.items():
-                if (
-                    key2.endswith("tsv")
-                    or key2.endswith("dir")
-                    or key2.endswith("directory")
-                    or key2.endswith("path")
-                    or key2.endswith("json")
-                    or key2.endswith("location")
-                ):
-                    if value2 == False:
-                        toml_dict[value][key2] = ""
-                    elif isinstance(value2, Path):
-                        toml_dict[value][key2] = value2.as_posix()
-        else:
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if value == False:
-                    toml_dict[key] = ""
-                elif isinstance(value, Path):
-                    toml_dict[key] = value.as_posix()
     return toml_dict

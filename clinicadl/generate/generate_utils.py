@@ -1,8 +1,6 @@
 # coding: utf8
 
 import random
-from copy import copy
-from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -17,7 +15,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 def find_file_type(
     preprocessing: str,
     uncropped_image: bool,
-    tracer: str,
+    acq_label: str,
     suvr_reference_region: str,
 ) -> Dict[str, str]:
     if preprocessing == "t1-linear":
@@ -26,12 +24,12 @@ def find_file_type(
         else:
             file_type = T1W_LINEAR_CROPPED
     elif preprocessing == "pet-linear":
-        if tracer is None or suvr_reference_region is None:
+        if acq_label is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
-                "`tracer` and `suvr_reference_region` must be defined "
+                "acq_label and suvr_reference_region must be defined "
                 "when using `pet-linear` preprocessing."
             )
-        file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
+        file_type = pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)
     else:
         raise NotImplementedError(
             f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
@@ -40,9 +38,13 @@ def find_file_type(
     return file_type
 
 
-def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
-    missing_path = output_dir / "missing_mods"
-    missing_path.mkdir(parents=True, exist_ok=True)
+def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
+    from copy import copy
+    from os import makedirs
+    from os.path import join
+
+    missing_path = join(output_dir, "missing_mods")
+    makedirs(missing_path, exist_ok=True)
 
     sessions = output_df.session_id.unique()
     for session in sessions:
@@ -50,13 +52,15 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
         out_df.to_csv(
-            missing_path / f"missing_mods_{session}.tsv", sep="\t", index=False
+            join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False
         )
 
 
 def load_and_check_tsv(
-    tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
+    tsv_path: str, caps_dict: Dict[str, str], output_path: str
 ) -> pd.DataFrame:
+    from os.path import join
+
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
     from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
@@ -88,7 +92,7 @@ def load_and_check_tsv(
                 caps_path, output_path, is_bids_dir=False, use_session_tsv=False
             )
             cohort_df = pd.read_csv(
-                output_path / "subjects_sessions_list.tsv", sep="\t"
+                join(output_path, "subjects_sessions_list.tsv"), sep="\t"
             )
             cohort_df["cohort"] = cohort
             df = pd.concat([df, cohort_df])
@@ -315,10 +319,3 @@ def generate_shepplogan_phantom(
     img.clip(0, 1)
 
     return img
-
-
-def mask_processing(mask, percentage, sigma):
-    inverse_mask = 1 - mask
-    inverse_mask[inverse_mask == 0] = 1 - percentage / 100
-    gaussian_mask = gaussian_filter(inverse_mask, sigma=sigma)
-    return gaussian_mask

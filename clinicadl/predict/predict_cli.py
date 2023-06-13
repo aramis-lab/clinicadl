@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.utils import cli_param
@@ -10,14 +8,14 @@ from clinicadl.utils import cli_param
 @cli_param.argument.data_group
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(exists=True),
     default=None,
     help="Data using CAPS structure, if different from the one used during network training.",
 )
 @click.option(
     "--participants_tsv",
     default=None,
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(),
     help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
@@ -64,7 +62,13 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
 )
-@cli_param.option.save_nifti
+@click.option(
+    "--save_nifti",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the reconstruction output in the MAPS in NIfTI format.",
+)
 @click.option(
     "--save_latent_tensor",
     type=bool,
@@ -98,9 +102,7 @@ def cli(
     save_latent_tensor,
 ):
     """Infer the outputs of a trained model on a test set.
-
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
-
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
     from clinicadl.utils.cmdline_utils import check_gpu

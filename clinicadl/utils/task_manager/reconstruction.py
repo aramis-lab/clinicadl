@@ -28,7 +28,10 @@ class ReconstructionManager(TaskManager):
         return True
 
     def generate_test_row(self, idx, data, outputs):
-        y = data["image"][idx]
+        try:
+            y = data["image"][idx]
+        except:
+            y = data["data"][idx]
         y_pred = outputs[idx].cpu()
         metrics = self.metrics_module.apply(y, y_pred)
         row = [
@@ -41,10 +44,10 @@ class ReconstructionManager(TaskManager):
         return [row]
 
     def compute_metrics(self, results_df):
-        metrics = dict()
-        for metric in self.evaluation_metrics:
-            metrics[metric] = results_df[metric].mean()
-        return metrics
+        #     metrics = dict()
+        #     for metric in self.evaluation_metrics:
+        #         metrics[metric] = results_df[metric].mean()
+        return results_df.describe()
 
     @staticmethod
     def output_size(input_size, df, label):

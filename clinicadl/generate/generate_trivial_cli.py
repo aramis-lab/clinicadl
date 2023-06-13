@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.utils import cli_param
@@ -11,10 +9,9 @@ from clinicadl.utils import cli_param
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
-@cli_param.option.n_proc
 @click.option(
     "--mask_path",
-    type=click.Path(exists=True, path_type=Path),
+    type=str,
     default=None,
     help="Path to the extracted masks to generate the two labels. "
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",
@@ -26,7 +23,7 @@ from clinicadl.utils import cli_param
     help="Percentage of atrophy applied.",
 )
 @cli_param.option.use_uncropped_image
-@cli_param.option.tracer
+@cli_param.option.acq_label
 @cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
@@ -34,11 +31,10 @@ def cli(
     preprocessing,
     participants_tsv,
     n_subjects,
-    n_proc,
     mask_path,
     atrophy_percent,
     use_uncropped_image,
-    tracer,
+    acq_label,
     suvr_reference_region,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
@@ -55,11 +51,10 @@ def cli(
         preprocessing=preprocessing,
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
-        n_proc=n_proc,
         mask_path=mask_path,
         atrophy_percent=atrophy_percent,
         uncropped_image=use_uncropped_image,
-        tracer=tracer,
+        acq_label=acq_label,
         suvr_reference_region=suvr_reference_region,
     )
 

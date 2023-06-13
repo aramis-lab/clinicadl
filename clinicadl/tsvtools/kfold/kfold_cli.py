@@ -4,7 +4,8 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="kfold", no_args_is_help=True)
-@cli_param.argument.data_tsv
+@cli_param.argument.formatted_data_directory
+@cli_param.option.no_mci_sub_categories
 @cli_param.option.subset_name
 @click.option(
     "--n_splits",
@@ -20,33 +21,27 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
 )
-@click.option(
-    "--merged-tsv",
-    help="Path to the merged.tsv file.",
-    type=str,
-    default=None,
-)
 def cli(
-    data_tsv,
+    formatted_data_directory,
     n_splits,
+    no_mci_sub_categories,
     subset_name,
     stratification,
-    merged_tsv,
 ):
     """Performs a k-fold split to prepare training.
 
-    DATA_TSV is the path to the output of tsvtool getlabels command.
+    FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
 
     N_SPLITS is k, the number of folds of the k-fold.
     """
     from .kfold import split_diagnoses
 
     split_diagnoses(
-        data_tsv,
+        formatted_data_directory,
         n_splits=n_splits,
         subset_name=subset_name,
+        MCI_sub_categories=no_mci_sub_categories,
         stratification=stratification,
-        merged_tsv=merged_tsv,
     )
 
 

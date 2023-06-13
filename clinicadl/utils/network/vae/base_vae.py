@@ -39,19 +39,25 @@ class BaseVAE(Network):
         output, _, _ = self.forward(x)
         return output
 
-    # Forward
     def forward(self, x):
         mu, logVar = self.encode(x)
         z = self.reparameterize(mu, logVar)
         return self.decode(z), mu, logVar
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
+
         images = input_dict["image"].to(self.device)
         recon_images, mu, logVar = self.forward(images)
 
         losses = criterion(images, recon_images, mu, logVar)
         reconstruction_loss, kl_loss = losses[0], losses[1]
         total_loss = self.lambda1 * reconstruction_loss + self.lambda2 * kl_loss
+
+        loss_dict = {
+            "recon_loss": reconstruction_loss,
+            "kl_loss": kl_loss,
+        }
+
         # In the case there is a regularization term
         if len(losses) > 2:
             regularization = losses[2]
@@ -60,12 +66,9 @@ class BaseVAE(Network):
                 + self.lambda2 * kl_loss
                 + regularization
             )
+            loss_dict["regularization"] = regularization
 
-        loss_dict = {
-            "loss": total_loss,
-            "recon_loss": reconstruction_loss,
-            "kl_loss": kl_loss,
-        }
+        loss_dict["loss"] = total_loss
 
         return recon_images, loss_dict
 
