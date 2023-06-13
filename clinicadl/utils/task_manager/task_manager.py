@@ -196,6 +196,7 @@ class TaskManager:
                     outputs, loss_dict = model.compute_outputs_and_loss(
                         data, criterion, use_labels=use_labels
                     )
+                    total_loss = dict()
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
                     for loss_component in total_loss.keys():

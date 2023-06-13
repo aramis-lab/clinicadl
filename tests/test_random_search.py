@@ -30,7 +30,7 @@ def test_random_search(cmdopt, tmp_path, test_name):
 
     if test_name == "rs_roi_cnn":
         toml_path = join(input_dir / "random_search.toml")
-        generate_input = ["random-search", str(tmp_out_dir), "job-1"]
+        generate_input = ["random-search", "classification", str(tmp_out_dir), "job-1"]
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 

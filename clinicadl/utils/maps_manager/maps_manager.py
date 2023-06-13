@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime
@@ -168,9 +169,9 @@ class MapsManager:
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
 
-            model_dir = path.join(self.maps_path, f"split-{split}", "best-loss")
-            if not path.exists(model_dir):
-                os.makedirs(model_dir)
+            model_dir = self.maps_path / f"split-{split}", "best-loss"
+            if not model_dir.is_dir():
+                model_dir.mkdir(parents=True)
 
             seed_everything(self.seed, self.deterministic, self.compensation)
 
@@ -213,7 +214,7 @@ class MapsManager:
                 eval_data=eval_dataset,  # must be torch.Tensor or np.array
             )
             # Move saved model to the correct path in the MAPS
-            src = path.join(model_dir, "*_training_*/final_model/model.pt")
+            src = model_dir / "*_training_*/final_model/model.pt"
             os.system(f"mv {src} {model_dir}")
 
     def resume(self, split_list: List[int] = None):
@@ -2246,12 +2247,12 @@ class MapsManager:
                 / f"best-{selection_metric}"
                 / "model.pth.tar"
             )
-            if not path.exists(model_path):
-                model_path = path.join(
-                    self.maps_path,
-                    f"{self.split_name}-{split}",
-                    f"best-{selection_metric}",
-                    "model.pt",
+            if not model_path.is_file():
+                model_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / "model.pt"
                 )
 
         logger.info(
