@@ -11,6 +11,7 @@ import torch
 import torchio as tio
 import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
+from pythae.data.datasets import DatasetOutput
 from torch.utils.data import Dataset
 
 from clinicadl.prepare_data.prepare_data_utils import (
@@ -31,8 +32,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
-
-from pythae.data.datasets import DatasetOutput
 
 logger = getLogger("clinicadl")
 
@@ -355,7 +354,6 @@ class CapsDatasetImage(CapsDataset):
 
 
 class PythaeCAPS(CapsDatasetImage):
-
     def __init__(
         self,
         caps_directory,
@@ -372,15 +370,15 @@ class PythaeCAPS(CapsDatasetImage):
             label_presence=False,
             all_transformations=all_transformations,
         )
-    
+
     def __getitem__(self, index):
         X = super().__getitem__(index)
         return DatasetOutput(
-            data=X['image'],
-            participant_id=X['participant_id'],
-            session_id=X['session_id'],
-            image_id=X['image_id'],
-            image_path=X['image_path'],
+            data=X["image"],
+            participant_id=X["participant_id"],
+            session_id=X["session_id"],
+            image_id=X["image_id"],
+            image_path=X["image_path"],
         )
 
 

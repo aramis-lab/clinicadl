@@ -1,14 +1,10 @@
-from clinicadl.utils.network.vae.vae_layers import (
-    EncoderLayer3D,
-    Flatten,
-)
+import torch
+from pythae.models.base.base_utils import ModelOutput
+from pythae.models.nn import BaseEncoder
+from torch import nn
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
-from pythae.models.nn import BaseEncoder
-from pythae.models.base.base_utils import ModelOutput
-
-import torch
-from torch import nn
+from clinicadl.utils.network.vae.vae_layers import EncoderLayer3D, Flatten
 
 
 class pythae_VQVAE(BasePythae):
@@ -36,7 +32,7 @@ class pythae_VQVAE(BasePythae):
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
             gpu=gpu,
-            is_ae=True
+            is_ae=True,
         )
 
         # encoder_layers, emb_layer = build_VQVAE_encoder(
@@ -66,6 +62,7 @@ class pythae_VQVAE(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
+
         return BaseTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,
@@ -76,7 +73,7 @@ class pythae_VQVAE(BasePythae):
 
 
 def build_VQVAE_encoder(
-    input_size = (1, 80, 96, 80),
+    input_size=(1, 80, 96, 80),
     latent_space_dim=16,
     feature_size=0,
     n_conv=3,
@@ -125,21 +122,21 @@ def build_VQVAE_encoder(
     # encoder = nn.Sequential(*encoder_layers)
 
     # LATENT SPACE
-    pre_qantized = nn.Conv3d(first_layer_channels * 2 ** (n_conv + 1), latent_space_dim, 1, 1)
+    pre_qantized = nn.Conv3d(
+        first_layer_channels * 2 ** (n_conv + 1), latent_space_dim, 1, 1
+    )
 
     return encoder, pre_qantized
 
 
 class Encoder(BaseEncoder):
-    def __init__(self, encoder_layers, pre_qantized): # Args is a ModelConfig instance
+    def __init__(self, encoder_layers, pre_qantized):  # Args is a ModelConfig instance
         BaseEncoder.__init__(self)
 
         self.layers = encoder_layers
         self.pre_qantized = pre_qantized
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         out = self.layers(x)
-        output = ModelOutput(
-            embedding=self.pre_qantized(out)
-        )
+        output = ModelOutput(embedding=self.pre_qantized(out))
         return output

@@ -1,12 +1,11 @@
-from clinicadl.utils.network.pythae.pythae_utils import BasePythae
-
-from pythae.models.nn import BaseDecoder, BaseDiscriminator
-from pythae.models.base.base_utils import ModelOutput
-
 from typing import List
 
 import torch
 import torch.nn as nn
+from pythae.models.base.base_utils import ModelOutput
+from pythae.models.nn import BaseDecoder, BaseDiscriminator
+
+from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 
 
 class pythae_VAEGAN(BasePythae):
@@ -32,7 +31,7 @@ class pythae_VAEGAN(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
 
         discriminator = Discriminator_VAEGAN()
@@ -54,6 +53,7 @@ class pythae_VAEGAN(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import CoupledOptimizerAdversarialTrainerConfig
+
         return CoupledOptimizerAdversarialTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,
@@ -64,7 +64,6 @@ class pythae_VAEGAN(BasePythae):
 
 
 class Discriminator_VAEGAN(BaseDiscriminator):
-
     def __init__(self):
 
         BaseDiscriminator.__init__(self)

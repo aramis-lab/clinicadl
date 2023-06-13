@@ -21,7 +21,7 @@ class pythae_Adversarial_AE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
 
         model_config = Adversarial_AE_Config(
@@ -37,6 +37,7 @@ class pythae_Adversarial_AE(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import AdversarialTrainerConfig
+
         return AdversarialTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,

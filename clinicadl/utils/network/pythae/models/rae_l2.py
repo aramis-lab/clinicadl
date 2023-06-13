@@ -40,6 +40,7 @@ class pythae_RAE_L2(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import CoupledOptimizerTrainerConfig
+
         return CoupledOptimizerTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,

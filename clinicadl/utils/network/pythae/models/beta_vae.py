@@ -21,13 +21,11 @@ class pythae_BetaVAE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
 
         model_config = BetaVAEConfig(
-            input_dim=self.input_size,
-            latent_dim=self.latent_space_size,
-            beta=beta
+            input_dim=self.input_size, latent_dim=self.latent_space_size, beta=beta
         )
         self.model = BetaVAE(
             model_config=model_config,
@@ -37,6 +35,7 @@ class pythae_BetaVAE(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
+
         return BaseTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,

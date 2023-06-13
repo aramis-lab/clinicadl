@@ -1,14 +1,10 @@
-from clinicadl.utils.network.vae.vae_layers import (
-    EncoderLayer3D,
-    Flatten,
-)
+import torch
+from pythae.models.base.base_utils import ModelOutput
+from pythae.models.nn import BaseDecoder, BaseEncoder
+from torch import nn
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
-from pythae.models.nn import BaseEncoder, BaseDecoder
-from pythae.models.base.base_utils import ModelOutput
-
-import torch
-from torch import nn
+from clinicadl.utils.network.vae.vae_layers import EncoderLayer3D, Flatten
 
 
 class pythae_SVAE(BasePythae):
@@ -30,7 +26,7 @@ class pythae_SVAE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
 
         encoder_layers, mu_layer, log_concentration_layer = build_SVAE_encoder(
@@ -44,8 +40,7 @@ class pythae_SVAE(BasePythae):
         encoder = Encoder(encoder_layers, mu_layer, log_concentration_layer)
 
         model_config = SVAEConfig(
-            input_dim=self.input_size,
-            latent_dim=self.latent_space_size
+            input_dim=self.input_size, latent_dim=self.latent_space_size
         )
         self.model = SVAE(
             model_config=model_config,
@@ -55,6 +50,7 @@ class pythae_SVAE(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
+
         return BaseTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,
@@ -65,7 +61,7 @@ class pythae_SVAE(BasePythae):
 
 
 def build_SVAE_encoder(
-    input_size = (1, 80, 96, 80),
+    input_size=(1, 80, 96, 80),
     latent_space_size=128,
     feature_size=0,
     n_conv=3,
@@ -113,9 +109,7 @@ def build_SVAE_encoder(
         feature_space = n_pix
     else:
         feature_space = feature_size
-        encoder_layers.append(
-            nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
-        )
+        encoder_layers.append(nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU()))
     encoder = nn.Sequential(*encoder_layers)
 
     # LATENT SPACE
@@ -124,19 +118,22 @@ def build_SVAE_encoder(
 
     return encoder, mu_layer, log_concentration_layer
 
+
 class Encoder(BaseEncoder):
-    def __init__(self, encoder_layers, mu_layer, logc_layer): # Args is a ModelConfig instance
+    def __init__(
+        self, encoder_layers, mu_layer, logc_layer
+    ):  # Args is a ModelConfig instance
         BaseEncoder.__init__(self)
 
         self.layers = encoder_layers
         self.mu_layer = mu_layer
         self.log_concentration = logc_layer
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         h = self.layers(x)
         mu, log_concentration = self.mu_layer(h), self.log_concentration(h)
         output = ModelOutput(
-            embedding=mu, # Set the output from the encoder in a ModelOutput instance
-            log_concentration=log_concentration
+            embedding=mu,  # Set the output from the encoder in a ModelOutput instance
+            log_concentration=log_concentration,
         )
         return output

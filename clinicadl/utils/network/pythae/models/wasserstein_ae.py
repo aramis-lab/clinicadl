@@ -42,6 +42,7 @@ class pythae_WAE_MMD(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
+
         return BaseTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,

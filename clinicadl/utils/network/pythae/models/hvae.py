@@ -23,7 +23,7 @@ class pythae_HVAE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
 
         model_config = HVAEConfig(
@@ -38,9 +38,10 @@ class pythae_HVAE(BasePythae):
             encoder=encoder,
             decoder=decoder,
         )
-    
+
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
+
         return BaseTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,

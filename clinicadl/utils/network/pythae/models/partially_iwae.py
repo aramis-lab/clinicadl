@@ -29,7 +29,7 @@ class pythae_PIWAE(BasePythae):
             input_dim=self.input_size,
             latent_dim=self.latent_space_size,
             number_gradient_estimates=number_gradient_estimates,
-            number_samples=number_samples
+            number_samples=number_samples,
         )
         self.model = PIWAE(
             model_config=model_config,
@@ -39,6 +39,7 @@ class pythae_PIWAE(BasePythae):
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import CoupledOptimizerTrainerConfig
+
         return CoupledOptimizerTrainerConfig(
             output_dir=output_dir,
             num_epochs=num_epochs,
