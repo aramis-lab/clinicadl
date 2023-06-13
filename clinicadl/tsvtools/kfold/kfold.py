@@ -82,9 +82,7 @@ def write_splits(
         )
 
         long_train_df.to_csv(
-            results_directory / f"split-{i}" / "train.tsv",
-            sep="\t",
-            index=False,
+            results_directory / f"split-{i}" / "train.tsv", sep="\t", index=False,
         )
 
 

@@ -16,9 +16,7 @@ logger = getLogger("clinicadl.tsvtools.get_progression")
 
 
 def get_progression(
-    data_tsv: Path,
-    horizon_time: int = 36,
-    stability_dict: dict = None,
+    data_tsv: Path, horizon_time: int = 36, stability_dict: dict = None,
 ):
     """
     A method to get the progression for each sessions, depending on their stability on the time horizon
@@ -45,10 +43,7 @@ def get_progression(
             parents_path = parents_path.parent
             labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
             bids_df = pd.merge(
-                bids_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
+                bids_df, labels_df, how="inner", on=["participant_id", "session_id"],
             )
         if "dx1" in bids_df.columns:
             bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)

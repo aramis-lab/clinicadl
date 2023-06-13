@@ -36,9 +36,7 @@ class pythae_INFOVAE_MMD(BasePythae):
             kernel_bandwidth=kernel_bandwidth,
         )
         self.model = INFOVAE_MMD(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
+            model_config=model_config, encoder=encoder, decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

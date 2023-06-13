@@ -29,11 +29,7 @@ class pythae_VAMP(BasePythae):
             latent_dim=self.latent_space_size,
             number_components=number_components,
         )
-        self.model = VAMP(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
-        )
+        self.model = VAMP(model_config=model_config, encoder=encoder, decoder=decoder,)
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

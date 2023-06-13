@@ -16,11 +16,7 @@ from clinicadl.utils.task_manager.task_manager import TaskManager
 
 class ClassificationManager(TaskManager):
     def __init__(
-        self,
-        mode,
-        n_classes=None,
-        df=None,
-        label=None,
+        self, mode, n_classes=None, df=None, label=None,
     ):
         if n_classes is None:
             n_classes = self.output_size(None, df, label)
@@ -61,8 +57,7 @@ class ClassificationManager(TaskManager):
 
     def compute_metrics(self, results_df):
         return self.metrics_module.apply(
-            results_df.true_label.values,
-            results_df.predicted_label.values,
+            results_df.true_label.values, results_df.predicted_label.values,
         )
 
     @staticmethod

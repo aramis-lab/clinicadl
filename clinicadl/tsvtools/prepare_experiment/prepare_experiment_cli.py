@@ -31,10 +31,7 @@ from clinicadl.utils import cli_param
     type=float,
 )
 def cli(
-    data_tsv,
-    n_test,
-    validation_type,
-    n_validation,
+    data_tsv, n_test, validation_type, n_validation,
 ):
     """Performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data.
 
@@ -94,10 +91,7 @@ def cli(
     ):
         data_df = pd.read_csv(data_tsv, sep="\t")
         train_df = pd.merge(
-            train_df,
-            data_df,
-            how="inner",
-            on=["participant_id", "session_id"],
+            train_df, data_df, how="inner", on=["participant_id", "session_id"],
         )
         train_df.to_csv(train_tsv, sep="\t")
 

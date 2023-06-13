@@ -30,14 +30,9 @@ class pythae_VAE(BasePythae):
         )
 
         model_config = VAEConfig(
-            input_dim=self.input_size,
-            latent_dim=self.latent_space_size,
+            input_dim=self.input_size, latent_dim=self.latent_space_size,
         )
-        self.model = VAE(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
-        )
+        self.model = VAE(model_config=model_config, encoder=encoder, decoder=decoder,)
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

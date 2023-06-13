@@ -31,7 +31,7 @@ class CVAE_3D_final_conv(Network):
         elif size_reduction_factor == 5:
             self.input_size = [1, 32, 40, 32]
         self.feature_size = int(
-            multiply_list(self.input_size[1:], 2**self.n_conv) * 128
+            multiply_list(self.input_size[1:], 2 ** self.n_conv) * 128
         )
 
         # Encoder
@@ -81,9 +81,9 @@ class CVAE_3D_final_conv(Network):
             [
                 encoded.size()[0],
                 256,
-                self.input_size[1] // 2**self.n_conv,
-                self.input_size[2] // 2**self.n_conv,
-                self.input_size[3] // 2**self.n_conv,
+                self.input_size[1] // 2 ** self.n_conv,
+                self.input_size[2] // 2 ** self.n_conv,
+                self.input_size[3] // 2 ** self.n_conv,
             ]
         )
         h6 = F.leaky_relu(self.in5(self.upconv1(h5)))

@@ -15,10 +15,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def find_file_type(
-    preprocessing: str,
-    uncropped_image: bool,
-    tracer: str,
-    suvr_reference_region: str,
+    preprocessing: str, uncropped_image: bool, tracer: str, suvr_reference_region: str,
 ) -> Dict[str, str]:
     if preprocessing == "t1-linear":
         if uncropped_image:

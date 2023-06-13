@@ -33,9 +33,7 @@ class pythae_RAE_GP(BasePythae):
             reg_weight=reg_weight,
         )
         self.model = RAE_GP(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
+            model_config=model_config, encoder=encoder, decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

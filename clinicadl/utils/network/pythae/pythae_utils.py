@@ -127,7 +127,7 @@ def build_encoder_decoder(
     for i in range(n_conv_encoder - 1):
         encoder_layers.append(
             EncoderLayer3D(
-                first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
+                first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
             )
         )
         # Construct output paddings
@@ -135,9 +135,9 @@ def build_encoder_decoder(
     n_pix_encoder = (
         first_layer_channels
         * 2 ** (n_conv_encoder - 1)
-        * (input_d // (2**n_conv_encoder))
-        * (input_h // (2**n_conv_encoder))
-        * (input_w // (2**n_conv_encoder))
+        * (input_d // (2 ** n_conv_encoder))
+        * (input_h // (2 ** n_conv_encoder))
+        * (input_w // (2 ** n_conv_encoder))
     )
     # Flatten
     encoder_layers.append(Flatten())
@@ -170,19 +170,16 @@ def build_encoder_decoder(
     n_pix_decoder = (
         last_layer_channels
         * 2 ** (n_conv_decoder - 1)
-        * (input_d // (2**n_conv_decoder))
-        * (input_h // (2**n_conv_decoder))
-        * (input_w // (2**n_conv_decoder))
+        * (input_d // (2 ** n_conv_decoder))
+        * (input_h // (2 ** n_conv_decoder))
+        * (input_w // (2 ** n_conv_decoder))
     )
 
     decoder_layers = []
     # Intermediate feature space
     if feature_size == 0:
         decoder_layers.append(
-            nn.Sequential(
-                nn.Linear(latent_space_size, n_pix_decoder),
-                nn.ReLU(),
-            )
+            nn.Sequential(nn.Linear(latent_space_size, n_pix_decoder), nn.ReLU(),)
         )
     else:
         decoder_layers.append(
@@ -197,9 +194,9 @@ def build_encoder_decoder(
     decoder_layers.append(
         Unflatten3D(
             last_layer_channels * 2 ** (n_conv_decoder - 1),
-            input_d // (2**n_conv_decoder),
-            input_h // (2**n_conv_decoder),
-            input_w // (2**n_conv_decoder),
+            input_d // (2 ** n_conv_decoder),
+            input_h // (2 ** n_conv_decoder),
+            input_w // (2 ** n_conv_decoder),
         )
     )
     # Decoder layers

@@ -971,10 +971,7 @@ class RandomSpike(object):
         self.intensity = intensity
 
     def __call__(self, image):
-        spike = tio.RandomSpike(
-            num_spikes=self.num_spikes,
-            intensity=self.intensity,
-        )
+        spike = tio.RandomSpike(num_spikes=self.num_spikes, intensity=self.intensity,)
         image = spike(image)
 
         return image

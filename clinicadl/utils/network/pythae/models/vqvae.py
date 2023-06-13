@@ -54,11 +54,7 @@ class pythae_VQVAE(BasePythae):
             use_ema=use_ema,
             decay=decay,
         )
-        self.model = VQVAE(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
-        )
+        self.model = VQVAE(model_config=model_config, encoder=encoder, decoder=decoder,)
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
@@ -98,7 +94,7 @@ def build_VQVAE_encoder(
     for i in range(n_conv - 1):
         encoder_layers.append(
             EncoderLayer3D(
-                first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
+                first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
             )
         )
     # # Compute size of the feature space

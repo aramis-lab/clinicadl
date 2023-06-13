@@ -63,18 +63,10 @@ def image_cli(
 @cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
 @click.option(
-    "-ps",
-    "--patch_size",
-    default=50,
-    show_default=True,
-    help="Patch size.",
+    "-ps", "--patch_size", default=50, show_default=True, help="Patch size.",
 )
 @click.option(
-    "-ss",
-    "--stride_size",
-    default=50,
-    show_default=True,
-    help="Stride size.",
+    "-ss", "--stride_size", default=50, show_default=True, help="Stride size.",
 )
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region

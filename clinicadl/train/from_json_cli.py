@@ -8,8 +8,7 @@ from clinicadl.utils import cli_param
 
 @click.command(name="from_json", no_args_is_help=True)
 @click.argument(
-    "config_json",
-    type=click.Path(exists=True, path_type=Path),
+    "config_json", type=click.Path(exists=True, path_type=Path),
 )
 @cli_param.argument.output_maps
 @click.option(
@@ -21,9 +20,7 @@ from clinicadl.utils import cli_param
     help="Train the list of given splits. By default, all the splits are trained.",
 )
 def cli(
-    config_json,
-    output_maps_directory,
-    split,
+    config_json, output_maps_directory, split,
 ):
     """
     Replicate a deep learning training based on a previously created JSON file.

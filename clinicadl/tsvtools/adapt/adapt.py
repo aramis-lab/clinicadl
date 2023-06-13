@@ -77,10 +77,7 @@ def adapt(old_tsv_dir: Path, new_tsv_dir: Path, subset_name="labels", labels_lis
             parameters_split = json.load(f)
         subset_name = parameters_split["subset_name"]
         adapt(
-            old_tsv_dir / subset_name,
-            new_split_dir,
-            subset_name,
-            labels_list,
+            old_tsv_dir / subset_name, new_split_dir, subset_name, labels_list,
         )
         adapt(old_tsv_dir / "train", new_split_dir, "train", labels_list)
 

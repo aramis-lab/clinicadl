@@ -32,9 +32,7 @@ class pythae_MSSSIM_VAE(BasePythae):
             window_size=window_size,
         )
         self.model = MSSSIM_VAE(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
+            model_config=model_config, encoder=encoder, decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

@@ -9,8 +9,7 @@ from clinicadl.utils.task_manager.task_manager import TaskManager
 
 class RegressionManager(TaskManager):
     def __init__(
-        self,
-        mode,
+        self, mode,
     ):
         super().__init__(mode)
 
@@ -45,8 +44,7 @@ class RegressionManager(TaskManager):
 
     def compute_metrics(self, results_df):
         return self.metrics_module.apply(
-            results_df.true_label.values,
-            results_df.predicted_label.values,
+            results_df.true_label.values, results_df.predicted_label.values,
         )
 
     @staticmethod

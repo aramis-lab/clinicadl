@@ -25,14 +25,10 @@ class pythae_VAE_LinNF(BasePythae):
         )
 
         model_config = VAE_LinNF_Config(
-            input_dim=self.input_size,
-            latent_dim=self.latent_space_size,
-            flows=flows,
+            input_dim=self.input_size, latent_dim=self.latent_space_size, flows=flows,
         )
         self.model = VAE_LinNF(
-            model_config=model_config,
-            encoder=encoder,
-            decoder=decoder,
+            model_config=model_config, encoder=encoder, decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

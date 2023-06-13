@@ -44,10 +44,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 class MapsManager:
     def __init__(
-        self,
-        maps_path: Path,
-        parameters: Dict[str, Any] = None,
-        verbose: str = "info",
+        self, maps_path: Path, parameters: Dict[str, Any] = None, verbose: str = "info",
     ):
         """
 
@@ -191,10 +188,7 @@ class MapsManager:
             )
 
             # Import the model
-            clinicadl_model, _ = self._init_model(
-                split=split,
-                gpu=True,
-            )
+            clinicadl_model, _ = self._init_model(split=split, gpu=True,)
             model = clinicadl_model.model
             config = clinicadl_model.get_trainer_config(
                 output_dir=model_dir,
@@ -309,12 +303,7 @@ class MapsManager:
             )
         criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
-            data_group,
-            caps_directory,
-            group_df,
-            multi_cohort,
-            overwrite,
-            label=label,
+            data_group, caps_directory, group_df, multi_cohort, overwrite, label=label,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -624,8 +613,7 @@ class MapsManager:
                     mode_map /= len(data_test)
 
                     torch.save(
-                        mode_map,
-                        results_path / f"mean_{self.mode}-{i}_map.pt",
+                        mode_map, results_path / f"mean_{self.mode}-{i}_map.pt",
                     )
                     if save_nifti:
                         import nibabel as nib
@@ -706,21 +694,14 @@ class MapsManager:
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
             self._train(
-                train_loader,
-                valid_loader,
-                split,
-                resume=resume,
+                train_loader, valid_loader, split, resume=resume,
             )
 
             self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
+                "train", split, self.selection_metrics,
             )
             self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
+                "validation", split, self.selection_metrics,
             )
 
             self._erase_tmp(split)
@@ -811,34 +792,21 @@ class MapsManager:
                 )
 
                 self._train(
-                    train_loader,
-                    valid_loader,
-                    split,
-                    network,
-                    resume=resume,
+                    train_loader, valid_loader, split, network, resume=resume,
                 )
                 resume = False
 
             self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
+                "train", split, self.selection_metrics,
             )
             self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
+                "validation", split, self.selection_metrics,
             )
 
             self._erase_tmp(split)
 
     def _train(
-        self,
-        train_loader,
-        valid_loader,
-        split,
-        network=None,
-        resume=False,
+        self, train_loader, valid_loader, split, network=None, resume=False,
     ):
         """
         Core function shared by train and resume.
@@ -1100,13 +1068,7 @@ class MapsManager:
             )
 
     def _compute_output_nifti(
-        self,
-        dataset,
-        data_group,
-        split,
-        selection_metrics,
-        gpu=None,
-        network=None,
+        self, dataset, data_group, split, selection_metrics, gpu=None, network=None,
     ):
         """
         Computes the output nifti images and saves them in the MAPS.
@@ -1309,11 +1271,7 @@ class MapsManager:
                     torch.save(latent, latent_tensor_path / output_filename)
 
     def _ensemble_prediction(
-        self,
-        data_group,
-        split,
-        selection_metrics,
-        use_labels=True,
+        self, data_group, split, selection_metrics, use_labels=True,
     ):
         """Computes the results on the image-level."""
 
@@ -1776,10 +1734,7 @@ class MapsManager:
 
     @staticmethod
     def write_description_log(
-        log_dir: Path,
-        data_group,
-        caps_dict,
-        df,
+        log_dir: Path, data_group, caps_dict, df,
     ):
         """
         Write description log file associated to a data group.
@@ -2123,10 +2078,7 @@ class MapsManager:
     # Getters                     #
     ###############################
     def _print_description_log(
-        self,
-        data_group,
-        split,
-        selection_metric,
+        self, data_group, split, selection_metric,
     ):
         """
         Print the description log associated to a prediction or interpretation.
@@ -2293,8 +2245,7 @@ class MapsManager:
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
-            prediction_dir / f"{data_group}_{mode}_level_prediction.tsv",
-            sep="\t",
+            prediction_dir / f"{data_group}_{mode}_level_prediction.tsv", sep="\t",
         )
         df.set_index(["participant_id", "session_id"], inplace=True, drop=True)
         return df

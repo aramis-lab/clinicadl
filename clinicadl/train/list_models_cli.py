@@ -23,9 +23,7 @@ import click
     help="Display the detailed Pytorch architecture.",
 )
 def cli(
-    architecture,
-    input_size,
-    model_layers,
+    architecture, input_size, model_layers,
 ):
     """Show the list of available models in ClinicaDL."""
     from .train_utils import get_model_list

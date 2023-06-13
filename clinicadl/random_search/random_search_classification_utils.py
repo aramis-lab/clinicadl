@@ -82,7 +82,7 @@ def sampling_fn(value, sampling_type: str):
             return random.choice(value)
         elif sampling_type == "exponent":
             exponent = random.uniform(*value)
-            return 10**-exponent
+            return 10 ** -exponent
         elif sampling_type == "randint":
             return random.randint(*value)
         elif sampling_type == "uniform":
@@ -93,7 +93,7 @@ def sampling_fn(value, sampling_type: str):
             )
     else:
         if sampling_type == "exponent":
-            return 10**-value
+            return 10 ** -value
         else:
             return value
 

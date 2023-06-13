@@ -77,10 +77,7 @@ class Conv5_FC3(CNN):
         )
         # fmt: on
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod
@@ -150,10 +147,7 @@ class Conv4_FC3(CNN):
         )
         # fmt: on
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod
@@ -202,10 +196,7 @@ class resnet18(CNN):
         fc.add_module("fc_out", nn.Linear(1000, output_size))
 
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod
@@ -270,10 +261,7 @@ class Stride_Conv5_FC3(CNN):
         )
         # fmt: on
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod
@@ -312,10 +300,7 @@ class ResNet3D(CNN):
         fc = model.fc
 
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod
@@ -358,10 +343,7 @@ class SqueezeExcitationCNN(CNN):
         fc = model.fc
 
         super().__init__(
-            convolutions=convolutions,
-            fc=fc,
-            n_classes=output_size,
-            gpu=gpu,
+            convolutions=convolutions, fc=fc, n_classes=output_size, gpu=gpu,
         )
 
     @staticmethod

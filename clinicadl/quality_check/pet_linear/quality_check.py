@@ -96,11 +96,7 @@ def quality_check(
     sessions, subjects = get_subject_session_list(
         caps_dir, participants_tsv, False, False, None
     )
-    file_type = pet_linear_nii(
-        tracer,
-        ref_region,
-        use_uncropped_image,
-    )
+    file_type = pet_linear_nii(tracer, ref_region, use_uncropped_image,)
     input_files = clinica_file_reader(subjects, sessions, caps_dir, file_type)[0]
 
     def write_output_data(file):
@@ -116,14 +112,7 @@ def quality_check(
 
         session = file.parent.parent
         subject = session.parent
-        row = [
-            [
-                subject.name,
-                session.name,
-                sum_contour,
-                sum_contour > threshold,
-            ]
-        ]
+        row = [[subject.name, session.name, sum_contour, sum_contour > threshold,]]
         row_df = pd.DataFrame(row, columns=columns)
 
         return row_df
