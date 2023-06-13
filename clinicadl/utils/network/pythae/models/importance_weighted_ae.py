@@ -12,7 +12,6 @@ class pythae_IWAE(BasePythae):
         number_samples,
         gpu=False,
     ):
-
         from pythae.models import IWAE, IWAEConfig
 
         encoder, decoder = super(pythae_IWAE, self).__init__(
@@ -29,7 +28,11 @@ class pythae_IWAE(BasePythae):
             latent_dim=self.latent_space_size,
             number_samples=number_samples,
         )
-        self.model = IWAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = IWAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

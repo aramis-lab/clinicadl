@@ -9,7 +9,10 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 @cli_param.option.extract_json
 @click.option(
-    "--image_size", help="Size in pixels of the squared images.", type=int, default=128,
+    "--image_size",
+    help="Size in pixels of the squared images.",
+    type=int,
+    default=128,
 )
 @click.option(
     "--cn_subtypes_distribution",

@@ -183,7 +183,10 @@ def extract_slices(
 
 
 def extract_slice_tensor(
-    image_tensor: torch.Tensor, slice_direction: int, slice_mode: str, slice_index: int,
+    image_tensor: torch.Tensor,
+    slice_direction: int,
+    slice_mode: str,
+    slice_index: int,
 ) -> torch.Tensor:
     # Allow to select the slice `slice_index` in dimension `slice_direction`
     idx_tuple = tuple(
@@ -225,7 +228,9 @@ def extract_slice_path(
 # PATCH    #
 ############
 def extract_patches(
-    nii_path: Path, patch_size: int, stride_size: int,
+    nii_path: Path,
+    patch_size: int,
+    stride_size: int,
 ) -> List[Tuple[str, torch.Tensor]]:
     """Extracts the patches
     This function extracts patches form the preprocessed nifti image. Patch size
@@ -469,7 +474,9 @@ def extract_roi(
 
 
 def extract_roi_tensor(
-    image_tensor: torch.Tensor, mask_np, uncrop_output: bool,
+    image_tensor: torch.Tensor,
+    mask_np,
+    uncrop_output: bool,
 ) -> torch.Tensor:
     if len(mask_np.shape) == 3:
         mask_np = np.expand_dims(mask_np, axis=0)

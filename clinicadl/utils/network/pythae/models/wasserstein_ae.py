@@ -14,7 +14,6 @@ class pythae_WAE_MMD(BasePythae):
         kernel_bandwidth,
         gpu=False,
     ):
-
         from pythae.models import WAE_MMD, WAE_MMD_Config
 
         encoder, decoder = super(pythae_WAE_MMD, self).__init__(
@@ -35,7 +34,9 @@ class pythae_WAE_MMD(BasePythae):
             kernel_bandwidth=kernel_bandwidth,
         )
         self.model = WAE_MMD(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

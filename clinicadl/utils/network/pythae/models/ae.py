@@ -11,7 +11,6 @@ class pythae_AE(BasePythae):
         io_layer_channels,
         gpu=False,
     ):
-
         from pythae.models import AE, AEConfig
 
         encoder, decoder = super(pythae_AE, self).__init__(
@@ -25,9 +24,14 @@ class pythae_AE(BasePythae):
         )
 
         model_config = AEConfig(
-            input_dim=self.input_size, latent_dim=self.latent_space_size,
+            input_dim=self.input_size,
+            latent_dim=self.latent_space_size,
         )
-        self.model = AE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = AE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

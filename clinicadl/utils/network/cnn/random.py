@@ -52,7 +52,10 @@ class RandomArchitecture(CNN):
             classifier.add_module(key, fc_block)
 
         super().__init__(
-            convolutions=convolutions, fc=classifier, n_classes=output_size, gpu=gpu,
+            convolutions=convolutions,
+            fc=classifier,
+            n_classes=output_size,
+            gpu=gpu,
         )
 
     def define_convolutional_block(self, conv_dict):
@@ -202,7 +205,7 @@ class RandomArchitecture(CNN):
         n_conv = len(convolutions)
         last_conv = convolutions[f"conv{(len(convolutions) - 1)}"]
         out_channels = last_conv["out_channels"]
-        flattened_shape = np.ceil(np.array(initial_shape) / 2 ** n_conv)
+        flattened_shape = np.ceil(np.array(initial_shape) / 2**n_conv)
         flattened_shape[0] = out_channels
         in_features = np.product(flattened_shape)
 

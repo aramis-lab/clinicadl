@@ -257,8 +257,16 @@ def check_and_complete(options, random_search=False):
         "sampler": "random",
     }
     mode_default_values = {
-        "patch": {"patch_size": 50, "stride_size": 50, "use_extracted_patches": False,},
-        "roi": {"roi_list": [], "uncropped_roi": False, "use_extracted_roi": False,},
+        "patch": {
+            "patch_size": 50,
+            "stride_size": 50,
+            "use_extracted_patches": False,
+        },
+        "roi": {
+            "roi_list": [],
+            "uncropped_roi": False,
+            "use_extracted_roi": False,
+        },
         "slice": {
             "discarded_slices": 20,
             "slice_direction": 0,
@@ -268,8 +276,13 @@ def check_and_complete(options, random_search=False):
     }
 
     task_default_values = {
-        "classification": {"label": "diagnosis", "selection_threshold": 0,},
-        "regression": {"label": "age",},
+        "classification": {
+            "label": "diagnosis",
+            "selection_threshold": 0,
+        },
+        "regression": {
+            "label": "age",
+        },
     }
     if random_search:
         default_values["d_reduction"] = "MaxPooling"
@@ -347,5 +360,5 @@ def cpuStats():
     pid = process.pid
 
     py = psutil.Process(pid)
-    memoryUse = py.memory_info()[0] / 2.0 ** 30  # memory use in GB...I think
+    memoryUse = py.memory_info()[0] / 2.0**30  # memory use in GB...I think
     print("memory GB:", memoryUse)

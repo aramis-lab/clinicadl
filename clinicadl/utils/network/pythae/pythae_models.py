@@ -42,7 +42,9 @@ class pythae_VAE(BasePythae):
             input_dim=self.input_size, latent_dim=self.latent_space_size
         )
         return VAE(
-            model_config=model_config, encoder=self.encoder, decoder=self.decoder,
+            model_config=model_config,
+            encoder=self.encoder,
+            decoder=self.decoder,
         )
 
 
@@ -91,7 +93,9 @@ class pythae_BetaVAE(BasePythae):
             beta=self.beta,
         )
         return BetaVAE(
-            model_config=model_config, encoder=self.encoder, decoder=self.decoder,
+            model_config=model_config,
+            encoder=self.encoder,
+            decoder=self.decoder,
         )
 
 
@@ -140,5 +144,7 @@ class pythae_VAE_LinNF(BasePythae):
             flows=self.flows,
         )
         return BetaVAE(
-            model_config=model_config, encoder=self.encoder, decoder=self.decoder,
+            model_config=model_config,
+            encoder=self.encoder,
+            decoder=self.decoder,
         )

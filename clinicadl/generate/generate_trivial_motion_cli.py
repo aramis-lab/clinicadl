@@ -29,7 +29,10 @@ from clinicadl.utils import cli_param
     help="Range in degree for the rotation",
 )
 @click.option(
-    "--num_transforms", type=int, default=2, help="Number of transforms",
+    "--num_transforms",
+    type=int,
+    default=2,
+    help="Number of transforms",
 )
 def cli(
     caps_directory,

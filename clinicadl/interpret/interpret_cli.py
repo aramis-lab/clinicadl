@@ -9,10 +9,12 @@ from clinicadl.utils import cli_param
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.argument(
-    "name", type=str,
+    "name",
+    type=str,
 )
 @click.argument(
-    "method", type=click.Choice(["gradients", "grad-cam"]),
+    "method",
+    type=click.Choice(["gradients", "grad-cam"]),
 )
 @click.option(
     "--level_grad_cam",

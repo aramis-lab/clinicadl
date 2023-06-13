@@ -8,13 +8,17 @@ from clinicadl.utils import cli_param
 @click.command(name="t1-volume", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @click.argument(
-    "output_directory", type=click.Path(path_type=Path),
+    "output_directory",
+    type=click.Path(path_type=Path),
 )
 @click.argument(
-    "group_label", type=str,
+    "group_label",
+    type=str,
 )
 def cli(
-    caps_directory, output_directory, group_label,
+    caps_directory,
+    output_directory,
+    group_label,
 ):
     """Performs quality check on t1-volume pipeline.
 
@@ -27,5 +31,7 @@ def cli(
     from .quality_check import quality_check as volume_qc
 
     volume_qc(
-        caps_directory, output_directory, group_label,
+        caps_directory,
+        output_directory,
+        group_label,
     )

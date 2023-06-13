@@ -14,7 +14,6 @@ class pythae_VAE_IAF(BasePythae):
         hidden_size,
         gpu=False,
     ):
-
         from pythae.models import VAE_IAF, VAE_IAF_Config
 
         encoder, decoder = super(pythae_VAE_IAF, self).__init__(
@@ -34,7 +33,9 @@ class pythae_VAE_IAF(BasePythae):
             hidden_size=hidden_size,
         )
         self.model = VAE_IAF(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

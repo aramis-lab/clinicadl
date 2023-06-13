@@ -6,11 +6,14 @@ import click
 @click.command("random-search", no_args_is_help=True)
 @click.argument("task", type=click.Choice(["classification", "vae-architecture"]))
 @click.argument(
-    "launch_directory", type=click.Path(exists=True, path_type=Path),
+    "launch_directory",
+    type=click.Path(exists=True, path_type=Path),
 )
 @click.argument("name", type=str)
 def cli(
-    task, launch_directory, name,
+    task,
+    launch_directory,
+    name,
 ):
     """Hyperparameter exploration using random search.
 

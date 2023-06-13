@@ -4,7 +4,10 @@ from clinicadl.utils import cli_param
 
 caps_directory = cli_param.argument.caps_directory
 preprocessing_json = cli_param.argument.preprocessing_json
-tsv_directory = click.argument("tsv_directory", type=click.Path(exists=True),)
+tsv_directory = click.argument(
+    "tsv_directory",
+    type=click.Path(exists=True),
+)
 output_maps = cli_param.argument.output_maps
 # train option
 config_file = click.option(
@@ -78,7 +81,9 @@ multi_network = cli_param.option_group.model_group.option(
 )
 # Task
 label = cli_param.option_group.task_group.option(
-    "--label", type=str, help="Target label used for training.",
+    "--label",
+    type=str,
+    help="Target label used for training.",
 )
 selection_metrics = cli_param.option_group.task_group.option(
     "--selection_metrics",

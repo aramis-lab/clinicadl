@@ -16,7 +16,6 @@ class pythae_RHVAE(BasePythae):
         regularization,
         gpu=False,
     ):
-
         from pythae.models import RHVAE, RHVAEConfig
 
         encoder, decoder = super(pythae_RHVAE, self).__init__(
@@ -37,7 +36,11 @@ class pythae_RHVAE(BasePythae):
             temperature=temperature,
             regularization=regularization,
         )
-        self.model = RHVAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = RHVAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

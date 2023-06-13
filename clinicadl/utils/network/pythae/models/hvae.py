@@ -14,7 +14,6 @@ class pythae_HVAE(BasePythae):
         beta_zero,
         gpu=False,
     ):
-
         from pythae.models import HVAE, HVAEConfig
 
         encoder, decoder = super(pythae_HVAE, self).__init__(
@@ -33,7 +32,11 @@ class pythae_HVAE(BasePythae):
             eps_lf=eps_lf,
             beta_zero=beta_zero,
         )
-        self.model = HVAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = HVAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

@@ -15,7 +15,6 @@ class pythae_PoincareVAE(BasePythae):
         curvature,
         gpu=False,
     ):
-
         from pythae.models import PoincareVAE, PoincareVAEConfig
 
         encoder, decoder = super(pythae_PoincareVAE, self).__init__(
@@ -36,7 +35,9 @@ class pythae_PoincareVAE(BasePythae):
             curvature=curvature,
         )
         self.model = PoincareVAE(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

@@ -118,7 +118,9 @@ class QCDataset(Dataset):
         ]
 
         output_images = [
-            np.zeros((224, 224),),
+            np.zeros(
+                (224, 224),
+            ),
             np.zeros((224, 224)),
             np.zeros((224, 224)),
         ]
@@ -146,7 +148,9 @@ class QCDataset(Dataset):
 
             sz = slice.shape
             # pad image
-            dummy = np.zeros((256, 256),)
+            dummy = np.zeros(
+                (256, 256),
+            )
             dummy[
                 int((256 - sz[0]) / 2) : int((256 - sz[0]) / 2) + sz[0],
                 int((256 - sz[1]) / 2) : int((256 - sz[1]) / 2) + sz[1],
@@ -176,7 +180,9 @@ class QCDataset(Dataset):
         ]
 
         output_images = [
-            np.zeros((224, 224),),
+            np.zeros(
+                (224, 224),
+            ),
             np.zeros((224, 224)),
             np.zeros((224, 224)),
         ]
@@ -205,7 +211,9 @@ class QCDataset(Dataset):
 
             sz = slice.shape
             # pad image
-            dummy = np.zeros((256, 256),)
+            dummy = np.zeros(
+                (256, 256),
+            )
             dummy[
                 int((256 - sz[0]) / 2) : int((256 - sz[0]) / 2) + sz[0],
                 int((256 - sz[1]) / 2) : int((256 - sz[1]) / 2) + sz[1],

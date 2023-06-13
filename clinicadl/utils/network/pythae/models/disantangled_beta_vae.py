@@ -14,7 +14,6 @@ class pythae_DisentangledBetaVAE(BasePythae):
         warmup_epoch,
         gpu=False,
     ):
-
         from pythae.models import DisentangledBetaVAE, DisentangledBetaVAEConfig
 
         encoder, decoder = super(pythae_DisentangledBetaVAE, self).__init__(
@@ -34,7 +33,9 @@ class pythae_DisentangledBetaVAE(BasePythae):
             warmup_epoch=warmup_epoch,
         )
         self.model = DisentangledBetaVAE(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

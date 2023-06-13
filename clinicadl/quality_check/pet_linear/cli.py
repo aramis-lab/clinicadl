@@ -6,13 +6,16 @@ from clinicadl.utils import cli_param
 @click.command(name="pet-linear", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @click.argument(
-    "output_tsv", type=click.Path(),
+    "output_tsv",
+    type=click.Path(),
 )
 @click.argument(
-    "tracer", type=str,
+    "tracer",
+    type=str,
 )
 @click.argument(
-    "suvr_reference_region", type=str,
+    "suvr_reference_region",
+    type=str,
 )
 @cli_param.option.use_uncropped_image
 @cli_param.option.participant_list

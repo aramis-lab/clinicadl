@@ -7,7 +7,8 @@ from clinicadl.utils.task_manager.task_manager import TaskManager
 
 class ReconstructionManager(TaskManager):
     def __init__(
-        self, mode,
+        self,
+        mode,
     ):
         super().__init__(mode)
 

@@ -22,7 +22,6 @@ class pythae_VAEGAN(BasePythae):
         equilibrium,
         gpu=False,
     ):
-
         from pythae.models import VAEGAN, VAEGANConfig
 
         encoder, decoder = super(pythae_VAEGAN, self).__init__(
@@ -65,7 +64,6 @@ class pythae_VAEGAN(BasePythae):
 
 class Discriminator_VAEGAN(BaseDiscriminator):
     def __init__(self):
-
         BaseDiscriminator.__init__(self)
 
         self.n_channels = 1
@@ -107,7 +105,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
         max_depth = self.depth
 
         if output_layer_levels is not None:
-
             assert all(
                 self.depth >= levels > 0 or levels == -1
                 for levels in output_layer_levels
@@ -124,7 +121,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
         out = x
 
         for i in range(max_depth):
-
             if i == 3:
                 out = out.reshape(x.shape[0], -1)
 

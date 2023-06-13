@@ -13,7 +13,6 @@ class pythae_MIWAE(BasePythae):
         number_samples,
         gpu=False,
     ):
-
         from pythae.models import MIWAE, MIWAEConfig
 
         encoder, decoder = super(pythae_MIWAE, self).__init__(
@@ -31,7 +30,11 @@ class pythae_MIWAE(BasePythae):
             number_gradient_estimates=number_gradient_estimates,
             number_samples=number_samples,
         )
-        self.model = MIWAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = MIWAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

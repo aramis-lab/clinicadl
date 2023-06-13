@@ -12,7 +12,6 @@ class pythae_Adversarial_AE(BasePythae):
         adversarial_loss_scale,
         gpu=False,
     ):
-
         from pythae.models import Adversarial_AE, Adversarial_AE_Config
 
         encoder, decoder = super(pythae_Adversarial_AE, self).__init__(
@@ -30,7 +29,9 @@ class pythae_Adversarial_AE(BasePythae):
             adversarial_loss_scale=adversarial_loss_scale,
         )
         self.model = Adversarial_AE(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

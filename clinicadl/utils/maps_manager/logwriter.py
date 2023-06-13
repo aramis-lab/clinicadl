@@ -112,8 +112,12 @@ class LogWriter:
         global_step = i + epoch * len_epoch
         for metric_idx, metric in enumerate(self.evaluation_metrics):
             self.writer_train.add_scalar(
-                metric, train_row[metric_idx], global_step,
+                metric,
+                train_row[metric_idx],
+                global_step,
             )
             self.writer_valid.add_scalar(
-                metric, valid_row[metric_idx], global_step,
+                metric,
+                valid_row[metric_idx],
+                global_step,
             )

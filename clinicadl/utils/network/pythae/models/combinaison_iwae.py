@@ -13,7 +13,6 @@ class pythae_CIWAE(BasePythae):
         number_samples,
         gpu=False,
     ):
-
         from pythae.models import CIWAE, CIWAEConfig
 
         encoder, decoder = super(pythae_CIWAE, self).__init__(
@@ -31,7 +30,11 @@ class pythae_CIWAE(BasePythae):
             beta=beta,
             number_samples=number_samples,
         )
-        self.model = CIWAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = CIWAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig

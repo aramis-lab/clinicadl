@@ -17,7 +17,6 @@ class pythae_SVAE(BasePythae):
         io_layer_channels,
         gpu=False,
     ):
-
         from pythae.models import SVAE, SVAEConfig
 
         _, decoder = super(pythae_SVAE, self).__init__(
@@ -42,7 +41,11 @@ class pythae_SVAE(BasePythae):
         model_config = SVAEConfig(
             input_dim=self.input_size, latent_dim=self.latent_space_size
         )
-        self.model = SVAE(model_config=model_config, encoder=encoder, decoder=decoder,)
+        self.model = SVAE(
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
+        )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
         from pythae.trainers import BaseTrainerConfig
@@ -84,7 +87,7 @@ def build_SVAE_encoder(
     for i in range(n_conv - 1):
         encoder_layers.append(
             EncoderLayer3D(
-                first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
+                first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
             )
         )
         # Construct output paddings
@@ -94,9 +97,9 @@ def build_SVAE_encoder(
     n_pix = (
         first_layer_channels
         * 2 ** (n_conv - 1)
-        * (input_d // (2 ** n_conv))
-        * (input_h // (2 ** n_conv))
-        * (input_w // (2 ** n_conv))
+        * (input_d // (2**n_conv))
+        * (input_h // (2**n_conv))
+        * (input_w // (2**n_conv))
     )
     # Flatten
     encoder_layers.append(Flatten())

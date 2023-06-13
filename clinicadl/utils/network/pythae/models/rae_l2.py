@@ -13,7 +13,6 @@ class pythae_RAE_L2(BasePythae):
         reg_weight,
         gpu=False,
     ):
-
         from pythae.models import RAE_L2, RAE_L2_Config
 
         encoder, decoder = super(pythae_RAE_L2, self).__init__(
@@ -33,7 +32,9 @@ class pythae_RAE_L2(BasePythae):
             reg_weight=reg_weight,
         )
         self.model = RAE_L2(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):

@@ -14,7 +14,6 @@ class pythae_BetaTCVAE(BasePythae):
         gamma,
         gpu=False,
     ):
-
         from pythae.models import BetaTCVAE, BetaTCVAEConfig
 
         encoder, decoder = super(pythae_BetaTCVAE, self).__init__(
@@ -34,7 +33,9 @@ class pythae_BetaTCVAE(BasePythae):
             gamma=gamma,
         )
         self.model = BetaTCVAE(
-            model_config=model_config, encoder=encoder, decoder=decoder,
+            model_config=model_config,
+            encoder=encoder,
+            decoder=decoder,
         )
 
     def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
