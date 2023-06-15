@@ -1,0 +1,35 @@
+cff-version: 1.4.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Thibeau-Sutre
+    given-names: Elina
+  - family-names: Diaz
+    given-names: Mauricio
+  - family-names: Hassanaly
+    given-names: Ravi
+  - family-names: Routier
+    given-names:  Alexandre
+  - family-names: Dormont
+    given-names: Didier
+  - family-names: Colliot
+    given-names: Olivier
+  - family-names: Burgos
+    given-names: Ninon
+  - family-names: Vaillant
+    given-names: Ghislain
+  - family-names: Wen
+    given-names: Junhao
+  - family-names: Loizillon
+    given-names: Sophie
+  - family-names: Cassereau
+    given-names: Nathan
+  - family-names: Brianceau
+    given-name: Camille
+  - family-names: Gensollen
+    given-names: Nicolas
+title: "ClinicaDL: Framework for the reproducible processing of neuroimaging data with deep learning methods."
+version: 1.4.0
+doi: 10.1016/j.cmpb.2022.106818
+license: MIT
+date-released: 2023-06-09
+url: "https://github.com/aramis-lab/clinicadl"
