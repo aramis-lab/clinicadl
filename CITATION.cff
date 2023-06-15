@@ -1,22 +1,24 @@
 cff-version: 1.4.0
 message: If you use this software, please cite it as below.
 authors:
-  - family-names: Routier
-    given-names:  Alexandre
-  - family-names: Burgos
-    given-names: Ninon
+  - family-names: Thibeau-Sutre
+    given-names: Elina
   - family-names: Diaz
     given-names: Mauricio
   - family-names: Hassanaly
     given-names: Ravi
-  - family-names: Thibeau-Sutre
-    given-names: Elina
+  - family-names: Routier
+    given-names:  Alexandre
+  - family-names: Dormont
+    given-names: Didier
+  - family-names: Colliot
+    given-names: Olivier
+  - family-names: Burgos
+    given-names: Ninon
   - family-names: Vaillant
     given-names: Ghislain
   - family-names: Wen
     given-names: Junhao
-  - family-names: Colliot
-    given-names: Olivier
   - family-names: Loizillon
     given-names: Sophie
   - family-names: Cassereau
