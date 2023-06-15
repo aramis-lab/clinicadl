@@ -855,7 +855,7 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    with autocast(enabled=self.map):
+                    with autocast(enabled=self.amp):
                         _, loss_dict = model.compute_outputs_and_loss(data, criterion)
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
