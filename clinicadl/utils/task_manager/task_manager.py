@@ -201,6 +201,7 @@ class TaskManager:
                     )
                 total_loss += loss_dict["loss"].float().item()
 
+
                 # initialize the loss list to save the loss components
                 if i == 0:
                     outputs, loss_dict = model.compute_outputs_and_loss(
