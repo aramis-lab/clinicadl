@@ -17,7 +17,7 @@ class pythae_VAE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
         self.input_size = input_size
         self.latent_space_size = latent_space_size
@@ -37,9 +37,9 @@ class pythae_VAE(BasePythae):
 
     def get_model(self):
         from pythae.models import VAE, VAEConfig
+
         model_config = VAEConfig(
-            input_dim=self.input_size,
-            latent_dim=self.latent_space_size
+            input_dim=self.input_size, latent_dim=self.latent_space_size
         )
         return VAE(
             model_config=model_config,
@@ -65,7 +65,7 @@ class pythae_BetaVAE(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
         self.input_size = input_size
         self.latent_space_size = latent_space_size
@@ -86,10 +86,11 @@ class pythae_BetaVAE(BasePythae):
 
     def get_model(self):
         from pythae.models import BetaVAE, BetaVAEConfig
+
         model_config = BetaVAEConfig(
             input_dim=self.input_size,
-            latent_dim=self.latent_space_size
-            beta=self.beta
+            latent_dim=self.latent_space_size,
+            beta=self.beta,
         )
         return BetaVAE(
             model_config=model_config,
@@ -115,7 +116,7 @@ class pythae_VAE_LinNF(BasePythae):
             feature_size=feature_size,
             n_conv=n_conv,
             io_layer_channels=io_layer_channels,
-            gpu=gpu
+            gpu=gpu,
         )
         self.input_size = input_size
         self.latent_space_size = latent_space_size
@@ -136,14 +137,14 @@ class pythae_VAE_LinNF(BasePythae):
 
     def get_model(self):
         from pythae.models import BetaVAE, BetaVAEConfig
+
         model_config = BetaVAEConfig(
             input_dim=self.input_size,
-            latent_dim=self.latent_space_size
-            flows=self.flows
+            latent_dim=self.latent_space_size,
+            flows=self.flows,
         )
         return BetaVAE(
             model_config=model_config,
             encoder=self.encoder,
             decoder=self.decoder,
         )
-
