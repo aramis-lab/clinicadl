@@ -45,6 +45,7 @@ from .task_utils import task_launcher
 @train_option.tolerance
 @train_option.accumulation_steps
 @train_option.profiler
+@train_option.track_exp
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
