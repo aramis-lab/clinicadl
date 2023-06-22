@@ -6,6 +6,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import wandb
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
@@ -845,6 +846,20 @@ class MapsManager:
 
         profiler = self._init_profiler()
 
+        #run_wandb = self._init_wandb()
+
+        # The next two lines will be moved inside init_wandb function
+        config = self.parameters
+
+        run = wandb.init(project=self.maps_path.name,
+                     entity="clinicadl",
+                     config=config,
+                     save_code=True,
+                     group="Final",
+                     mode="online",
+                     name=f"exp-split-{split}",
+                     reinit=True)
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
@@ -898,7 +913,23 @@ class MapsManager:
                                 f"at the end of iteration {i}"
                             )
 
+                            dict_log = {}
+                            for metric in metrics_train:
+                                dict_log = dict_log + {"metric": metrics_train[metric]}
+                            for metric in metrics_valid:
+                                dict_log = dict_log + {"metric": metrics_valid[metric]}
+                            dict_log = dict_log + loss_dict
+                            print(loss_dict)
+                            print(metrics_train)
+                            run.log({"epoch": epoch,
+                                    "i": i,
+                                    "len train_loader": len(train_loader),
+                                    "loss_train": metrics_train["loss"],
+                                    "loss_valid": metrics_valid["loss"],
+                                    })
+
                     profiler.step()
+                    
 
             # If no step has been performed, raise Exception
             if step_flag:
@@ -938,7 +969,14 @@ class MapsManager:
                 f"{self.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
-
+            print(loss_dict)
+            print(metrics_train)
+            run.log({"epoch": epoch,
+                    "i": i,
+                    "len train_loader": len(train_loader),
+                    "loss_train": metrics_train["loss"],
+                    "loss_valid": metrics_valid["loss"],
+                    })
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
@@ -962,8 +1000,9 @@ class MapsManager:
                 filename="optimizer.pth.tar",
             )
 
+            
             epoch += 1
-
+        run.finish()
         self._test_loader(
             train_loader,
             criterion,
