@@ -2,6 +2,7 @@
 Launch a random network training.
 """
 from pathlib import Path
+from random import sample
 
 
 def launch_search(launch_directory: Path, job_name):
@@ -35,8 +36,14 @@ def launch_vae_search(launch_directory, job_name):
     space_options = get_vae_space_dict(launch_directory)
     parameters = vae_random_sampling(space_options)
     parameters["architecture"] = "pythae_VAE"
+    print("Parameters:", parameters)
+
+    # Select 3 splits randomly
+    split_list = sample(range(6), 3)
+    print("Split list:", split_list)
+
     # initialise maps
-    maps_dir = path.join(launch_directory, job_name)
+    maps_dir = launch_directory / job_name
     maps_manager = MapsManager(maps_dir, parameters, verbose="info")
     # launch training procedure for Pythae
-    maps_manager.train_pythae()
+    maps_manager.train_pythae(split_list=split_list)

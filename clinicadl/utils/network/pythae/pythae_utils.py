@@ -76,7 +76,7 @@ class BasePythae(Network):
 
     # Network specific
     def predict(self, x):
-        return self.model.predict(x)
+        return self.model.predict(x.data)
 
     def forward(self, x):
         return self.model.forward(x)
@@ -216,9 +216,12 @@ def build_encoder_decoder(
             DecoderLayer3D(
                 last_layer_channels,
                 last_layer_channels,
-                output_padding=decoder_output_padding[i],
+                4,
+                stride=2,
+                padding=1,
+                output_padding=decoder_output_padding[0],
             ),
-            # ICI
+            nn.Conv3d(last_layer_channels, input_c, 3, stride=1, padding=1),
             nn.Sigmoid(),
         )
 

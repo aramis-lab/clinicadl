@@ -1132,7 +1132,6 @@ def get_transforms(
 def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=False):
     """
     Load data not managed by split_manager.
-
     Args:
         test_path (str): path to the test TSV files / split directory / TSV file for multi-cohort
         diagnoses_list (List[str]): list of the diagnoses wanted in case of split_dir or multi-cohort
@@ -1235,7 +1234,6 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
 def check_multi_cohort_tsv(tsv_df, purpose):
     """
     Checks that a multi-cohort TSV file is valid.
-
     Args:
         tsv_df (pd.DataFrame): DataFrame of multi-cohort definition.
         purpose (str): what the TSV file describes (CAPS or TSV).

@@ -387,6 +387,7 @@ class MapsManager:
                             save_latent_tensor=save_latent_tensor,
                             gpu=gpu,
                         )
+
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -420,18 +421,21 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor or save_nifti or save_latent_tensor:
+                    print(save_latent_tensor)
                     self._save_model_output(
                         data_test,
                         data_group,
                         split,
-                        selection_metrics,
+                        split_selection_metrics,
                         save_reconstruction_tensor=save_tensor,
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
                         gpu=gpu,
                     )
 
-            self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
+            self._ensemble_prediction(
+                data_group, split, split_selection_metrics, use_labels
+            )
 
     def interpret(
         self,
@@ -1192,7 +1196,9 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
+        print("in save model output")
         for selection_metric in selection_metrics:
+            print(selection_metric)
             # load the best trained model during the training
             model, _ = self._init_model(
                 transfer_path=self.maps_path,
@@ -1265,6 +1271,7 @@ class MapsManager:
                     )
                     torch.save(image, tensor_path / input_filename)
                     torch.save(reconstruction, tensor_path / output_filename)
+
                     logger.debug(f"File saved at {[input_filename, output_filename]}")
 
                 if save_reconstruction_nifti:
@@ -1614,7 +1621,7 @@ class MapsManager:
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
-            self.tsv_path,
+            Path(self.tsv_path),
             self.diagnoses,
             baseline=False,
             multi_cohort=self.multi_cohort,
