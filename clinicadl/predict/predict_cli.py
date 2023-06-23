@@ -2,6 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
+from pathlib import Path
+
 
 @click.command(name="predict", no_args_is_help=True)
 @cli_param.argument.input_maps
@@ -15,7 +17,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--participants_tsv",
     default=None,
-    type=click.Path(),
+    type=click.Path(exists=True, path_type=Path),
     help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",

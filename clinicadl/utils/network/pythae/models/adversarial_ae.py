@@ -5,10 +5,13 @@ class pythae_Adversarial_AE(BasePythae):
     def __init__(
         self,
         input_size,
-        latent_space_size,
+        first_layer_channels,
+        n_conv_encoder,
         feature_size,
-        n_conv,
-        io_layer_channels,
+        latent_space_size,
+        n_conv_decoder,
+        last_layer_channels,
+        last_layer_conv,
         adversarial_loss_scale,
         gpu=False,
     ):
@@ -17,10 +20,13 @@ class pythae_Adversarial_AE(BasePythae):
 
         encoder, decoder = super(pythae_Adversarial_AE, self).__init__(
             input_size=input_size,
-            latent_space_size=latent_space_size,
+            first_layer_channels=first_layer_channels,
+            n_conv_encoder=n_conv_encoder,
             feature_size=feature_size,
-            n_conv=n_conv,
-            io_layer_channels=io_layer_channels,
+            latent_space_size=latent_space_size,
+            n_conv_decoder=n_conv_decoder,
+            last_layer_channels=last_layer_channels,
+            last_layer_conv=last_layer_conv,
             gpu=gpu
         )
 
