@@ -38,6 +38,32 @@ from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everyth
 
 logger = getLogger("clinicadl.maps_manager")
 
+pythae_models_list = [
+    "pythae_Adversarial_AE",
+    "pythae_AE",
+    "pythae_BetaTCVAE",
+    "pythae_BetaVAE",
+    "pythae_CIWAE",
+    "pythae_DisentangledBetaVAEpythae_FactorVAE",
+    "pythae_HVAE",
+    "pythae_IWAE",
+    "pythae_INFOVAE_MMD",
+    "pythae_MSSSIM_VAE",
+    "pythae_MIWAE",
+    "pythae_PIWAE",
+    "pythae_PoincareVAE",
+    "pythae_RAE_GP",
+    "pythae_RAE_L2",
+    "pythae_RHVAE",
+    "pythae_SVAE",
+    "pythae_VAE",
+    "pythae_VAE_IAF",
+    "pythae_VAE_LinNF",
+    "pythae_VAEGAN",
+    "pythae_VAMP",
+    "pythae_VQVAE",
+    "pythae_WAE_MMD",
+]
 
 level_list: List[str] = ["warning", "info", "debug"]
 # TODO save weights on CPU for better compatibility
@@ -356,7 +382,9 @@ class MapsManager:
                         if label_code == "default"
                         else label_code,
                         cnn_index=network,
-                        for_pythae=True,
+                        for_pythae=True
+                        if self.parameters["architecture"] in pythae_models_list
+                        else False,
                     )
                     test_loader = DataLoader(
                         data_test,
@@ -400,7 +428,9 @@ class MapsManager:
                     label_code=self.label_code
                     if label_code == "default"
                     else label_code,
-                    for_pythae=True,
+                    for_pythae=True
+                    if self.parameters["architecture"] in pythae_models_list
+                    else False,
                 )
 
                 test_loader = DataLoader(
@@ -421,7 +451,6 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor or save_nifti or save_latent_tensor:
-                    print(save_latent_tensor)
                     self._save_model_output(
                         data_test,
                         data_group,
@@ -1196,9 +1225,7 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        print("in save model output")
         for selection_metric in selection_metrics:
-            print(selection_metric)
             # load the best trained model during the training
             model, _ = self._init_model(
                 transfer_path=self.maps_path,

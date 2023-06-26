@@ -187,7 +187,6 @@ class TaskManager:
         """
         model.eval()
         dataloader.dataset.eval()
-
         results_df = pd.DataFrame(columns=self.columns)
         with torch.no_grad():
             for i, data in enumerate(dataloader):
