@@ -219,8 +219,10 @@ class TaskManager:
                 print("len(outputs):", len(outputs))
                 print("len(data):", len(data))
 
-            for data in dataloader:
-                outputs = model.predict(data)["recon_x"]
+                # for data in dataloader:
+                pythae_bool = False
+                if pythae_bool:
+                    outputs = model.predict(data)["recon_x"]
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
@@ -230,9 +232,10 @@ class TaskManager:
 
                 del outputs
             results_df.reset_index(inplace=True, drop=True)
-            results_df[self.evaluation_metrics] = results_df[
-                self.evaluation_metrics
-            ].apply(pd.to_numeric, axis=1)
+            if pythae_bool:
+                results_df[self.evaluation_metrics] = results_df[
+                    self.evaluation_metrics
+                ].apply(pd.to_numeric, axis=1)
 
         if not use_labels:
             metrics_df = None

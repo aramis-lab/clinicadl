@@ -1870,15 +1870,15 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
-            # if not path.exists(metrics_path):
-            #     pd.DataFrame(metrics, index=[0]).to_csv(
-            #         metrics_path, index=False, sep="\t"
-            #     )
-            # else:
-            #     pd.DataFrame(metrics, index=[0]).to_csv(
-            #         metrics_path, index=False, sep="\t", mode="a", header=False
-            #     )
-            metrics.to_csv(metrics_path, sep="\t")
+            if not metrics_path.is_file():
+                pd.DataFrame(metrics, index=[0]).to_csv(
+                    metrics_path, index=False, sep="\t"
+                )
+            else:
+                pd.DataFrame(metrics, index=[0]).to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=False
+                )
+            # metrics.to_csv(metrics_path, sep="\t")
 
     def _ensemble_to_tsv(
         self,

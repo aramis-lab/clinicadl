@@ -116,6 +116,7 @@ class CNN(Network):
             )
 
     def forward(self, x):
+        print(x)
         x = self.convolutions(x)
         return self.fc(x)
 
