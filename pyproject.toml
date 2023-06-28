@@ -42,7 +42,6 @@ click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
 torchio = "^0.18.90"
-wandb = "^0.15.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
@@ -52,6 +51,11 @@ pytest = "*"
 pytest-timeout = "*"
 pytest-xdist = "*"
 pytest-cov = "^3.0.0"
+
+[tool.poetry.group.wandb]
+optional = true
+[tool.poetry.group.wandb.dependencies]
+wandb = "^0.15.4"
 
 [tool.poetry.group.docs]
 optional = true

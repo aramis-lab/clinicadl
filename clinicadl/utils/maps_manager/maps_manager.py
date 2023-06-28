@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
-import wandb
 from torch.utils.data import DataLoader
 
 from clinicadl.utils.caps_dataset.data import (
@@ -846,12 +845,30 @@ class MapsManager:
 
         profiler = self._init_profiler()
 
-        # run_wandb = self._init_wandb()
-        if self.parameters["track_exp"]:
+        if self.parameters["track_exp"] == "wandb":
+            from clinicadl.utils.tracking_exp import WandB_class
+
             # The next two lines will be moved inside init_wandb function
             config = self.parameters
+            run = WandB_class()
+            run._wandb.init(
+                project="ClinicaDL",
+                entity="clinicadl",
+                config=config,
+                save_code=True,
+                group=self.maps_path.name,
+                mode="online",
+                name=f"split-{split}",
+                reinit=True,
+            )
 
-            run = wandb.init(
+        if self.parameters["track_exp"] == "mlflow":
+            from clinicadl.utils.tracking_exp import WandB_class
+
+            # The next two lines will be moved inside init_wandb function
+            config = self.parameters
+            run = WandB_class()
+            run._wandb.init(
                 project="ClinicaDL",
                 entity="clinicadl",
                 config=config,
@@ -915,21 +932,6 @@ class MapsManager:
                                 f"at the end of iteration {i}"
                             )
 
-                            # dict_log = {}
-                            # for metric in metrics_train:
-                            #     dict_log = dict_log + {"metric": metrics_train[metric]}
-                            # for metric in metrics_valid:
-                            #     dict_log = dict_log + {"metric": metrics_valid[metric]}
-                            # dict_log = dict_log + loss_dict
-                            # # print(loss_dict)
-                            # # print(metrics_train)
-                            # run.log({"epoch": epoch,
-                            #         "i": i,
-                            #         "len train_loader": len(train_loader),
-                            #         "loss_train": metrics_train["loss"],
-                            #         "loss_valid": metrics_valid["loss"],
-                            #         })
-
                     profiler.step()
 
             # If no step has been performed, raise Exception
@@ -972,14 +974,12 @@ class MapsManager:
             )
             # print(loss_dict)
             # print(metrics_train)
-            if self.parameters["track_exp"]:
+            if self.parameters["track_exp"] == "wandb":
 
-                run.log(
+                run._wandb.log(
                     {
                         "loss_train": metrics_train["loss"],
                         "loss_valid": metrics_valid["loss"],
-                        "model": model.state_dict(),
-                        "optimizer": optimizer.state_dict(),
                     }
                 )
             # Save checkpoints and best models
@@ -1007,8 +1007,8 @@ class MapsManager:
 
             epoch += 1
 
-        if self.parameters["track_exp"]:
-            run.finish()
+        if self.parameters["track_exp"] == "wandb":
+            run._wandb.finish()
 
         self._test_loader(
             train_loader,

@@ -267,8 +267,12 @@ profiler = cli_param.option_group.optimization_group.option(
 track_exp = cli_param.option_group.optimization_group.option(
     "--track_exp",
     "-te",
-    type=bool,
-    default=False,
+    type=click.Choice(
+        [
+            "wandb",
+            "mlflow",
+        ]
+    ),
     help="Use `--track_exp` to enable wandb to track your experience.",
 )
 # transfer learning
