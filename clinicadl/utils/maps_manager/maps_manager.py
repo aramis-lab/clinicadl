@@ -975,7 +975,6 @@ class MapsManager:
             # print(loss_dict)
             # print(metrics_train)
             if self.parameters["track_exp"] == "wandb":
-
                 run._wandb.log(
                     {
                         "loss_train": metrics_train["loss"],
