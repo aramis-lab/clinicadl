@@ -865,9 +865,16 @@ class MapsManager:
         if self.parameters["track_exp"] == "mlflow":
             from clinicadl.utils.tracking_exp import Mlflow_class
 
+            config = self.parameters
             run = Mlflow_class()
-            run._mlflow.set_experiment(f"{self.maps_path}")
+            run._mlflow.set_experiment("clinicadl")
             run._mlflow.sklearn.autolog()
+            run._mlflow.start_run(run_name=self.maps_path)
+            self._mlflow.log_params(
+                {
+                    config,
+                }
+            )
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
