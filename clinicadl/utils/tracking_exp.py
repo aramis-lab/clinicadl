@@ -29,6 +29,18 @@ class WandB_class:
             self._wandb = wandb
 
 
+class Mlflow_class:
+    def __init__(self):
+        if not mlflow_is_available():
+            raise ModuleNotFoundError(
+                "`mlflow` package must be installed. Run `pip install mlflow`"
+            )
+        else:
+            import mlflow
+
+            self._mlflow = mlflow
+
+
 #     def setup(
 #         self,
 #         training_config: BaseTrainerConfig,

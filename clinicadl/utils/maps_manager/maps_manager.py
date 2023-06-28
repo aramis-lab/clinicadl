@@ -863,21 +863,11 @@ class MapsManager:
             )
 
         if self.parameters["track_exp"] == "mlflow":
-            from clinicadl.utils.tracking_exp import WandB_class
+            from clinicadl.utils.tracking_exp import Mlflow_class
 
-            # The next two lines will be moved inside init_wandb function
-            config = self.parameters
-            run = WandB_class()
-            run._wandb.init(
-                project="ClinicaDL",
-                entity="clinicadl",
-                config=config,
-                save_code=True,
-                group=self.maps_path.name,
-                mode="online",
-                name=f"split-{split}",
-                reinit=True,
-            )
+            run = Mlflow_class()
+            run._mlflow.set_experiment(f"{self.maps_path}")
+            run._mlflow.sklearn.autolog()
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
