@@ -212,12 +212,12 @@ class TaskManager:
                         )
                 # TOTDO change to logger
                 # Generate detailed DataFrame
-                print(
-                    "len(data['participant_id']) (and idx range):",
-                    len(data["participant_id"]),
-                )
-                print("len(outputs):", len(outputs))
-                print("len(data):", len(data))
+                # print(
+                #     "len(data['participant_id']) (and idx range):",
+                #     len(data["participant_id"]),
+                # )
+                # print("len(outputs):", len(outputs))
+                # print("len(data):", len(data))
 
                 # for data in dataloader:
                 pythae_bool = False

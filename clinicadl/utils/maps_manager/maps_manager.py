@@ -1003,6 +1003,7 @@ class MapsManager:
             train_loader.dataset.train()
 
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            print(metrics_train)
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss_components']} "
                 f"at the end of iteration {i}"
