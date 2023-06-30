@@ -1009,14 +1009,14 @@ class MapsManager:
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             print("metrics_train")
             print(metrics_train)
-            logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
+            # logger.info(
+            #     f"{self.mode} level training loss is {metrics_train['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # logger.info(
+            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
 
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
