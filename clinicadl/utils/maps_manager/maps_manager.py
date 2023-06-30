@@ -928,7 +928,7 @@ class MapsManager:
 
             model.train()
             train_loader.dataset.train()
-
+            print(metrics_train)
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
