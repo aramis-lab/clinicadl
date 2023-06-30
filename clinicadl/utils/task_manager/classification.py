@@ -39,7 +39,7 @@ class ClassificationManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+        return ["accuracy", "loss", "sensitivity", "specificity", "PPV", "NPV", "BA"]
 
     @property
     def save_outputs(self):
