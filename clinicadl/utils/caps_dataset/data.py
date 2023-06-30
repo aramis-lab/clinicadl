@@ -83,6 +83,8 @@ class CapsDataset(Dataset):
                 f"Columns should include {mandatory_col}"
             )
         self.elem_per_image = self.num_elem_per_image()
+        print("caps dataset self[O]")
+        print(self[0])
         if "image" in self[0].keys():
             self.size = self[0]["image"].size()
         else:

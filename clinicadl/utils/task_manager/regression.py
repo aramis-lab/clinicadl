@@ -44,6 +44,7 @@ class RegressionManager(TaskManager):
         ]
 
     def compute_metrics(self, results_df):
+        print(self.metrics_module)
         return self.metrics_module.apply(
             results_df.true_label.values,
             results_df.predicted_label.values,

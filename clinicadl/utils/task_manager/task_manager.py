@@ -237,6 +237,8 @@ class TaskManager:
                     self.evaluation_metrics
                 ].apply(pd.to_numeric, axis=1)
 
+        print("in task manager test")
+        print(results_df)
         if not use_labels:
             metrics_df = None
         else:

@@ -996,6 +996,10 @@ class MapsManager:
             model.zero_grad()
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
+            print("self.task_manager.tests(model train_loader, criterion)")
+            print(model)
+            print(train_loader)
+            print(criterion)
             _, metrics_train = self.task_manager.test(model, train_loader, criterion)
             _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
 
@@ -1003,9 +1007,10 @@ class MapsManager:
             train_loader.dataset.train()
 
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            print("metrics_train")
             print(metrics_train)
             logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss_components']} "
+                f"{self.mode} level training loss is {metrics_train['loss']} "
                 f"at the end of iteration {i}"
             )
             logger.info(
