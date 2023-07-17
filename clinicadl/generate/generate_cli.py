@@ -5,6 +5,7 @@ from .generate_random_cli import cli as generate_random_cli
 from .generate_shepplogan_cli import cli as generate_shepplogan_cli
 from .generate_trivial_cli import cli as generate_trivial_cli
 from .generate_trivial_motion_cli import cli as generate_trivial_motion_cli
+from .generate_trivial_contrast_cli import cli as generate_trivial_contrast_cli
 
 
 class RegistrationOrderGroup(click.Group):
@@ -25,7 +26,7 @@ cli.add_command(generate_trivial_cli)
 cli.add_command(generate_shepplogan_cli)
 cli.add_command(generate_hypo_cli)
 cli.add_command(generate_trivial_motion_cli)
-
+cli.add_command(generate_trivial_contrast_cli)
 
 if __name__ == "__main__":
     cli()
