@@ -821,7 +821,7 @@ class MapsManager:
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
-        logger.debug(f"Optimizer used for training is optimizer")
+        logger.debug(f"Optimizer used for training is {optimizer}")
 
         model.train()
         train_loader.dataset.train()
@@ -972,12 +972,27 @@ class MapsManager:
             # print(loss_dict)
             # print(metrics_train)
             if self.parameters["track_exp"] == "wandb":
-                run._wandb.log(
-                    {
-                        "loss_train": metrics_train["loss"],
-                        "loss_valid": metrics_valid["loss"],
-                    }
-                )
+                if self.network_task == "classification":
+                    run._wandb.log(
+                        {
+                            "loss_train": metrics_train["loss"],
+                            "accuracy_train": metrics_train["accuracy"],
+                            "sensitivity_train": metrics_train["sensitivity"],
+                            "accuracy_train": metrics_train["accuracy"],
+                            "specificity_train": metrics_train["specificity"],
+                            "PPV_train": metrics_train["PPV"],
+                            "NPV_train": metrics_train["NPV"],
+                            "BA_train": metrics_train["BA"],
+                            "loss_valid": metrics_valid["loss"],
+                            "accuracy_valid": metrics_valid["accuracy"],
+                            "sensitivity_valid": metrics_valid["sensitivity"],
+                            "accuracy_valid": metrics_valid["accuracy"],
+                            "specificity_valid": metrics_valid["specificity"],
+                            "PPV_valid": metrics_valid["PPV"],
+                            "NPV_valid": metrics_valid["NPV"],
+                            "BA_valid": metrics_valid["BA"],
+                        }
+                    )
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
