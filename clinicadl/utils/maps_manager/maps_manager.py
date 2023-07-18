@@ -874,9 +874,16 @@ class MapsManager:
                 if cle == "preprocessing_dict":
                     del config_bis[cle]
             config = config_bis
-            experiment_id = f"clinicadl-{str(self.maps_path)}"
             run = Mlflow_class()
-            experiment_id = run._mlflow.create_experiment(f"clinicadl-{str(self.maps_path)}",artifact_location=Path.cwd().joinpath("mlruns").as_uri(), tags={"version": "v1", "priority": "P1"})
+            experiment_id = run._mlflow.create_experiment(
+                f"clinicadl-{str(self.maps_path.name)}",
+                artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
+            )
+
+            print("FIRST RUN ")
+            run._mlflow.start_run(
+                experiment_id=experiment_id, run_name=f"split-{split}"
+            )
             run._mlflow.autolog()
             run._mlflow.log_params(config)
 
@@ -1024,8 +1031,8 @@ class MapsManager:
             )
 
             epoch += 1
-            if self.parameters["track_exp"] == "mlflow":
-                run._mlflow.end_run()
+        if self.parameters["track_exp"] == "mlflow":
+            run._mlflow.end_run()
 
         if self.parameters["track_exp"] == "wandb":
             run._wandb.finish()
