@@ -869,12 +869,8 @@ class MapsManager:
             run = Mlflow_class()
             run._mlflow.set_experiment("clinicadl")
             run._mlflow.sklearn.autolog()
-            run._mlflow.start_run(run_name=self.maps_path)
-            self._mlflow.log_params(
-                {
-                    config,
-                }
-            )
+            run._mlflow.start_run(run_name=str(self.maps_path))
+            run._mlflow.log_params(config)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
@@ -969,30 +965,11 @@ class MapsManager:
                 f"{self.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
-            # print(loss_dict)
-            # print(metrics_train)
-            if self.parameters["track_exp"] == "wandb":
-                if self.network_task == "classification":
-                    run._wandb.log(
-                        {
-                            "loss_train": metrics_train["loss"],
-                            "accuracy_train": metrics_train["accuracy"],
-                            "sensitivity_train": metrics_train["sensitivity"],
-                            "accuracy_train": metrics_train["accuracy"],
-                            "specificity_train": metrics_train["specificity"],
-                            "PPV_train": metrics_train["PPV"],
-                            "NPV_train": metrics_train["NPV"],
-                            "BA_train": metrics_train["BA"],
-                            "loss_valid": metrics_valid["loss"],
-                            "accuracy_valid": metrics_valid["accuracy"],
-                            "sensitivity_valid": metrics_valid["sensitivity"],
-                            "accuracy_valid": metrics_valid["accuracy"],
-                            "specificity_valid": metrics_valid["specificity"],
-                            "PPV_valid": metrics_valid["PPV"],
-                            "NPV_valid": metrics_valid["NPV"],
-                            "BA_valid": metrics_valid["BA"],
-                        }
-                    )
+            if self.track_exp == "wandb" : 
+                self.log_metrics(run._wandb, self.track_exp, self.network_task, metrics_train, metrics_valid)
+            elif self.track_exp == "mlflow":
+                self.log_metrics(run._mlflow,self.track_exp,  self.network_task, metrics_train, metrics_valid)
+            
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
@@ -1020,6 +997,8 @@ class MapsManager:
 
         if self.parameters["track_exp"] == "wandb":
             run._wandb.finish()
+        elif self.parameters["track_exp"] == "mlflow":
+            run._mlflow.end_run()
 
         self._test_loader(
             train_loader,
@@ -2370,3 +2349,55 @@ class MapsManager:
                 map_dir / f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt"
             )
         return map_pt
+
+
+    def log_metrics(self, tracker, track_exp: bool = False, network_task: str = "classification", metrics_train : list = [], metrics_valid : list = []):
+        metrics_dict={}
+        if network_task == "classification":
+
+            metrics_dict = {
+                    "loss_train": metrics_train["loss"],
+                    "accuracy_train": metrics_train["accuracy"],
+                    "sensitivity_train": metrics_train["sensitivity"],
+                    "accuracy_train": metrics_train["accuracy"],
+                    "specificity_train": metrics_train["specificity"],
+                    "PPV_train": metrics_train["PPV"],
+                    "NPV_train": metrics_train["NPV"],
+                    "BA_train": metrics_train["BA"],
+                    "loss_valid": metrics_valid["loss"],
+                    "accuracy_valid": metrics_valid["accuracy"],
+                    "sensitivity_valid": metrics_valid["sensitivity"],
+                    "accuracy_valid": metrics_valid["accuracy"],
+                    "specificity_valid": metrics_valid["specificity"],
+                    "PPV_valid": metrics_valid["PPV"],
+                    "NPV_valid": metrics_valid["NPV"],
+                    "BA_valid": metrics_valid["BA"],
+                }
+        elif network_task == "reconstruction":
+            metrics_dict = {
+                    "loss_train": metrics_train["loss"],
+                    "MSE_train": metrics_train["MSE"],
+                    "MAE_train": metrics_train["MAE"],
+                    "PSNR_train": metrics_train["PSNR"],
+                    "SSIM_train": metrics_train["SSIM"],
+                    "loss_valid": metrics_valid["loss"],
+                    "MSE_valid": metrics_valid["MSE"],
+                    "MAE_valid": metrics_valid["MAE"],
+                    "PSNR_valid": metrics_valid["PSNR"],
+                    "SSIM_valid": metrics_valid["SSIM"],
+                }
+        elif network_task == "regression":
+            metrics_dict = {
+                    "loss_train": metrics_train["loss"],
+                    "MSE_train": metrics_train["MSE"],
+                    "MAE_train": metrics_train["MAE"],
+                    "loss_valid": metrics_valid["loss"],
+                    "MSE_valid": metrics_valid["MSE"],
+                    "MAE_valid": metrics_valid["MAE"],
+                }
+
+        if track_exp == "wandb" : 
+            tracker.log(metrics_dict)
+        elif track_exp == "mlflow" : 
+            tracker.log_metrics(metrics_dict)
+        
