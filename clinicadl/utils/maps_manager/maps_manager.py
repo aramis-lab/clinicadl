@@ -848,48 +848,13 @@ class MapsManager:
         if self.parameters["track_exp"] == "wandb":
             from clinicadl.utils.tracking_exp import WandB_class
 
-            # The next two lines will be moved inside init_wandb function
-            config = self.parameters
-            run = WandB_class()
-            run._wandb.init(
-                project="ClinicaDL",
-                entity="clinicadl",
-                config=config,
-                save_code=True,
-                group=self.maps_path.name,
-                mode="online",
-                name=f"split-{split}",
-                reinit=True,
-            )
+            run = WandB_class(split, self.parameters, self.maps_path.name)
 
         if self.parameters["track_exp"] == "mlflow":
-            from copy import copy
 
             from clinicadl.utils.tracking_exp import Mlflow_class
-            from mlflow import MlflowException
 
-            config = self.parameters
-            config_bis = copy(config)
-            print(config)
-            for cle, valeur in config.items():
-                if cle == "preprocessing_dict":
-                    del config_bis[cle]
-            config = config_bis
-            run = Mlflow_class()
-            try:
-                experiment_id = run._mlflow.create_experiment(
-                    f"clinicadl-{str(self.maps_path.name)}",
-                    artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
-                )
-                
-            except MlflowException:
-                set_experiment(self.experiment_name)
-
-            run._mlflow.start_run(
-                experiment_id=experiment_id, run_name=f"split-{split}"
-            )
-            run._mlflow.autolog()
-            run._mlflow.log_params(config)
+            run = Mlflow_class(split, self.parameters, self.maps_path.name)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
@@ -985,7 +950,7 @@ class MapsManager:
                 f"at the end of iteration {i}"
             )
             if self.track_exp == "wandb":
-                self.log_metrics(
+                run.log_metrics(
                     run._wandb,
                     self.track_exp,
                     self.network_task,
@@ -994,22 +959,13 @@ class MapsManager:
                 )
 
             if self.track_exp == "mlflow":
-                self.log_metrics(
+                run.log_metrics(
                     run._mlflow,
                     self.track_exp,
                     self.network_task,
                     metrics_train,
                     metrics_valid,
                 )
-            print(metrics_train)
-            print(metrics_train)
-            print(f"epoch-{epoch}")
-            print(f"split-{split}")
-            # elif self.track_exp == "mlflow":
-            #     with run._mlflow.start_run(
-            #         run_name=f"split-{split}",
-            #         experiment_id=experiment_id):
-            #         self.log_metrics(run._mlflow,self.track_exp,  self.network_task, metrics_train, metrics_valid)
 
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
@@ -1040,8 +996,6 @@ class MapsManager:
 
         if self.parameters["track_exp"] == "wandb":
             run._wandb.finish()
-        # elif self.parameters["track_exp"] == "mlflow":
-        #     run._mlflow.end_run()
 
         self._test_loader(
             train_loader,
@@ -2392,62 +2346,3 @@ class MapsManager:
                 map_dir / f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt"
             )
         return map_pt
-
-    def log_metrics(
-        self,
-        tracker,
-        track_exp: bool = False,
-        network_task: str = "classification",
-        metrics_train: list = [],
-        metrics_valid: list = [],
-    ):
-        metrics_dict = {}
-        if network_task == "classification":
-
-            metrics_dict = {
-                "loss_train": metrics_train["loss"],
-                "accuracy_train": metrics_train["accuracy"],
-                "sensitivity_train": metrics_train["sensitivity"],
-                "accuracy_train": metrics_train["accuracy"],
-                "specificity_train": metrics_train["specificity"],
-                "PPV_train": metrics_train["PPV"],
-                "NPV_train": metrics_train["NPV"],
-                "BA_train": metrics_train["BA"],
-                "loss_valid": metrics_valid["loss"],
-                "accuracy_valid": metrics_valid["accuracy"],
-                "sensitivity_valid": metrics_valid["sensitivity"],
-                "accuracy_valid": metrics_valid["accuracy"],
-                "specificity_valid": metrics_valid["specificity"],
-                "PPV_valid": metrics_valid["PPV"],
-                "NPV_valid": metrics_valid["NPV"],
-                "BA_valid": metrics_valid["BA"],
-            }
-        elif network_task == "reconstruction":
-            metrics_dict = {
-                "loss_train": metrics_train["loss"],
-                "MSE_train": metrics_train["MSE"],
-                "MAE_train": metrics_train["MAE"],
-                "PSNR_train": metrics_train["PSNR"],
-                "SSIM_train": metrics_train["SSIM"],
-                "loss_valid": metrics_valid["loss"],
-                "MSE_valid": metrics_valid["MSE"],
-                "MAE_valid": metrics_valid["MAE"],
-                "PSNR_valid": metrics_valid["PSNR"],
-                "SSIM_valid": metrics_valid["SSIM"],
-            }
-        elif network_task == "regression":
-            metrics_dict = {
-                "loss_train": metrics_train["loss"],
-                "MSE_train": metrics_train["MSE"],
-                "MAE_train": metrics_train["MAE"],
-                "loss_valid": metrics_valid["loss"],
-                "MSE_valid": metrics_valid["MSE"],
-                "MAE_valid": metrics_valid["MAE"],
-            }
-
-        if track_exp == "wandb":
-            tracker.log(metrics_dict)
-            return 0
-        elif track_exp == "mlflow":
-            tracker.log_metrics(metrics_dict)
-            return metrics_dict

@@ -3,8 +3,8 @@ https://github.com/huggingface/transformers/blob/master/src/transformers/trainer
 
 import importlib
 import logging
-import os
-import sys
+from copy import copy
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,71 @@ def mlflow_is_available():
     return importlib.util.find_spec("mlflow") is not None
 
 
-class WandB_class:
+class Tracker:
     def __init__(self):
+        pass
+
+    def log_metrics(
+        self,
+        tracker,
+        track_exp: bool = False,
+        network_task: str = "classification",
+        metrics_train: list = [],
+        metrics_valid: list = [],
+    ):
+        metrics_dict = {}
+        if network_task == "classification":
+            metrics_dict = {
+                "loss_train": metrics_train["loss"],
+                "accuracy_train": metrics_train["accuracy"],
+                "sensitivity_train": metrics_train["sensitivity"],
+                "accuracy_train": metrics_train["accuracy"],
+                "specificity_train": metrics_train["specificity"],
+                "PPV_train": metrics_train["PPV"],
+                "NPV_train": metrics_train["NPV"],
+                "BA_train": metrics_train["BA"],
+                "loss_valid": metrics_valid["loss"],
+                "accuracy_valid": metrics_valid["accuracy"],
+                "sensitivity_valid": metrics_valid["sensitivity"],
+                "accuracy_valid": metrics_valid["accuracy"],
+                "specificity_valid": metrics_valid["specificity"],
+                "PPV_valid": metrics_valid["PPV"],
+                "NPV_valid": metrics_valid["NPV"],
+                "BA_valid": metrics_valid["BA"],
+            }
+        elif network_task == "reconstruction":
+            metrics_dict = {
+                "loss_train": metrics_train["loss"],
+                "MSE_train": metrics_train["MSE"],
+                "MAE_train": metrics_train["MAE"],
+                "PSNR_train": metrics_train["PSNR"],
+                "SSIM_train": metrics_train["SSIM"],
+                "loss_valid": metrics_valid["loss"],
+                "MSE_valid": metrics_valid["MSE"],
+                "MAE_valid": metrics_valid["MAE"],
+                "PSNR_valid": metrics_valid["PSNR"],
+                "SSIM_valid": metrics_valid["SSIM"],
+            }
+        elif network_task == "regression":
+            metrics_dict = {
+                "loss_train": metrics_train["loss"],
+                "MSE_train": metrics_train["MSE"],
+                "MAE_train": metrics_train["MAE"],
+                "loss_valid": metrics_valid["loss"],
+                "MSE_valid": metrics_valid["MSE"],
+                "MAE_valid": metrics_valid["MAE"],
+            }
+
+        if track_exp == "wandb":
+            tracker.log(metrics_dict)
+            return metrics_dict
+        elif track_exp == "mlflow":
+            tracker.log_metrics(metrics_dict)
+            return metrics_dict
+
+
+class WandB_class(Tracker):
+    def __init__(self, split: str, config: dict, maps_name: str):
         if not wandb_is_available():
             raise ModuleNotFoundError(
                 "`wandb` package must be installed. Run `pip install wandb`"
@@ -28,9 +91,20 @@ class WandB_class:
 
             self._wandb = wandb
 
+        self._wandb.init(
+            project="ClinicaDL",
+            entity="clinicadl",
+            config=config,
+            save_code=True,
+            group=maps_name,
+            mode="online",
+            name=f"split-{split}",
+            reinit=True,
+        )
 
-class Mlflow_class:
-    def __init__(self):
+
+class Mlflow_class(Tracker):
+    def __init__(self, split: str, config: dict, maps_name: str):
         if not mlflow_is_available():
             raise ModuleNotFoundError(
                 "`mlflow` package must be installed. Run `pip install mlflow`"
@@ -40,203 +114,20 @@ class Mlflow_class:
 
             self._mlflow = mlflow
 
+        try:
+            experiment_id = self._mlflow.create_experiment(
+                f"clinicadl-{maps_name}",
+                artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
+            )
 
-#     def setup(
-#         self,
-#         training_config: BaseTrainerConfig,
-#         model_config: BaseAEConfig = None,
-#         project_name: str = "ClinicaDL",
-#         entity_name: str = None,
-#         **kwargs,
-#     ):
-#         """
-#         Setup the WandbCallback.
+        except mlflow.exceptions.MlflowException:
+            self._mlflow.set_experiment(self.experiment_name)
 
-#         args:
-#             training_config (BaseTrainerConfig): The training configuration used in the run.
-
-#             model_config (BaseAEConfig): The model configuration used in the run.
-
-#             project_name (str): The name of the wandb project to use.
-
-#             entity_name (str): The name of the wandb entity to use.
-#         """
-
-#         self.is_initialized = True
-
-#         training_config_dict = training_config.to_dict()
-
-#         self.run = self._wandb.init(project=project_name, entity=entity_name)
-
-#         if model_config is not None:
-#             model_config_dict = model_config.to_dict()
-
-#             self._wandb.config.update(
-#                 {
-#                     "training_config": training_config_dict,
-#                     "model_config": model_config_dict,
-#                 }
-#             )
-
-#         else:
-#             self._wandb.config.update({**training_config_dict})
-
-#         self._wandb.define_metric("train/global_step")
-#         self._wandb.define_metric("*", step_metric="train/global_step", step_sync=True)
-
-#     def on_train_begin(self, training_config: BaseTrainerConfig, **kwargs):
-#         model_config = kwargs.pop("model_config", None)
-#         if not self.is_initialized:
-#             self.setup(training_config, model_config=model_config)
-
-#     def on_log(self, training_config: BaseTrainerConfig, logs, **kwargs):
-#         global_step = kwargs.pop("global_step", None)
-#         logs = rename_logs(logs)
-
-#         self._wandb.log({**logs, "train/global_step": global_step})
-
-#     def on_prediction_step(self, training_config: BaseTrainerConfig, **kwargs):
-#         kwargs.pop("global_step", None)
-
-#         column_names = ["images_id", "truth", "reconstruction", "normal_generation"]
-
-#         true_data = kwargs.pop("true_data", None)
-#         reconstructions = kwargs.pop("reconstructions", None)
-#         generations = kwargs.pop("generations", None)
-
-#         data_to_log = []
-
-#         if (
-#             true_data is not None
-#             and reconstructions is not None
-#             and generations is not None
-#         ):
-#             for i in range(len(true_data)):
-
-#                 data_to_log.append(
-#                     [
-#                         f"img_{i}",
-#                         self._wandb.Image(
-#                             np.moveaxis(true_data[i].cpu().detach().numpy(), 0, -1)
-#                         ),
-#                         self._wandb.Image(
-#                             np.clip(
-#                                 np.moveaxis(
-#                                     reconstructions[i].cpu().detach().numpy(), 0, -1
-#                                 ),
-#                                 0,
-#                                 255.0,
-#                             )
-#                         ),
-#                         self._wandb.Image(
-#                             np.clip(
-#                                 np.moveaxis(
-#                                     generations[i].cpu().detach().numpy(), 0, -1
-#                                 ),
-#                                 0,
-#                                 255.0,
-#                             )
-#                         ),
-#                     ]
-#                 )
-
-#             val_table = self._wandb.Table(data=data_to_log, columns=column_names)
-
-#             self._wandb.log({"my_val_table": val_table})
-
-#     def on_train_end(self, training_config: BaseTrainerConfig, **kwargs):
-#         self.run.finish()
-
-
-# class MLFlowCallback(TrainingCallback):  # pragma: no cover
-#     """
-#     A :class:`TrainingCallback` integrating the experiment tracking tool
-#     `mlflow` (https://mlflow.org/).
-
-#     It allows users to store their configs, monitor their trainings
-#     and compare runs through a graphic interface. To be able use this feature you will need:
-
-#         - the package `mlfow` installed in your virtual env. If not you can install it with
-
-#         .. code-block::
-
-#             $ pip install mlflow
-#     """
-
-#     def __init__(self):
-#         if not mlflow_is_available():
-#             raise ModuleNotFoundError(
-#                 "`mlflow` package must be installed. Run `pip install mlflow`"
-#             )
-
-#         else:
-#             import mlflow
-
-#             self._mlflow = mlflow
-
-#     def setup(
-#         self,
-#         training_config: BaseTrainerConfig,
-#         model_config: BaseAEConfig = None,
-#         run_name: str = None,
-#         **kwargs,
-#     ):
-#         """
-#         Setup the MLflowCallback.
-
-#         args:
-#             training_config (BaseTrainerConfig): The training configuration used in the run.
-
-#             model_config (BaseAEConfig): The model configuration used in the run.
-
-#             run_name (str): The name to apply to the current run.
-#         """
-#         self.is_initialized = True
-
-#         training_config_dict = training_config.to_dict()
-
-#         self._mlflow.start_run(run_name=run_name)
-
-#         logger.info(
-#             f"MLflow run started with run_id={self._mlflow.active_run().info.run_id}"
-#         )
-#         if model_config is not None:
-#             model_config_dict = model_config.to_dict()
-
-#             self._mlflow.log_params(
-#                 {
-#                     **training_config_dict,
-#                     **model_config_dict,
-#                 }
-#             )
-
-#         else:
-#             self._mlflow.log_params({**training_config_dict})
-
-#     def on_train_begin(self, training_config, **kwargs):
-#         model_config = kwargs.pop("model_config", None)
-#         if not self.is_initialized:
-#             self.setup(training_config, model_config=model_config)
-
-#     def on_log(self, training_config: BaseTrainerConfig, logs, **kwargs):
-#         global_step = kwargs.pop("global_step", None)
-
-#         logs = rename_logs(logs)
-#         metrics = {}
-#         for k, v in logs.items():
-#             if isinstance(v, (int, float)):
-#                 metrics[k] = v
-
-#         self._mlflow.log_metrics(metrics=metrics, step=global_step)
-
-#     def on_train_end(self, training_config: BaseTrainerConfig, **kwargs):
-#         self._mlflow.end_run()
-
-#     def __del__(self):
-#         # if the previous run is not terminated correctly, the fluent API will
-#         # not let you start a new run before the previous one is killed
-#         if (
-#             callable(getattr(self._mlflow, "active_run", None))
-#             and self._mlflow.active_run() is not None
-#         ):
-#             self._mlflow.end_run()
+        self._mlflow.start_run(experiment_id=experiment_id, run_name=f"split-{split}")
+        self._mlflow.autolog()
+        config_bis = copy(config)
+        for cle, valeur in config.items():
+            if cle == "preprocessing_dict":
+                del config_bis[cle]
+        config = config_bis
+        self._mlflow.log_params(config)
