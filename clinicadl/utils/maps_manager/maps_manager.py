@@ -876,10 +876,7 @@ class MapsManager:
             config = config_bis
             experiment_id = f"clinicadl-{str(self.maps_path)}"
             run = Mlflow_class()
-            experiment_id = run._mlflow.create_experiment(
-                f"clinicadl-{str(self.maps_path)}",
-                artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
-            )
+            experiment_id = run._mlflow.create_experiment(f"clinicadl-{str(self.maps_path)}",artifact_location=Path.cwd().joinpath("mlruns").as_uri(), tags={"version": "v1", "priority": "P1"})
             run._mlflow.autolog()
             run._mlflow.log_params(config)
 
@@ -1027,11 +1024,13 @@ class MapsManager:
             )
 
             epoch += 1
+            if self.parameters["track_exp"] == "mlflow":
+                run._mlflow.end_run()
 
         if self.parameters["track_exp"] == "wandb":
             run._wandb.finish()
-        elif self.parameters["track_exp"] == "mlflow":
-            run._mlflow.end_run()
+        # elif self.parameters["track_exp"] == "mlflow":
+        #     run._mlflow.end_run()
 
         self._test_loader(
             train_loader,
