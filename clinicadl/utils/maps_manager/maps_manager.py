@@ -863,13 +863,24 @@ class MapsManager:
             )
 
         if self.parameters["track_exp"] == "mlflow":
+            from copy import copy
+
             from clinicadl.utils.tracking_exp import Mlflow_class
 
             config = self.parameters
+            config_bis = copy(config)
+            print(config)
+            for cle, valeur in config.items():
+                if cle == "preprocessing_dict":
+                    del config_bis[cle]
+            config = config_bis
+            experiment_id = f"clinicadl-{str(self.maps_path)}"
             run = Mlflow_class()
-            run._mlflow.set_experiment("clinicadl")
-            run._mlflow.sklearn.autolog()
-            run._mlflow.start_run(run_name=str(self.maps_path))
+            experiment_id = run._mlflow.create_experiment(
+                f"clinicadl-{str(self.maps_path)}",
+                artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
+            )
+            run._mlflow.autolog()
             run._mlflow.log_params(config)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
@@ -965,11 +976,33 @@ class MapsManager:
                 f"{self.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
-            if self.track_exp == "wandb" : 
-                self.log_metrics(run._wandb, self.track_exp, self.network_task, metrics_train, metrics_valid)
-            elif self.track_exp == "mlflow":
-                self.log_metrics(run._mlflow,self.track_exp,  self.network_task, metrics_train, metrics_valid)
-            
+            if self.track_exp == "wandb":
+                self.log_metrics(
+                    run._wandb,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
+
+            if self.track_exp == "mlflow":
+                self.log_metrics(
+                    run._mlflow,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
+            print(metrics_train)
+            print(metrics_train)
+            print(f"epoch-{epoch}")
+            print(f"split-{split}")
+            # elif self.track_exp == "mlflow":
+            #     with run._mlflow.start_run(
+            #         run_name=f"split-{split}",
+            #         experiment_id=experiment_id):
+            #         self.log_metrics(run._mlflow,self.track_exp,  self.network_task, metrics_train, metrics_valid)
+
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
@@ -2350,54 +2383,61 @@ class MapsManager:
             )
         return map_pt
 
-
-    def log_metrics(self, tracker, track_exp: bool = False, network_task: str = "classification", metrics_train : list = [], metrics_valid : list = []):
-        metrics_dict={}
+    def log_metrics(
+        self,
+        tracker,
+        track_exp: bool = False,
+        network_task: str = "classification",
+        metrics_train: list = [],
+        metrics_valid: list = [],
+    ):
+        metrics_dict = {}
         if network_task == "classification":
 
             metrics_dict = {
-                    "loss_train": metrics_train["loss"],
-                    "accuracy_train": metrics_train["accuracy"],
-                    "sensitivity_train": metrics_train["sensitivity"],
-                    "accuracy_train": metrics_train["accuracy"],
-                    "specificity_train": metrics_train["specificity"],
-                    "PPV_train": metrics_train["PPV"],
-                    "NPV_train": metrics_train["NPV"],
-                    "BA_train": metrics_train["BA"],
-                    "loss_valid": metrics_valid["loss"],
-                    "accuracy_valid": metrics_valid["accuracy"],
-                    "sensitivity_valid": metrics_valid["sensitivity"],
-                    "accuracy_valid": metrics_valid["accuracy"],
-                    "specificity_valid": metrics_valid["specificity"],
-                    "PPV_valid": metrics_valid["PPV"],
-                    "NPV_valid": metrics_valid["NPV"],
-                    "BA_valid": metrics_valid["BA"],
-                }
+                "loss_train": metrics_train["loss"],
+                "accuracy_train": metrics_train["accuracy"],
+                "sensitivity_train": metrics_train["sensitivity"],
+                "accuracy_train": metrics_train["accuracy"],
+                "specificity_train": metrics_train["specificity"],
+                "PPV_train": metrics_train["PPV"],
+                "NPV_train": metrics_train["NPV"],
+                "BA_train": metrics_train["BA"],
+                "loss_valid": metrics_valid["loss"],
+                "accuracy_valid": metrics_valid["accuracy"],
+                "sensitivity_valid": metrics_valid["sensitivity"],
+                "accuracy_valid": metrics_valid["accuracy"],
+                "specificity_valid": metrics_valid["specificity"],
+                "PPV_valid": metrics_valid["PPV"],
+                "NPV_valid": metrics_valid["NPV"],
+                "BA_valid": metrics_valid["BA"],
+            }
         elif network_task == "reconstruction":
             metrics_dict = {
-                    "loss_train": metrics_train["loss"],
-                    "MSE_train": metrics_train["MSE"],
-                    "MAE_train": metrics_train["MAE"],
-                    "PSNR_train": metrics_train["PSNR"],
-                    "SSIM_train": metrics_train["SSIM"],
-                    "loss_valid": metrics_valid["loss"],
-                    "MSE_valid": metrics_valid["MSE"],
-                    "MAE_valid": metrics_valid["MAE"],
-                    "PSNR_valid": metrics_valid["PSNR"],
-                    "SSIM_valid": metrics_valid["SSIM"],
-                }
+                "loss_train": metrics_train["loss"],
+                "MSE_train": metrics_train["MSE"],
+                "MAE_train": metrics_train["MAE"],
+                "PSNR_train": metrics_train["PSNR"],
+                "SSIM_train": metrics_train["SSIM"],
+                "loss_valid": metrics_valid["loss"],
+                "MSE_valid": metrics_valid["MSE"],
+                "MAE_valid": metrics_valid["MAE"],
+                "PSNR_valid": metrics_valid["PSNR"],
+                "SSIM_valid": metrics_valid["SSIM"],
+            }
         elif network_task == "regression":
             metrics_dict = {
-                    "loss_train": metrics_train["loss"],
-                    "MSE_train": metrics_train["MSE"],
-                    "MAE_train": metrics_train["MAE"],
-                    "loss_valid": metrics_valid["loss"],
-                    "MSE_valid": metrics_valid["MSE"],
-                    "MAE_valid": metrics_valid["MAE"],
-                }
+                "loss_train": metrics_train["loss"],
+                "MSE_train": metrics_train["MSE"],
+                "MAE_train": metrics_train["MAE"],
+                "loss_valid": metrics_valid["loss"],
+                "MSE_valid": metrics_valid["MSE"],
+                "MAE_valid": metrics_valid["MAE"],
+            }
 
-        if track_exp == "wandb" : 
+        if track_exp == "wandb":
             tracker.log(metrics_dict)
-        elif track_exp == "mlflow" : 
+            return 0
+        elif track_exp == "mlflow":
             tracker.log_metrics(metrics_dict)
-        
+            return metrics_dict
