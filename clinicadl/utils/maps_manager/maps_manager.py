@@ -866,6 +866,7 @@ class MapsManager:
             from copy import copy
 
             from clinicadl.utils.tracking_exp import Mlflow_class
+            from mlflow import MlflowException
 
             config = self.parameters
             config_bis = copy(config)
@@ -875,12 +876,15 @@ class MapsManager:
                     del config_bis[cle]
             config = config_bis
             run = Mlflow_class()
-            experiment_id = run._mlflow.create_experiment(
-                f"clinicadl-{str(self.maps_path.name)}",
-                artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
-            )
+            try:
+                experiment_id = run._mlflow.create_experiment(
+                    f"clinicadl-{str(self.maps_path.name)}",
+                    artifact_location=Path.cwd().joinpath("mlruns").as_uri(),
+                )
+                
+            except MlflowException:
+                set_experiment(self.experiment_name)
 
-            print("FIRST RUN ")
             run._mlflow.start_run(
                 experiment_id=experiment_id, run_name=f"split-{split}"
             )
