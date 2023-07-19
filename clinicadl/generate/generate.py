@@ -786,7 +786,7 @@ def generate_contrast_dataset(
     uncropped_image: bool = False,
     tracer: str = "fdg",
     suvr_reference_region: str = "pons",
-    range: Tuple = (-0.2, -0.05),
+    gamma: List = [-0.2, -0.05],
 ):
     """
     Generates a fully separable dataset.
@@ -848,18 +848,18 @@ def generate_contrast_dataset(
         contrast_image_nii_dir = (
             output_dir
             / "subjects"
-            / f"{participant_id}-RM{data_idx}"
+            / f"{participant_id}-RC{data_idx}"
             / session_id
             / preprocessing
         )
         contrast_image_nii_filename = (
-            f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
+            f"{participant_id}-RC{data_idx}_{session_id}_{filename_pattern}"
         )
 
         contrast_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         contrast = tio.RandomGamma(
-            log_gamma=(range)
+            log_gamma=(gamma[0], gamma[1])
         )
 
         contrast_image = contrast(tio.ScalarImage(image_path))
@@ -871,7 +871,7 @@ def generate_contrast_dataset(
         output_df = pd.concat([output_df, row_df])
 
         return output_df
-
+    
     results_df = Parallel(n_jobs=n_proc)(
         delayed(create_contrast_image)(data_idx, output_df)
         for data_idx in range(len(data_df))
