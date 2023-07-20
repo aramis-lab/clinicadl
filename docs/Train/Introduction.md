@@ -102,6 +102,9 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     - `--transfer_path` (Path) is the path to the model used for transfer learning.
     - `--transfer_selection_metric` (str) is the transfer learning selection metric.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
+- **Track an experiment**
+    - `--track_exp` (str) is the name of the experiment tracker you want to use. Must be chosen between `wandb` (Weight & Biases) and `mlflow`. As mlflow and W&B are not ClinicaDL dependencies, you must install the one chosen on your own (by running `pip install wandb/mlflow`).
+    For more information, check out the documentation of [W&B](https://docs.wandb.ai) or [Mlflow](https://mlflow.org/docs/latest/index.html)
 
 <!---
 !!! tip
