@@ -195,28 +195,16 @@ class TaskManager:
         total_loss = {}
         with torch.no_grad():
             for i, data in enumerate(dataloader):
+                # initialize the loss list to save the loss components
                 with autocast(enabled=amp):
                     outputs, loss_dict = model.compute_outputs_and_loss(
                         data, criterion, use_labels=use_labels
                     )
-                total_loss += loss_dict["loss"].float().item()
-
-
-                # initialize the loss list to save the loss components
                 if i == 0:
-                    outputs, loss_dict = model.compute_outputs_and_loss(
-                        data, criterion, use_labels=use_labels
-                    )
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
-                    for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].item()
-                else:
-                    outputs, loss_dict = model.compute_outputs_and_loss(
-                        data, criterion, use_labels=use_labels
-                    )
-                    for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].item()
+                for loss_component in total_loss.keys():
+                    total_loss[loss_component] += loss_dict[loss_component].float().item()
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
