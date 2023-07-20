@@ -189,6 +189,7 @@ class MapsManager:
         diagnoses: List[str] = (),
         use_labels: bool = True,
         batch_size: int = None,
+        amp: bool = False,
         n_proc: int = None,
         gpu: bool = None,
         overwrite: bool = False,
@@ -305,6 +306,7 @@ class MapsManager:
                         split_selection_metrics,
                         use_labels=use_labels,
                         gpu=gpu,
+                        amp=amp,
                         network=network,
                     )
                     if save_tensor:
@@ -365,6 +367,7 @@ class MapsManager:
                     split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
+                    amp=amp,
                 )
                 if save_tensor:
                     logger.debug("Saving tensors")
@@ -979,6 +982,7 @@ class MapsManager:
             "train",
             split,
             self.selection_metrics,
+            amp=self.amp,
             network=network,
         )
         self._test_loader(
@@ -987,6 +991,7 @@ class MapsManager:
             "validation",
             split,
             self.selection_metrics,
+            amp=self.amp,
             network=network,
         )
 
@@ -1017,6 +1022,7 @@ class MapsManager:
         selection_metrics,
         use_labels=True,
         gpu=None,
+        amp=False,
         network=None,
     ):
         """
@@ -1055,7 +1061,7 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=self.amp
+                model, dataloader, criterion, use_labels=use_labels, amp=amp
             )
             if use_labels:
                 if network is not None:
