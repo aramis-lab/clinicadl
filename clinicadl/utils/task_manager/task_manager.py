@@ -204,7 +204,9 @@ class TaskManager:
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
                 for loss_component in total_loss.keys():
-                    total_loss[loss_component] += loss_dict[loss_component].float().item()
+                    total_loss[loss_component] += (
+                        loss_dict[loss_component].float().item()
+                    )
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
