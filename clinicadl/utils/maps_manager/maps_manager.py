@@ -189,9 +189,9 @@ class MapsManager:
         diagnoses: List[str] = (),
         use_labels: bool = True,
         batch_size: int = None,
-        amp: bool = False,
         n_proc: int = None,
         gpu: bool = None,
+        amp: bool = False,
         overwrite: bool = False,
         label: str = None,
         label_code: Optional[Dict[str, int]] = "default",
@@ -219,6 +219,7 @@ class MapsManager:
             batch_size: If given, sets the value of batch_size, else use the same as in training step.
             n_proc: If given, sets the value of num_workers, else use the same as in training step.
             gpu: If given, a new value for the device of the model will be computed.
+            amp: If enabled, uses Automatic Mixed Precision (requires GPU usage).
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
@@ -413,6 +414,7 @@ class MapsManager:
         batch_size=None,
         n_proc=None,
         gpu=None,
+        amp=False,
         overwrite=False,
         overwrite_name=False,
         level=None,
@@ -457,6 +459,8 @@ class MapsManager:
             If given, sets the value of num_workers, else use the same as in training step.
         gpu: bool
             If given, a new value for the device of the model will be computed.
+        amp: bool
+            If enabled, uses Automatic Mixed Precision (requires GPU usage).
         overwrite: bool
             If True erase the occurrences of data_group.
         overwrite_name: bool
@@ -562,7 +566,7 @@ class MapsManager:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(
-                        images, target_node, level=level, amp=self.amp
+                        images, target_node, level=level, amp=amp
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
@@ -1036,6 +1040,7 @@ class MapsManager:
             selection_metrics (list[str]): List of metrics used to select the best models which are tested.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             gpu (bool): If given, a new value for the device of the model will be computed.
+            amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
