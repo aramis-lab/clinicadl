@@ -858,9 +858,7 @@ def generate_contrast_dataset(
 
         contrast_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        contrast = tio.RandomGamma(
-            log_gamma=(gamma[0], gamma[1])
-        )
+        contrast = tio.RandomGamma(log_gamma=(gamma[0], gamma[1]))
 
         contrast_image = contrast(tio.ScalarImage(image_path))
         contrast_image.save(contrast_image_nii_dir / contrast_image_nii_filename)
@@ -871,7 +869,7 @@ def generate_contrast_dataset(
         output_df = pd.concat([output_df, row_df])
 
         return output_df
-    
+
     results_df = Parallel(n_jobs=n_proc)(
         delayed(create_contrast_image)(data_idx, output_df)
         for data_idx in range(len(data_df))
