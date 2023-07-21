@@ -705,7 +705,6 @@ def generate_motion_dataset(
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
-    data_df = extract_baseline(data_df)
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
@@ -820,7 +819,6 @@ def generate_contrast_dataset(
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
-    data_df = extract_baseline(data_df)
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
