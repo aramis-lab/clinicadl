@@ -44,24 +44,11 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
-ddp = cli_param.option_group.computational_group.option(
-    "--ddp/--no-ddp",
-    type=bool,
-    default=None,
-    help="Enables distributed data parallelism with Pytorch's API.",
-)
 zero = cli_param.option_group.computational_group.option(
     "--zero/--no-zero",
     type=bool,
     default=None,
     help="Enables Zero Redundancy Optimizer with Pytorch to save memory at the cost of communications.",
-)
-resolver = cli_param.option_group.computational_group.option(
-    "--resolver",
-    "--cluster-resolver",
-    type=str,
-    default=None,
-    help="Name of the cluster resolver to use Distributed Data Parallelism.",
 )
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(

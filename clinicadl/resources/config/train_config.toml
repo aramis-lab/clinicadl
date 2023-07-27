@@ -39,9 +39,7 @@ gpu = true
 n_proc = 2
 batch_size = 8
 evaluation_steps = 0
-ddp = false
 zero = false
-resolver = "slurm"
 
 [Reproducibility]
 seed = 0
