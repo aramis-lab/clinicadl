@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 
@@ -34,7 +33,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     change_str_to_path,
     read_json,
 )
-from clinicadl.utils.maps_manager.ddp import get_ddp_manager
+from clinicadl.utils.maps_manager.ddp import init_ddp, DDP, cluster
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
@@ -44,20 +43,6 @@ logger = getLogger("clinicadl.maps_manager")
 
 level_list: List[str] = ["warning", "info", "debug"]
 # TODO save weights on CPU for better compatibility
-
-
-class DDP(DistributedDataParallel):
-    def _forward(self, *args, **kwargs):
-        return self.module._forward(*args, **kwargs)
-
-    def predict(self, *args, **kwargs):
-        return self.module.predict(*args, **kwargs)
-
-    def transfer_weights(self, *args, **kwargs):
-        return self.module.transfer_weights(*args, **kwargs)
-
-    def state_dict(self):
-        return self.module.state_dict()
 
 
 class MapsManager:
@@ -93,12 +78,7 @@ class MapsManager:
                 )
             test_parameters = self.get_parameters()
             self.parameters = change_str_to_path(test_parameters)
-            self.ddp = get_ddp_manager(
-                ddp=self.parameters["ddp"],
-                resolver=self.parameters["resolver"],
-                gpu=self.parameters["gpu"],
-                logger=logger,
-            )
+            init_ddp(gpu=self.parameters["gpu"], logger=logger)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -107,16 +87,11 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            self.ddp = get_ddp_manager(
-                ddp=parameters["ddp"],
-                resolver=parameters["resolver"],
-                gpu=parameters["gpu"],
-                logger=logger,
-            )
+            init_ddp(gpu=self.parameters["gpu"], logger=logger)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             self.split_name = "split"  # Used only for retro-compatibility
-            if self.ddp.master:
+            if cluster.master:
                 if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
                     maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
                 ):
@@ -163,7 +138,7 @@ class MapsManager:
             split_path = self.maps_path / f"{self.split_name}-{split}"
             if split_path.is_dir():
                 if overwrite:
-                    if self.ddp.master:
+                    if cluster.master:
                         shutil.rmtree(split_path)
                 else:
                     existing_splits.append(split)
@@ -680,8 +655,8 @@ class MapsManager:
             train_sampler = self.task_manager.generate_sampler(
                 data_train,
                 self.sampler,
-                world_size=self.ddp.world_size,
-                rank=self.ddp.rank,
+                world_size=cluster.world_size,
+                rank=cluster.rank,
             )
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
@@ -696,8 +671,8 @@ class MapsManager:
             logger.debug(f"Train loader size is {len(train_loader)}")
             valid_sampler = DistributedSampler(
                 data_valid,
-                num_replicas=self.ddp.world_size,
-                rank=self.ddp.rank,
+                num_replicas=cluster.world_size,
+                rank=cluster.rank,
                 shuffle=False,
             )
             valid_loader = DataLoader(
@@ -727,7 +702,7 @@ class MapsManager:
                 self.selection_metrics,
             )
 
-            if self.ddp.master:
+            if cluster.master:
                 self._erase_tmp(split)
 
     def _train_multi(self, split_list: List[int] = None, resume: bool = False):
@@ -862,7 +837,7 @@ class MapsManager:
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
         )
-        model = DDP(model, device_ids=[self.ddp.local_rank])
+        model = DDP(model, device_ids=[cluster.local_rank])
 
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -877,7 +852,7 @@ class MapsManager:
         )
         metrics_valid = {"loss": None}
 
-        if self.ddp.master:
+        if cluster.master:
             log_writer = LogWriter(
                 self.maps_path,
                 self.task_manager.evaluation_metrics + ["loss"],
@@ -931,7 +906,7 @@ class MapsManager:
                             model.train()
                             train_loader.dataset.train()
 
-                            if self.ddp.master:
+                            if cluster.master:
                                 log_writer.step(
                                     epoch,
                                     i,
@@ -983,7 +958,7 @@ class MapsManager:
                 model.train()
                 train_loader.dataset.train()
 
-                if self.ddp.master:
+                if cluster.master:
                     log_writer.step(
                         epoch, i, metrics_train, metrics_valid, len(train_loader)
                     )
@@ -996,7 +971,7 @@ class MapsManager:
                     f"at the end of iteration {i}"
                 )
 
-                if self.ddp.master:
+                if cluster.master:
                     # Save checkpoints and best models
                     best_dict = retain_best.step(metrics_valid)
                     self._write_weights(
@@ -1083,7 +1058,7 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-            if self.ddp.master:
+            if cluster.master:
                 log_dir = (
                     self.maps_path
                     / f"{self.split_name}-{split}"
@@ -1105,7 +1080,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[self.ddp.local_rank])
+            model = DDP(model, device_ids=[cluster.local_rank])
 
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
@@ -1117,7 +1092,7 @@ class MapsManager:
                     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
-            if self.ddp.master:
+            if cluster.master:
                 # Replace here
                 self._mode_level_to_tsv(
                     prediction_df,
@@ -1160,7 +1135,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[self.ddp.local_rank])
+            model = DDP(model, device_ids=[cluster.local_rank])
 
             nifti_path = (
                 self.maps_path
@@ -1169,12 +1144,12 @@ class MapsManager:
                 / data_group
                 / "nifti_images"
             )
-            if self.ddp.master:
+            if cluster.master:
                 nifti_path.mkdir(parents=True, exist_ok=True)
             dist.barrier()
 
             nb_imgs = len(dataset)
-            for i in range(self.ddp.rank, nb_imgs, self.ddp.world_size):
+            for i in range(cluster.rank, nb_imgs, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 output = (
@@ -1225,7 +1200,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[self.ddp.local_rank])
+            model = DDP(model, device_ids=[cluster.local_rank])
 
             tensor_path = (
                 self.maps_path
@@ -1234,7 +1209,7 @@ class MapsManager:
                 / data_group
                 / "tensors"
             )
-            if self.ddp.master:
+            if cluster.master:
                 tensor_path.mkdir(parents=True, exist_ok=True)
             dist.barrier()
 
@@ -1243,7 +1218,7 @@ class MapsManager:
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(self.ddp.rank, nb_modes, self.ddp.world_size):
+            for i in range(cluster.rank, nb_modes, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 output = (
