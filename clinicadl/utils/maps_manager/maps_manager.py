@@ -115,22 +115,6 @@ class MapsManager:
             )
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
-            if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
-            ):
-                raise MAPSError(
-                    f"You are trying to create a new MAPS at {maps_path} but "
-                    f"this already corresponds to a file or a non-empty folder. \n"
-                    f"Please remove it or choose another location."
-                )
-            (maps_path / "groups").mkdir(parents=True)
-
-            logger.info(f"A new MAPS was created at {maps_path}")
-
-            self.write_parameters(self.maps_path, self.parameters)
-
-            self._write_requirements_version()
-
             self.split_name = "split"  # Used only for retro-compatibility
             if self.ddp.master:
                 if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -903,7 +887,7 @@ class MapsManager:
                 network=network,
             )
             retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
-        epoch = log_writer.beginning_epoch
+        epoch = beginning_epoch
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
@@ -918,8 +902,7 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    # _, loss_dict = model(data, criterion)
-                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    _, loss_dict = model(data, criterion)
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
                     loss.backward()
@@ -2134,7 +2117,7 @@ class MapsManager:
             filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
             # When ClinicaDL will be updated with Distributed Data Parallelism,
             # the next line will be handy, to make sure all processes write in the same file
-            # dist.broadcast_object_list(filename, src=0)
+            dist.broadcast_object_list(filename, src=0)
             profiler = profile(
                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
                 schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
