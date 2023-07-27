@@ -705,6 +705,7 @@ def generate_motion_dataset(
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
+    data_df = extract_baseline(data_df)
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
@@ -729,15 +730,17 @@ def generate_motion_dataset(
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
+        subject_id = participant_id.split("-")[1]
+
         motion_image_nii_dir = (
             output_dir
             / "subjects"
-            / f"{participant_id}-RM{data_idx}"
+            / f"sub-MOTION{subject_id}"
             / session_id
             / preprocessing
         )
         motion_image_nii_filename = (
-            f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
+            f"sub-MOTION{subject_id}_{session_id}_{filename_pattern}"
         )
 
         motion_image_nii_dir.mkdir(parents=True, exist_ok=True)
@@ -752,7 +755,7 @@ def generate_motion_dataset(
         motion_image.save(motion_image_nii_dir / motion_image_nii_filename)
 
         # Append row to output tsv
-        row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
+        row = [f"sub-MOTION{subject_id}", session_id, "motion"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
@@ -835,6 +838,7 @@ def generate_contrast_dataset(
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
+
         image_path = Path(
             clinica_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
@@ -843,15 +847,17 @@ def generate_contrast_dataset(
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
+        subject_id = participant_id.split("-")[1]
+
         contrast_image_nii_dir = (
             output_dir
             / "subjects"
-            / f"{participant_id}-RC{data_idx}"
+            / f"sub-CONT{subject_id}"
             / session_id
             / preprocessing
         )
         contrast_image_nii_filename = (
-            f"{participant_id}-RC{data_idx}_{session_id}_{filename_pattern}"
+            f"sub-CONT{subject_id}_{session_id}_{filename_pattern}"
         )
 
         contrast_image_nii_dir.mkdir(parents=True, exist_ok=True)
@@ -862,7 +868,7 @@ def generate_contrast_dataset(
         contrast_image.save(contrast_image_nii_dir / contrast_image_nii_filename)
 
         # Append row to output tsv
-        row = [f"{participant_id}_RC{data_idx}", session_id, "contrast"]
+        row = [f"sub-CONT{subject_id}", session_id, "contrast"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
