@@ -75,6 +75,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.split
 @cli_param.option.selection_metrics
 @cli_param.option.use_gpu
+@cli_param.option.amp
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 @cli_param.option.overwrite
@@ -85,6 +86,7 @@ def cli(
     participants_tsv,
     split,
     gpu,
+    amp,
     n_proc,
     batch_size,
     use_labels,
@@ -118,6 +120,7 @@ def cli(
         use_labels=use_labels,
         label=label,
         gpu=gpu,
+        amp=amp,
         n_proc=n_proc,
         batch_size=batch_size,
         split_list=split,

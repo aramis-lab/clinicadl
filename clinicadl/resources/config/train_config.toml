@@ -40,6 +40,7 @@ n_proc = 2
 batch_size = 8
 evaluation_steps = 0
 zero = false
+amp = false
 
 [Reproducibility]
 seed = 0

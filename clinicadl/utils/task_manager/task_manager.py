@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import torch.distributed as dist
 from torch import Tensor
+from torch.cuda.amp import autocast
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
 
@@ -177,6 +178,7 @@ class TaskManager:
         dataloader: DataLoader,
         criterion: _Loss,
         use_labels: bool = True,
+        amp: bool = False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -187,6 +189,7 @@ class TaskManager:
             criterion: function to calculate the loss.
             use_labels: If True the true_label will be written in output DataFrame
                 and metrics dict will be created.
+            amp: If True, enables Pytorch's automatic mixed precision.
         Returns:
             the results and metrics on the image level.
         """
@@ -197,19 +200,22 @@ class TaskManager:
         total_loss = {}
         with torch.no_grad():
             for i, data in enumerate(dataloader):
-                outputs, loss_dict = model.compute_outputs_and_loss(
-                    data, criterion, use_labels=use_labels
-                )
                 # initialize the loss list to save the loss components
+                with autocast(enabled=amp):
+                    outputs, loss_dict = model(
+                        data, criterion, use_labels=use_labels
+                    )
                 if i == 0:
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
                 for loss_component in total_loss.keys():
-                    total_loss[loss_component] += loss_dict[loss_component].item()
+                    total_loss[loss_component] += (
+                        loss_dict[loss_component].float().item()
+                    )
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
-                    row = self.generate_test_row(idx, data, outputs)
+                    row = self.generate_test_row(idx, data, outputs.float())
                     row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
 

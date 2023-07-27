@@ -73,6 +73,7 @@ from clinicadl.utils import cli_param
 )
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
+@cli_param.option.amp
 @cli_param.option.batch_size
 @cli_param.option.overwrite
 @click.option(
@@ -99,6 +100,7 @@ def cli(
     batch_size,
     n_proc,
     gpu,
+    amp,
     overwrite,
     overwrite_name,
     save_nifti,
@@ -135,6 +137,7 @@ def cli(
         batch_size=batch_size,
         n_proc=n_proc,
         gpu=gpu,
+        amp=amp,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
         level=level_grad_cam,
