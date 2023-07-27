@@ -990,8 +990,12 @@ class MapsManager:
                 model.zero_grad()
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = self.task_manager.test(model, train_loader, criterion)
-                _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
+                _, metrics_train = self.task_manager.test(
+                    model, train_loader, criterion
+                )
+                _, metrics_valid = self.task_manager.test(
+                    model, valid_loader, criterion
+                )
 
                 model.train()
                 train_loader.dataset.train()
@@ -1096,7 +1100,6 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-
             if self.ddp.master:
                 log_dir = (
                     self.maps_path
