@@ -26,7 +26,7 @@ which have the same arguments:
   hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
   containing the images corresponding to the `MODALITY` asked.
 - `MODALITY` (str) is the name of the preprocessing performed on the original images. It
-  can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
+  can be `t1-linear`, `flair-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
 Each sub-command has its own set of options. There are three generic options:
@@ -206,13 +206,19 @@ plane using three identical channels (`rgb`) or one channel (`single`).
   the cropped image (see the documentation of the [`t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/)). 
   You can deactivate this behaviour with the `--use_uncropped_image` flag.
 
+### `flair-linear`
+
+- `--use_uncropped_image`: by default the features are extracted from 
+  the cropped image (see the documentation of the [`flair-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/)). 
+  You can deactivate this behaviour with the `--use_uncropped_image` flag.
+
 ### `pet-linear`
 
 - `--use_uncropped_image`: by default the features are extracted from 
   the cropped image (see the documentation of the [`pet-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/)). 
   You can deactivate this behaviour with the `--use_uncropped_image` flag.
-- `--acq_label`: the label given to the PET acquisition, specifying the tracer used 
-  (`acq-<acq_label>`). It can be for instance 'fdg' for <sup>18</sup>F-fluorodeoxyglucose 
+- `--tracer`: the label given to the PET acquisition, specifying the tracer used 
+  (`<tracer>`). It can be for instance 'fdg' for <sup>18</sup>F-fluorodeoxyglucose 
   or 'av45' for <sup>18</sup>F-florbetapir.
 - `--suvr_reference_region`: the reference region used to perform intensity normalization 
   (i.e. dividing each voxel of the image by the average uptake in this region) resulting 

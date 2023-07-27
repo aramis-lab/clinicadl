@@ -17,7 +17,11 @@ class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(
-        self, img_dir, data_df, use_extracted_tensors=False, use_uncropped_image=True
+        self,
+        img_dir: Path,
+        data_df,
+        use_extracted_tensors=False,
+        use_uncropped_image=True,
     ):
         """
         Args:
@@ -36,7 +40,7 @@ class QCDataset(Dataset):
             "participant_id" not in list(self.df.columns.values)
         ):
             raise Exception(
-                "the data file is not in the correct format."
+                "The data file is not in the correct format."
                 "Columns should include ['participant_id', 'session_id']"
             )
 
@@ -60,16 +64,14 @@ class QCDataset(Dataset):
         if self.use_extracted_tensors:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list = clinica_file_reader(
-                [subject],
-                [session],
-                self.img_dir,
-                file_type,
-            )
-            image_filename = Path(image_path_list[0][0]).name
+            image_output = clinica_file_reader(
+                [subject], [session], self.img_dir, file_type
+            )[0]
+            image_path = Path(image_output[0])
+            image_filename = image_path.name
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = (
-                Path(self.img_dir)
+                self.img_dir
                 / "subjects"
                 / subject
                 / session
@@ -82,7 +84,6 @@ class QCDataset(Dataset):
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-
             image_path = clinica_file_reader(
                 [subject],
                 [session],
@@ -194,7 +195,6 @@ class QCDataset(Dataset):
             # direction with the pretrained model
 
             if len(input_images[i].shape) == 3:
-
                 slice = np.reshape(
                     input_images[i],
                     (input_images[i].shape[0], input_images[i].shape[1]),

@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from datetime import datetime
-from glob import glob
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -31,6 +30,8 @@ from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
+    change_path_to_str,
+    change_str_to_path,
     read_json,
 )
 from clinicadl.utils.maps_manager.ddp import get_ddp_manager
@@ -62,7 +63,7 @@ class DDP(DistributedDataParallel):
 class MapsManager:
     def __init__(
         self,
-        maps_path: str,
+        maps_path: Path,
         parameters: Dict[str, Any] = None,
         verbose: str = "info",
     ):
@@ -71,13 +72,12 @@ class MapsManager:
         Parameters
         ----------
         maps_path: str (path)
-            path of the MAPS
+            Path of the MAPS
         parameters: Dict[str, Any]
-            parameters of the training step. If given a new MAPS is created.
+            Parameters of the training step. If given a new MAPS is created.
         verbose: str
             Logging level ("debug", "info", "warning")
         """
-        maps_path = Path(maps_path)
         self.maps_path = maps_path.resolve()
         if verbose is not None:
             if verbose not in level_list:
@@ -91,7 +91,8 @@ class MapsManager:
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
-            self.parameters = self.get_parameters()
+            test_parameters = self.get_parameters()
+            self.parameters = change_str_to_path(test_parameters)
             self.ddp = get_ddp_manager(
                 ddp=self.parameters["ddp"],
                 resolver=self.parameters["resolver"],
@@ -112,6 +113,24 @@ class MapsManager:
                 gpu=parameters["gpu"],
                 logger=logger,
             )
+            parameters["tsv_path"] = Path(parameters["tsv_path"])
+
+            if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
+                maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
+            ):
+                raise MAPSError(
+                    f"You are trying to create a new MAPS at {maps_path} but "
+                    f"this already corresponds to a file or a non-empty folder. \n"
+                    f"Please remove it or choose another location."
+                )
+            (maps_path / "groups").mkdir(parents=True)
+
+            logger.info(f"A new MAPS was created at {maps_path}")
+
+            self.write_parameters(self.maps_path, self.parameters)
+
+            self._write_requirements_version()
+
             self.split_name = "split"  # Used only for retro-compatibility
             if self.ddp.master:
                 if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -158,7 +177,7 @@ class MapsManager:
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             split_path = self.maps_path / f"{self.split_name}-{split}"
-            if Path(split_path).is_dir():
+            if split_path.is_dir():
                 if overwrite:
                     if self.ddp.master:
                         shutil.rmtree(split_path)
@@ -208,8 +227,8 @@ class MapsManager:
     def predict(
         self,
         data_group: str,
-        caps_directory: str = None,
-        tsv_path: str = None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list: List[int] = None,
         selection_metrics: List[str] = None,
         multi_cohort: bool = False,
@@ -223,6 +242,7 @@ class MapsManager:
         label_code: Optional[Dict[str, int]] = "default",
         save_tensor: bool = False,
         save_nifti: bool = False,
+        save_latent_tensor: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -248,13 +268,15 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
-        if split_list is None:
+        if not split_list:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         group_df = None
@@ -281,7 +303,7 @@ class MapsManager:
                 self.task_manager.generate_label_code(group_df, label)
 
             # Erase previous TSV files
-            if selection_metrics is None:
+            if not selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
                 split_selection_metrics = selection_metrics
@@ -296,7 +318,7 @@ class MapsManager:
                 tsv_pattern = f"{data_group}*.tsv"
 
                 for tsv_file in tsv_dir.glob(tsv_pattern):
-                    Path(tsv_file).unlink()
+                    tsv_file.unlink()
 
             if self.multi_network:
                 for network in range(self.num_networks):
@@ -332,6 +354,7 @@ class MapsManager:
                         network=network,
                     )
                     if save_tensor:
+                        logger.debug("Saving tensors")
                         self._compute_output_tensors(
                             data_test,
                             data_group,
@@ -342,6 +365,15 @@ class MapsManager:
                         )
                     if save_nifti:
                         self._compute_output_nifti(
+                            data_test,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
+                    if save_latent_tensor:
+                        self._compute_latent_tensors(
                             data_test,
                             data_group,
                             split,
@@ -381,6 +413,7 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor:
+                    logger.debug("Saving tensors")
                     self._compute_output_tensors(
                         data_test,
                         data_group,
@@ -396,6 +429,15 @@ class MapsManager:
                         selection_metrics,
                         gpu=gpu,
                     )
+                if save_latent_tensor:
+                    self._compute_latent_tensors(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
 
     def interpret(
@@ -403,8 +445,8 @@ class MapsManager:
         data_group,
         name,
         method,
-        caps_directory=None,
-        tsv_path=None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list=None,
         selection_metrics=None,
         multi_cohort=False,
@@ -478,7 +520,7 @@ class MapsManager:
                 f"Please choose in {method_dict.keys()}"
             )
 
-        if split_list is None:
+        if not split_list:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -490,6 +532,8 @@ class MapsManager:
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         group_df = None
@@ -524,7 +568,7 @@ class MapsManager:
                 num_workers=n_proc if n_proc is not None else self.n_proc,
             )
 
-            if selection_metrics is None:
+            if not selection_metrics:
                 selection_metrics = self._find_selection_metrics(split)
 
             for selection_metric in selection_metrics:
@@ -617,6 +661,8 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
@@ -713,6 +759,8 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         split_manager = self._init_split_manager(split_list)
@@ -833,7 +881,7 @@ class MapsManager:
         model = DDP(model, device_ids=[self.ddp.local_rank])
 
         criterion = self.task_manager.get_criterion(self.loss)
-        logger.debug(f"Criterion for {self.network_task} is {criterion}")
+        logger.info(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -857,127 +905,135 @@ class MapsManager:
             retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
         epoch = log_writer.beginning_epoch
 
+        retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
+
+        profiler = self._init_profiler()
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
             train_loader.sampler.set_epoch(epoch)
             model.zero_grad()
             evaluation_flag, step_flag = True, True
-            for i, data in enumerate(train_loader):
 
-                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                logger.debug(f"Train loss dictionnary {loss_dict}")
-                loss = loss_dict["loss"]
-                loss.backward()
+            with profiler:
+                for i, data in enumerate(train_loader):
+                    # _, loss_dict = model(data, criterion)
+                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    logger.debug(f"Train loss dictionnary {loss_dict}")
+                    loss = loss_dict["loss"]
+                    loss.backward()
 
-                if (i + 1) % self.accumulation_steps == 0:
-                    step_flag = False
+                    if (i + 1) % self.accumulation_steps == 0:
+                        step_flag = False
+                        optimizer.step()
+                        optimizer.zero_grad()
+
+                        del loss
+
+                        # Evaluate the model only when no gradients are accumulated
+                        if (
+                            self.evaluation_steps != 0
+                            and (i + 1) % self.evaluation_steps == 0
+                        ):
+                            evaluation_flag = False
+
+                            _, metrics_train = self.task_manager.test(
+                                model, train_loader, criterion
+                            )
+                            _, metrics_valid = self.task_manager.test(
+                                model, valid_loader, criterion
+                            )
+
+                            model.train()
+                            train_loader.dataset.train()
+
+                            if self.ddp.master:
+                                log_writer.step(
+                                    epoch,
+                                    i,
+                                    metrics_train,
+                                    metrics_valid,
+                                    len(train_loader),
+                                )
+                            logger.info(
+                                f"{self.mode} level training loss is {metrics_train['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+                            logger.info(
+                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+
+                    profiler.step()
+
+                # If no step has been performed, raise Exception
+                if step_flag:
+                    raise Exception(
+                        "The model has not been updated once in the epoch. The accumulation step may be too large."
+                    )
+
+                # If no evaluation has been performed, warn the user
+                elif evaluation_flag and self.evaluation_steps != 0:
+                    logger.warning(
+                        f"Your evaluation steps {self.evaluation_steps} are too big "
+                        f"compared to the size of the dataset. "
+                        f"The model is evaluated only once at the end epochs."
+                    )
+
+                # Update weights one last time if gradients were computed without update
+                if (i + 1) % self.accumulation_steps != 0:
                     optimizer.step()
                     optimizer.zero_grad()
 
-                    del loss
+                # Always test the results and save them once at the end of the epoch
+                model.zero_grad()
+                logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                    # Evaluate the model only when no gradients are accumulated
-                    if (
-                        self.evaluation_steps != 0
-                        and (i + 1) % self.evaluation_steps == 0
-                    ):
-                        evaluation_flag = False
+                _, metrics_train = self.task_manager.test(model, train_loader, criterion)
+                _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
 
-                        _, metrics_train = self.task_manager.test(
-                            model, train_loader, criterion
-                        )
-                        _, metrics_valid = self.task_manager.test(
-                            model, valid_loader, criterion
-                        )
+                model.train()
+                train_loader.dataset.train()
 
-                        model.train()
-                        train_loader.dataset.train()
-
-                        if self.ddp.master:
-                            log_writer.step(
-                                epoch,
-                                i,
-                                metrics_train,
-                                metrics_valid,
-                                len(train_loader),
-                            )
-                        logger.info(
-                            f"{self.mode} level training loss is {metrics_train['loss']} "
-                            f"at the end of iteration {i}"
-                        )
-                        logger.info(
-                            f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                            f"at the end of iteration {i}"
-                        )
-
-            # If no step has been performed, raise Exception
-            if step_flag:
-                raise Exception(
-                    "The model has not been updated once in the epoch. The accumulation step may be too large."
+                if self.ddp.master:
+                    log_writer.step(
+                        epoch, i, metrics_train, metrics_valid, len(train_loader)
+                    )
+                logger.info(
+                    f"{self.mode} level training loss is {metrics_train['loss']} "
+                    f"at the end of iteration {i}"
+                )
+                logger.info(
+                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                    f"at the end of iteration {i}"
                 )
 
-            # If no evaluation has been performed, warn the user
-            elif evaluation_flag and self.evaluation_steps != 0:
-                logger.warning(
-                    f"Your evaluation steps {self.evaluation_steps} are too big "
-                    f"compared to the size of the dataset. "
-                    f"The model is evaluated only once at the end epochs."
-                )
+                if self.ddp.master:
+                    # Save checkpoints and best models
+                    best_dict = retain_best.step(metrics_valid)
+                    self._write_weights(
+                        {
+                            "model": model.state_dict(),
+                            "epoch": epoch,
+                            "name": self.architecture,
+                        },
+                        best_dict,
+                        split,
+                        network=network,
+                    )
+                    self._write_weights(
+                        {
+                            "optimizer": optimizer.state_dict(),
+                            "epoch": epoch,
+                            "name": self.optimizer,
+                        },
+                        None,
+                        split,
+                        filename="optimizer.pth.tar",
+                    )
 
-            # Update weights one last time if gradients were computed without update
-            if (i + 1) % self.accumulation_steps != 0:
-                optimizer.step()
-                optimizer.zero_grad()
-
-            # Always test the results and save them once at the end of the epoch
-            model.zero_grad()
-            logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
-
-            _, metrics_train = self.task_manager.test(model, train_loader, criterion)
-            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
-
-            model.train()
-            train_loader.dataset.train()
-
-            if self.ddp.master:
-                log_writer.step(
-                    epoch, i, metrics_train, metrics_valid, len(train_loader)
-                )
-            logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
-
-            if self.ddp.master:
-                # Save checkpoints and best models
-                best_dict = retain_best.step(metrics_valid)
-                self._write_weights(
-                    {
-                        "model": model.state_dict(),
-                        "epoch": epoch,
-                        "name": self.architecture,
-                    },
-                    best_dict,
-                    split,
-                    network=network,
-                )
-                self._write_weights(
-                    {
-                        "optimizer": optimizer.state_dict(),
-                        "epoch": epoch,
-                        "name": self.optimizer,
-                    },
-                    None,
-                    split,
-                    filename="optimizer.pth.tar",
-                )
-
-            epoch += 1
+                epoch += 1
 
         del model
         self._test_loader(
@@ -1149,8 +1205,8 @@ class MapsManager:
                 session_id = data["session_id"]
                 input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                 output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                nib.save(input_nii, Path(nifti_path) / input_filename)
-                nib.save(output_nii, Path(nifti_path) / output_filename)
+                nib.save(input_nii, nifti_path / input_filename)
+                nib.save(output_nii, nifti_path / output_filename)
 
     def _compute_output_tensors(
         self,
@@ -1216,8 +1272,69 @@ class MapsManager:
                 output_filename = (
                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                 )
-                torch.save(image, Path(tensor_path) / input_filename)
-                torch.save(output, Path(tensor_path) / output_filename)
+                torch.save(image, tensor_path / input_filename)
+                torch.save(output, tensor_path / output_filename)
+                logger.debug(f"File saved at {[input_filename, output_filename]}")
+
+    def _compute_latent_tensors(
+        self,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        nb_images=None,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+
+            tensor_path = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+                / "latent_tensors"
+            )
+            tensor_path.mkdir(parents=True, exist_ok=True)
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in range(nb_modes):
+                data = dataset[i]
+                image = data["image"]
+                logger.debug(f"Image for latent representation {image}")
+                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
+                latent = latent.squeeze(0).cpu()
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{self.mode}_id"]
+                output_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                )
+                torch.save(latent, tensor_path / output_filename)
 
     def _ensemble_prediction(
         self,
@@ -1228,7 +1345,7 @@ class MapsManager:
     ):
         """Computes the results on the image-level."""
 
-        if selection_metrics is None:
+        if not selection_metrics:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
@@ -1263,19 +1380,22 @@ class MapsManager:
             "mode",
             "network_task",
         ]
-
         for arg in mandatory_arguments:
             if arg not in parameters:
                 raise ClinicaDLArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-        parameters = add_default_values(parameters)
-        self.parameters = parameters
+        self.parameters = add_default_values(parameters)
+        self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
 
-        _, transformations = get_transforms(self.normalize)
+        _, transformations = get_transforms(
+            normalize=self.normalize,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
@@ -1370,7 +1490,7 @@ class MapsManager:
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
         available_metrics = self._find_selection_metrics(split)
-        if selection_metric is None:
+        if not selection_metric:
             if len(available_metrics) > 1:
                 raise ClinicaDLArgumentError(
                     f"Several metrics are available for split {split}. "
@@ -1438,7 +1558,7 @@ class MapsManager:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
-        group_dir = Path(self.maps_path) / "groups" / data_group
+        group_dir = self.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
             if overwrite:
@@ -1484,18 +1604,22 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path, parameters, verbose=True):
+    def write_parameters(json_path: Path, parameters, verbose=True):
+        from pathlib import PosixPath
+
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
-        Path(json_path).mkdir(parents=True, exist_ok=True)
+        json_path.mkdir(parents=True, exist_ok=True)
 
+        parameters = change_path_to_str(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
-        json_path = Path(json_path) / "maps.json"
+        json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
         with json_path.open(mode="w") as f:
             f.write(json_data)
+        parameters = change_str_to_path(parameters)
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -1524,9 +1648,7 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = (
-                Path(self.transfer_path) / "groups" / "train+validation.tsv"
-            )
+            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
@@ -1536,7 +1658,12 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
+        self,
+        data_group,
+        df,
+        caps_directory: Path = None,
+        multi_cohort: bool = None,
+        label=None,
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1557,7 +1684,7 @@ class MapsManager:
         if label is not None and label in df.columns.values:
             columns += [label]
 
-        df.to_csv(Path(group_path) / "data.tsv", sep="\t", columns=columns, index=False)
+        df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
         self.write_parameters(
             group_path,
             {
@@ -1677,7 +1804,7 @@ class MapsManager:
 
     @staticmethod
     def write_description_log(
-        log_dir,
+        log_dir: Path,
         data_group,
         caps_dict,
         df,
@@ -1691,8 +1818,8 @@ class MapsManager:
             caps_dict (dict[str, str]): Dictionary of the CAPS folders used for the task
             df (pd.DataFrame): DataFrame of the meta-data used for the task.
         """
-        Path(log_dir).mkdir(parents=True, exist_ok=True)
-        log_path = Path(log_dir) / "description.log"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "description.log"
         with log_path.open(mode="w") as f:
             f.write(f"Prediction {data_group} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
@@ -1855,7 +1982,7 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path=None,
+        transfer_path: Path = None,
         transfer_selection=None,
         split=None,
         resume=False,
@@ -1991,6 +2118,36 @@ class MapsManager:
                 f"Please choose between classification, regression and reconstruction."
             )
 
+    def _init_profiler(self):
+        if self.profiler:
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            # When ClinicaDL will be updated with Distributed Data Parallelism,
+            # the next line will be handy, to make sure all processes write in the same file
+            # dist.broadcast_object_list(filename, src=0)
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            from contextlib import nullcontext
+
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
+
     ###############################
     # Getters                     #
     ###############################
@@ -2015,7 +2172,7 @@ class MapsManager:
             / data_group
         )
         log_path = log_dir / "description.log"
-        with Path(log_path).open(mode="r") as f:
+        with log_path.open(mode="r") as f:
             content = f.read()
 
     def get_group_info(
@@ -2049,7 +2206,7 @@ class MapsManager:
         json_path = group_path / "maps.json"
         with json_path.open(mode="r") as f:
             parameters = json.load(f)
-
+        parameters = change_str_to_path(parameters)
         return df, parameters
 
     def get_parameters(self):

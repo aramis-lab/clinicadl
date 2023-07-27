@@ -1,6 +1,7 @@
 import click
 
-from .. import train_option
+from clinicadl.utils.cli_param import train_option
+
 from .task_utils import task_launcher
 
 
@@ -46,6 +47,7 @@ from .task_utils import task_launcher
 @train_option.patience
 @train_option.tolerance
 @train_option.accumulation_steps
+@train_option.profiler
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric

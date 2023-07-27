@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ logger = getLogger("clinicadl.tsvtools.get_metadata")
 
 
 def get_metadata(
-    data_tsv: str, merged_tsv: str, variables_of_interest=None
+    data_tsv: Path, merged_tsv: Path, variables_of_interest=None
 ) -> pd.DataFrame:
     """
     Get the meta data in metadata_df to write them in output_df.
@@ -21,7 +22,7 @@ def get_metadata(
     data_tsv: str (Path)
         Columns must include ['participant_id', 'session_id']
     merged_tsv: str (Path)
-        output of `clinica merge-tsv`
+        Output of `clinica merge-tsv`
     variables_of_interest: list of str
         List of columns that will be added in the output DataFrame.
 
@@ -40,7 +41,6 @@ def get_metadata(
     )
 
     if variables_of_interest is None:
-
         variables_list = np.unique(variables_metadata)
         logger.debug(
             f"Adding the following columns to the input tsv file: {variables_list}"
@@ -49,7 +49,6 @@ def get_metadata(
         result_df.set_index(["participant_id", "session_id"], inplace=True)
 
     else:
-
         if not set(variables_of_interest).issubset(set(metadata_df.columns.values)):
             raise ClinicaDLArgumentError(
                 f"The variables asked by the user {variables_of_interest} do not "

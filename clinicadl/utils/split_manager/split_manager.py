@@ -17,8 +17,8 @@ logger = getLogger("clinicadl.split_manager")
 class SplitManager:
     def __init__(
         self,
-        caps_directory,
-        tsv_path,
+        caps_directory: Path,
+        tsv_path: Path,
         diagnoses,
         baseline=False,
         multi_cohort=False,
@@ -121,12 +121,14 @@ class SplitManager:
             "validation": valid_df,
         }
 
-    def concatenate_diagnoses(self, split, cohort_path=None, cohort_diagnoses=None):
+    def concatenate_diagnoses(
+        self, split, cohort_path: Path = None, cohort_diagnoses=None
+    ):
         """Concatenated the diagnoses needed to form the train and validation sets."""
-
+        tmp_cohort_path = cohort_path if cohort_path is not None else self.tsv_path
         train_path, valid_path = self._get_tsv_paths(
-            split=split,
-            cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
+            tmp_cohort_path,
+            split,
         )
         logger.debug(f"Training data loaded at {train_path}")
         logger.debug(f"Validation data loaded at {valid_path}")
@@ -134,11 +136,11 @@ class SplitManager:
             cohort_diagnoses = self.diagnoses
 
         if self.baseline:
-            train_path = Path(train_path) / "train_baseline.tsv"
+            train_path = train_path / "train_baseline.tsv"
         else:
-            train_path = Path(train_path) / "train.tsv"
+            train_path = train_path / "train.tsv"
 
-        valid_path = Path(valid_path) / "validation_baseline.tsv"
+        valid_path = valid_path / "validation_baseline.tsv"
 
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
@@ -151,13 +153,13 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = Path(train_path).resolve().parent
+            parents_path = train_path.resolve().parent
             while (
                 not (parents_path / "labels.tsv").is_file()
                 and ((parents_path / "kfold.json").is_file())
                 or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parent
+                parents_path = parents_path.parent
             try:
                 labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 train_df = pd.merge(
@@ -176,13 +178,13 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = Path(valid_path).resolve().parent
+            parents_path = valid_path.resolve().parent
             while (
                 not (parents_path / "labels.tsv").is_file()
                 and ((parents_path / "kfold.json").is_file())
                 or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parent
+                parents_path = parents_path.parent
             try:
                 labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 valid_df = pd.merge(
@@ -194,13 +196,16 @@ class SplitManager:
             except:
                 pass
 
+        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
+        valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
+
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)
 
         return train_df, valid_df
 
     @abc.abstractmethod
-    def _get_tsv_paths(self, cohort_path, split):
+    def _get_tsv_paths(self, cohort_path, *args):
         """
         Computes the paths to the TSV files needed depending on the split structure.
 
@@ -225,9 +230,9 @@ class SplitManager:
             )
 
     @staticmethod
-    def _create_caps_dict(caps_directory, multi_cohort):
+    def _create_caps_dict(caps_directory: Path, multi_cohort):
         if multi_cohort:
-            if not caps_directory.endswith(".tsv"):
+            if not caps_directory.suffix == ".tsv":
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -249,7 +254,7 @@ class SplitManager:
     @staticmethod
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
-            if not tsv_path.endswith(".tsv"):
+            if not tsv_path.suffix == ".tsv":
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -257,7 +262,7 @@ class SplitManager:
                 tsv_df = pd.read_csv(tsv_path, sep="\t")
                 SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
-            if tsv_path.endswith(".tsv"):
+            if tsv_path.suffix == ".tsv":
                 raise ClinicaDLConfigurationError(
                     f"You gave the path to a TSV file in tsv_path {tsv_path}. "
                     f"To use multi-cohort framework, please add 'multi_cohort=true' to the configuration file or the --multi_cohort flag."

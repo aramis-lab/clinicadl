@@ -11,7 +11,7 @@ class LogWriter:
 
     def __init__(
         self,
-        maps_path,
+        maps_path: Path,
         evaluation_metrics,
         split,
         resume=False,
@@ -34,11 +34,11 @@ class LogWriter:
         self.evaluation_metrics = evaluation_metrics
         self.maps_path = maps_path
 
-        self.file_dir = Path(self.maps_path) / f"split-{split}" / "training_logs"
+        self.file_dir = self.maps_path / f"split-{split}" / "training_logs"
         if network is not None:
-            self.file_dir = Path(self.file_dir) / f"network-{network}"
-        Path(self.file_dir).mkdir(parents=True, exist_ok=True)
-        tsv_path = Path(self.file_dir) / "training.tsv"
+            self.file_dir = self.file_dir / f"network-{network}"
+        self.file_dir.mkdir(parents=True, exist_ok=True)
+        tsv_path = self.file_dir / "training.tsv"
 
         self.beginning_epoch = beginning_epoch
         if not resume:
@@ -47,7 +47,7 @@ class LogWriter:
                 results_df.to_csv(f, index=False, sep="\t")
             self.beginning_time = time()
         else:
-            if not Path(tsv_path).is_file():
+            if not tsv_path.is_file():
                 raise FileNotFoundError(
                     f"The training.tsv file of the split {split} in the MAPS "
                     f"{self.maps_path} does not exist."
@@ -61,10 +61,8 @@ class LogWriter:
                 self.beginning_time = time() + truncated_tsv.iloc[-1, 0]
             truncated_tsv.to_csv(tsv_path, index=True, sep="\t")
 
-        self.writer_train = SummaryWriter(Path(self.file_dir) / "tensorboard" / "train")
-        self.writer_valid = SummaryWriter(
-            Path(self.file_dir) / "tensorboard" / "validation"
-        )
+        self.writer_train = SummaryWriter(self.file_dir / "tensorboard" / "train")
+        self.writer_valid = SummaryWriter(self.file_dir / "tensorboard" / "validation")
 
     def step(self, epoch, i, metrics_train, metrics_valid, len_epoch):
         """
@@ -80,7 +78,7 @@ class LogWriter:
         from time import time
 
         # Write TSV file
-        tsv_path = Path(self.file_dir) / "training.tsv"
+        tsv_path = self.file_dir / "training.tsv"
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]

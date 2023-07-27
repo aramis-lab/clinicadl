@@ -9,7 +9,7 @@ from clinicadl import MapsManager
 from clinicadl.utils.exceptions import MAPSError
 
 
-def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
+def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):
     """
     This function summarizes the validation performance according to `evaluation_metric`
     of several MAPS stored in the folder `launch_dir`.
@@ -19,7 +19,7 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
         launch_dir (str): Path to the directory containing several MAPS.
         evaluation_metric (str): Name of the metric used for validation evaluation.
     """
-    launch_dir = Path(launch_dir)
+    launch_dir = launch_dir
     jobs_list = [
         job
         for job in list(launch_dir.iter_dir())

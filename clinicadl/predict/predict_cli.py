@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -8,14 +10,14 @@ from clinicadl.utils import cli_param
 @cli_param.argument.data_group
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Data using CAPS structure, if different from the one used during network training.",
 )
 @click.option(
     "--participants_tsv",
     default=None,
-    type=click.Path(),
+    type=click.Path(exists=True, path_type=Path),
     help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
@@ -63,6 +65,15 @@ from clinicadl.utils import cli_param
     help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
 )
 @cli_param.option.save_nifti
+@click.option(
+    "--save_latent_tensor",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="""Save the latent representation of the image.""",
+)
+@cli_param.option.split
+@cli_param.option.selection_metrics
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -72,6 +83,7 @@ def cli(
     data_group,
     caps_directory,
     participants_tsv,
+    split,
     gpu,
     n_proc,
     batch_size,
@@ -83,6 +95,7 @@ def cli(
     overwrite,
     save_tensor,
     save_nifti,
+    save_latent_tensor,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -107,10 +120,12 @@ def cli(
         gpu=gpu,
         n_proc=n_proc,
         batch_size=batch_size,
+        split_list=split,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
         overwrite=overwrite,
         save_tensor=save_tensor,
         save_nifti=save_nifti,
+        save_latent_tensor=save_latent_tensor,
     )

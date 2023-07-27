@@ -16,13 +16,12 @@ logger = getLogger("clinicadl.tsvtools.get_progression")
 
 
 def get_progression(
-    data_tsv: str,
+    data_tsv: Path,
     horizon_time: int = 36,
     stability_dict: dict = None,
 ):
-
     """
-    A method to get the progression for each sessions depending on their stability on the time horizon
+    A method to get the progression for each sessions, depending on their stability on the time horizon
     Outputs are written in data_tsv
 
     Parameters
@@ -41,10 +40,10 @@ def get_progression(
 
     if "diagnosis" not in bids_df.columns:
         logger.debug("Looking for the 'diagnosis' column in others files")
-        parents_path = (Path(data_tsv).resolve()).parent
-        while not (Path(parents_path) / "labels.tsv").is_file():
-            parents_path = Path(parents_path).parent
-            labels_df = pd.read_csv(Path(parents_path) / "labels.tsv", sep="\t")
+        parents_path = (data_tsv.resolve()).parent
+        while not (parents_path / "labels.tsv").is_file():
+            parents_path = parents_path.parent
+            labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
             bids_df = pd.merge(
                 bids_df,
                 labels_df,

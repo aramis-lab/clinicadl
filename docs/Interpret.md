@@ -52,7 +52,7 @@ Optional arguments:
     - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behaviour is to try to use a
       GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
 - **Model selection**
     - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.
       Default will predict the results for best model based on the loss only.
