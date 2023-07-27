@@ -8,7 +8,6 @@ from . import api
 from .api import API
 from .utils import descriptorize
 
-
 __all__ = [
     "all_APIs",
     "current_API",

@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from functools import wraps
 import os
+from functools import wraps
 from typing import Callable
 
-from .base import API
 from ..config import __all__ as all_API_methods
+from .base import API
 
 
 env_variables_set: bool = False

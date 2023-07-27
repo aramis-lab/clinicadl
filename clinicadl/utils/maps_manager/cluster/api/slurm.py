@@ -4,9 +4,9 @@
 import os
 from typing import List
 
+from ..utils import get_first_host
 from .auto_master_addr_port import AutoMasterAddressPort
 from .base import API
-from ..utils import get_first_host
 
 
 @AutoMasterAddressPort

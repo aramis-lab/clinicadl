@@ -27,6 +27,7 @@ from clinicadl.utils.exceptions import (
     MAPSError,
 )
 from clinicadl.utils.logger import setup_logging
+from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
@@ -34,7 +35,6 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     change_str_to_path,
     read_json,
 )
-from clinicadl.utils.maps_manager.ddp import init_ddp, DDP, cluster
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything

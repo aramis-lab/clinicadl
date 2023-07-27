@@ -1,13 +1,13 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from contextlib import closing
 import os
 import socket
+from contextlib import closing
 from typing import List
 
-from .base import API
 from .auto_master_addr_port import AutoMasterAddressPort
+from .base import API
 
 
 @AutoMasterAddressPort

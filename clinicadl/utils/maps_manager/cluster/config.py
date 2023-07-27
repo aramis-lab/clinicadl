@@ -3,7 +3,6 @@
 
 from .api.base import API
 
-
 # Endpoints redirection
 rank = API.rank
 local_rank = API.local_rank

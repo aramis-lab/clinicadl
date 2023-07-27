@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import List
 import warnings
+from typing import List
 
-from .base import API
 from ..utils import ClinicaClusterResolverWarning
+from .base import API
 
 
 class TorchElasticAPI(API):

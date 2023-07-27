@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import warnings
 from logging import Filter
 from re import findall, split, sub
-from typing import Callable, List, Tuple, Set
-import warnings
+from typing import Callable, List, Set, Tuple
 
 
 def titlecase(string: str) -> str:

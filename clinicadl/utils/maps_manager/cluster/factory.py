@@ -1,19 +1,24 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pathlib import Path
 import sys
-from typing import Callable, Any
 import warnings
+from pathlib import Path
+from typing import Callable, Any
 
-from . import __builtins__, __cached__, __name__, __path__
+from . import (
+    __builtins__,
+    __cached__,
+    __name__,
+    __path__,
+    available_apis,
+    config,
+)
 from .api import API, AutoMasterAddressPort
-from . import available_apis
-from . import config
 from .utils import (
     ClinicaClusterResolverWarning,
-    descriptorize,
     Rank0Filter,
+    descriptorize,
     warning_filter,
 )
 
