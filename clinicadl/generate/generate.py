@@ -889,3 +889,117 @@ def generate_contrast_dataset(
     logger.info(
         f"Images corrupted with contrast artefacts were generated at {output_dir}"
     )
+
+
+def generate_noise_dataset(
+    caps_directory: Path,
+    output_dir: Path,
+    n_proc: int,
+    tsv_path: Optional[str] = None,
+    preprocessing: str = "t1-linear",
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    tracer: str = "fdg",
+    suvr_reference_region: str = "pons",
+    std: List = [5, 15],
+):
+    """
+    Generates a noise corrupted separable dataset.
+    Generates a dataset, based on the images of the CAPS directory, where a
+    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Args:
+        caps_directory: path to the CAPS directory.
+        output_dir: folder containing the synthetic dataset in CAPS format.
+        n_subjects: number of subjects in each class of the synthetic dataset.
+        tsv_path: path to tsv file of list of subjects/sessions.
+        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Returns:
+        Folder structure where images are stored in CAPS format.
+    Raises:
+        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
+    """
+
+    commandline_to_json(
+        {
+            "output_dir": output_dir,
+            "caps_dir": caps_directory,
+            "preprocessing": preprocessing,
+        }
+    )
+
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    # Read DataFrame
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
+    # Create subjects dir
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
+
+    # Output tsv file
+    columns = ["participant_id", "session_id", "diagnosis"]
+    output_df = pd.DataFrame(columns=columns)
+
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, tracer, suvr_reference_region
+    )
+
+    def create_noise_image(data_idx, output_df):
+        participant_id = data_df.loc[data_idx, "participant_id"]
+        session_id = data_df.loc[data_idx, "session_id"]
+        cohort = data_df.loc[data_idx, "cohort"]
+
+
+        image_path = Path(
+            clinica_file_reader(
+                [participant_id], [session_id], caps_dict[cohort], file_type
+            )[0][0]
+        )
+        input_filename = image_path.name
+        filename_pattern = "_".join(input_filename.split("_")[2::])
+
+        subject_id = participant_id.split("-")[1]
+
+        noise_image_nii_dir = (
+            output_dir
+            / "subjects" 
+            / f"sub-NOIS{subject_id}"
+            / session_id
+            / preprocessing
+        )
+        noise_image_nii_filename = (
+            f"sub-NOIS{subject_id}_{session_id}_{filename_pattern}"
+        )
+
+        noise_image_nii_dir.mkdir(parents=True, exist_ok=True)
+
+        noise = tio.RandomNoise(std=(std[0], std[1]))
+
+        noise_image = noise(tio.ScalarImage(image_path))
+        noise_image.save(noise_image_nii_dir / noise_image_nii_filename)
+
+        # Append row to output tsv
+        row = [f"sub-NOIS{subject_id}", session_id, "noise"]
+        row_df = pd.DataFrame([row], columns=columns)
+        output_df = pd.concat([output_df, row_df])
+
+        return output_df
+
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_noise_image)(data_idx, output_df)
+        for data_idx in range(len(data_df))
+    )
+    output_df = pd.DataFrame()
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
+
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
+
+    write_missing_mods(output_dir, output_df)
+
+    logger.info(
+        f"Images corrupted with contrast artefacts were generated at {output_dir}"
+    )
