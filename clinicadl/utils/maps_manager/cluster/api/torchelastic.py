@@ -10,7 +10,6 @@ from ..utils import ClinicaClusterResolverWarning
 
 
 class TorchElasticAPI(API):
-
     priority: int = 9000
     name: str = "TorchElastic"
 
@@ -44,7 +43,7 @@ class TorchElasticAPI(API):
             "involved in a distributed computation. So you will only "
             "get the address of the master.",
             category=ClinicaClusterResolverWarning,
-            stacklevel=4
+            stacklevel=4,
         )
         return [self.master_address()]
 

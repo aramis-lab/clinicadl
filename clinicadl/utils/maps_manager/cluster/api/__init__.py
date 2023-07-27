@@ -6,6 +6,9 @@ from .torchelastic import TorchElasticAPI
 
 
 __all__ = [
-    "API", "SlurmAPI", "DefaultAPI", "TorchElasticAPI",
+    "API",
     "AutoMasterAddressPort",
+    "DefaultAPI",
+    "SlurmAPI",
+    "TorchElasticAPI",
 ]

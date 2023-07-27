@@ -2090,8 +2090,6 @@ class MapsManager:
 
             time = datetime.now().strftime("%H:%M:%S")
             filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
-            # When ClinicaDL will be updated with Distributed Data Parallelism,
-            # the next line will be handy, to make sure all processes write in the same file
             dist.broadcast_object_list(filename, src=0)
             profiler = profile(
                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],

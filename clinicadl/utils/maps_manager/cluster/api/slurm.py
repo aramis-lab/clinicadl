@@ -11,7 +11,6 @@ from ..utils import get_first_host
 
 @AutoMasterAddressPort
 class SlurmAPI(API):
-
     priority: int = 10000
     name: str = "Slurm"
 

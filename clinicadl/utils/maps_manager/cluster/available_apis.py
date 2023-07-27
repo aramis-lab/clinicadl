@@ -10,11 +10,15 @@ from .utils import descriptorize
 
 
 __all__ = [
-    "register_API", "get_APIs", "all_APIs", "current_API",
+    "all_APIs",
+    "current_API",
     "crawl_module_for_APIs",
+    "get_APIs",
+    "register_API",
 ]
 
 available_APIs: List[API] = []
+
 
 def register_API(new_API: API) -> None:
     for i, api in enumerate(available_APIs):
@@ -37,7 +41,7 @@ def get_launcher_API() -> API:
             return api
 
 
-def crawl_module_for_APIs( module) -> None:
+def crawl_module_for_APIs(module) -> None:
     for obj_name in dir(module):
         obj = getattr(module, obj_name)
         if isclass(obj) and issubclass(obj, API) and obj is not API:
@@ -53,4 +57,3 @@ all_APIs = descriptorize(lambda: [api.name for api in get_APIs()].__repr__())
 
 
 crawl_module_for_APIs(api)
-

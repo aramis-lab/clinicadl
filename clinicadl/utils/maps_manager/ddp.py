@@ -36,12 +36,14 @@ def init_ddp(gpu: bool = True, logger: Optional[Logger] = None):
     dist.init_process_group(
         backend=get_backend(gpu=gpu),
         init_method="env://",
+        rank=cluster.rank,
         world_size=cluster.world_size,
-        rank=cluster.rank
     )
     if gpu:
         torch.cuda.set_device(cluster.local_rank)
     if logger is not None:
         logger.addFilter(cluster.Rank0Filter(rank=cluster.rank))
 
-    assert dist.is_initialized(), "Something went wrong with the distribution initialization!"
+    assert (
+        dist.is_initialized()
+    ), "Something went wrong with the distribution initialization!"

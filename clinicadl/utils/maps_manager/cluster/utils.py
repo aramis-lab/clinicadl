@@ -8,14 +8,16 @@ import warnings
 
 
 def titlecase(string: str) -> str:
-    return ''.join(x for x in string.title() if x.isalnum())
+    return "".join(x for x in string.title() if x.isalnum())
 
 
 def descriptorize(getter: Callable):
     descriptor_cls = type(
         titlecase(getter.__name__),
         (),
-        {"__get__": lambda *args, **kwargs: getter(),}
+        {
+            "__get__": lambda *args, **kwargs: getter(),
+        },
     )
     return descriptor_cls()
 
@@ -43,13 +45,14 @@ class ClinicaClusterResolverWarning(RuntimeWarning):
     Type (subtype of RuntimeWarning) of all warnings raised by the cluster resolver.
     You can use it to customize warning filters.
     """
+
     pass
 
 
 class WarningFilter:
 
     def __init__(self):
-        self.registry: Set[Tuple[str, type[Warning]]] = set()
+        self.registry: Set[Tuple[str, type[ClinicaClusterResolverWarning]]] = set()
 
     def block(self, warning: Warning) -> bool:
         text = str(warning)
@@ -70,5 +73,6 @@ class WarningFilter:
                     category=warning.message.__class__,
                     stacklevel=4,
                 )
+
 
 warning_filter = WarningFilter()

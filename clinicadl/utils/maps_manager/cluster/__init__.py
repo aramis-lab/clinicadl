@@ -11,7 +11,7 @@ from .available_apis import *
 from .config import *
 from .utils import (
     ClinicaClusterResolverWarning as ClinicaClusterResolverWarning,
-    Rank0Filter as Rank0Filter
+    Rank0Filter as Rank0Filter,
 )
 
 sys.modules[__name__] = DistributedEnvironment(__name__)

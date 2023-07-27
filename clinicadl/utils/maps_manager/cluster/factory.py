@@ -10,17 +10,19 @@ from . import __builtins__, __cached__, __name__, __path__
 from .api import API, AutoMasterAddressPort
 from . import available_apis
 from . import config
-from .utils import descriptorize, ClinicaClusterResolverWarning, warning_filter, Rank0Filter
+from .utils import (
+    ClinicaClusterResolverWarning,
+    descriptorize,
+    Rank0Filter,
+    warning_filter,
+)
 
 
 def _create():
-    return APIFactory(
-        'DistributedEnvironment', (sys.__class__,), {}
-    )
+    return APIFactory('DistributedEnvironment', (sys.__class__,), {})
 
 
 class APIFactory(type):
-
     def make_new_func(dest_name: str) -> Callable:
         @descriptorize
         def redirect() -> Any:
@@ -30,6 +32,7 @@ class APIFactory(type):
             if warning_list:
                 warning_filter.warn(warning_list)
             return output
+
         return redirect
 
     def __new__(cls, name, bases, methods):

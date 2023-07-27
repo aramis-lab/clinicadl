@@ -12,7 +12,6 @@ from .auto_master_addr_port import AutoMasterAddressPort
 
 @AutoMasterAddressPort
 class DefaultAPI(API):
-
     priority: int = 0
     name: str = "Sequential"
 

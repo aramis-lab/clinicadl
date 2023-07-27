@@ -6,7 +6,6 @@ from typing import List
 
 
 class API(ABC):
-
     priority: int = 5000
     name: str = "AbstractAPI"
 
