@@ -15,7 +15,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @click.option(
-    "--std",
+    "--noise_std",
     type=float,
     multiple=2,
     default=[5, 15],
@@ -29,7 +29,7 @@ def cli(
     use_uncropped_image,
     tracer,
     suvr_reference_region,
-    std,
+    noise_std,
     n_proc,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
@@ -46,7 +46,7 @@ def cli(
         uncropped_image=use_uncropped_image,
         tracer=tracer,
         suvr_reference_region=suvr_reference_region,
-        std=std,
+        noise_std=noise_std,
         n_proc=n_proc,
     )
 
