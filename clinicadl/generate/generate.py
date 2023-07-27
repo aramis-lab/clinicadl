@@ -952,7 +952,6 @@ def generate_noise_dataset(
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
 
-
         image_path = Path(
             clinica_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
@@ -965,7 +964,7 @@ def generate_noise_dataset(
 
         noise_image_nii_dir = (
             output_dir
-            / "subjects" 
+            / "subjects"
             / f"sub-NOIS{subject_id}"
             / session_id
             / preprocessing
