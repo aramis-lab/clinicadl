@@ -50,7 +50,6 @@ class ClinicaClusterResolverWarning(RuntimeWarning):
 
 
 class WarningFilter:
-
     def __init__(self):
         self.registry: Set[Tuple[str, type[ClinicaClusterResolverWarning]]] = set()
 

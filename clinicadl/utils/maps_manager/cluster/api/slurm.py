@@ -42,7 +42,7 @@ class SlurmAPI(API):
             return step_gpus.split(",")
         return []
 
-    def nodelist(self) -> List[str]:
+    def nodelist(self) -> str:
         return os.environ["SLURM_STEP_NODELIST"]
 
     def master_address(self) -> str:

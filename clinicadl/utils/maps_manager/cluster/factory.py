@@ -19,7 +19,7 @@ from .utils import (
 
 
 def _create():
-    return APIFactory('DistributedEnvironment', (sys.__class__,), {})
+    return APIFactory("DistributedEnvironment", (sys.__class__,), {})
 
 
 class APIFactory(type):
