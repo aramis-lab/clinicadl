@@ -901,7 +901,7 @@ def generate_noise_dataset(
     uncropped_image: bool = False,
     tracer: str = "fdg",
     suvr_reference_region: str = "pons",
-    std: List = [5, 15],
+    noise_std: List = [5, 15],
 ):
     """
     Generates a noise corrupted separable dataset.
@@ -976,7 +976,7 @@ def generate_noise_dataset(
 
         noise_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        noise = tio.RandomNoise(std=(std[0], std[1]))
+        noise = tio.RandomNoise(std=(noise_std[0], noise_std[1]))
 
         noise_image = noise(tio.ScalarImage(image_path))
         noise_image.save(noise_image_nii_dir / noise_image_nii_filename)
