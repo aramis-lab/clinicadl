@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from contextlib import closing
+import os
 import socket
 from typing import List
 
@@ -20,7 +21,7 @@ class DefaultAPI(API):
         self.current_port: int = None
 
     @staticmethod
-    def find_available_port(starting_port: int) -> None:
+    def find_available_port(starting_port: int) -> int:
         port = starting_port
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             while True:
@@ -51,7 +52,7 @@ class DefaultAPI(API):
         return 1
 
     def cpus(self) -> int:
-        return 1
+        return len(os.sched_getaffinity(0))
 
     def gpus(self) -> List[str]:
         return []
