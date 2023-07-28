@@ -22,8 +22,8 @@ class DDP(DistributedDataParallel):
         return self.module.state_dict()
 
 
-def get_backend(gpu: bool = False):
-    if gpu and torch.cuda.is_available() and dist.is_nccl_available():
+def get_backend(gpu: bool = False) -> str:
+    if gpu and dist.is_nccl_available():
         return "nccl"
     if dist.is_gloo_available():
         return "gloo"
@@ -32,13 +32,20 @@ def get_backend(gpu: bool = False):
     raise NotImplementedError("No good backend found")
 
 
-def init_ddp(gpu: bool = True, logger: Optional[Logger] = None):
+def init_process_group(gpu: bool = False) -> None:
     dist.init_process_group(
         backend=get_backend(gpu=gpu),
         init_method="env://",
         rank=cluster.rank,
         world_size=cluster.world_size,
     )
+
+
+def init_ddp(gpu: bool = True, logger: Optional[Logger] = None) -> None:
+    gpu = gpu and torch.cuda.is_available()
+
+    if not dist.is_initialized():
+        init_process_group(gpu=gpu)
     if gpu:
         torch.cuda.set_device(cluster.local_rank)
     if logger is not None:
