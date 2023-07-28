@@ -4,16 +4,9 @@
 import sys
 import warnings
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any, Callable
 
-from . import (
-    __builtins__,
-    __cached__,
-    __name__,
-    __path__,
-    available_apis,
-    config,
-)
+from . import __cached__, __name__, __path__, available_apis, config
 from .api import API, AutoMasterAddressPort
 from .utils import (
     ClinicaClusterResolverWarning,

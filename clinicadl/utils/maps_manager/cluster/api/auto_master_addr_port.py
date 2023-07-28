@@ -8,7 +8,6 @@ from typing import Callable
 from ..config import __all__ as all_API_methods
 from .base import API
 
-
 env_variables_set: bool = False
 
 
