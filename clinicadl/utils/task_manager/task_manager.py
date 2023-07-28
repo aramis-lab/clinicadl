@@ -208,7 +208,7 @@ class TaskManager:
                         total_loss[loss_component] = 0
                 for loss_component in total_loss.keys():
                     total_loss[loss_component] += (
-                        loss_dict[loss_component].float().item()
+                        loss_dict[loss_component].float()
                     )
 
                 # Generate detailed DataFrame
@@ -236,7 +236,7 @@ class TaskManager:
                 handles.append(
                     dist.reduce(total_loss[loss_component], dst=0, async_op=True)
                 )
-                metrics_dict[loss_component] = total_loss[loss_component]
+                metrics_dict[loss_component] = total_loss[loss_component].item()
             for handle in handles:
                 handle.wait()
         torch.cuda.empty_cache()
