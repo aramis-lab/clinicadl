@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
@@ -886,13 +887,16 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    with autocast(enabled=self.amp):
-                        _, loss_dict = model(data, criterion)
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    scaler.scale(loss).backward()
+                    update = (i + 1) % self.accumulation_steps == 0
+                    sync = nullcontext() if update else model.no_sync()
+                    with sync:
+                        with autocast(enabled=self.amp):
+                            _, loss_dict = model(data, criterion)
+                        logger.debug(f"Train loss dictionnary {loss_dict}")
+                        loss = loss_dict["loss"]
+                        scaler.scale(loss).backward()
 
-                    if (i + 1) % self.accumulation_steps == 0:
+                    if update:
                         step_flag = False
                         scaler.step(optimizer)
                         scaler.update()
@@ -2118,8 +2122,6 @@ class MapsManager:
                 with_flops=False,
             )
         else:
-            from contextlib import nullcontext
-
             profiler = nullcontext()
             profiler.step = lambda *args, **kwargs: None
         return profiler
