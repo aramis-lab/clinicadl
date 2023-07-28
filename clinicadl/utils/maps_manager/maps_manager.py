@@ -845,7 +845,7 @@ class MapsManager:
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
         )
-        model = DDP(model, device_ids=[cluster.local_rank])
+        model = DDP(model)
 
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -1096,7 +1096,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[cluster.local_rank])
+            model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
@@ -1152,7 +1152,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[cluster.local_rank])
+            model = DDP(model)
 
             nifti_path = (
                 self.maps_path
@@ -1216,7 +1216,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, device_ids=[cluster.local_rank])
+            model = DDP(model)
 
             tensor_path = (
                 self.maps_path
