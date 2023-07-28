@@ -23,7 +23,7 @@ class DDP(DistributedDataParallel):
 
 
 def get_backend(gpu: bool = False):
-    if gpu and dist.is_nccl_available():
+    if gpu and torch.cuda.is_available() and dist.is_nccl_available():
         return "nccl"
     if dist.is_gloo_available():
         return "gloo"
