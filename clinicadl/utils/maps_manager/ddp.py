@@ -70,7 +70,7 @@ def monkeypatch(model: Module) -> None:
                 raise ValueError("Expected to find code object, did not find any.")
             function = FunctionType(
                 code=const,
-                globals=locals(),
+                globals=method.__globals__,
                 name=method.__name__,
             )
             method = MethodType(function, model)
