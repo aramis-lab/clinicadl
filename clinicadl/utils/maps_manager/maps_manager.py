@@ -887,7 +887,7 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    update = (i + 1) % self.accumulation_steps == 0
+                    update: bool = (i + 1) % self.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
                         with autocast(enabled=self.amp):
