@@ -2,7 +2,7 @@ import inspect
 from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
-from types import FunctionType, MethodType
+from types import CodeType, FunctionType, MethodType
 from typing import Any, Optional, Set
 
 import torch
@@ -63,8 +63,13 @@ def monkeypatch(model: Module) -> None:
                 source_code.replace("self.forward", "self._forward")
             )
             compiled_code = compile(monkeypatched_code, "<string>", "exec")
+            for const in compiled_code.co_consts:
+                if isinstance(const, CodeType) and const.co_name == method_name:
+                    break
+            else:
+                raise ValueError("Expected to find code object, did not find any.")
             function = FunctionType(
-                code=compiled_code.co_consts[0],
+                code=const,
                 globals=locals(),
                 name=method.__name__,
             )
