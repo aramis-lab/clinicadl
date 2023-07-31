@@ -8,6 +8,10 @@ from typing import Callable
 from ..config import __all__ as all_API_methods
 from .base import API
 
+# Defines a class decorator to make wraps any API methods so that the Master Address
+# and the Master Port are set in order to allow the process group to initialize
+# correctly.
+
 env_variables_set: bool = False
 
 

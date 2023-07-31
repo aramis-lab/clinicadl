@@ -21,6 +21,10 @@ class DefaultAPI(API):
 
     @staticmethod
     def find_available_port(starting_port: int) -> int:
+        """
+        Tries to bind to local port until it finds one which is available.
+        This is used to set the master port environment variable.
+        """
         port = starting_port
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             while True:

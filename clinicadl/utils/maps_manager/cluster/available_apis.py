@@ -20,6 +20,8 @@ available_APIs: List[API] = []
 
 
 def register_API(new_API: API) -> None:
+    # Registers API in order of priority.
+    # Higher priority APIs should be checked first.
     for i, api in enumerate(available_APIs):
         if api.priority > new_API.priority:
             continue

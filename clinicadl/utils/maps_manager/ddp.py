@@ -19,7 +19,16 @@ class Methods:
     method: Any
 
 
-def methodsWithoutDunders(obj) -> Set[str]:
+def methodsWithoutDunders(obj: Any) -> Set[str]:
+    """
+    Takes any object, and returns a set of all its methods names, without
+    dunders and attributes.
+
+    Args:
+        obj (Any): the object whose methods we want.
+    Returns:
+        (Set[str]): set of methods name.
+    """
     namesWithMethods = map(lambda name: Methods(name, getattr(obj, name)), dir(obj))
     withoutDunders = filter(
         lambda method: not (
@@ -38,10 +47,19 @@ def methodsWithoutDunders(obj) -> Set[str]:
     return set(onlyNames)
 
 
-def get_custom_methods(obj) -> Set[str]:
-    object_methods = methodsWithoutDunders(obj)
+def get_custom_methods(model: Module) -> Set[str]:
+    """
+    Only get newly-added methods from the object, without any method already
+    defined in the Module parent class.
+
+    Args:
+        model (torch.nn.Module): the model to analyze.
+    Returns:
+        (Set[str]): set of methods name without methods from Module parent class.
+    """
+    model_methods = methodsWithoutDunders(model)
     base_methods = methodsWithoutDunders(Module)
-    return object_methods - base_methods
+    return model_methods - base_methods
 
 
 def forward(self, input_dict, criterion=None, use_labels=True):
@@ -54,6 +72,15 @@ def forward(self, input_dict, criterion=None, use_labels=True):
 
 
 def monkeypatch(model: Module) -> None:
+    """
+    Patch a model to replace the forward method and store it in method _forward.
+    This is done in order to enable DistributedDataParallelism since Pytorch uses
+    "forward" has a keyword for its models.
+
+    Args:
+        model (torch.nn.Module): model to be trained and needs to be monkeypatched
+        to be distributed
+    """
     method_names = get_custom_methods(model)
 
     if "_forward" in method_names:
@@ -73,15 +100,22 @@ def monkeypatch(model: Module) -> None:
             continue
 
         if "self.forward" in source_code:
+            # The function calls the forward method, so needs to be patched
             monkeypatched_code = dedent(
                 source_code.replace("self.forward", "self._forward")
             )
             compiled_code = compile(monkeypatched_code, "<string>", "exec")
+
+            # If the function has default arguments, then the code of the function
+            # will not be the first constant in the defined code but will be after
+            # in the list so we look for it.
             for const in compiled_code.co_consts:
                 if isinstance(const, CodeType) and const.co_name == method_name:
                     break
             else:
                 raise ValueError("Expected to find code object, did not find any.")
+
+            # Convert code to a method bound to the given model.
             function = FunctionType(
                 code=const,
                 globals=method.__globals__,
@@ -89,6 +123,9 @@ def monkeypatch(model: Module) -> None:
             )
             method = MethodType(function, model)
             setattr(model, method_name, method)
+
+    # We introduce our new forward function and store the old one into the
+    # "_forward" method.
     model._forward = model.forward
     model.forward = MethodType(forward, model)
 
@@ -131,6 +168,14 @@ def init_process_group(gpu: bool = False) -> None:
 
 
 def init_ddp(gpu: bool = True, logger: Optional[Logger] = None) -> None:
+    """
+    Initiates the process group if not already done.
+
+    Args:
+        gpu (bool): whether or not the training process will be performed on GPU.
+        logger (logging.Logger): logger to filter so that only one process prints
+            its output.
+    """
     gpu = gpu and torch.cuda.is_available()
 
     if not dist.is_initialized():
@@ -138,6 +183,8 @@ def init_ddp(gpu: bool = True, logger: Optional[Logger] = None) -> None:
     if gpu:
         torch.cuda.set_device(cluster.local_rank)
     if logger is not None:
+        # Make sure the logging is performed only on one process so that our logs
+        # is not messed up.
         logger.addFilter(cluster.Rank0Filter(rank=cluster.rank))
 
     assert (
