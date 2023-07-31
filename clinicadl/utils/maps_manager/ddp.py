@@ -55,9 +55,23 @@ def forward(self, input_dict, criterion=None, use_labels=True):
 
 def monkeypatch(model: Module) -> None:
     method_names = get_custom_methods(model)
+
+    if "_forward" in method_names:
+        # A _forward function already exists, we abort the monkeypatching
+        # procedure in order not to break the object.
+        return
+
     for method_name in method_names:
         method = getattr(model, method_name)
-        source_code = inspect.getsource(method)
+
+        try:
+            source_code = inspect.getsource(method)
+        except OSError:
+            # The method probably has been created dynamically, this is a
+            # failure case of monkeypatching. Therefore we abort the patching
+            # of this method and assume it does not need it.
+            continue
+
         if "self.forward" in source_code:
             monkeypatched_code = dedent(
                 source_code.replace("self.forward", "self._forward")
