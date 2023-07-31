@@ -1,14 +1,84 @@
+import inspect
+from dataclasses import dataclass
 from logging import Logger
-from typing import Optional
+from textwrap import dedent
+from types import FunctionType, MethodType
+from typing import Any, Optional, Set
 
 import torch
 import torch.distributed as dist
+from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 
 from . import cluster
 
 
+@dataclass
+class Methods:
+    name: str
+    method: Any
+
+
+def methodsWithoutDunders(obj) -> Set[str]:
+    namesWithMethods = map(lambda name: Methods(name, getattr(obj, name)), dir(obj))
+    withoutDunders = filter(
+        lambda method: not (
+            method.name.startswith("__") and method.name.endswith("__")
+        ),
+        namesWithMethods,
+    )
+    onlyMethods = filter(
+        lambda method: isinstance(method.method, (FunctionType, MethodType)),
+        withoutDunders,
+    )
+    onlyNames = map(
+        lambda method: method.name,
+        onlyMethods,
+    )
+    return set(onlyNames)
+
+
+def get_custom_methods(obj) -> Set[str]:
+    object_methods = methodsWithoutDunders(obj)
+    base_methods = methodsWithoutDunders(Module)
+    return object_methods - base_methods
+
+
+def forward(self, input_dict, criterion=None, use_labels=True):
+    if criterion is None:
+        return self.predict(input_dict)
+    else:
+        return self.compute_outputs_and_loss(
+            input_dict, criterion, use_labels=use_labels
+        )
+
+
+def monkeypatch(model: Module) -> None:
+    method_names = get_custom_methods(model)
+    for method_name in method_names:
+        method = getattr(model, method_name)
+        source_code = inspect.getsource(method)
+        if "self.forward" in source_code:
+            monkeypatched_code = dedent(
+                source_code.replace("self.forward", "self._forward")
+            )
+            compiled_code = compile(monkeypatched_code, "<string>", "exec")
+            function = FunctionType(
+                code=compiled_code.co_consts[0],
+                globals=locals(),
+                name=method.__name__,
+            )
+            method = MethodType(function, model)
+            setattr(model, method_name, method)
+    model._forward = model.forward
+    model.forward = MethodType(forward, model)
+
+
 class DDP(DistributedDataParallel):
+    def __init__(self, model: Module, *args, **kwargs):
+        monkeypatch(model)
+        super().__init__(model, *args, **kwargs)
+
     def _forward(self, *args, **kwargs):
         return self.module._forward(*args, **kwargs)
 

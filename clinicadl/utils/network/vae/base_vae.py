@@ -36,17 +36,17 @@ class BaseVAE(Network):
 
     # Network specific
     def predict(self, x):
-        output, _, _ = self._forward(x)
+        output, _, _ = self.forward(x)
         return output
 
-    def _forward(self, x):
+    def forward(self, x):
         mu, logVar = self.encode(x)
         z = self.reparameterize(mu, logVar)
         return self.decode(z), mu, logVar
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
         images = input_dict["image"].to(self.device)
-        recon_images, mu, logVar = self._forward(images)
+        recon_images, mu, logVar = self.forward(images)
 
         losses = criterion(images, recon_images, mu, logVar)
         reconstruction_loss, kl_loss = losses[0], losses[1]

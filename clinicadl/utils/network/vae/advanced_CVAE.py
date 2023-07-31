@@ -103,7 +103,7 @@ class CVAE_3D_final_conv(Network):
         else:  # regular AE
             return mu
 
-    def _forward(self, image):
+    def forward(self, image):
         mu, logVar = self.encoder(image)
         if self.training:
             encoded = self.reparametrize(mu, logVar)
@@ -119,7 +119,7 @@ class CVAE_3D_final_conv(Network):
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
         input_ = input_dict["image"].to(self.device)
-        mu, logVar, reconstructed = self._forward(input_)
+        mu, logVar, reconstructed = self.forward(input_)
         losses = criterion(input_, reconstructed, mu, logVar)
         reconstruction_loss, kl_loss = losses[0], losses[1]
         total_loss = reconstruction_loss + self.beta * kl_loss

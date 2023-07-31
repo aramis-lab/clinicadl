@@ -90,7 +90,7 @@ class GeneratorUNet(Network):
 
         self.final = FinalLayer(128, 1)
 
-    def _forward(self, x):
+    def forward(self, x):
         d1 = self.down1(x)
         d2 = self.down2(d1)
         d3 = self.down3(d2)
@@ -105,7 +105,7 @@ class GeneratorUNet(Network):
         return self.final(u4, d1)
 
     def predict(self, x):
-        return self._forward(x)
+        return self.forward(x)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
         images = input_dict["image"].to(self.device)
