@@ -86,7 +86,7 @@ class API(ABC):
         """
         raise NotImplementedError()
 
-    def is_master(self):
+    def is_master(self) -> bool:
         """
         Detects whether or not the given process is the master (i.e. rank 0)
         """
