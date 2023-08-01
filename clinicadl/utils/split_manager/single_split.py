@@ -9,12 +9,13 @@ class SingleSplit(SplitManager):
         caps_directory,
         tsv_path,
         diagnoses,
+        label,
         baseline=False,
         multi_cohort=False,
         split_list=None,
     ):
         super().__init__(
-            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, split_list
+            caps_directory, tsv_path, diagnoses, label, baseline, multi_cohort, split_list
         )
 
     def max_length(self) -> int:

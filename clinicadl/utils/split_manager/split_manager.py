@@ -20,6 +20,7 @@ class SplitManager:
         caps_directory: Path,
         tsv_path: Path,
         diagnoses,
+        label,
         baseline=False,
         multi_cohort=False,
         split_list=None,
@@ -45,6 +46,10 @@ class SplitManager:
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)
         self.multi_cohort = multi_cohort
         self.diagnoses = diagnoses
+        if label is not None:
+            self.diagnosis = label
+        else :
+            self.diagnosis = "diagnosis"
         self.baseline = baseline
         self.split_list = split_list
 
@@ -195,9 +200,11 @@ class SplitManager:
                 )
             except:
                 pass
+        if train_df[train_df.diagnosis.isin(cohort_diagnoses)] is None :
+            logger.debug("Your diagnosis is not specified in tsv file")
 
-        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
-        valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
+        train_df = train_df[train_df[self.diagnosis].isin(cohort_diagnoses)]
+        valid_df = valid_df[valid_df[self.diagnosis].isin(cohort_diagnoses)]
 
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)
