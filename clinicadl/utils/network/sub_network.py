@@ -116,6 +116,7 @@ class CNN(Network):
             )
 
     def forward(self, x):
+        print(x)
         x = self.convolutions(x)
         return self.fc(x)
 
@@ -123,8 +124,9 @@ class CNN(Network):
         return self.forward(x)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
-        images, labels = input_dict["image"].to(self.device), input_dict["label"].to(
-            self.device
+        images, labels = (
+            input_dict["image"].to(self.device),
+            input_dict["label"].to(self.device),
         )
         train_output = self.forward(images)
         if use_labels:

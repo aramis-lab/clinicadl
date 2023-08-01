@@ -60,4 +60,4 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
     if len(stopped_splits) > 0:
         maps_manager.resume(stopped_splits)
     if len(absent_splits) > 0:
-        maps_manager.train(absent_splits, overwrite=True)
+        maps_manager.train_pythae(absent_splits)

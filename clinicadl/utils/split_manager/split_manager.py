@@ -25,7 +25,6 @@ class SplitManager:
         split_list=None,
     ):
         """
-
         Parameters
         ----------
         caps_director: str (path)
@@ -40,6 +39,9 @@ class SplitManager:
         split_list: List[str]
 
         """
+
+        tsv_path = Path(tsv_path)
+        print(tsv_path)
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)
@@ -62,7 +64,6 @@ class SplitManager:
     def allowed_splits_list(self):
         """
         List of possible splits if no restriction was applied
-
         Returns:
             list[int]: list of all possible splits
         """
@@ -71,7 +72,6 @@ class SplitManager:
     def __getitem__(self, item):
         """
         Returns a dictionary of DataFrames with train and validation data.
-
         Args:
             item (int): Index of the split wanted.
         Returns:
@@ -126,6 +126,7 @@ class SplitManager:
     ):
         """Concatenated the diagnoses needed to form the train and validation sets."""
         tmp_cohort_path = cohort_path if cohort_path is not None else self.tsv_path
+
         train_path, valid_path = self._get_tsv_paths(
             tmp_cohort_path,
             split,
@@ -208,7 +209,6 @@ class SplitManager:
     def _get_tsv_paths(self, cohort_path, *args):
         """
         Computes the paths to the TSV files needed depending on the split structure.
-
         Args:
             cohort_path (str): path to the split structure of a cohort.
             split (int): Index of the split.

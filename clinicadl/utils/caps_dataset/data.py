@@ -11,6 +11,7 @@ import torch
 import torchio as tio
 import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
+from pythae.data.datasets import DatasetOutput
 from torch.utils.data import Dataset
 
 from clinicadl.prepare_data.prepare_data_utils import (
@@ -82,7 +83,12 @@ class CapsDataset(Dataset):
                 f"Columns should include {mandatory_col}"
             )
         self.elem_per_image = self.num_elem_per_image()
-        self.size = self[0]["image"].size()
+        print("caps dataset self[O]")
+        print(self[0])
+        if "image" in self[0].keys():
+            self.size = self[0]["image"].size()
+        else:
+            self.size = self[0].data.size()
 
     @property
     @abc.abstractmethod
@@ -347,6 +353,35 @@ class CapsDatasetImage(CapsDataset):
 
     def num_elem_per_image(self):
         return 1
+
+
+class PythaeCAPS(CapsDatasetImage):
+    def __init__(
+        self,
+        caps_directory,
+        data_file,
+        preprocessing_dict,
+        train_transformations,
+        all_transformations,
+    ):
+        super().__init__(
+            caps_directory,
+            data_file,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            label_presence=False,
+            all_transformations=all_transformations,
+        )
+
+    def __getitem__(self, index):
+        X = super().__getitem__(index)
+        return DatasetOutput(
+            data=X["image"],
+            participant_id=X["participant_id"],
+            session_id=X["session_id"],
+            image_id=X["image_id"],
+            image_path=X["image_path"],
+        )
 
 
 class CapsDatasetPatch(CapsDataset):
@@ -734,6 +769,7 @@ def return_dataset(
     cnn_index: int = None,
     label_presence: bool = True,
     multi_cohort: bool = False,
+    for_pythae: bool = False,
 ) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.
@@ -757,61 +793,71 @@ def return_dataset(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
 
-    if preprocessing_dict["mode"] == "image":
-        return CapsDatasetImage(
+    if for_pythae:
+        return PythaeCAPS(
             input_dir,
             data_df,
             preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
         )
-    elif preprocessing_dict["mode"] == "patch":
-        return CapsDatasetPatch(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            patch_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
-    elif preprocessing_dict["mode"] == "roi":
-        return CapsDatasetRoi(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            roi_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
-    elif preprocessing_dict["mode"] == "slice":
-        return CapsDatasetSlice(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            slice_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
+
     else:
-        raise NotImplementedError(
-            f"Mode {preprocessing_dict['mode']} is not implemented."
-        )
+        if preprocessing_dict["mode"] == "image":
+            return CapsDatasetImage(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "patch":
+            return CapsDatasetPatch(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                patch_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "roi":
+            return CapsDatasetRoi(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                roi_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "slice":
+            return CapsDatasetSlice(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                slice_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        else:
+            raise NotImplementedError(
+                f"Mode {preprocessing_dict['mode']} is not implemented."
+            )
 
 
 ##################################
@@ -1088,7 +1134,6 @@ def get_transforms(
 def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=False):
     """
     Load data not managed by split_manager.
-
     Args:
         test_path (str): path to the test TSV files / split directory / TSV file for multi-cohort
         diagnoses_list (List[str]): list of the diagnoses wanted in case of split_dir or multi-cohort
@@ -1191,7 +1236,6 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
 def check_multi_cohort_tsv(tsv_df: pd.DataFrame, purpose: str) -> None:
     """
     Checks that a multi-cohort TSV file is valid.
-
     Args:
         tsv_df (pd.DataFrame): DataFrame of multi-cohort definition.
         purpose (str): what the TSV file describes (CAPS or TSV).
