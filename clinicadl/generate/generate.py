@@ -674,23 +674,35 @@ def generate_motion_dataset(
     num_transforms: int = 2,
 ):
     """
-    Generates a fully separable dataset.
-    Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Generates a dataset, based on the images of the CAPS directory, where
+    all the images are corrupted with motion artefacts using the image-based simulation of torchio.
     Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        tracer: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+        caps_directory:  Path
+            Path to the CAPS directory.
+        output_dir: Path
+            Folder containing the synthetic dataset in CAPS format.
+        n_proc: int
+            Number of cores used during the task.
+        tsv_path: Path
+            Path to tsv file of list of subjects/sessions.
+        preprocessing: str
+            Preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: bool
+            If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: bool
+            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: str
+            Name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: str
+            Name of the reference region when using `pet-linear` preprocessing.
+        translation: List
+            Translation range in mm of simulated movements.
+        rotation : List
+            Rotation range in degree of simulated movement.
+        num_transformes: int
+            Number of simulated movements.
     Returns:
         Folder structure where images are stored in CAPS format.
-    Raises:
-        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 
     commandline_to_json(
@@ -791,23 +803,31 @@ def generate_contrast_dataset(
     gamma: List = [-0.2, -0.05],
 ):
     """
-    Generates a fully separable dataset.
-    Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Generates a dataset, based on the images of the CAPS directory, where
+    all the images are corrupted with contrast artefacts using the gamma simulation of torchio.
     Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        tracer: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+        caps_directory: Path
+            Path to the CAPS directory.
+        output_dir: Path
+            Folder containing the synthetic dataset in CAPS format.
+        n_proc: int
+            Number of cores used during the task.
+        tsv_path: Path
+            Path to tsv file of list of subjects/sessions.
+        preprocessing: str
+            Preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: bool
+            If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: bool
+            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: str
+            Name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: str
+            Name of the reference region when using `pet-linear` preprocessing.
+        gamma: List
+            Range to compute gamma exponentiation.
     Returns:
         Folder structure where images are stored in CAPS format.
-    Raises:
-        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 
     commandline_to_json(
@@ -904,23 +924,29 @@ def generate_noise_dataset(
     noise_std: List = [5, 15],
 ):
     """
-    Generates a noise corrupted separable dataset.
-    Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Generates a dataset, based on the images of the CAPS directory, where
+    all the images are corrupted with noise artefacts using the gaussian noise simulation of torchio.
     Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        tracer: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+        caps_directory: Path
+            Path to the CAPS directory.
+        output_dir: Path
+            Folder containing the synthetic dataset in CAPS format.
+        n_proc: int
+            Number of cores used during the task.
+        tsv_path: Path
+            Path to tsv file of list of subjects/sessions.
+        preprocessing: str
+            Preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: bool
+            If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: bool
+            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: str
+            Name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: str
+            Name of the reference region when using `pet-linear` preprocessing.
     Returns:
         Folder structure where images are stored in CAPS format.
-    Raises:
-        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 
     commandline_to_json(
@@ -999,6 +1025,4 @@ def generate_noise_dataset(
 
     write_missing_mods(output_dir, output_df)
 
-    logger.info(
-        f"Images corrupted with contrast artefacts were generated at {output_dir}"
-    )
+    logger.info(f"Images corrupted with noise artefacts were generated at {output_dir}")
