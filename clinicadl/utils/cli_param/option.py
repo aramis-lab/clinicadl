@@ -100,7 +100,6 @@ batch_size = click.option(
 amp = click.option(
     "--amp/--no-amp",
     type=bool,
-    default=None,
     help="Enables automatic mixed precision during training and inference.",
 )
 

@@ -1372,6 +1372,10 @@ class MapsManager:
         self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
+        elif self.parameters["amp"]:
+            raise ClinicaDLArgumentError(
+                "AMP is designed to work with modern GPUs. Please add the --gpu flag."
+            )
 
         _, transformations = get_transforms(
             normalize=self.normalize,

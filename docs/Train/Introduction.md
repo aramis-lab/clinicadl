@@ -62,6 +62,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
+    - `--amp/--no-amp` (bool) Enables Pytorch's Automatic Mixed Precision with float16. Saves some memory and might speedup training with modern GPUs. We do not allow AMP on CPU. Default: `False`.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
@@ -81,7 +82,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
-- **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms)
+- **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms))
     - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
     - `--nondeterministic/--deterministic` (bool) forces the training process to be deterministic.
     If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `--nondeterministic`.
@@ -98,6 +99,8 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
     This allows to virtually increase the size of the batch. Default: `1`.
+    - `--profiler/--no-profiler` (bool) Enables Pytorch profiler for the first 30 steps after a short warmup. It will make an execution trace in the output directory and some statistics about the CPU and GPU usage. Default: `False`.
+
 - **Transfer learning parameters**
     - `--transfer_path` (Path) is the path to the model used for transfer learning.
     - `--transfer_selection_metric` (str) is the transfer learning selection metric.

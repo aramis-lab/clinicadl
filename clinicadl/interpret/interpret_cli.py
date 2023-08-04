@@ -3,6 +3,7 @@ from pathlib import Path
 import click
 
 from clinicadl.utils import cli_param
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -119,6 +120,10 @@ def cli(
 
     if gpu:
         check_gpu()
+    elif amp:
+        raise ClinicaDLArgumentError(
+            "AMP is designed to work with modern GPUs. Please add the --gpu flag."
+        )
 
     from .interpret import interpret
 
