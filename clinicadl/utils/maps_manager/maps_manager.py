@@ -1329,7 +1329,6 @@ class MapsManager:
                 "AMP is designed to work with modern GPUs. Please add the --gpu flag."
             )
 
-
         _, transformations = get_transforms(
             normalize=self.normalize,
             size_reduction=self.size_reduction,
