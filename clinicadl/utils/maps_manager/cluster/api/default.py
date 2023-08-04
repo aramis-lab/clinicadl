@@ -16,7 +16,6 @@ class DefaultAPI(API):
     name: str = "Sequential"
 
     def __init__(self):
-        self.base_port: int = 13689
         self.current_port: int = None
 
     @staticmethod
