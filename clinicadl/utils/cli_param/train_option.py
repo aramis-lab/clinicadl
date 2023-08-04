@@ -47,7 +47,6 @@ evaluation_steps = cli_param.option_group.computational_group.option(
 amp = cli_param.option_group.computational_group.option(
     "--amp/--no-amp",
     type=bool,
-    default=None,
     help="Enables automatic mixed precision during training and inference.",
 )
 # Reproducibility
@@ -266,7 +265,6 @@ accumulation_steps = cli_param.option_group.optimization_group.option(
 profiler = cli_param.option_group.optimization_group.option(
     "--profiler/--no-profiler",
     type=bool,
-    default=None,
     help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
     "It will make an execution trace and some statistics about the CPU and GPU usage.",
 )
