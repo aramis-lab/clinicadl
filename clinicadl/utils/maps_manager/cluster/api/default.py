@@ -20,20 +20,14 @@ class DefaultAPI(API):
         self.current_port: int = None
 
     @staticmethod
-    def find_available_port(starting_port: int) -> int:
+    def find_available_port() -> int:
         """
         Tries to bind to local port until it finds one which is available.
         This is used to set the master port environment variable.
         """
-        port = starting_port
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-            while True:
-                try:
-                    sock.bind(("localhost", port))
-                except PermissionError:
-                    port += 1
-                else:
-                    break
+            sock.bind(("localhost", 0))
+            port = sock.getsockname()[1]
         return port
 
     def is_launcher(self) -> bool:
@@ -68,5 +62,5 @@ class DefaultAPI(API):
 
     def port(self) -> int:
         if self.current_port is None:
-            self.current_port = self.find_available_port(self.base_port)
+            self.current_port = self.find_available_port()
         return self.current_port
