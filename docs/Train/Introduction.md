@@ -62,6 +62,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
+    - `--amp/--no-amp` (bool) Enables Pytorch's Automatic Mixed Precision with float16. Saves some memory and might speedup training with modern GPUs. We do not allow AMP on CPU. Default: `False`.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
