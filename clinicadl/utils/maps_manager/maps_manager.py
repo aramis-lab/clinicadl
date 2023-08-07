@@ -896,17 +896,6 @@ class MapsManager:
                         scaler.scale(loss).backward()
 
                     if update:
-                        with autocast(enabled=self.amp):
-                            _, loss_dict = model.compute_outputs_and_loss(
-                                data, criterion
-                            )
-                        logger.debug(f"Train loss dictionnary {loss_dict}")
-                        loss = loss_dict["loss"]
-                        scaler.scale(loss).backward()
-
-                    if (
-                        i + 1
-                    ) % self.accumulation_steps == 0:  ##pas sur de l'indentation ici
                         step_flag = False
                         scaler.step(optimizer)
                         scaler.update()
