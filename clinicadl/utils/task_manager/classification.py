@@ -108,7 +108,9 @@ class ClassificationManager(TaskManager):
                 return sampler.RandomSampler(weights)
         elif sampler_option == "weighted":
             if world_size is not None and rank is not None:
-                length = len(weights) // world_size + int(rank < len(weights) % world_size)
+                length = len(weights) // world_size + int(
+                    rank < len(weights) % world_size
+                )
             else:
                 length = len(weights)
             return sampler.WeightedRandomSampler(weights, length)
