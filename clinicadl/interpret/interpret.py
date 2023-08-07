@@ -19,6 +19,7 @@ def interpret(
     batch_size: int,
     n_proc: int,
     gpu: bool,
+    amp: bool,
     verbose=0,
     overwrite: bool = False,
     overwrite_name: bool = False,
@@ -63,6 +64,8 @@ def interpret(
         If given, sets the value of num_workers, else use the same as in training step.
     gpu: bool
         If given, a new value for the device of the model will be computed.
+    amp: bool
+        If enabled, uses Automatic Mixed Precision (requires GPU usage).
     overwrite: bool
         If True former definition of data group is erased.
     overwrite_name: bool
@@ -97,6 +100,7 @@ def interpret(
         batch_size=batch_size,
         n_proc=n_proc,
         gpu=gpu,
+        amp=amp,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
         level=level,

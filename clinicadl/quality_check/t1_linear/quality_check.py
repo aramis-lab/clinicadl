@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
+from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
@@ -29,6 +30,7 @@ def quality_check(
     batch_size: int = 1,
     n_proc: int = 0,
     gpu: bool = True,
+    amp: bool = False,
     network: str = "darq",
     use_tensor: bool = False,
     use_uncropped_image: bool = True,
@@ -49,6 +51,8 @@ def quality_check(
     batch_size: int
     n_proc: int
     gpu: int
+    amp: bool
+        If enabled, uses Automatic Mixed Precision (requires GPU usage).
     network: str
         Architecture of the pretrained network pretrained network that learned to classify images that are adequately registered.
         To chose between "darq" and "deep-qc"
@@ -114,6 +118,10 @@ def quality_check(
     if gpu:
         logger.debug("Working on GPU.")
         model = model.cuda()
+    elif amp:
+        raise ClinicaDLArgumentError(
+            "AMP is designed to work with modern GPUs. Please add the --gpu flag."
+        )
 
     with torch.no_grad():
         # Transform caps_dir in dict
@@ -139,7 +147,12 @@ def quality_check(
             inputs = data["image"]
             if gpu:
                 inputs = inputs.cuda()
-            outputs = softmax.forward(model(inputs))
+            with autocast(enabled=amp):
+                outputs = softmax(model(inputs))
+            # We cast back to 32bits. It should be a no-op as softmax is not eligible
+            # to fp16 and autocast is forbidden on CPU (output would be bf16 otherwise).
+            # But just in case...
+            outputs = outputs.float()
 
             for idx, sub in enumerate(data["participant_id"]):
                 pass_probability = outputs[idx, 1].item()
