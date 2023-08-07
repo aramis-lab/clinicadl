@@ -782,7 +782,10 @@ class MapsManager:
                 )
 
                 train_sampler = self.task_manager.generate_sampler(
-                    data_train, self.sampler
+                    data_train,
+                    self.sampler,
+                    world_size=cluster.world_size,
+                    rank=cluster.rank,
                 )
                 train_loader = DataLoader(
                     data_train,
@@ -792,11 +795,18 @@ class MapsManager:
                     worker_init_fn=pl_worker_init_function,
                 )
 
+                valid_sampler = DistributedSampler(
+                    data_valid,
+                    num_replicas=cluster.world_size,
+                    rank=cluster.rank,
+                    shuffle=False,
+                )
                 valid_loader = DataLoader(
                     data_valid,
                     batch_size=self.batch_size,
                     shuffle=False,
                     num_workers=self.n_proc,
+                    sampler=valid_sampler,
                 )
 
                 self._train(
@@ -880,7 +890,12 @@ class MapsManager:
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
-            train_loader.sampler.set_epoch(epoch)
+
+            if isinstance(train_loader.sampler, DistributedSampler):
+                # It should always be true but just in case we get a RandomSampler
+                # or a WeightedRandomSampler, we do not want to execute this line.
+                train_loader.sampler.set_epoch(epoch)
+
             model.zero_grad(set_to_none=True)
             evaluation_flag, step_flag = True, True
 
