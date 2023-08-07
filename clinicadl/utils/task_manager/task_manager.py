@@ -230,14 +230,9 @@ class TaskManager:
             metrics_dict = None
         else:
             metrics_dict = self.compute_metrics(results_df)
-            handles = []
             for loss_component in total_loss.keys():
-                handles.append(
-                    dist.reduce(total_loss[loss_component], dst=0, async_op=True)
-                )
+                dist.reduce(total_loss[loss_component], dst=0)
                 metrics_dict[loss_component] = total_loss[loss_component].item()
-            for handle in handles:
-                handle.wait()
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
