@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.utils.caps_dataset.data import (
@@ -190,6 +191,7 @@ class MapsManager:
         batch_size: int = None,
         n_proc: int = None,
         gpu: bool = None,
+        amp: bool = False,
         overwrite: bool = False,
         label: str = None,
         label_code: Optional[Dict[str, int]] = "default",
@@ -217,6 +219,7 @@ class MapsManager:
             batch_size: If given, sets the value of batch_size, else use the same as in training step.
             n_proc: If given, sets the value of num_workers, else use the same as in training step.
             gpu: If given, a new value for the device of the model will be computed.
+            amp: If enabled, uses Automatic Mixed Precision (requires GPU usage).
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
@@ -304,6 +307,7 @@ class MapsManager:
                         split_selection_metrics,
                         use_labels=use_labels,
                         gpu=gpu,
+                        amp=amp,
                         network=network,
                     )
                     if save_tensor:
@@ -364,6 +368,7 @@ class MapsManager:
                     split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
+                    amp=amp,
                 )
                 if save_tensor:
                     logger.debug("Saving tensors")
@@ -409,6 +414,7 @@ class MapsManager:
         batch_size=None,
         n_proc=None,
         gpu=None,
+        amp=False,
         overwrite=False,
         overwrite_name=False,
         level=None,
@@ -453,6 +459,8 @@ class MapsManager:
             If given, sets the value of num_workers, else use the same as in training step.
         gpu: bool
             If given, a new value for the device of the model will be computed.
+        amp: bool
+            If enabled, uses Automatic Mixed Precision (requires GPU usage).
         overwrite: bool
             If True erase the occurrences of data_group.
         overwrite_name: bool
@@ -558,7 +566,7 @@ class MapsManager:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(
-                        images, target_node, level=level
+                        images, target_node, level=level, amp=amp
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
@@ -844,25 +852,28 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
-            model.zero_grad()
+            model.zero_grad(set_to_none=True)
             evaluation_flag, step_flag = True, True
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    with autocast(enabled=self.amp):
+                        _, loss_dict = model.compute_outputs_and_loss(data, criterion)
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
-                    loss.backward()
+                    scaler.scale(loss).backward()
 
                     if (i + 1) % self.accumulation_steps == 0:
                         step_flag = False
-                        optimizer.step()
-                        optimizer.zero_grad()
+                        scaler.step(optimizer)
+                        scaler.update()
+                        optimizer.zero_grad(set_to_none=True)
 
                         del loss
 
@@ -874,10 +885,10 @@ class MapsManager:
                             evaluation_flag = False
 
                             _, metrics_train = self.task_manager.test(
-                                model, train_loader, criterion
+                                model, train_loader, criterion, amp=self.amp
                             )
                             _, metrics_valid = self.task_manager.test(
-                                model, valid_loader, criterion
+                                model, valid_loader, criterion, amp=self.amp
                             )
 
                             model.train()
@@ -917,15 +928,20 @@ class MapsManager:
 
             # Update weights one last time if gradients were computed without update
             if (i + 1) % self.accumulation_steps != 0:
-                optimizer.step()
-                optimizer.zero_grad()
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad(set_to_none=True)
 
             # Always test the results and save them once at the end of the epoch
-            model.zero_grad()
+            model.zero_grad(set_to_none=True)
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-            _, metrics_train = self.task_manager.test(model, train_loader, criterion)
-            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
+            _, metrics_train = self.task_manager.test(
+                model, train_loader, criterion, amp=self.amp
+            )
+            _, metrics_valid = self.task_manager.test(
+                model, valid_loader, criterion, amp=self.amp
+            )
 
             model.train()
             train_loader.dataset.train()
@@ -971,6 +987,7 @@ class MapsManager:
             "train",
             split,
             self.selection_metrics,
+            amp=self.amp,
             network=network,
         )
         self._test_loader(
@@ -979,6 +996,7 @@ class MapsManager:
             "validation",
             split,
             self.selection_metrics,
+            amp=self.amp,
             network=network,
         )
 
@@ -1009,6 +1027,7 @@ class MapsManager:
         selection_metrics,
         use_labels=True,
         gpu=None,
+        amp=False,
         network=None,
     ):
         """
@@ -1022,6 +1041,7 @@ class MapsManager:
             selection_metrics (list[str]): List of metrics used to select the best models which are tested.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             gpu (bool): If given, a new value for the device of the model will be computed.
+            amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
@@ -1047,7 +1067,7 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels
+                model, dataloader, criterion, use_labels=use_labels, amp=amp
             )
             if use_labels:
                 if network is not None:
@@ -1061,6 +1081,7 @@ class MapsManager:
                 prediction_df, metrics, split, selection_metric, data_group=data_group
             )
 
+    @torch.no_grad()
     def _compute_output_nifti(
         self,
         dataset,
@@ -1108,12 +1129,10 @@ class MapsManager:
             for i in range(nb_imgs):
                 data = dataset[i]
                 image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device))
-                    .squeeze(0)
-                    .detach()
-                    .cpu()
-                )
+                x = image.unsqueeze(0).to(model.device)
+                with autocast(enabled=self.amp):
+                    output = model.predict(x)
+                output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
                 output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
@@ -1125,6 +1144,7 @@ class MapsManager:
                 nib.save(input_nii, nifti_path / input_filename)
                 nib.save(output_nii, nifti_path / output_filename)
 
+    @torch.no_grad()
     def _compute_output_tensors(
         self,
         dataset,
@@ -1174,9 +1194,10 @@ class MapsManager:
             for i in range(nb_modes):
                 data = dataset[i]
                 image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
-                )
+                x = image.unsqueeze(0).to(model.device)
+                with autocast(enabled=self.amp):
+                    output = model.predict(x)
+                output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
@@ -1304,6 +1325,10 @@ class MapsManager:
         self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
+        elif self.parameters["amp"]:
+            raise ClinicaDLArgumentError(
+                "AMP is designed to work with modern GPUs. Please add the --gpu flag."
+            )
 
         _, transformations = get_transforms(
             normalize=self.normalize,
