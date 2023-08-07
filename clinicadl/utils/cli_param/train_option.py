@@ -49,6 +49,7 @@ zero = cli_param.option_group.computational_group.option(
     type=bool,
     help="Enables Zero Redundancy Optimizer with Pytorch to save memory at the cost of communications.",
 )
+
 amp = cli_param.option_group.computational_group.option(
     "--amp/--no-amp",
     type=bool,
