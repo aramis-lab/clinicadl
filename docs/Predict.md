@@ -44,6 +44,7 @@ Optional arguments:
 - **Computational resources**
     - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behaviour is to try to use a
       GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
+    - `--amp/--no-amp` (bool) Enables Pytorch's Automatic Mixed Precision with float16. Might speedup inference with modern GPUs. We do not allow AMP on CPU. Default: `False`.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
 - **Reconstruction**

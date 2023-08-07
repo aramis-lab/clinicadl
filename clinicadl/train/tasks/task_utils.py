@@ -34,6 +34,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     # Change value in train dict depending on user provided options
     standard_options_list = [
         "accumulation_steps",
+        "amp",
         "architecture",
         "baseline",
         "batch_size",

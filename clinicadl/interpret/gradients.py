@@ -1,4 +1,5 @@
 import torch
+from torch.cuda.amp import autocast
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
@@ -13,14 +14,15 @@ class VanillaBackProp:
         self.model.eval()
         self.device = next(model.parameters()).device
 
-    def generate_gradients(self, input_batch, target_class, **kwargs):
+    def generate_gradients(self, input_batch, target_class, amp=False, **kwargs):
         # Forward
         input_batch = input_batch.to(self.device)
         input_batch.requires_grad = True
-        if hasattr(self.model, "variational") and self.model.variational:
-            _, _, _, model_output = self.model(input_batch)
-        else:
-            model_output = self.model(input_batch)
+        with autocast(enabled=amp):
+            if hasattr(self.model, "variational") and self.model.variational:
+                _, _, _, model_output = self.model(input_batch)
+            else:
+                model_output = self.model(input_batch)
         # Target for backprop
         one_hot_output = torch.zeros_like(model_output)
         one_hot_output[:, target_class] = 1
@@ -47,7 +49,9 @@ class GradCam:
         if not isinstance(model, CNN):
             raise ValueError("Grad-CAM was only implemented for CNN models.")
 
-    def generate_gradients(self, input_batch, target_class, level=None, **kwargs):
+    def generate_gradients(
+        self, input_batch, target_class, level=None, amp=False, **kwargs
+    ):
         """
         Generate the gradients map corresponding to the input_tensor.
         Args:
@@ -55,6 +59,7 @@ class GradCam:
             target_class (int): allows to choose from which node the gradients are back-propagated.
                 Default will back-propagate from the node corresponding to the true class of the image.
             level (int): layer number in the convolutional part after which the feature map is chosen.
+            amp (bool): whether or not to use automatic mixed precision during forward.
         Returns:
             (Tensor): the gradients map
         """
@@ -82,7 +87,8 @@ class GradCam:
         # Get last conv feature map
         feature_maps = conv_part(input_batch).detach()
         feature_maps.requires_grad = True
-        model_output = fc_part(pre_fc_part(feature_maps))
+        with autocast(enabled=amp):
+            model_output = fc_part(pre_fc_part(feature_maps))
         # Target for backprop
         one_hot_output = torch.zeros_like(model_output)
         if target_class is not None:
