@@ -885,6 +885,7 @@ class MapsManager:
             evaluation_flag, step_flag = True, True
 
             with profiler:
+                for i, data in enumerate(train_loader):
                     update: bool = (i + 1) % self.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
@@ -895,13 +896,17 @@ class MapsManager:
                         scaler.scale(loss).backward()
 
                     if update:
-                    with autocast(enabled=self.amp):
-                        _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    scaler.scale(loss).backward()
+                        with autocast(enabled=self.amp):
+                            _, loss_dict = model.compute_outputs_and_loss(
+                                data, criterion
+                            )
+                        logger.debug(f"Train loss dictionnary {loss_dict}")
+                        loss = loss_dict["loss"]
+                        scaler.scale(loss).backward()
 
-                    if (i + 1) % self.accumulation_steps == 0:
+                    if (
+                        i + 1
+                    ) % self.accumulation_steps == 0:  ##pas sur de l'indentation ici
                         step_flag = False
                         scaler.step(optimizer)
                         scaler.update()
