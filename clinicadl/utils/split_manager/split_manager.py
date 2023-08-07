@@ -48,7 +48,7 @@ class SplitManager:
         self.diagnoses = diagnoses
         if label is not None:
             self.diagnosis = label
-        else :
+        else:
             self.diagnosis = "diagnosis"
         self.baseline = baseline
         self.split_list = split_list
@@ -200,7 +200,7 @@ class SplitManager:
                 )
             except:
                 pass
-        if train_df[train_df.diagnosis.isin(cohort_diagnoses)] is None :
+        if train_df[train_df.diagnosis.isin(cohort_diagnoses)] is None:
             logger.debug("Your diagnosis is not specified in tsv file")
 
         train_df = train_df[train_df[self.diagnosis].isin(cohort_diagnoses)]
