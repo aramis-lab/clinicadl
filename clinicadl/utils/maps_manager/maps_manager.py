@@ -42,6 +42,33 @@ level_list: List[str] = ["warning", "info", "debug"]
 # TODO save weights on CPU for better compatibility
 
 
+pythae_models_list = [
+    "pythae_Adversarial_AE",
+    "pythae_AE",
+    "pythae_BetaTCVAE",
+    "pythae_BetaVAE",
+    "pythae_CIWAE",
+    "pythae_DisentangledBetaVAEpythae_FactorVAE",
+    "pythae_HVAE",
+    "pythae_IWAE",
+    "pythae_INFOVAE_MMD",
+    "pythae_MSSSIM_VAE",
+    "pythae_MIWAE",
+    "pythae_PIWAE",
+    "pythae_PoincareVAE",
+    "pythae_RAE_GP",
+    "pythae_RAE_L2",
+    "pythae_RHVAE",
+    "pythae_SVAE",
+    "pythae_VAE",
+    "pythae_VAE_IAF",
+    "pythae_VAE_LinNF",
+    "pythae_VAEGAN",
+    "pythae_VAMP",
+    "pythae_VQVAE",
+    "pythae_WAE_MMD",
+ ]
+
 class MapsManager:
     def __init__(
         self,
@@ -1106,7 +1133,10 @@ class MapsManager:
             nb_imgs = len(dataset)
             for i in range(nb_imgs):
                 data = dataset[i]
-                image = data["image"]
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
                 output = (
                     model.predict(image.unsqueeze(0).to(model.device))
                     .squeeze(0)
@@ -1172,7 +1202,10 @@ class MapsManager:
 
             for i in range(nb_modes):
                 data = dataset[i]
-                image = data["image"]
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
                 output = (
                     model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
                 )
@@ -1684,7 +1717,10 @@ class MapsManager:
         """
         from datetime import datetime
 
-        import clinicadl.utils.network as network_package
+        if self.pythae :
+            import clinithae.network as network_package
+        else :
+            import clinicadl.utils.network as network_package
 
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -1694,6 +1730,9 @@ class MapsManager:
         )
         args.remove("self")
         kwargs = dict()
+        print(args)
+        print("para")
+        print(self.parameters)
         for arg in args:
             kwargs[arg] = self.parameters[arg]
         kwargs["gpu"] = False
@@ -1913,7 +1952,10 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network trained (used in multi-network setting only).
         """
-        import clinicadl.utils.network as network_package
+        if self.pythae :
+            import clinithae.network as network_package
+        else :
+            import clinicadl.utils.network as network_package
 
         logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary
@@ -1959,7 +2001,14 @@ class MapsManager:
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
             logger.debug(f"Transfer from {transfer_class}")
-            model.transfer_weights(transfer_state["model"], transfer_class)
+            if "model" in transfer_state.keys():
+                model.transfer_weights(transfer_state["model"], transfer_class)
+            elif "model_state_dict" in transfer_state.keys():
+                model.transfer_weights(
+                    transfer_state["model_state_dict"], transfer_class
+                )
+            else:
+                raise KeyError("Unknow key in model state dictionnary.")
 
         return model, current_epoch
 
