@@ -892,8 +892,9 @@ class MapsManager:
             logger.info(f"Beginning epoch {epoch}.")
 
             if isinstance(train_loader.sampler, DistributedSampler):
-                # It should always be true but just in case we get a RandomSampler
-                # or a WeightedRandomSampler, we do not want to execute this line.
+                # It should always be true for a random sampler. But just in case
+                # we get a WeightedRandomSampler or a forgotten RandomSampler,
+                # we do not want to execute this line.
                 train_loader.sampler.set_epoch(epoch)
 
             model.zero_grad(set_to_none=True)

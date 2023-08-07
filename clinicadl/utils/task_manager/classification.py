@@ -107,7 +107,11 @@ class ClassificationManager(TaskManager):
             else:
                 return sampler.RandomSampler(weights)
         elif sampler_option == "weighted":
-            return sampler.WeightedRandomSampler(weights, len(weights))
+            if world_size is not None and rank is not None:
+                length = len(weights) // world_size + int(rank < len(weights) % world_size)
+            else:
+                length = len(weights)
+            return sampler.WeightedRandomSampler(weights, length)
         else:
             raise NotImplementedError(
                 f"The option {sampler_option} for sampler on classification task is not implemented"
