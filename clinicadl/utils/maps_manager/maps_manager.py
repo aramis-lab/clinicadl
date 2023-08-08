@@ -1995,11 +1995,12 @@ class MapsManager:
             for param, _ in zip(list_param, list_name):
                 param.requires_grad = False
 
-            for i in range(nb_unfrozen_layer * 2):  # Freeze of the last FC layers
-                param = list_param[len(list_param) - i - 1]
-                name = list_name[len(list_name) - i - 1]
-                param.requires_grad = True
-                logger.info(f"Layer {name} freezed {param.requires_grad}")
+            if nb_unfrozen_layer != 0:
+                for i in range(nb_unfrozen_layer * 2):  # Freeze of the last FC layers
+                    param = list_param[len(list_param) - i - 1]
+                    name = list_name[len(list_name) - i - 1]
+                    param.requires_grad = True
+                    logger.info(f"Layer {name} freezed {param.requires_grad}")
 
         return model, current_epoch
 
