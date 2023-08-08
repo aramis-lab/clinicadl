@@ -1339,11 +1339,11 @@ class MapsManager:
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
+        if "label" not in self.parameters:
+            self.parameters["label"] = None
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
-        if "label" not in self.parameters:
-            self.parameters["label"] = None
 
         self.task_manager = self._init_task_manager(df=train_df)
 
