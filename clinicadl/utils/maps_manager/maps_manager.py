@@ -2005,6 +2005,10 @@ class MapsManager:
 
     def _init_optimizer(self, model, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
+        print(self.optimizer)
+        print(model.parameters())
+        print(getattr(torch.optim, self.optimizer))
+        print(filter(lambda x: x.requires_grad, model.parameters()))
         optimizer = getattr(torch.optim, self.optimizer)(
             filter(lambda x: x.requires_grad, model.parameters()),
             lr=self.learning_rate,
