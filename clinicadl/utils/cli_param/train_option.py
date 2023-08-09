@@ -283,3 +283,10 @@ transfer_selection_metric = cli_param.option_group.transfer_learning_group.optio
     # default="loss",
     help="Metric used to select the model for transfer learning in the MAPS defined by transfer_path.",
 )
+nb_unfrozen_layer = cli_param.option_group.transfer_learning_group.option(
+    "-nul",
+    "--nb_unfrozen_layer",
+    type=int,
+    default=0,
+    help="Number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.",
+)
