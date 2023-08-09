@@ -557,7 +557,6 @@ class MapsManager:
                     split=split,
                     transfer_selection=selection_metric,
                     gpu=gpu,
-                    nb_unfrozen_layer=self.nb_unfrozen_layer,
                 )
 
                 interpreter = method_dict[method](model)
@@ -830,6 +829,7 @@ class MapsManager:
         )
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
+
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -1066,7 +1066,6 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
-                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
@@ -1993,14 +1992,14 @@ class MapsManager:
             logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
-            # sophie
-            list_name = [name for (name, _) in model.named_parameters()]
-            list_param = [param for (_, param) in model.named_parameters()]
-
-            for param, _ in zip(list_param, list_name):
-                param.requires_grad = False
-
             if nb_unfrozen_layer != 0:
+                # sophie
+                list_name = [name for (name, _) in model.named_parameters()]
+                list_param = [param for (_, param) in model.named_parameters()]
+
+                for param, _ in zip(list_param, list_name):
+                    param.requires_grad = False
+
                 for i in range(nb_unfrozen_layer * 2):  # Freeze of the last FC layers
                     param = list_param[len(list_param) - i - 1]
                     name = list_name[len(list_name) - i - 1]
@@ -2011,10 +2010,7 @@ class MapsManager:
 
     def _init_optimizer(self, model, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
-        print(self.optimizer)
-        print(model.parameters())
-        print(getattr(torch.optim, self.optimizer))
-        print(filter(lambda x: x.requires_grad, model.parameters()))
+
         optimizer = getattr(torch.optim, self.optimizer)(
             filter(lambda x: x.requires_grad, model.parameters()),
             lr=self.learning_rate,
