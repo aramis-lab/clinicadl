@@ -83,32 +83,33 @@ class SplitManager:
             tsv_df = pd.read_csv(self.tsv_path, sep="\t")
             train_df = pd.DataFrame()
             valid_df = pd.DataFrame()
-            found_diagnoses = set()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
                 cohort_path = tsv_df.loc[idx, "path"]
-                cohort_diagnoses = (
-                    tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
-                )
-                if bool(set(cohort_diagnoses) & set(self.diagnoses)):
-                    target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
+                # cohort_diagnoses = (
+                #     tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
+                # )
+                # if bool(set(cohort_diagnoses) & set(self.diagnoses)):
+                # target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
+                # cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
+                #     item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
+                # )
+                # cohort_train_df["cohort"] = cohort_name
+                # cohort_valid_df["cohort"] = cohort_name
+                # train_df = pd.concat([train_df, cohort_train_df])
+                # valid_df = pd.concat([valid_df, cohort_valid_df])
+                # found_diagnoses = found_diagnoses | (
+                #     set(cohort_diagnoses) & set(self.diagnoses)
+                # )
 
-                    cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
-                        item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
-                    )
-                    cohort_train_df["cohort"] = cohort_name
-                    cohort_valid_df["cohort"] = cohort_name
-                    train_df = pd.concat([train_df, cohort_train_df])
-                    valid_df = pd.concat([valid_df, cohort_valid_df])
-                    found_diagnoses = found_diagnoses | (
-                        set(cohort_diagnoses) & set(self.diagnoses)
-                    )
-
-            if found_diagnoses != set(self.diagnoses):
-                raise ValueError(
-                    f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
-                    f"do not correspond to the diagnoses wanted {set(self.diagnoses)}."
+                cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
+                    item, cohort_path=cohort_path
                 )
+                cohort_train_df["cohort"] = cohort_name
+                cohort_valid_df["cohort"] = cohort_name
+                train_df = pd.concat([train_df, cohort_train_df])
+                valid_df = pd.concat([valid_df, cohort_valid_df])
+
             train_df.reset_index(inplace=True, drop=True)
             valid_df.reset_index(inplace=True, drop=True)
         else:
@@ -121,9 +122,7 @@ class SplitManager:
             "validation": valid_df,
         }
 
-    def concatenate_diagnoses(
-        self, split, cohort_path: Path = None, cohort_diagnoses=None
-    ):
+    def concatenate_diagnoses(self, split, cohort_path: Path = None):
         """Concatenated the diagnoses needed to form the train and validation sets."""
         tmp_cohort_path = cohort_path if cohort_path is not None else self.tsv_path
         train_path, valid_path = self._get_tsv_paths(
@@ -132,8 +131,8 @@ class SplitManager:
         )
         logger.debug(f"Training data loaded at {train_path}")
         logger.debug(f"Validation data loaded at {valid_path}")
-        if cohort_diagnoses is None:
-            cohort_diagnoses = self.diagnoses
+        # if cohort_diagnoses is None:
+        #     cohort_diagnoses = self.diagnoses
 
         if self.baseline:
             train_path = train_path / "train_baseline.tsv"
@@ -145,62 +144,62 @@ class SplitManager:
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
 
-        list_columns = train_df.columns.values
+        # list_columns = train_df.columns.values
 
-        if (
-            "diagnosis"
-            not in list_columns
-            # or "age" not in list_columns
-            # or "sex" not in list_columns
-        ):
-            parents_path = train_path.resolve().parent
-            while (
-                not (parents_path / "labels.tsv").is_file()
-                and ((parents_path / "kfold.json").is_file())
-                or (parents_path / "split.json").is_file()
-            ):
-                parents_path = parents_path.parent
-            try:
-                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
-                train_df = pd.merge(
-                    train_df,
-                    labels_df,
-                    how="inner",
-                    on=["participant_id", "session_id"],
-                )
-            except:
-                pass
+        # if (
+        #     "diagnosis"
+        #     not in list_columns
+        #     # or "age" not in list_columns
+        #     # or "sex" not in list_columns
+        # ):
+        #     parents_path = train_path.resolve().parent
+        #     while (
+        #         not (parents_path / "labels.tsv").is_file()
+        #         and ((parents_path / "kfold.json").is_file())
+        #         or (parents_path / "split.json").is_file()
+        #     ):
+        #         parents_path = parents_path.parent
+        #     try:
+        #         labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+        #         train_df = pd.merge(
+        #             train_df,
+        #             labels_df,
+        #             how="inner",
+        #             on=["participant_id", "session_id"],
+        #         )
+        #     except:
+        #         pass
 
-        list_columns = valid_df.columns.values
-        if (
-            "diagnosis"
-            not in list_columns
-            # or "age" not in list_columns
-            # or "sex" not in list_columns
-        ):
-            parents_path = valid_path.resolve().parent
-            while (
-                not (parents_path / "labels.tsv").is_file()
-                and ((parents_path / "kfold.json").is_file())
-                or (parents_path / "split.json").is_file()
-            ):
-                parents_path = parents_path.parent
-            try:
-                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
-                valid_df = pd.merge(
-                    valid_df,
-                    labels_df,
-                    how="inner",
-                    on=["participant_id", "session_id"],
-                )
-            except:
-                pass
+        # list_columns = valid_df.columns.values
+        # if (
+        #     "diagnosis"
+        #     not in list_columns
+        #     # or "age" not in list_columns
+        #     # or "sex" not in list_columns
+        # ):
+        #     parents_path = valid_path.resolve().parent
+        #     while (
+        #         not (parents_path / "labels.tsv").is_file()
+        #         and ((parents_path / "kfold.json").is_file())
+        #         or (parents_path / "split.json").is_file()
+        #     ):
+        #         parents_path = parents_path.parent
+        #     try:
+        #         labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+        #         valid_df = pd.merge(
+        #             valid_df,
+        #             labels_df,
+        #             how="inner",
+        #             on=["participant_id", "session_id"],
+        #         )
+        #     except:
+        #         pass
 
-        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
-        valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
+        # train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
+        # valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
 
-        train_df.reset_index(inplace=True, drop=True)
-        valid_df.reset_index(inplace=True, drop=True)
+        # train_df.reset_index(inplace=True, drop=True)
+        # valid_df.reset_index(inplace=True, drop=True)
 
         return train_df, valid_df
 

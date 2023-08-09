@@ -1351,6 +1351,7 @@ class MapsManager:
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
+
         if (
             "label_code" not in self.parameters
             or len(self.parameters["label_code"]) == 0
@@ -1358,6 +1359,7 @@ class MapsManager:
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
+            print(self.parameters["label_code"])
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
