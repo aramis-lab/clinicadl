@@ -851,7 +851,6 @@ class MapsManager:
             run = WandB_class(split, self.parameters, self.maps_path.name)
 
         if self.parameters["track_exp"] == "mlflow":
-
             from clinicadl.utils.tracking_exp import Mlflow_class
 
             run = Mlflow_class(split, self.parameters, self.maps_path.name)
