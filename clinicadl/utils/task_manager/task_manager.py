@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import nibabel as nib
+import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
@@ -22,7 +24,7 @@ class TaskManager:
 
     @property
     @abstractmethod
-    def columns(self):
+    def columns(self, **kwargs):
         """
         List of the columns' names in the TSV file containing the predictions.
         """
@@ -174,6 +176,12 @@ class TaskManager:
         criterion: _Loss,
         use_labels: bool = True,
         amp: bool = False,
+        save_reconstruction_tensor=True,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
+        tensor_path=None,
+        nifti_path=None,
+        latent_tensor_path=None,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -200,22 +208,71 @@ class TaskManager:
                     outputs, loss_dict = model.compute_outputs_and_loss(
                         data, criterion, use_labels=use_labels
                     )
-                if i == 0:
-                    for loss_component in loss_dict.keys():
-                        total_loss[loss_component] = 0
-                for loss_component in total_loss.keys():
-                    total_loss[loss_component] += (
-                        loss_dict[loss_component].float().item()
-                    )
+                    if i == 0:
+                        for loss_component in loss_dict.keys():
+                            total_loss[loss_component] = 0
+                    for loss_component in total_loss.keys():
+                        total_loss[loss_component] += (
+                            loss_dict[loss_component].float().item()
+                        )
 
-                # Generate detailed DataFrame
-                for idx in range(len(data["participant_id"])):
-                    row = self.generate_test_row(idx, data, outputs.float())
-                    row_df = pd.DataFrame(row, columns=self.columns)
-                    results_df = pd.concat([results_df, row_df])
+                    image = data["data"]
+                    participant_id = data["participant_id"][0]
+                    session_id = data["session_id"][0]
+                    mode_id = data[f"{self.mode}_id"][0]
+                    # Save tensor
+                    if save_reconstruction_tensor:
+                        reconstruction = outputs["recon_x"].squeeze(0).cpu()
+                        input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        torch.save(image, tensor_path / input_filename)
+                        torch.save(
+                            reconstruction,
+                            tensor_path / output_filename,
+                        )
 
-                del outputs, loss_dict
+                    # Save nifti image
+                    if save_reconstruction_nifti:
+                        reconstruction = outputs["recon_x"].squeeze(0).cpu()
+                        # Convert tensor to nifti image with appropriate affine
+                        input_nii = nib.Nifti1Image(
+                            image[0].detach().numpy(), np.eye(4)
+                        )
+                        output_nii = nib.Nifti1Image(
+                            reconstruction[0].detach().numpy(),
+                            np.eye(4),
+                        )
+                        # Create file name according to participant and session id
+                        input_filename = (
+                            f"{participant_id}_{session_id}_image_input.nii.gz"
+                        )
+                        output_filename = (
+                            f"{participant_id}_{session_id}_image_output.nii.gz"
+                        )
+                        nib.save(input_nii, nifti_path / input_filename)
+                        nib.save(output_nii, nifti_path / output_filename)
+
+                    # Save latent tensor
+                    if save_latent_tensor:
+                        latent = outputs["embedding"].squeeze(0).cpu()
+                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                        torch.save(
+                            latent,
+                            latent_tensor_path / output_filename,
+                        )
+
+                    # Generate detailed DataFrame
+                    for idx in range(len(data["participant_id"])):
+                        row = self.generate_test_row(idx, data, outputs.float())
+                        row_df = pd.DataFrame(row, columns=self.columns)
+                        results_df = pd.concat([results_df, row_df])
+
+                    del outputs, loss_dict
+
             results_df.reset_index(inplace=True, drop=True)
+            results_df[self.evaluation_metrics] = results_df[
+                self.evaluation_metrics
+            ].apply(pd.to_numeric, axis=1)
 
         if not use_labels:
             metrics_dict = None
