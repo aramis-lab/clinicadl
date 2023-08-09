@@ -1993,18 +1993,17 @@ class MapsManager:
             model.transfer_weights(transfer_state["model"], transfer_class)
 
             if nb_unfrozen_layer != 0:
-                # sophie
                 list_name = [name for (name, _) in model.named_parameters()]
                 list_param = [param for (_, param) in model.named_parameters()]
 
                 for param, _ in zip(list_param, list_name):
                     param.requires_grad = False
 
-                for i in range(nb_unfrozen_layer * 2):  # Freeze of the last FC layers
+                for i in range(nb_unfrozen_layer * 2):  # Unfreeze the last layers
                     param = list_param[len(list_param) - i - 1]
                     name = list_name[len(list_name) - i - 1]
                     param.requires_grad = True
-                    logger.info(f"Layer {name} freezed {param.requires_grad}")
+                    logger.info(f"Layer {name} unfrozen {param.requires_grad}")
 
         return model, current_epoch
 

@@ -288,5 +288,5 @@ nb_unfrozen_layer = cli_param.option_group.transfer_learning_group.option(
     "--nb_unfrozen_layer",
     type=int,
     default=0,
-    help="Number of layer that will not be freezed at the end of the model. For example, if it is 2, the last two layers of the model will not be freezed.",
+    help="Number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.",
 )
