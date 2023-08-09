@@ -23,6 +23,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.batch_size
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
+@cli_param.option.amp
 @click.option(
     "--network",
     default="darq",
@@ -44,6 +45,7 @@ def cli(
     batch_size,
     n_proc,
     gpu,
+    amp,
     network,
     use_tensor,
     use_uncropped_image=True,
@@ -69,6 +71,7 @@ def cli(
         batch_size=batch_size,
         n_proc=n_proc,
         gpu=gpu,
+        amp=amp,
         network=network,
         use_tensor=use_tensor,
         use_uncropped_image=use_uncropped_image,
