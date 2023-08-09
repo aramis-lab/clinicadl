@@ -855,11 +855,13 @@ class MapsManager:
             resume=resume,
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
+            nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         model = DDP(model)
 
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
+
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -1170,6 +1172,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             model = DDP(model)
 
@@ -1234,6 +1237,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             model = DDP(model)
 
@@ -1303,6 +1307,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
 
             tensor_path = (
@@ -1985,6 +1990,7 @@ class MapsManager:
         self,
         transfer_path: Path = None,
         transfer_selection=None,
+        nb_unfrozen_layer=0,
         split=None,
         resume=False,
         gpu=None,
@@ -2049,10 +2055,24 @@ class MapsManager:
             logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
+            if nb_unfrozen_layer != 0:
+                list_name = [name for (name, _) in model.named_parameters()]
+                list_param = [param for (_, param) in model.named_parameters()]
+
+                for param, _ in zip(list_param, list_name):
+                    param.requires_grad = False
+
+                for i in range(nb_unfrozen_layer * 2):  # Unfreeze the last layers
+                    param = list_param[len(list_param) - i - 1]
+                    name = list_name[len(list_name) - i - 1]
+                    param.requires_grad = True
+                    logger.info(f"Layer {name} unfrozen {param.requires_grad}")
+
         return model, current_epoch
 
     def _init_optimizer(self, model, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
+
         optimizer_cls = getattr(torch.optim, self.optimizer)
         parameters = filter(lambda x: x.requires_grad, model.parameters())
         optimizer_kwargs = dict(
@@ -2221,7 +2241,11 @@ class MapsManager:
                     "Please precise the network number that must be loaded."
                 )
         return self._init_model(
-            self.maps_path, selection_metric, split, network=network
+            self.maps_path,
+            selection_metric,
+            split,
+            network=network,
+            nb_unfrozen_layer=self.nb_unfrozen_layer,
         )[0]
 
     def get_best_epoch(
