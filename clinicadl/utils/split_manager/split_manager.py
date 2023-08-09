@@ -20,7 +20,6 @@ class SplitManager:
         caps_directory: Path,
         tsv_path: Path,
         diagnoses,
-        label,
         baseline=False,
         multi_cohort=False,
         split_list=None,
