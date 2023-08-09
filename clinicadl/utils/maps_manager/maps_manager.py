@@ -557,6 +557,7 @@ class MapsManager:
                     split=split,
                     transfer_selection=selection_metric,
                     gpu=gpu,
+                    nb_unfrozen_layer=self.nb_unfrozen_layer,
                 )
 
                 interpreter = method_dict[method](model)
@@ -1065,6 +1066,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
@@ -1114,6 +1116,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
 
             nifti_path = (
@@ -1175,6 +1178,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
 
             tensor_path = (
@@ -1241,6 +1245,7 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
+                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
 
             tensor_path = (
@@ -2172,7 +2177,11 @@ class MapsManager:
                     "Please precise the network number that must be loaded."
                 )
         return self._init_model(
-            self.maps_path, selection_metric, split, network=network
+            self.maps_path,
+            selection_metric,
+            split,
+            network=network,
+            nb_unfrozen_layer=self.nb_unfrozen_layer,
         )[0]
 
     def get_best_epoch(
