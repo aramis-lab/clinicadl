@@ -208,7 +208,6 @@ class TaskManager:
         model.eval()
         dataloader.dataset.eval()
 
-        cols = self.columns()
         results_df = pd.DataFrame(columns=self.columns)
         mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
 
