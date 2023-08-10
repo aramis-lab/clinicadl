@@ -209,7 +209,7 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
-        mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
+        mc_results_df = pd.DataFrame()
 
         total_loss = {}
         with torch.no_grad():
