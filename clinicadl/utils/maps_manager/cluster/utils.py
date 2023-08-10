@@ -4,7 +4,7 @@
 import warnings
 from logging import Filter
 from re import findall, split, sub
-from typing import Callable, List, Set, Tuple
+from typing import List, Set, Tuple
 
 
 def titlecase(string: str) -> str:
@@ -12,21 +12,6 @@ def titlecase(string: str) -> str:
     Converts a string to titlecase.
     """
     return "".join(x for x in string.title() if x.isalnum())
-
-
-def descriptorize(getter: Callable):
-    """
-    Converts a method from a class to a descriptor, i.e. enables calling it without
-    parentheses, but always without any arguments.
-    """
-    descriptor_cls = type(
-        titlecase(getter.__name__),
-        (),
-        {
-            "__get__": lambda *args, **kwargs: getter(),
-        },
-    )
-    return descriptor_cls()
 
 
 def get_first_host(hostlist: str) -> str:
