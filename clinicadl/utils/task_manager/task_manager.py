@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import nibabel as nib
+import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
