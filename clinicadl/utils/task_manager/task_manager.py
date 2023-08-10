@@ -208,7 +208,8 @@ class TaskManager:
         model.eval()
         dataloader.dataset.eval()
 
-        results_df = pd.DataFrame(columns=self.columns())
+        cols = self.columns()
+        results_df = pd.DataFrame(columns=cols)
         mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
 
         total_loss = {}
