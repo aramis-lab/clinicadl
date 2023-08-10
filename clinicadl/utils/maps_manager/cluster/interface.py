@@ -71,10 +71,6 @@ class Interface(object):
             "current_API",
             "all_APIs",
             "crawl_module_for_APIs",
-            "__file__",
-            "__path__",
-            "__cached__",
-            "__name__",
         ]
 
     def __dir__(self) -> str:
