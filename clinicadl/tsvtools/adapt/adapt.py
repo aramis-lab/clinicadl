@@ -72,7 +72,7 @@ def adapt(old_tsv_dir: Path, new_tsv_dir: Path, subset_name="labels", labels_lis
     if not df_baseline.empty:
         df_baseline.to_csv(str(new_tsv_dir / (subset_name + "_baseline.tsv")), sep="\t")
 
-    if "split.json" in files_list:
+    if (old_tsv_dir / "split.json") in files_list:
         new_split_dir = new_tsv_dir / "split"
         with (old_tsv_dir / "split.json").open(mode="r") as f:
             parameters_split = json.load(f)
