@@ -24,7 +24,7 @@ class TaskManager:
 
     @property
     @abstractmethod
-    def columns(self):
+    def columns(self, **kwargs):
         """
         List of the columns' names in the TSV file containing the predictions.
         """

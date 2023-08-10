@@ -309,6 +309,10 @@ class MapsManager:
                         gpu=gpu,
                         amp=amp,
                         network=network,
+                        seed=self.parameters["seed"],
+                        save_reconstruction_tensor=save_tensor,
+                        save_reconstruction_nifti=save_nifti,
+                        save_latent_tensor=save_latent_tensor,
                     )
                     if save_tensor:
                         logger.debug("Saving tensors")
@@ -369,6 +373,10 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                     amp=amp,
+                    seed=self.parameters["seed"],
+                    save_reconstruction_tensor=save_tensor,
+                    save_reconstruction_nifti=save_nifti,
+                    save_latent_tensor=save_latent_tensor,
                 )
                 if save_tensor:
                     logger.debug("Saving tensors")
@@ -1002,7 +1010,7 @@ class MapsManager:
         )
 
         if self.task_manager.save_outputs:
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "train",
                 split,
@@ -1010,7 +1018,7 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "validation",
                 split,
@@ -1030,6 +1038,11 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
+        monte_carlo=None,
+        seed=None,
+        save_reconstruction_tensor=True,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1044,6 +1057,11 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
             network (int): Index of the network tested (only used in multi-network setting).
+            monte_calro (int): Number of Monte-Carlo samples in the latent space.
+            seed (int): Random seed used for the Monte-Carlo sampling.
+            save_tensor: If True, saves the output tensor for each input in the test set.
+            save_nifti: If True, saves the output tensor for each input in the test set as a NIfTI file.
+            save_latent_tensor: If True, saves the latent tensor for each input in the test set.
         """
         for selection_metric in selection_metrics:
             log_dir = (
@@ -1067,8 +1085,54 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+
+            tensor_path = None
+            if save_reconstruction_tensor:
+                tensor_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "tensors"
+                )
+                tensor_path.mkdir(parents=True, exist_ok=True)
+
+            nifti_path = None
+            if save_reconstruction_nifti:
+                nifti_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "nifti_images"
+                )
+                nifti_path.mkdir(parents=True, exist_ok=True)
+
+            latent_tensor_path = None
+            if save_latent_tensor:
+                latent_tensor_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "latent_tensors"
+                )
+                latent_tensor_path.mkdir(parents=True, exist_ok=True)
+
+            prediction_df, metrics, mc_prediction_df = self.task_manager.test(
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=amp,
+                monte_carlo=monte_carlo,
+                seed=seed,
+                save_reconstruction_tensor=save_reconstruction_tensor,
+                save_reconstruction_nifti=save_reconstruction_nifti,
+                save_latent_tensor=save_latent_tensor,
+                tensor_path=tensor_path,
+                nifti_path=nifti_path,
+                latent_tensor_path=latent_tensor_path,
             )
             if use_labels:
                 if network is not None:
@@ -1079,7 +1143,13 @@ class MapsManager:
 
             # Replace here
             self._mode_level_to_tsv(
-                prediction_df, metrics, split, selection_metric, data_group=data_group
+                prediction_df,
+                metrics,
+                split,
+                selection_metric,
+                data_group=data_group,
+                monte_carlo=monte_carlo,
+                mc_results_df=mc_prediction_df,
             )
 
     @torch.no_grad()
@@ -1130,14 +1200,17 @@ class MapsManager:
             nb_imgs = len(dataset)
             for i in range(nb_imgs):
                 data = dataset[i]
-                image = data["image"]
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
                 x = image.unsqueeze(0).to(model.device)
                 with autocast(enabled=self.amp):
                     output = model.predict(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
-                output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
+                output_nii = nib.Nifti1Image(output[0].detach().numpy(), eye(4))
                 # Create file name according to participant and session id
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
@@ -1146,13 +1219,17 @@ class MapsManager:
                 nib.save(input_nii, nifti_path / input_filename)
                 nib.save(output_nii, nifti_path / output_filename)
 
-    @torch.no_grad()
-    def _compute_output_tensors(
+    def _save_model_output(
         self,
         dataset,
         data_group,
         split,
         selection_metrics,
+        save_reconstruction_tensor=True,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
+        monte_carlo=0,
+        seed=None,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1169,6 +1246,9 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
+        import nibabel as nib
+        from numpy import eye
+
         for selection_metric in selection_metrics:
             # load the best trained model during the training
             model, _ = self._init_model(
@@ -1177,42 +1257,130 @@ class MapsManager:
                 transfer_selection=selection_metric,
                 gpu=gpu,
                 network=network,
-                nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
 
-            tensor_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-                / "tensors"
-            )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            tensor_path = None
+            if save_reconstruction_tensor:
+                tensor_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "tensors"
+                )
+                tensor_path.mkdir(parents=True, exist_ok=True)
+
+            nifti_path = None
+            if save_reconstruction_nifti:
+                nifti_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "nifti_images"
+                )
+                nifti_path.mkdir(parents=True, exist_ok=True)
+
+            latent_tensor_path = None
+            if save_latent_tensor:
+                latent_tensor_path = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                    / "latent_tensors"
+                )
+                latent_tensor_path.mkdir(parents=True, exist_ok=True)
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
-            else:
+            else:  # compute outputs for only part of the data set
                 nb_modes = nb_images * dataset.elem_per_image
 
             for i in range(nb_modes):
                 data = dataset[i]
-                image = data["image"]
-                x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.amp):
-                    output = model.predict(x)
-                output = output.squeeze(0).cpu().float()
+                image = data["data"]
+                data["data"] = data["data"].unsqueeze(0)
+                output = model.predict(data)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
-                input_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
-                )
-                output_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
-                )
-                torch.save(image, tensor_path / input_filename)
-                torch.save(output, tensor_path / output_filename)
-                logger.debug(f"File saved at {[input_filename, output_filename]}")
+
+                if save_reconstruction_tensor:
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                    )
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                    )
+                    torch.save(image, tensor_path / input_filename)
+                    torch.save(reconstruction, tensor_path / output_filename)
+                    logger.debug(f"File saved at {[input_filename, output_filename]}")
+
+                if save_reconstruction_nifti:
+                    # Convert tensor to nifti image with appropriate affine
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(
+                        reconstruction[0].detach().numpy(), eye(4)
+                    )
+                    # Create file name according to participant and session id
+                    input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                    output_filename = (
+                        f"{participant_id}_{session_id}_image_output.nii.gz"
+                    )
+                    nib.save(input_nii, nifti_path / input_filename)
+                    nib.save(output_nii, nifti_path / output_filename)
+
+                if save_latent_tensor:
+                    latent = output["embedding"].squeeze(0).cpu()
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                    )
+                    torch.save(latent, latent_tensor_path / output_filename)
+
+                if monte_carlo:
+                    data = dataset[i]
+                    image = data["data"]
+                    data["data"] = data["data"].unsqueeze(0)
+                    participant_id = data["participant_id"]
+                    session_id = data["session_id"]
+                    mode_id = data[f"{self.mode}_id"]
+
+                    outputs = model.predict(data, monte_carlo=monte_carlo, seed=seed)
+
+                    for i in range(monte_carlo):
+                        output = outputs[i]
+
+                        reconstruction = output["recon_x"].squeeze(0).cpu()
+                        input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-mc{i}.pt"
+                        torch.save(image, tensor_path / input_filename)
+                        torch.save(reconstruction, tensor_path / output_filename)
+                        logger.debug(
+                            f"File saved at {[input_filename, output_filename]}"
+                        )
+
+                        # Convert tensor to nifti image with appropriate affine
+                        reconstruction = output["recon_x"].squeeze(0).cpu()
+                        input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                        output_nii = nib.Nifti1Image(
+                            reconstruction[0].detach().numpy(), eye(4)
+                        )
+                        # Create file name according to participant and session id
+                        input_filename = (
+                            f"{participant_id}_{session_id}_image_input.nii.gz"
+                        )
+                        output_filename = (
+                            f"{participant_id}_{session_id}_image_output-mc{i}.nii.gz"
+                        )
+                        nib.save(input_nii, nifti_path / input_filename)
+                        nib.save(output_nii, nifti_path / output_filename)
+
+                        latent = output["embedding"].squeeze(0).cpu()
+                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-mc{i}.pt"
+                        torch.save(latent, latent_tensor_path / output_filename)
 
     def _compute_latent_tensors(
         self,
@@ -1776,6 +1944,8 @@ class MapsManager:
         split: int,
         selection: str,
         data_group: str = "train",
+        monte_carlo: bool = False,
+        mc_results_df: pd.DataFrame = None,
     ):
         """
         Writes the outputs of the test function in tsv files.
@@ -1813,6 +1983,18 @@ class MapsManager:
             else:
                 pd.DataFrame(metrics, index=[0]).to_csv(
                     metrics_path, index=False, sep="\t", mode="a", header=False
+                )
+            metrics.to_csv(metrics_path, sep="\t")
+
+        if monte_carlo:
+            mc_performance_path = (
+                performance_dir / f"{data_group}_{self.mode}_level_prediction-mc.tsv"
+            )
+            if not mc_performance_path.is_file():
+                mc_results_df.to_csv(mc_performance_path, index=False, sep="\t")
+            else:
+                mc_results_df.to_csv(
+                    mc_performance_path, index=False, sep="\t", mode="a", header=False
                 )
 
     def _ensemble_to_tsv(
@@ -1990,7 +2172,14 @@ class MapsManager:
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
             logger.debug(f"Transfer from {transfer_class}")
-            model.transfer_weights(transfer_state["model"], transfer_class)
+            if "model" in transfer_state.keys():
+                model.transfer_weights(transfer_state["model"], transfer_class)
+            elif "model_state_dict" in transfer_state.keys():
+                model.transfer_weights(
+                    transfer_state["model_state_dict"], transfer_class
+                )
+            else:
+                raise KeyError("Unknow key in model state dictionnary.")
 
             if nb_unfrozen_layer != 0:
                 list_name = [name for (name, _) in model.named_parameters()]
