@@ -216,7 +216,7 @@ class TaskManager:
                             loss_dict[loss_component].float().item()
                         )
 
-                    image = data["data"]
+                    image = data["image"]
                     participant_id = data["participant_id"][0]
                     session_id = data["session_id"][0]
                     mode_id = data[f"{self.mode}_id"][0]
