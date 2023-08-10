@@ -7,13 +7,6 @@ from re import findall, split, sub
 from typing import List, Set, Tuple
 
 
-def titlecase(string: str) -> str:
-    """
-    Converts a string to titlecase.
-    """
-    return "".join(x for x in string.title() if x.isalnum())
-
-
 def get_first_host(hostlist: str) -> str:
     """
     Get the first host from SLURM's nodelist.
