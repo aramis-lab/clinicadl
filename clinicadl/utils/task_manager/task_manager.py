@@ -277,7 +277,7 @@ class TaskManager:
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
                     row = self.generate_test_row(idx, data, outputs.float())
-                    row_df = pd.DataFrame(row, columns=self.columns())
+                    row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
 
                 del outputs, loss_dict
@@ -323,7 +323,7 @@ class TaskManager:
                             idx, i, data, outputs[i]["recon_x"]
                         )
                         row_df = pd.DataFrame(
-                            row, columns=self.columns(monte_carlo=monte_carlo)
+                            row, columns=self.columns  # (monte_carlo=monte_carlo)
                         )
                         mc_results_df = pd.concat([mc_results_df, row_df])
 
