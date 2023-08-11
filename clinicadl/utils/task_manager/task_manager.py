@@ -213,7 +213,7 @@ class TaskManager:
 
         total_loss = {}
         with torch.no_grad():
-            for data in dataloader:
+            for i, data in enumerate(dataloader):
                 # output = model.predict(data)
                 with autocast(enabled=amp):
                     outputs, loss_dict = model.compute_outputs_and_loss(
