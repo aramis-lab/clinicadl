@@ -325,7 +325,7 @@ class TaskManager:
                         row_df = pd.DataFrame(
                             row, columns=self.columns  # (monte_carlo=monte_carlo)
                         )
-                        mc_results_df = pd.concat([mc_results_df, row_df])
+                        results_df = pd.concat([results_df, row_df])
 
                     del outputs
 
