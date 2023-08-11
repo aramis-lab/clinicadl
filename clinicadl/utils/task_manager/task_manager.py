@@ -330,9 +330,9 @@ class TaskManager:
                     del outputs
 
             results_df.reset_index(inplace=True, drop=True)
-            results_df[self.evaluation_metrics] = results_df[
-                self.evaluation_metrics
-            ].apply(pd.to_numeric, axis=1)
+            # results_df[self.evaluation_metrics] = results_df[
+            #     self.evaluation_metrics
+            # ].apply(pd.to_numeric, axis=1)
 
             if monte_carlo:
                 mc_results_df.reset_index(inplace=True, drop=True)
