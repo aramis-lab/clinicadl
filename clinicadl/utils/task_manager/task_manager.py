@@ -227,8 +227,10 @@ class TaskManager:
                         total_loss[loss_component] += (
                             loss_dict[loss_component].float().item()
                         )
-
-                    image = data["data"]
+                    try:
+                        image = data["image"]
+                    except:
+                        image = data["data"]
                     # data["data"] = data["data"].unsqueeze(0)
                     participant_id = data["participant_id"][0]
                     session_id = data["session_id"][0]
