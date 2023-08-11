@@ -340,9 +340,8 @@ class TaskManager:
                     self.evaluation_metrics
                 ].apply(pd.to_numeric, axis=1)
 
-        if not use_labels:
-            metrics_df = None
-        else:
+        metrics_df = None
+        if use_labels:
             metrics_dict = self.compute_metrics(results_df)
             for loss_component in total_loss.keys():
                 metrics_dict[loss_component] = total_loss[loss_component]
