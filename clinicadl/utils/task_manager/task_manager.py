@@ -178,7 +178,7 @@ class TaskManager:
         seed=None,
         use_labels: bool = True,
         amp: bool = False,
-        save_reconstruction_tensor=True,
+        save_reconstruction_tensor=False,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
         tensor_path=None,
