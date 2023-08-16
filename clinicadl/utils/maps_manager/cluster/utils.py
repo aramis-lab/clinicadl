@@ -72,7 +72,7 @@ class WarningFilter:
                 warnings.warn(
                     message=str(warning.message),
                     category=warning.message.__class__,
-                    stacklevel=4,
+                    stacklevel=3,
                 )
 
 
