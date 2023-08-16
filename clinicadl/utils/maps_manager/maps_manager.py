@@ -2141,7 +2141,7 @@ class MapsManager:
 
     def _init_profiler(self):
         if self.profiler:
-            from torch.profiler import (
+            from clinicadl.utils.maps_manager.cluster.profiler import (
                 ProfilerActivity,
                 profile,
                 schedule,
