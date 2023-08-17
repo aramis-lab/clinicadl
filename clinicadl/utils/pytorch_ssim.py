@@ -169,6 +169,10 @@ def ssim(y, y_pred, window_size=11, size_average=True):
     (channel, _, _) = img1.shape
     window = create_window(window_size, channel)
 
+    if torch.cuda.is_available():
+        img1 = img1.cuda()
+        img2 = img2.cuda()
+
     if img1.is_cuda:
         window = window.cuda(img1.get_device())
     window = window.type_as(img1)
@@ -181,6 +185,10 @@ def ssim3D(y, y_pred, window_size=11, size_average=True):
     img2 = torch.from_numpy(y_pred)[None, :, :, :, :]
     (_, channel, _, _, _) = img1.shape
     window = create_window_3D(window_size, channel)
+
+    if torch.cuda.is_available():
+        img1 = img1.cuda()
+        img2 = img2.cuda()
 
     if img1.is_cuda:
         window = window.cuda(img1.get_device())
