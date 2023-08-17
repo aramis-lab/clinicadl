@@ -50,7 +50,6 @@ class MetricModule:
         Returns:
             (Dict[str:float]) metrics results
         """
-
         if y is not None and y_pred is not None:
             results = dict()
             y = np.array(y)

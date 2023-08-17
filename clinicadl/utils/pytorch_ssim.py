@@ -164,17 +164,17 @@ class SSIM3D(torch.nn.Module):
 
 
 def ssim(y, y_pred, window_size=11, size_average=True):
-    img1 = torch.from_numpy(y)
-    img2 = torch.from_numpy(y_pred)
-    (channel, _, _) = img1.shape
+    img1 = torch.from_numpy(y)[None, ...]
+    img2 = torch.from_numpy(y_pred)[None, ...]
+    (_, channel, _, _) = img1.shape
     window = create_window(window_size, channel)
 
     if torch.cuda.is_available():
-        img1 = img1.cuda()
-        img2 = img2.cuda()
+        img1 = img1.to(device="cuda", memory_format=torch.channels_last)
+        img2 = img2.to(device="cuda", memory_format=torch.channels_last)
 
     if img1.is_cuda:
-        window = window.cuda(img1.get_device())
+        window = window.to(device=img1.device, memory_format=torch.channels_last)
     window = window.type_as(img1)
 
     return _ssim(img1, img2, window, window_size, channel, size_average)
