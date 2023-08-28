@@ -18,7 +18,7 @@ config_file = click.option(
 )
 # Computational
 gpu = cli_param.option_group.computational_group.option(
-   "--gpu/--no-gpu",
+    "--gpu/--no-gpu",
     type=bool,
     default=None,
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
@@ -169,7 +169,21 @@ normalize = cli_param.option_group.data_group.option(
 data_augmentation = cli_param.option_group.data_group.option(
     "--data_augmentation",
     "-da",
-    type=click.Choice(["None", "Noise", "Erasing", "CropPad", "Smoothing", "Motion", "Ghosting", "Spike", "BiasField", "RandomBlur", "RandomSwap"]),
+    type=click.Choice(
+        [
+            "None",
+            "Noise",
+            "Erasing",
+            "CropPad",
+            "Smoothing",
+            "Motion",
+            "Ghosting",
+            "Spike",
+            "BiasField",
+            "RandomBlur",
+            "RandomSwap",
+        ]
+    ),
     # default=(),
     multiple=True,
     help="Randomly applies transforms on the training set.",
