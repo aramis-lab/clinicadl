@@ -1122,7 +1122,7 @@ class MapsManager:
                 )
                 latent_tensor_path.mkdir(parents=True, exist_ok=True)
 
-            prediction_df, metrics, mc_prediction_df = self.task_manager.test(
+            prediction_df, metrics = self.task_manager.test(
                 model,
                 dataloader,
                 criterion,
