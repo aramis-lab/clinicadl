@@ -1152,7 +1152,6 @@ class MapsManager:
                 selection_metric,
                 data_group=data_group,
                 monte_carlo=monte_carlo,
-                mc_results_df=mc_prediction_df,
             )
 
     @torch.no_grad()
