@@ -347,4 +347,4 @@ class TaskManager:
                 metrics_dict[loss_component] = total_loss[loss_component]
         torch.cuda.empty_cache()
 
-        return results_df, metrics_df
+        return results_df, metrics_dict
