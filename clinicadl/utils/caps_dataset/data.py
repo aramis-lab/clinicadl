@@ -82,7 +82,10 @@ class CapsDataset(Dataset):
                 f"Columns should include {mandatory_col}"
             )
         self.elem_per_image = self.num_elem_per_image()
-        self.size = self[0]["image"].size()
+        if "image" in self[0].keys():
+            self.size = self[0]["image"].size()
+        else:
+            self.size = self[0].data.size()
 
     @property
     @abc.abstractmethod
