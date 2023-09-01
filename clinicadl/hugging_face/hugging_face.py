@@ -2,8 +2,15 @@ import importlib
 import os
 import shutil
 import tempfile
+import warnings
+from logging import getLogger
+from pathlib import Path
 
-logger = get_logger("clinicadl")
+import cloudpickle
+import torch
+from torch import nn
+
+logger = getLogger("clinicadl")
 
 
 model_card_template = """---
@@ -14,8 +21,17 @@ license: MIT
 ---
 """
 
+# class EnvironmentConfig(BaseConfig):
+#     python_version: str = "3.8"
 
-def push_to_hf_hub(self, hf_hub_path: str):  # pragma: no cover
+
+def push_to_hf_hub(
+    hf_hub_path: str,
+    maps_dir: Path,
+    model_name: str,
+    split_list: list = [0],
+    loss_list: str = ["best-loss"],
+):  # pragma: no cover
     """Method allowing to save your model directly on the huggung face hub.
     You will need to have the `huggingface_hub` package installed and a valid Hugging Face
     account. You can install the package using
@@ -43,60 +59,101 @@ def push_to_hf_hub(self, hf_hub_path: str):  # pragma: no cover
     else:
         from huggingface_hub import CommitOperationAdd, HfApi
 
-    logger.info(f"Uploading {self.model_name} model to {hf_hub_path} repo in HF hub...")
+    logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
 
-    tempdir = tempfile.mkdtemp()
+    # tempdir = tempfile.mkdtemp()
 
-    self.save(tempdir)
+    # network.save(tempdir)
 
-    model_files = os.listdir(tempdir)
+    # model_files = os.listdir(maps_dir)
 
     api = HfApi()
     hf_operations = []
 
-    for file in model_files:
+    id_ = hf_hub_path
+    api.create_repo(id_, token="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")
+    for split in split_list:
         hf_operations.append(
             CommitOperationAdd(
-                path_in_repo=file,
-                path_or_fileobj=f"{str(os.path.join(tempdir, file))}",
+                path_in_repo=str(("split-" + str(split)) + "_model5.pth.tar"),
+                path_or_fileobj=str(
+                    maps_dir
+                    / ("split-" + str(split))
+                    / loss_list[split]
+                    / "model.pth.tar"
+                ),
             )
         )
 
-    with open(os.path.join(tempdir, "model_card.md"), "w") as f:
-        f.write(model_card_template)
-
-    hf_operations.append(
-        CommitOperationAdd(
-            path_in_repo="README.md",
-            path_or_fileobj=os.path.join(tempdir, "model_card.md"),
+    for file in ["maps.json", "environment.txt", "information.log"]:
+        hf_operations.append(
+            CommitOperationAdd(
+                path_in_repo=file,
+                path_or_fileobj=str(maps_dir / file),
+            )
         )
-    )
 
     try:
         api.create_commit(
-            commit_message=f"Uploading {self.model_name} in {hf_hub_path}",
-            repo_id=hf_hub_path,
+            commit_message=f"Uploading {model_name} in {maps_dir}",
+            repo_id=id_,
             operations=hf_operations,
         )
-        logger.info(
-            f"Successfully uploaded {self.model_name} to {hf_hub_path} repo in HF hub!"
-        )
+        logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
 
     except:
         from huggingface_hub import create_repo
 
-        repo_name = os.path.basename(os.path.normpath(hf_hub_path))
+        repo_name = os.path.basename(os.path.normpath(maps_dir))
         logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
-        create_repo(repo_id=repo_name)
+        create_repo(repo_id=id_)
         logger.info(f"Successfully created {repo_name} in the HF hub!")
 
         api.create_commit(
-            commit_message=f"Uploading {self.model_name} in {hf_hub_path}",
-            repo_id=hf_hub_path,
+            commit_message=f"Uploading {model_name} in {maps_dir}",
+            repo_id=id_,
             operations=hf_operations,
         )
 
-    shutil.rmtree(tempdir)
+
+def save_model(network: nn.Module, dir_path: str):
+    """Method to save the model at a specific location. It saves, the model weights as a
+    ``models.pt`` file along with the model config as a ``model_config.json`` file. If the
+    model to save used custom encoder (resp. decoder) provided by the user, these are also
+    saved as ``decoder.pkl`` (resp. ``decoder.pkl``).
+
+    Args:
+    dir_path (str): The path where the model should be saved. If the path
+            path does not exist a folder will be created at the provided location.
+    """
+
+    env_spec = EnvironmentConfig(
+        python_version=f"{sys.version_info[0]}.{sys.version_info[1]}"
+    )
+    model_dict = {"model_state_dict": deepcopy(network.state_dict())}
+
+    if not os.path.exists(dir_path):
+        try:
+            os.makedirs(dir_path)
+
+        except FileNotFoundError as e:
+            raise e
+
+    env_spec.save_json(dir_path, "environment")
+    network.model_config.save_json(dir_path, "model_config")
+
+    # only save .pkl if custom architecture provided
+    if not network.model_config.uses_default_encoder:
+        with open(os.path.join(dir_path, "encoder.pkl"), "wb") as fp:
+            cloudpickle.register_pickle_by_value(inspect.getmodule(network.encoder))
+            cloudpickle.dump(network.encoder, fp)
+
+    if not network.model_config.uses_default_decoder:
+        with open(os.path.join(dir_path, "decoder.pkl"), "wb") as fp:
+            cloudpickle.register_pickle_by_value(inspect.getmodule(network.decoder))
+            cloudpickle.dump(network.decoder, fp)
+
+    torch.save(model_dict, os.path.join(dir_path, "model.pt"))
 
 
 def hf_hub_is_available():
