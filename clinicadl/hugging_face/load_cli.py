@@ -17,7 +17,6 @@ def cli(
     input_maps_directory,
     hf_hub_path,
 ):
-
     from .hugging_face import load_from_hf_hub
 
     cls = input_maps_directory

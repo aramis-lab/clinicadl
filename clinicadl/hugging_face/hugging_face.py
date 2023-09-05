@@ -220,7 +220,6 @@ def load_from_hf_hub(cls, hf_hub_path: str, allow_pickle=False):  # pragma: no c
         )
 
     else:
-
         if not model_config.uses_default_encoder:
             _ = hf_hub_download(repo_id=hf_hub_path, filename="encoder.pkl")
             encoder = cls._load_custom_encoder_from_folder(dir_path)
