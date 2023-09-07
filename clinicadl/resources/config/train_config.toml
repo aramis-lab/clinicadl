@@ -79,3 +79,5 @@ tolerance = 0.0
 accumulation_steps = 1
 profiler = false
 
+[Informations]
+emissions_tracker = true
