@@ -1,6 +1,0 @@
-# CONFIG FILE FOR TESTS
-[Cross_validation]
-n_splits = 2
-
-[Optimization]
-epochs = 5
