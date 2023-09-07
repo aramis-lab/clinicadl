@@ -291,7 +291,7 @@ track_exp = cli_param.option_group.optimization_group.option(
             "mlflow",
         ]
     ),
-    help="Use `--track_exp` to enable wandb to track your experience.",
+    help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
 )
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(

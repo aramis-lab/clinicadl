@@ -18,6 +18,10 @@ def mlflow_is_available():
 
 
 class Tracker:
+    """
+    Base class to track the metrics during training depending on the network task.
+    """
+
     def __init__(self):
         pass
 
@@ -80,7 +84,7 @@ class Tracker:
             return metrics_dict
 
 
-class WandB_class(Tracker):
+class WandB_handler(Tracker):
     def __init__(self, split: str, config: dict, maps_name: str):
         if not wandb_is_available():
             raise ModuleNotFoundError(
@@ -103,7 +107,7 @@ class WandB_class(Tracker):
         )
 
 
-class Mlflow_class(Tracker):
+class Mlflow_handler(Tracker):
     def __init__(self, split: str, config: dict, maps_name: str):
         if not mlflow_is_available():
             raise ModuleNotFoundError(
