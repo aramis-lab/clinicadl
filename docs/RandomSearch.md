@@ -93,7 +93,7 @@ Optional variables:
     - `baseline` (bool) allows to only load `_baseline.tsv` files when set to `True`.
     Sampling function: `choice`. Default: `False`.
     - `data_augmentation` (list of str) is the list of data augmentation transforms applied to the training data.
-    Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`].
+    Must be chosen in[`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`, `Motion`, `Ghosting`, `Spike`, `BiasField`, `RandomBlur`, `RandomSwap`].
     Sampling function: `fixed`. Default: `False`.
     - `unnormalize` (bool) is a flag to disable min-max normalization that is performed by default.
     Sampling function: `choice`. Default: `False`.

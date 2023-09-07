@@ -175,7 +175,21 @@ normalize = cli_param.option_group.data_group.option(
 data_augmentation = cli_param.option_group.data_group.option(
     "--data_augmentation",
     "-da",
-    type=click.Choice(["None", "Noise", "Erasing", "CropPad", "Smoothing"]),
+    type=click.Choice(
+        [
+            "None",
+            "Noise",
+            "Erasing",
+            "CropPad",
+            "Smoothing",
+            "Motion",
+            "Ghosting",
+            "Spike",
+            "BiasField",
+            "RandomBlur",
+            "RandomSwap",
+        ]
+    ),
     # default=(),
     multiple=True,
     help="Randomly applies transforms on the training set.",
