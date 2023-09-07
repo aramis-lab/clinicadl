@@ -857,14 +857,14 @@ class MapsManager:
         profiler = self._init_profiler()
 
         if self.parameters["track_exp"] == "wandb":
-            from clinicadl.utils.tracking_exp import WandB_class
+            from clinicadl.utils.tracking_exp import WandB_handler
 
-            run = WandB_class(split, self.parameters, self.maps_path.name)
+            run = WandB_handler(split, self.parameters, self.maps_path.name)
 
         if self.parameters["track_exp"] == "mlflow":
-            from clinicadl.utils.tracking_exp import Mlflow_class
+            from clinicadl.utils.tracking_exp import Mlflow_handler
 
-            run = Mlflow_class(split, self.parameters, self.maps_path.name)
+            run = Mlflow_handler(split, self.parameters, self.maps_path.name)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
