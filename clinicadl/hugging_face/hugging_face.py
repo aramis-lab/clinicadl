@@ -57,7 +57,7 @@ def push_to_hf_hub(
         )
 
     else:
-        from huggingface_hub import CommitOperationAdd, HfApi
+        from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
 
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
 
@@ -72,48 +72,56 @@ def push_to_hf_hub(
 
     id_ = hf_hub_path
     api.create_repo(id_, token="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")
-    for split in split_list:
-        hf_operations.append(
-            CommitOperationAdd(
-                path_in_repo=str(("split-" + str(split)) + "_model5.pth.tar"),
-                path_or_fileobj=str(
-                    maps_dir
-                    / ("split-" + str(split))
-                    / loss_list[split]
-                    / "model.pth.tar"
-                ),
-            )
-        )
 
-    for file in ["maps.json", "environment.txt", "information.log"]:
-        hf_operations.append(
-            CommitOperationAdd(
-                path_in_repo=file,
-                path_or_fileobj=str(maps_dir / file),
-            )
-        )
+    api.upload_folder(
+        folder_path=str(maps_dir),
+        # path_in_repo="my-dataset/train", # Upload to a specific folder
+        repo_id=hf_hub_path,
+        repo_type="model",
+    )
 
-    try:
-        api.create_commit(
-            commit_message=f"Uploading {model_name} in {maps_dir}",
-            repo_id=id_,
-            operations=hf_operations,
-        )
-        logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
+    # for split in split_list:
+    #     hf_operations.append(
+    #         CommitOperationAdd(
+    #             path_in_repo=str(("split-" + str(split)) + "_model5.pth.tar"),
+    #             path_or_fileobj=str(
+    #                 maps_dir
+    #                 / ("split-" + str(split))
+    #                 / loss_list[split]
+    #                 / "model.pth.tar"
+    #             ),
+    #         )
+    #     )
 
-    except:
-        from huggingface_hub import create_repo
+    # for file in ["maps.json", "environment.txt", "information.log"]:
+    #     hf_operations.append(
+    #         CommitOperationAdd(
+    #             path_in_repo=file,
+    #             path_or_fileobj=str(maps_dir / file),
+    #         )
+    #     )
 
-        repo_name = os.path.basename(os.path.normpath(maps_dir))
-        logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
-        create_repo(repo_id=id_)
-        logger.info(f"Successfully created {repo_name} in the HF hub!")
+    # try:
+    #     api.create_commit(
+    #         commit_message=f"Uploading {model_name} in {maps_dir}",
+    #         repo_id=id_,
+    #         operations=hf_operations,
+    #     )
+    #     logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
 
-        api.create_commit(
-            commit_message=f"Uploading {model_name} in {maps_dir}",
-            repo_id=id_,
-            operations=hf_operations,
-        )
+    # except:
+    #     from huggingface_hub import create_repo
+
+    #     repo_name = os.path.basename(os.path.normpath(maps_dir))
+    #     logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
+    #     create_repo(repo_id=id_)
+    #     logger.info(f"Successfully created {repo_name} in the HF hub!")
+
+    #     api.create_commit(
+    #         commit_message=f"Uploading {model_name} in {maps_dir}",
+    #         repo_id=id_,
+    #         operations=hf_operations,
+    #     )
 
 
 def save_model(network: nn.Module, dir_path: str):
@@ -188,55 +196,54 @@ def load_from_hf_hub(cls, hf_hub_path: str, allow_pickle=False):  # pragma: no c
     else:
         from huggingface_hub import hf_hub_download
 
-    logger.info(f"Downloading {cls.__name__} files for rebuilding...")
+    logger.info(f"Downloading {hf_hub_path} files for rebuilding...")
 
-    _ = hf_hub_download(repo_id=hf_hub_path, filename="environment.json")
-    config_path = hf_hub_download(repo_id=hf_hub_path, filename="model_config.json")
-    dir_path = os.path.dirname(config_path)
+    environment_json = hf_hub_download(repo_id=hf_hub_path, filename="*")
+    # #model_config_json = hf_hub_download(repo_id=hf_hub_path, filename="model_config.json")
 
-    _ = hf_hub_download(repo_id=hf_hub_path, filename="model.pt")
+    # _ = hf_hub_download(repo_id=hf_hub_path, filename="model.pt")
 
-    model_config = cls._load_model_config_from_folder(dir_path)
+    # model_config = cls._load_model_config_from_folder(dir_path)
+    # dir_path = os.path.dirname(config_path)
+    # if (
+    #     cls.__name__ + "Config" != model_config.name
+    #     and cls.__name__ + "_Config" != model_config.name
+    # ):
+    #     warnings.warn(
+    #         f"You are trying to load a "
+    #         f"`{ cls.__name__}` while a "
+    #         f"`{model_config.name}` is given."
+    #     )
 
-    if (
-        cls.__name__ + "Config" != model_config.name
-        and cls.__name__ + "_Config" != model_config.name
-    ):
-        warnings.warn(
-            f"You are trying to load a "
-            f"`{ cls.__name__}` while a "
-            f"`{model_config.name}` is given."
-        )
+    # model_weights = cls._load_model_weights_from_folder(dir_path)
 
-    model_weights = cls._load_model_weights_from_folder(dir_path)
+    # if (
+    #     not model_config.uses_default_encoder or not model_config.uses_default_decoder
+    # ) and not allow_pickle:
+    #     warnings.warn(
+    #         "You are about to download pickled files from the HF hub that may have "
+    #         "been created by a third party and so could potentially harm your computer. If you "
+    #         "are sure that you want to download them set `allow_pickle=true`."
+    #     )
 
-    if (
-        not model_config.uses_default_encoder or not model_config.uses_default_decoder
-    ) and not allow_pickle:
-        warnings.warn(
-            "You are about to download pickled files from the HF hub that may have "
-            "been created by a third party and so could potentially harm your computer. If you "
-            "are sure that you want to download them set `allow_pickle=true`."
-        )
+    # else:
+    #     if not model_config.uses_default_encoder:
+    #         _ = hf_hub_download(repo_id=hf_hub_path, filename="encoder.pkl")
+    #         encoder = cls._load_custom_encoder_from_folder(dir_path)
 
-    else:
-        if not model_config.uses_default_encoder:
-            _ = hf_hub_download(repo_id=hf_hub_path, filename="encoder.pkl")
-            encoder = cls._load_custom_encoder_from_folder(dir_path)
+    #     else:
+    #         encoder = None
 
-        else:
-            encoder = None
+    #     if not model_config.uses_default_decoder:
+    #         _ = hf_hub_download(repo_id=hf_hub_path, filename="decoder.pkl")
+    #         decoder = cls._load_custom_decoder_from_folder(dir_path)
 
-        if not model_config.uses_default_decoder:
-            _ = hf_hub_download(repo_id=hf_hub_path, filename="decoder.pkl")
-            decoder = cls._load_custom_decoder_from_folder(dir_path)
+    #     else:
+    #         decoder = None
 
-        else:
-            decoder = None
+    #     logger.info(f"Successfully downloaded {cls.__name__} model!")
 
-        logger.info(f"Successfully downloaded {cls.__name__} model!")
+    #     model = cls(model_config, encoder=encoder, decoder=decoder)
+    #     model.load_state_dict(model_weights)
 
-        model = cls(model_config, encoder=encoder, decoder=decoder)
-        model.load_state_dict(model_weights)
-
-        return model
+    #     return model
