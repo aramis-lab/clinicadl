@@ -44,6 +44,13 @@ class persistent_locals(object):
 
 if Version(torch.__version__) >= Version("1.12.0"):
 
+    # This tensorboard_trace_handler wraps Pytorch's version. It restores a feature
+    # of Kineto profiler which was lost when upgrading Pytorch from 1.11 to 1.12.
+    # In the profiler, some category names were changed. But in the tensorboard
+    # visualization from Kineto, those category have not been renamed accordingly.
+    # This loses the dataloader step profiling. We can restore this feature by
+    # renaming the category in the output trace file.
+
     @wraps(torch.profiler.tensorboard_trace_handler)
     def tensorboard_trace_handler(
         dir_name: str, worker_name: Optional[str] = None, use_gzip: bool = False
