@@ -265,7 +265,7 @@ class MapsManager:
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
 
-            # Erase previous TSV files
+            # Erase previous TSV files on master process
             if not selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
@@ -304,6 +304,12 @@ class MapsManager:
                         if batch_size is not None
                         else self.batch_size,
                         shuffle=False,
+                        sampler=DistributedSampler(
+                            data_test,
+                            num_replicas=cluster.world_size,
+                            rank=cluster.rank,
+                            shuffle=False,
+                        ),
                         num_workers=n_proc if n_proc is not None else self.n_proc,
                     )
                     self._test_loader(
@@ -365,6 +371,12 @@ class MapsManager:
                     if batch_size is not None
                     else self.batch_size,
                     shuffle=False,
+                    sampler=DistributedSampler(
+                        data_test,
+                        num_replicas=cluster.world_size,
+                        rank=cluster.rank,
+                        shuffle=False,
+                    ),
                     num_workers=n_proc if n_proc is not None else self.n_proc,
                 )
                 self._test_loader(
@@ -403,7 +415,10 @@ class MapsManager:
                         gpu=gpu,
                     )
 
-            self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
+            if cluster.master:
+                self._ensemble_prediction(
+                    data_group, split, selection_metrics, use_labels
+                )
 
     def interpret(
         self,
@@ -696,18 +711,18 @@ class MapsManager:
                 resume=resume,
             )
 
-            self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
-            )
-            self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
-            )
-
             if cluster.master:
+                self._ensemble_prediction(
+                    "train",
+                    split,
+                    self.selection_metrics,
+                )
+                self._ensemble_prediction(
+                    "validation",
+                    split,
+                    self.selection_metrics,
+                )
+
                 self._erase_tmp(split)
 
     def _train_multi(self, split_list: List[int] = None, resume: bool = False):
@@ -812,18 +827,19 @@ class MapsManager:
                 )
                 resume = False
 
-            self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
-            )
-            self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
-            )
+            if cluster.master:
+                self._ensemble_prediction(
+                    "train",
+                    split,
+                    self.selection_metrics,
+                )
+                self._ensemble_prediction(
+                    "validation",
+                    split,
+                    self.selection_metrics,
+                )
 
-            self._erase_tmp(split)
+                self._erase_tmp(split)
 
     def _train(
         self,
@@ -1303,6 +1319,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
+            model = DDP(model)
 
             tensor_path = (
                 self.maps_path
@@ -1311,19 +1328,22 @@ class MapsManager:
                 / data_group
                 / "latent_tensors"
             )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            if cluster.master:
+                tensor_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(nb_modes):
+            for i in range(cluster.rank, nb_modes, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
-                latent = latent.squeeze(0).cpu()
+                with autocast(enabled=self.amp):
+                    _, latent, _ = model._forward(image.unsqueeze(0).to(model.device))
+                latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
