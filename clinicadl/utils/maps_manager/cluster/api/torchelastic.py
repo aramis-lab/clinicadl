@@ -48,7 +48,9 @@ class TorchElasticAPI(API):
         return [self.master_address()]
 
     def master_address(self) -> str:
+        # Torchrun already defines the Master address.
         return os.environ["MASTER_ADDR"]
 
     def port(self) -> int:
+        # Torchrun already defines the Master port.
         return int(os.environ["MASTER_PORT"])

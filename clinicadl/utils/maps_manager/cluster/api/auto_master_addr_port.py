@@ -16,6 +16,7 @@ env_variables_set: bool = False
 
 
 def set_master_addr_port_env_variables(func):
+    # The parameter should be a method of a subclass of the API abstract class.
     @wraps(func)
     def wrapper(self):
         global env_variables_set
@@ -29,6 +30,7 @@ def set_master_addr_port_env_variables(func):
 
 
 def decorate_methods(cls: Type[API], func_to_apply: Callable) -> Type[API]:
+    # Decorate all API methods defined in the config file with the given function.
     for obj_name in dir(cls):
         if obj_name in all_API_methods:
             decorated = func_to_apply(getattr(cls, obj_name))
@@ -38,4 +40,7 @@ def decorate_methods(cls: Type[API], func_to_apply: Callable) -> Type[API]:
 
 
 def AutoMasterAddressPort(cls: Type[API]) -> Type[API]:
+    # When we call a cluster API function for the first time, we set the MASTER_ADDR
+    # and MASTER_PORT environment variables, so that the Pytorch wrapper
+    # DistributedDataParallel can set up communication correctly.
     return decorate_methods(cls, func_to_apply=set_master_addr_port_env_variables)
