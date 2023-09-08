@@ -125,7 +125,7 @@ class Mlflow_handler(Tracker):
             )
 
         except mlflow.exceptions.MlflowException:
-            self._mlflow.set_experiment(self.experiment_name)
+            self._mlflow.set_experiment(maps_name)
 
         self._mlflow.start_run(experiment_id=experiment_id, run_name=f"split-{split}")
         self._mlflow.autolog()
