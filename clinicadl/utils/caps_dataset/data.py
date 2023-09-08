@@ -126,7 +126,7 @@ class CapsDataset(Dataset):
                 caps_dict = dict()
                 for idx in range(len(caps_df)):
                     cohort = caps_df.loc[idx, "cohort"]
-                    caps_path = caps_df.loc[idx, "path"]
+                    caps_path = Path(caps_df.loc[idx, "path"])
                     check_caps_folder(caps_path)
                     caps_dict[cohort] = caps_path
         else:
@@ -1109,7 +1109,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
             found_diagnoses = set()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = tsv_df.loc[idx, "path"]
+                cohort_path = Path(tsv_df.loc[idx, "path"])
                 cohort_diagnoses = (
                     tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
                 )
