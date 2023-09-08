@@ -45,6 +45,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "dropout",
         "epochs",
         "evaluation_steps",
+        "fsdp",
         "gpu",
         "learning_rate",
         "multi_cohort",
@@ -63,7 +64,6 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "sampler",
         "seed",
         "split",
-        "zero",
     ]
     all_options_list = standard_options_list + task_options_list
 

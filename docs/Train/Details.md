@@ -216,4 +216,5 @@ included in the future.
 Distributing the training process allows the usage of Zero Redundancy Optimizer.
 You will decrease the memory footprint per gpu of the optimizer states.
 However Pytorch's implementation might increase the volume of communications.
-Use the `--zero` flag to activate this feature.
+Use the `--fsdp` flag to activate this feature. This currently only implements ZeRO
+Stage 1 but will be entirely replaced by FSDP in a later patch.

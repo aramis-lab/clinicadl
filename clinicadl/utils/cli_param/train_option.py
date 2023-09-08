@@ -44,10 +44,13 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
-zero = cli_param.option_group.computational_group.option(
-    "--zero/--no-zero",
+fsdp = cli_param.option_group.computational_group.option(
+    "--fsdp/--no-fsdp",
     type=bool,
-    help="Enables Zero Redundancy Optimizer with Pytorch to save memory at the cost of communications.",
+    help="Enables Fully Sharded Data Parallel with Pytorch to save memory at the cost of communications. "
+    "Currently this only enables ZeRO Stage 1 but will be entirely replaced by FSDP in a later patch, "
+    "this flag is already set to FSDP to that the zero flag is never actually removed.",
+    default=False,
 )
 
 amp = cli_param.option_group.computational_group.option(
