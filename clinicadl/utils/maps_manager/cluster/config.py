@@ -15,7 +15,6 @@ nodelist = API.nodelist
 master_addr = API.master_address
 master_port = API.port
 is_master = API.is_master
-master = API.is_master
 
 # Aliases
 ntasks = world_size
@@ -27,6 +26,7 @@ cpus_per_task = cpus
 hostnames = nodelist
 hostname = master_addr
 host = master_addr
+master = is_master
 
 
 __all__ = [
