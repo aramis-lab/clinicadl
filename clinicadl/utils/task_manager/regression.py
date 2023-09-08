@@ -60,7 +60,7 @@ class RegressionManager(TaskManager):
 
     @staticmethod
     def generate_sampler(
-        dataset, sampler_option="random", n_bins=5, world_size=None, rank=None
+        dataset, sampler_option="random", n_bins=5, dp_degree=None, rank=None
     ):
         df = dataset.df
 
@@ -82,16 +82,16 @@ class RegressionManager(TaskManager):
             weights += [weight_per_class[key]] * dataset.elem_per_image
 
         if sampler_option == "random":
-            if world_size is not None and rank is not None:
+            if dp_degree is not None and rank is not None:
                 return DistributedSampler(
-                    weights, num_replicas=world_size, rank=rank, shuffle=True
+                    weights, num_replicas=dp_degree, rank=rank, shuffle=True
                 )
             else:
                 return sampler.RandomSampler(weights)
         elif sampler_option == "weighted":
-            if world_size is not None and rank is not None:
-                length = len(weights) // world_size + int(
-                    rank < len(weights) % world_size
+            if dp_degree is not None and rank is not None:
+                length = len(weights) // dp_degree + int(
+                    rank < len(weights) % dp_degree
                 )
             else:
                 length = len(weights)

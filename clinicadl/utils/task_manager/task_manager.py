@@ -137,7 +137,7 @@ class TaskManager:
         dataset: CapsDataset,
         sampler_option: str = "random",
         n_bins: int = 5,
-        world_size: Optional[int] = None,
+        dp_degree: Optional[int] = None,
         rank: Optional[int] = None,
     ) -> Sampler:
         """
@@ -147,7 +147,7 @@ class TaskManager:
             dataset: the dataset to sample from.
             sampler_option: choice of sampler.
             n_bins: number of bins to used for a continuous variable (regression task).
-            world_size: the degree of data parallelism.
+            dp_degree: the degree of data parallelism.
             rank: process id within the data parallelism communicator.
         Returns:
             callable given to the training data loader.
