@@ -14,7 +14,7 @@ from tests.testing_tools import clean_folder, compare_folders
         "trivial_example",
         "shepplogan_example",
         "hypometabolic_example",
-        "trivial_motion_example",
+        "artifacts_example",
     ]
 )
 def test_name(request):
@@ -89,15 +89,18 @@ def test_generate(cmdopt, tmp_path, test_name):
             "--n_subjects",
             f"{n_subjects}",
         ]
-    elif test_name == "trivial_motion_example":
+    elif test_name == "artifacts_example":
         output_folder = tmp_out_dir / test_name
         test_input = [
             "generate",
-            "trivial_motion",
+            "artifacts",
             data_caps_folder,
             str(output_folder),
             "--preprocessing",
             "t1-linear",
+            "--noise",
+            "--motion",
+            "--contrast",
         ]
 
     else:
