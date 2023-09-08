@@ -4,7 +4,7 @@
 import warnings
 from logging import Filter
 from re import findall, split, sub
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Type, Union
 
 
 def get_first_host(hostlist: str) -> str:
@@ -50,9 +50,9 @@ class WarningFilter:
     """
 
     def __init__(self):
-        self.registry: Set[Tuple[str, type[ClinicaClusterResolverWarning]]] = set()
+        self.registry: Set[Tuple[str, Union[Type[str], Type[Warning]]]] = set()
 
-    def block(self, warning: Warning) -> bool:
+    def block(self, warning: Union[str, Warning]) -> bool:
         """
         Checks whether or not a warning should be intercepted.
         """
@@ -66,12 +66,17 @@ class WarningFilter:
             return False
         return True
 
-    def warn(self, warning_list: List[Warning]):
+    def warn(self, warning_list: List[warnings.WarningMessage]):
         for warning in warning_list:
             if not self.block(warning.message):
+                category = (
+                    warning.message.__class__
+                    if isinstance(warning.message, Warning)
+                    else Warning
+                )
                 warnings.warn(
                     message=str(warning.message),
-                    category=warning.message.__class__,
+                    category=category,
                     stacklevel=3,
                 )
 

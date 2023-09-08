@@ -3,7 +3,7 @@
 
 import os
 from functools import wraps
-from typing import Callable
+from typing import Callable, Type
 
 from ..config import __all__ as all_API_methods
 from .base import API
@@ -28,7 +28,7 @@ def set_master_addr_port_env_variables(func):
     return wrapper
 
 
-def decorate_methods(cls: API, func_to_apply: Callable) -> Callable:
+def decorate_methods(cls: Type[API], func_to_apply: Callable) -> Type[API]:
     for obj_name in dir(cls):
         if obj_name in all_API_methods:
             decorated = func_to_apply(getattr(cls, obj_name))
@@ -37,5 +37,5 @@ def decorate_methods(cls: API, func_to_apply: Callable) -> Callable:
     return cls
 
 
-def AutoMasterAddressPort(cls: API) -> API:
+def AutoMasterAddressPort(cls: Type[API]) -> Type[API]:
     return decorate_methods(cls, func_to_apply=set_master_addr_port_env_variables)

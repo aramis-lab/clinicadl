@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 
 
 class API(ABC):
@@ -66,7 +66,7 @@ class API(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def nodelist(self) -> List[str]:
+    def nodelist(self) -> Union[str, List[str]]:
         """
         Property containing the list of nodes.
         """

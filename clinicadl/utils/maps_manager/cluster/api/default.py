@@ -4,7 +4,7 @@
 import os
 import socket
 from contextlib import closing
-from typing import List
+from typing import List, Optional
 
 from .auto_master_addr_port import AutoMasterAddressPort
 from .base import API
@@ -16,7 +16,7 @@ class DefaultAPI(API):
     name: str = "Sequential"
 
     def __init__(self):
-        self.current_port: int = None
+        self.current_port: Optional[int] = None
 
     @staticmethod
     def find_available_port() -> int:

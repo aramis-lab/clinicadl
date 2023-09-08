@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import warnings
+from collections.abc import Iterable
 from inspect import isclass
 from pathlib import Path
-from typing import Any, Callable, List
+from typing import Any, List
 
-from . import __cached__, __name__, __path__
-from .api import API, AutoMasterAddressPort
+from . import __name__, __path__
+from .api import API, AutoMasterAddressPort, DefaultAPI
 from .utils import ClinicaClusterResolverWarning, Rank0Filter, warning_filter
 
 
@@ -58,7 +59,6 @@ class Interface(object):
         self.Rank0Filter = Rank0Filter
         self.__file__ = str(Path(__file__).parent)
         self.__path__ = __path__
-        self.__cached__ = __cached__
         self.__name__ = __name__
         self.__all__ = [
             "api",
@@ -73,10 +73,10 @@ class Interface(object):
             "crawl_module_for_APIs",
         ]
 
-    def __dir__(self) -> str:
+    def __dir__(self) -> Iterable[str]:
         return self.__dir
 
-    def make_new_func(self, dest_name: str) -> Callable:
+    def make_new_func(self, dest_name: str) -> property:
         def redirect(self: Interface) -> Any:
             with warnings.catch_warnings(record=True) as warning_list:
                 api = self.get_launcher_API()
@@ -101,6 +101,9 @@ class Interface(object):
         for api in self._available_APIs:
             if api.is_launcher():
                 return api
+        # This should never trigger but it is a safety precaution.
+        # It also helps mypy understand that this code is in fact correct.
+        return DefaultAPI()
 
     @property
     def current_API(self) -> str:
