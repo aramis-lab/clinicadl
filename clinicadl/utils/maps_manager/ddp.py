@@ -75,7 +75,7 @@ def monkeypatch(model: Module) -> None:
     """
     Patch a model to replace the forward method and store it in method _forward.
     This is done in order to enable DistributedDataParallelism since Pytorch uses
-    "forward" has a keyword for its models.
+    "forward" as a keyword for its models.
 
     Args:
         model (torch.nn.Module): model to be trained and needs to be monkeypatched
