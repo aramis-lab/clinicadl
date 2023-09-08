@@ -478,8 +478,6 @@ class MapsManager:
             If True, save the interpretation map in nifti format.
         """
 
-        from torch.utils.data import DataLoader
-
         from clinicadl.interpret.gradients import method_dict
 
         if method not in method_dict.keys():
@@ -624,8 +622,6 @@ class MapsManager:
             split_list (list[int]): list of splits that are trained.
             resume (bool): If True the job is resumed from checkpoint.
         """
-        from torch.utils.data import DataLoader
-
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -722,8 +718,6 @@ class MapsManager:
             split_list: list of splits that are trained.
             resume: If True the job is resumed from checkpoint.
         """
-        from torch.utils.data import DataLoader
-
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -1611,8 +1605,6 @@ class MapsManager:
     ###############################
     @staticmethod
     def write_parameters(json_path: Path, parameters, verbose=True):
-        from pathlib import PosixPath
-
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
