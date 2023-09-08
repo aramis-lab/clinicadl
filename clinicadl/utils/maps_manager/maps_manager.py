@@ -80,7 +80,6 @@ class MapsManager:
                 )
             test_parameters = self.get_parameters()
             self.parameters = change_str_to_path(test_parameters)
-            init_ddp(gpu=self.parameters["gpu"], logger=logger)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -89,7 +88,6 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            init_ddp(gpu=self.parameters["gpu"], logger=logger)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             self.split_name = "split"  # Used only for retro-compatibility
@@ -112,6 +110,8 @@ class MapsManager:
                 self._write_training_data()
                 self._write_train_val_groups()
                 self._write_information()
+
+        init_ddp(gpu=self.parameters["gpu"], logger=logger)
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
