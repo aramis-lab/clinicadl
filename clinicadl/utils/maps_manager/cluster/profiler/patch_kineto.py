@@ -42,7 +42,7 @@ class persistent_locals(object):
         return self._locals
 
 
-if torch.__version__ >= Version("1.12.0"):
+if Version(torch.__version__) >= Version("1.12.0"):
 
     @wraps(torch.profiler.tensorboard_trace_handler)
     def tensorboard_trace_handler(
