@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import warnings
-from collections.abc import Iterable
 from inspect import isclass
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Iterable, List
 
 from . import __name__, __path__
 from .api import API, AutoMasterAddressPort, DefaultAPI
