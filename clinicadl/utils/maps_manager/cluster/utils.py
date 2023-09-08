@@ -17,7 +17,7 @@ def get_first_host(hostlist: str) -> str:
     Returns:
         (str): the first node to host the master process
     """
-    regex = "\[([^[\]]*)\]"
+    regex = r"\[([^[\]]*)\]"
     all_replacement: list[str] = findall(regex, hostlist)
     new_values = [split("-|,", element)[0] for element in all_replacement]
     for i in range(len(new_values)):
