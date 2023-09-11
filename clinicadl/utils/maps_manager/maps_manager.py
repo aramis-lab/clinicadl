@@ -675,7 +675,7 @@ class MapsManager:
             train_sampler = self.task_manager.generate_sampler(
                 data_train,
                 self.sampler,
-                world_size=cluster.world_size,
+                dp_degree=cluster.world_size,
                 rank=cluster.rank,
             )
             logger.debug(
@@ -793,7 +793,7 @@ class MapsManager:
                 train_sampler = self.task_manager.generate_sampler(
                     data_train,
                     self.sampler,
-                    world_size=cluster.world_size,
+                    dp_degree=cluster.world_size,
                     rank=cluster.rank,
                 )
                 train_loader = DataLoader(
