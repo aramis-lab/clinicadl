@@ -828,11 +828,16 @@ class MapsManager:
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         criterion = self.task_manager.get_criterion(self.loss)
+        callbacks = self.callbacks
+        self._setup_callbacks()
+
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
-
+        self.callback_handler.on_train_begin(
+            training_config=self.training_config, model_config=self.model_config
+        )
         model.train()
         train_loader.dataset.train()
 
@@ -2362,3 +2367,16 @@ class MapsManager:
                 map_dir / f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt"
             )
         return map_pt
+
+    def _setup_callbacks(self):
+        from clinicadl.utils.callbacks import Callbacks, CallbacksHandler
+
+        if self.callbacks is None:
+            self.callbacks = [Callbacks()]
+
+        self.callback_handler = CallbackHandler(
+            callbacks=self.callbacks, model=self.model
+        )
+
+        # self.callback_handler.add_callback(ProgressBarCallback())
+        # self.callback_handler.add_callback(MetricConsolePrinterCallback())
