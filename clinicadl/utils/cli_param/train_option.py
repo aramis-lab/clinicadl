@@ -44,9 +44,11 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
-fsdp = cli_param.option_group.computational_group.option(
-    "--fsdp/--no-fsdp",
+fullyshardeddataparallel = cli_param.option_group.computational_group.option(
+    "--fullyshardeddataparallel",
+    "-fsdp",
     type=bool,
+    is_flag=True,
     help="Enables Fully Sharded Data Parallel with Pytorch to save memory at the cost of communications. "
     "Currently this only enables ZeRO Stage 1 but will be entirely replaced by FSDP in a later patch, "
     "this flag is already set to FSDP to that the zero flag is never actually removed.",
