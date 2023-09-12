@@ -1066,9 +1066,8 @@ class MapsManager:
                         filename="optimizer.pth.tar",
                     )
 
-
                 epoch += 1
-                  
+
         if self.parameters["track_exp"] == "mlflow":
             run._mlflow.end_run()
 
