@@ -107,6 +107,9 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     - `--transfer_selection_metric` (str) is the transfer learning selection metric.
     - `--nb_unfrozen_layer` (int) is the number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
+- **Track an experiment**
+    - `--track_exp` (str) is the name of the experiment tracker you want to use. Must be chosen between `wandb` (Weight & Biases) and `mlflow`. As mlflow and W&B are not ClinicaDL dependencies, you must install the one chosen on your own (by running `pip install wandb/mlflow`).
+    For more information, check out the documentation of [W&B](https://docs.wandb.ai) or [Mlflow](https://mlflow.org/docs/latest/index.html)
 
 <!---
 !!! tip

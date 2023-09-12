@@ -58,6 +58,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "patience",
         "profiler",
         "tolerance",
+        "track_exp",
         "transfer_path",
         "transfer_selection_metric",
         "weight_decay",

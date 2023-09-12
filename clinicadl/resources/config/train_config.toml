@@ -46,6 +46,7 @@ amp = false
 seed = 0
 deterministic = false
 compensation = "memory" # Only used if deterministic = true
+track_exp = ""
 
 [Transfer_learning]
 transfer_path = ""
