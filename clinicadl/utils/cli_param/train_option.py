@@ -285,6 +285,7 @@ profiler = cli_param.option_group.optimization_group.option(
 track_exp = cli_param.option_group.optimization_group.option(
     "--track_exp",
     "-te",
+    default=False,
     type=click.Choice(
         [
             "wandb",
