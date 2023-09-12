@@ -1022,6 +1022,7 @@ class MapsManager:
                 logger.info(
                     f"{self.mode} level validation loss is {metrics_valid['loss']} "
                     f"at the end of iteration {i}"
+                )
 
                 if self.track_exp == "wandb":
                     run.log_metrics(
