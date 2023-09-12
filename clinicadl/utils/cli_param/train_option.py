@@ -282,6 +282,18 @@ profiler = cli_param.option_group.optimization_group.option(
     help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
     "It will make an execution trace and some statistics about the CPU and GPU usage.",
 )
+track_exp = cli_param.option_group.optimization_group.option(
+    "--track_exp",
+    "-te",
+    type=click.Choice(
+        [
+            "wandb",
+            "mlflow",
+            "",
+        ]
+    ),
+    help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
+)
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
     "-tp",
