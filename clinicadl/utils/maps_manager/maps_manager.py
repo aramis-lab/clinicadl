@@ -831,7 +831,7 @@ class MapsManager:
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
-        logger.debug(f"Optimizer used for training is optimizer")
+        logger.debug(f"Optimizer used for training is {optimizer}")
 
         model.train()
         train_loader.dataset.train()
@@ -855,6 +855,16 @@ class MapsManager:
 
         scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
+
+        if self.parameters["track_exp"] == "wandb":
+            from clinicadl.utils.tracking_exp import WandB_handler
+
+            run = WandB_handler(split, self.parameters, self.maps_path.name)
+
+        if self.parameters["track_exp"] == "mlflow":
+            from clinicadl.utils.tracking_exp import Mlflow_handler
+
+            run = Mlflow_handler(split, self.parameters, self.maps_path.name)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
@@ -956,6 +966,23 @@ class MapsManager:
                 f"{self.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
+            if self.track_exp == "wandb":
+                run.log_metrics(
+                    run._wandb,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
+
+            if self.track_exp == "mlflow":
+                run.log_metrics(
+                    run._mlflow,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
 
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
@@ -981,6 +1008,11 @@ class MapsManager:
             )
 
             epoch += 1
+        if self.parameters["track_exp"] == "mlflow":
+            run._mlflow.end_run()
+
+        if self.parameters["track_exp"] == "wandb":
+            run._wandb.finish()
 
         self._test_loader(
             train_loader,
