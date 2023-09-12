@@ -290,6 +290,7 @@ track_exp = cli_param.option_group.optimization_group.option(
         [
             "wandb",
             "mlflow",
+            False,
         ]
     ),
     help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
