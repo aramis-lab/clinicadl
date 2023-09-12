@@ -10,19 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* Fix `adapt command` 
-* 
+* Fix `adapt` command 
+
 ### Changed
 
-* SSIM now executed on GPU when possible
+* SSIM is now executed on GPU when possible
 
 ### New
 
 * Add new command `generate artifacts` to generate noise/contract/motion
 * Add options for data augmentation
-* Add fine tuning option
+* Add fine-tuning option
 * Add `--amp` for automatic mixed precision
-* Add `--dp` option for data parallelism
 * Add `--track_exp` option to track your parameters during training with MLflow or WandB
   
 
