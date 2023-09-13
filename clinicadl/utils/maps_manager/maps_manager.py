@@ -825,6 +825,15 @@ class MapsManager:
             resume (bool): If True the job is resumed from the checkpoint.
         """
 
+        print(self.parameters["emissions_tracker"])
+        if self.parameters["emissions_tracker"]:
+            from codecarbon import EmissionsTracker
+
+            tracker = EmissionsTracker()
+            print(tracker)
+            print("tracker on !!!!!!!!!")
+            tracker.start()
+
         model, beginning_epoch = self._init_model(
             split=split,
             resume=resume,
@@ -1026,6 +1035,8 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
+        if self.parameters["emissions_tracker"]:
+            tracker.stop()
 
     def _test_loader(
         self,
