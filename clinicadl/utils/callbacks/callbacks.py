@@ -3,7 +3,7 @@ from logging import getLogger
 logger = getLogger("clinicadl.maps_manager")
 
 
-def Callback():
+class Callback:
     def __init__(self):
         pass
 
@@ -38,16 +38,16 @@ def Callback():
         pass
 
 
-class CallbackHandler:
+class CallbacksHandler:
     """
     Class to handle list of Callback.
     """
 
-    def __init__(self, callbacks, model):
+    def __init__(self, callbacks):
         self.callbacks = []
         for cb in callbacks:
             self.add_callback(cb)
-        self.model = model
+        # self.model = model
 
     def add_callback(self, callback):
         cb = callback() if isinstance(callback, type) else callback
@@ -63,8 +63,8 @@ class CallbackHandler:
     def callback_list(self):
         return "\n".join(cb.__class__.__name__ for cb in self.callbacks)
 
-    def on_train_begin(self, training_config, **kwargs):
-        self.call_event("on_train_begin", training_config, **kwargs)
+    def on_train_begin(self, **kwargs):
+        self.call_event("on_train_begin", **kwargs)
 
     def on_train_end(self, training_config, **kwargs):
         self.call_event("on_train_end", training_config, **kwargs)
@@ -93,17 +93,17 @@ class CallbackHandler:
     def on_step_end(self, training_config, **kwargs):
         self.call_event("on_step_end", training_config, **kwargs)
 
-    def call_event(self, event, training_config, **kwargs):
+    def call_event(self, event, **kwargs):
         for callback in self.callbacks:
             result = getattr(callback, event)(
-                training_config,
-                model=self.model,
+                # training_config,
+                # model=self.model,
                 **kwargs,
             )
 
 
 class LearningRateScheduler(Callback):
-    def on_epoch_begin(self, iteration, **kwargs):
+    def on_train_begin(self, **kwargs):
         # control the learning rate over iteration
         # self.optimizer.lr = fct(iteration)
         print("test réussi")

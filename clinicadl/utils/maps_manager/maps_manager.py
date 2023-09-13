@@ -673,12 +673,14 @@ class MapsManager:
                 num_workers=self.n_proc,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
+            from clinicadl.utils.callbacks.callbacks import LearningRateScheduler
 
             self._train(
                 train_loader,
                 valid_loader,
                 split,
                 resume=resume,
+                callbacks=[LearningRateScheduler],
             )
 
             self._ensemble_prediction(
@@ -778,6 +780,7 @@ class MapsManager:
                     shuffle=False,
                     num_workers=self.n_proc,
                 )
+                from clinicadl.utils.callbacks.callback import LearningRateScheduler
 
                 self._train(
                     train_loader,
@@ -785,6 +788,7 @@ class MapsManager:
                     split,
                     network,
                     resume=resume,
+                    callbacks=[LearningRateScheduler],
                 )
                 resume = False
 
@@ -808,6 +812,7 @@ class MapsManager:
         split,
         network=None,
         resume=False,
+        callbacks=[],
     ):
         """
         Core function shared by train and resume.
@@ -828,16 +833,14 @@ class MapsManager:
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         criterion = self.task_manager.get_criterion(self.loss)
-        callbacks = self.callbacks
+        self.callbacks = callbacks
         self._setup_callbacks()
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
-        self.callback_handler.on_train_begin(
-            training_config=self.training_config, model_config=self.model_config
-        )
+        self.callback_handler.on_train_begin()
         model.train()
         train_loader.dataset.train()
 
@@ -2369,14 +2372,12 @@ class MapsManager:
         return map_pt
 
     def _setup_callbacks(self):
-        from clinicadl.utils.callbacks import Callbacks, CallbacksHandler
+        from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 
         if self.callbacks is None:
             self.callbacks = [Callbacks()]
 
-        self.callback_handler = CallbackHandler(
-            callbacks=self.callbacks, model=self.model
-        )
+        self.callback_handler = CallbacksHandler(callbacks=self.callbacks)
 
         # self.callback_handler.add_callback(ProgressBarCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
