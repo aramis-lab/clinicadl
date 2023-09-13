@@ -1,6 +1,6 @@
 from logging import getLogger
 
-logger = getLogger("clinicadl.maps_manager")
+logger = getLogger("clinicadl.callbacks")
 
 
 class Callback:
@@ -43,10 +43,10 @@ class CallbacksHandler:
     Class to handle list of Callback.
     """
 
-    def __init__(self, callbacks):
+    def __init__(self):
         self.callbacks = []
-        for cb in callbacks:
-            self.add_callback(cb)
+        # for cb in callbacks:
+        #     self.add_callback(cb)
         # self.model = model
 
     def add_callback(self, callback):
@@ -63,47 +63,62 @@ class CallbacksHandler:
     def callback_list(self):
         return "\n".join(cb.__class__.__name__ for cb in self.callbacks)
 
-    def on_train_begin(self, **kwargs):
-        self.call_event("on_train_begin", **kwargs)
+    def on_train_begin(self, parameters, **kwargs):
+        self.call_event("on_train_begin", parameters, **kwargs)
 
-    def on_train_end(self, training_config, **kwargs):
-        self.call_event("on_train_end", training_config, **kwargs)
+    def on_train_end(self, parameters, **kwargs):
+        self.call_event("on_train_end", parameters, **kwargs)
 
-    def on_epoch_begin(self, training_config, **kwargs):
-        self.call_event("on_epoch_begin", training_config, **kwargs)
+    def on_epoch_begin(self, parameters, **kwargs):
+        self.call_event("on_epoch_begin", parameters, **kwargs)
 
-    def on_epoch_end(self, training_config, **kwargs):
-        self.call_event("on_epoch_end", training_config, **kwargs)
+    def on_epoch_end(self, parameters, **kwargs):
+        self.call_event("on_epoch_end", parameters, **kwargs)
 
-    def on_batch_begin(self, training_config, **kwargs):
-        self.call_event("on_batch_begin", training_config, **kwargs)
+    def on_batch_begin(self, parameters, **kwargs):
+        self.call_event("on_batch_begin", parameters, **kwargs)
 
-    def on_batch_end(self, training_config, **kwargs):
-        self.call_event("on_batch_end", training_config, **kwargs)
+    def on_batch_end(self, parameters, **kwargs):
+        self.call_event("on_batch_end", parameters, **kwargs)
 
-    def on_loss_begin(self, training_config, **kwargs):
-        self.call_event("on_loss_begin", training_config, **kwargs)
+    def on_loss_begin(self, parameters, **kwargs):
+        self.call_event("on_loss_begin", parameters, **kwargs)
 
-    def on_loss_end(self, training_config, **kwargs):
-        self.call_event("on_loss_end", training_config, **kwargs)
+    def on_loss_end(self, parameters, **kwargs):
+        self.call_event("on_loss_end", parameters, **kwargs)
 
-    def on_step_begin(self, training_config, **kwargs):
-        self.call_event("on_step_begin", training_config, **kwargs)
+    def on_step_begin(self, parameters, **kwargs):
+        self.call_event("on_step_begin", parameters, **kwargs)
 
-    def on_step_end(self, training_config, **kwargs):
-        self.call_event("on_step_end", training_config, **kwargs)
+    def on_step_end(self, parameters, **kwargs):
+        self.call_event("on_step_end", parameters, **kwargs)
 
-    def call_event(self, event, **kwargs):
+    def call_event(self, event, parameters, **kwargs):
         for callback in self.callbacks:
             result = getattr(callback, event)(
-                # training_config,
+                parameters,
                 # model=self.model,
                 **kwargs,
             )
 
 
-class LearningRateScheduler(Callback):
-    def on_train_begin(self, **kwargs):
-        # control the learning rate over iteration
-        # self.optimizer.lr = fct(iteration)
-        print("test réussi")
+# class LearningRateScheduler(Callback):
+#     def on_train_begin(self, codecarbon_bool, **kwargs):
+#         # control the learning rate over iteration
+#         # self.optimizer.lr = fct(iteration)
+#         print("test réussi")
+
+#     def on_train_end(self, codecarbon_bool, **kwargs):
+#         print("ok")
+
+
+class CodeCarbonTracker(Callback):
+    def on_train_begin(self, parameters, **kwargs):
+        from codecarbon import EmissionsTracker
+
+        # my_logger = LoggerOutput(logger, logging.WARNING)
+        self.tracker = EmissionsTracker()
+        self.tracker.start()
+
+    def on_train_end(self, parameters, **kwargs):
+        self.tracker.stop()

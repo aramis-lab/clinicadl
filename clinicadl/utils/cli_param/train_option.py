@@ -309,6 +309,5 @@ emissions_tracker = cli_param.option_group.informations_group.option(
     "--track_emissions/--dont_track_emissions",
     "-te",
     type=bool,
-    default=None,
     help="Flag to allow calculate the carbon emissions during training.",
 )

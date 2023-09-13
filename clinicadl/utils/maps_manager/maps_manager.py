@@ -11,6 +11,7 @@ import torch
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
+from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -144,6 +145,7 @@ class MapsManager:
                 f"specify a list of splits not intersecting the previous list, "
                 f"or use overwrite to erase previously trained splits."
             )
+
         if self.multi_network:
             self._train_multi(split_list, resume=False)
         else:
@@ -673,14 +675,14 @@ class MapsManager:
                 num_workers=self.n_proc,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
-            from clinicadl.utils.callbacks.callbacks import LearningRateScheduler
+            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
             self._train(
                 train_loader,
                 valid_loader,
                 split,
                 resume=resume,
-                callbacks=[LearningRateScheduler],
+                callbacks=[CodeCarbonTracker],
             )
 
             self._ensemble_prediction(
@@ -780,7 +782,7 @@ class MapsManager:
                     shuffle=False,
                     num_workers=self.n_proc,
                 )
-                from clinicadl.utils.callbacks.callback import LearningRateScheduler
+                from clinicadl.utils.callbacks.callback import CodeCarbonTracker
 
                 self._train(
                     train_loader,
@@ -788,7 +790,7 @@ class MapsManager:
                     split,
                     network,
                     resume=resume,
-                    callbacks=[LearningRateScheduler],
+                    callbacks=[CodeCarbonTracker],
                 )
                 resume = False
 
@@ -825,14 +827,8 @@ class MapsManager:
             resume (bool): If True the job is resumed from the checkpoint.
         """
 
-        print(self.parameters["emissions_tracker"])
-        if self.parameters["emissions_tracker"]:
-            from codecarbon import EmissionsTracker
-
-            tracker = EmissionsTracker()
-            print(tracker)
-            print("tracker on !!!!!!!!!")
-            tracker.start()
+        self._init_callbacks(self.parameters)
+        self.callback_handler.on_train_begin(self.parameters)
 
         model, beginning_epoch = self._init_model(
             split=split,
@@ -842,14 +838,12 @@ class MapsManager:
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         criterion = self.task_manager.get_criterion(self.loss)
-        self.callbacks = callbacks
-        self._setup_callbacks()
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
-        self.callback_handler.on_train_begin()
+
         model.train()
         train_loader.dataset.train()
 
@@ -1035,8 +1029,8 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-        if self.parameters["emissions_tracker"]:
-            tracker.stop()
+
+        self.callback_handler.on_train_end(self.parameters)
 
     def _test_loader(
         self,
@@ -2382,13 +2376,18 @@ class MapsManager:
             )
         return map_pt
 
-    def _setup_callbacks(self):
+    def _init_callbacks(self, parameters):
         from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 
-        if self.callbacks is None:
-            self.callbacks = [Callbacks()]
+        # if self.callbacks is None:
+        #     self.callbacks = [Callback()]
 
-        self.callback_handler = CallbacksHandler(callbacks=self.callbacks)
+        self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
+
+        if parameters["emissions_tracker"]:
+            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
+
+            self.callback_handler.add_callback(CodeCarbonTracker())
 
         # self.callback_handler.add_callback(ProgressBarCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
