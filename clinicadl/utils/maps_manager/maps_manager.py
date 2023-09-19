@@ -1301,9 +1301,13 @@ class MapsManager:
 
             for i in range(nb_modes):
                 data = dataset[i]
-                image = data["data"]
-                data["data"] = data["data"].unsqueeze(0)
-                output = model.predict(data)
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
+                output = model.predict(image.unsqueeze(0))
+                # data["data"] = data["data"].unsqueeze(0)
+                # output = model.predict(data)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
