@@ -262,17 +262,3 @@ def change_path_to_str(
                 elif isinstance(value, Path):
                     toml_dict[key] = value.as_posix()
     return toml_dict
-
-
-def fix_retrocompatibility(
-    toml_dict: Dict[str, Dict[str, Any]]
-) -> Dict[str, Dict[str, Any]]:
-
-    clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
-    config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
-    default_json = read_json(config_path)
-    for param in default_json:
-        if param not in toml_dict:
-            toml_dict[param] = default_json[param]
-
-    return toml_dict
