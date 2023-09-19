@@ -1043,7 +1043,7 @@ class MapsManager:
         network=None,
         monte_carlo=None,
         seed=None,
-        save_reconstruction_tensor=True,
+        save_reconstruction_tensor=False,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
     ):
