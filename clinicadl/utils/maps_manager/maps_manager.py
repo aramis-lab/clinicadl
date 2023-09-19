@@ -30,6 +30,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     change_path_to_str,
     change_str_to_path,
+    fix_retrocompatibility,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
@@ -75,7 +76,8 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             test_parameters = self.get_parameters()
-            self.parameters = change_str_to_path(test_parameters)
+            test_parameters = change_str_to_path(test_parameters)
+            self.parameters = fix_retrocompatibility(test_parameters)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
