@@ -1977,6 +1977,8 @@ class MapsManager:
             )
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
+        print(metrics)
+
         if metrics is not None:
             if not metrics_path.is_file():
                 pd.DataFrame(metrics, index=[0]).to_csv(
@@ -1986,7 +1988,7 @@ class MapsManager:
                 pd.DataFrame(metrics, index=[0]).to_csv(
                     metrics_path, index=False, sep="\t", mode="a", header=False
                 )
-            metrics.to_csv(metrics_path, sep="\t")
+            # metrics.to_csv(metrics_path, sep="\t")
 
         if monte_carlo:
             mc_performance_path = (
