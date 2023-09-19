@@ -342,9 +342,9 @@ class TaskManager:
 
         metrics_df = None
         if use_labels:
-            metrics_dict = self.compute_metrics(results_df)
+            metrics_df = self.compute_metrics(results_df)
             for loss_component in total_loss.keys():
-                metrics_dict[loss_component] = total_loss[loss_component]
+                metrics_df[loss_component] = total_loss[loss_component]
         torch.cuda.empty_cache()
 
-        return results_df, metrics_dict
+        return results_df, metrics_df
