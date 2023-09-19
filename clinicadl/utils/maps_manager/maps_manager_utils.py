@@ -264,7 +264,7 @@ def change_path_to_str(
     return toml_dict
 
 
-def change_path_to_str(
+def fix_retrocompatibility(
     toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
 
