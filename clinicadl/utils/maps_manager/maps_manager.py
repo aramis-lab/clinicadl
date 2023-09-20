@@ -2127,7 +2127,7 @@ class MapsManager:
             weight_decay=self.weight_decay,
         )
 
-        if not self.fullyshardeddataparallel:
+        if not self.fully_sharded_data_parallel:
             optimizer = optimizer_cls(parameters, **optimizer_kwargs)
         else:
             from torch.distributed.optim import ZeroRedundancyOptimizer

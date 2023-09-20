@@ -44,8 +44,8 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
-fullyshardeddataparallel = cli_param.option_group.computational_group.option(
-    "--fullyshardeddataparallel",
+fully_sharded_data_parallel = cli_param.option_group.computational_group.option(
+    "--fully_sharded_data_parallel",
     "-fsdp",
     type=bool,
     is_flag=True,

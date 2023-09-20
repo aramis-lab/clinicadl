@@ -39,7 +39,7 @@ gpu = true
 n_proc = 2
 batch_size = 8
 evaluation_steps = 0
-fullyshardeddataparallel = false
+fully_sharded_data_parallel = false
 amp = false
 
 [Reproducibility]

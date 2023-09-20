@@ -45,7 +45,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "dropout",
         "epochs",
         "evaluation_steps",
-        "fullyshardeddataparallel",
+        "fully_sharded_data_parallel",
         "gpu",
         "learning_rate",
         "multi_cohort",
