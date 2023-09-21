@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
@@ -8,8 +9,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+import torch.distributed as dist
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
@@ -25,6 +28,7 @@ from clinicadl.utils.exceptions import (
     MAPSError,
 )
 from clinicadl.utils.logger import setup_logging
+from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
@@ -86,26 +90,28 @@ class MapsManager:
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
-            if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
-            ):
-                raise MAPSError(
-                    f"You are trying to create a new MAPS at {maps_path} but "
-                    f"this already corresponds to a file or a non-empty folder. \n"
-                    f"Please remove it or choose another location."
-                )
-            (maps_path / "groups").mkdir(parents=True)
-
-            logger.info(f"A new MAPS was created at {maps_path}")
-
-            self.write_parameters(self.maps_path, self.parameters)
-
-            self._write_requirements_version()
-
             self.split_name = "split"  # Used only for retro-compatibility
-            self._write_training_data()
-            self._write_train_val_groups()
-            self._write_information()
+            if cluster.master:
+                if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
+                    maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
+                ):
+                    raise MAPSError(
+                        f"You are trying to create a new MAPS at {maps_path} but "
+                        f"this already corresponds to a file or a non-empty folder. \n"
+                        f"Please remove it or choose another location."
+                    )
+                (maps_path / "groups").mkdir(parents=True)
+
+                logger.info(f"A new MAPS was created at {maps_path}")
+
+                self.write_parameters(self.maps_path, self.parameters)
+                self._write_requirements_version()
+
+                self._write_training_data()
+                self._write_train_val_groups()
+                self._write_information()
+
+        init_ddp(gpu=self.parameters["gpu"], logger=logger)
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -134,7 +140,8 @@ class MapsManager:
             split_path = self.maps_path / f"{self.split_name}-{split}"
             if split_path.is_dir():
                 if overwrite:
-                    shutil.rmtree(split_path)
+                    if cluster.master:
+                        shutil.rmtree(split_path)
                 else:
                     existing_splits.append(split)
 
@@ -258,7 +265,7 @@ class MapsManager:
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
 
-            # Erase previous TSV files
+            # Erase previous TSV files on master process
             if not selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
@@ -297,6 +304,12 @@ class MapsManager:
                         if batch_size is not None
                         else self.batch_size,
                         shuffle=False,
+                        sampler=DistributedSampler(
+                            data_test,
+                            num_replicas=cluster.world_size,
+                            rank=cluster.rank,
+                            shuffle=False,
+                        ),
                         num_workers=n_proc if n_proc is not None else self.n_proc,
                     )
                     self._test_loader(
@@ -358,6 +371,12 @@ class MapsManager:
                     if batch_size is not None
                     else self.batch_size,
                     shuffle=False,
+                    sampler=DistributedSampler(
+                        data_test,
+                        num_replicas=cluster.world_size,
+                        rank=cluster.rank,
+                        shuffle=False,
+                    ),
                     num_workers=n_proc if n_proc is not None else self.n_proc,
                 )
                 self._test_loader(
@@ -396,7 +415,10 @@ class MapsManager:
                         gpu=gpu,
                     )
 
-            self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
+            if cluster.master:
+                self._ensemble_prediction(
+                    data_group, split, selection_metrics, use_labels
+                )
 
     def interpret(
         self,
@@ -470,8 +492,6 @@ class MapsManager:
         save_nifi : bool
             If True, save the interpretation map in nifti format.
         """
-
-        from torch.utils.data import DataLoader
 
         from clinicadl.interpret.gradients import method_dict
 
@@ -617,8 +637,6 @@ class MapsManager:
             split_list (list[int]): list of splits that are trained.
             resume (bool): If True the job is resumed from checkpoint.
         """
-        from torch.utils.data import DataLoader
-
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -654,7 +672,12 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-            train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
+            train_sampler = self.task_manager.generate_sampler(
+                data_train,
+                self.sampler,
+                dp_degree=cluster.world_size,
+                rank=cluster.rank,
+            )
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -666,11 +689,18 @@ class MapsManager:
                 worker_init_fn=pl_worker_init_function,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
+            valid_sampler = DistributedSampler(
+                data_valid,
+                num_replicas=cluster.world_size,
+                rank=cluster.rank,
+                shuffle=False,
+            )
             valid_loader = DataLoader(
                 data_valid,
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.n_proc,
+                sampler=valid_sampler,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
@@ -681,18 +711,19 @@ class MapsManager:
                 resume=resume,
             )
 
-            self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
-            )
-            self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
-            )
+            if cluster.master:
+                self._ensemble_prediction(
+                    "train",
+                    split,
+                    self.selection_metrics,
+                )
+                self._ensemble_prediction(
+                    "validation",
+                    split,
+                    self.selection_metrics,
+                )
 
-            self._erase_tmp(split)
+                self._erase_tmp(split)
 
     def _train_multi(self, split_list: List[int] = None, resume: bool = False):
         """
@@ -702,8 +733,6 @@ class MapsManager:
             split_list: list of splits that are trained.
             resume: If True the job is resumed from checkpoint.
         """
-        from torch.utils.data import DataLoader
-
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -762,7 +791,10 @@ class MapsManager:
                 )
 
                 train_sampler = self.task_manager.generate_sampler(
-                    data_train, self.sampler
+                    data_train,
+                    self.sampler,
+                    dp_degree=cluster.world_size,
+                    rank=cluster.rank,
                 )
                 train_loader = DataLoader(
                     data_train,
@@ -772,11 +804,18 @@ class MapsManager:
                     worker_init_fn=pl_worker_init_function,
                 )
 
+                valid_sampler = DistributedSampler(
+                    data_valid,
+                    num_replicas=cluster.world_size,
+                    rank=cluster.rank,
+                    shuffle=False,
+                )
                 valid_loader = DataLoader(
                     data_valid,
                     batch_size=self.batch_size,
                     shuffle=False,
                     num_workers=self.n_proc,
+                    sampler=valid_sampler,
                 )
 
                 self._train(
@@ -788,18 +827,19 @@ class MapsManager:
                 )
                 resume = False
 
-            self._ensemble_prediction(
-                "train",
-                split,
-                self.selection_metrics,
-            )
-            self._ensemble_prediction(
-                "validation",
-                split,
-                self.selection_metrics,
-            )
+            if cluster.master:
+                self._ensemble_prediction(
+                    "train",
+                    split,
+                    self.selection_metrics,
+                )
+                self._ensemble_prediction(
+                    "validation",
+                    split,
+                    self.selection_metrics,
+                )
 
-            self._erase_tmp(split)
+                self._erase_tmp(split)
 
     def _train(
         self,
@@ -827,6 +867,8 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
+        model = DDP(model)
+
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
@@ -841,15 +883,17 @@ class MapsManager:
         )
         metrics_valid = {"loss": None}
 
-        log_writer = LogWriter(
-            self.maps_path,
-            self.task_manager.evaluation_metrics + ["loss"],
-            split,
-            resume=resume,
-            beginning_epoch=beginning_epoch,
-            network=network,
-        )
-        epoch = log_writer.beginning_epoch
+        if cluster.master:
+            log_writer = LogWriter(
+                self.maps_path,
+                self.task_manager.evaluation_metrics + ["loss"],
+                split,
+                resume=resume,
+                beginning_epoch=beginning_epoch,
+                network=network,
+            )
+            retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
+        epoch = beginning_epoch
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
@@ -869,18 +913,27 @@ class MapsManager:
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
+            if isinstance(train_loader.sampler, DistributedSampler):
+                # It should always be true for a random sampler. But just in case
+                # we get a WeightedRandomSampler or a forgotten RandomSampler,
+                # we do not want to execute this line.
+                train_loader.sampler.set_epoch(epoch)
+
             model.zero_grad(set_to_none=True)
             evaluation_flag, step_flag = True, True
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    with autocast(enabled=self.amp):
-                        _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    scaler.scale(loss).backward()
+                    update: bool = (i + 1) % self.accumulation_steps == 0
+                    sync = nullcontext() if update else model.no_sync()
+                    with sync:
+                        with autocast(enabled=self.amp):
+                            _, loss_dict = model(data, criterion)
+                        logger.debug(f"Train loss dictionnary {loss_dict}")
+                        loss = loss_dict["loss"]
+                        scaler.scale(loss).backward()
 
-                    if (i + 1) % self.accumulation_steps == 0:
+                    if update:
                         step_flag = False
                         scaler.step(optimizer)
                         scaler.update()
@@ -905,13 +958,14 @@ class MapsManager:
                             model.train()
                             train_loader.dataset.train()
 
-                            log_writer.step(
-                                epoch,
-                                i,
-                                metrics_train,
-                                metrics_valid,
-                                len(train_loader),
-                            )
+                            if cluster.master:
+                                log_writer.step(
+                                    epoch,
+                                    i,
+                                    metrics_train,
+                                    metrics_valid,
+                                    len(train_loader),
+                                )
                             logger.info(
                                 f"{self.mode} level training loss is {metrics_train['loss']} "
                                 f"at the end of iteration {i}"
@@ -923,97 +977,104 @@ class MapsManager:
 
                     profiler.step()
 
-            # If no step has been performed, raise Exception
-            if step_flag:
-                raise Exception(
-                    "The model has not been updated once in the epoch. The accumulation step may be too large."
+                # If no step has been performed, raise Exception
+                if step_flag:
+                    raise Exception(
+                        "The model has not been updated once in the epoch. The accumulation step may be too large."
+                    )
+
+                # If no evaluation has been performed, warn the user
+                elif evaluation_flag and self.evaluation_steps != 0:
+                    logger.warning(
+                        f"Your evaluation steps {self.evaluation_steps} are too big "
+                        f"compared to the size of the dataset. "
+                        f"The model is evaluated only once at the end epochs."
+                    )
+
+                # Update weights one last time if gradients were computed without update
+                if (i + 1) % self.accumulation_steps != 0:
+                    scaler.step(optimizer)
+                    scaler.update()
+                    optimizer.zero_grad(set_to_none=True)
+
+                # Always test the results and save them once at the end of the epoch
+                model.zero_grad(set_to_none=True)
+                logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+
+                _, metrics_train = self.task_manager.test(
+                    model, train_loader, criterion, amp=self.amp
+                )
+                _, metrics_valid = self.task_manager.test(
+                    model, valid_loader, criterion, amp=self.amp
                 )
 
-            # If no evaluation has been performed, warn the user
-            elif evaluation_flag and self.evaluation_steps != 0:
-                logger.warning(
-                    f"Your evaluation steps {self.evaluation_steps} are too big "
-                    f"compared to the size of the dataset. "
-                    f"The model is evaluated only once at the end epochs."
+                model.train()
+                train_loader.dataset.train()
+
+                if cluster.master:
+                    log_writer.step(
+                        epoch, i, metrics_train, metrics_valid, len(train_loader)
+                    )
+                logger.info(
+                    f"{self.mode} level training loss is {metrics_train['loss']} "
+                    f"at the end of iteration {i}"
+                )
+                logger.info(
+                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                    f"at the end of iteration {i}"
                 )
 
-            # Update weights one last time if gradients were computed without update
-            if (i + 1) % self.accumulation_steps != 0:
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad(set_to_none=True)
+                if self.track_exp == "wandb":
+                    run.log_metrics(
+                        run._wandb,
+                        self.track_exp,
+                        self.network_task,
+                        metrics_train,
+                        metrics_valid,
+                    )
 
-            # Always test the results and save them once at the end of the epoch
-            model.zero_grad(set_to_none=True)
-            logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+                if self.track_exp == "mlflow":
+                    run.log_metrics(
+                        run._mlflow,
+                        self.track_exp,
+                        self.network_task,
+                        metrics_train,
+                        metrics_valid,
+                    )
 
-            _, metrics_train = self.task_manager.test(
-                model, train_loader, criterion, amp=self.amp
-            )
-            _, metrics_valid = self.task_manager.test(
-                model, valid_loader, criterion, amp=self.amp
-            )
+                if cluster.master:
+                    # Save checkpoints and best models
+                    best_dict = retain_best.step(metrics_valid)
+                    self._write_weights(
+                        {
+                            "model": model.state_dict(),
+                            "epoch": epoch,
+                            "name": self.architecture,
+                        },
+                        best_dict,
+                        split,
+                        network=network,
+                    )
+                    self._write_weights(
+                        {
+                            "optimizer": optimizer.state_dict(),
+                            "epoch": epoch,
+                            "name": self.optimizer,
+                        },
+                        None,
+                        split,
+                        filename="optimizer.pth.tar",
+                    )
 
-            model.train()
-            train_loader.dataset.train()
+                epoch += 1
 
-            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
-            if self.track_exp == "wandb":
-                run.log_metrics(
-                    run._wandb,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
-
-            if self.track_exp == "mlflow":
-                run.log_metrics(
-                    run._mlflow,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
-
-            # Save checkpoints and best models
-            best_dict = retain_best.step(metrics_valid)
-            self._write_weights(
-                {
-                    "model": model.state_dict(),
-                    "epoch": epoch,
-                    "name": self.architecture,
-                },
-                best_dict,
-                split,
-                network=network,
-            )
-            self._write_weights(
-                {
-                    "optimizer": optimizer.state_dict(),
-                    "epoch": epoch,
-                    "name": self.optimizer,
-                },
-                None,
-                split,
-                filename="optimizer.pth.tar",
-            )
-
-            epoch += 1
         if self.parameters["track_exp"] == "mlflow":
             run._mlflow.end_run()
 
         if self.parameters["track_exp"] == "wandb":
             run._wandb.finish()
 
+        del model
         self._test_loader(
             train_loader,
             criterion,
@@ -1078,18 +1139,19 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-            log_dir = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-            )
-            self.write_description_log(
-                log_dir,
-                data_group,
-                dataloader.dataset.caps_dict,
-                dataloader.dataset.df,
-            )
+            if cluster.master:
+                log_dir = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                )
+                self.write_description_log(
+                    log_dir,
+                    data_group,
+                    dataloader.dataset.caps_dict,
+                    dataloader.dataset.df,
+                )
 
             # load the best trained model during the training
             model, _ = self._init_model(
@@ -1099,6 +1161,8 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+            model = DDP(model)
+
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
             )
@@ -1109,10 +1173,15 @@ class MapsManager:
                     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
-            # Replace here
-            self._mode_level_to_tsv(
-                prediction_df, metrics, split, selection_metric, data_group=data_group
-            )
+            if cluster.master:
+                # Replace here
+                self._mode_level_to_tsv(
+                    prediction_df,
+                    metrics,
+                    split,
+                    selection_metric,
+                    data_group=data_group,
+                )
 
     @torch.no_grad()
     def _compute_output_nifti(
@@ -1149,6 +1218,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
+            model = DDP(model)
 
             nifti_path = (
                 self.maps_path
@@ -1157,10 +1227,12 @@ class MapsManager:
                 / data_group
                 / "nifti_images"
             )
-            nifti_path.mkdir(parents=True, exist_ok=True)
+            if cluster.master:
+                nifti_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             nb_imgs = len(dataset)
-            for i in range(nb_imgs):
+            for i in range(cluster.rank, nb_imgs, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
@@ -1211,6 +1283,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
+            model = DDP(model)
 
             tensor_path = (
                 self.maps_path
@@ -1219,14 +1292,16 @@ class MapsManager:
                 / data_group
                 / "tensors"
             )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            if cluster.master:
+                tensor_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(nb_modes):
+            for i in range(cluster.rank, nb_modes, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
@@ -1278,6 +1353,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
+            model = DDP(model)
 
             tensor_path = (
                 self.maps_path
@@ -1286,19 +1362,22 @@ class MapsManager:
                 / data_group
                 / "latent_tensors"
             )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            if cluster.master:
+                tensor_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(nb_modes):
+            for i in range(cluster.rank, nb_modes, cluster.world_size):
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
-                latent = latent.squeeze(0).cpu()
+                with autocast(enabled=self.amp):
+                    _, latent, _ = model._forward(image.unsqueeze(0).to(model.device))
+                latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
@@ -1581,8 +1660,6 @@ class MapsManager:
     ###############################
     @staticmethod
     def write_parameters(json_path: Path, parameters, verbose=True):
-        from pathlib import PosixPath
-
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
@@ -2043,11 +2120,21 @@ class MapsManager:
     def _init_optimizer(self, model, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
 
-        optimizer = getattr(torch.optim, self.optimizer)(
-            filter(lambda x: x.requires_grad, model.parameters()),
+        optimizer_cls = getattr(torch.optim, self.optimizer)
+        parameters = filter(lambda x: x.requires_grad, model.parameters())
+        optimizer_kwargs = dict(
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
+
+        if not self.fully_sharded_data_parallel:
+            optimizer = optimizer_cls(parameters, **optimizer_kwargs)
+        else:
+            from torch.distributed.optim import ZeroRedundancyOptimizer
+
+            optimizer = ZeroRedundancyOptimizer(
+                parameters, optimizer_class=optimizer_cls, **optimizer_kwargs
+            )
 
         if resume:
             checkpoint_path = (
@@ -2101,7 +2188,7 @@ class MapsManager:
 
     def _init_profiler(self):
         if self.profiler:
-            from torch.profiler import (
+            from clinicadl.utils.maps_manager.cluster.profiler import (
                 ProfilerActivity,
                 profile,
                 schedule,
@@ -2110,9 +2197,7 @@ class MapsManager:
 
             time = datetime.now().strftime("%H:%M:%S")
             filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
-            # When ClinicaDL will be updated with Distributed Data Parallelism,
-            # the next line will be handy, to make sure all processes write in the same file
-            # dist.broadcast_object_list(filename, src=0)
+            dist.broadcast_object_list(filename, src=0)
             profiler = profile(
                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
                 schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
@@ -2123,8 +2208,6 @@ class MapsManager:
                 with_flops=False,
             )
         else:
-            from contextlib import nullcontext
-
             profiler = nullcontext()
             profiler.step = lambda *args, **kwargs: None
         return profiler
