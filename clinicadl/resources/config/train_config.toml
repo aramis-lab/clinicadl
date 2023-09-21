@@ -82,4 +82,4 @@ accumulation_steps = 1
 profiler = false
 
 [Informations]
-emissions_calculator = true
+emissions_calculator = false
