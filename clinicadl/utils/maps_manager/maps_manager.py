@@ -822,7 +822,7 @@ class MapsManager:
                     num_workers=self.n_proc,
                     sampler=valid_sampler,
                 )
-                from clinicadl.utils.callbacks.callback import CodeCarbonTracker
+                from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
                 self._train(
                     train_loader,
