@@ -305,9 +305,9 @@ nb_unfrozen_layer = cli_param.option_group.transfer_learning_group.option(
     help="Number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.",
 )
 # informations
-emissions_tracker = cli_param.option_group.informations_group.option(
-    "--track_emissions/--dont_track_emissions",
-    "-te",
+emissions_calculator = cli_param.option_group.informations_group.option(
+    "--calculate_emissions/--dont_calculate_emissions",
     type=bool,
+    default=None,
     help="Flag to allow calculate the carbon emissions during training.",
 )

@@ -2384,7 +2384,7 @@ class MapsManager:
 
         self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
 
-        if parameters["emissions_tracker"]:
+        if parameters["emissions_calculator"]:
             from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
             self.callback_handler.add_callback(CodeCarbonTracker())

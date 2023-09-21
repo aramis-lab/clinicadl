@@ -55,7 +55,7 @@ from .task_utils import task_launcher
 @train_option.selection_metrics
 @train_option.regression_loss
 # informations
-@train_option.emissions_tracker
+@train_option.emissions_calculator
 def cli(**kwargs):
     """
     Train a deep learning model to learn a regression task on neuroimaging data.
