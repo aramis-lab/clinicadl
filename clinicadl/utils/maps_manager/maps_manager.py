@@ -1054,7 +1054,6 @@ class MapsManager:
                         metrics_valid,
                     )
 
-
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
