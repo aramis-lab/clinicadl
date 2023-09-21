@@ -14,6 +14,10 @@ clinicadl.egg-info
 *.so
 .DS_Store
 *.swp
+mlruns/
+profiler/
+wandb/
+emissions.csv
 
 # Editor's files
 .idea
