@@ -42,7 +42,6 @@ click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
 torchio = "^0.18.90"
-codecarbon = {version = "^2.3.1", optional = true}
 # urllib3= "<2.0.0"
 #protobuf = "<3.2.0"
 
@@ -60,6 +59,7 @@ optional = true
 [tool.poetry.group.tracking.dependencies]
 wandb = "^0.15.4"
 mlflow = "^2.0.0"
+codecarbon = "^2.3.1"
 
 [tool.poetry.group.docs]
 optional = true
