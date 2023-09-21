@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from torch import nn
 from torch.utils.data import sampler
+from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
@@ -58,7 +59,9 @@ class RegressionManager(TaskManager):
         return 1
 
     @staticmethod
-    def generate_sampler(dataset, sampler_option="random", n_bins=5):
+    def generate_sampler(
+        dataset, sampler_option="random", n_bins=5, dp_degree=None, rank=None
+    ):
         df = dataset.df
 
         count = np.zeros(n_bins)
@@ -79,9 +82,20 @@ class RegressionManager(TaskManager):
             weights += [weight_per_class[key]] * dataset.elem_per_image
 
         if sampler_option == "random":
-            return sampler.RandomSampler(weights)
+            if dp_degree is not None and rank is not None:
+                return DistributedSampler(
+                    weights, num_replicas=dp_degree, rank=rank, shuffle=True
+                )
+            else:
+                return sampler.RandomSampler(weights)
         elif sampler_option == "weighted":
-            return sampler.WeightedRandomSampler(weights, len(weights))
+            if dp_degree is not None and rank is not None:
+                length = len(weights) // dp_degree + int(
+                    rank < len(weights) % dp_degree
+                )
+            else:
+                length = len(weights)
+            return sampler.WeightedRandomSampler(weights, length)
         else:
             raise NotImplementedError(
                 f"The option {sampler_option} for sampler on regression task is not implemented"

@@ -1,5 +1,6 @@
 from torch import nn
 from torch.utils.data import sampler
+from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
@@ -55,13 +56,20 @@ class ReconstructionManager(TaskManager):
         return None
 
     @staticmethod
-    def generate_sampler(dataset, sampler_option="random", n_bins=5):
+    def generate_sampler(
+        dataset, sampler_option="random", n_bins=5, dp_degree=None, rank=None
+    ):
         df = dataset.df
 
         weights = [1] * len(df) * dataset.elem_per_image
 
         if sampler_option == "random":
-            return sampler.RandomSampler(weights)
+            if dp_degree is not None and rank is not None:
+                return DistributedSampler(
+                    weights, num_replicas=dp_degree, rank=rank, shuffle=True
+                )
+            else:
+                return sampler.RandomSampler(weights)
         else:
             raise NotImplementedError(
                 f"The option {sampler_option} for sampler on reconstruction task is not implemented"

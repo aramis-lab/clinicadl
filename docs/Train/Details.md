@@ -199,3 +199,22 @@ The `TSV_DIRECTORY` argument points to a TSV file with two columns:
 - `path` the path to the corresponding labels list, outputs of [`split`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) 
 or [`kfold`](../TSVTools.md#kfold---k-fold-split) methods.
 - `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels separated by commas.
+
+## Distributed Data Parallelism
+
+It is possible to train a model with ClinicaDL using Distributed Data Parallelism
+(DDP). DDP uses multiple GPUs to speed up the training process. DDP splits a batch
+across GPUs so that the memory requirement and workload per GPU is lower.
+
+ClinicaDL's cluster module detects when your script is launched within a distributed
+environment and sets up the distribution by itself. However, you will still need to
+launch your code as many times as you have GPUs.
+You may want to use use a launcher for that. Currently ClinicaDL's cluster module
+supports SLURM (srun) and TorchElastic (torchrun). Additional launcher might be
+included in the future.
+
+Distributing the training process allows the usage of Zero Redundancy Optimizer.
+You will decrease the memory footprint per gpu of the optimizer states.
+However Pytorch's implementation might increase the volume of communications.
+Use the `--fully_sharded_data_parallel` or `-fsdp` flag to activate this feature. This currently only implements ZeRO
+Stage 1 but will be entirely replaced by FSDP in a later patch.
