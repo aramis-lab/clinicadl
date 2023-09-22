@@ -14,6 +14,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -152,6 +153,7 @@ class MapsManager:
                 f"specify a list of splits not intersecting the previous list, "
                 f"or use overwrite to erase previously trained splits."
             )
+
         if self.multi_network:
             self._train_multi(split_list, resume=False)
         else:
@@ -704,12 +706,14 @@ class MapsManager:
                 sampler=valid_sampler,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
+            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
             self._train(
                 train_loader,
                 valid_loader,
                 split,
                 resume=resume,
+                callbacks=[CodeCarbonTracker],
             )
 
             if cluster.master:
@@ -818,6 +822,7 @@ class MapsManager:
                     num_workers=self.n_proc,
                     sampler=valid_sampler,
                 )
+                from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
                 self._train(
                     train_loader,
@@ -825,6 +830,7 @@ class MapsManager:
                     split,
                     network,
                     resume=resume,
+                    callbacks=[CodeCarbonTracker],
                 )
                 resume = False
 
@@ -849,6 +855,7 @@ class MapsManager:
         split,
         network=None,
         resume=False,
+        callbacks=[],
     ):
         """
         Core function shared by train and resume.
@@ -860,7 +867,8 @@ class MapsManager:
             network (int): Index of the network trained (used in multi-network setting only).
             resume (bool): If True the job is resumed from the checkpoint.
         """
-
+        self._init_callbacks()
+        self.callback_handler.on_train_begin(self.parameters)
         model, beginning_epoch = self._init_model(
             split=split,
             resume=resume,
@@ -869,8 +877,8 @@ class MapsManager:
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         model = DDP(model)
-
         criterion = self.task_manager.get_criterion(self.loss)
+
         logger.info(f"Criterion for {self.network_task} is {criterion}")
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
@@ -1043,31 +1051,57 @@ class MapsManager:
                         metrics_valid,
                     )
 
-                if cluster.master:
-                    # Save checkpoints and best models
-                    best_dict = retain_best.step(metrics_valid)
-                    self._write_weights(
-                        {
-                            "model": model.state_dict(),
-                            "epoch": epoch,
-                            "name": self.architecture,
-                        },
-                        best_dict,
-                        split,
-                        network=network,
-                    )
-                    self._write_weights(
-                        {
-                            "optimizer": optimizer.state_dict(),
-                            "epoch": epoch,
-                            "name": self.optimizer,
-                        },
-                        None,
-                        split,
-                        filename="optimizer.pth.tar",
-                    )
+            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            logger.info(
+                f"{self.mode} level training loss is {metrics_train['loss']} "
+                f"at the end of iteration {i}"
+            )
+            logger.info(
+                f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                f"at the end of iteration {i}"
+            )
+            if self.track_exp == "wandb":
+                run.log_metrics(
+                    run._wandb,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
 
-                epoch += 1
+            if self.track_exp == "mlflow":
+                run.log_metrics(
+                    run._mlflow,
+                    self.track_exp,
+                    self.network_task,
+                    metrics_train,
+                    metrics_valid,
+                )
+            if cluster.master:
+                # Save checkpoints and best models
+                best_dict = retain_best.step(metrics_valid)
+                self._write_weights(
+                    {
+                        "model": model.state_dict(),
+                        "epoch": epoch,
+                        "name": self.architecture,
+                    },
+                    best_dict,
+                    split,
+                    network=network,
+                )
+                self._write_weights(
+                    {
+                        "optimizer": optimizer.state_dict(),
+                        "epoch": epoch,
+                        "name": self.optimizer,
+                    },
+                    None,
+                    split,
+                    filename="optimizer.pth.tar",
+                )
+
+            epoch += 1
 
         if self.parameters["track_exp"] == "mlflow":
             run._mlflow.end_run()
@@ -1112,6 +1146,8 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
+
+        self.callback_handler.on_train_end(self.parameters)
 
     def _test_loader(
         self,
@@ -2479,3 +2515,19 @@ class MapsManager:
                 map_dir / f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt"
             )
         return map_pt
+
+    def _init_callbacks(self):
+        from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
+
+        # if self.callbacks is None:
+        #     self.callbacks = [Callback()]
+
+        self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
+
+        if self.parameters["emissions_calculator"]:
+            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
+
+            self.callback_handler.add_callback(CodeCarbonTracker())
+
+        # self.callback_handler.add_callback(ProgressBarCallback())
+        # self.callback_handler.add_callback(MetricConsolePrinterCallback())

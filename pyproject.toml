@@ -36,7 +36,7 @@ toml = "*"
 pandas = "^1.2"
 numpy = "^1.17"
 scikit-learn = "^1.0"
-scikit-image = ">=0.21"
+scikit-image = "^0.21"
 joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
@@ -59,6 +59,8 @@ optional = true
 [tool.poetry.group.tracking.dependencies]
 wandb = "^0.15.4"
 mlflow = "^2.0.0"
+codecarbon = "^2.3.1"
+
 
 [tool.poetry.group.docs]
 optional = true
