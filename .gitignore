@@ -18,6 +18,7 @@ mlruns/
 profiler/
 wandb/
 emissions.csv
+clinicadl_debug.log
 
 # Editor's files
 .idea
