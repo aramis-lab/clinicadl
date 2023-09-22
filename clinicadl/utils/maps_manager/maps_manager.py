@@ -867,10 +867,11 @@ class MapsManager:
             network (int): Index of the network trained (used in multi-network setting only).
             resume (bool): If True the job is resumed from the checkpoint.
         """
-
-        self._init_callbacks(self.parameters)
+        print("before callbacks")
+        self._init_callbacks()
+        print("init done")
         self.callback_handler.on_train_begin(self.parameters)
-
+        print("train begin done")
         model, beginning_epoch = self._init_model(
             split=split,
             resume=resume,
@@ -878,8 +879,9 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
+        print("1")
         model = DDP(model)
-
+        print("2")
         criterion = self.task_manager.get_criterion(self.loss)
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -1080,31 +1082,31 @@ class MapsManager:
                     metrics_train,
                     metrics_valid,
                 )
-                if cluster.master:
-                    # Save checkpoints and best models
-                    best_dict = retain_best.step(metrics_valid)
-                    self._write_weights(
-                        {
-                            "model": model.state_dict(),
-                            "epoch": epoch,
-                            "name": self.architecture,
-                        },
-                        best_dict,
-                        split,
-                        network=network,
-                    )
-                    self._write_weights(
-                        {
-                            "optimizer": optimizer.state_dict(),
-                            "epoch": epoch,
-                            "name": self.optimizer,
-                        },
-                        None,
-                        split,
-                        filename="optimizer.pth.tar",
-                    )
+            if cluster.master:
+                # Save checkpoints and best models
+                best_dict = retain_best.step(metrics_valid)
+                self._write_weights(
+                    {
+                        "model": model.state_dict(),
+                        "epoch": epoch,
+                        "name": self.architecture,
+                    },
+                    best_dict,
+                    split,
+                    network=network,
+                )
+                self._write_weights(
+                    {
+                        "optimizer": optimizer.state_dict(),
+                        "epoch": epoch,
+                        "name": self.optimizer,
+                    },
+                    None,
+                    split,
+                    filename="optimizer.pth.tar",
+                )
 
-                epoch += 1
+            epoch += 1
 
         if self.parameters["track_exp"] == "mlflow":
             run._mlflow.end_run()
@@ -2519,7 +2521,7 @@ class MapsManager:
             )
         return map_pt
 
-    def _init_callbacks(self, parameters):
+    def _init_callbacks(self):
         from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 
         # if self.callbacks is None:
@@ -2527,7 +2529,7 @@ class MapsManager:
 
         self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
 
-        if parameters["emissions_calculator"]:
+        if self.parameters["emissions_calculator"]:
             from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
             self.callback_handler.add_callback(CodeCarbonTracker())
