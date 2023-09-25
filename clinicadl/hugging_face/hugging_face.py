@@ -168,7 +168,9 @@ def hf_hub_is_available():
     return importlib.util.find_spec("huggingface_hub") is not None
 
 
-def load_from_hf_hub(cls, hf_hub_path: str, allow_pickle=False):  # pragma: no cover
+def load_from_hf_hub(
+    output_maps: Path, hf_hub_path: str, allow_pickle=False
+):  # pragma: no cover
     """Class method to be used to load a pretrained model from the Hugging Face hub
 
     Args:
@@ -198,7 +200,10 @@ def load_from_hf_hub(cls, hf_hub_path: str, allow_pickle=False):  # pragma: no c
 
     logger.info(f"Downloading {hf_hub_path} files for rebuilding...")
 
-    environment_json = hf_hub_download(repo_id=hf_hub_path, filename="*")
+    environment_json = hf_hub_download(
+        repo_id=hf_hub_path, filename="maps.json", local_dir=output_maps
+    )
+    print(environment_json)
     # #model_config_json = hf_hub_download(repo_id=hf_hub_path, filename="model_config.json")
 
     # _ = hf_hub_download(repo_id=hf_hub_path, filename="model.pt")

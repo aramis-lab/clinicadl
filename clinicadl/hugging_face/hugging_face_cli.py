@@ -1,6 +1,6 @@
 import click
 
-from .predict_cli import cli as predict_cli
+from .pull_cli import cli as pull_cli
 from .push_cli import cli as push_cli
 
 
@@ -11,7 +11,7 @@ def cli():
 
 
 cli.add_command(push_cli)
-cli.add_command(predict_cli)
+cli.add_command(pull_cli)
 
 
 if __name__ == "__main__":
