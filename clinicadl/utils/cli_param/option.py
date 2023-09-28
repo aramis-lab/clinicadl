@@ -57,6 +57,13 @@ variables_of_interest = click.option(
     multiple=True,
     default=None,
 )
+ssda_network = click.option(
+    "--ssda_network",
+    type=bool,
+    default=False,
+    show_default=True,
+    help="ssda training.",
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
