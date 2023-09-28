@@ -21,6 +21,7 @@ class SplitManager:
         tsv_path: Path,
         diagnoses,
         baseline=False,
+        valid_longitudinal=False,
         multi_cohort=False,
         split_list=None,
     ):
@@ -36,6 +37,8 @@ class SplitManager:
             List of diagnosis
         baseline: bool
             if True, split only on baseline sessions
+        valid_longitudinal: bool
+            if True, split validation on longitudinal sessions
         multi-cohort: bool
         split_list: List[str]
 
@@ -46,6 +49,7 @@ class SplitManager:
         self.multi_cohort = multi_cohort
         self.diagnoses = diagnoses
         self.baseline = baseline
+        self.valid_longitudinal = valid_longitudinal
         self.split_list = split_list
 
     @abc.abstractmethod
@@ -139,8 +143,10 @@ class SplitManager:
             train_path = train_path / "train_baseline.tsv"
         else:
             train_path = train_path / "train.tsv"
-
-        valid_path = valid_path / "validation_baseline.tsv"
+        if self.valid_longitudinal:
+            valid_path = valid_path / "validation.tsv"
+        else:
+            valid_path = valid_path / "validation_baseline.tsv"
 
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")

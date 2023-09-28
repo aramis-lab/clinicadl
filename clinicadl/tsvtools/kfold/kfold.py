@@ -60,6 +60,7 @@ def write_splits(
         test_df = baseline_df.iloc[test_index]
         train_df = baseline_df.iloc[train_index]
         long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+        long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
 
         train_df.reset_index(inplace=True, drop=True)
         test_df.reset_index(inplace=True, drop=True)
@@ -83,6 +84,11 @@ def write_splits(
 
         long_train_df.to_csv(
             results_directory / f"split-{i}" / "train.tsv",
+            sep="\t",
+            index=False,
+        )
+        long_test_df.to_csv(
+            results_directory / f"split-{i}" / f"{subset_name}.tsv",
             sep="\t",
             index=False,
         )

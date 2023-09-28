@@ -171,6 +171,12 @@ baseline = cli_param.option_group.data_group.option(
     default=None,
     help="If provided, only the baseline sessions are used for training.",
 )
+valid_longitudinal = cli_param.option_group.data_group.option(
+    "--valid_longitudinal/--not_valid_longitudinal",
+    type=bool,
+    default=None,
+    help="If provided, not only the baseline sessions are used for validation (careful with this bad habits).",
+)
 normalize = cli_param.option_group.data_group.option(
     "--normalize/--unnormalize",
     type=bool,
