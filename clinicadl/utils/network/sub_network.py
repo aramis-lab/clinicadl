@@ -11,6 +11,7 @@ from clinicadl.utils.network.network_utils import (
     CropMaxUnpool3d,
     PadMaxPool2d,
     PadMaxPool3d,
+    ReverseLayerF,
 )
 
 logger = getLogger("clinicadl.networks")
@@ -133,3 +134,170 @@ class CNN(Network):
             loss = torch.Tensor([0])
 
         return train_output, {"loss": loss}
+
+
+class CNN_SSDA(Network):
+    def __init__(
+        self,
+        convolutions,
+        fc_class_source,
+        fc_class_target,
+        fc_domain,
+        n_classes,
+        gpu=False,
+    ):
+        super().__init__(gpu=gpu)
+        self.convolutions = convolutions.to(self.device)
+        self.fc_class_source = fc_class_source.to(self.device)
+        self.fc_class_target = fc_class_target.to(self.device)
+        self.fc_domain = fc_domain.to(self.device)
+        self.n_classes = n_classes
+
+    @property
+    def layers(self):
+        return nn.Sequential(
+            self.convolutions,
+            self.fc_class_source,
+            self.fc_class_target,
+            self.fc_domain,
+        )  # ,
+
+    def transfer_weights(self, state_dict, transfer_class):
+        if issubclass(transfer_class, CNN_SSDA):
+            self.load_state_dict(state_dict)
+        elif issubclass(transfer_class, AutoEncoder):
+            convolutions_dict = OrderedDict(
+                [
+                    (k.replace("encoder.", ""), v)
+                    for k, v in state_dict.items()
+                    if "encoder" in k
+                ]
+            )
+            self.convolutions.load_state_dict(convolutions_dict)
+        else:
+            raise ClinicaDLNetworksError(
+                f"Cannot transfer weights from {transfer_class} to CNN."
+            )
+
+    def forward(self, x, alpha):
+        x = self.convolutions(x)
+        x_class_source = self.fc_class_source(x)
+        x_class_target = self.fc_class_target(x)
+        x_reverse = ReverseLayerF.apply(x, alpha)  # TO CHECK
+        x_domain = self.fc_domain(x_reverse)
+        return x_class_source, x_class_target, x_domain
+
+    def predict(self, x):
+        return self.forward(x)
+
+    def compute_outputs_and_loss(self, data_lab, data_target_unl, criterion, alpha):
+
+        images, labels, domain = (
+            data_lab["image"].to(self.device),
+            data_lab["label"].to(self.device),
+            data_lab["domain"],  # .to(self.device),
+        )
+
+        logger.info(f"Label : {labels}")
+
+        images_target_unl = data_target_unl["image"].to(self.device)
+
+        (
+            train_output_class_source,
+            _,
+            train_output_domain,
+        ) = self.forward(images, alpha)
+
+        _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
+
+        loss_classif = criterion(train_output_class_source, labels)
+
+        output_array_domain = [0 if element == "t1" else 1 for element in domain]
+
+        output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
+
+        logger.info(f"domain : {output_array_domain}")
+
+        labels_domain_t = (
+            torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
+        )
+
+        loss_domain_lab = criterion(train_output_domain, output_tensor_domain)
+        loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
+
+        loss_domain = loss_domain_lab + loss_domain_t_unl
+
+        total_loss = loss_classif + loss_domain
+
+        return (
+            train_output_class_source,
+            train_output_domain,
+            {"loss": total_loss},
+        )
+
+    def compute_outputs_and_loss_source_target(
+        self, data_lab, data_lab_target, data_target_unl, criterion, alpha
+    ):
+
+        images, labels, domain = (
+            data_lab["image"].to(self.device),
+            data_lab["label"].to(self.device),
+            data_lab["domain"],  # .to(self.device),
+        )
+
+        images_target, labels_target, domain = (
+            data_lab_target["image"].to(self.device),
+            data_lab_target["label"].to(self.device),
+            data_lab_target["domain"],  # .to(self.device),
+        )
+        logger.info(f"Label : {labels}")
+
+        images_target_unl = data_target_unl["image"].to(self.device)
+
+        (
+            train_output_class_source,
+            _,
+            train_output_domain,
+        ) = self.forward(images, alpha)
+
+        (
+            _,
+            train_output_class_target,
+            train_output_domain,
+        ) = self.forward(images_target, alpha)
+
+        _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
+
+        loss_classif_source = criterion(train_output_class_source, labels)
+        loss_classif_target = criterion(train_output_class_target, labels_target)
+
+        loss_classif = loss_classif_source + loss_classif_target
+
+        output_array_domain = [0 if element == "t1" else 1 for element in domain]
+
+        output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
+
+        logger.info(f"domain : {output_array_domain}")
+
+        labels_domain_t = (
+            torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
+        )
+
+        loss_domain_lab = criterion(train_output_domain, output_tensor_domain)
+        loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
+
+        loss_domain = loss_domain_lab + loss_domain_t_unl
+
+        total_loss = loss_classif + loss_domain
+
+        return (
+            train_output_class_source,
+            train_output_domain,
+            {"loss": total_loss},
+        )
+
+    def lr_scheduler(self, lr, optimizer, p):
+        lr = lr / (1 + 10 * p) ** 0.75
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
+        return optimizer
