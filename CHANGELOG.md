@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## ClinicaDL 1.5.1
+
+### Fixed
+
+* Fix retrocompatibility for new option in maps.json
+
+### Changed
+
+* Change MapsManager architecture by adding Callbacks 
+
+### New
+
+* Add `--fully_sharded_data_parallelism` option
+* Add `--emisions_calculator` option with codecarbon
+  
+
 ## ClinicaDL 1.5.0
 
 ### Fixed
