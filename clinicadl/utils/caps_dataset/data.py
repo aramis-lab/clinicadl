@@ -333,6 +333,7 @@ class CapsDatasetImage(CapsDataset):
         if self.augmentation_transformations and not self.eval_mode:
             image = self.augmentation_transformations(image)
 
+        domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
         sample = {
             "image": image,
             "label": label,
@@ -340,6 +341,7 @@ class CapsDatasetImage(CapsDataset):
             "session_id": session,
             "image_id": 0,
             "image_path": image_path.as_posix(),
+            "domain": domain,
         }
 
         return sample
