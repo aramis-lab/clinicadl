@@ -842,7 +842,7 @@ class MapsManager:
             logger.debug("Loading target labelled training data...")
             print(self.preprocessing_dict_target)
             data_train_target_labeled = return_dataset(
-                self.caps_target,
+                Path(self.caps_target),  # TO CHECK
                 split_df_dict_ssda_lab["train"],
                 self.preprocessing_dict_target,
                 train_transformations=train_transforms,
