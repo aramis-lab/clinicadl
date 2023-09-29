@@ -199,6 +199,7 @@ class CNN_SSDA(Network):
         )
 
         logger.info(f"Label : {labels}")
+        logger.info(f"domain : {domain}")
 
         images_target_unl = data_target_unl["image"].to(self.device)
 

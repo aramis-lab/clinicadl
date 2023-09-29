@@ -84,7 +84,6 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            print(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -801,7 +800,7 @@ class MapsManager:
 
     def _train_ssda(self, split_list=None, resume=False):
         """
-        Trains a single CNN for all inputs using semi-supervised domain adaptation.
+        Trains a single CNN for a source and target domain using semi-supervised domain adaptation.
 
         Args:
             split_list (list[int]): list of splits that are trained.
@@ -812,11 +811,13 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         split_manager = self._init_split_manager(split_list)
 
-        split_manager_ssda_lab = self._init_split_manager_ssda(
+        split_manager_target_lab = self._init_split_manager_ssda(
             self.caps_target, self.tsv_target_lab, split_list
         )
 
@@ -825,7 +826,7 @@ class MapsManager:
             seed_everything(self.seed, self.deterministic, self.compensation)
 
             split_df_dict = split_manager[split]
-            split_df_dict_ssda_lab = split_manager_ssda_lab[split]
+            split_df_dict_target_lab = split_manager_target_lab[split]
 
             logger.debug("Loading source training data...")
             data_train_source = return_dataset(
@@ -840,10 +841,9 @@ class MapsManager:
             )
 
             logger.debug("Loading target labelled training data...")
-            print(self.preprocessing_dict_target)
             data_train_target_labeled = return_dataset(
                 Path(self.caps_target),  # TO CHECK
-                split_df_dict_ssda_lab["train"],
+                split_df_dict_target_lab["train"],
                 self.preprocessing_dict_target,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -883,7 +883,7 @@ class MapsManager:
             logger.debug("Loading validation target labelled data...")
             data_valid_target_labeled = return_dataset(
                 Path(self.caps_target),
-                split_df_dict_ssda_lab["validation"],
+                split_df_dict_target_lab["validation"],
                 self.preprocessing_dict_target,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -894,9 +894,7 @@ class MapsManager:
             train_source_sampler = self.task_manager.generate_sampler(
                 data_train_source, self.sampler
             )
-            train_target_sampler = self.task_manager.generate_sampler(
-                data_train_target_labeled, self.sampler
-            )
+
             logger.info(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -2137,8 +2135,6 @@ class MapsManager:
         json_path.mkdir(parents=True, exist_ok=True)
 
         parameters = change_path_to_str(parameters)
-        print("just before error")
-        print(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = json_path / "maps.json"
