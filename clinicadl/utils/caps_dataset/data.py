@@ -71,7 +71,12 @@ class CapsDataset(Dataset):
 
         self.df = data_df
 
-        mandatory_col = {"participant_id", "session_id", "cohort"}
+        mandatory_col = {
+            "participant_id",
+            "session_id",
+            "cohort",
+            "domain",
+        }  # TO CHANGE
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
 
