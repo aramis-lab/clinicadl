@@ -955,8 +955,8 @@ class MapsManager:
             )
             data_combined.reset_index(inplace=True)
 
-            train_sampler = self.task_manager.generate_sampler(
-                data_combined, "weighted"
+            train_sampler = self.task_manager.generate_sampler_ssda(
+                data_train_source, data_combined, "weighted"
             )  # To check
 
             combined_data_loader = DataLoader(
