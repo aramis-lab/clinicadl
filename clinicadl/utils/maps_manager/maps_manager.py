@@ -1921,6 +1921,8 @@ class MapsManager:
         )
 
         split_manager = self._init_split_manager(None)
+        print(split_manager)
+        print(split_manager[0]["train"])
         train_df = split_manager[0]["train"]
         if "label" not in self.parameters:
             self.parameters["label"] = None
