@@ -859,7 +859,7 @@ class MapsManager:
 
             logger.debug("Loading target unlabelled training data...")
             data_target_unlabeled = return_dataset(
-                self.caps_target,
+                Path(self.caps_target),
                 pd.read_csv(self.tsv_target_unlab, sep="\t"),
                 self.preprocessing_dict_target,
                 train_transformations=train_transforms,
@@ -882,7 +882,7 @@ class MapsManager:
             )
             logger.debug("Loading validation target labelled data...")
             data_valid_target_labeled = return_dataset(
-                self.caps_target,
+                Path(self.caps_target),
                 split_df_dict_ssda_lab["validation"],
                 self.preprocessing_dict_target,
                 train_transformations=train_transforms,
