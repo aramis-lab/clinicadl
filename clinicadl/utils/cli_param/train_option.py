@@ -200,8 +200,8 @@ tsv_target_unlab = cli_param.option_group.data_group.option(
     type=str,
     help="TSV of unllabeled target data.",
 )
-preprocessing_json_target = cli_param.option_group.data_group.option(
-    "--preprocessing_json_target",
+preprocessing_dict_target = cli_param.option_group.data_group.option(
+    "--preprocessing_dict_target",
     "-d",
     type=str,
     help="Path to json taget.",
