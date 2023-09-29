@@ -65,7 +65,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "caps_target",
         "tsv_target_lab",
         "tsv_target_unlab",
-        "preprocessing_json_target",
+        "preprocessing_dict_target",
     ]
     all_options_list = standard_options_list + task_options_list
 
