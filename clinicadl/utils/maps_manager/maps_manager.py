@@ -1311,7 +1311,9 @@ class MapsManager:
             model.zero_grad()
             evaluation_flag, step_flag = True, True
 
-            data_iter_t = iter(train_target_loader) # Iterator over train target data loader
+            data_iter_t = iter(
+                train_target_loader
+            )  # Iterator over train target data loader
             for i, (data_lab, data_target_unl) in enumerate(
                 zip(combined_data_loader, train_target_unl_loader)
             ):
@@ -1328,7 +1330,7 @@ class MapsManager:
                     )
                     _, _, loss_dict = model.compute_outputs_and_loss(
                         data_lab, data_target_unl, criterion, alpha
-                    ) # TO CHECK
+                    )  # TO CHECK
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
                     loss.backward()
@@ -1342,7 +1344,7 @@ class MapsManager:
 
                     _, _, loss_dict = model.compute_outputs_and_loss_source_target(
                         data_lab, data_target, data_target_unl, criterion, alpha
-                    ) # TO CHECK
+                    )  # TO CHECK
 
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
@@ -1389,7 +1391,7 @@ class MapsManager:
                             criterion,
                             alpha,
                             target=True,
-                        ) # TO CHECK
+                        )  # TO CHECK
 
                         _, metrics_valid_target = self.task_manager.test_da(
                             model,
@@ -2626,8 +2628,8 @@ class MapsManager:
         for arg in args:
             kwargs[arg] = self.parameters[arg]
 
-        kwargs["caps_directory"] = caps_dir
-        kwargs["tsv_path"] = tsv_dir
+        kwargs["caps_directory"] = caps_dir.resolve()
+        kwargs["tsv_path"] = tsv_dir.resolve()
 
         return split_class(**kwargs)
 
