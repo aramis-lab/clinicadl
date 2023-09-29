@@ -31,6 +31,12 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     train_dict["caps_directory"] = Path(kwargs["caps_directory"])
     train_dict["tsv_path"] = Path(kwargs["tsv_directory"])
 
+    # TO CHECK
+
+    train_dict["caps_target"] = Path(kwargs["caps_target"])
+    train_dict["tsv_target_lab"] = Path(kwargs["tsv_target_lab"])
+    train_dict["tsv_target_unlab"] = Path(kwargs["tsv_target_unlab"])
+
     # Change value in train dict depending on user provided options
     standard_options_list = [
         "accumulation_steps",
