@@ -1325,33 +1325,14 @@ class MapsManager:
                     / len(combined_data_loader)
                 )
                 alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
-
-                if (i + 1) % self.accumulation_steps != 0:
-                    logger.info(
-                        f"Iteration {i} out of {len(combined_data_loader)} with alpha = {alpha}"
-                    )
-                    # _, _, loss_dict = model.compute_outputs_and_loss(
-                    #     data_lab, data_target_unl, criterion, alpha
-                    # )  # TO CHECK
-                    _, _, loss_dict = model.compute_outputs_and_loss2(
-                        data_source, data_target, data_target_unl, criterion, alpha
-                    )  # TO CHECK
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    loss.backward()
-
+                _, _, loss_dict = model.compute_outputs_and_loss2(
+                    data_source, data_target, data_target_unl, criterion, alpha
+                )  # TO CHECK
+                logger.debug(f"Train loss dictionnary {loss_dict}")
+                loss = loss_dict["loss"]
+                loss.backward()
                 if (i + 1) % self.accumulation_steps == 0:
-                    # data_target = next(data_iter_t)
-
-                    # _, _, loss_dict = model.compute_outputs_and_loss_source_target(
-                    #     data_lab, data_target, data_target_unl, criterion, alpha
-                    # )  # TO CHECK
-
-                    # logger.debug(f"Train loss dictionnary {loss_dict}")
-                    # loss = loss_dict["loss"]
-                    # loss.backward()
                     step_flag = False
-
                     source_label_predictor_optimizer.step()
                     target_label_predictor_optimizer.step()
                     domain_classifier_optimizer.step()
