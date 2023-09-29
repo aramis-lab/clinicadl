@@ -333,6 +333,7 @@ class CapsDatasetImage(CapsDataset):
         if self.augmentation_transformations and not self.eval_mode:
             image = self.augmentation_transformations(image)
 
+        print(self.preprocessing_dict["preprocessing"])
         domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
         sample = {
             "image": image,
