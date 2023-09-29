@@ -195,7 +195,7 @@ class CNN_SSDA(Network):
         images, labels, domain = (
             data_lab["image"].to(self.device),
             data_lab["label"].to(self.device),
-            data_lab["domain"],  # .to(self.device),
+            data_lab["domain"].to(self.device),
         )
 
         logger.info(f"Label : {labels}")
@@ -214,18 +214,15 @@ class CNN_SSDA(Network):
 
         loss_classif = criterion(train_output_class_source, labels)
 
-        output_array_domain = [0 if element == "t1" else 1 for element in domain]
+        # output_array_domain = [0 if element == "t1" else 1 for element in domain]
 
-        output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
-
-        print(output_tensor_domain)
-        logger.info(f"domain : {output_array_domain}")
+        # output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
 
         labels_domain_t = (
             torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
         )
 
-        loss_domain_lab = criterion(train_output_domain, output_tensor_domain)
+        loss_domain_lab = criterion(train_output_domain, domain)
         loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
 
         loss_domain = loss_domain_lab + loss_domain_t_unl
