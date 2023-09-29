@@ -198,6 +198,8 @@ class CapsDataset(Dataset):
         session = self.df.loc[image_idx, "session_id"]
         cohort = self.df.loc[image_idx, "cohort"]
 
+        domain = self.df.loc[image_idx, "domain"]  # TO CHECK
+
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
         else:
@@ -208,7 +210,7 @@ class CapsDataset(Dataset):
         else:
             label = -1
 
-        return participant, session, cohort, elem_idx, label
+        return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
         """
@@ -322,7 +324,7 @@ class CapsDatasetImage(CapsDataset):
         return None
 
     def __getitem__(self, idx):
-        participant, session, cohort, _, label = self._get_meta_data(idx)
+        participant, session, cohort, _, label, domain = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
         image = torch.load(image_path)
@@ -334,7 +336,7 @@ class CapsDatasetImage(CapsDataset):
             image = self.augmentation_transformations(image)
 
         print(self.preprocessing_dict["preprocessing"])
-        domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
+        # domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
         sample = {
             "image": image,
             "label": label,
