@@ -209,7 +209,7 @@ class CNN_SSDA(Network):
             _,
             train_output_domain,
         ) = self.forward(images, alpha)
-
+        print(train_output_domain)
         _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
 
         loss_classif = criterion(train_output_class_source, labels)
@@ -218,6 +218,7 @@ class CNN_SSDA(Network):
 
         output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
 
+        print(output_tensor_domain)
         logger.info(f"domain : {output_array_domain}")
 
         labels_domain_t = (
