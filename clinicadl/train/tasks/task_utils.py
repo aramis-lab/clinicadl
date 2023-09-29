@@ -109,13 +109,13 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     print(preprocessing_json_target)
     if preprocessing_json_target.is_file():
         logger.info(
-            f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_name}."
+            f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."
         )
         json_found = True
     if not json_found:
         raise ValueError(
             f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
-            f"in {caps_dict}."
+            f"in {caps_target}."
         )
 
     # Mode and preprocessing
