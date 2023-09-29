@@ -100,22 +100,22 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 f"in {caps_dict}."
             )
 
-        if train_dict["ssda_network"]:
-            print("SSDA Networks")
-            caps_target = Path(kwargs["caps_target"])
-            preprocessing_json_target = (
-                caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
+        # To CHECK AND CHANGE
+        print("SSDA Networks")
+        caps_target = Path(kwargs["caps_target"])
+        preprocessing_json_target = (
+            caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
+        )
+        if preprocessing_json_target.is_file():
+            logger.info(
+                f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_name}."
             )
-            if preprocessing_json_target.is_file():
-                logger.info(
-                    f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_name}."
-                )
-                json_found = True
-            if not json_found:
-                raise ValueError(
-                    f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
-                    f"in {caps_dict}."
-                )
+            json_found = True
+        if not json_found:
+            raise ValueError(
+                f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
+                f"in {caps_dict}."
+            )
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
