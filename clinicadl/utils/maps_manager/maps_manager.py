@@ -827,6 +827,7 @@ class MapsManager:
 
             split_df_dict = split_manager[split]
             split_df_dict_target_lab = split_manager_target_lab[split]
+            print(split_df_dict["train"])
 
             logger.debug("Loading source training data...")
             data_train_source = return_dataset(
