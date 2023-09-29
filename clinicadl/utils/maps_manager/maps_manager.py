@@ -2628,8 +2628,8 @@ class MapsManager:
         for arg in args:
             kwargs[arg] = self.parameters[arg]
 
-        kwargs["caps_directory"] = caps_dir.resolve()
-        kwargs["tsv_path"] = tsv_dir.resolve()
+        kwargs["caps_directory"] = Path(caps_dir)
+        kwargs["tsv_path"] = Path(tsv_dir)
 
         return split_class(**kwargs)
 
