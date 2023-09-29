@@ -75,7 +75,6 @@ class CapsDataset(Dataset):
             "participant_id",
             "session_id",
             "cohort",
-            "domain",
         }  # TO CHANGE
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
