@@ -946,7 +946,7 @@ class MapsManager:
             )
 
             data_train_target_labeled.df = data_train_target_labeled.df[
-                ["participant_id", "session_id", "diagnosis_train", "cohort"]
+                ["participant_id", "session_id", "diagnosis_train", "cohort", "domain"]
             ]
             data_combined = pd.concat(
                 [data_train_source.df, data_train_target_labeled.df]
