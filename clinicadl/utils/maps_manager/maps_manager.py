@@ -1925,6 +1925,8 @@ class MapsManager:
         print(split_manager)
         print(split_manager[0]["train"])
         train_df = split_manager[0]["train"]
+        # TO REMOVE
+        train_df["domain"] = "t1"
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
