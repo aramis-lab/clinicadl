@@ -222,7 +222,7 @@ class CapsDataset(Dataset):
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
             domain = self.df.loc[image_idx, "domain"]  # TO CHECK
-            domain = self.domain_fn(target)
+            domain = self.domain_fn(domain)
 
         else:
             label = -1
