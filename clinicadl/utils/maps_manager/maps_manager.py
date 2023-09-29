@@ -1275,7 +1275,7 @@ class MapsManager:
             domain_classifier_optimizer,
             source_label_predictor_optimizer,
             target_label_predictor_optimizer,
-        ) = self._init_optimizer_dann(model, split=split, resume=resume)
+        ) = self._init_optimizer_ssda(model, split=split, resume=resume)
 
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -2596,6 +2596,32 @@ class MapsManager:
             optimizer.load_state_dict(checkpoint_state["optimizer"])
 
         return optimizer
+
+    def _init_optimizer_ssda(self, model, split=None, resume=False):
+        """Initialize the optimizer for SSDA"""
+        import torch.optim as optim
+
+        conv = model.convolutions
+        fc_domain = model.fc_domain
+        fc_label_source = model.fc_class_source
+        fc_label_target = model.fc_class_target
+
+        # Define optimizers
+        feature_extractor_optimizer = optim.Adam(conv.parameters(), lr=1e-4)
+        domain_classifier_optimizer = optim.Adam(fc_domain.parameters(), lr=1e-4)
+        source_label_predictor_optimizer = optim.Adam(
+            fc_label_source.parameters(), lr=1e-4
+        )
+        target_label_predictor_optimizer = optim.Adam(
+            fc_label_target.parameters(), lr=1e-4
+        )
+
+        return (
+            feature_extractor_optimizer,
+            domain_classifier_optimizer,
+            source_label_predictor_optimizer,
+            target_label_predictor_optimizer,
+        )
 
     def _init_split_manager(self, split_list=None):
         from clinicadl.utils import split_manager
