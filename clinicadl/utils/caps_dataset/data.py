@@ -201,7 +201,6 @@ class CapsDataset(Dataset):
         participant = self.df.loc[image_idx, "participant_id"]
         session = self.df.loc[image_idx, "session_id"]
         cohort = self.df.loc[image_idx, "cohort"]
-        domain = self.df.loc[image_idx, "domain"]  # TO CHECK
         print("Domain")
         print(domain)
         if self.elem_index is None:
@@ -211,6 +210,7 @@ class CapsDataset(Dataset):
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
+            domain = self.df.loc[image_idx, "domain"]  # TO CHECK
         else:
             label = -1
 
