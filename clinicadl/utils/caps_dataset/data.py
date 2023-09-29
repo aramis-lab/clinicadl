@@ -70,7 +70,7 @@ class CapsDataset(Dataset):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
-
+        print(data_df)
         mandatory_col = {
             "participant_id",
             "session_id",
