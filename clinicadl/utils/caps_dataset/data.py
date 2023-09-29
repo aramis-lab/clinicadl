@@ -111,6 +111,18 @@ class CapsDataset(Dataset):
         else:
             return self.label_code[str(target)]
 
+    def domain_fn(self, target: Union[str, float, int]) -> Union[float, int]:
+        """
+        Returns the label value usable in criterion.
+
+        Args:
+            target: value of the target.
+        Returns:
+            label: value of the label usable in criterion.
+        """
+        domain_code = {"t1": 0, "flair": 1}
+        return domain_code[str(target)]
+
     def __len__(self) -> int:
         return len(self.df) * self.elem_per_image
 
@@ -210,6 +222,8 @@ class CapsDataset(Dataset):
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
             domain = self.df.loc[image_idx, "domain"]  # TO CHECK
+            domain = self.domain_fn(target)
+
         else:
             label = -1
 
