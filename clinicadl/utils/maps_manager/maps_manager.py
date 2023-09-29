@@ -1314,9 +1314,11 @@ class MapsManager:
             data_iter_t = iter(
                 train_target_loader
             )  # Iterator over train target data loader
-            for i, (data_lab, data_target_unl) in enumerate(
-                zip(combined_data_loader, train_target_unl_loader)
+
+            for i, (data_source, data_target, data_target_unl) in enumerate(
+                zip(train_source_loader, train_target_loader, train_target_unl_loader)
             ):
+
                 p = (
                     float(epoch * len(combined_data_loader))
                     / 10
@@ -1328,27 +1330,26 @@ class MapsManager:
                     logger.info(
                         f"Iteration {i} out of {len(combined_data_loader)} with alpha = {alpha}"
                     )
-                    _, _, loss_dict = model.compute_outputs_and_loss(
-                        data_lab, data_target_unl, criterion, alpha
+                    # _, _, loss_dict = model.compute_outputs_and_loss(
+                    #     data_lab, data_target_unl, criterion, alpha
+                    # )  # TO CHECK
+                    _, _, loss_dict = model.compute_outputs_and_loss2(
+                        data_source, data_target, data_target_unl, criterion, alpha
                     )  # TO CHECK
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
                     loss.backward()
 
                 if (i + 1) % self.accumulation_steps == 0:
-                    data_target = next(data_iter_t)
-                    logger.info(f"Data target {(i + 1) / self.accumulation_steps -1} ")
-                    logger.info(
-                        f"Iteration {i} out of {len(combined_data_loader)} with alpha = {alpha}"
-                    )
+                    # data_target = next(data_iter_t)
 
-                    _, _, loss_dict = model.compute_outputs_and_loss_source_target(
-                        data_lab, data_target, data_target_unl, criterion, alpha
-                    )  # TO CHECK
+                    # _, _, loss_dict = model.compute_outputs_and_loss_source_target(
+                    #     data_lab, data_target, data_target_unl, criterion, alpha
+                    # )  # TO CHECK
 
-                    logger.debug(f"Train loss dictionnary {loss_dict}")
-                    loss = loss_dict["loss"]
-                    loss.backward()
+                    # logger.debug(f"Train loss dictionnary {loss_dict}")
+                    # loss = loss_dict["loss"]
+                    # loss.backward()
                     step_flag = False
 
                     source_label_predictor_optimizer.step()

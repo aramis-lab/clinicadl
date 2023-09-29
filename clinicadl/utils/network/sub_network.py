@@ -235,6 +235,91 @@ class CNN_SSDA(Network):
             {"loss": total_loss},
         )
 
+    def compute_outputs_and_loss_test(self, input_dict, criterion, alpha, target):
+        images, labels = input_dict["image"].to(self.device), input_dict["label"].to(
+            self.device
+        )
+        train_output_source, train_output_target, train_output_domain = self.forward(
+            images, alpha
+        )
+
+        if target:
+            out = train_output_target
+            loss_bce = criterion(train_output_target, labels)
+
+        else:
+            out = train_output_source
+
+            loss_bce = criterion(train_output_target, labels)
+
+        return out, {"loss": loss_bce}
+
+    def compute_outputs_and_loss2(
+        self, data_source, data_target, data_target_unl, criterion, alpha
+    ):
+
+        images, labels = (
+            data_source["image"].to(self.device),
+            data_source["label"].to(self.device),
+            # data_source["domain"].to(self.device),
+        )
+
+        images_target, labels_target = (
+            data_target["image"].to(self.device),
+            data_target["label"].to(self.device),
+            # data_source["domain"].to(self.device),
+        )
+
+        logger.info(f"Label : {labels}")
+        logger.info(f"Label : {labels_target}")
+
+        images_target_unl = data_target_unl["image"].to(self.device)
+
+        (
+            train_output_class_source,
+            _,
+            train_output_domain_s,
+        ) = self.forward(images, alpha)
+
+        (
+            _,
+            train_output_class_target,
+            train_output_domain_t,
+        ) = self.forward(images_target, alpha)
+
+        _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
+
+        loss_classif_source = criterion(train_output_class_source, labels)
+        loss_classif_target = criterion(train_output_class_target, labels_target)
+
+        loss_classif = loss_classif_source + loss_classif_target
+
+        labels_domain_s = (
+            torch.zeros(data_source["image"].shape[0]).long().to(self.device)
+        )
+
+        labels_domain_t = (
+            torch.ones(data_target["image"].shape[0]).long().to(self.device)
+        )
+
+        labels_domain_t = (
+            torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
+        )
+
+        loss_domain_lab = criterion(train_output_domain_s, labels_domain_s)
+        loss_domain_lab_t = criterion(train_output_domain_t, labels_domain_s)
+        loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
+
+        loss_domain = loss_domain_lab + loss_domain_lab_t + loss_domain_t_unl
+
+        total_loss = loss_classif + loss_domain
+
+        return (
+            train_output_class_source,
+            train_output_class_target,
+            {"loss": total_loss},
+        )
+
     def compute_outputs_and_loss_source_target(
         self, data_lab, data_lab_target, data_target_unl, criterion, alpha
     ):
