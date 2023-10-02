@@ -1560,6 +1560,7 @@ class MapsManager:
             selection_metrics=self.selection_metrics,
             network=network,
             target=True,
+            alpha=0,
         )
         self._test_loader_ssda(
             valid_loader,
@@ -1569,6 +1570,7 @@ class MapsManager:
             selection_metrics=self.selection_metrics,
             network=network,
             target=True,
+            alpha=0,
         )
 
         if self.task_manager.save_outputs:
