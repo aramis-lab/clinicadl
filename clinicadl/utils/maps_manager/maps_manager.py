@@ -1310,10 +1310,6 @@ class MapsManager:
             model.zero_grad()
             evaluation_flag, step_flag = True, True
 
-            data_iter_t = iter(
-                train_target_loader
-            )  # Iterator over train target data loader
-
             for i, (data_source, data_target, data_target_unl) in enumerate(
                 zip(train_source_loader, train_target_loader, train_target_unl_loader)
             ):
@@ -1563,7 +1559,6 @@ class MapsManager:
             split,
             self.selection_metrics,
             network=network,
-            alpha=alpha,
             target=True,
         )
         self._test_loader_ssda(
@@ -1573,7 +1568,6 @@ class MapsManager:
             split,
             self.selection_metrics,
             network=network,
-            alpha=alpha,
             target=True,
         )
 
