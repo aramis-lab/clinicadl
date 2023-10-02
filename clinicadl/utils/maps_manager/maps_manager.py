@@ -1557,7 +1557,7 @@ class MapsManager:
             criterion,
             "train",
             split,
-            self.selection_metrics,
+            selection_metrics=self.selection_metrics,
             network=network,
             target=True,
         )
@@ -1566,7 +1566,7 @@ class MapsManager:
             criterion,
             "validation",
             split,
-            self.selection_metrics,
+            selection_metrics=self.selection_metrics,
             network=network,
             target=True,
         )
