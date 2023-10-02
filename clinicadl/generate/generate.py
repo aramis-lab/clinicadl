@@ -6,13 +6,15 @@ This file generates data for trivial or intractable (random) data for binary cla
 import tarfile
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
+import torchio as tio
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
+from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
@@ -39,6 +41,7 @@ def generate_random_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[Path] = None,
     mean: float = 0,
     sigma: float = 0.5,
@@ -92,6 +95,7 @@ def generate_random_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "mean": mean,
             "sigma": sigma,
         }
@@ -138,9 +142,10 @@ def generate_random_dataset(
 
     input_filename = image_path.name
     filename_pattern = "_".join(input_filename.split("_")[2::])
-    for i in range(2 * n_subjects):
+
+    def create_random_image(subject_id):
         gauss = np.random.normal(mean, sigma, image.shape)
-        participant_id = f"sub-RAND{i}"
+        participant_id = f"sub-RAND{subject_id}"
         noisy_image = image + gauss
         noisy_image_nii = nib.Nifti1Image(
             noisy_image, header=image_nii.header, affine=image_nii.affine
@@ -153,7 +158,12 @@ def generate_random_dataset(
         noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
         nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
+    Parallel(n_jobs=n_proc)(
+        delayed(create_random_image)(subject_id) for subject_id in range(2 * n_subjects)
+    )
+
     write_missing_mods(output_dir, output_df)
+    logger.info(f"Random dataset was generated at {output_dir}")
 
     logger.info(f"Random dataset was generated at {output_dir}")
 
@@ -162,6 +172,7 @@ def generate_trivial_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[Path] = None,
     preprocessing: str = "t1-linear",
     mask_path: Optional[Path] = None,
@@ -221,6 +232,7 @@ def generate_trivial_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "atrophy_percent": atrophy_percent,
         }
     )
@@ -283,9 +295,9 @@ def generate_trivial_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    for i in range(2 * n_subjects):
-        data_idx = i // 2
-        label = i % 2
+    def create_trivial_image(subject_id, output_df):
+        data_idx = subject_id // 2
+        label = subject_id % 2
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
@@ -302,10 +314,16 @@ def generate_trivial_dataset(
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         trivial_image_nii_dir = (
-            output_dir / "subjects" / f"sub-TRIV{i}" / session_id / preprocessing
+            output_dir
+            / "subjects"
+            / f"sub-TRIV{subject_id}"
+            / session_id
+            / preprocessing
         )
 
-        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
+        trivial_image_nii_filename = (
+            f"sub-TRIV{subject_id}_{session_id}_{filename_pattern}"
+        )
 
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
@@ -321,13 +339,23 @@ def generate_trivial_dataset(
         )
 
         # Append row to output tsv
-        row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
+        row = [f"sub-TRIV{subject_id}", session_id, diagnosis_list[label], 60, "F"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
-    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
+        return output_df
 
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_trivial_image)(subject_id, output_df)
+        for subject_id in range(2 * n_subjects)
+    )
+    output_df = pd.DataFrame()
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
+
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
     write_missing_mods(output_dir, output_df)
+    logger.info(f"Trivial dataset was generated at {output_dir}")
 
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
@@ -335,6 +363,7 @@ def generate_trivial_dataset(
 def generate_shepplogan_dataset(
     output_dir: Path,
     img_size: int,
+    n_proc: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
     extract_json: str = None,
     samples: int = 100,
@@ -366,9 +395,11 @@ def generate_shepplogan_dataset(
     columns = ["participant_id", "session_id", "diagnosis", "subtype"]
     data_df = pd.DataFrame(columns=columns)
 
-    for i, label in enumerate(labels_distribution.keys()):
-        for j in range(samples):
-            participant_id = f"sub-CLNC{i}{j:04d}"
+    for label_id, label in enumerate(labels_distribution.keys()):
+
+        def create_shepplogan_image(subject_id, data_df):
+            # for j in range(samples):
+            participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
             session_id = "ses-M00"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]
@@ -392,7 +423,6 @@ def generate_shepplogan_dataset(
 
             slice_dir = slice_path.parent
             slice_dir.mkdir(parents=True, exist_ok=True)
-
             slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
             )
@@ -411,6 +441,16 @@ def generate_shepplogan_dataset(
             image_dir.mkdir(parents=True, exist_ok=True)
             with image_path.open("w") as f:
                 f.write("0")
+            return data_df
+
+        results_df = Parallel(n_jobs=n_proc)(
+            delayed(create_shepplogan_image)(subject_id, data_df)
+            for subject_id in range(samples)
+        )
+
+        data_df = pd.DataFrame()
+        for result in results_df:
+            data_df = pd.concat([result, data_df])
 
     # Save data
     data_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
@@ -568,8 +608,8 @@ def generate_hypometabolic_dataset(
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
-    def generate_hypometabolic_image(i, output_df):
-        image_path = Path(images_paths[i])
+    def generate_hypometabolic_image(subject_id, output_df):
+        image_path = Path(images_paths[subject_id])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
         if image_path.suffix == ".gz":
@@ -578,7 +618,11 @@ def generate_hypometabolic_dataset(
             input_filename = image_path.stem
         input_filename = input_filename.strip("pet")
         hypo_image_nii_dir = (
-            output_dir / "subjects" / participants[i] / sessions[i] / preprocessing
+            output_dir
+            / "subjects"
+            / participants[subject_id]
+            / sessions[subject_id]
+            / preprocessing
         )
         hypo_image_nii_filename = (
             f"{input_filename}pat-{pathology}_deg-{int(anomaly_degree)}_pet.nii.gz"
@@ -592,8 +636,8 @@ def generate_hypometabolic_dataset(
 
         # Append row to output tsv
         row = [
-            participants[i],
-            sessions[i],
+            participants[subject_id],
+            sessions[subject_id],
             pathology,
             anomaly_degree,
         ]
@@ -602,8 +646,11 @@ def generate_hypometabolic_dataset(
         return output_df
 
     results_list = Parallel(n_jobs=n_proc)(
-        delayed(generate_hypometabolic_image)(i, output_df) for i in range(n_subjects)
+        delayed(generate_hypometabolic_image)(subject_id, output_df)
+        for subject_id in range(n_subjects)
     )
+
+    output_df = pd.DataFrame()
     for result_df in results_list:
         output_df = pd.concat([result_df, output_df])
 
@@ -614,3 +661,168 @@ def generate_hypometabolic_dataset(
     logger.info(
         f"Hypometabolic dataset was generated, with {anomaly_degree} % of dementia {pathology} at {output_dir}."
     )
+
+
+def generate_artifacts_dataset(
+    caps_directory: Path,
+    output_dir: Path,
+    n_proc: int,
+    tsv_path: Optional[str] = None,
+    preprocessing: str = "t1-linear",
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    tracer: str = "fdg",
+    suvr_reference_region: str = "pons",
+    contrast: bool = False,
+    gamma: List = [-0.2, -0.05],
+    motion: bool = False,
+    translation: List = [2, 4],
+    rotation: List = [2, 4],
+    num_transforms: int = 2,
+    noise: bool = False,
+    noise_std: List = [5, 15],
+):
+    """
+    Generates a dataset, based on the images of the CAPS directory, where
+    all the images are corrupted with a combination of motion, contrast and
+    noise artefacts using torchio simulations.
+    Args:
+        caps_directory:  Path
+            Path to the CAPS directory.
+        output_dir: Path
+            Folder containing the synthetic dataset in CAPS format.
+        n_proc: int
+            Number of cores used during the task.
+        tsv_path: Path
+            Path to tsv file of list of subjects/sessions.
+        preprocessing: str
+            Preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: bool
+            If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: bool
+            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: str
+            Name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: str
+            Name of the reference region when using `pet-linear` preprocessing.
+        translation: List
+            Translation range in mm of simulated movements.
+        rotation : List
+            Rotation range in degree of simulated movement.
+        num_transformes: int
+            Number of simulated movements.
+        gamma: List
+            Gamma range of simulated contrast.
+        noise_std: List
+            Stadndard deviation of simulated noise.
+    Returns:
+        Folder structure where images are stored in CAPS format.
+    """
+
+    commandline_to_json(
+        {
+            "output_dir": output_dir,
+            "caps_dir": caps_directory,
+            "preprocessing": preprocessing,
+        }
+    )
+
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    # Read DataFrame
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
+    # Create subjects dir
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
+
+    # Output tsv file
+    columns = ["participant_id", "session_id", "diagnosis"]
+    output_df = pd.DataFrame(columns=columns)
+
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, tracer, suvr_reference_region
+    )
+    artifacts_list = []
+    if motion:
+        artifacts_list.append("motion")
+    if contrast:
+        artifacts_list.append("contrast")
+    if noise:
+        artifacts_list.append("noise")
+
+    def create_artifacts_image(data_idx, output_df):
+        participant_id = data_df.loc[data_idx, "participant_id"]
+        session_id = data_df.loc[data_idx, "session_id"]
+        cohort = data_df.loc[data_idx, "cohort"]
+        image_path = Path(
+            clinica_file_reader(
+                [participant_id], [session_id], caps_dict[cohort], file_type
+            )[0][0]
+        )
+        input_filename = image_path.name
+        filename_pattern = "_".join(input_filename.split("_")[2::])
+        subject_name = input_filename.split("_")[:1][0]
+        session_name = input_filename.split("_")[1:2][0]
+
+        artif_image_nii_dir = (
+            output_dir / "subjects" / subject_name / session_name / preprocessing
+        )
+        artif_image_nii_dir.mkdir(parents=True, exist_ok=True)
+
+        artifacts_tio = []
+        arti_ext = ""
+        for artif in artifacts_list:
+            if artif == "motion":
+                artifacts_tio.append(
+                    tio.RandomMotion(
+                        degrees=(rotation[0], rotation[1]),
+                        translation=(translation[0], translation[1]),
+                        num_transforms=num_transforms,
+                    )
+                )
+                arti_ext += "mot-"
+            elif artif == "noise":
+                artifacts_tio.append(
+                    tio.RandomNoise(
+                        std=(noise_std[0], noise_std[1]),
+                    )
+                )
+                arti_ext += "noi-"
+            elif artif == "contrast":
+                artifacts_tio.append(tio.RandomGamma(log_gamma=(gamma[0], gamma[1])))
+                arti_ext += "con-"
+
+        if filename_pattern.endswith(".nii.gz"):
+            file_suffix = ".nii.gz"
+            filename_pattern = Path(Path(filename_pattern).stem).stem
+        elif filename_pattern.endswith(".nii"):
+            file_suffix = ".nii"
+            filename_pattern = Path(filename_pattern).stem
+
+        artif_image_nii_filename = f"{subject_name}_{session_name}_{filename_pattern}_art-{arti_ext[:-1]}{file_suffix}"
+
+        artifacts = tio.transforms.Compose(artifacts_tio)
+
+        artif_image = artifacts(tio.ScalarImage(image_path))
+        artif_image.save(artif_image_nii_dir / artif_image_nii_filename)
+
+        # Append row to output tsv
+        row = [subject_name, session_name, artifacts_list]
+        row_df = pd.DataFrame([row], columns=columns)
+        output_df = pd.concat([output_df, row_df])
+
+        return output_df
+
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_artifacts_image)(data_idx, output_df)
+        for data_idx in range(len(data_df))
+    )
+    output_df = pd.DataFrame()
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
+
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
+
+    write_missing_mods(output_dir, output_df)
+
+    logger.info(f"Images corrupted with artefacts were generated at {output_dir}")

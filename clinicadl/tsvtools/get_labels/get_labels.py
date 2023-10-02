@@ -317,27 +317,32 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    if merged_tsv is None:
+    if not merged_tsv:
         merged_tsv = output_dir / "merged.tsv"
-    elif not merged_tsv.is_file():
-        from clinica.iotools.utils.data_handling import create_merge_file
+        if merged_tsv.is_file():
+            logger.warning(
+                f"A merged_tsv file already exists at {merged_tsv}. It will be used to run the command."
+            )
+        else:
+            from clinica.iotools.utils.data_handling import create_merge_file
 
-        logger.info("create merge tsv")
-        check_bids_folder(bids_directory)
-        create_merge_file(
-            bids_directory,
-            merged_tsv,
-            caps_dir=caps_directory,
-            pipelines=None,
-            ignore_scan_files=None,
-            ignore_sessions_files=None,
-            volume_atlas_selection=None,
-            freesurfer_atlas_selection=None,
-            pvc_restriction=None,
-            tsv_file=None,
-            group_selection=False,
-            tracers_selection=False,
-        )
+            logger.info("Running Clinica merge TSV pipeline.")
+
+            check_bids_folder(bids_directory)
+            create_merge_file(
+                bids_directory,
+                merged_tsv,
+                caps_dir=caps_directory,
+                pipelines=None,
+                ignore_scan_files=None,
+                ignore_sessions_files=None,
+                volume_atlas_selection=None,
+                freesurfer_atlas_selection=None,
+                pvc_restriction=None,
+                tsv_file=None,
+                group_selection=False,
+                tracers_selection=False,
+            )
 
     logger.info(f"output of clinica iotools merge-tsv: {merged_tsv}")
 

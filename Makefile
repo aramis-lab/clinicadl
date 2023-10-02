@@ -8,6 +8,10 @@ help: Makefile
 	@echo "Commands:"
 	@sed -n 's/^##//p' $<
 
+.PHONY: check.lock
+check.lock:
+	@$(POETRY) lock --check
+
 ## build			: Build the package.
 .PHONY: build
 build:
@@ -16,6 +20,10 @@ build:
 .PHONY: clean.doc
 clean.doc:
 	@$(RM) -rf site
+
+.PHONY: clean.test
+clean.test:
+	@$(RM) -r .pytest_cache/
 
 ## doc			: Build the documentation.
 .PHONY: doc
@@ -61,3 +69,21 @@ lint.black: env.dev
 .PHONY: lint.isort
 lint.isort: env.dev
 	@$(POETRY) run isort --check --diff $(PACKAGES)
+
+## Install
+.PHONY: install
+install: check.lock
+	@$(POETRY) install
+
+.PHONY: install.dev
+install.dev: check.lock
+	@$(POETRY) install --only dev
+
+.PHONY: install.doc
+install.doc: check.lock
+	@$(POETRY) install --only docs
+
+## tests        : Run the unit tests
+.PHONY: test
+test: install
+	@$(POETRY) run python -m pytest -v tests/unittests

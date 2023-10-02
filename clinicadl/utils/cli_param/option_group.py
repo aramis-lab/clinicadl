@@ -22,3 +22,7 @@ transfer_learning_group = OptionGroup(
 task_group = OptionGroup(
     "Task specific options", help="Options specific to the task learnt by the network."
 )
+informations_group = OptionGroup(
+    "Informative options",
+    help=" Allow to get some more informations during the training.",
+)

@@ -39,15 +39,19 @@ gpu = true
 n_proc = 2
 batch_size = 8
 evaluation_steps = 0
+fully_sharded_data_parallel = false
+amp = false
 
 [Reproducibility]
 seed = 0
 deterministic = false
 compensation = "memory" # Only used if deterministic = true
+track_exp = ""
 
 [Transfer_learning]
 transfer_path = ""
 transfer_selection_metric = "loss"
+nb_unfrozen_layer = 0
 
 [Mode]
 # require to manually generate preprocessing json
@@ -77,3 +81,5 @@ tolerance = 0.0
 accumulation_steps = 1
 profiler = false
 
+[Informations]
+emissions_calculator = false

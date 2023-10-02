@@ -1,5 +1,7 @@
 import click
 
+from clinicadl.generate.generate_artifacts_cli import cli as generate_artifacts_cli
+
 from .generate_hypometabolic_cli import cli as generate_hypo_cli
 from .generate_random_cli import cli as generate_random_cli
 from .generate_shepplogan_cli import cli as generate_shepplogan_cli
@@ -23,6 +25,7 @@ cli.add_command(generate_random_cli)
 cli.add_command(generate_trivial_cli)
 cli.add_command(generate_shepplogan_cli)
 cli.add_command(generate_hypo_cli)
+cli.add_command(generate_artifacts_cli)
 
 
 if __name__ == "__main__":

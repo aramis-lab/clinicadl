@@ -18,6 +18,8 @@ from .task_utils import task_launcher
 @train_option.n_proc
 @train_option.batch_size
 @train_option.evaluation_steps
+@train_option.fully_sharded_data_parallel
+@train_option.amp
 # Reproducibility
 @train_option.seed
 @train_option.deterministic
@@ -50,14 +52,18 @@ from .task_utils import task_launcher
 @train_option.tolerance
 @train_option.accumulation_steps
 @train_option.profiler
+@train_option.track_exp
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
+@train_option.nb_unfrozen_layer
 # Task-related
 @train_option.label
 @train_option.selection_metrics
 @train_option.selection_threshold
 @train_option.classification_loss
+# informations
+@train_option.emissions_calculator
 def cli(**kwargs):
     """
     Train a deep learning model to learn a classification task on neuroimaging data.
