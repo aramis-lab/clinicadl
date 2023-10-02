@@ -190,7 +190,9 @@ class CNN_SSDA(Network):
     def predict(self, x):
         return self.forward(x)
 
-    def compute_outputs_and_loss(self, data_lab, data_target_unl, criterion, alpha):
+    def compute_outputs_and_loss(
+        self, data_lab, data_target_unl, criterion, alpha, use_labels=True
+    ):
 
         images, labels, domain = (
             data_lab["image"].to(self.device),
@@ -210,8 +212,6 @@ class CNN_SSDA(Network):
         ) = self.forward(images, alpha)
         _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
 
-        loss_classif = criterion(train_output_class_source, labels)
-
         # output_array_domain = [0 if element == "t1" else 1 for element in domain]
 
         # output_tensor_domain = torch.tensor(output_array_domain).to(self.device)
@@ -220,13 +220,16 @@ class CNN_SSDA(Network):
             torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
         )
 
-        loss_domain_lab = criterion(train_output_domain, domain)
-        loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
-
-        loss_domain = loss_domain_lab + loss_domain_t_unl
-
-        total_loss = loss_classif + loss_domain
-
+        if use_labels:
+            loss_classif = criterion(train_output_class_source, labels)
+            loss_domain_lab = criterion(train_output_domain, domain)
+            loss_domain_t_unl = criterion(
+                train_output_domain_target_lab, labels_domain_t
+            )
+            loss_domain = loss_domain_lab + loss_domain_t_unl
+            total_loss = loss_classif + loss_domain
+        else:
+            total_loss = torch.Tensor([0])
         return (
             train_output_class_source,
             train_output_domain,
