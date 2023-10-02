@@ -1556,21 +1556,25 @@ class MapsManager:
 
             epoch += 1
 
-        self._test_loader(
+        self._test_loader_ssda(
             train_target_loader,
             criterion,
             "train",
             split,
             self.selection_metrics,
             network=network,
+            alpha=alpha,
+            target=True,
         )
-        self._test_loader(
+        self._test_loader_ssda(
             valid_loader,
             criterion,
             "validation",
             split,
             self.selection_metrics,
             network=network,
+            alpha=alpha,
+            target=True,
         )
 
         if self.task_manager.save_outputs:
@@ -1639,6 +1643,73 @@ class MapsManager:
             )
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
+            )
+            if use_labels:
+                if network is not None:
+                    metrics[f"{self.mode}_id"] = network
+                logger.info(
+                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                )
+
+            # Replace here
+            self._mode_level_to_tsv(
+                prediction_df, metrics, split, selection_metric, data_group=data_group
+            )
+
+    def _test_loader_ssda(
+        self,
+        dataloader,
+        criterion,
+        alpha,
+        data_group,
+        split,
+        selection_metrics,
+        use_labels=True,
+        gpu=None,
+        network=None,
+        target=False,
+    ):
+        """
+        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
+
+        Args:
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
+            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
+            data_group (str): name of the data group used for the testing task.
+            split (int): Index of the split used to train the model tested.
+            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            log_dir = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+            )
+            self.write_description_log(
+                log_dir,
+                data_group,
+                dataloader.dataset.caps_dict,
+                dataloader.dataset.df,
+            )
+
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+            prediction_df, metrics = self.task_manager.test_da(
+                model,
+                dataloader,
+                criterion,
+                alpha=alpha,
+                target=target,
             )
             if use_labels:
                 if network is not None:

@@ -191,7 +191,7 @@ class CNN_SSDA(Network):
         return self.forward(x)
 
     def compute_outputs_and_loss(
-        self, data_lab, data_target_unl, criterion, alpha, use_labels=True
+        self, data_lab, data_target_unl, criterion, alpha=0, use_labels=True
     ):
 
         images, labels, domain = (
