@@ -1555,8 +1555,8 @@ class MapsManager:
         self._test_loader_ssda(
             train_target_loader,
             criterion,
-            "train",
-            split,
+            data_group="train",
+            split=split,
             selection_metrics=self.selection_metrics,
             network=network,
             target=True,
@@ -1564,8 +1564,8 @@ class MapsManager:
         self._test_loader_ssda(
             valid_loader,
             criterion,
-            "validation",
-            split,
+            data_group="validation",
+            split=split,
             selection_metrics=self.selection_metrics,
             network=network,
             target=True,
