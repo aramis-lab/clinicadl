@@ -64,7 +64,7 @@ class LogWriter:
         self.writer_train = SummaryWriter(self.file_dir / "tensorboard" / "train")
         self.writer_valid = SummaryWriter(self.file_dir / "tensorboard" / "validation")
 
-    def step(self, epoch, i, metrics_train, metrics_valid, len_epoch):
+    def step(self, epoch, i, metrics_train, metrics_valid, len_epoch, file_name=None):
         """
         Write a new row on the output file training.tsv.
 
@@ -78,7 +78,10 @@ class LogWriter:
         from time import time
 
         # Write TSV file
-        tsv_path = self.file_dir / "training.tsv"
+        if file_name:
+            tsv_path = self.file_dir / file_name
+        else:
+            tsv_path = self.file_dir / "training.tsv"
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]

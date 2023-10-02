@@ -107,12 +107,11 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             )
 
     # To CHECK AND CHANGE
-    print("SSDA Networks")
     caps_target = Path(kwargs["caps_target"])
     preprocessing_json_target = (
         caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
     )
-    print(preprocessing_json_target)
+
     if preprocessing_json_target.is_file():
         logger.info(
             f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."

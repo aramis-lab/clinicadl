@@ -827,7 +827,6 @@ class MapsManager:
 
             split_df_dict = split_manager[split]
             split_df_dict_target_lab = split_manager_target_lab[split]
-            print(split_df_dict["train"])
 
             logger.debug("Loading source training data...")
             data_train_source = return_dataset(
@@ -1904,8 +1903,6 @@ class MapsManager:
         )
 
         split_manager = self._init_split_manager(None)
-        print(split_manager)
-        print(split_manager[0]["train"])
         train_df = split_manager[0]["train"]
         # TO REMOVE
         train_df["domain"] = "t1"

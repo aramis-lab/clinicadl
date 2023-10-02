@@ -200,7 +200,6 @@ class CNN_SSDA(Network):
 
         logger.info(f"Label : {labels}")
         logger.info(f"domain : {domain}")
-        print(data_lab["domain"])
 
         images_target_unl = data_target_unl["image"].to(self.device)
 
@@ -209,7 +208,6 @@ class CNN_SSDA(Network):
             _,
             train_output_domain,
         ) = self.forward(images, alpha)
-        print(train_output_domain)
         _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
 
         loss_classif = criterion(train_output_class_source, labels)
