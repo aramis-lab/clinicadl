@@ -47,5 +47,5 @@ class pythae_VAE(BasePythae):
             learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
-            #amp=True,
+            # amp=True,
         )
