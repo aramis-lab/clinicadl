@@ -224,9 +224,9 @@ class CapsDataset(Dataset):
             label = self.label_fn(target)
             domain = self.df.loc[image_idx, "domain"]  # TO CHECK
             domain = self.domain_fn(domain)
-
         else:
             label = -1
+            domain = None
 
         return participant, session, cohort, elem_idx, label, domain
 
