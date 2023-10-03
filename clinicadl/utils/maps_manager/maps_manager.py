@@ -1461,7 +1461,6 @@ class MapsManager:
             for i, (data_source, data_target, data_target_unl) in enumerate(
                 zip(train_source_loader, train_target_loader, train_target_unl_loader)
             ):
-
                 p = (
                     float(epoch * len(combined_data_loader))
                     / 10

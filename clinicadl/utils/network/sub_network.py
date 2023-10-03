@@ -193,7 +193,6 @@ class CNN_SSDA(Network):
     def compute_outputs_and_loss(
         self, data_lab, data_target_unl, criterion, alpha=0, use_labels=True
     ):
-
         images, labels, domain = (
             data_lab["image"].to(self.device),
             data_lab["label"].to(self.device),
@@ -258,7 +257,6 @@ class CNN_SSDA(Network):
     def compute_outputs_and_loss2(
         self, data_source, data_target, data_target_unl, criterion, alpha
     ):
-
         images, labels = (
             data_source["image"].to(self.device),
             data_source["label"].to(self.device),
@@ -324,7 +322,6 @@ class CNN_SSDA(Network):
     def compute_outputs_and_loss_source_target(
         self, data_lab, data_lab_target, data_target_unl, criterion, alpha
     ):
-
         images, labels, domain = (
             data_lab["image"].to(self.device),
             data_lab["label"].to(self.device),
