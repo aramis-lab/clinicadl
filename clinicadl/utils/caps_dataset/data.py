@@ -422,7 +422,9 @@ class CapsDatasetPatch(CapsDataset):
         return self.patch_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, patch_idx, label, domain = self._get_meta_data(
+            idx
+        )
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
@@ -529,7 +531,7 @@ class CapsDatasetRoi(CapsDataset):
         return self.roi_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.roi_list is None:
@@ -694,7 +696,9 @@ class CapsDatasetSlice(CapsDataset):
         return self.slice_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
+            idx
+        )
         slice_idx = slice_idx + self.discarded_slices[0]
         image_path = self._get_image_path(participant, session, cohort)
 
