@@ -73,7 +73,10 @@ def get_vae_space_dict(launch_directory):
     train_default["mode"] = preprocessing_dict["mode"]
 
     # Add the other default parameters to the dictionnary
-    space_dict.update(train_default)
+    # space_dict.update(train_default)
+    for k, v in train_default.items():
+        if k not in space_dict:
+            space_dict[k] = v
     return space_dict
 
 def vae_random_sampling(space_dict):

@@ -6,6 +6,7 @@ from .resume_cli import cli as resume_cli
 from .tasks.classification_cli import cli as classification_cli
 from .tasks.reconstruction_cli import cli as reconstruction_cli
 from .tasks.regression_cli import cli as regression_cli
+from .tasks.pythae_cli import cli as pythae_cli
 
 
 @click.group(name="train", no_args_is_help=True)
@@ -20,6 +21,7 @@ cli.add_command(reconstruction_cli)
 cli.add_command(from_json_cli)
 cli.add_command(resume_cli)
 cli.add_command(list_models_cli)
+cli.add_command(pythae_cli)
 
 
 if __name__ == "__main__":
