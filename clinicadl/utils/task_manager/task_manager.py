@@ -266,6 +266,7 @@ class TaskManager:
         total_loss = 0
         with torch.no_grad():
             for i, data in enumerate(dataloader):
+                print(target)
                 outputs, loss_dict = model.compute_outputs_and_loss_test(
                     data, criterion, 0, target
                 )
