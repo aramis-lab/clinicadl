@@ -2165,6 +2165,8 @@ class MapsManager:
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
+        print(train_df)
+
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
@@ -2175,7 +2177,6 @@ class MapsManager:
             train_transformations=None,
             all_transformations=transformations,
         )
-        print(train_df)
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
