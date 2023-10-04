@@ -222,7 +222,6 @@ class CapsDataset(Dataset):
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
-
         else:
             label = -1
 
@@ -230,7 +229,7 @@ class CapsDataset(Dataset):
             domain = self.df.loc[image_idx, "domain"]
             domain = self.domain_fn(domain)
         else:
-            domain = ""
+            domain = "" #TO MODIFY
         return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
@@ -423,7 +422,9 @@ class CapsDatasetPatch(CapsDataset):
         return self.patch_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, patch_idx, label, domain = self._get_meta_data(
+            idx
+        )
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
@@ -530,7 +531,7 @@ class CapsDatasetRoi(CapsDataset):
         return self.roi_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.roi_list is None:
@@ -695,7 +696,9 @@ class CapsDatasetSlice(CapsDataset):
         return self.slice_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
+            idx
+        )
         slice_idx = slice_idx + self.discarded_slices[0]
         image_path = self._get_image_path(participant, session, cohort)
 
