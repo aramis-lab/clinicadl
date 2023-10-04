@@ -77,8 +77,10 @@ class LogWriter:
         """
         from time import time
 
-        # Write TSV file
-        tsv_path = self.file_dir / "training.tsv"
+        if file_name:
+            tsv_path = self.file_dir / file_name
+        else:
+            tsv_path = self.file_dir / "training.tsv"
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]
