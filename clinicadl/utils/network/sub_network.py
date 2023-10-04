@@ -242,12 +242,12 @@ class CNN_SSDA(Network):
         train_output_source, train_output_target, _ = self.forward(images, alpha)
 
         if target:
-            logger.debug("Target evaluation")
+            logger.info("Target evaluation")
             out = train_output_target
             loss_bce = criterion(train_output_target, labels)
 
         else:
-            logger.debug("Source evaluation")
+            logger.info("Source evaluation")
             out = train_output_source
             loss_bce = criterion(train_output_target, labels)
 
