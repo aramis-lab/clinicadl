@@ -1615,7 +1615,6 @@ class MapsManager:
                     model,
                     train_source_loader,
                     criterion,
-                    alpha,
                     True,
                     False,
                 )
@@ -1623,7 +1622,6 @@ class MapsManager:
                     model,
                     valid_source_loader,
                     criterion,
-                    alpha,
                     True,
                     False,
                 )
