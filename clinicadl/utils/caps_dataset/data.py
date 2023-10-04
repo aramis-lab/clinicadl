@@ -71,12 +71,11 @@ class CapsDataset(Dataset):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
-        print(data_df)
         mandatory_col = {
             "participant_id",
             "session_id",
             "cohort",
-        }  # TO CHANGE
+        }
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
 
@@ -353,8 +352,6 @@ class CapsDatasetImage(CapsDataset):
         if self.augmentation_transformations and not self.eval_mode:
             image = self.augmentation_transformations(image)
 
-        print(self.preprocessing_dict["preprocessing"])
-        # domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
         sample = {
             "image": image,
             "label": label,
