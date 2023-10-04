@@ -1694,7 +1694,7 @@ class MapsManager:
             )
             self._write_weights(
                 {
-                    "optimizer": feature_extractor_optimizer.state_dict(),
+                    "optimizer": optimizer.state_dict(),  # TO MODIFY
                     "epoch": epoch,
                     "name": self.optimizer,
                 },
