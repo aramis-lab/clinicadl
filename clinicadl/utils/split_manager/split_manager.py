@@ -134,8 +134,6 @@ class SplitManager:
         logger.debug(f"Validation data loaded at {valid_path}")
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
-            print(cohort_diagnoses)
-            cohort_diagnoses = "t12vs3"
         if self.baseline:
             train_path = train_path / "train_baseline.tsv"
         else:
@@ -196,7 +194,7 @@ class SplitManager:
                 )
             except:
                 pass
-
+        print(cohort_diagnoses)
         train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
         valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
 
