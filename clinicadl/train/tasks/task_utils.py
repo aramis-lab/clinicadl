@@ -50,6 +50,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "learning_rate",
         "multi_cohort",
         "multi_network",
+        "ssda_network",
         "n_proc",
         "n_splits",
         "nb_unfrozen_layer",
@@ -65,6 +66,10 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "sampler",
         "seed",
         "split",
+        "caps_target",
+        "tsv_target_lab",
+        "tsv_target_unlab",
+        "preprocessing_dict_target",
     ]
     all_options_list = standard_options_list + task_options_list
 
