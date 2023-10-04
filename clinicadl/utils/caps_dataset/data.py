@@ -1205,7 +1205,7 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
             test_path = test_path.parent / "train.tsv"
 
     test_df = pd.read_csv(test_path, sep="\t")
-    test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
+    test_df = test_df[test_df.diagnosis_train.isin(diagnoses_list)]  # TO CHANGE
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df
