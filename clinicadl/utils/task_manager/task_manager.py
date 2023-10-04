@@ -261,7 +261,7 @@ class TaskManager:
         """
         model.eval()
         dataloader.dataset.eval()
-        print(f"Start task manager for {target}")
+        logger.debug(f"Start task manager for {target}")
         results_df = pd.DataFrame(columns=self.columns)
         total_loss = 0
         with torch.no_grad():

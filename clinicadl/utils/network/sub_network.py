@@ -239,17 +239,15 @@ class CNN_SSDA(Network):
         images, labels = input_dict["image"].to(self.device), input_dict["label"].to(
             self.device
         )
-        train_output_source, train_output_target, train_output_domain = self.forward(
-            images, alpha
-        )
+        train_output_source, train_output_target, _ = self.forward(images, alpha)
 
         if target:
-            print("Target evaluation")
+            logger.debug("Target evaluation")
             out = train_output_target
             loss_bce = criterion(train_output_target, labels)
 
         else:
-            print("Source evaluation")
+            logger.debug("Source evaluation")
             out = train_output_source
             loss_bce = criterion(train_output_target, labels)
 
