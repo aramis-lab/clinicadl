@@ -1592,16 +1592,17 @@ class MapsManager:
 
             # Update weights one last time if gradients were computed without update
             if (i + 1) % self.accumulation_steps != 0:
-                source_label_predictor_optimizer.step()
-                domain_classifier_optimizer.step()
-                feature_extractor_optimizer.step()
-                target_label_predictor_optimizer.step()
+                # source_label_predictor_optimizer.step()
+                # domain_classifier_optimizer.step()
+                # feature_extractor_optimizer.step()
+                # target_label_predictor_optimizer.step()
+                optimizer.step()
 
-                source_label_predictor_optimizer.zero_grad()
-                domain_classifier_optimizer.zero_grad()
-                feature_extractor_optimizer.zero_grad()
-                target_label_predictor_optimizer.zero_grad()
-
+                # source_label_predictor_optimizer.zero_grad()
+                # domain_classifier_optimizer.zero_grad()
+                # feature_extractor_optimizer.zero_grad()
+                # target_label_predictor_optimizer.zero_grad()
+                optimizer.zero_grad()
             # Always test the results and save them once at the end of the epoch
             model.zero_grad()
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
@@ -1615,13 +1616,17 @@ class MapsManager:
                     train_source_loader,
                     criterion,
                     alpha,
+                    target=False,
                 )
                 _, metrics_valid_source = self.task_manager.test_da(
                     model,
                     valid_source_loader,
                     criterion,
                     alpha,
+                    target=False,
                 )
+                print(metrics_train_source)
+                print(metrics_valid_source)
 
                 log_writer.step(
                     epoch,
