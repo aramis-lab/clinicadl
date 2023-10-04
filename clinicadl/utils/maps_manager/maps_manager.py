@@ -1462,7 +1462,7 @@ class MapsManager:
                 )
                 alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
                 # alpha = 0
-                _, _, loss_dict = model.compute_outputs_and_loss2(
+                _, _, loss_dict = model.compute_outputs_and_loss(
                     data_source, data_target, data_target_unl, criterion, alpha
                 )  # TO CHECK
                 logger.debug(f"Train loss dictionnary {loss_dict}")
