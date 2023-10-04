@@ -1590,8 +1590,6 @@ class MapsManager:
                     True,
                     False,
                 )
-                print(metrics_train_source)
-                print(metrics_valid_source)
 
                 log_writer.step(
                     epoch,
@@ -2134,7 +2132,6 @@ class MapsManager:
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
-        print(train_df)
 
         full_dataset = return_dataset(
             self.caps_directory,

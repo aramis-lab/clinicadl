@@ -160,7 +160,7 @@ class CNN_SSDA(Network):
             self.fc_class_source,
             self.fc_class_target,
             self.fc_domain,
-        )  # ,
+        )
 
     def transfer_weights(self, state_dict, transfer_class):
         if issubclass(transfer_class, CNN_SSDA):
@@ -183,7 +183,7 @@ class CNN_SSDA(Network):
         x = self.convolutions(x)
         x_class_source = self.fc_class_source(x)
         x_class_target = self.fc_class_target(x)
-        x_reverse = ReverseLayerF.apply(x, alpha)  # TO CHECK
+        x_reverse = ReverseLayerF.apply(x, alpha)
         x_domain = self.fc_domain(x_reverse)
         return x_class_source, x_class_target, x_domain
 
@@ -197,12 +197,10 @@ class CNN_SSDA(Network):
         train_output_source, train_output_target, _ = self.forward(images, alpha)
 
         if target:
-            print("Target evaluation")
             out = train_output_target
             loss_bce = criterion(train_output_target, labels)
 
         else:
-            print("Source evaluation")
             out = train_output_source
             loss_bce = criterion(train_output_target, labels)
 

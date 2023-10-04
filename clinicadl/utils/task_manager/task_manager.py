@@ -262,7 +262,6 @@ class TaskManager:
         """
         model.eval()
         dataloader.dataset.eval()
-        print(f"Start task manager for {target}")
         results_df = pd.DataFrame(columns=self.columns)
         total_loss = 0
         with torch.no_grad():
@@ -270,7 +269,6 @@ class TaskManager:
                 outputs, loss_dict = model.compute_outputs_and_loss_test(
                     data, criterion, alpha, target
                 )
-                print(outputs)
                 total_loss += loss_dict["loss"].item()
 
                 # Generate detailed DataFrame
@@ -278,7 +276,6 @@ class TaskManager:
                     row = self.generate_test_row(idx, data, outputs)
                     row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
-                    print(results_df)
 
                 del outputs, loss_dict
             results_df.reset_index(inplace=True, drop=True)
@@ -286,9 +283,7 @@ class TaskManager:
         if not use_labels:
             metrics_dict = None
         else:
-            print("use_labels")
             metrics_dict = self.compute_metrics(results_df)
-            print(metrics_dict)
             metrics_dict["loss"] = total_loss
         torch.cuda.empty_cache()
 
