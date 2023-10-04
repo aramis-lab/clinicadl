@@ -222,12 +222,15 @@ class CapsDataset(Dataset):
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
-            domain = self.df.loc[image_idx, "domain"]  # TO CHECK
-            domain = self.domain_fn(domain)
 
         else:
             label = -1
 
+        if "domain" in self.df.columns:
+            domain = self.df.loc[image_idx, "domain"]
+            domain = self.domain_fn(domain)
+        else:
+            domain = ""
         return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
