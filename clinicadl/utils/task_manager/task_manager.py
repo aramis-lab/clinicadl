@@ -244,6 +244,7 @@ class TaskManager:
         model: Network,
         dataloader: DataLoader,
         criterion: _Loss,
+        alpha: float = 0,
         use_labels: bool = True,
         target: bool = True,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
@@ -267,7 +268,7 @@ class TaskManager:
         with torch.no_grad():
             for i, data in enumerate(dataloader):
                 outputs, loss_dict = model.compute_outputs_and_loss_test(
-                    data, criterion, 0, target
+                    data, criterion, alpha, target
                 )
                 print(outputs)
                 total_loss += loss_dict["loss"].item()

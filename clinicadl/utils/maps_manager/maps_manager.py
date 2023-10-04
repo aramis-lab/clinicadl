@@ -1478,28 +1478,6 @@ class MapsManager:
                     step_flag = False
                     optimizer.step()
                     optimizer.zero_grad()
-                    # source_label_predictor_optimizer.step()
-                    # target_label_predictor_optimizer.step()
-                    # domain_classifier_optimizer.step()
-                    # feature_extractor_optimizer.step()
-
-                    # source_label_predictor_optimizer.zero_grad()
-                    # target_label_predictor_optimizer.zero_grad()
-                    # domain_classifier_optimizer.zero_grad()
-                    # feature_extractor_optimizer.zero_grad()
-
-                    # source_label_predictor_optimizer = model.lr_scheduler(
-                    #     self.learning_rate, source_label_predictor_optimizer, p
-                    # )
-                    # domain_classifier_optimizer = model.lr_scheduler(
-                    #     self.learning_rate, domain_classifier_optimizer, p
-                    # )
-                    # feature_extractor_optimizer = model.lr_scheduler(
-                    #     self.learning_rate, feature_extractor_optimizer, p
-                    # )
-                    # target_label_predictor_optimizer = model.lr_scheduler(
-                    #     self.learning_rate, target_label_predictor_optimizer, p
-                    # )
 
                     del loss
 
@@ -1592,16 +1570,7 @@ class MapsManager:
 
             # Update weights one last time if gradients were computed without update
             if (i + 1) % self.accumulation_steps != 0:
-                # source_label_predictor_optimizer.step()
-                # domain_classifier_optimizer.step()
-                # feature_extractor_optimizer.step()
-                # target_label_predictor_optimizer.step()
                 optimizer.step()
-
-                # source_label_predictor_optimizer.zero_grad()
-                # domain_classifier_optimizer.zero_grad()
-                # feature_extractor_optimizer.zero_grad()
-                # target_label_predictor_optimizer.zero_grad()
                 optimizer.zero_grad()
             # Always test the results and save them once at the end of the epoch
             model.zero_grad()
@@ -1615,6 +1584,7 @@ class MapsManager:
                     model,
                     train_source_loader,
                     criterion,
+                    alpha,
                     True,
                     False,
                 )
@@ -1622,6 +1592,7 @@ class MapsManager:
                     model,
                     valid_source_loader,
                     criterion,
+                    alpha,
                     True,
                     False,
                 )
@@ -1649,12 +1620,14 @@ class MapsManager:
                 model,
                 train_target_loader,
                 criterion,
+                alpha,
                 target=True,
             )
             _, metrics_valid_target = self.task_manager.test_da(
                 model,
                 valid_loader,
                 criterion,
+                alpha,
                 target=True,
             )
 
