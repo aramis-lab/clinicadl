@@ -1867,7 +1867,6 @@ class MapsManager:
                 model,
                 dataloader,
                 criterion,
-                alpha=alpha,
                 target=target,
             )
             if use_labels:
