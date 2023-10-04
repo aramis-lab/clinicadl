@@ -2175,6 +2175,7 @@ class MapsManager:
             train_transformations=None,
             all_transformations=transformations,
         )
+        print(train_df)
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
