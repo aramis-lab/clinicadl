@@ -148,7 +148,7 @@ class SplitManager:
         list_columns = train_df.columns.values
 
         if (
-            "diagnosis_train"
+            "diagnosis"
             not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
@@ -173,7 +173,7 @@ class SplitManager:
 
         list_columns = valid_df.columns.values
         if (
-            "diagnosis_train"
+            "diagnosis"
             not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
