@@ -1616,17 +1616,16 @@ class MapsManager:
                     train_source_loader,
                     criterion,
                     alpha,
-                    target=False,
-                    use_labels=True,
-
+                    True,
+                    False,
                 )
                 _, metrics_valid_source = self.task_manager.test_da(
                     model,
                     valid_source_loader,
                     criterion,
                     alpha,
-                    target=False,
-                    use_labels=True,
+                    True,
+                    False,
                 )
                 print(metrics_train_source)
                 print(metrics_valid_source)
