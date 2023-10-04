@@ -84,6 +84,11 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             / "tensor_extraction"
             / kwargs["preprocessing_json"]
         )
+        preprocessing_json_target = (
+            Path(kwargs["caps_target"])
+            / "tensor_extraction"
+            / kwargs["preprocessing_dict_target"]
+        )
     else:
         caps_dict = CapsDataset.create_caps_dict(
             train_dict["caps_directory"], train_dict["multi_cohort"]
