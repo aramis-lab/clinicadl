@@ -71,7 +71,6 @@ class CapsDataset(Dataset):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
-        print(data_df)
         mandatory_col = {
             "participant_id",
             "session_id",
@@ -229,7 +228,7 @@ class CapsDataset(Dataset):
             domain = self.df.loc[image_idx, "domain"]
             domain = self.domain_fn(domain)
         else:
-            domain = "" #TO MODIFY
+            domain = ""  # TO MODIFY
         return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
@@ -1208,7 +1207,7 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
             test_path = test_path.parent / "train.tsv"
 
     test_df = pd.read_csv(test_path, sep="\t")
-    test_df = test_df[test_df.diagnosis_train.isin(diagnoses_list)]  # TO CHANGE
+    test_df = test_df[test_df.diagnosis_train.isin(diagnoses_list)]
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df

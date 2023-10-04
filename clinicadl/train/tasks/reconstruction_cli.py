@@ -27,6 +27,7 @@ from .task_utils import task_launcher
 # Model
 @train_option.architecture
 @train_option.multi_network
+@train_option.ssda_network
 # Data
 @train_option.multi_cohort
 @train_option.diagnoses
