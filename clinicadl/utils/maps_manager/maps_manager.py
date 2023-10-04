@@ -1416,12 +1416,6 @@ class MapsManager:
         criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
-        # (
-        #     feature_extractor_optimizer,
-        #     domain_classifier_optimizer,
-        #     source_label_predictor_optimizer,
-        #     target_label_predictor_optimizer,
-        # ) = self._init_optimizer_ssda(model, split=split, resume=resume)
 
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -1461,13 +1455,13 @@ class MapsManager:
             for i, (data_source, data_target, data_target_unl) in enumerate(
                 zip(train_source_loader, train_target_loader, train_target_unl_loader)
             ):
-                # p = (
-                #     float(epoch * len(train_target_loader))
-                #     / 10
-                #     / len(train_target_loader)
-                # )
-                # alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
-                alpha = 0
+                p = (
+                    float(epoch * len(train_target_loader))
+                    / 10
+                    / len(train_target_loader)
+                )
+                alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
+                # alpha = 0
                 _, _, loss_dict = model.compute_outputs_and_loss2(
                     data_source, data_target, data_target_unl, criterion, alpha
                 )  # TO CHECK
