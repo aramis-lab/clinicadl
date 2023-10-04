@@ -106,7 +106,9 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
+    preprocessing_dict_target = read_preprocessing(preprocessing_dict_target)
     train_dict["preprocessing_dict"] = preprocessing_dict
+    train_dict["preprocessing_dict_target"] = preprocessing_dict_target
     train_dict["mode"] = preprocessing_dict["mode"]
 
     # Add default values if missing
