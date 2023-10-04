@@ -238,3 +238,53 @@ class TaskManager:
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
+
+    def test_da(
+        self,
+        model: Network,
+        dataloader: DataLoader,
+        criterion: _Loss,
+        use_labels: bool = True,
+        target: bool = True,
+    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+        """
+        Computes the predictions and evaluation metrics.
+
+        Args:
+            model: the model trained.
+            dataloader: wrapper of a CapsDataset.
+            criterion: function to calculate the loss.
+            use_labels: If True the true_label will be written in output DataFrame
+                and metrics dict will be created.
+        Returns:
+            the results and metrics on the image level.
+        """
+        model.eval()
+        dataloader.dataset.eval()
+        print(f"Start task manager for {target}")
+        results_df = pd.DataFrame(columns=self.columns)
+        total_loss = 0
+        with torch.no_grad():
+            for i, data in enumerate(dataloader):
+                outputs, loss_dict = model.compute_outputs_and_loss_test(
+                    data, criterion, 0, target
+                )
+                total_loss += loss_dict["loss"].item()
+
+                # Generate detailed DataFrame
+                for idx in range(len(data["participant_id"])):
+                    row = self.generate_test_row(idx, data, outputs)
+                    row_df = pd.DataFrame(row, columns=self.columns)
+                    results_df = pd.concat([results_df, row_df])
+
+                del outputs, loss_dict
+            results_df.reset_index(inplace=True, drop=True)
+
+        if not use_labels:
+            metrics_dict = None
+        else:
+            metrics_dict = self.compute_metrics(results_df)
+            metrics_dict["loss"] = total_loss
+        torch.cuda.empty_cache()
+
+        return results_df, metrics_dict

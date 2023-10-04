@@ -244,12 +244,13 @@ class CNN_SSDA(Network):
         )
 
         if target:
+            print("Target evaluation")
             out = train_output_target
             loss_bce = criterion(train_output_target, labels)
 
         else:
+            print("Source evaluation")
             out = train_output_source
-
             loss_bce = criterion(train_output_target, labels)
 
         return out, {"loss": loss_bce}
