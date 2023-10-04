@@ -103,10 +103,26 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
                 f"in {caps_dict}."
             )
+        # To CHECK AND CHANGE
+        caps_target = Path(kwargs["caps_target"])
+        preprocessing_json_target = (
+            caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
+        )
+
+        if preprocessing_json_target.is_file():
+            logger.info(
+                f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."
+            )
+            json_found = True
+        if not json_found:
+            raise ValueError(
+                f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
+                f"in {caps_target}."
+            )
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
-    preprocessing_dict_target = read_preprocessing(preprocessing_dict_target)
+    preprocessing_dict_target = read_preprocessing(preprocessing_json_target)
     train_dict["preprocessing_dict"] = preprocessing_dict
     train_dict["preprocessing_dict_target"] = preprocessing_dict_target
     train_dict["mode"] = preprocessing_dict["mode"]
