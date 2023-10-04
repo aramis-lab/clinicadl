@@ -1415,13 +1415,7 @@ class MapsManager:
 
         criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
-        # optimizer = self._init_optimizer(model, split=split, resume=resume)
-        (
-            feature_extractor_optimizer,
-            domain_classifier_optimizer,
-            source_label_predictor_optimizer,
-            target_label_predictor_optimizer,
-        ) = self._init_optimizer_ssda(model, split=split, resume=resume)
+        optimizer = self._init_optimizer(model, split=split, resume=resume)
 
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -1462,12 +1456,13 @@ class MapsManager:
                 zip(train_source_loader, train_target_loader, train_target_unl_loader)
             ):
                 p = (
-                    float(epoch * len(combined_data_loader))
+                    float(epoch * len(train_target_loader))
                     / 10
-                    / len(combined_data_loader)
+                    / len(train_target_loader)
                 )
                 alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
-                _, _, loss_dict = model.compute_outputs_and_loss2(
+                # alpha = 0
+                _, _, loss_dict = model.compute_outputs_and_loss(
                     data_source, data_target, data_target_unl, criterion, alpha
                 )  # TO CHECK
                 logger.debug(f"Train loss dictionnary {loss_dict}")
@@ -1475,28 +1470,8 @@ class MapsManager:
                 loss.backward()
                 if (i + 1) % self.accumulation_steps == 0:
                     step_flag = False
-                    source_label_predictor_optimizer.step()
-                    target_label_predictor_optimizer.step()
-                    domain_classifier_optimizer.step()
-                    feature_extractor_optimizer.step()
-
-                    source_label_predictor_optimizer.zero_grad()
-                    target_label_predictor_optimizer.zero_grad()
-                    domain_classifier_optimizer.zero_grad()
-                    feature_extractor_optimizer.zero_grad()
-
-                    source_label_predictor_optimizer = model.lr_scheduler(
-                        self.learning_rate, source_label_predictor_optimizer, p
-                    )
-                    domain_classifier_optimizer = model.lr_scheduler(
-                        self.learning_rate, domain_classifier_optimizer, p
-                    )
-                    feature_extractor_optimizer = model.lr_scheduler(
-                        self.learning_rate, feature_extractor_optimizer, p
-                    )
-                    target_label_predictor_optimizer = model.lr_scheduler(
-                        self.learning_rate, target_label_predictor_optimizer, p
-                    )
+                    optimizer.step()
+                    optimizer.zero_grad()
 
                     del loss
 
@@ -1589,16 +1564,8 @@ class MapsManager:
 
             # Update weights one last time if gradients were computed without update
             if (i + 1) % self.accumulation_steps != 0:
-                source_label_predictor_optimizer.step()
-                domain_classifier_optimizer.step()
-                feature_extractor_optimizer.step()
-                target_label_predictor_optimizer.step()
-
-                source_label_predictor_optimizer.zero_grad()
-                domain_classifier_optimizer.zero_grad()
-                feature_extractor_optimizer.zero_grad()
-                target_label_predictor_optimizer.zero_grad()
-
+                optimizer.step()
+                optimizer.zero_grad()
             # Always test the results and save them once at the end of the epoch
             model.zero_grad()
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
@@ -1612,12 +1579,16 @@ class MapsManager:
                     train_source_loader,
                     criterion,
                     alpha,
+                    True,
+                    False,
                 )
                 _, metrics_valid_source = self.task_manager.test_da(
                     model,
                     valid_source_loader,
                     criterion,
                     alpha,
+                    True,
+                    False,
                 )
 
                 log_writer.step(
@@ -1688,7 +1659,7 @@ class MapsManager:
             )
             self._write_weights(
                 {
-                    "optimizer": feature_extractor_optimizer.state_dict(),
+                    "optimizer": optimizer.state_dict(),  # TO MODIFY
                     "epoch": epoch,
                     "name": self.optimizer,
                 },
@@ -1861,7 +1832,6 @@ class MapsManager:
                 model,
                 dataloader,
                 criterion,
-                alpha=alpha,
                 target=target,
             )
             if use_labels:
@@ -2162,6 +2132,7 @@ class MapsManager:
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
+
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,

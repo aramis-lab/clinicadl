@@ -134,7 +134,6 @@ class SplitManager:
         logger.debug(f"Validation data loaded at {valid_path}")
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
-
         if self.baseline:
             train_path = train_path / "train_baseline.tsv"
         else:
@@ -142,6 +141,7 @@ class SplitManager:
 
         valid_path = valid_path / "validation_baseline.tsv"
 
+        print(train_path)
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
 
@@ -195,9 +195,11 @@ class SplitManager:
                 )
             except:
                 pass
-
-        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
-        valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
+        print(cohort_diagnoses)
+        train_df = train_df[
+            train_df.diagnosis_train.isin(cohort_diagnoses)
+        ]  # TO MODIFY with train
+        valid_df = valid_df[valid_df.diagnosis_train.isin(cohort_diagnoses)]
 
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)

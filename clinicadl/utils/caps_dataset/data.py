@@ -76,7 +76,7 @@ class CapsDataset(Dataset):
             "participant_id",
             "session_id",
             "cohort",
-        }  # TO CHANGE
+        }
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
 
@@ -222,12 +222,14 @@ class CapsDataset(Dataset):
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
-            domain = self.df.loc[image_idx, "domain"]  # TO CHECK
-            domain = self.domain_fn(domain)
         else:
             label = -1
-            domain = None
 
+        if "domain" in self.df.columns:
+            domain = self.df.loc[image_idx, "domain"]
+            domain = self.domain_fn(domain)
+        else:
+            domain = "" #TO MODIFY
         return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
@@ -353,8 +355,6 @@ class CapsDatasetImage(CapsDataset):
         if self.augmentation_transformations and not self.eval_mode:
             image = self.augmentation_transformations(image)
 
-        print(self.preprocessing_dict["preprocessing"])
-        # domain = self.preprocessing_dict["preprocessing"].split("-")[0]  # TO CHECK
         sample = {
             "image": image,
             "label": label,
@@ -1208,7 +1208,7 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
             test_path = test_path.parent / "train.tsv"
 
     test_df = pd.read_csv(test_path, sep="\t")
-    test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
+    test_df = test_df[test_df.diagnosis_train.isin(diagnoses_list)]  # TO CHANGE
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df
