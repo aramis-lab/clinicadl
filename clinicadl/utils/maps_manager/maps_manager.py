@@ -1617,6 +1617,8 @@ class MapsManager:
                     criterion,
                     alpha,
                     target=False,
+                    use_labels=True,
+
                 )
                 _, metrics_valid_source = self.task_manager.test_da(
                     model,
@@ -1624,6 +1626,7 @@ class MapsManager:
                     criterion,
                     alpha,
                     target=False,
+                    use_labels=True,
                 )
                 print(metrics_train_source)
                 print(metrics_valid_source)

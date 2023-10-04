@@ -285,7 +285,9 @@ class TaskManager:
         if not use_labels:
             metrics_dict = None
         else:
+            print("use_labels")
             metrics_dict = self.compute_metrics(results_df)
+            print(metrics_dict)
             metrics_dict["loss"] = total_loss
         torch.cuda.empty_cache()
 
