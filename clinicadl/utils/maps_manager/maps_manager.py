@@ -1649,14 +1649,12 @@ class MapsManager:
                 model,
                 train_target_loader,
                 criterion,
-                alpha,
                 target=True,
             )
             _, metrics_valid_target = self.task_manager.test_da(
                 model,
                 valid_loader,
                 criterion,
-                alpha,
                 target=True,
             )
 
