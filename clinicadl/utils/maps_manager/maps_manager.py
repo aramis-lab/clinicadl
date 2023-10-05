@@ -1003,27 +1003,6 @@ class MapsManager:
             data_train_target_labeled.df = data_train_target_labeled.df[
                 ["participant_id", "session_id", "diagnosis_train", "cohort", "domain"]
             ]
-            data_combined = pd.concat(
-                [data_train_source.df, data_train_target_labeled.df]
-            )
-            data_combined.reset_index(inplace=True)
-
-            train_sampler = self.task_manager.generate_sampler_ssda(
-                data_train_source, data_combined, "weighted"
-            )  # To check
-
-            combined_data_loader = DataLoader(
-                combined_dataset,
-                batch_size=self.batch_size,
-                sampler=train_sampler,
-                num_workers=self.n_proc,
-                worker_init_fn=pl_worker_init_function,
-                drop_last=True,
-            )
-
-            logger.info(
-                f"Train labeled loader size is {len(combined_data_loader)*self.batch_size}"
-            )
 
             train_target_unl_loader = DataLoader(
                 data_target_unlabeled,
@@ -1065,7 +1044,6 @@ class MapsManager:
                 train_target_unl_loader,
                 valid_loader_target,
                 valid_loader_source,
-                combined_data_loader,
                 split,
                 resume=resume,
             )
@@ -1390,7 +1368,6 @@ class MapsManager:
         train_target_unl_loader,
         valid_loader,
         valid_source_loader,
-        combined_data_loader,
         split,
         network=None,
         resume=False,
@@ -2811,32 +2788,6 @@ class MapsManager:
             optimizer.load_state_dict(checkpoint_state["optimizer"])
 
         return optimizer
-
-    def _init_optimizer_ssda(self, model, split=None, resume=False):
-        """Initialize the optimizer for SSDA"""
-        import torch.optim as optim
-
-        conv = model.convolutions
-        fc_domain = model.fc_domain
-        fc_label_source = model.fc_class_source
-        fc_label_target = model.fc_class_target
-
-        # Define optimizers
-        feature_extractor_optimizer = optim.Adam(conv.parameters(), lr=1e-4)
-        domain_classifier_optimizer = optim.Adam(fc_domain.parameters(), lr=1e-4)
-        source_label_predictor_optimizer = optim.Adam(
-            fc_label_source.parameters(), lr=1e-4
-        )
-        target_label_predictor_optimizer = optim.Adam(
-            fc_label_target.parameters(), lr=1e-4
-        )
-
-        return (
-            feature_extractor_optimizer,
-            domain_classifier_optimizer,
-            source_label_predictor_optimizer,
-            target_label_predictor_optimizer,
-        )
 
     def _init_split_manager(self, split_list=None):
         from clinicadl.utils import split_manager
