@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Add `--fully_sharded_data_parallelism` option
 * Add `--emisions_calculator` option with codecarbon
+* Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop
   
 
 ## ClinicaDL 1.5.0
