@@ -219,9 +219,6 @@ class CNN_SSDA(Network):
             data_target["label"].to(self.device),
         )
 
-        logger.info(f"Label : {labels}")
-        logger.info(f"Label : {labels_target}")
-
         images_target_unl = data_target_unl["image"].to(self.device)
 
         (
@@ -236,7 +233,7 @@ class CNN_SSDA(Network):
             train_output_domain_t,
         ) = self.forward(images_target, alpha)
 
-        _, _, train_output_domain_target_lab = self.forward(images_target_unl, alpha)
+        _, _, train_output_domain_target_unlab = self.forward(images_target_unl, alpha)
 
         loss_classif_source = criterion(train_output_class_source, labels)
         loss_classif_target = criterion(train_output_class_target, labels_target)
@@ -251,17 +248,19 @@ class CNN_SSDA(Network):
             torch.ones(data_target["image"].shape[0]).long().to(self.device)
         )
 
-        labels_domain_t = (
+        labels_domain_tu = (
             torch.ones(data_target_unl["image"].shape[0]).long().to(self.device)
         )
 
         loss_domain_lab = criterion(train_output_domain_s, labels_domain_s)
         loss_domain_lab_t = criterion(train_output_domain_t, labels_domain_tl)
-        loss_domain_t_unl = criterion(train_output_domain_target_lab, labels_domain_t)
+        loss_domain_t_unl = criterion(
+            train_output_domain_target_unlab, labels_domain_tu
+        )
 
         loss_domain = loss_domain_lab + loss_domain_lab_t + loss_domain_t_unl
 
-        total_loss = loss_classif + loss_domain
+        total_loss = loss_classif + 0.1 * loss_domain
 
         return (
             train_output_class_source,
