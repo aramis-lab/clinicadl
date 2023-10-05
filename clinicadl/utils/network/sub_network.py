@@ -202,7 +202,7 @@ class CNN_SSDA(Network):
 
         else:
             out = train_output_source
-            loss_bce = criterion(train_output_target, labels)
+            loss_bce = criterion(train_output_source, labels)
 
         return out, {"loss": loss_bce}
 
@@ -238,7 +238,7 @@ class CNN_SSDA(Network):
         loss_classif_source = criterion(train_output_class_source, labels)
         loss_classif_target = criterion(train_output_class_target, labels_target)
 
-        loss_classif = 0.25 * loss_classif_source + loss_classif_target
+        loss_classif = loss_classif_source + loss_classif_target
 
         labels_domain_s = (
             torch.zeros(data_source["image"].shape[0]).long().to(self.device)
