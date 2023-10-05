@@ -216,24 +216,28 @@ caps_target = cli_param.option_group.data_group.option(
     "--caps_target",
     "-d",
     type=str,
+    default=None,
     help="CAPS of target data.",
 )
 tsv_target_lab = cli_param.option_group.data_group.option(
     "--tsv_target_lab",
     "-d",
     type=str,
+    default=None,
     help="TSV of labeled target data.",
 )
 tsv_target_unlab = cli_param.option_group.data_group.option(
     "--tsv_target_unlab",
     "-d",
     type=str,
+    default=None,
     help="TSV of unllabeled target data.",
 )
 preprocessing_dict_target = cli_param.option_group.data_group.option(
     "--preprocessing_dict_target",
     "-d",
     type=str,
+    default=None,
     help="Path to json taget.",
 )
 # Cross validation
