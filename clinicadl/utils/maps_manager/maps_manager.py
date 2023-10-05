@@ -1001,7 +1001,7 @@ class MapsManager:
             )
 
             data_train_target_labeled.df = data_train_target_labeled.df[
-                ["participant_id", "session_id", "diagnosis_train", "cohort", "domain"]
+                ["participant_id", "session_id", "diagnosis", "cohort", "domain"]
             ]
 
             train_target_unl_loader = DataLoader(
