@@ -35,6 +35,10 @@ from .task_utils import task_launcher
 @train_option.normalize
 @train_option.data_augmentation
 @train_option.sampler
+@train_option.caps_target
+@train_option.tsv_target_lab
+@train_option.tsv_target_unlab
+@train_option.preprocessing_dict_target
 # Cross validation
 @train_option.n_splits
 @train_option.split
