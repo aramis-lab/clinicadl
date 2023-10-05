@@ -202,7 +202,7 @@ class CNN_SSDA(Network):
 
         else:
             out = train_output_source
-            loss_bce = criterion(train_output_target, labels)
+            loss_bce = criterion(train_output_source, labels)
 
         return out, {"loss": loss_bce}
 
