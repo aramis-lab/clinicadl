@@ -1297,7 +1297,7 @@ class MapsManager:
                 "name": self.architecture,
             }
             optimizer_weights = {
-                "optimizer": model.optim_state_dict(),
+                "optimizer": model.optim_state_dict(optimizer),
                 "epoch": epoch,
                 "name": self.architecture,
             }
