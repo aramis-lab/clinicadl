@@ -15,19 +15,20 @@ from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
 
-try:
-    from torch.distributed.fsdp import (
-        FullOptimStateDictConfig,
-        FullStateDictConfig,
-        FullyShardedDataParallel,
-        ShardingStrategy,
-        StateDictType,
-    )
-    from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
-except ImportError:
-    fsdp_available = False
-else:
-    fsdp_available = True
+# try:
+from torch.distributed.fsdp import (
+    FullOptimStateDictConfig,
+    FullStateDictConfig,
+    FullyShardedDataParallel,
+    ShardingStrategy,
+    StateDictType,
+)
+from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
+# except ImportError:
+#     fsdp_available = False
+# else:
+    # fsdp_available = True
+fsdp_available = True
 
 from . import cluster
 
