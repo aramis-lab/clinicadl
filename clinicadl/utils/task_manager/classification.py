@@ -9,6 +9,9 @@ from torch.utils.data import sampler
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+
+logger = getLogger("clinicadl.task_manager")
+
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 logger = getLogger("clinicadl.task_manager")
@@ -114,6 +117,32 @@ class ClassificationManager(TaskManager):
             else:
                 length = len(weights)
             return sampler.WeightedRandomSampler(weights, length)
+        else:
+            raise NotImplementedError(
+                f"The option {sampler_option} for sampler on classification task is not implemented"
+            )
+
+    @staticmethod
+    def generate_sampler_ssda(dataset, df, sampler_option="random", n_bins=5):
+        n_labels = df["diagnosis_train"].nunique()
+        count = np.zeros(n_labels)
+
+        for idx in df.index:
+            label = df.loc[idx, "diagnosis_train"]
+            key = dataset.label_fn(label)
+            count[key] += 1
+
+        weight_per_class = 1 / np.array(count)
+        weights = []
+
+        for idx, label in enumerate(df["diagnosis_train"].values):
+            key = dataset.label_fn(label)
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+        if sampler_option == "random":
+            return sampler.RandomSampler(weights)
+        elif sampler_option == "weighted":
+            return sampler.WeightedRandomSampler(weights, len(weights))
         else:
             raise NotImplementedError(
                 f"The option {sampler_option} for sampler on classification task is not implemented"

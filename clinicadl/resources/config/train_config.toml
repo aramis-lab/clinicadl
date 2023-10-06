@@ -4,6 +4,7 @@
 [Model]
 architecture = "default" # ex : Conv5_FC3
 multi_network = false
+ssda_network = false
 
 [Architecture]
 # CNN
@@ -67,6 +68,10 @@ data_augmentation = false
 sampler = "random"
 size_reduction=false
 size_reduction_factor=2
+caps_target = ""
+tsv_target_lab = ""
+tsv_target_unlab = ""
+preprocessing_dict_target = ""
 
 [Cross_validation]
 n_splits = 0

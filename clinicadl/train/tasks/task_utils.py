@@ -50,6 +50,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "learning_rate",
         "multi_cohort",
         "multi_network",
+        "ssda_network",
         "n_proc",
         "n_splits",
         "nb_unfrozen_layer",
@@ -66,6 +67,10 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "sampler",
         "seed",
         "split",
+        "caps_target",
+        "tsv_target_lab",
+        "tsv_target_unlab",
+        "preprocessing_dict_target",
     ]
     all_options_list = standard_options_list + task_options_list
 
@@ -80,6 +85,13 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             / "tensor_extraction"
             / kwargs["preprocessing_json"]
         )
+
+        if train_dict["ssda_network"]:
+            preprocessing_json_target = (
+                Path(kwargs["caps_target"])
+                / "tensor_extraction"
+                / kwargs["preprocessing_dict_target"]
+            )
     else:
         caps_dict = CapsDataset.create_caps_dict(
             train_dict["caps_directory"], train_dict["multi_cohort"]
@@ -99,11 +111,32 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
                 f"in {caps_dict}."
             )
+        # To CHECK AND CHANGE
+        if train_dict["ssda_network"]:
+            caps_target = Path(kwargs["caps_target"])
+            preprocessing_json_target = (
+                caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
+            )
+
+            if preprocessing_json_target.is_file():
+                logger.info(
+                    f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."
+                )
+                json_found = True
+            if not json_found:
+                raise ValueError(
+                    f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
+                    f"in {caps_target}."
+                )
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
     train_dict["preprocessing_dict"] = preprocessing_dict
     train_dict["mode"] = preprocessing_dict["mode"]
+
+    if train_dict["ssda_network"]:
+        preprocessing_dict_target = read_preprocessing(preprocessing_json_target)
+        train_dict["preprocessing_dict_target"] = preprocessing_dict_target
 
     # Add default values if missing
     if (
