@@ -906,7 +906,7 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
-        scaler = model.scaler
+        scaler = model.GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
         if self.parameters["track_exp"] == "wandb":
