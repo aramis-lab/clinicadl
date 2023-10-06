@@ -39,6 +39,7 @@ class BaseVAE(Network):
         output, _, _ = self.forward(x)
         return output
 
+    # Forward
     def forward(self, x):
         mu, logVar = self.encode(x)
         z = self.reparameterize(mu, logVar)

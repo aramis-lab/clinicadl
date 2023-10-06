@@ -165,6 +165,8 @@ def generate_random_dataset(
     write_missing_mods(output_dir, output_df)
     logger.info(f"Random dataset was generated at {output_dir}")
 
+    logger.info(f"Random dataset was generated at {output_dir}")
+
 
 def generate_trivial_dataset(
     caps_directory: Path,
@@ -353,6 +355,8 @@ def generate_trivial_dataset(
 
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
     write_missing_mods(output_dir, output_df)
+    logger.info(f"Trivial dataset was generated at {output_dir}")
+
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
 

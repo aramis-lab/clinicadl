@@ -128,6 +128,7 @@ def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
         "mode": "fixed",
         "multi_cohort": "fixed",
         "multi_network": "choice",
+        "ssda_netork": "fixed",
         "n_fcblocks": "randint",
         "n_splits": "fixed",
         "n_proc": "fixed",

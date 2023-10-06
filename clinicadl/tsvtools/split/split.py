@@ -281,6 +281,8 @@ def split_diagnoses(
 
     if categorical_split_variable is None:
         categorical_split_variable = "diagnosis"
+    else:
+        categorical_split_variable.append("diagnosis")
 
     # Read files
     diagnosis_df_path = data_tsv.name

@@ -3140,6 +3140,42 @@ tests = ["pybids[test]"]
 tutorial = ["ipykernel", "jinja2", "jupyter-client", "markupsafe", "nbconvert"]
 
 [[package]]
+name = "pybids"
+version = "0.15.6"
+description = "bids: interface with datasets conforming to BIDS"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pybids-0.15.6-py3-none-any.whl", hash = "sha256:8b3257379138669c2a995c65e0f08e8f9a007784aebba115815cf79e0d90bb5f"},
+    {file = "pybids-0.15.6.tar.gz", hash = "sha256:3a3596d3cb725431e41745f73dafb5d07603ffb1b2b29e43904b7d2da571b1d3"},
+]
+
+[package.dependencies]
+bids-validator = "*"
+click = ">=8.0"
+formulaic = ">=0.2.4,<0.6"
+nibabel = ">=2.1"
+num2words = "*"
+numpy = [
+    {version = "*", markers = "python_version >= \"3.9\""},
+    {version = "<1.25.0.dev0", markers = "python_version < \"3.9\""},
+]
+pandas = ">=0.23"
+scipy = "*"
+sqlalchemy = "<1.4.0.dev0"
+
+[package.extras]
+ci-tests = ["codecov", "pybids[test]", "pytest-xdist"]
+dev = ["pybids[doc,plotting,test]"]
+doc = ["jupytext", "myst-nb", "numpydoc", "sphinx (>=2.2,!=5.1.0)", "sphinx-rtd-theme"]
+docs = ["pybids[doc]"]
+plotting = ["graphviz"]
+test = ["bsmschema", "coverage[toml]", "pytest (>=3.3)", "pytest-cov"]
+tests = ["pybids[test]"]
+tutorial = ["ipykernel", "jinja2 (<3)", "jupyter-client", "markupsafe (<2.1)", "nbconvert"]
+
+[[package]]
 name = "pydicom"
 version = "2.4.3"
 description = "A pure Python package for reading and writing DICOM data"
