@@ -1,4 +1,5 @@
 import inspect
+import logging
 from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
@@ -8,19 +9,30 @@ from typing import Any, Optional, Set
 import torch
 import torch.distributed as dist
 from torch.cuda.amp import GradScaler
-from torch.distributed.fsdp import (
-    FullOptimStateDictConfig,
-    FullStateDictConfig,
-    FullyShardedDataParallel,
-    ShardingStrategy,
-    StateDictType,
-)
-from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
+from typing import TypeVar
+
+try:
+    from torch.distributed.fsdp import (
+        FullOptimStateDictConfig,
+        FullStateDictConfig,
+        FullyShardedDataParallel,
+        ShardingStrategy,
+        StateDictType,
+    )
+    from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
+except ImportError:
+    fsdp_available = False
+else:
+    fsdp_available = True
 
 from . import cluster
+
+
+logger = logging.getLogger("DDP")
+ShardedGradScalerType = TypeVar("ShardedGradScalerType", bound="ShardedGradScaler")
 
 
 @dataclass
@@ -140,36 +152,40 @@ def monkeypatch(model: Module) -> None:
     model.forward = MethodType(forward, model)
 
 
-class FSDP(FullyShardedDataParallel):
-    GradScaler = ShardedGradScaler
+if fsdp_available:
+    class FSDP(FullyShardedDataParallel):
+        GradScaler = ShardedGradScaler
 
-    def __init__(self, model: Module):
-        sharding_strategy = ShardingStrategy.FULL_SHARD
-        super().__init__(
-            model,
-            sharding_strategy=sharding_strategy,
-            cpu_offload=None,
-        )
-        self.set_state_dict_type(
-            self,
-            StateDictType.FULL_STATE_DICT,
-            FullStateDictConfig(offload_to_cpu=True, rank0_only=True),
-            FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=True),
-        )
+        def __init__(self, model: Module):
+            sharding_strategy = ShardingStrategy.FULL_SHARD
+            super().__init__(
+                model,
+                sharding_strategy=sharding_strategy,
+                cpu_offload=None,
+            )
+            self.set_state_dict_type(
+                self,
+                StateDictType.FULL_STATE_DICT,
+                FullStateDictConfig(offload_to_cpu=True, rank0_only=True),
+                FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=True),
+            )
 
-    def transfer_weights(self, *args, **kwargs):
-        raise RuntimeError("Please transfer weights before converting to FSDP.")
+        def transfer_weights(self, *args, **kwargs):
+            raise RuntimeError("Please transfer weights before converting to FSDP.")
 
-    def optim_state_dict(self, optimizer: Optimizer):
-        return super().optim_state_dict(self, optimizer)
+        def optim_state_dict(self, optimizer: Optimizer):
+            return super().optim_state_dict(self, optimizer)
 
-    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
-        optim_state_dict = self.optim_state_dict_to_load(
-            optim_state_dict=state_dict,
-            model=self,
-            optim=optimizer,
-        )
-        optimizer.load_state_dict(optim_state_dict)
+        def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+            optim_state_dict = self.optim_state_dict_to_load(
+                optim_state_dict=state_dict,
+                model=self,
+                optim=optimizer,
+            )
+            optimizer.load_state_dict(optim_state_dict)
+else:
+    class FSDP(object):
+        pass
 
 
 class ClinicaDDP(DistributedDataParallel):
@@ -195,13 +211,21 @@ class ClinicaDDP(DistributedDataParallel):
 
 
 class DDP:
-    GradScaler: GradScaler | ShardedGradScaler
+    GradScaler: GradScaler | ShardedGradScalerType
 
-    def __new__(
-        cls, model: Module, fsdp: bool = False
-    ) -> ClinicaDDP | FSDP:
+    def __new__(cls, model: Module, fsdp: bool = False) -> ClinicaDDP | FSDP:
         monkeypatch(model)
-        return FSDP(model) if fsdp else ClinicaDDP(model)
+        if fsdp:
+            if fsdp_available:
+                return FSDP(model)
+            else:
+                logger.warning(
+                    "FSDP is not available on your system, falling back "
+                    "to standard distributed data parallelism."
+                )
+                return ClinicaDDP(model)
+        else:
+            return ClinicaDDP(model)
 
     def optim_state_dict(self, optimizer: Optimizer):
         ...
