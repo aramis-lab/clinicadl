@@ -10,25 +10,25 @@ from uuid import uuid4
 
 import torch
 import torch.distributed as dist
+from packaging.version import Version
 from torch.cuda.amp import GradScaler
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
 
-# try:
-from torch.distributed.fsdp import (
-    FullOptimStateDictConfig,
-    FullStateDictConfig,
-    FullyShardedDataParallel,
-    ShardingStrategy,
-    StateDictType,
-)
-from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
-# except ImportError:
-#     fsdp_available = False
-# else:
-    # fsdp_available = True
-fsdp_available = True
+try:
+    from torch.distributed.fsdp import (
+        FullOptimStateDictConfig,
+        FullStateDictConfig,
+        FullyShardedDataParallel,
+        ShardingStrategy,
+        StateDictType,
+    )
+    from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
+except ImportError:
+    fsdp_available = False
+else:
+    fsdp_available = True
 
 from . import cluster
 
@@ -231,14 +231,20 @@ class DDP:
     def __new__(cls, model: Module, fsdp: bool = False) -> Union[ClinicaDDP, FSDP]:
         monkeypatch(model)
 
-        if fsdp or True:
-            if fsdp_available or True:
+        if fsdp:
+            if fsdp_available:
                 return FSDP(model)
             else:
-                logger.warning(
-                    "FSDP is not available on your system, falling back "
-                    "to standard distributed data parallelism."
-                )
+                if Version(torch.__version__) < Version("2.0.0"):
+                    logger.warning(
+                        "We do not support FullyShardedDataParallel before Pytorch 2."
+                        " Falling back to standard distributed data parallelism."
+                    )
+                else:
+                    logger.warning(
+                        "FSDP is not available on your system, falling back "
+                        "to standard distributed data parallelism."
+                    )
                 return ClinicaDDP(model)
         else:
             return ClinicaDDP(model)
