@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -1089,7 +1089,7 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
-        model = DDP(model, amp=self.amp, fsdp=self.fully_sharded_data_parallel)
+        model = DDP(model, fsdp=self.fully_sharded_data_parallel)
         criterion = self.task_manager.get_criterion(self.loss)
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -1739,7 +1739,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
 
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
@@ -1862,7 +1862,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
 
             nifti_path = (
                 self.maps_path
@@ -1927,7 +1927,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
 
             tensor_path = (
                 self.maps_path
@@ -2000,7 +2000,7 @@ class MapsManager:
             assert (
                 not self.fully_sharded_data_parallel
             ), "FSDP cannot be used to compute latent tensors."
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
 
             tensor_path = (
                 self.maps_path
