@@ -1,10 +1,12 @@
 import inspect
+import linecache
 import logging
 from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
 from typing import Any, Optional, Set, TypeVar, Union
+from uuid import uuid4
 
 import torch
 import torch.distributed as dist
@@ -124,7 +126,8 @@ def monkeypatch(model: Module) -> None:
             monkeypatched_code = dedent(
                 source_code.replace("self.forward", "self._forward")
             )
-            compiled_code = compile(monkeypatched_code, "<string>", "exec")
+            filename = f"<dynamic-{int(uuid4())}>"
+            compiled_code = compile(monkeypatched_code, filename, "exec")
 
             # If the function has default arguments, then the code of the function
             # will not be the first constant in the defined code but will be after
@@ -134,6 +137,16 @@ def monkeypatch(model: Module) -> None:
                     break
             else:
                 raise ValueError("Expected to find code object, did not find any.")
+
+            # Store the patched code source in the cache so that it can be retrieved
+            # later on by inspect.getsource. Otherwise, inspect would not be
+            # able to get source code from dynamically generated functions.
+            linecache.cache[filename] = (
+                len(monkeypatched_code),
+                None,
+                [line + "\n" for line in monkeypatched_code.splitlines()],
+                filename,
+            )
 
             # Convert code to a method bound to the given model.
             function = FunctionType(
