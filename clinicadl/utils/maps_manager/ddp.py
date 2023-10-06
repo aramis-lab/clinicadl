@@ -141,14 +141,15 @@ def monkeypatch(model: Module) -> None:
 
 
 class FSDP(FullyShardedDataParallel):
-    def __init__(self, model: Module, amp: bool = False):
+    GradScaler = ShardedGradScaler
+
+    def __init__(self, model: Module):
         sharding_strategy = ShardingStrategy.FULL_SHARD
         super().__init__(
             model,
             sharding_strategy=sharding_strategy,
             cpu_offload=None,
         )
-        self.scaler = ShardedGradScaler(enabled=amp)
         self.set_state_dict_type(
             self,
             StateDictType.FULL_STATE_DICT,
@@ -172,9 +173,7 @@ class FSDP(FullyShardedDataParallel):
 
 
 class ClinicaDDP(DistributedDataParallel):
-    def __init__(self, model: Module, amp: bool = False):
-        super().__init__(model)
-        self.scaler = GradScaler(enabled=amp)
+    GradScaler = GradScaler
 
     def _forward(self, *args, **kwargs):
         return self.module._forward(*args, **kwargs)
@@ -195,14 +194,15 @@ class ClinicaDDP(DistributedDataParallel):
         optimizer.load_state_dict(state_dict)
 
 
+
 class DDP:
-    scaler: GradScaler | ShardedGradScaler
+    GradScaler: GradScaler | ShardedGradScaler
 
     def __new__(
-        cls, model: Module, amp: bool = False, fsdp: bool = False
+        cls, model: Module, fsdp: bool = False
     ) -> ClinicaDDP | FSDP:
         monkeypatch(model)
-        return FSDP(model, amp=amp) if fsdp else ClinicaDDP(model, amp=amp)
+        return FSDP(model) if fsdp else ClinicaDDP(model)
 
     def optim_state_dict(self, optimizer: Optimizer):
         ...

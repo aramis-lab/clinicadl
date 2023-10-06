@@ -876,8 +876,6 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
-        # from .ddp import distribute
-        # model = distribute(model, fsdp=self.fully_sharded_data_parallel)
         model = DDP(model, amp=self.amp, fsdp=self.fully_sharded_data_parallel)
         criterion = self.task_manager.get_criterion(self.loss)
 
