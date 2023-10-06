@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
-from typing import Any, Optional, Set
+from typing import Any, Optional, Set, TypeVar
 
 import torch
 import torch.distributed as dist
@@ -12,7 +12,6 @@ from torch.cuda.amp import GradScaler
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
-from typing import TypeVar
 
 try:
     from torch.distributed.fsdp import (
@@ -29,7 +28,6 @@ else:
     fsdp_available = True
 
 from . import cluster
-
 
 logger = logging.getLogger("DDP")
 ShardedGradScalerType = TypeVar("ShardedGradScalerType", bound="ShardedGradScaler")
@@ -153,6 +151,7 @@ def monkeypatch(model: Module) -> None:
 
 
 if fsdp_available:
+
     class FSDP(FullyShardedDataParallel):
         GradScaler = ShardedGradScaler
 
@@ -183,7 +182,9 @@ if fsdp_available:
                 optim=optimizer,
             )
             optimizer.load_state_dict(optim_state_dict)
+
 else:
+
     class FSDP(object):
         pass
 
