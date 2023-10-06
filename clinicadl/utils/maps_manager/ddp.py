@@ -231,7 +231,7 @@ class DDP:
         monkeypatch(model)
 
         if fsdp or True:
-            if fsdp_available:
+            if fsdp_available or True:
                 return FSDP(model)
             else:
                 logger.warning(
