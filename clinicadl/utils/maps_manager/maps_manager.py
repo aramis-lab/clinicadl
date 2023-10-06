@@ -82,6 +82,7 @@ class MapsManager:
             test_parameters = self.get_parameters()
             test_parameters = change_str_to_path(test_parameters)
             self.parameters = add_default_values(test_parameters)
+            self.ssda_network = False  # A MODIFIER
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -156,6 +157,8 @@ class MapsManager:
 
         if self.multi_network:
             self._train_multi(split_list, resume=False)
+        elif self.ssda_network:
+            self._train_ssda(split_list, resume=False)
         else:
             self._train_single(split_list, resume=False)
 
@@ -185,6 +188,8 @@ class MapsManager:
 
         if self.multi_network:
             self._train_multi(split_list, resume=True)
+        elif self.ssda_network:
+            self._train_ssda(split_list, resume=True)
         else:
             self._train_single(split_list, resume=True)
 
@@ -848,6 +853,214 @@ class MapsManager:
 
                 self._erase_tmp(split)
 
+    def _train_ssda(self, split_list=None, resume=False):
+        """
+        Trains a single CNN for a source and target domain using semi-supervised domain adaptation.
+
+        Args:
+            split_list (list[int]): list of splits that are trained.
+            resume (bool): If True the job is resumed from checkpoint.
+        """
+        from torch.utils.data import DataLoader
+
+        train_transforms, all_transforms = get_transforms(
+            normalize=self.normalize,
+            data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
+
+        split_manager = self._init_split_manager(split_list)
+
+        split_manager_target_lab = self._init_split_manager_ssda(
+            self.caps_target, self.tsv_target_lab, split_list
+        )
+
+        for split in split_manager.split_iterator():
+            logger.info(f"Training split {split}")
+            seed_everything(self.seed, self.deterministic, self.compensation)
+
+            split_df_dict = split_manager[split]
+            split_df_dict_target_lab = split_manager_target_lab[split]
+
+            logger.debug("Loading source training data...")
+            data_train_source = return_dataset(
+                self.caps_directory,
+                split_df_dict["train"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+                multi_cohort=self.multi_cohort,
+                label=self.label,
+                label_code=self.label_code,
+            )
+
+            logger.debug("Loading target labelled training data...")
+            data_train_target_labeled = return_dataset(
+                Path(self.caps_target),  # TO CHECK
+                split_df_dict_target_lab["train"],
+                self.preprocessing_dict_target,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+                multi_cohort=False,  # A checker
+                label=self.label,
+                label_code=self.label_code,
+            )
+            from torch.utils.data import ConcatDataset, DataLoader
+
+            combined_dataset = ConcatDataset(
+                [data_train_source, data_train_target_labeled]
+            )
+
+            logger.debug("Loading target unlabelled training data...")
+            data_target_unlabeled = return_dataset(
+                Path(self.caps_target),
+                pd.read_csv(self.tsv_target_unlab, sep="\t"),
+                self.preprocessing_dict_target,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+                multi_cohort=False,  # A checker
+                label=self.label,
+                label_code=self.label_code,
+            )
+
+            logger.debug("Loading validation source data...")
+            data_valid_source = return_dataset(
+                self.caps_directory,
+                split_df_dict["validation"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+                multi_cohort=self.multi_cohort,
+                label=self.label,
+                label_code=self.label_code,
+            )
+            logger.debug("Loading validation target labelled data...")
+            data_valid_target_labeled = return_dataset(
+                Path(self.caps_target),
+                split_df_dict_target_lab["validation"],
+                self.preprocessing_dict_target,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+                multi_cohort=False,
+                label=self.label,
+                label_code=self.label_code,
+            )
+            train_source_sampler = self.task_manager.generate_sampler(
+                data_train_source, self.sampler
+            )
+
+            logger.info(
+                f"Getting train and validation loader with batch size {self.batch_size}"
+            )
+
+            ## Oversampling of the target dataset
+            from torch.utils.data import SubsetRandomSampler
+
+            # Create index lists for target labeled dataset
+            labeled_indices = list(range(len(data_train_target_labeled)))
+
+            # Oversample the indices for the target labeld dataset to match the size of the labeled source dataset
+            data_train_source_size = len(data_train_source) // self.batch_size
+            labeled_oversampled_indices = labeled_indices * (
+                data_train_source_size // len(labeled_indices)
+            )
+
+            # Append remaining indices to match the size of the largest dataset
+            labeled_oversampled_indices += labeled_indices[
+                : data_train_source_size % len(labeled_indices)
+            ]
+
+            # Create SubsetRandomSamplers using the oversampled indices
+            labeled_sampler = SubsetRandomSampler(labeled_oversampled_indices)
+
+            train_source_loader = DataLoader(
+                data_train_source,
+                batch_size=self.batch_size,
+                sampler=train_source_sampler,
+                # shuffle=True,  # len(data_train_source) < len(data_train_target_labeled),
+                num_workers=self.n_proc,
+                worker_init_fn=pl_worker_init_function,
+                drop_last=True,
+            )
+            logger.info(
+                f"Train source loader size is {len(train_source_loader)*self.batch_size}"
+            )
+            train_target_loader = DataLoader(
+                data_train_target_labeled,
+                batch_size=1,  # To limit the need of oversampling
+                # sampler=train_target_sampler,
+                sampler=labeled_sampler,
+                num_workers=self.n_proc,
+                worker_init_fn=pl_worker_init_function,
+                # shuffle=True,  # len(data_train_target_labeled) < len(data_train_source),
+                drop_last=True,
+            )
+            logger.info(
+                f"Train target labeled loader size oversample is {len(train_target_loader)}"
+            )
+
+            data_train_target_labeled.df = data_train_target_labeled.df[
+                ["participant_id", "session_id", "diagnosis", "cohort", "domain"]
+            ]
+
+            train_target_unl_loader = DataLoader(
+                data_target_unlabeled,
+                batch_size=self.batch_size,
+                num_workers=self.n_proc,
+                # sampler=unlabeled_sampler,
+                worker_init_fn=pl_worker_init_function,
+                shuffle=True,
+                drop_last=True,
+            )
+
+            logger.info(
+                f"Train target unlabeled loader size is {len(train_target_unl_loader)*self.batch_size}"
+            )
+
+            valid_loader_source = DataLoader(
+                data_valid_source,
+                batch_size=self.batch_size,
+                shuffle=False,
+                num_workers=self.n_proc,
+            )
+            logger.info(
+                f"Validation loader source size is {len(valid_loader_source)*self.batch_size}"
+            )
+
+            valid_loader_target = DataLoader(
+                data_valid_target_labeled,
+                batch_size=self.batch_size,  # To check
+                shuffle=False,
+                num_workers=self.n_proc,
+            )
+            logger.info(
+                f"Validation loader target size is {len(valid_loader_target)*self.batch_size}"
+            )
+
+            self._train_ssdann(
+                train_source_loader,
+                train_target_loader,
+                train_target_unl_loader,
+                valid_loader_target,
+                valid_loader_source,
+                split,
+                resume=resume,
+            )
+
+            self._ensemble_prediction(
+                "train",
+                split,
+                self.selection_metrics,
+            )
+            self._ensemble_prediction(
+                "validation",
+                split,
+                self.selection_metrics,
+            )
+
+            self._erase_tmp(split)
+
     def _train(
         self,
         train_loader,
@@ -1149,8 +1362,333 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-
         self.callback_handler.on_train_end(self.parameters)
+
+    def _train_ssdann(
+        self,
+        train_source_loader,
+        train_target_loader,
+        train_target_unl_loader,
+        valid_loader,
+        valid_source_loader,
+        split,
+        network=None,
+        resume=False,
+        evaluate_source=True,  # TO MODIFY
+    ):
+        """
+        Core function shared by train and resume.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): DataLoader wrapping the training set.
+            valid_loader (torch.utils.data.DataLoader): DataLoader wrapping the validation set.
+            split (int): Index of the split trained.
+            network (int): Index of the network trained (used in multi-network setting only).
+            resume (bool): If True the job is resumed from the checkpoint.
+        """
+
+        model, beginning_epoch = self._init_model(
+            split=split,
+            resume=resume,
+            transfer_path=self.transfer_path,
+            transfer_selection=self.transfer_selection_metric,
+        )
+
+        criterion = self.task_manager.get_criterion(self.loss)
+        logger.debug(f"Criterion for {self.network_task} is {criterion}")
+        optimizer = self._init_optimizer(model, split=split, resume=resume)
+
+        logger.debug(f"Optimizer used for training is optimizer")
+
+        model.train()
+        train_source_loader.dataset.train()
+        train_target_loader.dataset.train()
+        train_target_unl_loader.dataset.train()
+
+        early_stopping = EarlyStopping(
+            "min", min_delta=self.tolerance, patience=self.patience
+        )
+
+        metrics_valid_target = {"loss": None}
+        metrics_valid_source = {"loss": None}
+
+        log_writer = LogWriter(
+            self.maps_path,
+            self.task_manager.evaluation_metrics + ["loss"],
+            split,
+            resume=resume,
+            beginning_epoch=beginning_epoch,
+            network=network,
+        )
+        epoch = log_writer.beginning_epoch
+
+        retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
+        import numpy as np
+
+        while epoch < self.epochs and not early_stopping.step(
+            metrics_valid_target["loss"]
+        ):
+            logger.info(f"Beginning epoch {epoch}.")
+
+            model.zero_grad()
+            evaluation_flag, step_flag = True, True
+
+            for i, (data_source, data_target, data_target_unl) in enumerate(
+                zip(train_source_loader, train_target_loader, train_target_unl_loader)
+            ):
+                p = (
+                    float(epoch * len(train_target_loader))
+                    / 10
+                    / len(train_target_loader)
+                )
+                alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
+                # alpha = 0
+                _, _, loss_dict = model.compute_outputs_and_loss(
+                    data_source, data_target, data_target_unl, criterion, alpha
+                )  # TO CHECK
+                logger.debug(f"Train loss dictionnary {loss_dict}")
+                loss = loss_dict["loss"]
+                loss.backward()
+                if (i + 1) % self.accumulation_steps == 0:
+                    step_flag = False
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+                    del loss
+
+                    # Evaluate the model only when no gradients are accumulated
+                    if (
+                        self.evaluation_steps != 0
+                        and (i + 1) % self.evaluation_steps == 0
+                    ):
+                        evaluation_flag = False
+
+                        # Evaluate on taget data
+                        logger.info("Evaluation on target data")
+                        _, metrics_train_target = self.task_manager.test_da(
+                            model,
+                            train_target_loader,
+                            criterion,
+                            alpha,
+                            target=True,
+                        )  # TO CHECK
+
+                        _, metrics_valid_target = self.task_manager.test_da(
+                            model,
+                            valid_loader,
+                            criterion,
+                            alpha,
+                            target=True,
+                        )
+
+                        model.train()
+                        train_target_loader.dataset.train()
+
+                        log_writer.step(
+                            epoch,
+                            i,
+                            metrics_train_target,
+                            metrics_valid_target,
+                            len(train_target_loader),
+                            "training_target.tsv",
+                        )
+                        logger.info(
+                            f"{self.mode} level training loss for target data is {metrics_train_target['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+                        logger.info(
+                            f"{self.mode} level validation loss for target data is {metrics_valid_target['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+
+                        # Evaluate on source data
+                        logger.info("Evaluation on source data")
+                        _, metrics_train_source = self.task_manager.test_da(
+                            model, train_source_loader, criterion, alpha
+                        )
+                        _, metrics_valid_source = self.task_manager.test_da(
+                            model, valid_source_loader, criterion, alpha
+                        )
+
+                        model.train()
+                        train_source_loader.dataset.train()
+
+                        log_writer.step(
+                            epoch,
+                            i,
+                            metrics_train_source,
+                            metrics_valid_source,
+                            len(train_source_loader),
+                        )
+                        logger.info(
+                            f"{self.mode} level training loss for source data is {metrics_train_source['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+                        logger.info(
+                            f"{self.mode} level validation loss for source data is {metrics_valid_source['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+
+            # If no step has been performed, raise Exception
+            if step_flag:
+                raise Exception(
+                    "The model has not been updated once in the epoch. The accumulation step may be too large."
+                )
+
+            # If no evaluation has been performed, warn the user
+            elif evaluation_flag and self.evaluation_steps != 0:
+                logger.warning(
+                    f"Your evaluation steps {self.evaluation_steps} are too big "
+                    f"compared to the size of the dataset. "
+                    f"The model is evaluated only once at the end epochs."
+                )
+
+            # Update weights one last time if gradients were computed without update
+            if (i + 1) % self.accumulation_steps != 0:
+                optimizer.step()
+                optimizer.zero_grad()
+            # Always test the results and save them once at the end of the epoch
+            model.zero_grad()
+            logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+
+            if evaluate_source:
+                logger.info(
+                    f"Evaluate source data at the end of the epoch {epoch} with alpha: {alpha}."
+                )
+                _, metrics_train_source = self.task_manager.test_da(
+                    model,
+                    train_source_loader,
+                    criterion,
+                    alpha,
+                    True,
+                    False,
+                )
+                _, metrics_valid_source = self.task_manager.test_da(
+                    model,
+                    valid_source_loader,
+                    criterion,
+                    alpha,
+                    True,
+                    False,
+                )
+
+                log_writer.step(
+                    epoch,
+                    i,
+                    metrics_train_source,
+                    metrics_valid_source,
+                    len(train_source_loader),
+                )
+
+                logger.info(
+                    f"{self.mode} level training loss for source data is {metrics_train_source['loss']} "
+                    f"at the end of iteration {i}"
+                )
+                logger.info(
+                    f"{self.mode} level validation loss for source data is {metrics_valid_source['loss']} "
+                    f"at the end of iteration {i}"
+                )
+
+            _, metrics_train_target = self.task_manager.test_da(
+                model,
+                train_target_loader,
+                criterion,
+                alpha,
+                target=True,
+            )
+            _, metrics_valid_target = self.task_manager.test_da(
+                model,
+                valid_loader,
+                criterion,
+                alpha,
+                target=True,
+            )
+
+            model.train()
+            train_source_loader.dataset.train()
+            train_target_loader.dataset.train()
+
+            log_writer.step(
+                epoch,
+                i,
+                metrics_train_target,
+                metrics_valid_target,
+                len(train_target_loader),
+                "training_target.tsv",
+            )
+
+            logger.info(
+                f"{self.mode} level training loss for target data is {metrics_train_target['loss']} "
+                f"at the end of iteration {i}"
+            )
+            logger.info(
+                f"{self.mode} level validation loss for target data is {metrics_valid_target['loss']} "
+                f"at the end of iteration {i}"
+            )
+
+            # Save checkpoints and best models
+            best_dict = retain_best.step(metrics_valid_target)
+            self._write_weights(
+                {
+                    "model": model.state_dict(),
+                    "epoch": epoch,
+                    "name": self.architecture,
+                },
+                best_dict,
+                split,
+                network=network,
+            )
+            self._write_weights(
+                {
+                    "optimizer": optimizer.state_dict(),  # TO MODIFY
+                    "epoch": epoch,
+                    "name": self.optimizer,
+                },
+                None,
+                split,
+                filename="optimizer.pth.tar",
+            )
+
+            epoch += 1
+
+        self._test_loader_ssda(
+            train_target_loader,
+            criterion,
+            data_group="train",
+            split=split,
+            selection_metrics=self.selection_metrics,
+            network=network,
+            target=True,
+            alpha=0,
+        )
+        self._test_loader_ssda(
+            valid_loader,
+            criterion,
+            data_group="validation",
+            split=split,
+            selection_metrics=self.selection_metrics,
+            network=network,
+            target=True,
+            alpha=0,
+        )
+
+        if self.task_manager.save_outputs:
+            self._compute_output_tensors(
+                train_target_loader.dataset,
+                "train",
+                split,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
+            self._compute_output_tensors(
+                train_target_loader.dataset,
+                "validation",
+                split,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
 
     def _test_loader(
         self,
@@ -1222,6 +1760,72 @@ class MapsManager:
                     selection_metric,
                     data_group=data_group,
                 )
+
+    def _test_loader_ssda(
+        self,
+        dataloader,
+        criterion,
+        alpha,
+        data_group,
+        split,
+        selection_metrics,
+        use_labels=True,
+        gpu=None,
+        network=None,
+        target=False,
+    ):
+        """
+        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
+
+        Args:
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
+            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
+            data_group (str): name of the data group used for the testing task.
+            split (int): Index of the split used to train the model tested.
+            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            log_dir = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+            )
+            self.write_description_log(
+                log_dir,
+                data_group,
+                dataloader.dataset.caps_dict,
+                dataloader.dataset.df,
+            )
+
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+            prediction_df, metrics = self.task_manager.test_da(
+                model,
+                dataloader,
+                criterion,
+                target=target,
+            )
+            if use_labels:
+                if network is not None:
+                    metrics[f"{self.mode}_id"] = network
+                logger.info(
+                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                )
+
+            # Replace here
+            self._mode_level_to_tsv(
+                prediction_df, metrics, split, selection_metric, data_group=data_group
+            )
 
     @torch.no_grad()
     def _compute_output_nifti(
@@ -1496,7 +2100,6 @@ class MapsManager:
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
-
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
@@ -1513,6 +2116,7 @@ class MapsManager:
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
+
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
@@ -2198,6 +2802,27 @@ class MapsManager:
         kwargs = {"split_list": split_list}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
+        return split_class(**kwargs)
+
+    def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
+        # A intégrer directement dans _init_split_manager
+        from clinicadl.utils import split_manager
+
+        split_class = getattr(split_manager, self.validation)
+        args = list(
+            split_class.__init__.__code__.co_varnames[
+                : split_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        args.remove("split_list")
+        kwargs = {"split_list": split_list}
+        for arg in args:
+            kwargs[arg] = self.parameters[arg]
+
+        kwargs["caps_directory"] = Path(caps_dir)
+        kwargs["tsv_path"] = Path(tsv_dir)
+
         return split_class(**kwargs)
 
     def _init_task_manager(self, df=None, n_classes=None):

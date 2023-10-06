@@ -71,8 +71,11 @@ class CapsDataset(Dataset):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
-
-        mandatory_col = {"participant_id", "session_id", "cohort"}
+        mandatory_col = {
+            "participant_id",
+            "session_id",
+            "cohort",
+        }
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
 
@@ -107,6 +110,18 @@ class CapsDataset(Dataset):
         # Classification case (label + label_code dict)
         else:
             return self.label_code[str(target)]
+
+    def domain_fn(self, target: Union[str, float, int]) -> Union[float, int]:
+        """
+        Returns the label value usable in criterion.
+
+        Args:
+            target: value of the target.
+        Returns:
+            label: value of the label usable in criterion.
+        """
+        domain_code = {"t1": 0, "flair": 1}
+        return domain_code[str(target)]
 
     def __len__(self) -> int:
         return len(self.df) * self.elem_per_image
@@ -209,7 +224,12 @@ class CapsDataset(Dataset):
         else:
             label = -1
 
-        return participant, session, cohort, elem_idx, label
+        if "domain" in self.df.columns:
+            domain = self.df.loc[image_idx, "domain"]
+            domain = self.domain_fn(domain)
+        else:
+            domain = ""  # TO MODIFY
+        return participant, session, cohort, elem_idx, label, domain
 
     def _get_full_image(self) -> torch.Tensor:
         """
@@ -323,7 +343,7 @@ class CapsDatasetImage(CapsDataset):
         return None
 
     def __getitem__(self, idx):
-        participant, session, cohort, _, label = self._get_meta_data(idx)
+        participant, session, cohort, _, label, domain = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
         image = torch.load(image_path)
@@ -341,6 +361,7 @@ class CapsDatasetImage(CapsDataset):
             "session_id": session,
             "image_id": 0,
             "image_path": image_path.as_posix(),
+            "domain": domain,
         }
 
         return sample
@@ -400,7 +421,9 @@ class CapsDatasetPatch(CapsDataset):
         return self.patch_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, patch_idx, label, domain = self._get_meta_data(
+            idx
+        )
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
@@ -507,7 +530,7 @@ class CapsDatasetRoi(CapsDataset):
         return self.roi_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.roi_list is None:
@@ -672,7 +695,9 @@ class CapsDatasetSlice(CapsDataset):
         return self.slice_index
 
     def __getitem__(self, idx):
-        participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
+            idx
+        )
         slice_idx = slice_idx + self.discarded_slices[0]
         image_path = self._get_image_path(participant, session, cohort)
 

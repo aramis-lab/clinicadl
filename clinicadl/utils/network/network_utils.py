@@ -3,6 +3,7 @@ Class of layers used in the CNN not directly implemented in pytorch.
 """
 
 import torch.nn as nn
+from torch.autograd import Function
 
 
 class Reshape(nn.Module):
@@ -156,3 +157,14 @@ def torch_summarize(model, show_weights=True, show_parameters=True):
 
     tmpstr = tmpstr + ")"
     return tmpstr
+
+
+class ReverseLayerF(Function):
+    def forward(self, x, alpha):
+        self.alpha = alpha
+        return x.view_as(x)
+
+    def backward(self, grad_output):
+        output = grad_output.neg() * self.alpha
+
+        return output, None
