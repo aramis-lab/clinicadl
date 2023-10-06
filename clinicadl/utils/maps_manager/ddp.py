@@ -7,8 +7,18 @@ from typing import Any, Optional, Set
 
 import torch
 import torch.distributed as dist
+from torch.cuda.amp import GradScaler
+from torch.distributed.fsdp import (
+    FullOptimStateDictConfig,
+    FullStateDictConfig,
+    FullyShardedDataParallel,
+    ShardingStrategy,
+    StateDictType,
+)
+from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
+from torch.optim import Optimizer
 
 from . import cluster
 
@@ -130,10 +140,41 @@ def monkeypatch(model: Module) -> None:
     model.forward = MethodType(forward, model)
 
 
-class DDP(DistributedDataParallel):
-    def __init__(self, model: Module, *args, **kwargs):
-        monkeypatch(model)
-        super().__init__(model, *args, **kwargs)
+class FSDP(FullyShardedDataParallel):
+    def __init__(self, model: Module, amp: bool = False):
+        sharding_strategy = ShardingStrategy.FULL_SHARD
+        super().__init__(
+            model,
+            sharding_strategy=sharding_strategy,
+            cpu_offload=None,
+        )
+        self.scaler = ShardedGradScaler(enabled=amp)
+        self.set_state_dict_type(
+            self,
+            StateDictType.FULL_STATE_DICT,
+            FullStateDictConfig(offload_to_cpu=True, rank0_only=True),
+            FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=True),
+        )
+
+    def transfer_weights(self, *args, **kwargs):
+        raise RuntimeError("Please transfer weights before converting to FSDP.")
+
+    def optim_state_dict(self, optimizer: Optimizer):
+        return super().optim_state_dict(self, optimizer)
+
+    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+        optim_state_dict = self.optim_state_dict_to_load(
+            optim_state_dict=state_dict,
+            model=self,
+            optim=optimizer,
+        )
+        optimizer.load_state_dict(optim_state_dict)
+
+
+class ClinicaDDP(DistributedDataParallel):
+    def __init__(self, model: Module, amp: bool = False):
+        super().__init__(model)
+        self.scaler = GradScaler(enabled=amp)
 
     def _forward(self, *args, **kwargs):
         return self.module._forward(*args, **kwargs)
@@ -146,6 +187,34 @@ class DDP(DistributedDataParallel):
 
     def state_dict(self):
         return self.module.state_dict()
+
+    def optim_state_dict(self, optimizer: Optimizer):
+        return optimizer.state_dict()
+
+    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+        optimizer.load_state_dict(state_dict)
+
+
+class DDP:
+    scaler: GradScaler | ShardedGradScaler
+
+    def __new__(
+        cls, model: Module, amp: bool = False, fsdp: bool = False
+    ) -> ClinicaDDP | FSDP:
+        monkeypatch(model)
+        return FSDP(model, amp=amp) if fsdp else ClinicaDDP(model, amp=amp)
+
+    def optim_state_dict(self, optimizer: Optimizer):
+        ...
+
+    def state_dict(self):
+        ...
+
+    def load_state_dict(self, state_dict: dict):
+        ...
+
+    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+        ...
 
 
 def get_backend(gpu: bool = False) -> str:

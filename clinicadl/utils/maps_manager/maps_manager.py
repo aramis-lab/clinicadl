@@ -876,7 +876,9 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
-        model = DDP(model)
+        # from .ddp import distribute
+        # model = distribute(model, fsdp=self.fully_sharded_data_parallel)
+        model = DDP(model, amp=self.amp, fsdp=self.fully_sharded_data_parallel)
         criterion = self.task_manager.get_criterion(self.loss)
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -906,7 +908,7 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
-        scaler = GradScaler(enabled=self.amp)
+        scaler = model.scaler
         profiler = self._init_profiler()
 
         if self.parameters["track_exp"] == "wandb":
@@ -1077,25 +1079,28 @@ class MapsManager:
                     metrics_train,
                     metrics_valid,
                 )
+
+            model_weights = {
+                "model": model.state_dict(),
+                "epoch": epoch,
+                "name": self.architecture,
+            }
+            optimizer_weights = {
+                "optimizer": model.optim_state_dict(),
+                "epoch": epoch,
+                "name": self.architecture,
+            }
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
                 self._write_weights(
-                    {
-                        "model": model.state_dict(),
-                        "epoch": epoch,
-                        "name": self.architecture,
-                    },
+                    model_weights,
                     best_dict,
                     split,
                     network=network,
                 )
                 self._write_weights(
-                    {
-                        "optimizer": optimizer.state_dict(),
-                        "epoch": epoch,
-                        "name": self.optimizer,
-                    },
+                    optimizer_weights,
                     None,
                     split,
                     filename="optimizer.pth.tar",
@@ -1274,7 +1279,7 @@ class MapsManager:
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
                 with autocast(enabled=self.amp):
-                    output = model.predict(x)
+                    output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
@@ -1343,7 +1348,7 @@ class MapsManager:
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
                 with autocast(enabled=self.amp):
-                    output = model.predict(x)
+                    output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
@@ -1390,6 +1395,9 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
+            assert (
+                not self.fully_sharded_data_parallel
+            ), "FSDP cannot be used to compute latent tensors."
             model = DDP(model)
 
             tensor_path = (
@@ -2154,7 +2162,7 @@ class MapsManager:
 
         return model, current_epoch
 
-    def _init_optimizer(self, model, split=None, resume=False):
+    def _init_optimizer(self, model: DDP, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
 
         optimizer_cls = getattr(torch.optim, self.optimizer)
@@ -2164,14 +2172,7 @@ class MapsManager:
             weight_decay=self.weight_decay,
         )
 
-        if not self.fully_sharded_data_parallel:
-            optimizer = optimizer_cls(parameters, **optimizer_kwargs)
-        else:
-            from torch.distributed.optim import ZeroRedundancyOptimizer
-
-            optimizer = ZeroRedundancyOptimizer(
-                parameters, optimizer_class=optimizer_cls, **optimizer_kwargs
-            )
+        optimizer = optimizer_cls(parameters, **optimizer_kwargs)
 
         if resume:
             checkpoint_path = (
@@ -2181,7 +2182,7 @@ class MapsManager:
                 / "optimizer.pth.tar"
             )
             checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
-            optimizer.load_state_dict(checkpoint_state["optimizer"])
+            model.load_optim_state_dict(optimizer, checkpoint_state["optimizer"])
 
         return optimizer
 
