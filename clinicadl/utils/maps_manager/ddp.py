@@ -229,7 +229,8 @@ class DDP:
 
     def __new__(cls, model: Module, fsdp: bool = False) -> Union[ClinicaDDP, FSDP]:
         monkeypatch(model)
-        if fsdp:
+
+        if fsdp or True:
             if fsdp_available:
                 return FSDP(model)
             else:
