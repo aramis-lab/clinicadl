@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
-from typing import Any, Optional, Set, TypeVar
+from typing import Any, Optional, Set, TypeVar, Union
 
 import torch
 import torch.distributed as dist
@@ -212,9 +212,9 @@ class ClinicaDDP(DistributedDataParallel):
 
 
 class DDP:
-    GradScaler: GradScaler | ShardedGradScalerType
+    GradScaler: Union[GradScaler, ShardedGradScalerType]
 
-    def __new__(cls, model: Module, fsdp: bool = False) -> ClinicaDDP | FSDP:
+    def __new__(cls, model: Module, fsdp: bool = False) -> Union[ClinicaDDP, FSDP]:
         monkeypatch(model)
         if fsdp:
             if fsdp_available:
