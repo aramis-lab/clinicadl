@@ -194,7 +194,6 @@ class ClinicaDDP(DistributedDataParallel):
         optimizer.load_state_dict(state_dict)
 
 
-
 class DDP:
     GradScaler: GradScaler | ShardedGradScaler
 
