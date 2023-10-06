@@ -10,17 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* Fix retrocompatibility for new option in maps.json
+* Fix retrocompatibility for new option in maps.json,
 
 ### Changed
 
-* Change MapsManager architecture by adding Callbacks 
+* Change MapsManager architecture by adding Callbacks, 
 
 ### New
 
-* Add `--fully_sharded_data_parallelism` option
-* Add `--emisions_calculator` option with codecarbon
-* Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop
+* Add `--fully_sharded_data_parallelism` option,
+* Add `--emisions_calculator` option with codecarbon,
+* Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop.
   
 
 ## ClinicaDL 1.5.0
