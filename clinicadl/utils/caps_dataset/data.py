@@ -3,6 +3,7 @@
 import abc
 from logging import getLogger
 from os import path
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -1034,10 +1035,9 @@ def get_transforms(
 ################################
 # TSV files loaders
 ################################
-def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False):
+def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=False):
     """
     Load data not managed by split_manager.
-
     Args:
         test_path (str): path to the test TSV files / split directory / TSV file for multi-cohort
         diagnoses_list (List[str]): list of the diagnoses wanted in case of split_dir or multi-cohort
@@ -1047,7 +1047,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
     # TODO: computes baseline sessions on-the-fly to manager TSV file case
 
     if multi_cohort:
-        if not test_path.endswith(".tsv"):
+        if not test_path.suffix == ".tsv":
             raise ClinicaDLArgumentError(
                 "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
@@ -1080,7 +1080,8 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 )
             test_df.reset_index(inplace=True, drop=True)
     else:
-        if test_path.endswith(".tsv"):
+        print(test_path)
+        if test_path.suffix == ".tsv":
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
@@ -1093,9 +1094,8 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
     return test_df
 
 
-def load_data_test_single(test_path, diagnoses_list, baseline=True):
-
-    if test_path.endswith(".tsv"):
+def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
+    if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
             raise ClinicaDLTSVError(
@@ -1110,15 +1110,28 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     test_df = pd.DataFrame()
 
-    for diagnosis in diagnoses_list:
-
-        if baseline:
-            test_diagnosis_path = path.join(test_path, diagnosis + "_baseline.tsv")
+    if baseline:
+        if not (test_path.parent / "train_baseline.tsv").is_file():
+            if not (test_path.parent / "labels_baseline.tsv").is_file():
+                raise ClinicaDLTSVError(
+                    f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {test_path.parents[0]} "
+                )
+            else:
+                test_path = test_path.parent / "labels_baseline.tsv"
         else:
-            test_diagnosis_path = path.join(test_path, diagnosis + ".tsv")
+            test_path = test_path.parent / "train_baseline.tsv"
+    else:
+        if not (test_path.parent / "train.tsv").is_file():
+            if not (test_path.parent / "labels.tsv").is_file():
+                raise ClinicaDLTSVError(
+                    f"There is no train.tsv or labels.tsv in your folder {test_path.parent} "
+                )
+            else:
+                test_path = test_path.parent / "labels.tsv"
+        else:
+            test_path = test_path.parent / "train.tsv"
 
-        test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep="\t")
-        test_df = pd.concat([test_df, test_diagnosis_df])
+    test_df = pd.read_csv(test_path, sep="\t")
 
     test_df.reset_index(inplace=True, drop=True)
 
@@ -1128,7 +1141,6 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 def check_multi_cohort_tsv(tsv_df, purpose):
     """
     Checks that a multi-cohort TSV file is valid.
-
     Args:
         tsv_df (pd.DataFrame): DataFrame of multi-cohort definition.
         purpose (str): what the TSV file describes (CAPS or TSV).

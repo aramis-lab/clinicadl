@@ -20,10 +20,13 @@ class BasePythae(Network):
     def __init__(
         self,
         input_size,
-        latent_space_size,
+        first_layer_channels,
+        n_conv_encoder,
         feature_size,
-        n_conv,
-        io_layer_channels,
+        latent_space_size,
+        n_conv_decoder,
+        last_layer_channels,
+        last_layer_conv,
         gpu,
         is_ae=False,
     ):
@@ -36,10 +39,13 @@ class BasePythae(Network):
 
         encoder_layers, mu_layer, logvar_layer, decoder_layers = build_encoder_decoder(
             input_size=input_size,
-            latent_space_size=latent_space_size,
+            first_layer_channels=first_layer_channels,
+            n_conv_encoder=n_conv_encoder,
             feature_size=feature_size,
-            n_conv=n_conv,
-            io_layer_channels=io_layer_channels,
+            latent_space_size=latent_space_size,
+            n_conv_decoder=n_conv_decoder,
+            last_layer_channels=last_layer_channels,
+            last_layer_conv=last_layer_conv,
         )
 
         if is_ae:
@@ -73,7 +79,7 @@ class BasePythae(Network):
 
     # Network specific
     def predict(self, x):
-        return self.model.predict(x)
+        return self.model.predict(x.data)
 
     def forward(self, x):
         return self.model.forward(x)
@@ -100,56 +106,51 @@ class BasePythae(Network):
 
 
 def build_encoder_decoder(
-    input_size = (1, 80, 96, 80),
-    latent_space_size=128,
+    input_size=(1, 80, 96, 80),
+    first_layer_channels=32,
+    n_conv_encoder=3,
     feature_size=0,
-    n_conv=3,
-    io_layer_channels=32,
+    latent_space_size=128,
+    n_conv_decoder=3,
+    last_layer_channels=32,
+    last_layer_conv=False,
 ):
-    first_layer_channels = io_layer_channels
-    last_layer_channels = io_layer_channels
-    # automatically compute padding
-    decoder_output_padding = []
 
     input_c = input_size[0]
     input_d = input_size[1]
     input_h = input_size[2]
     input_w = input_size[3]
-    d, h, w = input_d, input_h, input_w
 
     # ENCODER
     encoder_layers = []
     # Input Layer
     encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
-    decoder_output_padding.append([d % 2, h % 2, w % 2])
-    d, h, w = d // 2, h // 2, w // 2
+    
     # Conv Layers
-    for i in range(n_conv - 1):
+    for i in range(n_conv_encoder - 1):
         encoder_layers.append(
             EncoderLayer3D(
                 first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
             )
         )
         # Construct output paddings
-        decoder_output_padding.append([d % 2, h % 2, w % 2])
-        d, h, w = d // 2, h // 2, w // 2
     # Compute size of the feature space
-    n_pix = (
+    n_pix_encoder = (
         first_layer_channels
-        * 2 ** (n_conv - 1)
-        * (input_d // (2**n_conv))
-        * (input_h // (2**n_conv))
-        * (input_w // (2**n_conv))
+        * 2 ** (n_conv_encoder - 1)
+        * (input_d // (2**n_conv_encoder))
+        * (input_h // (2**n_conv_encoder))
+        * (input_w // (2**n_conv_encoder))
     )
     # Flatten
     encoder_layers.append(Flatten())
     # Intermediate feature space
     if feature_size == 0:
-        feature_space = n_pix
+        feature_space = n_pix_encoder
     else:
         feature_space = feature_size
         encoder_layers.append(
-            nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
+            nn.Sequential(nn.Linear(n_pix_encoder, feature_space), nn.ReLU())
         )
     encoder = nn.Sequential(*encoder_layers)
 
@@ -158,12 +159,30 @@ def build_encoder_decoder(
     var_layer = nn.Linear(feature_space, latent_space_size)
 
     # DECODER
+
+    # automatically compute padding
+    d, h, w = input_d, input_h, input_w
+    decoder_output_padding = []
+    decoder_output_padding.append([d % 2, h % 2, w % 2])
+    d, h, w = d // 2, h // 2, w // 2
+    for i in range(n_conv_decoder - 1):
+        decoder_output_padding.append([d % 2, h % 2, w % 2])
+        d, h, w = d // 2, h // 2, w // 2
+
+    n_pix_decoder = (
+        last_layer_channels
+        * 2 ** (n_conv_decoder - 1)
+        * (input_d // (2**n_conv_decoder))
+        * (input_h // (2**n_conv_decoder))
+        * (input_w // (2**n_conv_decoder))
+    )
+
     decoder_layers = []
     # Intermediate feature space
     if feature_size == 0:
         decoder_layers.append(
             nn.Sequential(
-                nn.Linear(latent_space_size, n_pix),
+                nn.Linear(latent_space_size, n_pix_decoder),
                 nn.ReLU(),
             )
         )
@@ -172,21 +191,21 @@ def build_encoder_decoder(
             nn.Sequential(
                 nn.Linear(latent_space_size, feature_size),
                 nn.ReLU(),
-                nn.Linear(feature_size, n_pix),
+                nn.Linear(feature_size, n_pix_decoder),
                 nn.ReLU(),
             )
         )
     # Unflatten
     decoder_layers.append(
         Unflatten3D(
-            last_layer_channels * 2 ** (n_conv - 1),
-            input_d // (2**n_conv),
-            input_h // (2**n_conv),
-            input_w // (2**n_conv),
+            last_layer_channels * 2 ** (n_conv_decoder - 1),
+            input_d // (2**n_conv_decoder),
+            input_h // (2**n_conv_decoder),
+            input_w // (2**n_conv_decoder),
         )
     )
     # Decoder layers
-    for i in range(n_conv - 1, 0, -1):
+    for i in range(n_conv_decoder - 1, 0, -1):
         decoder_layers.append(
             DecoderLayer3D(
                 last_layer_channels * 2 ** (i),
@@ -194,21 +213,41 @@ def build_encoder_decoder(
                 output_padding=decoder_output_padding[i],
             )
         )
-    # Output layer
-    decoder_layers.append(
-        nn.Sequential(
-            nn.ConvTranspose3d(
+    # Output conv layer
+    if last_layer_conv:
+        last_layer = nn.Sequential(
+            DecoderLayer3D(
                 last_layer_channels,
-                input_c,
+                last_layer_channels,
                 4,
                 stride=2,
                 padding=1,
                 output_padding=decoder_output_padding[0],
-                bias=False,
+            ),
+            nn.Conv3d(
+                last_layer_channels,
+                input_c,
+                3,
+                stride=1,
+                padding=1
             ),
             nn.Sigmoid(),
         )
-    )
+
+    else:
+        last_layer = nn.Sequential(
+                nn.ConvTranspose3d(
+                    last_layer_channels,
+                    input_c,
+                    4,
+                    stride=2,
+                    padding=1,
+                    output_padding=decoder_output_padding[0],
+                    bias=False,
+                ),
+                nn.Sigmoid(),
+            )
+    decoder_layers.append(last_layer)
     decoder = nn.Sequential(*decoder_layers)
     return encoder, mu_layer, var_layer, decoder
 

@@ -1,5 +1,6 @@
 # coding: utf8
 from typing import List
+from pathlib import Path
 
 from clinicadl import MapsManager
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
@@ -9,7 +10,7 @@ def predict(
     maps_dir: str,
     data_group: str,
     caps_directory: str,
-    tsv_path: str,
+    tsv_path: Path,
     use_labels: bool = True,
     label: str = None,
     gpu: bool = True,

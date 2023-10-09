@@ -3,24 +3,42 @@ Launch a random network training.
 """
 
 from os import path
-
-import toml
-
-from clinicadl.random_search.random_search_utils import get_space_dict, random_sampling
-from clinicadl.train import train
+from random import sample
 
 
 def launch_search(launch_directory, job_name):
+    from clinicadl.random_search.random_search_classification_utils import get_classification_space_dict, classification_random_sampling
+    from clinicadl.train import train
 
     if not path.exists(path.join(launch_directory, "random_search.toml")):
         raise FileNotFoundError(
             f"TOML file 'random_search.toml' must be written in directory {launch_directory}."
         )
-    space_options = get_space_dict(launch_directory)
-    options = random_sampling(space_options)
+    space_options = get_classification_space_dict(launch_directory)
+    options = classification_random_sampling(space_options)
 
     maps_directory = path.join(launch_directory, job_name)
     split = options.pop("split")
     options["architecture"] = "RandomArchitecture"
 
     train(maps_directory, options, split)
+
+
+def launch_vae_search(launch_directory, job_name):
+    from clinicadl.utils.maps_manager import MapsManager
+    from clinicadl.random_search.random_search_vae_utils import get_vae_space_dict, vae_random_sampling
+
+    space_options = get_vae_space_dict(launch_directory)
+    parameters = vae_random_sampling(space_options)
+    parameters["architecture"] = "pythae_VAE"
+    print("Parameters:", parameters)
+
+    # Select 3 splits randomly
+    split_list = sample(range(6), 3)
+    print("Split list:", split_list)
+
+    # initialise maps
+    maps_dir = path.join(launch_directory, job_name)
+    maps_manager = MapsManager(maps_dir, parameters, verbose="info")
+    # launch training procedure for Pythae
+    maps_manager.train_pythae(split_list=split_list)

@@ -6,6 +6,7 @@ from datetime import datetime
 from glob import glob
 from logging import getLogger
 from os import listdir, makedirs, path
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -137,6 +138,76 @@ class MapsManager:
         else:
             self._train_single(split_list, resume=False)
 
+
+    def train_pythae(self, split_list: List[int] = None):
+        """
+        Train using Pythae procedure
+        only works for single splits
+        """
+        from clinicadl.utils.caps_dataset.data import PythaeCAPS
+        from pythae.pipelines import TrainingPipeline
+
+        train_transforms, all_transforms = get_transforms(
+            normalize=self.normalize,
+            data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
+        
+        split_manager = self._init_split_manager(split_list)
+        for split in split_manager.split_iterator():
+            logger.info(f"Training split {split}")
+
+            model_dir = path.join(self.maps_path, f"split-{split}", "best-loss")
+            if not path.exists(model_dir):
+                os.makedirs(model_dir)
+
+            seed_everything(self.seed, self.deterministic, self.compensation)
+        
+            split_df_dict = split_manager[split]
+            train_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["train"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+            eval_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["validation"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+
+            # Import the model
+            clinicadl_model, _ = self._init_model(
+                split=split,
+                gpu=True,
+            )
+            model = clinicadl_model.model
+            config = clinicadl_model.get_trainer_config(
+                output_dir=model_dir,
+                num_epochs=self.epochs,
+                learning_rate=self.learning_rate,
+                batch_size=self.batch_size,
+            )            
+            # Create Pythae Training Pipeline
+            pipeline = TrainingPipeline(
+                training_config=config,
+                model=model
+            )
+            
+            # Launch training
+            pipeline(
+                train_data=train_dataset, # must be torch.Tensor or np.array
+                eval_data=eval_dataset # must be torch.Tensor or np.array
+            )
+            # Move saved model to the correct path in the MAPS
+            src = path.join(model_dir, "*_training_*/final_model/model.pt")
+            os.system(f"mv {src} {model_dir}")
+        
+
     def resume(self, split_list: List[int] = None):
         """
         Resumes the training task for a defined list of splits.
@@ -172,7 +243,7 @@ class MapsManager:
         self,
         data_group: str,
         caps_directory: str = None,
-        tsv_path: str = None,
+        tsv_path: Path = None,
         split_list: List[int] = None,
         selection_metrics: List[str] = None,
         multi_cohort: bool = False,
@@ -212,7 +283,7 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
-        if split_list is None:
+        if not split_list:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
@@ -250,7 +321,7 @@ class MapsManager:
                 self.task_manager.generate_label_code(group_df, label)
 
             # Erase previous TSV files
-            if selection_metrics is None:
+            if not selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
                 split_selection_metrics = selection_metrics
@@ -304,7 +375,7 @@ class MapsManager:
                         data_test,
                         data_group,
                         split,
-                        selection_metrics,
+                        split_selection_metrics,
                         save_reconstruction_tensor=save_tensor,
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
@@ -343,18 +414,19 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor or save_nifti or save_latent_tensor:
+                    print(save_latent_tensor)
                     self._save_model_output(
                         data_test,
                         data_group,
                         split,
-                        selection_metrics,
+                        split_selection_metrics,
                         save_reconstruction_tensor=save_tensor,
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
                         gpu=gpu,
                     )
 
-            self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
+            self._ensemble_prediction(data_group, split, split_selection_metrics, use_labels)
 
     def interpret(
         self,
@@ -1075,7 +1147,9 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
+        print("in save model output")
         for selection_metric in selection_metrics:
+            print(selection_metric)
             # load the best trained model during the training
             model, _ = self._init_model(
                 transfer_path=self.maps_path,
@@ -1137,6 +1211,7 @@ class MapsManager:
                     output_filename = (
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                     )
+                    print(output_filename)
                     torch.save(image, path.join(tensor_path, input_filename))
                     torch.save(reconstruction, path.join(tensor_path, output_filename))
                     logger.debug(f"File saved at {[input_filename, output_filename]}")
@@ -1149,6 +1224,7 @@ class MapsManager:
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                     output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                    print(output_filename)
                     nib.save(input_nii, path.join(nifti_path, input_filename))
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
@@ -1157,6 +1233,7 @@ class MapsManager:
                     output_filename = (
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                     )
+                    print(output_filename)
                     torch.save(latent, path.join(latent_tensor_path, output_filename))
 
 
@@ -1463,7 +1540,7 @@ class MapsManager:
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
-            self.tsv_path,
+            Path(self.tsv_path),
             self.diagnoses,
             baseline=False,
             multi_cohort=self.multi_cohort,
