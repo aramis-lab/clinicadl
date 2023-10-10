@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import autocast
+from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -1089,7 +1089,7 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
-        model = DDP(model, fsdp=self.fully_sharded_data_parallel)
+        model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
         criterion = self.task_manager.get_criterion(self.loss)
 
         logger.info(f"Criterion for {self.network_task} is {criterion}")
@@ -1119,7 +1119,7 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
-        scaler = model.GradScaler(enabled=self.amp)
+        scaler = GradScaler(enabled=self.std_amp)
         profiler = self._init_profiler()
 
         if self.parameters["track_exp"] == "wandb":
@@ -1149,7 +1149,7 @@ class MapsManager:
                     update: bool = (i + 1) % self.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
-                        with autocast(enabled=self.amp):
+                        with autocast(enabled=self.std_amp):
                             _, loss_dict = model(data, criterion)
                         logger.debug(f"Train loss dictionnary {loss_dict}")
                         loss = loss_dict["loss"]
@@ -1171,10 +1171,10 @@ class MapsManager:
                             evaluation_flag = False
 
                             _, metrics_train = self.task_manager.test(
-                                model, train_loader, criterion, amp=self.amp
+                                model, train_loader, criterion, amp=self.std_amp
                             )
                             _, metrics_valid = self.task_manager.test(
-                                model, valid_loader, criterion, amp=self.amp
+                                model, valid_loader, criterion, amp=self.std_amp
                             )
 
                             model.train()
@@ -1224,10 +1224,10 @@ class MapsManager:
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
                 _, metrics_train = self.task_manager.test(
-                    model, train_loader, criterion, amp=self.amp
+                    model, train_loader, criterion, amp=self.std_amp
                 )
                 _, metrics_valid = self.task_manager.test(
-                    model, valid_loader, criterion, amp=self.amp
+                    model, valid_loader, criterion, amp=self.std_amp
                 )
 
                 model.train()
@@ -1332,7 +1332,7 @@ class MapsManager:
             "train",
             split,
             self.selection_metrics,
-            amp=self.amp,
+            amp=self.std_amp,
             network=network,
         )
         self._test_loader(
@@ -1341,7 +1341,7 @@ class MapsManager:
             "validation",
             split,
             self.selection_metrics,
-            amp=self.amp,
+            amp=self.std_amp,
             network=network,
         )
 
@@ -1739,7 +1739,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels, amp=amp
@@ -1862,7 +1862,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             nifti_path = (
                 self.maps_path
@@ -1880,7 +1880,7 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.amp):
+                with autocast(enabled=self.std_amp):
                     output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
@@ -1927,7 +1927,7 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             tensor_path = (
                 self.maps_path
@@ -1949,7 +1949,7 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.amp):
+                with autocast(enabled=self.std_amp):
                     output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
@@ -2000,7 +2000,7 @@ class MapsManager:
             assert (
                 not self.fully_sharded_data_parallel
             ), "FSDP cannot be used to compute latent tensors."
-            model = DDP(model, fsdp=self.fully_sharded_data_parallel)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             tensor_path = (
                 self.maps_path
@@ -2022,7 +2022,7 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                with autocast(enabled=self.amp):
+                with autocast(enabled=self.std_amp):
                     _, latent, _ = model._forward(image.unsqueeze(0).to(model.device))
                 latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
@@ -3155,3 +3155,12 @@ class MapsManager:
 
         # self.callback_handler.add_callback(ProgressBarCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
+
+    @property
+    def std_amp(self) -> bool:
+        """
+        Returns whether or not the standard PyTorch AMP should be enabled. It helps
+        distinguishing the base DDP with AMP and the usage of FSDP with AMP which
+        then calls the internal FSDP AMP mechanisms.
+        """
+        return self.amp and not self.fully_sharded_data_parallel

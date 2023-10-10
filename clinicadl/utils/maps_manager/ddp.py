@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
-from typing import Any, Optional, Set, TypeVar, Union
+from typing import Any, Optional, Set, Union
 from uuid import uuid4
 
 import torch
@@ -21,10 +21,10 @@ try:
         FullOptimStateDictConfig,
         FullStateDictConfig,
         FullyShardedDataParallel,
+        MixedPrecision,
         ShardingStrategy,
         StateDictType,
     )
-    from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 except ImportError:
     fsdp_available = False
 else:
@@ -33,7 +33,6 @@ else:
 from . import cluster
 
 logger = logging.getLogger("DDP")
-ShardedGradScalerType = TypeVar("ShardedGradScalerType", bound="ShardedGradScaler")
 
 
 @dataclass
@@ -167,13 +166,21 @@ def monkeypatch(model: Module) -> None:
 if fsdp_available:
 
     class FSDP(FullyShardedDataParallel):
-        GradScaler = ShardedGradScaler
-
-        def __init__(self, model: Module):
+        def __init__(self, model: Module, amp: bool = False):
             sharding_strategy = ShardingStrategy.FULL_SHARD
+            if amp:
+                mixed_precision = MixedPrecision(
+                    param_dtype=torch.float16,
+                    reduce_dtype=torch.float16,
+                    buffer_dtype=torch.float16,
+                    keep_low_precision_grads=False,
+                )
+            else:
+                mixed_precision = None
             super().__init__(
                 model,
                 sharding_strategy=sharding_strategy,
+                mixed_precision=mixed_precision,
                 cpu_offload=None,
             )
             self.set_state_dict_type(
@@ -204,8 +211,6 @@ else:
 
 
 class ClinicaDDP(DistributedDataParallel):
-    GradScaler = GradScaler
-
     def _forward(self, *args, **kwargs):
         return self.module._forward(*args, **kwargs)
 
@@ -226,14 +231,14 @@ class ClinicaDDP(DistributedDataParallel):
 
 
 class DDP:
-    GradScaler: Union[GradScaler, ShardedGradScalerType]
-
-    def __new__(cls, model: Module, fsdp: bool = False) -> Union[ClinicaDDP, FSDP]:
+    def __new__(
+        cls, model: Module, fsdp: bool = False, amp: bool = False
+    ) -> Union[ClinicaDDP, FSDP]:
         monkeypatch(model)
 
         if fsdp:
             if fsdp_available:
-                return FSDP(model)
+                return FSDP(model, amp=amp)
             else:
                 if Version(torch.__version__) < Version("2.0.0"):
                     logger.warning(
