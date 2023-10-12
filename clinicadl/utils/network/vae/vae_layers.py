@@ -428,3 +428,120 @@ class VAE_Decoder(nn.Module):
     def forward(self, z):
         y = self.sequential(z)
         return y
+
+
+class MultiConvEncoderLayer3D(nn.Module):
+    """
+    Class defining the encoder's part of the Autoencoder.
+    This layer is composed of n_conv_per_layer layers containing 
+    a 3D convolutional layer, and a batch normalization, 
+    and finally a leaky relu activation function.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        kernel_size=4,
+        stride=2,
+        padding=1,
+        normalization="batch",
+        # n_conv_per_layer=3,
+    ):
+        # To remove later
+        n_conv_per_layer = 3
+
+        super(MultiConvEncoderLayer3D, self).__init__()
+
+        layers = [
+            nn.Conv3d(
+                input_channels,
+                output_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ), 
+            get_norm3d(normalization, output_channels), 
+        ]
+
+        for _ in range(n_conv_per_layer-1):
+            layers.append(
+                nn.Conv3d(
+                    output_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                )
+            )
+            layers.append(
+                get_norm3d(normalization, output_channels),
+            )
+
+        self.layer = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = F.leaky_relu(self.layer(x), negative_slope=0.2, inplace=True)
+        return x
+
+
+class MultiConvDecoderLayer3D(nn.Module):
+    """
+    Class defining the decoder's part of the Autoencoder.
+    This layer is composed of n_conv_per_layer layers composed of a 
+    3D transposed convolutional layer, and a batch normalization layer, 
+    with finally a relu activation function.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        kernel_size=4,
+        stride=2,
+        padding=1,
+        output_padding=0,
+        normalization="batch",
+        # n_conv_per_layer=3,
+    ):
+        # To remove later
+        n_conv_per_layer = 3
+
+        super(MultiConvDecoderLayer3D, self).__init__()
+
+        layers = [
+            nn.ConvTranspose3d(
+                input_channels,
+                output_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                output_padding=output_padding,
+                bias=False,
+            ), 
+            get_norm3d(normalization, output_channels), 
+        ]
+
+        for _ in range(n_conv_per_layer-1):
+            layers.append(
+                nn.ConvTranspose3d(
+                    output_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    output_padding=0,
+                    bias=False,
+                )
+            )
+            layers.append(
+                get_norm3d(normalization, output_channels),
+            )
+
+        self.layer = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = F.relu(self.layer(x), inplace=True)
+        return x
