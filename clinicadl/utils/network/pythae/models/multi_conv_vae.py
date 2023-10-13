@@ -2,7 +2,6 @@ import torch
 
 from clinicadl.utils.network.pythae.pythae_utils import (
     Encoder_VAE, 
-    Encoder_AE, 
     Decoder
 )
 
@@ -34,7 +33,7 @@ class multi_conv_VAE(BasePythae):
         last_layer_channels,
         last_layer_conv,
         gpu,
-        # n_conv_per_layer,
+        # n_conv_per_block,
     ):
         from pythae.models import VAE, VAEConfig
 
@@ -50,7 +49,7 @@ class multi_conv_VAE(BasePythae):
             last_layer_channels=last_layer_channels,
             last_layer_conv=last_layer_conv,
             gpu=gpu,
-            # n_conv_per_layer,
+            # n_conv_per_block,
         )
 
         # self.input_size = input_size
@@ -65,7 +64,7 @@ class multi_conv_VAE(BasePythae):
             n_conv_decoder=n_conv_decoder,
             last_layer_channels=last_layer_channels,
             last_layer_conv=last_layer_conv,
-            # n_conv_per_layer=n_conv_per_layer,
+            # n_conv_per_block=n_conv_per_block,
         )
 
         encoder = Encoder_VAE(encoder_layers, mu_layer, logvar_layer)
@@ -138,10 +137,8 @@ def build_encoder_decoder(
     n_conv_decoder=3,
     last_layer_channels=32,
     last_layer_conv=False,
-    # n_conv_per_layer=3,
+    # n_conv_per_block=3,
 ):
-
-    print(input_size)
 
     input_c = input_size[0]
     input_d = input_size[1]
