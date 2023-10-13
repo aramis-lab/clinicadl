@@ -376,7 +376,7 @@ class VAE_Decoder(nn.Module):
 class MultiConvEncoderLayer3D(nn.Module):
     """
     Class defining the encoder's part of the Autoencoder.
-    This layer is composed of n_conv_per_layer layers containing 
+    This layer is composed of n_conv_per_block layers containing 
     a 3D convolutional layer, and a batch normalization, 
     and finally a leaky relu activation function.
     """
@@ -389,10 +389,10 @@ class MultiConvEncoderLayer3D(nn.Module):
         stride=2,
         padding=1,
         normalization="batch",
-        # n_conv_per_layer=3,
+        # n_conv_per_block=3,
     ):
         # To remove later
-        n_conv_per_layer = 3
+        n_conv_per_block = 3
 
         super(MultiConvEncoderLayer3D, self).__init__()
 
@@ -408,7 +408,7 @@ class MultiConvEncoderLayer3D(nn.Module):
             get_norm3d(normalization, output_channels), 
         ]
 
-        for _ in range(n_conv_per_layer-1):
+        for _ in range(n_conv_per_block-1):
             layers.append(
                 nn.Conv3d(
                     output_channels,
@@ -433,7 +433,7 @@ class MultiConvEncoderLayer3D(nn.Module):
 class MultiConvDecoderLayer3D(nn.Module):
     """
     Class defining the decoder's part of the Autoencoder.
-    This layer is composed of n_conv_per_layer layers composed of a 
+    This layer is composed of n_conv_per_block layers composed of a 
     3D transposed convolutional layer, and a batch normalization layer, 
     with finally a relu activation function.
     """
@@ -447,10 +447,10 @@ class MultiConvDecoderLayer3D(nn.Module):
         padding=1,
         output_padding=0,
         normalization="batch",
-        # n_conv_per_layer=3,
+        # n_conv_per_block=3,
     ):
         # To remove later
-        n_conv_per_layer = 3
+        n_conv_per_block = 3
 
         super(MultiConvDecoderLayer3D, self).__init__()
 
@@ -467,7 +467,7 @@ class MultiConvDecoderLayer3D(nn.Module):
             get_norm3d(normalization, output_channels), 
         ]
 
-        for _ in range(n_conv_per_layer-1):
+        for _ in range(n_conv_per_block-1):
             layers.append(
                 nn.ConvTranspose3d(
                     output_channels,
