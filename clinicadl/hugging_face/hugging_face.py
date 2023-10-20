@@ -21,9 +21,6 @@ license: MIT
 ---
 """
 
-# class EnvironmentConfig(BaseConfig):
-#     python_version: str = "3.8"
-
 
 def push_to_hf_hub(
     hf_hub_path: str,

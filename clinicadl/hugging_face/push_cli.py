@@ -18,7 +18,7 @@ from clinicadl.utils.maps_manager import MapsManager
     "--model_name",
     type=str,
     default=None,
-    help="Nale of the model you want to save.",
+    help="Name of the model you want to save.",
 )
 def cli(
     input_maps_directory,
