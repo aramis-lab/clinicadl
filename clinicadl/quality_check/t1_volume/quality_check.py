@@ -9,12 +9,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from .utils import extract_metrics
+from clinicadl.quality_check.t1_volume.utils import extract_metrics
 
 
 def quality_check(caps_dir: Path, output_directory: Path, group_label):
     logger = getLogger("clinicadl.quality_check")
-
     extract_metrics(
         caps_dir=caps_dir, output_dir=output_directory, group_label=group_label
     )
@@ -22,7 +21,6 @@ def quality_check(caps_dir: Path, output_directory: Path, group_label):
         f"Quality check metrics extracted at {output_directory / 'QC_metrics.tsv'}."
     )
     qc_df = pd.read_csv(output_directory / "QC_metrics.tsv", sep="\t")
-
     rejection1_df = qc_df[qc_df.max_intensity > 0.95]
     rejection1_df.to_csv(output_directory / "pass_step-1.tsv", sep="\t", index=False)
     logger.info(
