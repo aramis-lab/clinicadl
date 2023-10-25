@@ -10,6 +10,13 @@ import cloudpickle
 import torch
 from torch import nn
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.maps_manager.maps_manager_utils import (
+    change_str_to_path,
+    read_json,
+    remove_unused_tasks,
+)
+
 logger = getLogger("clinicadl")
 
 
@@ -55,7 +62,8 @@ def push_to_hf_hub(
 
     else:
         from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
-
+    config_file = maps_dir / "maps.json"
+    readme_file = create_readme(config_file=config_file, model_name=model_name)
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
 
     # tempdir = tempfile.mkdtemp()
@@ -70,13 +78,22 @@ def push_to_hf_hub(
     id_ = hf_hub_path
     api.create_repo(id_, token="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")
 
-    api.upload_folder(
-        folder_path=str(maps_dir),
-        # path_in_repo="my-dataset/train", # Upload to a specific folder
-        repo_id=hf_hub_path,
-        repo_type="model",
-    )
+    # api.upload_folder(
+    #     folder_path=str(maps_dir),
+    #     # path_in_repo="my-dataset/train", # Upload to a specific folder
+    #     repo_id=hf_hub_path,
+    #     repo_type="model",
+    # )
 
+    hf_operations = [
+        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="README.md"),
+    ]
+
+    # ...     CommitOperationAdd(path_in_repo="weights.h5", path_or_fileobj="~/repo/weights-final.h5"),
+    # ...     CommitOperationDelete(path_in_repo="old-weights.h5"),
+    # ...     CommitOperationDelete(path_in_repo="logs/"),
+    # ...     CommitOperationCopy(src_path_in_repo="image.png", path_in_repo="duplicate_image.png"),
+    # ...
     # for split in split_list:
     #     hf_operations.append(
     #         CommitOperationAdd(
@@ -98,27 +115,43 @@ def push_to_hf_hub(
     #         )
     #     )
 
-    # try:
-    #     api.create_commit(
-    #         commit_message=f"Uploading {model_name} in {maps_dir}",
-    #         repo_id=id_,
-    #         operations=hf_operations,
-    #     )
-    #     logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
+    try:
+        api.create_commit(
+            commit_message=f"Uploading {model_name} in {maps_dir}",
+            repo_id=id_,
+            operations=hf_operations,
+        )
+        logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
 
-    # except:
-    #     from huggingface_hub import create_repo
+    except:
+        from huggingface_hub import create_repo
 
-    #     repo_name = os.path.basename(os.path.normpath(maps_dir))
-    #     logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
-    #     create_repo(repo_id=id_)
-    #     logger.info(f"Successfully created {repo_name} in the HF hub!")
+        repo_name = os.path.basename(os.path.normpath(maps_dir))
+        logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
+        create_repo(repo_id=id_)
+        logger.info(f"Successfully created {repo_name} in the HF hub!")
 
-    #     api.create_commit(
-    #         commit_message=f"Uploading {model_name} in {maps_dir}",
-    #         repo_id=id_,
-    #         operations=hf_operations,
-    #     )
+        api.create_commit(
+            commit_message=f"Uploading {model_name} in {maps_dir}",
+            repo_id=id_,
+            operations=hf_operations,
+        )
+
+
+def create_readme(config_file: Path = None, model_name: str = "test"):
+    if not config_file.is_file():
+        raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
+
+    train_dict = read_json(config_file)
+    train_dict = change_str_to_path(train_dict)
+    file = open("README.md", "w")
+    list_lines = []
+    list_lines.append(f"# Model Card for {model_name}  \n")
+    for name in train_dict.keys():
+        list_lines.append(f"**{name}**: {train_dict[name]}  \n")
+    file.writelines(list_lines)
+    file.close()
+    return file
 
 
 def save_model(network: nn.Module, dir_path: str):
