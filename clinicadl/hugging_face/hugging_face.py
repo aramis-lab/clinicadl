@@ -33,6 +33,7 @@ def push_to_hf_hub(
     hf_hub_path: str,
     maps_dir: Path,
     model_name: str,
+    dataset: [],
     split_list: list = [0],
     loss_list: str = ["best-loss"],
 ):  # pragma: no cover
@@ -63,7 +64,11 @@ def push_to_hf_hub(
     else:
         from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
     config_file = maps_dir / "maps.json"
-    readme_file = create_readme(config_file=config_file, model_name=model_name)
+    n_splits, validation = create_readme(config_file=config_file, model_name=model_name)
+    if validation == "KfoldSplit":
+        split_list = [f"split-{n}" for n in n_splits]
+    elif validation == "Split":
+        split_list = []
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
 
     # tempdir = tempfile.mkdtemp()
@@ -76,7 +81,7 @@ def push_to_hf_hub(
     hf_operations = []
 
     id_ = hf_hub_path
-    api.create_repo(id_, token="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")
+    # api.create_repo(id_, token="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")
 
     # api.upload_folder(
     #     folder_path=str(maps_dir),
@@ -87,6 +92,9 @@ def push_to_hf_hub(
 
     hf_operations = [
         CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="README.md"),
+        CommitOperationAdd(
+            path_in_repo="maps.json", path_or_fileobj=maps_dir / "maps.json"
+        ),
     ]
 
     # ...     CommitOperationAdd(path_in_repo="weights.h5", path_or_fileobj="~/repo/weights-final.h5"),
@@ -94,19 +102,40 @@ def push_to_hf_hub(
     # ...     CommitOperationDelete(path_in_repo="logs/"),
     # ...     CommitOperationCopy(src_path_in_repo="image.png", path_in_repo="duplicate_image.png"),
     # ...
-    # for split in split_list:
-    #     hf_operations.append(
-    #         CommitOperationAdd(
-    #             path_in_repo=str(("split-" + str(split)) + "_model5.pth.tar"),
-    #             path_or_fileobj=str(
-    #                 maps_dir
-    #                 / ("split-" + str(split))
-    #                 / loss_list[split]
-    #                 / "model.pth.tar"
-    #             ),
-    #         )
-    #     )
 
+    for split in range(n_splits):
+        hf_operations.append(
+            CommitOperationAdd(
+                path_in_repo=str(("split-" + str(split)) + "/best-loss/model.pth.tar"),
+                path_or_fileobj=str(
+                    maps_dir / ("split-" + str(split)) / "best-loss" / "model.pth.tar"
+                ),
+            )
+        )
+
+    import os
+
+    for root, dirs, files in os.walk(maps_dir, topdown=False):
+        for name in files:
+            print(root[(len(str(maps_dir))) :] + "/" + name)
+
+            # print(os.path.join((root[(len(str(maps_dir))):], name)))
+            hf_operations.append(
+                CommitOperationAdd(
+                    path_in_repo=str(
+                        ("split-" + str(split)) + "/best-loss/model.pth.tar"
+                    ),
+                    path_or_fileobj=str(
+                        maps_dir
+                        / ("split-" + str(split))
+                        / "best-loss"
+                        / "model.pth.tar"
+                    ),
+                )
+            )
+
+        # for name in dirs:
+        #     print(os.path.join(root, name))
     # for file in ["maps.json", "environment.txt", "information.log"]:
     #     hf_operations.append(
     #         CommitOperationAdd(
@@ -141,17 +170,48 @@ def push_to_hf_hub(
 def create_readme(config_file: Path = None, model_name: str = "test"):
     if not config_file.is_file():
         raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
+    import json
 
+    json_path = Path("/Users/camille.brianceau/aramis/clinicadl/test.json")
+    with json_path.open(mode="r") as f:
+        default_dict = json.load(f)
     train_dict = read_json(config_file)
     train_dict = change_str_to_path(train_dict)
+    for name in train_dict:
+        default_dict[name] = train_dict[name]
+
     file = open("README.md", "w")
     list_lines = []
     list_lines.append(f"# Model Card for {model_name}  \n")
+    list_lines.append(
+        f"This model was trained with ClinicaDL. You can find here the   \n"
+    )
+
+    list_lines.append(f"## General information  \n")
+
+    if default_dict["multi_cohort"]:
+        list_lines.append(
+            f"This model was trained on several datasets at the same time.   \n"
+        )
+
+    list_lines.append(f"## Architecture  \n")
+    list_lines.append(
+        f"This model was trained for **{default_dict['network_task']}** and the architecture chosen is **{default_dict['architecture']}**.  \n"
+    )
+    list_lines.append(f"**dropout**: {default_dict['dropout']}  \n")
+    list_lines.append(f"**latent_space_size**: {default_dict['latent_space_size']}  \n")
+    list_lines.append(f"**feature_size**: {default_dict['feature_size']}  \n")
+    list_lines.append(f"**n_conv**: {default_dict['n_conv']}  \n")
+    list_lines.append(f"**io_layer_channels**: {default_dict['io_layer_channels']}  \n")
+    list_lines.append(f"**recons_weight**: {default_dict['recons_weight']}  \n")
+    list_lines.append(f"**kl_weight**: {default_dict['kl_weight']}  \n")
+    list_lines.append(f"**normalization**: {default_dict['normalization']}  \n")
+
     for name in train_dict.keys():
         list_lines.append(f"**{name}**: {train_dict[name]}  \n")
     file.writelines(list_lines)
     file.close()
-    return file
+    return default_dict["n_splits"], default_dict["validation"]
 
 
 def save_model(network: nn.Module, dir_path: str):

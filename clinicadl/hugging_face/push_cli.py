@@ -20,10 +20,18 @@ from clinicadl.utils.maps_manager import MapsManager
     default=None,
     help="Name of the model you want to save.",
 )
+@click.option(
+    "--dataset",
+    type=str,
+    default=None,
+    multiple=True,
+    help="Name of the dataset used for training.",
+)
 def cli(
     input_maps_directory,
     hf_hub_path,
     model_name,
+    dataset,
 ):
     # maps_manager = MapsManager(input_maps_directory, verbose=None)
     from .hugging_face import push_to_hf_hub
@@ -35,6 +43,7 @@ def cli(
         hf_hub_path=hf_hub_path,
         maps_dir=input_maps_directory,
         model_name=model_name,
+        dataset=dataset,
     )
 
 
