@@ -37,4 +37,7 @@ from .pythae import (
     pythae_RAE_L2,
     pythae_RAE_GP,
     multi_conv_VAE,
+    progressive_conv_VAE,
+    non_monotonic_conv_VAE,
+    ResNet18_VAE,
 )
