@@ -20,6 +20,7 @@ last_layer_conv = false
 recons_weight = 1
 kl_weight = 1
 normalization = "batch"
+n_conv_per_block = 1
 
 [Classification]
 selection_metrics = ["loss"]

@@ -3,18 +3,18 @@ import torch
 from clinicadl.utils.network.pythae.pythae_utils import Encoder_VAE, Decoder
 
 from clinicadl.utils.network.vae.vae_layers import (
-    # EncoderLayer3D,
+    EncoderLayer3D,
     DecoderLayer3D,
     Flatten,
     Unflatten3D,
-    MultiConvEncoderBlock3D,
-    MultiConvDecoderBlock3D,
+    NonMonotonicConvEncoderBlock3D,
+    NonMonotonicConvDecoderBlock3D,
 )
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 
 
-class multi_conv_VAE(BasePythae):
+class non_monotonic_conv_VAE(BasePythae):
     def __init__(
         self,
         input_size,
@@ -30,7 +30,7 @@ class multi_conv_VAE(BasePythae):
     ):
         from pythae.models import VAE, VAEConfig
 
-        _, _ = super(multi_conv_VAE, self).__init__(
+        _, _ = super(non_monotonic_conv_VAE, self).__init__(
             input_size=input_size,
             first_layer_channels=first_layer_channels,
             n_conv_encoder=n_conv_encoder,
@@ -104,20 +104,27 @@ def build_encoder_decoder(
     encoder_layers = []
     # Input Layer
     encoder_layers.append(
-        MultiConvEncoderBlock3D(
-            input_c, first_layer_channels, n_conv_per_block=n_conv_per_block
+        EncoderLayer3D(
+            input_c, first_layer_channels
         )
     )  # EncoderLayer3D
 
     # Conv Layers
     for i in range(n_conv_encoder - 1):
         encoder_layers.append(
-            MultiConvEncoderBlock3D(
+            NonMonotonicConvEncoderBlock3D(
                 first_layer_channels * 2**i,
                 first_layer_channels * 2 ** (i + 1),
                 n_conv_per_block=n_conv_per_block,
             )
         )
+        # encoder_layers.append(
+        #     NonMonotonicConvEncoderBlock3D(
+        #         first_layer_channels,
+        #         first_layer_channels,
+        #         n_conv_per_block=n_conv_per_block,
+        #     )
+        # )
         # Construct output paddings
     # Compute size of the feature space
     n_pix_encoder = (
@@ -194,13 +201,21 @@ def build_encoder_decoder(
     # Decoder layers
     for i in range(n_conv_decoder - 1, 0, -1):
         decoder_layers.append(
-            MultiConvDecoderBlock3D(
+            NonMonotonicConvDecoderBlock3D(
                 last_layer_channels * 2 ** (i),
                 last_layer_channels * 2 ** (i - 1),
                 output_padding=decoder_output_padding[i],
                 n_conv_per_block=n_conv_per_block,
             )
         )
+        # decoder_layers.append(
+        #     NonMonotonicConvDecoderBlock3D(
+        #         last_layer_channels,
+        #         last_layer_channels,
+        #         output_padding=decoder_output_padding[i],
+        #         n_conv_per_block=n_conv_per_block,
+        #     )
+        # )
     # Output conv layer
     if last_layer_conv:
         last_layer = torch.nn.Sequential(
