@@ -35,10 +35,8 @@ from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
-    add_default_values,
-    change_path_to_str,
-    change_str_to_path,
     read_json,
+    remove_unused_tasks,
 )
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
@@ -202,7 +200,6 @@ class DataConfig(dict):
             config_dict = toml.load(config_path)
             # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
             if user_dict is not None:
-                user_dict = change_str_to_path(user_dict)
                 for section_name in user_dict:
                     if section_name not in config_dict:
                         raise ClinicaDLConfigurationError(
@@ -310,7 +307,7 @@ class DataConfig(dict):
         return read_json(json_path)
 
     def initiate_maps(self):
-        self._check_args()
+        task_manager = self._check_args()
         self.__dict__["tsv_path"] = Path(self.__dict__["tsv_path"])
 
         self.split_name = "split"  # Used only for retro-compatibility
@@ -326,11 +323,15 @@ class DataConfig(dict):
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
                 )
+            self.maps_path = Path(self.maps_path)
+            print(self.maps_path)
             (self.maps_path / "groups").mkdir(parents=True)
 
             logger.info(f"A new MAPS was created at {self.maps_path}")
 
+            print(self.maps_path)
             self.write_parameters()
+            print(self.maps_path)
             self._write_requirements_version()
 
             self._write_training_data()
@@ -339,13 +340,11 @@ class DataConfig(dict):
 
     def write_parameters(self, verbose=True):
         """Write JSON files of parameters."""
-        json_path = self.maps_path
+        json_path = Path(self.maps_path)
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
-        test = change_path_to_str(self.__dict__)
-        # save to json file
-        print(test)
-        json_data = json.dumps(test, skipkeys=True, indent=4)
+        self.change_path_to_str()
+        json_data = json.dumps(self.__dict__, skipkeys=True, indent=4)
         json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
@@ -359,7 +358,8 @@ class DataConfig(dict):
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
             )
-            with (self.maps_path / "environment.txt").open(mode="w") as file:
+            print(self.maps_path)
+            with (Path(self.maps_path) / "environment.txt").open(mode="w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
             logger.warning(
@@ -371,6 +371,7 @@ class DataConfig(dict):
         logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
+        self.change_str_to_path()
         train_df = load_data_test(
             self.tsv_path,
             self.diagnoses,
@@ -391,12 +392,14 @@ class DataConfig(dict):
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
+        self.change_str_to_path()
         split_manager = self._init_split_manager()
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]
+                print(self.maps_path)
                 group_path = (
-                    self.maps_path
+                    Path(self.maps_path)
                     / "groups"
                     / data_group
                     / f"{self.split_name}-{split}"
@@ -408,11 +411,6 @@ class DataConfig(dict):
                     columns.append(self.label)
                 df.to_csv(group_path / "data.tsv", sep="\t", columns=columns)
                 self.write_parameters(
-                    group_path,
-                    {
-                        "caps_directory": self.caps_directory,
-                        "multi_cohort": self.multi_cohort,
-                    },
                     verbose=False,
                 )
 
@@ -433,14 +431,14 @@ class DataConfig(dict):
         args.remove("self")
         kwargs = dict()
         for arg in args:
-            kwargs[arg] = self.parameters[arg]
+            kwargs[arg] = self.__dict__[arg]
         kwargs["gpu"] = False
 
         model = model_class(**kwargs)
 
         file_name = "information.log"
 
-        with (self.maps_path / file_name).open(mode="w") as f:
+        with (Path(self.maps_path) / file_name).open(mode="w") as f:
             f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
             f.write(f"- Path :\t{self.maps_path}\n\n")
             # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
@@ -485,8 +483,8 @@ class DataConfig(dict):
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-        parameters = add_default_values(self.__dict__)
-        self.__dict__ = change_str_to_path(parameters)
+        self.add_default_values()
+        self.change_str_to_path()
         if self.__dict__["gpu"]:
             check_gpu()
         elif self.__dict__["amp"]:
@@ -505,16 +503,16 @@ class DataConfig(dict):
         if "label" not in self.__dict__:
             self.__dict__["label"] = None
 
-        self.task_manager = self._init_task_manager(df=train_df)
+        task_manager = self._init_task_manager(df=train_df)
 
         if self.__dict__["architecture"] == "default":
-            self.__dict__["architecture"] = self.task_manager.get_default_network()
+            self.__dict__["architecture"] = task_manager.get_default_network()
         if "selection_threshold" not in self.__dict__:
             self.__dict__["selection_threshold"] = None
         if (
             "label_code" not in self.__dict__ or len(self.__dict__["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
-            self.__dict__["label_code"] = self.task_manager.generate_label_code(
+            self.__dict__["label_code"] = task_manager.generate_label_code(
                 train_df, self.label
             )
 
@@ -531,7 +529,7 @@ class DataConfig(dict):
         self.__dict__.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "output_size": self.task_manager.output_size(
+                "output_size": task_manager.output_size(
                     full_dataset.size, full_dataset.df, self.label
                 ),
                 "input_size": full_dataset.size,
@@ -546,9 +544,7 @@ class DataConfig(dict):
                 f"framework with only {self.__dict__['num_networks']} element "
                 f"per image."
             )
-        possible_selection_metrics_set = set(self.task_manager.evaluation_metrics) | {
-            "loss"
-        }
+        possible_selection_metrics_set = set(task_manager.evaluation_metrics) | {"loss"}
         if not set(self.__dict__["selection_metrics"]).issubset(
             possible_selection_metrics_set
         ):
@@ -557,3 +553,124 @@ class DataConfig(dict):
                 f"must be a subset of metrics used for evaluation "
                 f"{possible_selection_metrics_set}."
             )
+        return task_manager
+
+    def change_str_to_path(self):
+        """
+        For all paths in the dictionnary, it changes the type from str to pathlib.Path.
+
+        Paramaters
+        ----------
+        toml_dict: Dict[str, Dict[str, Any]]
+            Dictionary of options as written in a TOML file, with type(path)=str
+
+        Returns
+        -------
+            Updated TOML dictionary with type(path)=pathlib.Path
+        """
+        for key, value in self.__dict__.items():
+            if type(value) == Dict:
+                for key2, value2 in value.items():
+                    if (
+                        key2.endswith("tsv")
+                        or key2.endswith("dir")
+                        or key2.endswith("directory")
+                        or key2.endswith("path")
+                        or key2.endswith("json")
+                        or key2.endswith("location")
+                    ):
+                        if value2 == "":
+                            self.__dict__[value][key2] = False
+                        else:
+                            self.__dict__[value][key2] = Path(value2)
+            else:
+                if (
+                    key.endswith("tsv")
+                    or key.endswith("dir")
+                    or key.endswith("directory")
+                    or key.endswith("path")
+                    or key.endswith("json")
+                    or key.endswith("location")
+                ):
+                    if value == "":
+                        self.__dict__[key] = False
+                    elif value == None:
+                        self.__dict__[key] = False
+                    elif type(value) is not bool:
+                        self.__dict__[key] = Path(value)
+
+    def change_path_to_str(self):
+        """
+        For all paths in the dictionnary, it changes the type from pathlib.Path to str.
+
+        Paramaters
+        ----------
+        toml_dict: Dict[str, Dict[str, Any]]
+            Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
+
+        Returns
+        -------
+            Updated TOML dictionary with type(path)=str
+        """
+        for key, value in self.__dict__.items():
+            if type(value) == Dict:
+                for key2, value2 in value.items():
+                    if (
+                        key2.endswith("tsv")
+                        or key2.endswith("dir")
+                        or key2.endswith("directory")
+                        or key2.endswith("path")
+                        or key2.endswith("json")
+                        or key2.endswith("location")
+                    ):
+                        if value2 == False:
+                            self.__dict__[value][key2] = ""
+                        elif isinstance(value2, Path):
+                            self.__dict__[value][key2] = value2.as_posix()
+            else:
+                if (
+                    key.endswith("tsv")
+                    or key.endswith("dir")
+                    or key.endswith("directory")
+                    or key.endswith("path")
+                    or key.endswith("json")
+                    or key.endswith("location")
+                ):
+                    if value == False:
+                        self.__dict__[key] = ""
+                    elif isinstance(value, Path):
+                        self.__dict__[key] = value.as_posix()
+
+    def add_default_values(self):
+        """
+        Updates the training parameters defined by the user with the default values in missing fields.
+
+        Args:
+            user_dict: dictionary of training parameters defined by the user.
+
+        Returns:
+            dictionary of values ready to use for the training process.
+        """
+        import toml
+
+        from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks
+
+        task = self.__dict__["network_task"]
+        # read default values
+        clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
+        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
+        config_dict = toml.load(config_path)
+
+        # task dependent
+        config_dict = remove_unused_tasks(config_dict, task)
+        # Check that TOML file has the same format as the one in resources
+        for section_name in config_dict:
+            for key in config_dict[section_name]:
+                if key not in self.__dict__:  # Add value if not present in user_dict
+                    self.__dict__[key] = config_dict[section_name][key]
+
+        # Hard-coded options
+        if self.__dict__["n_splits"] and self.__dict__["n_splits"] > 1:
+            self.__dict__["validation"] = "KFoldSplit"
+        else:
+            self.__dict__["validation"] = "SingleSplit"

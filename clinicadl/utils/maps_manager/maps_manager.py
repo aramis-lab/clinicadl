@@ -32,12 +32,7 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import (
-    add_default_values,
-    change_path_to_str,
-    change_str_to_path,
-    read_json,
-)
+from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
@@ -79,7 +74,7 @@ class MapsManager:
         else:  # Initiate MAPS
             data_config.initiate_maps()
 
-        init_ddp(gpu=self.parameters["gpu"], logger=logger)
+        init_ddp(gpu=data_config.gpu, logger=logger)
 
     # def __getattr__(self, name):
     #     """Allow to directly get the values in parameters attribute"""

@@ -24,6 +24,9 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     data_config = DataConfig(task=network_task)
     config_file_name = None
     if kwargs["config_file"]:
+        print("etete")
+        print(kwargs["config_file"])
+        print("etetet")
         config_file_name = Path(kwargs["config_file"])
         data_config.from_config_file(config_file=config_file_name, task=network_task)
 
