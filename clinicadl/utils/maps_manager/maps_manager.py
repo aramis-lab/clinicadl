@@ -21,6 +21,7 @@ from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.utils.cmdline_utils import check_gpu
+from clinicadl.utils.data_handler.data_config import DataConfig
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -51,8 +52,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 class MapsManager:
     def __init__(
         self,
-        maps_path: Path,
-        parameters: Dict[str, Any] = None,
+        data_config: DataConfig,
         verbose: str = "info",
     ):
         """
@@ -66,62 +66,27 @@ class MapsManager:
         verbose: str
             Logging level ("debug", "info", "warning")
         """
-        self.maps_path = maps_path.resolve()
+        self.maps_path = data_config.maps_path.resolve()
         if verbose is not None:
             if verbose not in level_list:
                 raise ValueError(f"verbose value {verbose} must be in {level_list}.")
             setup_logging(level_list.index(verbose))
 
         # Existing MAPS
-        if parameters is None:
-            if not (maps_path / "maps.json").is_file():
-                raise MAPSError(
-                    f"MAPS was not found at {maps_path}."
-                    f"To initiate a new MAPS please give a train_dict."
-                )
-            test_parameters = self.get_parameters()
-            test_parameters = change_str_to_path(test_parameters)
-            self.parameters = add_default_values(test_parameters)
-            self.ssda_network = False  # A MODIFIER
-            self.task_manager = self._init_task_manager(n_classes=self.output_size)
-            self.split_name = (
-                self._check_split_wording()
-            )  # Used only for retro-compatibility
+        if data_config.existing_maps:
+            data_config.check_existing_maps()
 
-        # Initiate MAPS
-        else:
-            self._check_args(parameters)
-            parameters["tsv_path"] = Path(parameters["tsv_path"])
-
-            self.split_name = "split"  # Used only for retro-compatibility
-            if cluster.master:
-                if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                    maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
-                ):
-                    raise MAPSError(
-                        f"You are trying to create a new MAPS at {maps_path} but "
-                        f"this already corresponds to a file or a non-empty folder. \n"
-                        f"Please remove it or choose another location."
-                    )
-                (maps_path / "groups").mkdir(parents=True)
-
-                logger.info(f"A new MAPS was created at {maps_path}")
-
-                self.write_parameters(self.maps_path, self.parameters)
-                self._write_requirements_version()
-
-                self._write_training_data()
-                self._write_train_val_groups()
-                self._write_information()
+        else:  # Initiate MAPS
+            data_config.initiate_maps()
 
         init_ddp(gpu=self.parameters["gpu"], logger=logger)
 
-    def __getattr__(self, name):
-        """Allow to directly get the values in parameters attribute"""
-        if name in self.parameters:
-            return self.parameters[name]
-        else:
-            raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
+    # def __getattr__(self, name):
+    #     """Allow to directly get the values in parameters attribute"""
+    #     if name in self.parameters:
+    #         return self.parameters[name]
+    #     else:
+    #         raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
 
     def train(self, split_list: List[int] = None, overwrite: bool = False):
         """
@@ -2151,14 +2116,6 @@ class MapsManager:
                 f"{possible_selection_metrics_set}."
             )
 
-    def _check_split_wording(self):
-        """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
-
-        if len(list(self.maps_path.glob("fold-*"))) > 0:
-            return "fold"
-        else:
-            return "split"
-
     def _find_splits(self):
         """Find which splits were trained in the MAPS."""
         return [
@@ -2299,57 +2256,6 @@ class MapsManager:
     ###############################
     # File writers                #
     ###############################
-    @staticmethod
-    def write_parameters(json_path: Path, parameters, verbose=True):
-        """Write JSON files of parameters."""
-        logger.debug("Writing parameters...")
-        json_path.mkdir(parents=True, exist_ok=True)
-
-        parameters = change_path_to_str(parameters)
-        # save to json file
-        json_data = json.dumps(parameters, skipkeys=True, indent=4)
-        json_path = json_path / "maps.json"
-        if verbose:
-            logger.info(f"Path of json file: {json_path}")
-        with json_path.open(mode="w") as f:
-            f.write(json_data)
-        parameters = change_str_to_path(parameters)
-
-    def _write_requirements_version(self):
-        """Writes the environment.txt file."""
-        logger.debug("Writing requirement version...")
-        try:
-            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
-                "utf-8"
-            )
-            with (self.maps_path / "environment.txt").open(mode="w") as file:
-                file.write(env_variables)
-        except subprocess.CalledProcessError:
-            logger.warning(
-                "You do not have the right to execute pip freeze. Your environment will not be written"
-            )
-
-    def _write_training_data(self):
-        """Writes the TSV file containing the participant and session IDs used for training."""
-        logger.debug("Writing training data...")
-        from clinicadl.utils.caps_dataset.data import load_data_test
-
-        train_df = load_data_test(
-            self.tsv_path,
-            self.diagnoses,
-            baseline=False,
-            multi_cohort=self.multi_cohort,
-        )
-        train_df = train_df[["participant_id", "session_id"]]
-        if self.transfer_path:
-            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
-            transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
-            transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
-            train_df = pd.concat([train_df, transfer_train_df])
-            train_df.drop_duplicates(inplace=True)
-        train_df.to_csv(
-            self.maps_path / "groups" / "train+validation.tsv", sep="\t", index=False
-        )
 
     def _write_data_group(
         self,
@@ -2391,34 +2297,6 @@ class MapsManager:
             },
         )
 
-    def _write_train_val_groups(self):
-        """Defines the training and validation groups at the initialization"""
-        logger.debug("Writing training and validation groups...")
-        split_manager = self._init_split_manager()
-        for split in split_manager.split_iterator():
-            for data_group in ["train", "validation"]:
-                df = split_manager[split][data_group]
-                group_path = (
-                    self.maps_path
-                    / "groups"
-                    / data_group
-                    / f"{self.split_name}-{split}"
-                )
-                group_path.mkdir(parents=True, exist_ok=True)
-
-                columns = ["participant_id", "session_id", "cohort"]
-                if self.label is not None:
-                    columns.append(self.label)
-                df.to_csv(group_path / "data.tsv", sep="\t", columns=columns)
-                self.write_parameters(
-                    group_path,
-                    {
-                        "caps_directory": self.caps_directory,
-                        "multi_cohort": self.multi_cohort,
-                    },
-                    verbose=False,
-                )
-
     def _write_weights(
         self,
         state: Dict[str, Any],
@@ -2458,38 +2336,6 @@ class MapsManager:
                 if metric_bool:
                     metric_path.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(checkpoint_path, metric_path / best_filename)
-
-    def _write_information(self):
-        """
-        Writes model architecture of the MAPS in MAPS root.
-        """
-        from datetime import datetime
-
-        import clinicadl.utils.network as network_package
-
-        model_class = getattr(network_package, self.architecture)
-        args = list(
-            model_class.__init__.__code__.co_varnames[
-                : model_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        kwargs = dict()
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-        kwargs["gpu"] = False
-
-        model = model_class(**kwargs)
-
-        file_name = "information.log"
-
-        with (self.maps_path / file_name).open(mode="w") as f:
-            f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
-            f.write(f"- Path :\t{self.maps_path}\n\n")
-            # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
-            f.write(f"- Model :\t{model.layers}\n\n")
-
-        del model
 
     def _erase_tmp(self, split):
         """Erase checkpoints of the model and optimizer at the end of training."""
@@ -2789,22 +2635,6 @@ class MapsManager:
 
         return optimizer
 
-    def _init_split_manager(self, split_list=None):
-        from clinicadl.utils import split_manager
-
-        split_class = getattr(split_manager, self.validation)
-        args = list(
-            split_class.__init__.__code__.co_varnames[
-                : split_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        args.remove("split_list")
-        kwargs = {"split_list": split_list}
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-        return split_class(**kwargs)
-
     def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
         # A intégrer directement dans _init_split_manager
         from clinicadl.utils import split_manager
@@ -2825,28 +2655,6 @@ class MapsManager:
         kwargs["tsv_path"] = Path(tsv_dir)
 
         return split_class(**kwargs)
-
-    def _init_task_manager(self, df=None, n_classes=None):
-        from clinicadl.utils.task_manager import (
-            ClassificationManager,
-            ReconstructionManager,
-            RegressionManager,
-        )
-
-        if self.network_task == "classification":
-            if n_classes is not None:
-                return ClassificationManager(self.mode, n_classes=n_classes)
-            else:
-                return ClassificationManager(self.mode, df=df, label=self.label)
-        elif self.network_task == "regression":
-            return RegressionManager(self.mode)
-        elif self.network_task == "reconstruction":
-            return ReconstructionManager(self.mode)
-        else:
-            raise NotImplementedError(
-                f"Task {self.network_task} is not implemented in ClinicaDL. "
-                f"Please choose between classification, regression and reconstruction."
-            )
 
     def _init_profiler(self):
         if self.profiler:
@@ -2934,11 +2742,6 @@ class MapsManager:
             parameters = json.load(f)
         parameters = change_str_to_path(parameters)
         return df, parameters
-
-    def get_parameters(self):
-        """Returns the training parameters dictionary."""
-        json_path = self.maps_path / "maps.json"
-        return read_json(json_path)
 
     def get_model(
         self, split: int = 0, selection_metric: str = None, network: int = None

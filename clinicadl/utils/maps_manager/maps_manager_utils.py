@@ -218,9 +218,7 @@ def change_str_to_path(
     return toml_dict
 
 
-def change_path_to_str(
-    toml_dict: Dict[str, Dict[str, Any]]
-) -> Dict[str, Dict[str, Any]]:
+def change_path_to_str(toml_dict):
     """
     For all paths in the dictionnary, it changes the type from pathlib.Path to str.
 
