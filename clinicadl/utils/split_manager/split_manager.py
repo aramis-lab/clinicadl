@@ -254,6 +254,7 @@ class SplitManager:
 
     @staticmethod
     def _check_tsv_path(tsv_path, multi_cohort):
+        tsv_path = Path(tsv_path)
         if multi_cohort:
             if not tsv_path.suffix == ".tsv":
                 raise ClinicaDLArgumentError(

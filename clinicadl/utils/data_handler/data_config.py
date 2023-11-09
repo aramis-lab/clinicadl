@@ -263,6 +263,170 @@ class DataConfig(dict):
         else:
             return "split"
 
+    # Objects initialization      #
+    ###############################
+    def _init_model(
+        self,
+        transfer_path: Path = None,
+        transfer_selection=None,
+        nb_unfrozen_layer=0,
+        split=None,
+        resume=False,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Instantiate the model
+
+        Args:
+            transfer_path (str): path to a MAPS in which a model's weights are used for transfer learning.
+            transfer_selection (str): name of the metric used to find the source model.
+            split (int): Index of the split (only used if transfer_path is not None of not resume).
+            resume (bool): If True initialize the network with the checkpoint weights.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network trained (used in multi-network setting only).
+        """
+        import clinicadl.utils.network as network_package
+
+        logger.debug(f"Initialization of model {self.architecture}")
+        # or choose to implement a dictionary
+        model_class = getattr(network_package, self.architecture)
+        args = list(
+            model_class.__init__.__code__.co_varnames[
+                : model_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        kwargs = dict()
+        for arg in args:
+            kwargs[arg] = self.__dict__[arg]
+
+        # Change device from the training parameters
+        if gpu is not None:
+            kwargs["gpu"] = gpu
+
+        model = model_class(**kwargs)
+        logger.debug(f"Model:\n{model.layers}")
+        device = model.device
+        logger.info(f"Working on {device}")
+        current_epoch = 0
+
+        if resume:
+            checkpoint_path = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / "tmp"
+                / "checkpoint.pth.tar"
+            )
+            checkpoint_state = torch.load(checkpoint_path, map_location=device)
+            model.load_state_dict(checkpoint_state["model"])
+            current_epoch = checkpoint_state["epoch"]
+        elif transfer_path:
+            logger.debug(f"Transfer weights from MAPS at {transfer_path}")
+            transfer_maps = MapsManager(transfer_path)
+            transfer_state = transfer_maps.get_state_dict(
+                split,
+                selection_metric=transfer_selection,
+                network=network,
+                map_location=model.device,
+            )
+            transfer_class = getattr(network_package, transfer_maps.architecture)
+            logger.debug(f"Transfer from {transfer_class}")
+            model.transfer_weights(transfer_state["model"], transfer_class)
+
+            if nb_unfrozen_layer != 0:
+                list_name = [name for (name, _) in model.named_parameters()]
+                list_param = [param for (_, param) in model.named_parameters()]
+
+                for param, _ in zip(list_param, list_name):
+                    param.requires_grad = False
+
+                for i in range(nb_unfrozen_layer * 2):  # Unfreeze the last layers
+                    param = list_param[len(list_param) - i - 1]
+                    name = list_name[len(list_name) - i - 1]
+                    param.requires_grad = True
+                    logger.info(f"Layer {name} unfrozen {param.requires_grad}")
+
+        return model, current_epoch
+
+    def _init_optimizer(self, model, split=None, resume=False):
+        """Initialize the optimizer and use checkpoint weights if resume is True."""
+
+        optimizer_cls = getattr(torch.optim, self.optimizer)
+        parameters = filter(lambda x: x.requires_grad, model.parameters())
+        optimizer_kwargs = dict(
+            lr=self.learning_rate,
+            weight_decay=self.weight_decay,
+        )
+
+        if not self.fully_sharded_data_parallel:
+            optimizer = optimizer_cls(parameters, **optimizer_kwargs)
+        else:
+            from torch.distributed.optim import ZeroRedundancyOptimizer
+
+            optimizer = ZeroRedundancyOptimizer(
+                parameters, optimizer_class=optimizer_cls, **optimizer_kwargs
+            )
+
+        if resume:
+            checkpoint_path = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / "tmp"
+                / "optimizer.pth.tar"
+            )
+            checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
+            optimizer.load_state_dict(checkpoint_state["optimizer"])
+
+        return optimizer
+
+    def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
+        # A intégrer directement dans _init_split_manager
+        from clinicadl.utils import split_manager
+
+        split_class = getattr(split_manager, self.validation)
+        args = list(
+            split_class.__init__.__code__.co_varnames[
+                : split_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        args.remove("split_list")
+        kwargs = {"split_list": split_list}
+        for arg in args:
+            kwargs[arg] = self.parameters[arg]
+
+        kwargs["caps_directory"] = Path(caps_dir)
+        kwargs["tsv_path"] = Path(tsv_dir)
+
+        return split_class(**kwargs)
+
+    def _init_profiler(self):
+        if self.profiler:
+            from clinicadl.utils.maps_manager.cluster.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            dist.broadcast_object_list(filename, src=0)
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
+
     def _init_task_manager(self, df=None, n_classes=None):
         from clinicadl.utils.task_manager import (
             ClassificationManager,
@@ -337,6 +501,7 @@ class DataConfig(dict):
             self._write_training_data()
             self._write_train_val_groups()
             self._write_information()
+            self.task_manager = task_manager
 
     def write_parameters(self, verbose=True):
         """Write JSON files of parameters."""
