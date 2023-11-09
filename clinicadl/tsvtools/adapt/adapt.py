@@ -67,10 +67,12 @@ def adapt(old_tsv_dir: Path, new_tsv_dir: Path, subset_name="labels", labels_lis
             df_all, df_baseline = concat_files(path, df_baseline, df_all)
 
     if not df_all.empty:
-        df_all.to_csv(str(new_tsv_dir / (subset_name + ".tsv")), sep="\t")
+        df_all.to_csv(str(new_tsv_dir / (subset_name + ".tsv")), sep="\t", index=False)
 
     if not df_baseline.empty:
-        df_baseline.to_csv(str(new_tsv_dir / (subset_name + "_baseline.tsv")), sep="\t")
+        df_baseline.to_csv(
+            str(new_tsv_dir / (subset_name + "_baseline.tsv")), sep="\t", index=False
+        )
 
     if (old_tsv_dir / "split.json") in files_list:
         new_split_dir = new_tsv_dir / "split"
