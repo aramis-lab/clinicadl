@@ -1126,7 +1126,6 @@ class MapsManager:
         profiler = self._init_profiler()
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
-
             # self.callback_handler.on_epoch_begin(self.parameters, epoch = epoch)
 
             if isinstance(train_loader.sampler, DistributedSampler):

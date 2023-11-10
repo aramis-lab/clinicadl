@@ -178,7 +178,6 @@ class LoggerCallback(Callback):
         logger.info(f"Beginning epoch {kwargs['epoch']}.")
 
     def on_epoch_end(self, parameters, **kwargs):
-
         logger.info(
             f"{kwargs['mode']} level training loss is {kwargs['metrics_train']['loss']} "
             f"at the end of iteration {kwargs['i']}"
@@ -189,7 +188,6 @@ class LoggerCallback(Callback):
         )
 
     def on_train_end(self, parameters, **kwargs):
-
         logger.info("tests")
 
 
