@@ -1093,7 +1093,11 @@ class MapsManager:
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         self.callback_handler.on_train_begin(
-            self.parameters, criterion=criterion, optimizer=optimizer, split=split
+            self.parameters,
+            criterion=criterion,
+            optimizer=optimizer,
+            split=split,
+            maps_path=self.maps_path,
         )
 
         model.train()
@@ -1123,7 +1127,7 @@ class MapsManager:
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
 
-            self.callback_handler.on_epoch_begin(self.parameters, epoch=epoch)
+            # self.callback_handler.on_epoch_begin(self.parameters, epoch = epoch)
 
             if isinstance(train_loader.sampler, DistributedSampler):
                 # It should always be true for a random sampler. But just in case

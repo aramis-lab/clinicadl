@@ -130,31 +130,31 @@ class Tracker(Callback):
             from clinicadl.utils.tracking_exp import WandB_handler
 
             self.run = WandB_handler(
-                kwargs["split"], parameters, parameters["maps_path"].name
+                kwargs["split"], parameters, kwargs["maps_path"].name
             )
 
         if parameters["track_exp"] == "mlflow":
             from clinicadl.utils.tracking_exp import Mlflow_handler
 
             self.run = Mlflow_handler(
-                kwargs["split"], parameters, parameters["maps_path"].name
+                kwargs["split"], parameters, kwargs["maps_path"].name
             )
 
     def on_epoch_end(self, parameters, **kwargs):
-        if self.track_exp == "wandb":
+        if parameters["track_exp"] == "wandb":
             self.run.log_metrics(
                 self.run._wandb,
-                self.track_exp,
-                self.network_task,
+                parameters["track_exp"],
+                parameters["network_task"],
                 kwargs["metrics_train"],
                 kwargs["metrics_valid"],
             )
 
-        if self.track_exp == "mlflow":
+        if parameters["track_exp"] == "mlflow":
             self.run.log_metrics(
                 self.run._mlflow,
-                self.track_exp,
-                self.network_task,
+                parameters["track_exp"],
+                parameters["network_task"],
                 kwargs["metrics_train"],
                 kwargs["metrics_valid"],
             )
@@ -184,7 +184,7 @@ class LoggerCallback(Callback):
             f"at the end of iteration {kwargs['i']}"
         )
         logger.info(
-            f"{kwargs['mode']} level validation loss is {kwargs['metrics_validation']['loss']} "
+            f"{kwargs['mode']} level validation loss is {kwargs['metrics_valid']['loss']} "
             f"at the end of iteration {kwargs['i']}"
         )
 
