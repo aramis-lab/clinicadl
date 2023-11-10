@@ -14,4 +14,4 @@ def train(
     maps_manager = MapsManager(data_config, verbose=None)
 
     print("test pass")
-    maps_manager.train(data_config, overwrite=erase_existing)
+    maps_manager.train(overwrite=erase_existing)

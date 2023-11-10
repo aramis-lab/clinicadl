@@ -321,7 +321,10 @@ class DataConfig(dict):
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
-        elif transfer_path:
+        elif self.transfer_path:
+            print(self.transfer_path)
+            from clinicadl.utils.maps_manager.maps_manager import MapsManager
+
             logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(

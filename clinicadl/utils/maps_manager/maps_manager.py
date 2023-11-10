@@ -62,6 +62,7 @@ class MapsManager:
             Logging level ("debug", "info", "warning")
         """
         self.maps_path = data_config.maps_path.resolve()
+
         if verbose is not None:
             if verbose not in level_list:
                 raise ValueError(f"verbose value {verbose} must be in {level_list}.")
@@ -75,6 +76,7 @@ class MapsManager:
             data_config.initiate_maps()
 
         init_ddp(gpu=data_config.gpu, logger=logger)
+        self.data_config = data_config
 
     # def __getattr__(self, name):
     #     """Allow to directly get the values in parameters attribute"""
@@ -83,7 +85,7 @@ class MapsManager:
     #     else:
     #         raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
 
-    def train(self, data_config: DataConfig, overwrite: bool = False):
+    def train(self, overwrite: bool = False):
         """
         Performs the training task for a defined list of splits
 
@@ -96,12 +98,12 @@ class MapsManager:
         Raises:
             MAPSError: If splits specified in input already exist and overwrite is False.
         """
-        data_config.change_str_to_path()
+        self.data_config.change_str_to_path()
         existing_splits = []
-        split_list = data_config.__dict__.pop("split")
-        split_manager = data_config._init_split_manager(split_list)
+        split_list = self.data_config.__dict__.pop("split")
+        split_manager = self.data_config._init_split_manager(split_list)
         for split in split_manager.split_iterator():
-            split_path = self.maps_path / f"{data_config.split_name}-{split}"
+            split_path = self.maps_path / f"{self.data_config.split_name}-{split}"
             if split_path.is_dir():
                 if overwrite:
                     if cluster.master:
@@ -116,16 +118,16 @@ class MapsManager:
                 f"or use overwrite to erase previously trained splits."
             )
 
-        self._init_callbacks(data_config)
+        self._init_callbacks()
 
-        if data_config.multi_network:
+        if self.data_config.multi_network:
             self._train_multi(split_list, resume=False)
-        elif data_config.ssda_network:
+        elif self.data_config.ssda_network:
             self._train_ssda(split_list, resume=False)
         else:
-            self._train_single(data_config, split_list, resume=False)
+            self._train_single(split_list, resume=False)
 
-    def resume(self, data_config: DataConfig):
+    def resume(self):
         """
         Resumes the training task for a defined list of splits.
 
@@ -137,12 +139,12 @@ class MapsManager:
             MAPSError: If splits specified in input do not exist.
         """
         missing_splits = []
-        split_list = data_config.__dict__.pop("split")
-        split_manager = self._init_split_manager(split_list)
+        split_list = self.data_config.__dict__.pop("split")
+        split_manager = self.data_config._init_split_manager(split_list)
 
         for split in split_manager.split_iterator():
             if not (
-                self.maps_path / f"{data_config.split_name}-{split}" / "tmp"
+                self.maps_path / f"{self.data_config.split_name}-{split}" / "tmp"
             ).is_dir():
                 missing_splits.append(split)
 
@@ -152,16 +154,15 @@ class MapsManager:
                 f"Please try train command on these splits and resume only others."
             )
 
-        if data_config.multi_network:
+        if self.data_config.multi_network:
             self._train_multi(split_list, resume=True)
-        elif data_config.ssda_network:
+        elif self.data_config.ssda_network:
             self._train_ssda(split_list, resume=True)
         else:
             self._train_single(split_list, resume=True)
 
     def predict(
         self,
-        data_config: DataConfig,
         data_group: str,
         # caps_directory: Path = None,
         # tsv_path: Path = None,
@@ -211,36 +212,40 @@ class MapsManager:
         logger.debug(f"List of splits {split_list}")
 
         _, all_transforms = get_transforms(
-            normalize=data_config.normalize,
-            data_augmentation=data_config.data_augmentation,
-            size_reduction=data_config.size_reduction,
-            size_reduction_factor=data_config.size_reduction_factor,
+            normalize=self.data_config.normalize,
+            data_augmentation=self.data_config.data_augmentation,
+            size_reduction=self.data_config.size_reduction,
+            size_reduction_factor=self.data_config.size_reduction_factor,
         )
 
         group_df = None
-        if data_config.tsv_path is not None:
+        if self.data_config.tsv_path is not None:
             group_df = load_data_test(
-                data_config.tsv_path,
-                data_config.diagnoses
-                if len(data_config.diagnoses) != 0
-                else data_config.diagnoses,
-                multi_cohort=data_config.multi_cohort,
+                self.data_config.tsv_path,
+                self.data_config.diagnoses
+                if len(self.data_config.diagnoses) != 0
+                else self.data_config.diagnoses,
+                multi_cohort=self.data_config.multi_cohort,
             )
-        criterion = data_config.task_manager.get_criterion(data_config.loss)
+        criterion = self.data_config.task_manager.get_criterion(self.data_config.loss)
         self._check_data_group(
             data_group,
             group_df,
-            data_config,
+            self.data_config,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(data_group, split)
             # Find label code if not given
-            if label is not None and label != self.label and label_code == "default":
-                self.task_manager.generate_label_code(group_df, label)
+            if (
+                self.data_config.label is not None
+                and self.data_config.label != self.data_config.label
+                and self.data_config.label_code == "default"
+            ):
+                self.task_manager.generate_label_code(group_df, self.data_config.label)
 
             # Erase previous TSV files on master process
-            if not selection_metrics:
+            if not self.data_config.selection_metrics:
                 split_selection_metrics = self._find_selection_metrics(split)
             else:
                 split_selection_metrics = selection_metrics
@@ -603,7 +608,7 @@ class MapsManager:
     ###################################
     # High-level functions templates  #
     ###################################
-    def _train_single(self, data_config: DataConfig, split_list=None, resume=False):
+    def _train_single(self, split_list=None, resume=False):
         """
         Trains a single CNN for all inputs.
 
@@ -612,56 +617,58 @@ class MapsManager:
             resume (bool): If True the job is resumed from checkpoint.
         """
         train_transforms, all_transforms = get_transforms(
-            normalize=data_config.normalize,
-            data_augmentation=data_config.data_augmentation,
-            size_reduction=data_config.size_reduction,
-            size_reduction_factor=data_config.size_reduction_factor,
+            normalize=self.data_config.normalize,
+            data_augmentation=self.data_config.data_augmentation,
+            size_reduction=self.data_config.size_reduction,
+            size_reduction_factor=self.data_config.size_reduction_factor,
         )
-        split_manager = data_config._init_split_manager(split_list)
+        split_manager = self.data_config._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(
-                data_config.seed, data_config.deterministic, data_config.compensation
+                self.data_config.seed,
+                self.data_config.deterministic,
+                self.data_config.compensation,
             )
 
             split_df_dict = split_manager[split]
 
             logger.debug("Loading training data...")
             data_train = return_dataset(
-                data_config.caps_directory,
+                self.data_config.caps_directory,
                 split_df_dict["train"],
-                data_config.preprocessing_dict,
+                self.data_config.preprocessing_dict,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
-                multi_cohort=data_config.multi_cohort,
-                label=data_config.label,
-                label_code=data_config.label_code,
+                multi_cohort=self.data_config.multi_cohort,
+                label=self.data_config.label,
+                label_code=self.data_config.label_code,
             )
             logger.debug("Loading validation data...")
             data_valid = return_dataset(
-                data_config.caps_directory,
+                self.data_config.caps_directory,
                 split_df_dict["validation"],
-                data_config.preprocessing_dict,
+                self.data_config.preprocessing_dict,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
-                multi_cohort=data_config.multi_cohort,
-                label=data_config.label,
-                label_code=data_config.label_code,
+                multi_cohort=self.data_config.multi_cohort,
+                label=self.data_config.label,
+                label_code=self.data_config.label_code,
             )
-            train_sampler = data_config.task_manager.generate_sampler(
+            train_sampler = self.data_config.task_manager.generate_sampler(
                 data_train,
-                data_config.sampler,
+                self.data_config.sampler,
                 dp_degree=cluster.world_size,
                 rank=cluster.rank,
             )
             logger.debug(
-                f"Getting train and validation loader with batch size {data_config.batch_size}"
+                f"Getting train and validation loader with batch size {self.data_config.batch_size}"
             )
             train_loader = DataLoader(
                 data_train,
-                batch_size=data_config.batch_size,
+                batch_size=self.data_config.batch_size,
                 sampler=train_sampler,
-                num_workers=data_config.n_proc,
+                num_workers=self.data_config.n_proc,
                 worker_init_fn=pl_worker_init_function,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
@@ -673,9 +680,9 @@ class MapsManager:
             )
             valid_loader = DataLoader(
                 data_valid,
-                batch_size=data_config.batch_size,
+                batch_size=self.data_config.batch_size,
                 shuffle=False,
-                num_workers=data_config.n_proc,
+                num_workers=self.data_config.n_proc,
                 sampler=valid_sampler,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
@@ -685,7 +692,6 @@ class MapsManager:
                 train_loader,
                 valid_loader,
                 split,
-                data_config,
                 resume=resume,
                 callbacks=[CodeCarbonTracker],
             )
@@ -694,12 +700,12 @@ class MapsManager:
                 self._ensemble_prediction(
                     "train",
                     split,
-                    data_config.selection_metrics,
+                    self.data_config.selection_metrics,
                 )
                 self._ensemble_prediction(
                     "validation",
                     split,
-                    data_config.selection_metrics,
+                    self.data_config.selection_metrics,
                 )
 
                 self._erase_tmp(split)
@@ -713,16 +719,20 @@ class MapsManager:
             resume: If True the job is resumed from checkpoint.
         """
         train_transforms, all_transforms = get_transforms(
-            normalize=self.normalize,
-            data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
-            size_reduction_factor=self.size_reduction_factor,
+            normalize=self.data_config.normalize,
+            data_augmentation=self.data_config.data_augmentation,
+            size_reduction=self.data_config.size_reduction,
+            size_reduction_factor=self.data_config.size_reduction_factor,
         )
 
-        split_manager = self._init_split_manager(split_list)
+        split_manager = self.data_config._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
-            seed_everything(self.seed, self.deterministic, self.compensation)
+            seed_everything(
+                self.data_config.seed,
+                self.data_config.deterministic,
+                self.data_config.compensation,
+            )
 
             split_df_dict = split_manager[split]
 
@@ -733,7 +743,7 @@ class MapsManager:
                     for network_folder in list(
                         (
                             self.maps_path
-                            / f"{self.split_name}-{split}"
+                            / f"{self.data_config.split_name}-{split}"
                             / "training_logs"
                         ).iterdir()
                     )
@@ -743,43 +753,43 @@ class MapsManager:
                     first_network += 1
                     resume = False
 
-            for network in range(first_network, self.num_networks):
+            for network in range(first_network, self.data_config.num_networks):
                 logger.info(f"Train network {network}")
 
                 data_train = return_dataset(
-                    self.caps_directory,
+                    self.data_config.caps_directory,
                     split_df_dict["train"],
-                    self.preprocessing_dict,
+                    self.data_config.preprocessing_dict,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
-                    multi_cohort=self.multi_cohort,
-                    label=self.label,
-                    label_code=self.label_code,
+                    multi_cohort=self.data_config.multi_cohort,
+                    label=self.data_config.label,
+                    label_code=self.data_config.label_code,
                     cnn_index=network,
                 )
                 data_valid = return_dataset(
-                    self.caps_directory,
+                    self.data_config.caps_directory,
                     split_df_dict["validation"],
-                    self.preprocessing_dict,
+                    self.data_config.preprocessing_dict,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
-                    multi_cohort=self.multi_cohort,
-                    label=self.label,
-                    label_code=self.label_code,
+                    multi_cohort=self.data_config.multi_cohort,
+                    label=self.data_config.label,
+                    label_code=self.data_config.label_code,
                     cnn_index=network,
                 )
 
                 train_sampler = self.task_manager.generate_sampler(
                     data_train,
-                    self.sampler,
+                    self.data_config.sampler,
                     dp_degree=cluster.world_size,
                     rank=cluster.rank,
                 )
                 train_loader = DataLoader(
                     data_train,
-                    batch_size=self.batch_size,
+                    batch_size=self.data_config.batch_size,
                     sampler=train_sampler,
-                    num_workers=self.n_proc,
+                    num_workers=self.data_config.n_proc,
                     worker_init_fn=pl_worker_init_function,
                 )
 
@@ -791,9 +801,9 @@ class MapsManager:
                 )
                 valid_loader = DataLoader(
                     data_valid,
-                    batch_size=self.batch_size,
+                    batch_size=self.data_config.batch_size,
                     shuffle=False,
-                    num_workers=self.n_proc,
+                    num_workers=self.data_config.n_proc,
                     sampler=valid_sampler,
                 )
                 from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
@@ -812,12 +822,12 @@ class MapsManager:
                 self._ensemble_prediction(
                     "train",
                     split,
-                    self.selection_metrics,
+                    self.data_config.selection_metrics,
                 )
                 self._ensemble_prediction(
                     "validation",
                     split,
-                    self.selection_metrics,
+                    self.data_config.selection_metrics,
                 )
 
                 self._erase_tmp(split)
@@ -1035,7 +1045,6 @@ class MapsManager:
         train_loader,
         valid_loader,
         split,
-        data_config: DataConfig,
         network=None,
         resume=False,
         callbacks=[],
@@ -1050,62 +1059,68 @@ class MapsManager:
             network (int): Index of the network trained (used in multi-network setting only).
             resume (bool): If True the job is resumed from the checkpoint.
         """
-        self.callback_handler.on_train_begin(data_config)
-        model, beginning_epoch = data_config._init_model(
+        self.callback_handler.on_train_begin(self.data_config)
+        model, beginning_epoch = self.data_config._init_model(
             split=split,
             resume=resume,
-            transfer_path=data_config.transfer_path,
-            transfer_selection=data_config.transfer_selection_metric,
-            nb_unfrozen_layer=data_config.nb_unfrozen_layer,
+            transfer_path=self.data_config.transfer_path,
+            transfer_selection=self.data_config.transfer_selection_metric,
+            nb_unfrozen_layer=self.data_config.nb_unfrozen_layer,
         )
         model = DDP(model)
-        criterion = data_config.task_manager.get_criterion(data_config.loss)
+        criterion = self.data_config.task_manager.get_criterion(self.data_config.loss)
 
-        logger.info(f"Criterion for {data_config.network_task} is {criterion}")
+        logger.info(f"Criterion for {self.data_config.network_task} is {criterion}")
 
-        optimizer = data_config._init_optimizer(model, split=split, resume=resume)
+        optimizer = self.data_config._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is {optimizer}")
 
         model.train()
         train_loader.dataset.train()
 
         early_stopping = EarlyStopping(
-            "min", min_delta=data_config.tolerance, patience=data_config.patience
+            "min",
+            min_delta=self.data_config.tolerance,
+            patience=self.data_config.patience,
         )
         metrics_valid = {"loss": None}
 
         if cluster.master:
             log_writer = LogWriter(
-                data_config.maps_path,
-                data_config.task_manager.evaluation_metrics + ["loss"],
+                self.data_config.maps_path,
+                self.data_config.task_manager.evaluation_metrics + ["loss"],
                 split,
                 resume=resume,
                 beginning_epoch=beginning_epoch,
                 network=network,
             )
             retain_best = RetainBest(
-                selection_metrics=list(data_config.selection_metrics)
+                selection_metrics=list(self.data_config.selection_metrics)
             )
         epoch = beginning_epoch
 
-        retain_best = RetainBest(selection_metrics=list(data_config.selection_metrics))
+        retain_best = RetainBest(
+            selection_metrics=list(self.data_config.selection_metrics)
+        )
 
-        scaler = GradScaler(enabled=data_config.amp)
-        profiler = data_config._init_profiler()
+        scaler = GradScaler(enabled=self.data_config.amp)
+        profiler = self.data_config._init_profiler()
 
-        if data_config.track_exp == "wandb":
+        if self.data_config.track_exp == "wandb":
             from clinicadl.utils.tracking_exp import WandB_handler
 
-            run = WandB_handler(split, data_config.__dict__, data_config.maps_path.name)
+            run = WandB_handler(
+                split, self.data_config.__dict__, self.data_config.maps_path.name
+            )
 
-        if data_config.track_exp == "mlflow":
+        if self.data_config.track_exp == "mlflow":
             from clinicadl.utils.tracking_exp import Mlflow_handler
 
             run = Mlflow_handler(
-                split, data_config.__dict__, data_config.maps_path.name
+                split, self.data_config.__dict__, self.data_config.maps_path.name
             )
 
-        while epoch < data_config.epochs and not early_stopping.step(
+        while epoch < self.data_config.epochs and not early_stopping.step(
             metrics_valid["loss"]
         ):
             logger.info(f"Beginning epoch {epoch}.")
@@ -1121,10 +1136,10 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-                    update: bool = (i + 1) % data_config.accumulation_steps == 0
+                    update: bool = (i + 1) % self.data_config.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
-                        with autocast(enabled=data_config.amp):
+                        with autocast(enabled=self.data_config.amp):
                             _, loss_dict = model(data, criterion)
                         logger.debug(f"Train loss dictionnary {loss_dict}")
                         loss = loss_dict["loss"]
@@ -1140,16 +1155,16 @@ class MapsManager:
 
                         # Evaluate the model only when no gradients are accumulated
                         if (
-                            data_config.evaluation_steps != 0
-                            and (i + 1) % data_config.evaluation_steps == 0
+                            self.data_config.evaluation_steps != 0
+                            and (i + 1) % self.data_config.evaluation_steps == 0
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = data_config.task_manager.test(
-                                model, train_loader, criterion, amp=data_config.amp
+                            _, metrics_train = self.data_config.task_manager.test(
+                                model, train_loader, criterion, amp=self.data_config.amp
                             )
-                            _, metrics_valid = data_config.task_manager.test(
-                                model, valid_loader, criterion, amp=data_config.amp
+                            _, metrics_valid = self.data_config.task_manager.test(
+                                model, valid_loader, criterion, amp=self.data_config.amp
                             )
 
                             model.train()
@@ -1164,11 +1179,11 @@ class MapsManager:
                                     len(train_loader),
                                 )
                             logger.info(
-                                f"{data_config.mode} level training loss is {metrics_train['loss']} "
+                                f"{self.data_config.mode} level training loss is {metrics_train['loss']} "
                                 f"at the end of iteration {i}"
                             )
                             logger.info(
-                                f"{data_config.mode} level validation loss is {metrics_valid['loss']} "
+                                f"{self.data_config.mode} level validation loss is {metrics_valid['loss']} "
                                 f"at the end of iteration {i}"
                             )
 
@@ -1181,15 +1196,15 @@ class MapsManager:
                     )
 
                 # If no evaluation has been performed, warn the user
-                elif evaluation_flag and data_config.evaluation_steps != 0:
+                elif evaluation_flag and self.data_config.evaluation_steps != 0:
                     logger.warning(
-                        f"Your evaluation steps {data_config.evaluation_steps} are too big "
+                        f"Your evaluation steps {self.data_config.evaluation_steps} are too big "
                         f"compared to the size of the dataset. "
                         f"The model is evaluated only once at the end epochs."
                     )
 
                 # Update weights one last time if gradients were computed without update
-                if (i + 1) % data_config.accumulation_steps != 0:
+                if (i + 1) % self.data_config.accumulation_steps != 0:
                     scaler.step(optimizer)
                     scaler.update()
                     optimizer.zero_grad(set_to_none=True)
@@ -1198,11 +1213,11 @@ class MapsManager:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = data_config.task_manager.test(
-                    model, train_loader, criterion, amp=data_config.amp
+                _, metrics_train = self.data_config.task_manager.test(
+                    model, train_loader, criterion, amp=self.data_config.amp
                 )
-                _, metrics_valid = data_config.task_manager.test(
-                    model, valid_loader, criterion, amp=data_config.amp
+                _, metrics_valid = self.data_config.task_manager.test(
+                    model, valid_loader, criterion, amp=self.data_config.amp
                 )
 
                 model.train()
@@ -1213,55 +1228,55 @@ class MapsManager:
                         epoch, i, metrics_train, metrics_valid, len(train_loader)
                     )
                 logger.info(
-                    f"{data_config.mode} level training loss is {metrics_train['loss']} "
+                    f"{self.data_config.mode} level training loss is {metrics_train['loss']} "
                     f"at the end of iteration {i}"
                 )
                 logger.info(
-                    f"{data_config.mode} level validation loss is {metrics_valid['loss']} "
+                    f"{self.data_config.mode} level validation loss is {metrics_valid['loss']} "
                     f"at the end of iteration {i}"
                 )
 
-                if data_config.track_exp == "wandb":
+                if self.data_config.track_exp == "wandb":
                     run.log_metrics(
                         run._wandb,
-                        data_config.track_exp,
-                        data_config.network_task,
+                        self.data_config.track_exp,
+                        self.data_config.network_task,
                         metrics_train,
                         metrics_valid,
                     )
 
-                if data_config.track_exp == "mlflow":
+                if self.data_config.track_exp == "mlflow":
                     run.log_metrics(
                         run._mlflow,
-                        data_config.track_exp,
-                        data_config.network_task,
+                        self.data_config.track_exp,
+                        self.data_config.network_task,
                         metrics_train,
                         metrics_valid,
                     )
 
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             logger.info(
-                f"{data_config.mode} level training loss is {metrics_train['loss']} "
+                f"{self.data_config.mode} level training loss is {metrics_train['loss']} "
                 f"at the end of iteration {i}"
             )
             logger.info(
-                f"{data_config.mode} level validation loss is {metrics_valid['loss']} "
+                f"{self.data_config.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
-            if data_config.track_exp == "wandb":
+            if self.data_config.track_exp == "wandb":
                 run.log_metrics(
                     run._wandb,
-                    data_config.track_exp,
-                    data_config.network_task,
+                    self.data_config.track_exp,
+                    self.data_config.network_task,
                     metrics_train,
                     metrics_valid,
                 )
 
-            if data_config.track_exp == "mlflow":
+            if self.data_config.track_exp == "mlflow":
                 run.log_metrics(
                     run._mlflow,
-                    data_config.track_exp,
-                    data_config.network_task,
+                    self.data_config.track_exp,
+                    self.data_config.network_task,
                     metrics_train,
                     metrics_valid,
                 )
@@ -1269,20 +1284,24 @@ class MapsManager:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
                 self._write_weights(
+                    self.data_config.split_name,
+                    self.data_config.maps_path,
                     {
                         "model": model.state_dict(),
                         "epoch": epoch,
-                        "name": data_config.architecture,
+                        "name": self.data_config.architecture,
                     },
                     best_dict,
                     split,
                     network=network,
                 )
                 self._write_weights(
+                    self.data_config.split_name,
+                    self.data_config.maps_path,
                     {
                         "optimizer": optimizer.state_dict(),
                         "epoch": epoch,
-                        "name": data_config.optimizer,
+                        "name": self.data_config.optimizer,
                     },
                     None,
                     split,
@@ -1291,10 +1310,10 @@ class MapsManager:
 
             epoch += 1
 
-        if data_config.track_exp == "mlflow":
+        if self.data_config.track_exp == "mlflow":
             run._mlflow.end_run()
 
-        if data_config.track_exp == "wandb":
+        if self.data_config.track_exp == "wandb":
             run._wandb.finish()
 
         del model
@@ -1303,8 +1322,7 @@ class MapsManager:
             criterion,
             "train",
             split,
-            data_config.selection_metrics,
-            amp=data_config.amp,
+            self.data_config.selection_metrics,
             network=network,
         )
         self._test_loader(
@@ -1312,17 +1330,16 @@ class MapsManager:
             criterion,
             "validation",
             split,
-            data_config.selection_metrics,
-            amp=data_config.amp,
+            self.data_config.selection_metrics,
             network=network,
         )
 
-        if data_config.task_manager.save_outputs:
+        if self.data_config.task_manager.save_outputs:
             self._compute_output_tensors(
                 train_loader.dataset,
                 "train",
                 split,
-                data_config.selection_metrics,
+                self.data_config.selection_metrics,
                 nb_images=1,
                 network=network,
             )
@@ -1330,11 +1347,11 @@ class MapsManager:
                 train_loader.dataset,
                 "validation",
                 split,
-                data_config.selection_metrics,
+                self.data_config.selection_metrics,
                 nb_images=1,
                 network=network,
             )
-        self.callback_handler.on_train_end(data_config)
+        self.callback_handler.on_train_end(self.data_config)
 
     def _train_ssdann(
         self,
@@ -1670,8 +1687,8 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
-        gpu=None,
-        amp=False,
+        # gpu=None,
+        # amp=False,
         network=None,
     ):
         """
@@ -1691,8 +1708,8 @@ class MapsManager:
         for selection_metric in selection_metrics:
             if cluster.master:
                 log_dir = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
+                    self.data_config.maps_path
+                    / f"{self.data_config.split_name}-{split}"
                     / f"best-{selection_metric}"
                     / data_group
                 )
@@ -1704,23 +1721,27 @@ class MapsManager:
                 )
 
             # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.maps_path,
+            model, _ = self.data_config._init_model(
+                transfer_path=self.data_config.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=gpu,
+                gpu=self.data_config.gpu,
                 network=network,
             )
             model = DDP(model)
 
-            prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+            prediction_df, metrics = self.data_config.task_manager.test(
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=self.data_config.amp,
             )
             if use_labels:
                 if network is not None:
-                    metrics[f"{self.mode}_id"] = network
+                    metrics[f"{self.data_config.mode}_id"] = network
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.data_config.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -2016,14 +2037,14 @@ class MapsManager:
 
         for selection_metric in selection_metrics:
             # Soft voting
-            if self.num_networks > 1:
+            if self.data_config.num_networks > 1:
                 self._ensemble_to_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
                 )
-            elif self.mode != "image":
+            elif self.data_config.mode != "image":
                 self._mode_to_image_tsv(
                     split,
                     selection=selection_metric,
@@ -2137,7 +2158,7 @@ class MapsManager:
     def _find_selection_metrics(self, split):
         """Find which selection metrics are available in MAPS for a given split."""
 
-        split_path = self.maps_path / f"{self.split_name}-{split}"
+        split_path = self.maps_path / f"{self.data_config.split_name}-{split}"
         if not split_path.is_dir():
             raise MAPSError(
                 f"Training of split {split} was not performed."
@@ -2196,7 +2217,6 @@ class MapsManager:
 
     def _check_data_group(
         self,
-        data_config: DataConfig,
         data_group,
         # caps_directory=None,
         df=None,
@@ -2225,7 +2245,7 @@ class MapsManager:
         group_dir = self.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if data_config.overwrite:
+            if self.data_config.overwrite:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
@@ -2235,14 +2255,14 @@ class MapsManager:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
                             results_path = (
-                                data_config.maps_path
-                                / f"{data_config.split_name}-{split}"
+                                self.data_config.maps_path
+                                / f"{self.data_config.split_name}-{split}"
                                 / f"best-{selection}"
                                 / data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
-            elif df is not None or data_config.caps_directory is not None:
+            elif df is not None or self.data_config.caps_directory is not None:
                 raise ClinicaDLArgumentError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
@@ -2250,7 +2270,7 @@ class MapsManager:
                 )
 
         if not group_dir.is_dir() and (
-            data_config.caps_directory is None or df is None
+            self.data_config.caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
                 f"The data group {data_group} does not already exist. "
@@ -2263,9 +2283,9 @@ class MapsManager:
             self._write_data_group(
                 data_group,
                 df,
-                data_config.caps_directory,
-                data_config.multi_cohort,
-                label=data_config.label,
+                self.data_config.caps_directory,
+                self.data_config.multi_cohort,
+                label=self.data_config.label,
             )
 
     ###############################
@@ -2314,6 +2334,8 @@ class MapsManager:
 
     def _write_weights(
         self,
+        split_name,
+        maps_path,
         state: Dict[str, Any],
         metrics_dict: Optional[Dict[str, bool]],
         split: int,
@@ -2331,7 +2353,7 @@ class MapsManager:
             network: network number (multi-network framework).
             filename: name of the checkpoint file.
         """
-        checkpoint_dir = self.maps_path / f"{data_config.split_name}-{split}" / "tmp"
+        checkpoint_dir = maps_path / f"{split_name}-{split}" / "tmp"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = checkpoint_dir / filename
         torch.save(state, checkpoint_path)
@@ -2344,9 +2366,7 @@ class MapsManager:
         if metrics_dict is not None:
             for metric_name, metric_bool in metrics_dict.items():
                 metric_path = (
-                    self.maps_path
-                    / f"{self.split_name}-{split}"
-                    / f"best-{metric_name}"
+                    maps_path / f"{split_name}-{split}" / f"best-{metric_name}"
                 )
                 if metric_bool:
                     metric_path.mkdir(parents=True, exist_ok=True)
@@ -2354,7 +2374,7 @@ class MapsManager:
 
     def _erase_tmp(self, split):
         """Erase checkpoints of the model and optimizer at the end of training."""
-        tmp_path = self.maps_path / f"{self.split_name}-{split}" / "tmp"
+        tmp_path = self.maps_path / f"{self.data_config.split_name}-{split}" / "tmp"
         shutil.rmtree(tmp_path)
 
     @staticmethod
@@ -2400,14 +2420,15 @@ class MapsManager:
             data_group: the name referring to the data group on which evaluation is performed.
         """
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
+            self.data_config.maps_path
+            / f"{self.data_config.split_name}-{split}"
             / f"best-{selection}"
             / data_group
         )
         performance_dir.mkdir(parents=True, exist_ok=True)
         performance_path = (
-            performance_dir / f"{data_group}_{self.mode}_level_prediction.tsv"
+            performance_dir
+            / f"{data_group}_{self.data_config.mode}_level_prediction.tsv"
         )
         if not performance_path.is_file():
             results_df.to_csv(performance_path, index=False, sep="\t")
@@ -2416,7 +2437,9 @@ class MapsManager:
                 performance_path, index=False, sep="\t", mode="a", header=False
             )
 
-        metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
+        metrics_path = (
+            performance_dir / f"{data_group}_{self.data_config.mode}_level_metrics.tsv"
+        )
         if metrics is not None:
             if not metrics_path.is_file():
                 pd.DataFrame(metrics, index=[0]).to_csv(
@@ -2451,25 +2474,25 @@ class MapsManager:
         else:
             validation_dataset = "validation"
         test_df = self.get_prediction(
-            data_group, split, selection, self.mode, verbose=False
+            data_group, split, selection, self.data_config.mode, verbose=False
         )
         validation_df = self.get_prediction(
-            validation_dataset, split, selection, self.mode, verbose=False
+            validation_dataset, split, selection, self.data_config.mode, verbose=False
         )
 
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
+            self.data_config.maps_path
+            / f"{self.data_config.split_name}-{split}"
             / f"best-{selection}"
             / data_group
         )
 
         performance_dir.mkdir(parents=True, exist_ok=True)
 
-        df_final, metrics = self.task_manager.ensemble_prediction(
+        df_final, metrics = self.data_config.task_manager.ensemble_prediction(
             test_df,
             validation_df,
-            selection_threshold=self.selection_threshold,
+            selection_threshold=self.data_config.selection_threshold,
             use_labels=use_labels,
         )
 
@@ -2691,7 +2714,7 @@ class MapsManager:
             self._print_description_log(data_group, split, selection_metric)
         prediction_dir = (
             self.maps_path
-            / f"{self.split_name}-{split}"
+            / f"{self.data_config.split_name}-{split}"
             / f"best-{selection_metric}"
             / data_group
         )
@@ -2796,7 +2819,7 @@ class MapsManager:
             )
         return map_pt
 
-    def _init_callbacks(self, data_config: DataConfig):
+    def _init_callbacks(self):
         from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 
         # if self.callbacks is None:
@@ -2804,7 +2827,7 @@ class MapsManager:
 
         self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
 
-        if data_config.emissions_calculator:
+        if self.data_config.emissions_calculator:
             from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
 
             self.callback_handler.add_callback(CodeCarbonTracker())
