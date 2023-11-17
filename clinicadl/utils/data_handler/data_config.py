@@ -237,7 +237,6 @@ class DataConfig(dict):
             )
 
     def check_existing_maps(self):
-
         if not (self.maps_path / "maps.json").is_file():
             raise MAPSError(
                 f"MAPS was not found at {self.maps_path}."
