@@ -97,7 +97,7 @@ def vae_random_sampling(space_dict):
     "evaluation_steps": "fixed",
     "gpu": "fixed",
     "label": "fixed",
-    "learning_rate": "fixed",
+    # "learning_rate": "fixed",
     "mode": "fixed",
     "multi_cohort": "fixed",
     "n_splits": "fixed",
@@ -120,6 +120,7 @@ def vae_random_sampling(space_dict):
     "wd_bool": "fixed",
     "weight_decay": "fixed",
     # VAE architecture
+    "architecture": "choice", # added by MS
     "first_layer_channels": "choice",
     "n_conv_encoder": "randint",
     "feature_size": "choice",
@@ -127,6 +128,8 @@ def vae_random_sampling(space_dict):
     "n_conv_decoder": "randint",
     "last_layer_channels": "choice",
     "last_layer_conv": "choice",
+    "n_conv_per_block": "randint", # added by MS
+    "learning_rate": "exponent", # added by MS
 }
 
     for name, sampling_type in sampling_vae_dict.items():

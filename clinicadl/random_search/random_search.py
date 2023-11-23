@@ -30,7 +30,7 @@ def launch_vae_search(launch_directory, job_name):
 
     space_options = get_vae_space_dict(launch_directory)
     parameters = vae_random_sampling(space_options)
-    parameters["architecture"] = "pythae_VAE"
+    # parameters["architecture"] = "pythae_VAE"
     print("Parameters:", parameters)
 
     # Select 3 splits randomly
