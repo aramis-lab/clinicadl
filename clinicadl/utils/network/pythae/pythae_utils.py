@@ -6,7 +6,8 @@ from pythae.models.base.base_utils import ModelOutput
 
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_layers import (
-    DecoderLayer3D,
+    DecoderTranspose3D,
+    DecoderUpsample3D,
     EncoderLayer3D,
     Flatten,
     Unflatten3D,
@@ -15,6 +16,7 @@ from clinicadl.utils.network.vae.vae_layers import (
 import torch
 from torch import nn
 
+DecoderLayer3D = DecoderUpsample3D
 
 class BasePythae(Network):
     def __init__(
@@ -133,7 +135,7 @@ def build_encoder_decoder(
                 first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
             )
         )
-        # Construct output paddings
+    # Construct output paddings
     # Compute size of the feature space
     n_pix_encoder = (
         first_layer_channels
@@ -160,14 +162,17 @@ def build_encoder_decoder(
 
     # DECODER
 
-    # automatically compute padding
+    # automatically compute output padding and image size
     d, h, w = input_d, input_h, input_w
     decoder_output_padding = []
+    decoder_input_size = []
     decoder_output_padding.append([d % 2, h % 2, w % 2])
     d, h, w = d // 2, h // 2, w // 2
+    decoder_input_size.append([d, h, w])
     for i in range(n_conv_decoder - 1):
         decoder_output_padding.append([d % 2, h % 2, w % 2])
         d, h, w = d // 2, h // 2, w // 2
+        decoder_input_size.append([d, h, w])
 
     n_pix_decoder = (
         last_layer_channels
@@ -210,18 +215,18 @@ def build_encoder_decoder(
             DecoderLayer3D(
                 last_layer_channels * 2 ** (i),
                 last_layer_channels * 2 ** (i - 1),
+                input_size=decoder_input_size[i],
                 output_padding=decoder_output_padding[i],
             )
         )
+
     # Output conv layer
     if last_layer_conv:
         last_layer = nn.Sequential(
             DecoderLayer3D(
                 last_layer_channels,
                 last_layer_channels,
-                4,
-                stride=2,
-                padding=1,
+                input_size=decoder_input_size[0],
                 output_padding=decoder_output_padding[0],
             ),
             nn.Conv3d(
@@ -236,13 +241,25 @@ def build_encoder_decoder(
 
     else:
         last_layer = nn.Sequential(
-                nn.ConvTranspose3d(
+                # nn.ConvTranspose3d(
+                #    last_layer_channels,
+                #    input_c,
+                #    4,
+                #    stride=2,
+                #    padding=1,
+                #    output_padding=decoder_output_padding[0],
+                #    bias=False,
+                #),
+                nn.Upsample(
+                    size=[input_d, input_h, input_w],
+                    mode='nearest',
+                ),
+                nn.Conv3d(
                     last_layer_channels,
                     input_c,
-                    4,
-                    stride=2,
+                    3,
+                    stride=1,
                     padding=1,
-                    output_padding=decoder_output_padding[0],
                     bias=False,
                 ),
                 nn.Sigmoid(),

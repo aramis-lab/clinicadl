@@ -14,16 +14,16 @@ from torch import nn
 
 class ResNet18_VAE(BasePythae):
     def __init__(
-            self,
-            input_size,
-            first_layer_channels,
-            n_conv_encoder,
-            feature_size,
-            latent_space_size,
-            n_conv_decoder,
-            last_layer_channels,
-            last_layer_conv,
-            gpu,
+        self,
+        input_size,
+        first_layer_channels,
+        n_conv_encoder,
+        feature_size,
+        latent_space_size,
+        n_conv_decoder,
+        last_layer_channels,
+        last_layer_conv,
+        gpu,
     ):
         from pythae.models import VAE, VAEConfig
 
@@ -77,12 +77,21 @@ class ResNet18_VAE(BasePythae):
 
 def conv3x3x3(input_channels: int, output_channels: int, stride: int = 1) -> nn.Conv3d:
     """3x3x3 convolution with padding"""
-    return nn.Conv3d(input_channels, output_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+    return nn.Conv3d(
+        input_channels,
+        output_channels,
+        kernel_size=3,
+        stride=stride,
+        padding=1,
+        bias=False,
+    )
 
 
 def conv1x1x1(input_channels: int, output_channels: int, stride: int = 1) -> nn.Conv3d:
     """1x1x1 convolution"""
-    return nn.Conv3d(input_channels, output_channels, kernel_size=1, stride=stride, bias=False)
+    return nn.Conv3d(
+        input_channels, output_channels, kernel_size=1, stride=stride, bias=False
+    )
 
 
 class BasicBlockEnc(nn.Module):
@@ -114,15 +123,15 @@ class BasicBlockEnc(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        print("After (layer x (y) 1st conv)", out.shape)
+        # print("After (layer x (y) 1st conv)", out.shape)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        print("After (layer x (y) 2nd conv)", out.shape)
+        # print("After (layer x (y) 2nd conv)", out.shape)
 
         out += self.shortcut(x)
         out = self.relu(out)
-        print("After (layer x (y) shortcut)", out.shape)
+        # print("After (layer x (y) shortcut)", out.shape)
 
         return out
 
@@ -151,7 +160,7 @@ class BasicBlockDec(nn.Module):
             self.shortcut = nn.Sequential()
         else:
             self.conv1 = nn.Sequential(
-                nn.Upsample(size=up_size, mode='nearest'),
+                nn.Upsample(size=up_size, mode="nearest"),
                 conv3x3x3(
                     input_channels,
                     output_channels,
@@ -159,7 +168,7 @@ class BasicBlockDec(nn.Module):
                 ),
             )
             self.shortcut = nn.Sequential(
-                nn.Upsample(size=up_size, mode='nearest'),
+                nn.Upsample(size=up_size, mode="nearest"),
                 conv3x3x3(
                     input_channels,
                     output_channels,
@@ -181,10 +190,10 @@ class BasicBlockDec(nn.Module):
 
 class ResNet18Enc(BaseEncoder):
     def __init__(
-            self,
-            input_size: Tuple[int],
-            latent_space_size: int,
-            num_blocks: List[int] = [2, 2, 2, 2],
+        self,
+        input_size: Tuple[int],
+        latent_space_size: int,
+        num_blocks: List[int] = [2, 2, 2, 2],
     ):
         super(ResNet18Enc, self).__init__()
 
@@ -197,7 +206,14 @@ class ResNet18Enc(BaseEncoder):
         self.latent_space_size = latent_space_size
 
         self.layer1 = nn.Sequential(
-            nn.Conv3d(input_c, self.input_channels, kernel_size=7, stride=2, padding=3, bias=False),
+            nn.Conv3d(
+                input_c,
+                self.input_channels,
+                kernel_size=7,
+                stride=2,
+                padding=3,
+                bias=False,
+            ),
             nn.BatchNorm3d(self.input_channels),
             nn.ReLU(inplace=True),
         )
@@ -208,14 +224,15 @@ class ResNet18Enc(BaseEncoder):
         self.layer4 = self._make_layer(256, num_blocks[2], stride=2)
         self.layer5 = self._make_layer(512, num_blocks[3], stride=2)
 
+        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.flatten = Flatten()
 
-        n_pix_encoder = 512 * 6 * 7 * 6
+        # n_pix_encoder = 512 * 6 * 7 * 6
+        n_pix_encoder = 512
         feature_size = n_pix_encoder
 
         self.mu_layer = nn.Linear(feature_size, self.latent_space_size)
         self.logvar_layer = nn.Linear(feature_size, self.latent_space_size)
-
 
     def _make_layer(self, output_channels: int, num_blocks: int, stride: int):
         strides = [stride] + [1] * (num_blocks - 1)
@@ -235,19 +252,21 @@ class ResNet18Enc(BaseEncoder):
         # print("After (maxpool)", x.shape)
 
         x = self.layer2(x)
-        # print("After (layer2)", x.shape)
+        # print("After (layer 2)", x.shape)
 
         x = self.layer3(x)
-        # print("After (layer3)", x.shape)
+        # print("After (layer 3)", x.shape)
 
         x = self.layer4(x)
-        # print("After (layer4)", x.shape)
+        # print("After (layer 4)", x.shape)
 
         x = self.layer5(x)
-        # print("After (layer5)", x.shape)
+        # print("After (layer 5)", x.shape)
 
+        x = self.avgpool(x)
+        # print("After (avgpool)", x.shape)
         x = self.flatten(x)
-        # print("After flatten", x.shape)
+        # print("After (flatten)", x.shape)
 
         mu = self.mu_layer(x)
         # print("After mu", mu.shape)
@@ -263,16 +282,17 @@ class ResNet18Enc(BaseEncoder):
 
 class ResNet18Dec(BaseDecoder):
     def __init__(
-            self,
-            output_size: Tuple[int],
-            latent_space_size: int,
-            num_blocks: List[int] = [2, 2, 2, 2],
+        self,
+        output_size: Tuple[int],
+        latent_space_size: int,
+        num_blocks: List[int] = [2, 2, 2, 2],
     ):
         super(ResNet18Dec, self).__init__()
 
         self.input_channels = 512
 
-        n_pix_decoder = 512 * 6 * 7 * 6
+        # n_pix_decoder = 512 * 6 * 7 * 6
+        n_pix_decoder = 512
         feature_size = n_pix_decoder
 
         self.linear = nn.Sequential(
@@ -280,30 +300,42 @@ class ResNet18Dec(BaseDecoder):
             nn.ReLU(inplace=True),
         )
 
-        self.unflatten = Unflatten3D(512, 6, 7, 6)
+        self.unflatten = Unflatten3D(512, 1, 1, 1)
 
-        self.layer5 = self._make_layer(256, num_blocks[3], stride=2, up_size=[11, 13, 12])
-        self.layer4 = self._make_layer(128, num_blocks[2], stride=2, up_size=[22, 26, 23])
-        self.layer3 = self._make_layer(64, num_blocks[1], stride=2, up_size=[43, 52, 45])
-        self.layer2 = self._make_layer(64, num_blocks[0], stride=1, up_size=[85, 104, 90])
+        self.upsample = nn.Upsample(size=[6, 7, 6], mode="nearest")
+
+        self.layer5 = self._make_layer(
+            256, num_blocks[3], stride=2, up_size=[11, 13, 12]
+        )
+        self.layer4 = self._make_layer(
+            128, num_blocks[2], stride=2, up_size=[22, 26, 23]
+        )
+        self.layer3 = self._make_layer(
+            64, num_blocks[1], stride=2, up_size=[43, 52, 45]
+        )
+        self.layer2 = self._make_layer(
+            64, num_blocks[0], stride=1, up_size=[85, 104, 90]
+        )
 
         self.layer1 = nn.Sequential(
-            nn.Upsample(size=[169, 208, 179], mode='nearest'),
-            conv3x3x3(64, output_size[0],1),
-            nn.Sigmoid()
+            nn.Upsample(size=[169, 208, 179], mode="nearest"),
+            conv3x3x3(64, output_size[0], 1),
+            nn.Sigmoid(),
         )
 
     def _make_layer(
-            self,
-            output_channels: int,
-            num_blocks: int,
-            stride: int,
-            up_size: List[int],
+        self,
+        output_channels: int,
+        num_blocks: int,
+        stride: int,
+        up_size: List[int],
     ):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in reversed(strides):
-            layers += [BasicBlockDec(self.input_channels, up_size=up_size, stride=stride)]
+            layers += [
+                BasicBlockDec(self.input_channels, up_size=up_size, stride=stride)
+            ]
         self.input_channels = output_channels
         return nn.Sequential(*layers)
 
@@ -314,11 +346,13 @@ class ResNet18Dec(BaseDecoder):
         x = self.linear(z)
         # print("After (linear)", x.shape)
 
-        out = self.unflatten(x)
-        # print("After (unflatten)", out.shape)
+        x = self.unflatten(x)
+        # print("After (unflatten)", x.shape)
+        x = self.upsample(x)
+        # print("After (upsample)", x.shape)
 
-        out = self.layer5(out)
-        # print("After (layer 5)", out.shape)
+        out = self.layer5(x)
+        print("After (layer 5)", out.shape)
 
         out = self.layer4(out)
         # print("After (layer 4)", out.shape)
@@ -334,36 +368,3 @@ class ResNet18Dec(BaseDecoder):
 
         output = ModelOutput(reconstruction=out)
         return output
-
-# class Encoder_VAE(BaseEncoder):
-#     def __init__(
-#         self, encoder_layers, mu_layer, logvar_layer
-#     ):  # Args is a ModelConfig instance
-#         BaseEncoder.__init__(self)
-
-#         self.layers = encoder_layers
-#         self.mu_layer = mu_layer
-#         self.logvar_layer = logvar_layer
-
-#     def forward(self, x: torch.torch.Tensor) -> ModelOutput:
-#         h = self.layers(x)
-#         mu, logVar = self.mu_layer(h), self.logvar_layer(h)
-#         output = ModelOutput(
-#             embedding=mu,  # Set the output from the encoder in a ModelOutput instance
-#             log_covariance=logVar,
-#         )
-#         return output
-
-
-# class Decoder(BaseDecoder):
-#     def __init__(self, decoder_layers):
-#         BaseDecoder.__init__(self)
-
-#         self.layers = decoder_layers
-
-#     def forward(self, x: torch.torch.Tensor) -> ModelOutput:
-#         out = self.layers(x)
-#         output = ModelOutput(
-#             reconstruction=out  # Set the output from the decoder in a ModelOutput instance
-#         )
-#         return output

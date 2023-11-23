@@ -1,14 +1,14 @@
 import torch
+import torch.nn as nn
 
 from clinicadl.utils.network.pythae.pythae_utils import Encoder_VAE, Decoder
 
 from clinicadl.utils.network.vae.vae_layers import (
-    # EncoderLayer3D,
-    DecoderLayer3D,
     Flatten,
     Unflatten3D,
-    MultiConvEncoderBlock3D,
-    MultiConvDecoderBlock3D,
+    EncoderBlock3D,
+    DecoderBlock3D,
+    DecoderConv3D,
 )
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
@@ -30,6 +30,7 @@ class multi_conv_VAE(BasePythae):
     ):
         from pythae.models import VAE, VAEConfig
 
+        # TODO: get rid of this call, because it creates an encoder and decoder that we don't use
         _, _ = super(multi_conv_VAE, self).__init__(
             input_size=input_size,
             first_layer_channels=first_layer_channels,
@@ -41,6 +42,9 @@ class multi_conv_VAE(BasePythae):
             last_layer_conv=last_layer_conv,
             gpu=gpu,
         )
+
+        # self.input_size = input_size
+        # self.latent_space_size = latent_space_size
 
         encoder_layers, mu_layer, logvar_layer, decoder_layers = build_encoder_decoder(
             input_size=input_size,
@@ -85,7 +89,6 @@ class multi_conv_VAE(BasePythae):
 
 def build_encoder_decoder(
     input_size=(1, 80, 96, 80),
-    # input_size=(1, 169, 208, 179),
     first_layer_channels=32,
     n_conv_encoder=3,
     feature_size=0,
@@ -101,24 +104,21 @@ def build_encoder_decoder(
     input_w = input_size[3]
 
     # ENCODER
-    encoder_layers = []
-    # Input Layer
-    encoder_layers.append(
-        MultiConvEncoderBlock3D(
-            input_c, first_layer_channels, n_conv_per_block=n_conv_per_block
-        )
-    )  # EncoderLayer3D
 
-    # Conv Layers
-    for i in range(n_conv_encoder - 1):
-        encoder_layers.append(
-            MultiConvEncoderBlock3D(
-                first_layer_channels * 2**i,
-                first_layer_channels * 2 ** (i + 1),
-                n_conv_per_block=n_conv_per_block,
-            )
-        )
-        # Construct output paddings
+    # Compute channels
+    enc_channels = [
+        [input_c] + [first_layer_channels for _ in range(n_conv_per_block)]
+    ] + [
+        [first_layer_channels * 2**i]
+        + [first_layer_channels * 2 ** (i + 1) for _ in range(n_conv_per_block)]
+        for i in range(n_conv_encoder - 1)
+    ]
+
+    encoder_layers = [
+        EncoderBlock3D(channels=enc_channels[i], n_conv_per_block=n_conv_per_block)
+        for i in range(n_conv_encoder)
+    ]
+
     # Compute size of the feature space
     n_pix_encoder = (
         first_layer_channels
@@ -127,34 +127,36 @@ def build_encoder_decoder(
         * (input_h // (2**n_conv_encoder))
         * (input_w // (2**n_conv_encoder))
     )
+
     # Flatten
-    encoder_layers.append(Flatten())
+    encoder_layers += [Flatten()]
+
     # Intermediate feature space
     if feature_size == 0:
         feature_space = n_pix_encoder
     else:
         feature_space = feature_size
-        encoder_layers.append(
-            torch.nn.Sequential(
-                torch.nn.Linear(n_pix_encoder, feature_space), torch.nn.ReLU()
-            )
-        )
-    encoder = torch.nn.Sequential(*encoder_layers)
+        encoder_layers += [nn.Linear(n_pix_encoder, feature_space), nn.ReLU()]
+
+    encoder = nn.Sequential(*encoder_layers)
 
     # LATENT SPACE
-    mu_layer = torch.nn.Linear(feature_space, latent_space_size)
-    var_layer = torch.nn.Linear(feature_space, latent_space_size)
+    mu_layer = nn.Linear(feature_space, latent_space_size)
+    var_layer = nn.Linear(feature_space, latent_space_size)
 
     # DECODER
 
     # automatically compute padding
     d, h, w = input_d, input_h, input_w
     decoder_output_padding = []
+    decoder_input_size = []
     decoder_output_padding.append([d % 2, h % 2, w % 2])
     d, h, w = d // 2, h // 2, w // 2
+    decoder_input_size.append([d, h, w])
     for i in range(n_conv_decoder - 1):
         decoder_output_padding.append([d % 2, h % 2, w % 2])
         d, h, w = d // 2, h // 2, w // 2
+        decoder_input_size.append([d, h, w])
 
     n_pix_decoder = (
         last_layer_channels
@@ -167,70 +169,85 @@ def build_encoder_decoder(
     decoder_layers = []
     # Intermediate feature space
     if feature_size == 0:
-        decoder_layers.append(
-            torch.nn.Sequential(
-                torch.nn.Linear(latent_space_size, n_pix_decoder),
-                torch.nn.ReLU(),
-            )
-        )
+        decoder_layers += [
+            nn.Linear(latent_space_size, n_pix_decoder),
+            nn.ReLU(),
+        ]
     else:
-        decoder_layers.append(
-            torch.nn.Sequential(
-                torch.nn.Linear(latent_space_size, feature_size),
-                torch.nn.ReLU(),
-                torch.nn.Linear(feature_size, n_pix_decoder),
-                torch.nn.ReLU(),
-            )
-        )
+        decoder_layers += [
+            nn.Linear(latent_space_size, feature_size),
+            nn.ReLU(),
+            nn.Linear(feature_size, n_pix_decoder),
+            nn.ReLU(),
+        ]
+
     # Unflatten
-    decoder_layers.append(
+    decoder_layers += [
         Unflatten3D(
             last_layer_channels * 2 ** (n_conv_decoder - 1),
             input_d // (2**n_conv_decoder),
             input_h // (2**n_conv_decoder),
             input_w // (2**n_conv_decoder),
         )
-    )
-    # Decoder layers
-    for i in range(n_conv_decoder - 1, 0, -1):
-        decoder_layers.append(
-            MultiConvDecoderBlock3D(
-                last_layer_channels * 2 ** (i),
-                last_layer_channels * 2 ** (i - 1),
-                output_padding=decoder_output_padding[i],
-                n_conv_per_block=n_conv_per_block,
-            )
+    ]
+
+    dec_channels = [
+        [input_c] + [last_layer_channels for _ in range(n_conv_per_block)]
+    ] + [
+        [last_layer_channels * 2**i]
+        + [last_layer_channels * 2 ** (i + 1) for _ in range(n_conv_per_block)]
+        for i in range(n_conv_decoder - 1)
+    ]
+
+    decoder_layers += [
+        DecoderBlock3D(
+            channels=dec_channels[i],
+            output_padding=decoder_output_padding[i],
+            input_size=decoder_input_size[i],
+            n_conv_per_block=n_conv_per_block,
         )
+        for i in range(n_conv_decoder - 1, 0, -1)
+    ]
+
     # Output conv layer
     if last_layer_conv:
-        last_layer = torch.nn.Sequential(
-            DecoderLayer3D(
-                last_layer_channels,
-                last_layer_channels,
-                4,
-                stride=2,
-                padding=1,
+        last_layer = [
+            DecoderBlock3D(
+                channels=dec_channels[0],
                 output_padding=decoder_output_padding[0],
+                input_size=decoder_input_size[0],
+                n_conv_per_block=n_conv_per_block,
             ),
-            torch.nn.Conv3d(last_layer_channels, input_c, 3, stride=1, padding=1),
-            torch.nn.Sigmoid(),
-        )
+            nn.Conv3d(input_c, input_c, kernel_size=3, stride=1, padding=1),
+            nn.Sigmoid(),
+        ]
 
     else:
-        last_layer = torch.nn.Sequential(
-            torch.nn.ConvTranspose3d(
+        last_layer = [
+            DecoderConv3D(
+                channels=dec_channels[0][i],
+                output_padding=decoder_output_padding[0],
+                input_size=decoder_input_size[0],
+                n_conv_per_block=3,
+            ) 
+            for i in range(n_conv_per_block, 0, -1)
+        ] + [
+            nn.Upsample(
+                size=[input_d, input_h, input_w],
+                mode="nearest",
+            ),
+            nn.Conv3d(
                 last_layer_channels,
                 input_c,
-                4,
-                stride=2,
+                3,
+                stride=1,
                 padding=1,
-                output_padding=decoder_output_padding[0],
                 bias=False,
             ),
-            # Why isn't this DecoderLayer3D?
-            torch.nn.Sigmoid(),
-        )
-    decoder_layers.append(last_layer)
-    decoder = torch.nn.Sequential(*decoder_layers)
+            nn.Sigmoid(),
+        ]
+
+    decoder_layers += last_layer
+    decoder = nn.Sequential(*decoder_layers)
 
     return encoder, mu_layer, var_layer, decoder
