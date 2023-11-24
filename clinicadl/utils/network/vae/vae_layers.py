@@ -112,7 +112,7 @@ class EncoderLayer3D(nn.Module):
         return x
 
 
-class DecoderLayer3D(nn.Module):
+class DecoderTranspose3D(nn.Module):
     """
     Class defining the decoder's part of the Autoencoder.
     This layer is composed of one 3D transposed convolutional layer,
@@ -123,15 +123,16 @@ class DecoderLayer3D(nn.Module):
         self,
         input_channels,
         output_channels,
+        input_size=None,
         kernel_size=4,
-        stride=2,
+        stride=1,
         padding=1,
         output_padding=0,
         normalization="batch",
     ):
-        super(DecoderLayer3D, self).__init__()
+        super(DecoderTranspose3D, self).__init__()
         self.layer = nn.Sequential(
-            nn.ConvTranspose3d(
+             nn.ConvTranspose3d(
                 input_channels,
                 output_channels,
                 kernel_size,
@@ -145,6 +146,63 @@ class DecoderLayer3D(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.layer(x), inplace=True)
+        return x
+
+
+class DecoderUpsample3D(nn.Module):
+    """
+    Class defining the decoder's part of the Autoencoder.
+    This layer is composed of one 3D transposed convolutional layer,
+    a batch normalization layer with a relu activation function.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        input_size,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        output_padding=[0,0,0],
+        normalization="batch",
+    ):
+        super(DecoderUpsample3D, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Upsample(
+                size=[
+                    input_size[0] * 2 + output_padding[0],
+                    input_size[1] * 2 + output_padding[1],
+                    input_size[2] * 2 + output_padding[2],
+                ],
+                mode='nearest'
+            ),
+            nn.Conv3d(
+                input_channels,
+                output_channels,
+                3,
+                stride=1,
+                padding=1,
+                bias=False,
+            ),
+            get_norm3d(normalization, output_channels),
+        )
+        self.input_size = input_size
+        self.padding = output_padding
+        self.dim = [
+            input_size[0] * 2 + output_padding[0],
+            input_size[1] * 2 + output_padding[1],
+            input_size[2] * 2 + output_padding[2],
+        ],
+
+    def forward(self, x):
+        #print("Decoder layer param")
+        #print("input size:", self.input_size)
+        #print("output padding:", self.padding)
+        #print("dimension:", self.dim)
+        #print("decoder layer input shape:", x.shape)
+        x = F.relu(self.layer(x), inplace=True)
+        #print("decoder layer output shape:", x.shape)
         return x
 
 
@@ -229,7 +287,6 @@ class VAE_Encoder(nn.Module):
             tensor_h, tensor_w = tensor_h // 2, tensor_w // 2
 
         self.decoder_padding = decoder_padding
-        print(self.decoder_padding)
 
         # Final Layer
         if latent_dim == 1:
