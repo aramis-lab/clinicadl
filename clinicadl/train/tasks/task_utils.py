@@ -22,7 +22,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
 
     config_file_name = None
     if kwargs["config_file"]:
-        config_file_name = kwargs["config_file"].name
+        config_file_name = kwargs["config_file"]
     train_dict = build_train_dict(config_file_name, network_task)
 
     # Add arguments

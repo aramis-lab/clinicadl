@@ -158,15 +158,15 @@ class LogWriter:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
         # Write tensorboard logs
-        global_step = i + epoch * len_epoch
-        for metric_idx, metric in enumerate(self.evaluation_metrics):
-            self.writer_train.add_scalar(
-                metric,
-                train_row[metric_idx],
-                global_step,
-            )
-            self.writer_valid.add_scalar(
-                metric,
-                valid_row[metric_idx],
-                global_step,
-            )
+        #global_step = i + epoch * len_epoch
+        #for metric_idx, metric in enumerate(self.evaluation_metrics):
+        #    self.writer_train.add_scalar(
+        #        metric,
+        #        train_row[metric_idx],
+        #        global_step,
+        #    )
+        #    self.writer_valid.add_scalar(
+        #        metric,
+        #        valid_row[metric_idx],
+        #        global_step,
+        #    )
