@@ -14,6 +14,7 @@ metric_optimum = {
     "BA": "max",
     "PSNR": "max",
     "SSIM": "max",
+    "MSSSIM": "max",
     "LNCC": "max",
     "loss": "min",
 }
@@ -231,6 +232,19 @@ class MetricModule:
         from clinicadl.utils.pytorch_ssim import ssim3D
 
         return ssim3D(y, y_pred).item()
+
+    @staticmethod
+    def msssim_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) MS-SSIM
+        """
+        from clinicadl.utils.pytorch_msssim import MSSSIM
+        
+        return MSSSIM()(y, y_pred).item()
 
     @staticmethod
     def psnr_fn(y, y_pred):
