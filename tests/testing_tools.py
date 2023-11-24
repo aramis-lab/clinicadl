@@ -1,4 +1,6 @@
 import pathlib
+from os import PathLike
+from pathlib import Path
 from typing import Dict, List
 
 
@@ -81,3 +83,86 @@ def models_equal(state_dict_1, state_dict_2, epsilon=0):
             print(f"Not equivalent: {key_item_1[0]} != {key_item_2[0]}")
             return False
     return True
+
+
+def tree(dir_: PathLike, file_out: PathLike):
+    """Creates a file (file_out) with a visual tree representing the file
+    hierarchy at a given directory
+
+    .. note::
+        Does not display empty directories.
+
+    """
+    from pathlib import Path
+
+    file_content = ""
+
+    for path in sorted(Path(dir_).rglob("*")):
+        if path.is_dir() and not any(path.iterdir()):
+            continue
+        depth = len(path.relative_to(dir_).parts)
+        spacer = "    " * depth
+        file_content = file_content + f"{spacer}+ {path.name}\n"
+
+    print(file_content)
+
+    Path(file_out).write_text(file_content)
+
+
+def compare_folders(outdir: PathLike, refdir: PathLike, tmp_path: PathLike) -> bool:
+    """
+    Compares the file hierarchy of two folders.
+
+        Args:
+            outdir: path to the fisrt fodler.
+            refdir: path to the second folder.
+            tmp_path: path to a temporary folder.
+    """
+
+    from filecmp import cmp
+    from pathlib import PurePath
+
+    file_out = PurePath(tmp_path) / "file_out.txt"
+    file_ref = PurePath(tmp_path) / "file_ref.txt"
+    tree(outdir, file_out)
+    tree(refdir, file_ref)
+    if not cmp(file_out, file_ref):
+        with open(file_out, "r") as fin:
+            out_message = fin.read()
+        with open(file_ref, "r") as fin:
+            ref_message = fin.read()
+        raise ValueError(
+            "Comparison of out and ref directories shows mismatch :\n "
+            "OUT :\n" + out_message + "\n REF :\n" + ref_message
+        )
+    return True
+
+
+def compare_folder_with_files(folder: str, file_list: List[str]) -> bool:
+    """Compare file existing in two folders
+    Args:
+        folder: path to a folder
+        file_list: list of files which must be found in folder
+    Returns:
+        True if files in file_list were all found in folder.
+    """
+    import os
+
+    folder_list = []
+    for root, dirs, files in os.walk(folder):
+        folder_list.extend(files)
+
+    print(f"Missing files {set(file_list) - set(folder_list)}")
+    return set(file_list).issubset(set(folder_list))
+
+
+def clean_folder(path, recreate=True):
+    from os import makedirs
+    from os.path import abspath, exists
+    from shutil import rmtree
+
+    abs_path = abspath(path)
+    if exists(abs_path):
+        rmtree(abs_path)
+    if recreate:
+        makedirs(abs_path)
