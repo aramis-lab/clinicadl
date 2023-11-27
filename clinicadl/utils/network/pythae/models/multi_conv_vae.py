@@ -225,10 +225,10 @@ def build_encoder_decoder(
     else:
         last_layer = [
             DecoderConv3D(
-                channels=dec_channels[0][i],
+                input_channels=dec_channels[0][i],
+                output_channels=dec_channels[0][i-1],
                 output_padding=decoder_output_padding[0],
                 input_size=decoder_input_size[0],
-                n_conv_per_block=3,
             ) 
             for i in range(n_conv_per_block, 0, -1)
         ] + [
@@ -237,7 +237,7 @@ def build_encoder_decoder(
                 mode="nearest",
             ),
             nn.Conv3d(
-                last_layer_channels,
+                input_c,
                 input_c,
                 3,
                 stride=1,

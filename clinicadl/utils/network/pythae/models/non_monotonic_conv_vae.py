@@ -114,7 +114,7 @@ def build_encoder_decoder(
         + [first_layer_channels * 2 ** (i+1)]
         for i in range(n_conv_encoder - 1)
     ]
-    print(enc_channels)
+    # print("enc_channels=", enc_channels)
 
     encoder_layers = [
         EncoderBlock3D(channels=enc_channels[i], n_conv_per_block=n_conv_per_block)
@@ -201,7 +201,7 @@ def build_encoder_decoder(
         + [last_layer_channels * 2 ** (i+1)]
         for i in range(n_conv_decoder - 1)
     ]
-    print(dec_channels)
+    # print("dec_channels=", dec_channels)
 
     decoder_layers += [
         DecoderBlock3D(
@@ -229,10 +229,10 @@ def build_encoder_decoder(
     else:
         last_layer = [
             DecoderConv3D(
-                channels=dec_channels[0][i],
+                input_channels=dec_channels[0][i],
+                output_channels=dec_channels[0][i-1],
                 output_padding=decoder_output_padding[0],
                 input_size=decoder_input_size[0],
-                n_conv_per_block=3,
             ) 
             for i in range(n_conv_per_block, 0, -1)
         ] + [
@@ -241,7 +241,7 @@ def build_encoder_decoder(
                 mode="nearest",
             ),
             nn.Conv3d(
-                last_layer_channels,
+                input_c,
                 input_c,
                 3,
                 stride=1,
