@@ -652,6 +652,7 @@ class MapsManager:
                 sampler=train_sampler,
                 num_workers=self.n_proc,
                 worker_init_fn=pl_worker_init_function,
+                drop_last=True,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
             valid_loader = DataLoader(
@@ -659,6 +660,7 @@ class MapsManager:
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.n_proc,
+                drop_last=True,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
@@ -759,6 +761,7 @@ class MapsManager:
                     sampler=train_sampler,
                     num_workers=self.n_proc,
                     worker_init_fn=pl_worker_init_function,
+                    drop_last=True,
                 )
 
                 valid_loader = DataLoader(
@@ -766,6 +769,7 @@ class MapsManager:
                     batch_size=self.batch_size,
                     shuffle=False,
                     num_workers=self.n_proc,
+                    drop_last=True,
                 )
 
                 self._train(
