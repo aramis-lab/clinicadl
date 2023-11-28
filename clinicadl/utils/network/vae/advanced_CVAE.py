@@ -119,7 +119,7 @@ class CVAE_3D_final_conv(Network):
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
 
-        input_ = input_dict["image"].to(self.device)
+        input_ = input_dict["data"].to(self.device)
         mu, logVar, reconstructed = self.forward(input_)
         losses = criterion(input_, reconstructed, mu, logVar)
         reconstruction_loss, kl_loss = losses[0], losses[1]
