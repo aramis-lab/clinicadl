@@ -1,5 +1,8 @@
+from typing import List
+
 import torch.nn.functional as F
 from torch import nn
+import torch
 
 from clinicadl.utils.network.vae.vae_utils import get_norm2d, get_norm3d
 
@@ -77,7 +80,7 @@ class DecoderLayer2D(nn.Module):
         return x
 
 
-class EncoderLayer3D(nn.Module):
+class EncoderConv3DLayer(nn.Module):
     """
     Class defining the encoder's part of the Autoencoder.
     This layer is composed of one 3D convolutional layer,
@@ -94,7 +97,7 @@ class EncoderLayer3D(nn.Module):
         padding=1,
         normalization="batch",
     ):
-        super(EncoderLayer3D, self).__init__()
+        super(EncoderConv3DLayer, self).__init__()
         self.layer = nn.Sequential(
             nn.Conv3d(
                 input_channels,
@@ -115,7 +118,7 @@ class EncoderLayer3D(nn.Module):
         return out
 
 
-class DecoderTranspose3D(nn.Module):
+class DecoderTranspose3DLayer(nn.Module):
     """
     Class defining the decoder's part of the Autoencoder.
     This layer is composed of one 3D transposed convolutional layer,
@@ -133,7 +136,7 @@ class DecoderTranspose3D(nn.Module):
         output_padding=0,
         normalization="batch",
     ):
-        super(DecoderTranspose3D, self).__init__()
+        super(DecoderTranspose3DLayer, self).__init__()
         self.layer = nn.Sequential(
             nn.ConvTranspose3d(
                 input_channels,
@@ -152,7 +155,7 @@ class DecoderTranspose3D(nn.Module):
         return self.layer(x)
 
 
-class DecoderUpsample3D(nn.Module):
+class DecoderUpsample3DLayer(nn.Module):
     """
     Class defining the decoder's part of the Autoencoder.
     This layer is composed of one 3D transposed convolutional layer,
@@ -170,7 +173,7 @@ class DecoderUpsample3D(nn.Module):
         output_padding=[0, 0, 0],
         normalization="batch",
     ):
-        super(DecoderUpsample3D, self).__init__()
+        super(DecoderUpsample3DLayer, self).__init__()
         self.layer = nn.Sequential(
             nn.Upsample(
                 size=[
@@ -183,113 +186,9 @@ class DecoderUpsample3D(nn.Module):
             nn.Conv3d(
                 input_channels,
                 output_channels,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
-            ),
-            get_norm3d(normalization, output_channels),
-            nn.ReLU(inplace=True),
-        )
-        self.input_size = input_size
-        self.padding = output_padding
-        self.dim = (
-            [
-                input_size[0] * 2 + output_padding[0],
-                input_size[1] * 2 + output_padding[1],
-                input_size[2] * 2 + output_padding[2],
-            ],
-        )
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layer(x)
-        # print("out: ", out.shape)
-        return out
-
-
-class DecoderConv3D(nn.Module):
-    """
-    Class defining the decoder's part of the Autoencoder.
-    This layer is composed of one 3D convolutional layer,
-    a batch normalization layer with a relu activation function.
-    """
-
-    def __init__(
-        self,
-        input_channels,
-        output_channels,
-        input_size,
-        kernel_size=3,
-        stride=1,
-        padding=1,
-        output_padding=[0, 0, 0],
-        normalization="batch",
-    ):
-        super(DecoderConv3D, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Conv3d(
-                input_channels,
-                output_channels,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
-            ),
-            get_norm3d(normalization, output_channels),
-            nn.ReLU(inplace=True),
-        )
-        self.input_size = input_size
-        self.padding = output_padding
-        self.dim = (
-            [
-                input_size[0] * 2 + output_padding[0],
-                input_size[1] * 2 + output_padding[1],
-                input_size[2] * 2 + output_padding[2],
-            ],
-        )
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layer(x)
-        # print("out: ", out.shape)
-        return out
-
-
-class DecoderUpsample3D(nn.Module):
-    """
-    Class defining the decoder's part of the Autoencoder.
-    This layer is composed of one 3D transposed convolutional layer,
-    a batch normalization layer with a relu activation function.
-    """
-
-    def __init__(
-        self,
-        input_channels,
-        output_channels,
-        input_size,
-        kernel_size=3,
-        stride=1,
-        padding=1,
-        output_padding=[0, 0, 0],
-        normalization="batch",
-    ):
-        super(DecoderUpsample3D, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Upsample(
-                size=[
-                    input_size[0] * 2 + output_padding[0],
-                    input_size[1] * 2 + output_padding[1],
-                    input_size[2] * 2 + output_padding[2],
-                ],
-                mode="nearest",
-            ),
-            nn.Conv3d(
-                input_channels,
-                output_channels,
-                3,
-                stride=1,
-                padding=1,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
                 bias=False,
             ),
             get_norm3d(normalization, output_channels),
@@ -342,6 +241,457 @@ class Unflatten3D(nn.Module):
     def forward(self, input):
         return input.view(
             input.size(0), self.channel, self.height, self.width, self.depth
+        )
+
+
+class EncoderConv3DBlock(nn.Module):
+    """
+    Class defining the encoder's part of the Autoencoder.
+    This block is composed of multiple layers each with
+        - a 3D convolution,
+        - a batch normalization layer
+        - a leaky relu activation function.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        normalization="batch",
+        n_layer_per_block_encoder=3,
+    ):
+        super(EncoderConv3DBlock, self).__init__()
+
+        channels = get_channels(
+            input_channels, output_channels, n_layer_per_block_encoder
+        )
+
+        layers = []
+
+        layers.append(
+            EncoderLayer3D(
+                input_channels=channels[0],
+                output_channels=channels[1],
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                normalization=normalization,
+            )
+        )
+
+        for i in range(1, n_layer_per_block_encoder):
+            layers.append(
+                EncoderLayer3D(
+                    input_channels=channels[i],
+                    output_channels=channels[i + 1],
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    normalization=normalization,
+                )
+            )
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        # print("x: ", x.shape)
+        out = self.layers(x)
+        # print("out: ", out.shape)
+        return out
+
+
+class DecoderConv3DBlock(nn.Module):
+    """
+    Class defining the decoder's part of the Autoencoder.
+    This block is composed of multiple layers each with
+        - an upsampling layer,
+        - a 3D convolution,
+        - a batch normalization layer
+        - a leaky relu activation function.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        input_size,
+        output_padding,
+        normalization="batch",
+        n_layer_per_block_decoder=3,
+    ):
+        super(DecoderConv3DBlock, self).__init__()
+
+        channels = get_channels(
+            input_channels, output_channels, n_layer_per_block_decoder
+        )
+
+        layers = []
+
+        for i in range(n_layer_per_block_decoder, 1, -1):
+            layers.append(
+                DecoderConv3D(
+                    input_channels=channels[i],
+                    output_channels=channels[i - 1],
+                    input_size=input_size,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    output_padding=output_padding,
+                    normalization=normalization,
+                )
+            )
+
+        layers.append(
+            DecoderUpsample3D(
+                input_channels=channels[1],
+                output_channels=channels[0],
+                input_size=input_size,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                output_padding=output_padding,
+                normalization=normalization,
+            )
+        )
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        # print("x: ", x.shape)
+        out = self.layers(x)
+        # print("out: ", out.shape)
+        return out
+
+
+class EncoderResLayer(nn.Module):
+    """
+    This layer is composed of a residual block.
+    """
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        normalization="batch",
+    ):
+        super(EncoderResLayer, self).__init__()
+
+        stride = output_channels // input_channels
+
+        self.conv1 = nn.Conv3d(
+            input_channels,
+            output_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
+        )
+
+        self.norm1 = get_norm3d(normalization, output_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+        self.conv2 = nn.Conv3d(
+            output_channels,
+            output_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False,
+        )
+        self.norm2 = get_norm3d(normalization, output_channels)
+
+        if stride == 1:
+            self.shortcut = nn.Sequential()
+        else:
+            self.shortcut = nn.Sequential(
+                nn.Conv3d(
+                    input_channels,
+                    output_channels,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
+                nn.BatchNorm3d(output_channels),
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.conv1(x)
+        out = self.norm1(out)
+        out = self.relu(out)
+        # print("After (layer x (y) 1st conv)", out.shape)
+
+        out = self.conv2(out)
+        out = self.norm2(out)
+        # print("After (layer x (y) 2nd conv)", out.shape)
+
+        out += self.shortcut(x)
+        out = self.relu(out)
+        # print("After (layer x (y) shortcut)", out.shape)
+
+        return out
+
+
+class DecoderResLayer(nn.Module):
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        input_size,
+        output_padding,
+        normalization="batch",
+    ):
+        super(DecoderResLayer, self).__init__()
+
+        self.conv2 = nn.Conv3d(
+            input_channels,
+            input_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False,
+        )
+
+        self.norm2 = get_norm3d(normalization, output_channels)
+
+        self.norm1 = get_norm3d(normalization, output_channels)
+
+        if input_channels == output_channels:
+            self.conv1 = nn.Conv3d(
+                input_channels,
+                output_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+            )
+            self.shortcut = nn.Sequential()
+        else:
+            self.conv1 = nn.Sequential(
+                nn.Upsample(
+                    size=[
+                        input_size[0] * 2 + output_padding[0],
+                        input_size[1] * 2 + output_padding[1],
+                        input_size[2] * 2 + output_padding[2],
+                    ],
+                    mode="nearest",
+                ),
+                nn.Conv3d(
+                    input_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
+            )
+            self.shortcut = nn.Sequential(
+                nn.Upsample(
+                    size=[
+                        input_size[0] * 2 + output_padding[0],
+                        input_size[1] * 2 + output_padding[1],
+                        input_size[2] * 2 + output_padding[2],
+                    ],
+                    mode="nearest",
+                ),
+                nn.Conv3d(
+                    input_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
+                get_norm3d(normalization, output_channels),
+            )
+
+    def forward(self, x):
+        out = F.relu(self.norm2(self.conv2(x)))
+        # print("After layer (x (y) 1st conv)", out.shape)
+        out = self.norm1(self.conv1(out))
+        # print("After layer (x (y) 2nd conv)", out.shape)
+        out += self.shortcut(x)
+        # print("After layer (x (y) shortcut)", out.shape)
+        out = F.relu(out)
+        return out
+
+
+class EncoderBlock(nn.Module):
+    """Encoder block where we choose the type of layer (conv or res)"""
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        n_layer_per_block_encoder=3,
+        block_type="conv",
+        normalization="batch",
+    ):
+        super(EncoderBlock, self).__init__()
+
+        channels = get_channels(
+            input_channels, output_channels, n_layer_per_block_encoder
+        )
+
+        layers = []
+
+        layers.append(
+            get_encoder_layer(
+                block_type, channels[0], channels[1], 4, 2, 1, normalization
+            )
+        )
+
+        for i in range(1, n_layer_per_block_encoder):
+            layers.append(
+                get_encoder_layer(
+                    block_type, channels[i], channels[i + 1], 3, 1, 1, normalization,
+                )
+            )
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        # print("x: ", x.shape)
+        out = self.layers(x)
+        # print("out: ", out.shape)
+        return out
+
+
+class DecoderBlock(nn.Module):
+    """Decoder block where we choose the type of layer (conv or res)"""
+
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        input_size,
+        output_padding,
+        n_layer_per_block_decoder=3,
+        normalization="batch",
+    ):
+        super(DecoderBlock, self).__init__()
+
+        channels = get_channels(
+            input_channels, output_channels, n_layer_per_block_decoder
+        )
+
+        layers = []
+
+        for i in range(n_layer_per_block_decoder, 1, -1):
+            layers.append(
+                get_decoder_layer(
+                    input_channels=channels[i],
+                    output_channels=channels[i - 1],
+                    input_size=input_size,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    output_padding=output_padding,
+                    normalization=normalization,
+                )
+            )
+
+        layers.append(
+            get_decoder_layer(
+                input_channels=channels[1],
+                output_channels=channels[0],
+                input_size=input_size,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                output_padding=output_padding,
+                normalization=normalization,
+            )
+        )
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        # print("x: ", x.shape)
+        out = self.layers(x)
+        # print("out: ", out.shape)
+        return out
+
+
+def get_channels(
+    input_channels: int, output_channels: int, n_layer_per_block_encoder: int
+):
+    channels = []
+    channels.append(input_channels)
+    for _ in range(n_layer_per_block_encoder):
+        channels.append(output_channels)
+    return channels
+
+
+def get_encoder_layer(
+    block_type: str,
+    input_channels: int,
+    output_channels: int,
+    kernel_size: int,
+    stride: int,
+    padding: int,
+    normalization: str,
+):
+    if block_type == "conv":
+        return EncoderConv3DLayer(
+            input_channels,
+            output_channels,
+            kernel_size,
+            stride,
+            padding,
+            normalization,
+        )
+    elif block_type == "res":
+        return EncoderResLayer(
+            input_channels,
+            output_channels,
+            normalization,
+        )
+    else:
+        raise AttributeError("Bad block type specified. Block type must be conv or res")
+
+
+def get_decoder_layer(
+    block_type: str,
+    input_channels: int,
+    output_channels: int,
+    input_size: int,
+    kernel_size: int,
+    stride: int,
+    padding: int,
+    output_padding: List[int],
+    normalization: str,
+):
+    if block_type == "upsample":
+        return DecoderUpsample3DLayer(
+            input_channels,
+            output_channels,
+            input_size,
+            kernel_size,
+            stride,
+            padding,
+            output_padding,
+            normalization,
+        )
+    elif block_type == "transpose":
+        return DecoderTranspose3DLayer(
+            input_channels,
+            output_channels,
+            input_size,
+            kernel_size,
+            stride,
+            padding,
+            output_padding,
+            normalization,
+        )
+    elif block_type == "res":
+        return EncoderResLayer(
+            input_channels,
+            output_channels,
+            normalization,
+        )
+    else:
+        raise AttributeError(
+            "Bad block type specified. Block type must be upsample, transpose or res"
         )
 
 
@@ -537,495 +887,3 @@ class VAE_Decoder(nn.Module):
     def forward(self, z):
         y = self.sequential(z)
         return y
-
-
-class EncoderBlock3D(nn.Module):
-    """
-    Class defining the encoder's part of the Autoencoder.
-    This block is composed of multiple layers each with
-        - a 3D convolution,
-        - a batch normalization layer
-        - a leaky relu activation function.
-    """
-
-    def __init__(
-        self,
-        channels,
-        normalization="batch",
-        n_conv_per_block=3,
-    ):
-        super(EncoderBlock3D, self).__init__()
-
-        layers = [
-            EncoderLayer3D(
-                input_channels=channels[0],
-                output_channels=channels[1],
-                kernel_size=4,
-                stride=2,
-                padding=1,
-                normalization="batch",
-            )
-        ] + [
-            EncoderLayer3D(
-                input_channels=channels[i],
-                output_channels=channels[i + 1],
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                normalization="batch",
-            )
-            for i in range(1, n_conv_per_block)
-        ]
-
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layers(x)
-        # print("out: ", out.shape)
-        return out
-
-
-class DecoderBlock3D(nn.Module):
-    """
-    Class defining the decoder's part of the Autoencoder.
-    This block is composed of multiple layers each with
-        - an upsampling layer,
-        - a 3D convolution,
-        - a batch normalization layer
-        - a leaky relu activation function.
-    """
-
-    def __init__(
-        self,
-        channels,
-        input_size,
-        output_padding,
-        normalization="batch",
-        n_conv_per_block=3,
-    ):
-        super(DecoderBlock3D, self).__init__()
-
-        layers = [
-            DecoderConv3D(
-                input_channels=channels[i + 1],
-                output_channels=channels[i],
-                input_size=input_size,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                output_padding=output_padding,
-                normalization=normalization,
-            )
-            for i in range(n_conv_per_block - 1, 0, -1)
-        ] + [
-            DecoderUpsample3D(
-                input_channels=channels[1],
-                output_channels=channels[0],
-                input_size=input_size,
-                kernel_size=4,
-                stride=2,
-                padding=1,
-                output_padding=output_padding,
-                normalization=normalization,
-            )
-        ]
-
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layers(x)
-        # print("out: ", out.shape)
-        return out
-
-
-# class MultiConvEncoderBlock3D(nn.Module):
-#     """
-#     Class defining the encoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers containing
-#     a 3D convolutional layer, and a batch normalization,
-#     and finally a leaky relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         normalization="batch",
-#         n_conv_per_block=3,
-#     ):
-#         super(MultiConvEncoderBlock3D, self).__init__()
-
-#         layers = [
-#             nn.Conv3d(
-#                 input_channels,
-#                 output_channels,
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, output_channels),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for _ in range(n_conv_per_block - 1):
-#             layers.append(
-#                 nn.Conv3d(
-#                     output_channels,
-#                     output_channels,
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 )
-#             )
-#             layers.append(
-#                 get_norm3d(normalization, output_channels),
-#             )
-#             layers.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)
-
-
-# class MultiConvDecoderBlock3D(nn.Module):
-#     """
-#     Class defining the decoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers composed of a
-#     3D transposed convolutional layer, and a batch normalization layer,
-#     with finally a relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         output_padding=0,
-#         normalization="batch",
-#         n_conv_per_block=3,
-#     ):
-#         super(MultiConvDecoderBlock3D, self).__init__()
-
-#         layers = [
-#             nn.ConvTranspose3d(
-#                 input_channels,
-#                 output_channels,
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 output_padding=output_padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, output_channels),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for _ in range(n_conv_per_block - 1):
-#             layers.append(
-#                 nn.Conv3d(
-#                     output_channels,
-#                     output_channels,
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 )
-#             )
-#             layers.append(
-#                 get_norm3d(normalization, output_channels),
-#             )
-#             layers.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)
-
-
-# class ProgressiveConvEncoderBlock3D(nn.Module):
-#     """
-#     Class defining the encoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers containing
-#     a 3D convolutional layer, and a batch normalization,
-#     and finally a leaky relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         normalization="batch",
-#         n_conv_per_block=3,
-#     ):
-#         super(ProgressiveConvEncoderBlock3D, self).__init__()
-
-#         try:
-#             assert n_conv_per_block > 1
-#         except AssertionError():
-#             print(
-#                 "Oops! When calling ProgressiveConvEncoderLayer3D, n_conv_per_block should be > 1!"
-#             )
-
-#         n_channels = compute_n_channels(
-#             input_channels, output_channels, n_conv_per_block
-#         )
-
-#         layers = [
-#             nn.Conv3d(
-#                 n_channels[0],
-#                 n_channels[1],
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, n_channels[1]),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for i in range(n_conv_per_block - 1):
-#             layers.append(
-#                 nn.Conv3d(
-#                     n_channels[i + 1],
-#                     n_channels[i + 2],
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 )
-#             )
-#             layers.append(
-#                 get_norm3d(normalization, n_channels[i + 2]),
-#             )
-#             layers.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)
-
-
-# class ProgressiveConvDecoderBlock3D(nn.Module):
-#     """
-#     Class defining the decoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers composed of a
-#     3D transposed convolutional layer, and a batch normalization layer,
-#     with finally a relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         output_padding=0,
-#         normalization="batch",
-#         n_conv_per_block=3,
-#     ):
-#         super(ProgressiveConvDecoderBlock3D, self).__init__()
-
-#         try:
-#             assert n_conv_per_block > 1
-#         except AssertionError():
-#             print(
-#                 "Oops! When calling ProgressiveConvDecoderLayer3D, n_conv_per_block should be > 1!"
-#             )
-
-#         n_channels = compute_n_channels(
-#             output_channels, input_channels, n_conv_per_block
-#         )
-#         n_channels.reverse()
-
-#         layers = [
-#             nn.ConvTranspose3d(
-#                 n_channels[0],
-#                 n_channels[1],
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 output_padding=output_padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, n_channels[1]),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for i in range(n_conv_per_block - 1):
-#             layers.append(
-#                 nn.Conv3d(
-#                     n_channels[i + 1],
-#                     n_channels[i + 2],
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 )
-#             )
-#             layers.append(get_norm3d(normalization, n_channels[i + 2]))
-#             layers.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)
-
-
-# def compute_n_channels(input_channels, output_channels, n_conv_per_block):
-#     step_channels = (output_channels - input_channels) // (n_conv_per_block)
-#     channels = (
-#         [input_channels]
-#         + list(range(input_channels + step_channels, output_channels, step_channels))[
-#             : n_conv_per_block - 1
-#         ]
-#         + [output_channels]
-#     )
-#     return channels
-
-
-# class NonMonotonicConvEncoderBlock3D(nn.Module):
-#     """
-#     Class defining the encoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers containing
-#     a 3D convolutional layer, and a batch normalization,
-#     and finally a leaky relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         normalization="batch",
-#         n_conv_per_block=4,
-#     ):
-#         super(NonMonotonicConvEncoderBlock3D, self).__init__()
-
-#         layers = [
-#             nn.Conv3d(
-#                 input_channels,
-#                 input_channels * 2,
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, input_channels * 2),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for i in range(1, n_conv_per_block - 1):
-#             layers += [
-#                 nn.Conv3d(
-#                     input_channels * 2**i,
-#                     input_channels * 2 ** (i + 1),
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 ),
-#                 get_norm3d(normalization, input_channels * 2 ** (i + 1)),
-#                 nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#             ]
-
-#         layers += [
-#             nn.Conv3d(
-#                 input_channels * 2 ** (n_conv_per_block - 1),
-#                 output_channels,
-#                 kernel_size=3,
-#                 stride=1,
-#                 padding=1,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, output_channels),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)
-
-
-# class NonMonotonicConvDecoderBlock3D(nn.Module):
-#     """
-#     Class defining the decoder's part of the Autoencoder.
-#     This layer is composed of n_conv_per_block layers composed of a
-#     3D transposed convolutional layer, and a batch normalization layer,
-#     with finally a relu activation function.
-#     """
-
-#     def __init__(
-#         self,
-#         input_channels,
-#         output_channels,
-#         kernel_size=4,
-#         stride=2,
-#         padding=1,
-#         output_padding=0,
-#         normalization="batch",
-#         n_conv_per_block=4,
-#     ):
-#         super(NonMonotonicConvDecoderBlock3D, self).__init__()
-
-#         layers = [
-#             nn.ConvTranspose3d(
-#                 input_channels,
-#                 input_channels // 2,
-#                 kernel_size,
-#                 stride=stride,
-#                 padding=padding,
-#                 output_padding=output_padding,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, input_channels // 2),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         for i in range(1, n_conv_per_block - 1):
-#             layers += [
-#                 nn.Conv3d(
-#                     input_channels // 2**i,
-#                     input_channels // 2 ** (i + 1),
-#                     kernel_size=3,
-#                     stride=1,
-#                     padding=1,
-#                     bias=False,
-#                 ),
-#                 get_norm3d(normalization, input_channels // 2 ** (i + 1)),
-#                 nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#             ]
-
-#         layers += [
-#             nn.Conv3d(
-#                 input_channels // 2 ** (n_conv_per_block - 1),
-#                 output_channels,
-#                 kernel_size=3,
-#                 stride=1,
-#                 padding=1,
-#                 bias=False,
-#             ),
-#             get_norm3d(normalization, output_channels),
-#             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-#         ]
-
-#         self.layer = nn.Sequential(*layers)
-
-#     def forward(self, x):
-#         return self.layer(x)

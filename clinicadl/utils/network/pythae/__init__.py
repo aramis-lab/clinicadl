@@ -23,7 +23,4 @@ from .models.wasserstein_ae import pythae_WAE_MMD
 from .models.ae import pythae_AE
 from .models.rae_l2 import pythae_RAE_L2
 from .models.rae_gp import pythae_RAE_GP
-from .models.multi_conv_vae import multi_conv_VAE
-from .models.progressive_conv_vae import progressive_conv_VAE
-from .models.non_monotonic_conv_vae import non_monotonic_conv_VAE
 from .models.resnet_vae import ResNet18_VAE

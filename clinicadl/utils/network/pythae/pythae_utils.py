@@ -6,9 +6,9 @@ from pythae.models.base.base_utils import ModelOutput
 
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_layers import (
-    DecoderTranspose3D,
-    DecoderUpsample3D,
-    EncoderLayer3D,
+    EncoderBlock,
+    DecoderBlock,
+    EncoderConv3DLayer,
     Flatten,
     Unflatten3D,
 )
@@ -16,25 +16,25 @@ from clinicadl.utils.network.vae.vae_layers import (
 import torch
 from torch import nn
 
-DecoderLayer3D = DecoderUpsample3D
 
 class BasePythae(Network):
     def __init__(
         self,
         input_size,
         first_layer_channels,
-        n_conv_encoder,
+        n_block_encoder,
         feature_size,
         latent_space_size,
-        n_conv_decoder,
+        n_block_decoder,
         last_layer_channels,
         last_layer_conv,
+        n_layer_per_block_encoder,
+        n_layer_per_block_decoder,
+        block_type,
         gpu,
         is_ae=False,
     ):
         super(BasePythae, self).__init__(gpu=gpu)
-
-        #self.model = None
 
         self.input_size = input_size
         self.latent_space_size = latent_space_size
@@ -42,12 +42,15 @@ class BasePythae(Network):
         encoder_layers, mu_layer, logvar_layer, decoder_layers = build_encoder_decoder(
             input_size=input_size,
             first_layer_channels=first_layer_channels,
-            n_conv_encoder=n_conv_encoder,
+            n_block_encoder=n_block_encoder,
             feature_size=feature_size,
             latent_space_size=latent_space_size,
-            n_conv_decoder=n_conv_decoder,
+            n_block_decoder=n_block_decoder,
             last_layer_channels=last_layer_channels,
             last_layer_conv=last_layer_conv,
+            n_layer_per_block_encoder=n_layer_per_block_encoder,
+            n_layer_per_block_decoder=n_layer_per_block_decoder,
+            block_type=block_type,
         )
 
         if is_ae:
@@ -69,7 +72,7 @@ class BasePythae(Network):
         )
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
-        #x = input_dict["image"].to(self.device)
+        # x = input_dict["image"].to(self.device)
         model_outputs = self.forward(input_dict)
         loss_dict = {
             "loss": model_outputs.loss, 
@@ -110,12 +113,15 @@ class BasePythae(Network):
 def build_encoder_decoder(
     input_size=(1, 80, 96, 80),
     first_layer_channels=32,
-    n_conv_encoder=3,
+    n_block_encoder=3,
     feature_size=0,
     latent_space_size=128,
-    n_conv_decoder=3,
+    n_block_decoder=3,
     last_layer_channels=32,
     last_layer_conv=False,
+    n_layer_per_block_encoder=1,
+    n_layer_per_block_decoder=1,
+    block_type="conv",
 ):
 
     input_c = input_size[0]
@@ -125,24 +131,28 @@ def build_encoder_decoder(
 
     # ENCODER
     encoder_layers = []
-    # Input Layer
-    encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
     
+    # Input Layer
+    encoder_layers.append(EncoderConv3DLayer(input_c, first_layer_channels))
+
     # Conv Layers
-    for i in range(n_conv_encoder - 1):
+    for i in range(n_block_encoder):
         encoder_layers.append(
-            EncoderLayer3D(
-                first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
+            EncoderBlock(
+                first_layer_channels * 2**i, 
+                first_layer_channels * 2**(i+1), 
+                n_layer_per_block_encoder, 
+                block_type,
             )
         )
     # Construct output paddings
     # Compute size of the feature space
     n_pix_encoder = (
         first_layer_channels
-        * 2 ** (n_conv_encoder - 1)
-        * (input_d // (2**n_conv_encoder))
-        * (input_h // (2**n_conv_encoder))
-        * (input_w // (2**n_conv_encoder))
+        * 2 ** (n_block_encoder - 1)
+        * (input_d // (2**n_block_encoder))
+        * (input_h // (2**n_block_encoder))
+        * (input_w // (2**n_block_encoder))
     )
     # Flatten
     encoder_layers.append(Flatten())
@@ -154,6 +164,7 @@ def build_encoder_decoder(
         encoder_layers.append(
             nn.Sequential(nn.Linear(n_pix_encoder, feature_space), nn.ReLU())
         )
+
     encoder = nn.Sequential(*encoder_layers)
 
     # LATENT SPACE
@@ -169,17 +180,17 @@ def build_encoder_decoder(
     decoder_output_padding.append([d % 2, h % 2, w % 2])
     d, h, w = d // 2, h // 2, w // 2
     decoder_input_size.append([d, h, w])
-    for i in range(n_conv_decoder - 1):
+    for i in range(n_block_decoder - 1):
         decoder_output_padding.append([d % 2, h % 2, w % 2])
         d, h, w = d // 2, h // 2, w // 2
         decoder_input_size.append([d, h, w])
 
     n_pix_decoder = (
         last_layer_channels
-        * 2 ** (n_conv_decoder - 1)
-        * (input_d // (2**n_conv_decoder))
-        * (input_h // (2**n_conv_decoder))
-        * (input_w // (2**n_conv_decoder))
+        * 2 ** (n_block_decoder - 1)
+        * (input_d // (2**n_block_decoder))
+        * (input_h // (2**n_block_decoder))
+        * (input_w // (2**n_block_decoder))
     )
 
     decoder_layers = []
@@ -203,69 +214,69 @@ def build_encoder_decoder(
     # Unflatten
     decoder_layers.append(
         Unflatten3D(
-            last_layer_channels * 2 ** (n_conv_decoder - 1),
-            input_d // (2**n_conv_decoder),
-            input_h // (2**n_conv_decoder),
-            input_w // (2**n_conv_decoder),
+            last_layer_channels * 2 ** (n_block_decoder - 1),
+            input_d // (2**n_block_decoder),
+            input_h // (2**n_block_decoder),
+            input_w // (2**n_block_decoder),
         )
     )
     # Decoder layers
-    for i in range(n_conv_decoder - 1, 0, -1):
+    for i in range(n_block_decoder - 1, 0, -1):
         decoder_layers.append(
-            DecoderLayer3D(
-                last_layer_channels * 2 ** (i),
-                last_layer_channels * 2 ** (i - 1),
-                input_size=decoder_input_size[i],
-                output_padding=decoder_output_padding[i],
-            )
+            DecoderBlock(
+                last_layer_channels * 2 ** (i), 
+                last_layer_channels * 2 ** (i-1), 
+                decoder_input_size[i],
+                decoder_output_padding[i],
+                n_layer_per_block_decoder,
+                block_type,
+            ),
         )
 
     # Output conv layer
     if last_layer_conv:
         last_layer = nn.Sequential(
-            DecoderLayer3D(
-                last_layer_channels,
-                last_layer_channels,
-                input_size=decoder_input_size[0],
-                output_padding=decoder_output_padding[0],
+            DecoderBlock(
+                last_layer_channels, 
+                last_layer_channels, 
+                decoder_input_size[0],
+                decoder_output_padding[0],
+                n_layer_per_block_decoder,
+                block_type,
+            ),
+            nn.Conv3d(last_layer_channels, input_c, 3, stride=1, padding=1),
+            nn.Sigmoid(),
+        )
+
+    else:
+        last_layer = nn.Sequential(
+            DecoderBlock(
+                last_layer_channels, 
+                last_layer_channels, 
+                decoder_input_size[0],
+                decoder_output_padding[0],
+                n_layer_per_block_decoder - 1,
+                block_type,
+            ),
+            nn.Upsample(
+                size=[input_d, input_h, input_w],
+                mode="nearest",
             ),
             nn.Conv3d(
                 last_layer_channels,
                 input_c,
                 3,
                 stride=1,
-                padding=1
+                padding=1,
+                bias=False,
             ),
             nn.Sigmoid(),
         )
 
-    else:
-        last_layer = nn.Sequential(
-                # nn.ConvTranspose3d(
-                #    last_layer_channels,
-                #    input_c,
-                #    4,
-                #    stride=2,
-                #    padding=1,
-                #    output_padding=decoder_output_padding[0],
-                #    bias=False,
-                #),
-                nn.Upsample(
-                    size=[input_d, input_h, input_w],
-                    mode='nearest',
-                ),
-                nn.Conv3d(
-                    last_layer_channels,
-                    input_c,
-                    3,
-                    stride=1,
-                    padding=1,
-                    bias=False,
-                ),
-                nn.Sigmoid(),
-            )
     decoder_layers.append(last_layer)
+
     decoder = nn.Sequential(*decoder_layers)
+
     return encoder, mu_layer, var_layer, decoder
 
 
@@ -277,12 +288,12 @@ class Encoder_VAE(BaseEncoder):
         self.mu_layer = mu_layer
         self.logvar_layer = logvar_layer
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         h = self.layers(x)
         mu, logVar = self.mu_layer(h), self.logvar_layer(h)
         output = ModelOutput(
-            embedding=mu, # Set the output from the encoder in a ModelOutput instance
-            log_covariance=logVar
+            embedding=mu,  # Set the output from the encoder in a ModelOutput instance
+            log_covariance=logVar,
         )
         return output
 
@@ -294,11 +305,11 @@ class Encoder_AE(BaseEncoder):
         self.layers = encoder_layers
         self.mu_layer = mu_layer
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         h = self.layers(x)
         embedding = self.mu_layer(h)
         output = ModelOutput(
-            embedding=embedding, # Set the output from the encoder in a ModelOutput instance
+            embedding=embedding,  # Set the output from the encoder in a ModelOutput instance
         )
         return output
 
@@ -309,9 +320,9 @@ class Decoder(BaseDecoder):
 
         self.layers = decoder_layers
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         out = self.layers(x)
         output = ModelOutput(
-            reconstruction=out # Set the output from the decoder in a ModelOutput instance
+            reconstruction=out  # Set the output from the decoder in a ModelOutput instance
         )
         return output
