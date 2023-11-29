@@ -191,7 +191,7 @@ class MapsManager:
                 num_epochs=self.epochs,
                 learning_rate=self.learning_rate,
                 batch_size=self.batch_size,
-            )            
+            )
             # Create Pythae Training Pipeline
             pipeline = TrainingPipeline(
                 training_config=config,
@@ -258,6 +258,7 @@ class MapsManager:
         save_tensor: bool = False,
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
+        pythae: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -350,7 +351,7 @@ class MapsManager:
                         if label_code == "default"
                         else label_code,
                         cnn_index=network,
-                        for_pythae=True,
+                        for_pythae=pythae,
                     )
                     test_loader = DataLoader(
                         data_test,
@@ -393,7 +394,7 @@ class MapsManager:
                     label_code=self.label_code
                     if label_code == "default"
                     else label_code,
-                    for_pythae=True,
+                    for_pythae=pythae,
                 )
 
                 test_loader = DataLoader(
@@ -412,9 +413,9 @@ class MapsManager:
                     split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
+                    for_pythae=pythae,
                 )
                 if save_tensor or save_nifti or save_latent_tensor:
-                    print(save_latent_tensor)
                     self._save_model_output(
                         data_test,
                         data_group,
@@ -568,7 +569,7 @@ class MapsManager:
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
-                    images = data["image"].to(model.device)
+                    images = data["data"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(
                         images, target_node, level=level
@@ -925,7 +926,6 @@ class MapsManager:
 
             model.train()
             train_loader.dataset.train()
-
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
@@ -1006,6 +1006,7 @@ class MapsManager:
         use_labels=True,
         gpu=None,
         network=None,
+        for_pythae=False,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1044,9 +1045,14 @@ class MapsManager:
                 network=network,
             )
 
-            prediction_df, metrics = self.task_manager.test(
+            if for_pythae:
+                prediction_df, metrics = self.task_manager.test_pythae(
                 model, dataloader, criterion, use_labels=use_labels
             )
+            else:
+                prediction_df, metrics = self.task_manager.test(
+                    model, dataloader, criterion, use_labels=use_labels
+                )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
@@ -1106,7 +1112,7 @@ class MapsManager:
             for i in range(nb_imgs):
                 data = dataset[i]
                 try:
-                    image = data["image"]
+                    image = data["data"]
                 except:
                     image = data["data"]
                 output = (
@@ -1151,9 +1157,7 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        print("in save model output")
         for selection_metric in selection_metrics:
-            print(selection_metric)
             # load the best trained model during the training
             model, _ = self._init_model(
                 transfer_path=self.maps_path,
@@ -1215,7 +1219,6 @@ class MapsManager:
                     output_filename = (
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                     )
-                    print(output_filename)
                     torch.save(image, path.join(tensor_path, input_filename))
                     torch.save(reconstruction, path.join(tensor_path, output_filename))
                     logger.debug(f"File saved at {[input_filename, output_filename]}")
@@ -1228,7 +1231,6 @@ class MapsManager:
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                     output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                    print(output_filename)
                     nib.save(input_nii, path.join(nifti_path, input_filename))
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
@@ -1237,7 +1239,6 @@ class MapsManager:
                     output_filename = (
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                     )
-                    print(output_filename)
                     torch.save(latent, path.join(latent_tensor_path, output_filename))
 
 
@@ -1769,18 +1770,22 @@ class MapsManager:
         metrics_path = path.join(
             performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
         )
-        if metrics is not None:
-            # if not path.exists(metrics_path):
-            #     pd.DataFrame(metrics, index=[0]).to_csv(
-            #         metrics_path, index=False, sep="\t"
-            #     )
-            # else:
-            #     pd.DataFrame(metrics, index=[0]).to_csv(
-            #         metrics_path, index=False, sep="\t", mode="a", header=False
-            #     )
-            metrics.to_csv(
-                metrics_path, sep="\t"
-            )
+        #if metrics is not None:
+        #    if isinstance(metrics, pd.DataFrame):
+        #        metrics.to_csv(
+        #            metrics_path, sep="\t"
+        #        )
+        #    else:
+        #        if not path.exists(metrics_path):
+        #            pd.DataFrame(metrics, index=[0]).to_csv(
+        #                metrics_path, index=False, sep="\t"
+        #            )
+        #        else:
+        #            pd.DataFrame(metrics, index=[0]).to_csv(
+        #                metrics_path, index=False, sep="\t", mode="a", header=False
+        #            )
+        results_df.describe().to_csv(metrics_path, sep="\t")
+            
 
     def _ensemble_to_tsv(
         self,
@@ -2047,7 +2052,6 @@ class MapsManager:
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
-            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None

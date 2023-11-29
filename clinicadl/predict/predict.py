@@ -58,6 +58,14 @@ def predict(
         raise ClinicaDLArgumentError(
             "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
         )
+    # Check if it is a pythae model
+    pythae = "pythae" in maps_manager.parameters["architecture"]
+    
+    print("overwrite:", overwrite)
+    print("batch_size:", batch_size)
+    print("split_list:", split_list)
+    print("pythae:", pythae)
+
     maps_manager.predict(
         data_group,
         caps_directory=caps_directory,
@@ -75,4 +83,5 @@ def predict(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
+        pythae=pythae
     )

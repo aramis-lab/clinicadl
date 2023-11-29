@@ -1,7 +1,9 @@
 from clinicadl.utils.network.vae.vae_layers import (
-    EncoderLayer3D,
+    EncoderConv3DLayer,
     Flatten,
 )
+
+EncoderLayer3D = EncoderConv3DLayer
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 from pythae.models.nn import BaseEncoder, BaseDecoder

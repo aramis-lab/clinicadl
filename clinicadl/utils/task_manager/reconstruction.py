@@ -21,7 +21,7 @@ class ReconstructionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE", "PSNR", "SSIM"]
+        return ["MSE", "MAE", "PSNR", "SSIM", "MSSSIM"]
 
     @property
     def save_outputs(self):
@@ -29,7 +29,7 @@ class ReconstructionManager(TaskManager):
 
     def generate_test_row(self, idx, data, outputs):
         try:
-            y = data["image"][idx]
+            y = data["data"][idx]
         except:
             y = data["data"][idx]
         y_pred = outputs[idx].cpu()
@@ -44,10 +44,11 @@ class ReconstructionManager(TaskManager):
         return [row]
 
     def compute_metrics(self, results_df):
-    #     metrics = dict()
-    #     for metric in self.evaluation_metrics:
-    #         metrics[metric] = results_df[metric].mean()
-        return results_df.describe()
+        metrics = dict()
+        for metric in self.evaluation_metrics:
+            metrics[metric] = results_df[metric].mean()
+        return metrics
+        #return results_df.describe()
 
     @staticmethod
     def output_size(input_size, df, label):

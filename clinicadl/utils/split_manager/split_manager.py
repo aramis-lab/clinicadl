@@ -39,7 +39,6 @@ class SplitManager:
         split_list: List[str]
         """
         tsv_path = Path(tsv_path)
-        print(tsv_path)
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)

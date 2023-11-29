@@ -85,8 +85,8 @@ class CapsDataset(Dataset):
             )
 
         self.elem_per_image = self.num_elem_per_image()
-        if "image" in self[0].keys():
-            self.size = self[0]["image"].size()
+        if "data" in self[0].keys():
+            self.size = self[0]["data"].size()
         else:
             self.size = self[0].data.size()
 
@@ -339,7 +339,7 @@ class CapsDatasetImage(CapsDataset):
             image = self.augmentation_transformations(image)
 
         sample = {
-            "image": image,
+            "data": image,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -375,7 +375,7 @@ class PythaeCAPS(CapsDatasetImage):
     def __getitem__(self, index):
         X = super().__getitem__(index)
         return DatasetOutput(
-            data=X['image'],
+            data=X['data'],
             participant_id=X['participant_id'],
             session_id=X['session_id'],
             image_id=X['image_id'],
@@ -459,7 +459,7 @@ class CapsDatasetPatch(CapsDataset):
             patch_tensor = self.augmentation_transformations(patch_tensor)
 
         sample = {
-            "image": patch_tensor,
+            "data": patch_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -570,7 +570,7 @@ class CapsDatasetRoi(CapsDataset):
             roi_tensor = self.augmentation_transformations(roi_tensor)
 
         sample = {
-            "image": roi_tensor,
+            "data": roi_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -734,7 +734,7 @@ class CapsDatasetSlice(CapsDataset):
             slice_tensor = self.augmentation_transformations(slice_tensor)
 
         sample = {
-            "image": slice_tensor,
+            "data": slice_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -926,10 +926,10 @@ class GaussianSmoothing(object):
     def __call__(self, sample):
         from scipy.ndimage.filters import gaussian_filter
 
-        image = sample["image"]
+        image = sample["data"]
         np.nan_to_num(image, copy=False)
         smoothed_image = gaussian_filter(image, sigma=self.sigma)
-        sample["image"] = smoothed_image
+        sample["data"] = smoothed_image
 
         return sample
 
