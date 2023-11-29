@@ -66,7 +66,7 @@ They provide all the details of the processing performed by the `prepare-data` c
 ## Extraction method
 
 In this section we consider the options needed and outputs produced for different
-extraction method command. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
+extraction method commands. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
 The suffix represents the initial modality (it can be for example `T1w`).
 
 !!! warning
