@@ -33,14 +33,6 @@ class ResNet18_VAE(BasePythae):
         _, _ = super(ResNet18_VAE, self).__init__(
             input_size=input_size,
             first_layer_channels=first_layer_channels,
-<<<<<<< HEAD
-            n_conv_encoder=n_conv_encoder,
-            feature_size=feature_size,
-            latent_space_size=latent_space_size,
-            n_conv_decoder=n_conv_decoder,
-            last_layer_channels=last_layer_channels,
-            last_layer_conv=last_layer_conv,
-=======
             n_block_encoder=n_block_encoder,
             feature_size=feature_size,
             latent_space_size=latent_space_size,
@@ -50,7 +42,6 @@ class ResNet18_VAE(BasePythae):
             n_layer_per_block_encoder=n_layer_per_block_encoder,
             n_layer_per_block_decoder=n_layer_per_block_decoder,
             block_type=block_type,
->>>>>>> 6f4f080e28f20ad2c32b545be0a7f4511bcfafcf
             gpu=gpu,
         )
 
@@ -382,8 +373,6 @@ class ResNet18Dec(BaseDecoder):
         # print("After (layer 1)", out.shape)
 
         output = ModelOutput(reconstruction=out)
-<<<<<<< HEAD
+
         return output
-=======
-        return output
->>>>>>> 6f4f080e28f20ad2c32b545be0a7f4511bcfafcf
+
