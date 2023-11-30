@@ -6,12 +6,10 @@ from pythae.models.base.base_utils import ModelOutput
 
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_layers import (
-    EncoderBlock,
-    DecoderBlock,
-    EncoderConv3DLayer,
     Flatten,
     Unflatten3D,
 )
+from clinicadl.utils.network.vae.vae_blocks import EncoderBlock, DecoderBlock
 
 import torch
 from torch import nn
