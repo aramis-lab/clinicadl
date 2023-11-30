@@ -4,6 +4,11 @@
 
 # ClinicaDL Documentation
 
+!!! tip "ClinicaDL tutorial"
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/) 
+    to try **ClinicaDL** directly in a Google Colab instance!
+
+
 ## What is ClinicaDL ?
 
 **ClinicaDL** is an open-source deep learning software for reproducible neuroimaging processing. It can be seen as the deep learning extension of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/), an open-source Python library for neuroimaging preprocessing and analysis. The combination of **ClinicaDL** and **Clinica** allows performing an end-to-end neuroimaging analysis, from the download of raw data sets to the interpretation of trained networks, including neuroimaging preprocessing, quality check, label definition, architecture search, and network training and evaluation.
@@ -25,10 +30,6 @@ tutorial](https://aramislab.paris.inria.fr/clinicadl/tuto/).
 
 If you are new to ClinicaDL, please consider reading the [First steps
 section](./Introduction.md) before starting your project!
-
-!!! tip "ClinicaDL tutorial"
-    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/) 
-    to try **ClinicaDL** directly in a Google Colab instance!
 
 ## Installation
 
