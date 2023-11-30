@@ -107,12 +107,10 @@ class EncoderConv3DLayer(nn.Module):
             bias=False,
         )
         self.norm = get_norm3d(normalization, output_channels)
-        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        out = self.conv(x)
-        out = self.norm(out)
-        out = self.activation(out)
+        out = self.norm(self.conv(x))
+        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -145,12 +143,10 @@ class DecoderTranspose3DLayer(nn.Module):
             bias=False,
         )
         self.norm = get_norm3d(normalization, output_channels)
-        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        out = self.convtranspose(x)
-        out = self.norm(out)
-        out = self.activation(out)
+        out = self.norm(self.convtranspose(x))
+        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -190,7 +186,6 @@ class DecoderUpsample3DLayer(nn.Module):
             bias=False,
         )
         self.norm = get_norm3d(normalization, output_channels)
-        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
         self.input_size = input_size
         self.padding = output_padding
         self.dim = (
@@ -202,10 +197,8 @@ class DecoderUpsample3DLayer(nn.Module):
         )
 
     def forward(self, x):
-        out = self.upsample(x)
-        out = self.conv(out)
-        out = self.norm(out)
-        out = self.activation(out)
+        out = self.norm(self.conv(self.upsample(x)))
+        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -269,7 +262,6 @@ class EncoderResLayer(nn.Module):
         )
 
         self.norm1 = get_norm3d(normalization, output_channels)
-        self.relu = nn.ReLU(inplace=True)
 
         self.conv2 = nn.Conv3d(
             output_channels,
@@ -297,19 +289,14 @@ class EncoderResLayer(nn.Module):
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.conv1(x)
-        out = self.norm1(out)
-        out = self.relu(out)
-        # print("After (layer x (y) 1st conv)", out.shape)
+        out = self.norm1(self.conv1(x))
+        out = F.relu(out, inplace=True)
 
-        out = self.conv2(out)
-        out = self.norm2(out)
-        # print("After (layer x (y) 2nd conv)", out.shape)
+        out = self.norm2(self.conv2(out))
 
         out += self.shortcut(x)
-        out = self.relu(out)
-        # print("After (layer x (y) shortcut)", out.shape)
-
+        out = F.relu(out, inplace=True)
+        
         return out
 
 
@@ -387,18 +374,12 @@ class DecoderResLayer(nn.Module):
         self.norm1 = get_norm3d(normalization, output_channels)
 
     def forward(self, x):
-        out = self.conv2(x)
-        out = self.norm2(out)
-        out = F.relu(out)
-        # print("After (layer x (y) 1st conv)", out.shape)
+        out = self.norm2(self.conv2(x))
+        out = F.relu(out, inplace=True)
 
-        out = self.conv1(out)
-        out = self.norm1(out)
-        # print("After layer (x (y) 2nd conv)", out.shape)
+        out = self.norm1(self.conv1(out))
 
         out += self.shortcut(x)
-        # print("After layer (x (y) shortcut)", out.shape)
-
         out = F.relu(out)
         return out
 

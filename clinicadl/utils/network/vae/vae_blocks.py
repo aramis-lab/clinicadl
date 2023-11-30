@@ -52,10 +52,7 @@ class EncoderBlock(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        # print("Before encoder block (x): ", x.shape)
-        out = self.layers(x)
-        # print("After encoder block (x): ", out.shape)
-        return out
+        return self.layers(x)
 
 
 class DecoderBlock(nn.Module):
@@ -111,10 +108,7 @@ class DecoderBlock(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        # print("Before decoder block (x): ", x.shape)
-        out = self.layers(x)
-        # print("After decoder block (x): ", out.shape)
-        return out
+        return self.layers(x)
 
 
 def get_channels(
