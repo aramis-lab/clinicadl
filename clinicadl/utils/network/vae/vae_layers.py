@@ -98,23 +98,21 @@ class EncoderConv3DLayer(nn.Module):
         normalization="batch",
     ):
         super(EncoderConv3DLayer, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Conv3d(
-                input_channels,
-                output_channels,
-                kernel_size,
-                stride=stride,
-                padding=padding,
-                bias=False,
-            ),
-            get_norm3d(normalization, output_channels),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+        self.conv = nn.Conv3d(
+            input_channels,
+            output_channels,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            bias=False,
         )
+        self.norm = get_norm3d(normalization, output_channels)
+        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layer(x)
-        # print("out: ", out.shape)
+        out = self.conv(x)
+        out = self.norm(out)
+        out = self.activation(out)
         return out
 
 
@@ -137,22 +135,23 @@ class DecoderTranspose3DLayer(nn.Module):
         normalization="batch",
     ):
         super(DecoderTranspose3DLayer, self).__init__()
-        self.layer = nn.Sequential(
-            nn.ConvTranspose3d(
-                input_channels,
-                output_channels,
-                kernel_size,
-                stride=stride,
-                padding=padding,
-                output_padding=output_padding,
-                bias=False,
-            ),
-            get_norm3d(normalization, output_channels),
-            nn.ReLU(inplace=True),
+        self.convtranspose = nn.ConvTranspose3d(
+            input_channels,
+            output_channels,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            output_padding=output_padding,
+            bias=False,
         )
+        self.norm = get_norm3d(normalization, output_channels)
+        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        return self.layer(x)
+        out = self.convtranspose(x)
+        out = self.norm(out)
+        out = self.activation(out)
+        return out
 
 
 class DecoderUpsample3DLayer(nn.Module):
@@ -174,25 +173,24 @@ class DecoderUpsample3DLayer(nn.Module):
         normalization="batch",
     ):
         super(DecoderUpsample3DLayer, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Upsample(
-                size=[
-                    input_size[0] * 2 + output_padding[0],
-                    input_size[1] * 2 + output_padding[1],
-                    input_size[2] * 2 + output_padding[2],
-                ],
-                mode="nearest",
-            ),
-            nn.Conv3d(
-                input_channels,
-                output_channels,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                bias=False,
-            ),
-            get_norm3d(normalization, output_channels),
+        self.upsample = nn.Upsample(
+            size=[
+                input_size[0] * 2 + output_padding[0],
+                input_size[1] * 2 + output_padding[1],
+                input_size[2] * 2 + output_padding[2],
+            ],
+            mode="nearest",
         )
+        self.conv = nn.Conv3d(
+            input_channels,
+            output_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            bias=False,
+        )
+        self.norm = get_norm3d(normalization, output_channels)
+        self.activation = nn.LeakyReLU(negative_slope=0.2, inplace=True)
         self.input_size = input_size
         self.padding = output_padding
         self.dim = (
@@ -204,14 +202,11 @@ class DecoderUpsample3DLayer(nn.Module):
         )
 
     def forward(self, x):
-        # print("Decoder layer param")
-        # print("input size:", self.input_size)
-        # print("output padding:", self.padding)
-        # print("dimension:", self.dim)
-        # print("decoder layer input shape:", x.shape)
-        x = F.relu(self.layer(x), inplace=True)
-        # print("decoder layer output shape:", x.shape)
-        return x
+        out = self.upsample(x)
+        out = self.conv(out)
+        out = self.norm(out)
+        out = self.activation(out)
+        return out
 
 
 class Flatten(nn.Module):
@@ -244,125 +239,6 @@ class Unflatten3D(nn.Module):
         )
 
 
-class EncoderConv3DBlock(nn.Module):
-    """
-    Class defining the encoder's part of the Autoencoder.
-    This block is composed of multiple layers each with
-        - a 3D convolution,
-        - a batch normalization layer
-        - a leaky relu activation function.
-    """
-
-    def __init__(
-        self,
-        input_channels,
-        output_channels,
-        normalization="batch",
-        n_layer_per_block_encoder=3,
-    ):
-        super(EncoderConv3DBlock, self).__init__()
-
-        channels = get_channels(
-            input_channels, output_channels, n_layer_per_block_encoder
-        )
-
-        layers = []
-
-        layers.append(
-            EncoderLayer3D(
-                input_channels=channels[0],
-                output_channels=channels[1],
-                kernel_size=4,
-                stride=2,
-                padding=1,
-                normalization=normalization,
-            )
-        )
-
-        for i in range(1, n_layer_per_block_encoder):
-            layers.append(
-                EncoderLayer3D(
-                    input_channels=channels[i],
-                    output_channels=channels[i + 1],
-                    kernel_size=3,
-                    stride=1,
-                    padding=1,
-                    normalization=normalization,
-                )
-            )
-
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layers(x)
-        # print("out: ", out.shape)
-        return out
-
-
-class DecoderConv3DBlock(nn.Module):
-    """
-    Class defining the decoder's part of the Autoencoder.
-    This block is composed of multiple layers each with
-        - an upsampling layer,
-        - a 3D convolution,
-        - a batch normalization layer
-        - a leaky relu activation function.
-    """
-
-    def __init__(
-        self,
-        input_channels,
-        output_channels,
-        input_size,
-        output_padding,
-        normalization="batch",
-        n_layer_per_block_decoder=3,
-    ):
-        super(DecoderConv3DBlock, self).__init__()
-
-        channels = get_channels(
-            input_channels, output_channels, n_layer_per_block_decoder
-        )
-
-        layers = []
-
-        for i in range(n_layer_per_block_decoder, 1, -1):
-            layers.append(
-                DecoderConv3D(
-                    input_channels=channels[i],
-                    output_channels=channels[i - 1],
-                    input_size=input_size,
-                    kernel_size=3,
-                    stride=1,
-                    padding=1,
-                    output_padding=output_padding,
-                    normalization=normalization,
-                )
-            )
-
-        layers.append(
-            DecoderUpsample3D(
-                input_channels=channels[1],
-                output_channels=channels[0],
-                input_size=input_size,
-                kernel_size=4,
-                stride=2,
-                padding=1,
-                output_padding=output_padding,
-                normalization=normalization,
-            )
-        )
-
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x):
-        # print("x: ", x.shape)
-        out = self.layers(x)
-        # print("out: ", out.shape)
-        return out
-
-
 class EncoderResLayer(nn.Module):
     """
     This layer is composed of a residual block.
@@ -376,12 +252,17 @@ class EncoderResLayer(nn.Module):
     ):
         super(EncoderResLayer, self).__init__()
 
-        stride = output_channels // input_channels
+        if output_channels != input_channels: 
+            stride = 2
+            kernel_size = 4
+        else: 
+            stride = 1
+            kernel_size = 3
 
         self.conv1 = nn.Conv3d(
             input_channels,
             output_channels,
-            kernel_size=3,
+            kernel_size=kernel_size,
             stride=stride,
             padding=1,
             bias=False,
@@ -400,15 +281,16 @@ class EncoderResLayer(nn.Module):
         )
         self.norm2 = get_norm3d(normalization, output_channels)
 
-        if stride == 1:
+        if input_channels == output_channels:
             self.shortcut = nn.Sequential()
         else:
             self.shortcut = nn.Sequential(
                 nn.Conv3d(
                     input_channels,
                     output_channels,
-                    kernel_size=1,
+                    kernel_size=kernel_size,
                     stride=stride,
+                    padding=1,
                     bias=False,
                 ),
                 nn.BatchNorm3d(output_channels),
@@ -451,9 +333,7 @@ class DecoderResLayer(nn.Module):
             bias=False,
         )
 
-        self.norm2 = get_norm3d(normalization, output_channels)
-
-        self.norm1 = get_norm3d(normalization, output_channels)
+        self.norm2 = get_norm3d(normalization, input_channels)
 
         if input_channels == output_channels:
             self.conv1 = nn.Conv3d(
@@ -503,14 +383,22 @@ class DecoderResLayer(nn.Module):
                 ),
                 get_norm3d(normalization, output_channels),
             )
+        
+        self.norm1 = get_norm3d(normalization, output_channels)
 
     def forward(self, x):
-        out = F.relu(self.norm2(self.conv2(x)))
-        # print("After layer (x (y) 1st conv)", out.shape)
-        out = self.norm1(self.conv1(out))
+        out = self.conv2(x)
+        out = self.norm2(out)
+        out = F.relu(out)
+        # print("After (layer x (y) 1st conv)", out.shape)
+
+        out = self.conv1(out)
+        out = self.norm1(out)
         # print("After layer (x (y) 2nd conv)", out.shape)
+
         out += self.shortcut(x)
         # print("After layer (x (y) shortcut)", out.shape)
+
         out = F.relu(out)
         return out
 
@@ -550,9 +438,9 @@ class EncoderBlock(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        # print("x: ", x.shape)
+        # print("Before encoder block (x): ", x.shape)
         out = self.layers(x)
-        # print("out: ", out.shape)
+        # print("After encoder block (x): ", out.shape)
         return out
 
 
@@ -565,13 +453,14 @@ class DecoderBlock(nn.Module):
         output_channels,
         input_size,
         output_padding,
-        n_layer_per_block_decoder=3,
+        n_layer_per_block_decoder,
+        block_type="upsample",
         normalization="batch",
     ):
         super(DecoderBlock, self).__init__()
 
         channels = get_channels(
-            input_channels, output_channels, n_layer_per_block_decoder
+            output_channels, input_channels, n_layer_per_block_decoder
         )
 
         layers = []
@@ -579,24 +468,26 @@ class DecoderBlock(nn.Module):
         for i in range(n_layer_per_block_decoder, 1, -1):
             layers.append(
                 get_decoder_layer(
+                    block_type,
                     input_channels=channels[i],
                     output_channels=channels[i - 1],
                     input_size=input_size,
                     kernel_size=3,
                     stride=1,
                     padding=1,
-                    output_padding=output_padding,
+                    output_padding=[0, 0, 0],
                     normalization=normalization,
                 )
             )
 
         layers.append(
             get_decoder_layer(
+                block_type,
                 input_channels=channels[1],
                 output_channels=channels[0],
                 input_size=input_size,
-                kernel_size=4,
-                stride=2,
+                kernel_size=3,
+                stride=1,
                 padding=1,
                 output_padding=output_padding,
                 normalization=normalization,
@@ -606,9 +497,9 @@ class DecoderBlock(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        # print("x: ", x.shape)
+        # print("Before decoder block (x): ", x.shape)
         out = self.layers(x)
-        # print("out: ", out.shape)
+        # print("After decoder block (x): ", out.shape)
         return out
 
 
@@ -631,7 +522,7 @@ def get_encoder_layer(
     padding: int,
     normalization: str,
 ):
-    if block_type == "conv":
+    if block_type in ["conv", "transpose", "upsample"]:
         return EncoderConv3DLayer(
             input_channels,
             output_channels,
@@ -661,7 +552,7 @@ def get_decoder_layer(
     output_padding: List[int],
     normalization: str,
 ):
-    if block_type == "upsample":
+    if block_type in ["conv", "upsample"]:
         return DecoderUpsample3DLayer(
             input_channels,
             output_channels,
@@ -684,14 +575,16 @@ def get_decoder_layer(
             normalization,
         )
     elif block_type == "res":
-        return EncoderResLayer(
+        return DecoderResLayer(
             input_channels,
             output_channels,
+            input_size,
+            output_padding,
             normalization,
         )
     else:
         raise AttributeError(
-            "Bad block type specified. Block type must be upsample, transpose or res"
+            "Bad block type specified. Block type must be conv, upsample, transpose or res"
         )
 
 
