@@ -202,6 +202,9 @@ class MapsManager:
             pipeline(
                 train_data=train_dataset, # must be torch.Tensor or np.array
                 eval_data=eval_dataset # must be torch.Tensor or np.array
+                callbacks=[
+                    TrainHistoryCallback(),
+                ]
             )
             # Move saved model to the correct path in the MAPS
             src = path.join(model_dir, "*_training_*/final_model/model.pt")
