@@ -176,7 +176,8 @@ class DecoderUpsample3DLayer(nn.Module):
                 input_size[2] * 2 + output_padding[2],
             ],
             mode="nearest",
-        )
+        ) if input_channels != output_channels else nn.Sequential()
+        
         self.conv = nn.Conv3d(
             input_channels,
             output_channels,
