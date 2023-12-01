@@ -4,14 +4,14 @@ from clinicadl.utils.network.autoencoder.cnn_transformer import CNN_Transformer
 from clinicadl.utils.network.cnn.models import Conv4_FC3, Conv5_FC3, resnet18
 from clinicadl.utils.network.sub_network import AutoEncoder
 from clinicadl.utils.network.vae.vae_layers import (
-    DecoderTranspose3D,
-    EncoderLayer3D,
+    DecoderUpsample3DLayer,
+    EncoderConv3DLayer,
     Flatten,
     Unflatten3D,
 )
 
-DecoderLayer3D = DecoderTranspose3D
-
+DecoderLayer3D = DecoderUpsample3DLayer
+EncoderLayer3D = EncoderConv3DLayer
 
 class AE_Conv5_FC3(AutoEncoder):
     """
@@ -65,6 +65,7 @@ class AE_Conv4_FC3(AutoEncoder):
     @staticmethod
     def get_task():
         return ["reconstruction"]
+
 
 class CAE_half(AutoEncoder):
     """
