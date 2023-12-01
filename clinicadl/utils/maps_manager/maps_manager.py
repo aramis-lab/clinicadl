@@ -146,6 +146,7 @@ class MapsManager:
         """
         from clinicadl.utils.caps_dataset.data import PythaeCAPS
         from pythae.pipelines import TrainingPipeline
+        from pythae.trainers.training_callbacks import TrainHistoryCallback
 
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
@@ -201,10 +202,10 @@ class MapsManager:
             # Launch training
             pipeline(
                 train_data=train_dataset, # must be torch.Tensor or np.array
-                eval_data=eval_dataset # must be torch.Tensor or np.array
+                eval_data=eval_dataset, # must be torch.Tensor or np.array
                 callbacks=[
                     TrainHistoryCallback(),
-                ]
+                ],
             )
             # Move saved model to the correct path in the MAPS
             src = path.join(model_dir, "*_training_*/final_model/model.pt")
