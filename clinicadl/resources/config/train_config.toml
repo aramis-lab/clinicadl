@@ -11,15 +11,18 @@ dropout = 0.0 # between 0 and 1
 # architecture.n_layers = 4
 # VAE
 first_layer_channels = 32
-n_conv_encoder = 4
+n_block_encoder = 4
 feature_size = 0
 latent_space_size = 128
-n_conv_decoder = 4
+n_block_decoder = 4
 last_layer_channels = 32
 last_layer_conv = false
 recons_weight = 1
 kl_weight = 1
 normalization = "batch"
+n_layer_per_block_encoder = 1
+n_layer_per_block_decoder = 1
+block_type = "conv"
 
 [Classification]
 selection_metrics = ["loss"]

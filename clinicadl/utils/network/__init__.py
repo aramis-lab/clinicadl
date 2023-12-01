@@ -36,4 +36,5 @@ from .pythae import (
     pythae_AE,
     pythae_RAE_L2,
     pythae_RAE_GP,
+    ResNet18_VAE,
 )

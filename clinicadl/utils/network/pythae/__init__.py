@@ -23,3 +23,4 @@ from .models.wasserstein_ae import pythae_WAE_MMD
 from .models.ae import pythae_AE
 from .models.rae_l2 import pythae_RAE_L2
 from .models.rae_gp import pythae_RAE_GP
+from .models.resnet_vae import ResNet18_VAE

@@ -3,16 +3,16 @@ from torch import nn
 
 from clinicadl.utils.network.vae.base_vae import BaseVAE
 from clinicadl.utils.network.vae.vae_layers import (
-    DecoderTranspose3D,
-    EncoderLayer3D,
+    DecoderTranspose3DLayer,
+    EncoderConv3DLayer,
     Flatten,
     Unflatten3D,
     VAE_Decoder,
     VAE_Encoder,
 )
 
-DecoderLayer3D = DecoderTranspose3D
-
+DecoderLayer3D = DecoderTranspose3DLayer
+EncoderLayer3D = EncoderConv3DLayer
 
 class VanillaDenseVAE(BaseVAE):
     """
