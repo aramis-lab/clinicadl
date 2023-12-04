@@ -50,6 +50,9 @@ def get_vae_space_dict(launch_directory):
         "n_block_decoder",
         "last_layer_channels",
         "last_layer_conv",
+        "n_layer_per_block_encoder",
+        "n_layer_per_block_decoder",
+        "block_type",
     ]
 
     for argument in mandatory_arguments:
@@ -132,6 +135,7 @@ def vae_random_sampling(space_dict):
         "last_layer_conv": "choice",
         "n_layer_per_block_encoder": "randint",
         "n_layer_per_block_decoder": "randint",
+        "block_type": "choice",
     }
 
     for name, sampling_type in sampling_vae_dict.items():
