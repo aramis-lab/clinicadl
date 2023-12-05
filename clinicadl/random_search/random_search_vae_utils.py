@@ -108,7 +108,7 @@ def vae_random_sampling(space_dict):
         "n_proc": "fixed",
         "network_task": "fixed",
         "normalize": "fixed",
-        "optimizer": "fixed",
+        "optimizer": "choice",
         "patience": "fixed",
         "preprocessing_dict": "fixed",
         "sampler": "fixed",

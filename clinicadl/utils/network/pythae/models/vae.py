@@ -44,7 +44,7 @@ class pythae_VAE(BasePythae):
             decoder=decoder,
         )
 
-    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
+    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size, optimizer):
         from pythae.trainers import BaseTrainerConfig
 
         return BaseTrainerConfig(
@@ -53,5 +53,6 @@ class pythae_VAE(BasePythae):
             learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
+            optimizer_cls=optimizer,
             # amp=True,
         )
