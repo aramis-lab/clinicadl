@@ -229,56 +229,19 @@ def build_encoder_decoder(
             ),
         )
 
-    # Output conv layer
-    if last_layer_conv:
-        last_layer = nn.Sequential(
-            DecoderBlock(
-                last_layer_channels, 
-                input_c,
-                decoder_input_size[0],
-                decoder_output_padding[0],
-                n_layer_per_block_decoder,
-                block_type,
-            ),
-            nn.Conv3d(input_c, input_c, 3, stride=1, padding=1),
-            nn.Sigmoid(),
+    # Output layer
+    decoder_layers.append(
+        DecoderBlock(
+            last_layer_channels, 
+            input_c, 
+            decoder_input_size[0], 
+            decoder_output_padding[0], 
+            n_layer_per_block_decoder,
+            block_type,
+            is_last_block=True, 
+            last_layer_conv=last_layer_conv,
         )
-
-    else:
-        last_layer = []
-        if n_layer_per_block_decoder > 1: 
-            last_layer.append(
-                DecoderBlock(
-                    last_layer_channels, 
-                    last_layer_channels, 
-                    decoder_input_size[0],
-                    decoder_output_padding[0],
-                    n_layer_per_block_decoder - 1,
-                    block_type,
-                )
-            )
-        last_layer.append(
-            nn.Upsample(
-                size=[input_d, input_h, input_w],
-                mode="nearest",
-            )
-        )
-        last_layer.append(
-            nn.Conv3d(
-                last_layer_channels,
-                input_c,
-                3,
-                stride=1,
-                padding=1,
-                bias=False,
-            )
-        )
-        last_layer.append(
-            nn.Sigmoid(),
-        )
-        last_layer = nn.Sequential(*last_layer)
-
-    decoder_layers.append(last_layer)
+    )
 
     decoder = nn.Sequential(*decoder_layers)
 

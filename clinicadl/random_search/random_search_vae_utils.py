@@ -11,16 +11,16 @@ from clinicadl.utils.preprocessing import read_preprocessing
 from clinicadl.random_search.random_search_classification_utils import sampling_fn
 
 
-def get_vae_space_dict(launch_directory):
+def get_vae_space_dict(launch_directory, toml_name):
     """
     Takes a launch directory with a "random_search.toml" file with all the parameters to explore.
     Return a parameters dictionnary randomly sampled
     """
 
-    toml_path = path.join(launch_directory, "random_search.toml")
+    toml_path = path.join(launch_directory, toml_name)
     if not path.exists(toml_path):
         raise FileNotFoundError(
-            f"TOML file 'random_search.toml' must be written in directory {launch_directory}."
+            f"TOML file {toml} must be written in directory {launch_directory}."
         )
 
     # load TOML file and create space dict
@@ -50,6 +50,9 @@ def get_vae_space_dict(launch_directory):
         "n_block_decoder",
         "last_layer_channels",
         "last_layer_conv",
+        "n_layer_per_block_encoder",
+        "n_layer_per_block_decoder",
+        "block_type",
     ]
 
     for argument in mandatory_arguments:
@@ -105,7 +108,7 @@ def vae_random_sampling(space_dict):
         "n_proc": "fixed",
         "network_task": "fixed",
         "normalize": "fixed",
-        "optimizer": "fixed",
+        "optimizer": "choice",
         "patience": "fixed",
         "preprocessing_dict": "fixed",
         "sampler": "fixed",
@@ -132,6 +135,7 @@ def vae_random_sampling(space_dict):
         "last_layer_conv": "choice",
         "n_layer_per_block_encoder": "randint",
         "n_layer_per_block_decoder": "randint",
+        "block_type": "choice",
         # Beta VAE
         "beta": "choice",
         # Linear Normalizing Flow VAE

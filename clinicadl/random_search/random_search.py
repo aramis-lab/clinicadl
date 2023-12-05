@@ -6,15 +6,15 @@ from os import path
 from random import sample
 
 
-def launch_search(launch_directory, job_name):
+def launch_search(launch_directory, job_name, toml_name):
     from clinicadl.random_search.random_search_classification_utils import get_classification_space_dict, classification_random_sampling
     from clinicadl.train import train
 
-    if not path.exists(path.join(launch_directory, "random_search.toml")):
+    if not path.exists(path.join(launch_directory, toml_name)):
         raise FileNotFoundError(
-            f"TOML file 'random_search.toml' must be written in directory {launch_directory}."
+            f"TOML file {toml_name} must be written in directory {launch_directory}."
         )
-    space_options = get_classification_space_dict(launch_directory)
+    space_options = get_classification_space_dict(launch_directory, toml_name)
     options = classification_random_sampling(space_options)
 
     maps_directory = path.join(launch_directory, job_name)
@@ -24,11 +24,11 @@ def launch_search(launch_directory, job_name):
     train(maps_directory, options, split)
 
 
-def launch_vae_search(launch_directory, job_name):
+def launch_vae_search(launch_directory, job_name, toml_name):
     from clinicadl.utils.maps_manager import MapsManager
     from clinicadl.random_search.random_search_vae_utils import get_vae_space_dict, vae_random_sampling
 
-    space_options = get_vae_space_dict(launch_directory)
+    space_options = get_vae_space_dict(launch_directory, toml_name)
     parameters = vae_random_sampling(space_options)
     print("Parameters:", parameters)
 

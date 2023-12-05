@@ -40,8 +40,9 @@ class EncoderLayer2D(nn.Module):
         )
 
     def forward(self, x):
-        x = F.leaky_relu(self.layer(x), negative_slope=0.2, inplace=True)
-        return x
+        # out = F.leaky_relu(self.layer(x), negative_slope=0.2, inplace=True)
+        out = F.silu(self.layer(x), inplace=True)
+        return out
 
 
 class DecoderLayer2D(nn.Module):
@@ -76,8 +77,9 @@ class DecoderLayer2D(nn.Module):
         )
 
     def forward(self, x):
-        x = F.relu(self.layer(x), inplace=True)
-        return x
+        # out = F.relu(self.layer(x), inplace=True)
+        out = F.silu(self.layer(x), inplace=True)
+        return out
 
 
 class EncoderConv3DLayer(nn.Module):
@@ -110,7 +112,8 @@ class EncoderConv3DLayer(nn.Module):
 
     def forward(self, x):
         out = self.norm(self.conv(x))
-        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
+        out = F.silu(out, inplace=True)
+        # out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -146,7 +149,8 @@ class DecoderTranspose3DLayer(nn.Module):
 
     def forward(self, x):
         out = self.norm(self.convtranspose(x))
-        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
+        out = F.silu(out, inplace=True)
+        # out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -167,6 +171,7 @@ class DecoderUpsample3DLayer(nn.Module):
         padding=1,
         output_padding=[0, 0, 0],
         normalization="batch",
+        is_last_layer=False,
     ):
         super(DecoderUpsample3DLayer, self).__init__()
         self.upsample = nn.Upsample(
@@ -186,7 +191,10 @@ class DecoderUpsample3DLayer(nn.Module):
             padding=padding,
             bias=False,
         )
-        self.norm = get_norm3d(normalization, output_channels)
+        self.norm = get_norm3d(normalization, output_channels) if not is_last_layer else nn.Sequential()
+
+        self.activation = nn.SiLU(inplace=True) if not is_last_layer else nn.Sequential()
+
         self.input_size = input_size
         self.padding = output_padding
         self.dim = (
@@ -199,7 +207,8 @@ class DecoderUpsample3DLayer(nn.Module):
 
     def forward(self, x):
         out = self.norm(self.conv(self.upsample(x)))
-        out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
+        out = self.activation(out)
+        # out = F.leaky_relu(out, negative_slope=0.2, inplace=True)
         return out
 
 
@@ -291,12 +300,14 @@ class EncoderResLayer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.norm1(self.conv1(x))
-        out = F.relu(out, inplace=True)
+        out = F.silu(out, inplace=True)
+        # out = F.relu(out, inplace=True)
 
         out = self.norm2(self.conv2(out))
 
         out += self.shortcut(x)
-        out = F.relu(out, inplace=True)
+        out = F.silu(out, inplace=True)
+        # out = F.relu(out, inplace=True)
         
         return out
 
@@ -309,6 +320,7 @@ class DecoderResLayer(nn.Module):
         input_size,
         output_padding,
         normalization="batch",
+        is_last_layer=False,
     ):
         super(DecoderResLayer, self).__init__()
 
@@ -374,14 +386,19 @@ class DecoderResLayer(nn.Module):
 
         self.norm1 = get_norm3d(normalization, output_channels)
 
+        self.activation = nn.SiLU(inplace=True) if not is_last_layer else nn.Sequential()
+
     def forward(self, x):
         out = self.norm2(self.conv2(x))
-        out = F.relu(out, inplace=True)
+        out = F.silu(out, inplace=True)
+        # out = F.relu(out, inplace=True)
 
         out = self.norm1(self.conv1(out))
 
         out += self.shortcut(x)
-        out = F.relu(out)
+        out = self.activation(out)
+        # out = F.relu(out)
+
         return out
 
 
