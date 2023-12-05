@@ -67,6 +67,8 @@ class DecoderBlock(nn.Module):
         n_layer_per_block_decoder,
         block_type="upsample",
         normalization="batch",
+        is_last_block=False, 
+        last_layer_conv=False,
     ):
         super(DecoderBlock, self).__init__()
 
@@ -102,13 +104,21 @@ class DecoderBlock(nn.Module):
                 padding=1,
                 output_padding=output_padding,
                 normalization=normalization,
+                is_last_layer=(is_last_block and (not last_layer_conv)),
             )
         )
+
+        if last_layer_conv: 
+            layers.append(nn.Conv3d(channels[0], channels[0], 3, stride=1, padding=1))
+
+        if is_last_block:
+            layers.append(nn.Sigmoid())
 
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.layers(x)
+
 
 
 def get_channels(
@@ -159,6 +169,7 @@ def get_decoder_layer(
     padding: int,
     output_padding: List[int],
     normalization: str,
+    is_last_layer:bool=False,
 ):
     if block_type in ["conv", "upsample"]:
         return DecoderUpsample3DLayer(
@@ -170,6 +181,7 @@ def get_decoder_layer(
             padding,
             output_padding,
             normalization,
+            is_last_layer,
         )
     elif block_type == "transpose":
         return DecoderTranspose3DLayer(
@@ -181,6 +193,7 @@ def get_decoder_layer(
             padding,
             output_padding,
             normalization,
+            is_last_layer,
         )
     elif block_type == "res":
         return DecoderResLayer(
@@ -189,6 +202,7 @@ def get_decoder_layer(
             input_size,
             output_padding,
             normalization,
+            is_last_layer,
         )
     else:
         raise AttributeError(

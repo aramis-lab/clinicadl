@@ -10,11 +10,16 @@ import click
     "launch_directory",
     type=str,
 )
+@click.argument(
+    "toml_name", 
+    type=str,
+)
 @click.argument("name", type=str)
 def cli(
     task,
     launch_directory,
     name,
+    toml_name,
 ):
     """Hyperparameter exploration using random search.
 
@@ -25,10 +30,10 @@ def cli(
 
     if task == "classification":
         from .random_search import launch_search
-        launch_search(task, launch_directory, name)
+        launch_search(task, launch_directory, name, toml_name)
     elif task == "vae-architecture":
         from.random_search import launch_vae_search
-        launch_vae_search(launch_directory, name)
+        launch_vae_search(launch_directory, name, toml_name)
 
 
 if __name__ == "__main__":
