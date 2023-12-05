@@ -165,8 +165,6 @@ def generate_random_dataset(
     write_missing_mods(output_dir, output_df)
     logger.info(f"Random dataset was generated at {output_dir}")
 
-    logger.info(f"Random dataset was generated at {output_dir}")
-
 
 def generate_trivial_dataset(
     caps_directory: Path,
@@ -243,16 +241,6 @@ def generate_trivial_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
-    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
-    FILE1 = RemoteFileStructure(
-        filename="AAL2.tar.gz",
-        url=url_aramis,
-        checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
-    )
-    cache_clinicadl.mkdir(parents=True, exist_ok=True)
-
     if n_subjects > len(data_df):
         raise IndexError(
             f"The number of subjects {n_subjects} cannot be higher "
@@ -260,6 +248,17 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
+
+        home = Path.home()
+        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
+        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+        FILE1 = RemoteFileStructure(
+            filename="AAL2.tar.gz",
+            url=url_aramis,
+            checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
+        )
+        cache_clinicadl.mkdir(parents=True, exist_ok=True)
+
         if not (cache_clinicadl / "AAL2").is_dir():
             print("Downloading AAL2 masks...")
             try:
@@ -327,7 +326,11 @@ def generate_trivial_dataset(
 
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        atlas_to_mask = nib.load(mask_path / f"mask-{label + 1}.nii").get_data()
+        path_to_mask = mask_path / f"mask-{label + 1}.nii"
+        if path_to_mask.is_file():
+            atlas_to_mask = nib.load(path_to_mask).get_data()
+        else:
+            raise ValueError("masks need to be named mask-1.nii and mask-2.nii")
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(
@@ -355,8 +358,6 @@ def generate_trivial_dataset(
 
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
     write_missing_mods(output_dir, output_df)
-    logger.info(f"Trivial dataset was generated at {output_dir}")
-
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
 
