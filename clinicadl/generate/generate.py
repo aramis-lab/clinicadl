@@ -50,7 +50,7 @@ def generate_random_dataset(
     uncropped_image: bool = False,
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
-):
+) -> None:
     """
     Generates a random dataset.
 
@@ -89,6 +89,7 @@ def generate_random_dataset(
     tsv file describing this output
 
     """
+
     commandline_to_json(
         {
             "output_dir": output_dir,
@@ -100,6 +101,11 @@ def generate_random_dataset(
             "sigma": sigma,
         }
     )
+
+    SESSION_ID = "ses-M00"
+    AGE_BL_DEFAULT = 60
+    SEX_DEFAULT = "F"
+
     # Transform caps_directory in dict
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
 
@@ -131,13 +137,17 @@ def generate_random_dataset(
     participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
     session_id_list = ["ses-M00"] * 2 * n_subjects
     diagnosis_list = ["AD"] * n_subjects + ["CN"] * n_subjects
-    data = np.array([participant_id_list, session_id_list, diagnosis_list])
-    data = data.T
+
     output_df = pd.DataFrame(
-        data, columns=["participant_id", "session_id", "diagnosis"]
+        {
+            "participant_id": participant_id_list,
+            "session_id": session_id_list,
+            "diagnosis": diagnosis_list,
+        }
     )
-    output_df["age_bl"] = 60
-    output_df["sex"] = "F"
+
+    output_df["age_bl"] = AGE_BL_DEFAULT
+    output_df["sex"] = SEX_DEFAULT
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     input_filename = image_path.name
@@ -151,10 +161,10 @@ def generate_random_dataset(
             noisy_image, header=image_nii.header, affine=image_nii.affine
         )
         noisy_image_nii_path = (
-            output_dir / "subjects" / participant_id / "ses-M00" / "t1_linear"
+            output_dir / "subjects" / participant_id / SESSION_ID / "t1_linear"
         )
 
-        noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
+        noisy_image_nii_filename = f"{participant_id}_{SESSION_ID}_{filename_pattern}"
         noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
         nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
