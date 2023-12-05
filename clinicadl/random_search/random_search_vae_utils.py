@@ -11,16 +11,16 @@ from clinicadl.utils.preprocessing import read_preprocessing
 from clinicadl.random_search.random_search_classification_utils import sampling_fn
 
 
-def get_vae_space_dict(launch_directory):
+def get_vae_space_dict(launch_directory, toml_name):
     """
     Takes a launch directory with a "random_search.toml" file with all the parameters to explore.
     Return a parameters dictionnary randomly sampled
     """
 
-    toml_path = path.join(launch_directory, "random_search.toml")
+    toml_path = path.join(launch_directory, toml_name)
     if not path.exists(toml_path):
         raise FileNotFoundError(
-            f"TOML file 'random_search.toml' must be written in directory {launch_directory}."
+            f"TOML file {toml} must be written in directory {launch_directory}."
         )
 
     # load TOML file and create space dict
