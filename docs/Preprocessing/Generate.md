@@ -36,7 +36,7 @@ where:
 Options:
 
 - `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
-- `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default: `300`.
+- `--n_subjects` (int) number of subjects per label in the synthetic dataset. The number of subjects cannot be higher than the number of subjects in the baseline caps dataset. Default: `300`.
 - `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Default: `t1-linear`.
 - `--mask_path` (str) Path to the atrophy masks used to generate the two labels. 
 Default will download masks based on AAL2 in `clinicadl/resources/masks`.
@@ -78,7 +78,7 @@ where:
 Options:
 
 - `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
-- `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default: `300`.
+- `--n_subjects` (int) number of subjects per label in the synthetic dataset. The number of subjects cannot be higher than the number of subjects in the baseline caps dataset. Default: `300`.
 - `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Default: `t1-linear`.
 - `--mean` (float) Mean value of the gaussian noise added to images. Default: `0`.
 - `--sigma` (float) Standard deviation of the gaussian noise added to images. Default: `0.5`.
