@@ -234,7 +234,7 @@ def build_encoder_decoder(
         last_layer = nn.Sequential(
             DecoderBlock(
                 last_layer_channels, 
-                input_c, 
+                input_c,
                 decoder_input_size[0],
                 decoder_output_padding[0],
                 n_layer_per_block_decoder,

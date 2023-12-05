@@ -82,7 +82,7 @@ def quality_check(
 
     for data in dataloader:
         logger.debug(f"Processing subject {data['participant_id']}.")
-        inputs = data["image"]
+        inputs = data["data"]
         if gpu:
             inputs = inputs.cuda()
         outputs = softmax.forward(model(inputs))
