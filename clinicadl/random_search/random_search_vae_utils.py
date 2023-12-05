@@ -132,6 +132,49 @@ def vae_random_sampling(space_dict):
         "last_layer_conv": "choice",
         "n_layer_per_block_encoder": "randint",
         "n_layer_per_block_decoder": "randint",
+        # Beta VAE
+        "beta": "choice",
+        # Linear Normalizing Flow VAE
+        "flows": "choice",              # Maybe to change
+        # Inverse Autoregressive Flows
+        "n_made_blocks": "choice",
+        "n_hidden_in_made": "choice",
+        "hidden_size": "choice",
+        # Beta TC VAE
+        #beta:2.
+        "alpha": "choice",
+        "gamma": "choice",
+        # MS SSIM VAE
+        #beta:1e-2
+        "window_size": "choice",
+        # Info VAE
+        "kernel_choice": "choice",
+        #alpha:-2
+        "lbd": "choice",
+        "kernel_bandwidth": "choice",
+        # Wasserstein Autoencoder
+        #kernel_choice:'imq'
+        "reg_weight": "choice",
+        #kernel_bandwidth:2
+        # Adversarial AE
+        "adversarial_loss_scale": "choice",
+        # VAE GAN
+        #adversarial_loss_scale:0.8
+        "reconstruction_layer": "choice",
+        "margin": "choice",
+        "equilibrium": "choice",
+        # VQ VAE
+        "commitment_loss_factor": "choice",
+        "quantization_loss_factor": "choice",
+        "num_embeddings": "choice",
+        "use_ema": "choice",
+        "decay": "choice",
+        # Regularized AE with L2 decoder param
+        "embedding_weight": "choice",
+        #reg_weight:1e-4
+        # Regularized AE with gradient penalty
+        #embedding_weight:1e-2
+        #reg_weight:1e-4
     }
 
     for name, sampling_type in sampling_vae_dict.items():
