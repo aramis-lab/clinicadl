@@ -147,6 +147,8 @@ class MapsManager:
         from clinicadl.utils.caps_dataset.data import PythaeCAPS
         from pythae.pipelines import TrainingPipeline
         from pythae.trainers.training_callbacks import TrainHistoryCallback
+        
+        print(self.encoder_decoder_config)
 
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
@@ -1368,6 +1370,7 @@ class MapsManager:
                 f"{possible_selection_metrics_set}."
             )
 
+
     def _check_split_wording(self):
         """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
         from glob import glob
@@ -1678,6 +1681,10 @@ class MapsManager:
         """
         Writes model architecture of the MAPS in MAPS root.
         """
+        if "pythae" in self.parameters["architecture"]:
+            from clinicadl.utils.network.pythae.encoder_decoder_config import make_encoder_decoder_config
+            self.parameters = make_encoder_decoder_config(self.parameters)
+
         from datetime import datetime
 
         import clinicadl.utils.network as network_package

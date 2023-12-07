@@ -44,7 +44,7 @@ def cli(caps_directory, preprocessing_json, tsv_directory, output_maps_directory
     parameters["caps_directory"] = caps_directory
     parameters["tsv_path"] = tsv_directory
     parameters["mode"] = "image"
-    # parameters["input_size"] = (1, 80, 96, 80)
+
     preprocessing_json_path = os.path.join(
         caps_directory,
         "tensor_extraction",
