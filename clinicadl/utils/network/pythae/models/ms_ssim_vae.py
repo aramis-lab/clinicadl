@@ -4,11 +4,7 @@ from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 class pythae_MSSSIM_VAE(BasePythae):
     def __init__(
         self,
-        input_size,
-        latent_space_size,
-        feature_size,
-        n_conv,
-        io_layer_channels,
+        encoder_decoder_config,
         beta,
         window_size,
         gpu=False,
@@ -17,12 +13,8 @@ class pythae_MSSSIM_VAE(BasePythae):
         from pythae.models import MSSSIM_VAE, MSSSIM_VAEConfig
 
         encoder, decoder = super(pythae_MSSSIM_VAE, self).__init__(
-            input_size=input_size,
-            latent_space_size=latent_space_size,
-            feature_size=feature_size,
-            n_conv=n_conv,
-            io_layer_channels=io_layer_channels,
-            gpu=gpu
+            encoder_decoder_config = encoder_decoder_config,
+            gpu=gpu,
         )
 
         model_config = MSSSIM_VAEConfig(
@@ -37,7 +29,7 @@ class pythae_MSSSIM_VAE(BasePythae):
             decoder=decoder,
         )
 
-    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
+    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size, optimizer):
         from pythae.trainers import BaseTrainerConfig
         return BaseTrainerConfig(
             output_dir=output_dir,
@@ -45,4 +37,5 @@ class pythae_MSSSIM_VAE(BasePythae):
             learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
+            optimizer_cls=optimizer,
         )

@@ -4,33 +4,13 @@ from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 class pythae_VAE(BasePythae):
     def __init__(
         self,
-        input_size,
-        first_layer_channels,
-        n_block_encoder,
-        feature_size,
-        latent_space_size,
-        n_block_decoder,
-        last_layer_channels,
-        last_layer_conv,
-        n_layer_per_block_encoder,
-        n_layer_per_block_decoder,
-        block_type,
+        encoder_decoder_config,
         gpu=False,
     ):
         from pythae.models import VAE, VAEConfig
 
         encoder, decoder = super(pythae_VAE, self).__init__(
-            input_size=input_size,
-            first_layer_channels=first_layer_channels,
-            n_block_encoder=n_block_encoder,
-            feature_size=feature_size,
-            latent_space_size=latent_space_size,
-            n_block_decoder=n_block_decoder,
-            last_layer_channels=last_layer_channels,
-            last_layer_conv=last_layer_conv,
-            n_layer_per_block_encoder=n_layer_per_block_encoder,
-            n_layer_per_block_decoder=n_layer_per_block_decoder,
-            block_type=block_type,
+            encoder_decoder_config = encoder_decoder_config,
             gpu=gpu,
         )
 
@@ -54,5 +34,4 @@ class pythae_VAE(BasePythae):
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
             optimizer_cls=optimizer,
-            # amp=True,
         )

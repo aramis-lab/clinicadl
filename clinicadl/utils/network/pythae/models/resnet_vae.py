@@ -15,33 +15,13 @@ from torch import nn
 class ResNet18_VAE(BasePythae):
     def __init__(
         self,
-        input_size,
-        first_layer_channels,
-        n_block_encoder,
-        feature_size,
-        latent_space_size,
-        n_block_decoder,
-        last_layer_channels,
-        last_layer_conv,
-        n_layer_per_block_encoder,
-        n_layer_per_block_decoder,
-        block_type,
+        encoder_decoder_config,
         gpu=False,
     ):
         from pythae.models import VAE, VAEConfig
 
-        _, _ = super(ResNet18_VAE, self).__init__(
-            input_size=input_size,
-            first_layer_channels=first_layer_channels,
-            n_block_encoder=n_block_encoder,
-            feature_size=feature_size,
-            latent_space_size=latent_space_size,
-            n_block_decoder=n_block_decoder,
-            last_layer_channels=last_layer_channels,
-            last_layer_conv=last_layer_conv,
-            n_layer_per_block_encoder=n_layer_per_block_encoder,
-            n_layer_per_block_decoder=n_layer_per_block_decoder,
-            block_type=block_type,
+        encoder, decoder = super(ResNet18_VAE, self).__init__(
+            encoder_decoder_config = encoder_decoder_config,
             gpu=gpu,
         )
 
@@ -68,7 +48,7 @@ class ResNet18_VAE(BasePythae):
             decoder=decoder,
         )
 
-    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
+    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size, optimizer):
         from pythae.trainers import BaseTrainerConfig
 
         return BaseTrainerConfig(

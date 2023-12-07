@@ -16,15 +16,8 @@ class pythae_AE(BasePythae):
     ):
         from pythae.models import AE, AEConfig
 
-        encoder, decoder = super(pythae_AE, self).__init__(
-            input_size=input_size,
-            first_layer_channels=first_layer_channels,
-            n_block_encoder=n_block_encoder,
-            feature_size=feature_size,
-            latent_space_size=latent_space_size,
-            n_block_decoder=n_block_decoder,
-            last_layer_channels=last_layer_channels,
-            last_layer_conv=last_layer_conv,
+        encoder, decoder = super(pythae_VAE, self).__init__(
+            encoder_decoder_config = encoder_decoder_config,
             gpu=gpu,
             is_ae=True,
         )
@@ -39,7 +32,7 @@ class pythae_AE(BasePythae):
             decoder=decoder,
         )
 
-    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
+    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size, optimizer):
         from pythae.trainers import BaseTrainerConfig
 
         return BaseTrainerConfig(
@@ -48,4 +41,5 @@ class pythae_AE(BasePythae):
             learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
+            optimizer_cls=optimizer,
         )

@@ -16,23 +16,15 @@ from torch import nn
 class pythae_SVAE(BasePythae):
     def __init__(
         self,
-        input_size,
-        latent_space_size,
-        feature_size,
-        n_conv,
-        io_layer_channels,
+        encoder_decoder_config,
         gpu=False,
     ):
 
         from pythae.models import SVAE, SVAEConfig
 
         _, decoder = super(pythae_SVAE, self).__init__(
-            input_size=input_size,
-            latent_space_size=latent_space_size,
-            feature_size=feature_size,
-            n_conv=n_conv,
-            io_layer_channels=io_layer_channels,
-            gpu=gpu
+            encoder_decoder_config = encoder_decoder_config,
+            gpu=gpu,
         )
 
         encoder_layers, mu_layer, log_concentration_layer = build_SVAE_encoder(
@@ -55,7 +47,7 @@ class pythae_SVAE(BasePythae):
             decoder=decoder,
         )
 
-    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size):
+    def get_trainer_config(self, output_dir, num_epochs, learning_rate, batch_size, optimizer):
         from pythae.trainers import BaseTrainerConfig
         return BaseTrainerConfig(
             output_dir=output_dir,
@@ -63,6 +55,7 @@ class pythae_SVAE(BasePythae):
             learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
+            optimizer_cls=optimizer,
         )
 
 
