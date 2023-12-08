@@ -44,16 +44,6 @@ def get_vae_space_dict(launch_directory, toml_name):
         "tsv_path",
         "caps_directory",
         "preprocessing_json",
-        # "first_layer_channels",
-        # "n_block_encoder",
-        # "feature_size",
-        # "latent_space_size",
-        # "n_block_decoder",
-        # "last_layer_channels",
-        # "last_layer_conv",
-        # "n_layer_per_block_encoder",
-        # "n_layer_per_block_decoder",
-        # "block_type",
     ]
 
     for argument in mandatory_arguments:
