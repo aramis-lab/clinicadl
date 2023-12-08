@@ -27,7 +27,7 @@ class pythae_VAEGAN(BasePythae):
             gpu=gpu,
         )
 
-        discriminator = Discriminator_VAEGAN()
+        discriminator = Discriminator_VAEGAN(input_size=self.input_size)
 
         model_config = VAEGANConfig(
             input_dim=self.input_size,
@@ -58,7 +58,7 @@ class pythae_VAEGAN(BasePythae):
 
 class Discriminator_VAEGAN(BaseDiscriminator):
 
-    def __init__(self):
+    def __init__(self, input_size):
 
         BaseDiscriminator.__init__(self)
 
@@ -90,8 +90,8 @@ class Discriminator_VAEGAN(BaseDiscriminator):
             )
         )
 
-        layers.append(nn.Sequential(nn.Linear(1537536, 1), nn.Sigmoid()))
-        # layers.append(nn.Sequential(nn.Linear(153600, 1), nn.Sigmoid()))
+        n_pix = 128 * input_size[1] // 2**3 * input_size[2] // 2**3 * input_size[3] // 2**3
+        layers.append(nn.Sequential(nn.Linear(n_pix, 1), nn.Sigmoid()))
 
         self.layers = layers
         self.depth = len(layers)
@@ -116,7 +116,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
             else:
                 max_depth = max(output_layer_levels)
 
-        # print(x.shape)
         out = x
 
         for i in range(max_depth):
@@ -125,7 +124,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
                 out = out.reshape(x.shape[0], -1)
 
             out = self.layers[i](out)
-            # print(out.shape)
 
             if output_layer_levels is not None:
                 if i + 1 in output_layer_levels:
