@@ -69,7 +69,7 @@ class Discriminator_VAEGAN(BaseDiscriminator):
         layers.append(
             nn.Sequential(
                 nn.Conv3d(self.n_channels, 32, 4, 2, padding=1),
-                # nn.BatchNorm2d(32),
+                nn.BatchNorm3d(32),
                 nn.ReLU(),
             )
         )
@@ -77,7 +77,7 @@ class Discriminator_VAEGAN(BaseDiscriminator):
         layers.append(
             nn.Sequential(
                 nn.Conv3d(32, 64, 4, 2, padding=1),
-                # nn.BatchNorm2d(64),
+                nn.BatchNorm3d(64),
                 nn.ReLU(),
             )
         )
@@ -85,13 +85,33 @@ class Discriminator_VAEGAN(BaseDiscriminator):
         layers.append(
             nn.Sequential(
                 nn.Conv3d(64, 128, 4, 2, padding=1),
-                # nn.BatchNorm2d(128),
+                nn.BatchNorm3d(128),
                 nn.ReLU(),
             )
         )
 
-        n_pix = 128 * input_size[1] // 2**3 * input_size[2] // 2**3 * input_size[3] // 2**3
-        layers.append(nn.Sequential(nn.Linear(n_pix, 1), nn.Sigmoid()))
+        layers.append(
+            nn.Sequential(
+                nn.Conv3d(128, 256, 4, 2, padding=1),
+                nn.BatchNorm3d(256),
+                nn.ReLU(),
+            )
+        )
+
+        n_pix = 256 * (input_size[1] // (2**4)) * (input_size[2] // (2**4)) * (input_size[3] // (2**4))
+        layers.append(
+            nn.Sequential(
+                nn.Linear(n_pix, 512), 
+                nn.BatchNorm1d(512), 
+                nn.ReLU(),
+            )
+        )
+        layers.append(
+            nn.Sequential(
+                nn.Linear(512, 1), 
+                nn.Sigmoid(),
+            )
+        )
 
         self.layers = layers
         self.depth = len(layers)
@@ -117,13 +137,15 @@ class Discriminator_VAEGAN(BaseDiscriminator):
                 max_depth = max(output_layer_levels)
 
         out = x
+        print(out.shape)
 
         for i in range(max_depth):
 
-            if i == 3:
+            if i == 4:
                 out = out.reshape(x.shape[0], -1)
 
             out = self.layers[i](out)
+            print(out.shape)
 
             if output_layer_levels is not None:
                 if i + 1 in output_layer_levels:
