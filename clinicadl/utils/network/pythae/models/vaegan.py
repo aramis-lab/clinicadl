@@ -90,7 +90,8 @@ class Discriminator_VAEGAN(BaseDiscriminator):
             )
         )
 
-        layers.append(nn.Sequential(nn.Linear(153600, 1), nn.Sigmoid()))
+        layers.append(nn.Sequential(nn.Linear(1537536, 1), nn.Sigmoid()))
+        # layers.append(nn.Sequential(nn.Linear(153600, 1), nn.Sigmoid()))
 
         self.layers = layers
         self.depth = len(layers)
@@ -115,6 +116,7 @@ class Discriminator_VAEGAN(BaseDiscriminator):
             else:
                 max_depth = max(output_layer_levels)
 
+        # print(x.shape)
         out = x
 
         for i in range(max_depth):
@@ -123,6 +125,7 @@ class Discriminator_VAEGAN(BaseDiscriminator):
                 out = out.reshape(x.shape[0], -1)
 
             out = self.layers[i](out)
+            # print(out.shape)
 
             if output_layer_levels is not None:
                 if i + 1 in output_layer_levels:
