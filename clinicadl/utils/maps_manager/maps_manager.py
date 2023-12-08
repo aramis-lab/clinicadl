@@ -83,6 +83,7 @@ class MapsManager:
             test_parameters = change_str_to_path(test_parameters)
             self.parameters = add_default_values(test_parameters)
             self.ssda_network = False  # A MODIFIER
+            self.save_all_models = self.parameters["save_all_models"]
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -1302,6 +1303,7 @@ class MapsManager:
                     best_dict,
                     split,
                     network=network,
+                    save_all_models=save_all_models,
                 )
                 self._write_weights(
                     {
@@ -1312,6 +1314,7 @@ class MapsManager:
                     None,
                     split,
                     filename="optimizer.pth.tar",
+                    save_all_models=False,
                 )
 
             epoch += 1
@@ -1634,6 +1637,7 @@ class MapsManager:
                 best_dict,
                 split,
                 network=network,
+                save_all_models=False,
             )
             self._write_weights(
                 {
@@ -1644,6 +1648,7 @@ class MapsManager:
                 None,
                 split,
                 filename="optimizer.pth.tar",
+                save_all_models=False,
             )
 
             epoch += 1
@@ -2426,6 +2431,7 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
+        save_all_models=False,
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
@@ -2442,6 +2448,13 @@ class MapsManager:
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = checkpoint_dir / filename
         torch.save(state, checkpoint_path)
+
+        if save_all_models:
+            all_models_dir = (
+                self.maps_path / f"{self.split_name}-{split}" / "all_models"
+            )
+            all_models_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
 
         best_filename = "model.pth.tar"
         if network is not None:
