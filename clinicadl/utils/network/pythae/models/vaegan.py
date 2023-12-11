@@ -137,7 +137,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
                 max_depth = max(output_layer_levels)
 
         out = x
-        print(out.shape)
 
         for i in range(max_depth):
 
@@ -145,7 +144,6 @@ class Discriminator_VAEGAN(BaseDiscriminator):
                 out = out.reshape(x.shape[0], -1)
 
             out = self.layers[i](out)
-            print(out.shape)
 
             if output_layer_levels is not None:
                 if i + 1 in output_layer_levels:
