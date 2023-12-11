@@ -302,6 +302,10 @@ class MapsManager:
             size_reduction_factor=self.size_reduction_factor,
         )
 
+        if pythae:
+            from clinicadl.utils.network.pythae.encoder_decoder_config import make_encoder_decoder_config
+            self.parameters = make_encoder_decoder_config(self.parameters)
+
         group_df = None
         if tsv_path is not None:
             group_df = load_data_test(
