@@ -11,7 +11,6 @@ from uuid import uuid4
 import torch
 import torch.distributed as dist
 from packaging.version import Version
-from torch.cuda.amp import GradScaler
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
