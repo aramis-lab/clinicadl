@@ -1328,7 +1328,7 @@ class MapsManager:
                 network=network,
             )
             self._compute_output_tensors(
-                train_loader.dataset,
+                valid_loader.dataset,
                 "validation",
                 split,
                 self.selection_metrics,
