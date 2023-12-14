@@ -1849,7 +1849,10 @@ class MapsManager:
             dist.barrier()
 
             nb_imgs = len(dataset)
-            for i in range(cluster.rank, nb_imgs, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
@@ -1918,7 +1921,10 @@ class MapsManager:
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(cluster.rank, nb_modes, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
@@ -1996,7 +2002,7 @@ class MapsManager:
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
                 with autocast(enabled=self.std_amp):
-                    _, latent, _ = model._forward(image.unsqueeze(0).to(model.device))
+                    _, latent, _ = model.module._forward(image.unsqueeze(0).to(model.device))
                 latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
