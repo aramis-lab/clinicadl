@@ -1836,6 +1836,7 @@ class MapsManager:
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             nifti_path = (
                 self.maps_path
@@ -1904,6 +1905,7 @@ class MapsManager:
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             tensor_path = (
                 self.maps_path
@@ -1980,6 +1982,7 @@ class MapsManager:
                 not self.fully_sharded_data_parallel
             ), "FSDP cannot be used to compute latent tensors."
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             tensor_path = (
                 self.maps_path
