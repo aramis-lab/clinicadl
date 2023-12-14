@@ -237,19 +237,20 @@ class DDP:
         monkeypatch(model)
 
         if fsdp:
+            if Version(torch.__version__) < Version("2.0.0"):
+                logger.warning(
+                    "We do not support FullyShardedDataParallel before Pytorch 2."
+                    " Falling back to standard distributed data parallelism."
+                )
+                return ClinicaDDP(model)
+
             if fsdp_available:
                 return FSDP(model, amp=amp)
             else:
-                if Version(torch.__version__) < Version("2.0.0"):
-                    logger.warning(
-                        "We do not support FullyShardedDataParallel before Pytorch 2."
-                        " Falling back to standard distributed data parallelism."
-                    )
-                else:
-                    logger.warning(
-                        "FSDP is not available on your system, falling back "
-                        "to standard distributed data parallelism."
-                    )
+                logger.warning(
+                    "FSDP is not available on your system, falling back "
+                    "to standard distributed data parallelism."
+                )
                 return ClinicaDDP(model)
         else:
             return ClinicaDDP(model)
