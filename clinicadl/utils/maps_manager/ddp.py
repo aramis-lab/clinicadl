@@ -2,6 +2,7 @@ import inspect
 import linecache
 import logging
 from dataclasses import dataclass
+from functools import partial
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
@@ -11,7 +12,7 @@ from uuid import uuid4
 import torch
 import torch.distributed as dist
 from packaging.version import Version
-from torch.nn import Module
+from torch.nn import Module, Sequential
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
 
@@ -23,6 +24,10 @@ try:
         MixedPrecision,
         ShardingStrategy,
         StateDictType,
+    )
+    from torch.distributed.fsdp.wrap import (
+        size_based_auto_wrap_policy,
+        _module_wrap_policy,
     )
 except ImportError:
     fsdp_available = False
@@ -176,11 +181,19 @@ if fsdp_available:
                 )
             else:
                 mixed_precision = None
+
+            def custom_wrap_policy(*args, **kwargs):
+                return (
+                    _module_wrap_policy(*args, **kwargs, module_classes=(Sequential,))
+                    or size_based_auto_wrap_policy(*args, **kwargs, min_num_params=1e5)
+                )
+
             super().__init__(
                 model,
                 sharding_strategy=sharding_strategy,
                 mixed_precision=mixed_precision,
                 cpu_offload=None,
+                auto_wrap_policy=custom_wrap_policy,
             )
             self.set_state_dict_type(
                 self,
