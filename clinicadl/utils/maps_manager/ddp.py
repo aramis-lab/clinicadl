@@ -26,8 +26,8 @@ try:
         StateDictType,
     )
     from torch.distributed.fsdp.wrap import (
-        size_based_auto_wrap_policy,
         _module_wrap_policy,
+        size_based_auto_wrap_policy,
     )
 except ImportError:
     fsdp_available = False
@@ -183,10 +183,9 @@ if fsdp_available:
                 mixed_precision = None
 
             def custom_wrap_policy(*args, **kwargs):
-                return (
-                    _module_wrap_policy(*args, **kwargs, module_classes=(Sequential,))
-                    or size_based_auto_wrap_policy(*args, **kwargs, min_num_params=1e5)
-                )
+                return _module_wrap_policy(
+                    *args, **kwargs, module_classes=(Sequential,)
+                ) or size_based_auto_wrap_policy(*args, **kwargs, min_num_params=1e5)
 
             super().__init__(
                 model,

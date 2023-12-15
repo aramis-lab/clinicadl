@@ -2005,7 +2005,9 @@ class MapsManager:
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
                 with autocast(enabled=self.std_amp):
-                    _, latent, _ = model.module._forward(image.unsqueeze(0).to(model.device))
+                    _, latent, _ = model.module._forward(
+                        image.unsqueeze(0).to(model.device)
+                    )
                 latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
