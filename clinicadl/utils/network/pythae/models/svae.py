@@ -1,9 +1,7 @@
 from clinicadl.utils.network.vae.vae_layers import (
-    EncoderConv3DLayer,
     Flatten,
 )
-
-EncoderLayer3D = EncoderConv3DLayer
+from clinicadl.utils.network.vae.vae_blocks import EncoderBlock
 
 from clinicadl.utils.network.pythae.pythae_utils import BasePythae
 from pythae.models.nn import BaseEncoder, BaseDecoder
@@ -27,15 +25,15 @@ class pythae_SVAE(BasePythae):
             gpu=gpu,
         )
 
-        encoder_layers, mu_layer, log_concentration_layer = build_SVAE_encoder(
-            input_size=input_size,
-            latent_space_size=latent_space_size,
-            feature_size=feature_size,
-            n_conv=n_conv,
-            io_layer_channels=io_layer_channels,
+        self.svae_encoder = build_SVAE_encoder(
+            encoder_decoder_config=encoder_decoder_config
         )
 
-        encoder = Encoder(encoder_layers, mu_layer, log_concentration_layer)
+        encoder = Encoder(
+            self.svae_encoder.encoder,
+            self.svae_encoder.mu_layer,
+            self.svae_encoder.log_concentration_layer
+        )
 
         model_config = SVAEConfig(
             input_dim=self.input_size,
@@ -59,65 +57,71 @@ class pythae_SVAE(BasePythae):
         )
 
 
-def build_SVAE_encoder(
-    input_size = (1, 80, 96, 80),
-    latent_space_size=128,
-    feature_size=0,
-    n_conv=3,
-    io_layer_channels=32,
-):
-    first_layer_channels = io_layer_channels
-    last_layer_channels = io_layer_channels
-    # automatically compute padding
-    decoder_output_padding = []
+class build_SVAE_encoder():
 
-    input_c = input_size[0]
-    input_d = input_size[1]
-    input_h = input_size[2]
-    input_w = input_size[3]
-    d, h, w = input_d, input_h, input_w
+    def __init__(self, encoder_decoder_config):
 
-    # ENCODER
-    encoder_layers = []
-    # Input Layer
-    encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
-    decoder_output_padding.append([d % 2, h % 2, w % 2])
-    d, h, w = d // 2, h // 2, w // 2
-    # Conv Layers
-    for i in range(n_conv - 1):
+        self.input_size = encoder_decoder_config.input_size
+        self.first_layer_channels = encoder_decoder_config.first_layer_channels
+        self.n_block_encoder = encoder_decoder_config.n_block_encoder
+        self.feature_size = encoder_decoder_config.feature_size
+        self.latent_space_size = encoder_decoder_config.latent_space_size
+        self.n_layer_per_block_encoder = encoder_decoder_config.n_layer_per_block_encoder
+        self.block_type = encoder_decoder_config.block_type
+
+        self.build_encoder()
+
+    def build_encoder(self):
+        input_c = self.input_size[0]
+        input_d = self.input_size[1]
+        input_h = self.input_size[2]
+        input_w = self.input_size[3]
+
+        # ENCODER
+        encoder_layers = []
+        
+        # Input Layer
         encoder_layers.append(
-            EncoderLayer3D(
-                first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
+            EncoderBlock(input_c, self.first_layer_channels, self.n_layer_per_block_encoder, self.block_type,)
+        )
+
+        # Conv Layers
+        for i in range(self.n_block_encoder-1):
+            encoder_layers.append(
+                EncoderBlock(
+                    self.first_layer_channels * 2**i, 
+                    self.first_layer_channels * 2**(i+1), 
+                    self.n_layer_per_block_encoder, 
+                    self.block_type,
+                )
             )
-        )
         # Construct output paddings
-        decoder_output_padding.append([d % 2, h % 2, w % 2])
-        d, h, w = d // 2, h // 2, w // 2
-    # Compute size of the feature space
-    n_pix = (
-        first_layer_channels
-        * 2 ** (n_conv - 1)
-        * (input_d // (2**n_conv))
-        * (input_h // (2**n_conv))
-        * (input_w // (2**n_conv))
-    )
-    # Flatten
-    encoder_layers.append(Flatten())
-    # Intermediate feature space
-    if feature_size == 0:
-        feature_space = n_pix
-    else:
-        feature_space = feature_size
-        encoder_layers.append(
-            nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
-        )
-    encoder = nn.Sequential(*encoder_layers)
 
-    # LATENT SPACE
-    mu_layer = nn.Linear(feature_space, latent_space_size)
-    log_concentration_layer = nn.Linear(feature_space, 1)
+        enc_feature_c = self.first_layer_channels * 2 ** (self.n_block_encoder - 1)
+        enc_feature_d = input_d // (2**self.n_block_encoder)
+        enc_feature_h = input_h // (2**self.n_block_encoder)
+        enc_feature_w = input_w // (2**self.n_block_encoder)
 
-    return encoder, mu_layer, log_concentration_layer
+        # Compute size of the feature space
+        n_pix_encoder = enc_feature_c * enc_feature_d * enc_feature_h * enc_feature_w
+
+        # Flatten
+        encoder_layers.append(Flatten())
+        # Intermediate feature space
+        if self.feature_size == 0:
+            feature_space = n_pix_encoder
+        else:
+            feature_space = feature_size
+            encoder_layers.append(
+                nn.Sequential(nn.Linear(n_pix_encoder, feature_space), nn.ReLU())
+            )
+
+        self.encoder = nn.Sequential(*encoder_layers)
+
+        # LATENT SPACE
+        self.mu_layer = nn.Linear(feature_space, self.latent_space_size)
+        self.log_concentration_layer = nn.Linear(feature_space, 1)
+
 
 class Encoder(BaseEncoder):
     def __init__(self, encoder_layers, mu_layer, logc_layer): # Args is a ModelConfig instance
