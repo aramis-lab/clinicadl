@@ -172,6 +172,12 @@ class TaskManager:
         dataloader: DataLoader,
         criterion: _Loss,
         use_labels: bool = True,
+        save_reconstruction_tensor=False,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
+        tensor_path=None, 
+        nifti_path=None,
+        latent_tensor_path=None,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -185,19 +191,60 @@ class TaskManager:
         Returns:
             the results and metrics on the image level.
         """
+        import nibabel as nib
+        from numpy import eye
+        from os import path
+        
         model.eval()
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
         with torch.no_grad():
             for data in dataloader:
-                outputs = model.predict(data)["recon_x"]
+                outputs = model.predict(data)
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
-                    row = self.generate_test_row(idx, data, outputs)
+                    row = self.generate_test_row(idx, data, outputs["recon_x"])
                     row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
+                    
+                    image = data["data"][idx]
+                    data["data"][idx] = data["data"][idx].unsqueeze(0)
+                    participant_id = data["participant_id"][idx]
+                    session_id = data["session_id"][idx]
+                    mode_id = data[f"{self.mode}_id"][idx]
+                    
+                    # Save reconstruction tensor
+                    if save_reconstruction_tensor:
+                        reconstruction = outputs["recon_x"][idx].squeeze(0).cpu()
+                        input_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        )
+                        output_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        )
+                        torch.save(image, path.join(tensor_path, input_filename))
+                        torch.save(reconstruction, path.join(tensor_path, output_filename))
+                    
+                    # Save reconstruction nifti
+                    if save_reconstruction_nifti:
+                        reconstruction = outputs["recon_x"][idx].squeeze(0).cpu()
+                        input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
+                        output_nii = nib.Nifti1Image(reconstruction[0].numpy(), eye(4))
+                        # Create file name according to participant and session id
+                        input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                        output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                        nib.save(input_nii, path.join(nifti_path, input_filename))
+                        nib.save(output_nii, path.join(nifti_path, output_filename))
+                    
+                    # Save latent tensor
+                    if save_latent_tensor:
+                        latent = outputs["embedding"][idx].squeeze(0).cpu()
+                        output_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                        )
+                        torch.save(latent, path.join(latent_tensor_path, output_filename))
 
                 del outputs
             results_df.reset_index(inplace=True, drop=True)
