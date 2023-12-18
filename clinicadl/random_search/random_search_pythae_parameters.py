@@ -62,4 +62,54 @@ RS_PYTHAE_DICT = {
         "lbd": "choice",
         "kernel_bandwidth": "choice",
     },
+    "pythae_CIWAE": {
+        "beta": "choice",
+        "number_samples": "randint",
+    },
+    "pythae_PIWAE": {
+        "number_gradient_estimates": "randint",
+        "number_samples": "randint",
+    },
+    "pythae_MIWAE": {
+        "number_gradient_estimates": "randint",
+        "number_samples": "randint",
+    },
+    "pythae_IWAE": {
+        "number_samples": "choice",
+    },
+    "pythae_DisentangledBetaVAE": {
+        "beta": "choice",
+        "C": "choice",
+        "warmup_epoch": "choice",
+    },
+    "pythae_FactorVAE": {
+        "gamma": "choice",
+    },
+    "pythae_SVAE": {
+    },
+    "pythae_PoincareVAE": {
+        "prior_distribution": "choice",
+        "posterior_distribution": "choice",
+        "curvature": "choice",
+    },
+    "pythae_HVAE": {
+        "n_lf": "choice",
+        "eps_lf": "choice",
+        "beta_zero": "choice",
+    },
+    "pythae_RHVAE": {
+        "n_lf": "choice",
+        "eps_lf": "choice",
+        "beta_zero": "choice",
+        "temperature": "choice",
+        "regularization": "choice",
+    },
+    "pythae_VAMP": {
+        "number_components": "choice",
+        "linear_scheduling_steps": "choice",
+    },
+    "pythae_MSSSIM_VAE": {
+        "beta": "choice",
+        "window_size": "choice",
+    }
 }
