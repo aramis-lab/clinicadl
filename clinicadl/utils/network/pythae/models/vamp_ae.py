@@ -6,6 +6,7 @@ class pythae_VAMP(BasePythae):
         self,
         encoder_decoder_config,
         number_components,
+        linear_scheduling_steps,
         gpu=False,
     ):
 
@@ -20,6 +21,7 @@ class pythae_VAMP(BasePythae):
             input_dim=self.input_size,
             latent_dim=self.latent_space_size,
             number_components=number_components,
+            linear_scheduling_steps=linear_scheduling_steps,
         )
         self.model = VAMP(
             model_config=model_config,

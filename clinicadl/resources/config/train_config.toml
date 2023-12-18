@@ -113,6 +113,7 @@ number_gradient_estimates=4
 #number_samples=4
 # VAMP Autoencoder
 number_components=50
+linear_scheduling_steps=0
 # Regularized AE with L2 decoder param
 embedding_weight=1e-2
 #reg_weight=1e-4
