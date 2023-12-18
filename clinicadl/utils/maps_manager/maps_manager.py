@@ -148,8 +148,6 @@ class MapsManager:
         from pythae.pipelines import TrainingPipeline
         from pythae.trainers.training_callbacks import TrainHistoryCallback
         
-        print(self.encoder_decoder_config)
-
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -1329,6 +1327,7 @@ class MapsManager:
             self.parameters["selection_threshold"] = None
         if (
             "label_code" not in self.parameters
+            or self.parameters["label_code"] is None
             or len(self.parameters["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
