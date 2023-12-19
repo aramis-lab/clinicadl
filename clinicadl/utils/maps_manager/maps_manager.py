@@ -379,18 +379,22 @@ class MapsManager:
                         use_labels=use_labels,
                         gpu=gpu,
                         network=network,
-                    )
-                    if save_tensor or save_nifti or save_latent_tensor:
-                        self._save_model_output(
-                        data_test,
-                        data_group,
-                        split,
-                        split_selection_metrics,
                         save_reconstruction_tensor=save_tensor,
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
-                        gpu=gpu,
                     )
+                    if not pythae: 
+                        if save_tensor or save_nifti or save_latent_tensor:
+                            self._save_model_output(
+                            data_test,
+                            data_group,
+                            split,
+                            split_selection_metrics,
+                            save_reconstruction_tensor=save_tensor,
+                            save_reconstruction_nifti=save_nifti,
+                            save_latent_tensor=save_latent_tensor,
+                            gpu=gpu,
+                        )
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -423,18 +427,22 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                     for_pythae=pythae,
+                    save_reconstruction_tensor=save_tensor,
+                    save_reconstruction_nifti=save_nifti,
+                    save_latent_tensor=save_latent_tensor,
                 )
-                if save_tensor or save_nifti or save_latent_tensor:
-                    self._save_model_output(
-                        data_test,
-                        data_group,
-                        split,
-                        split_selection_metrics,
-                        save_reconstruction_tensor=save_tensor,
-                        save_reconstruction_nifti=save_nifti,
-                        save_latent_tensor=save_latent_tensor,
-                        gpu=gpu,
-                    )
+                if not pythae: 
+                    if save_tensor or save_nifti or save_latent_tensor:
+                        self._save_model_output(
+                            data_test,
+                            data_group,
+                            split,
+                            split_selection_metrics,
+                            save_reconstruction_tensor=save_tensor,
+                            save_reconstruction_nifti=save_nifti,
+                            save_latent_tensor=save_latent_tensor,
+                            gpu=gpu,
+                        )
 
             self._ensemble_prediction(data_group, split, split_selection_metrics, use_labels)
 
@@ -1016,6 +1024,9 @@ class MapsManager:
         gpu=None,
         network=None,
         for_pythae=False,
+        save_reconstruction_tensor=False,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1053,11 +1064,53 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+            
+            tensor_path = None
+            if save_reconstruction_tensor:
+                tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "tensors",
+                )
+                makedirs(tensor_path, exist_ok=True)
+
+            nifti_path = None
+            if save_reconstruction_nifti:
+                nifti_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "nifti_images",
+                )
+                makedirs(nifti_path, exist_ok=True)
+
+            latent_tensor_path = None
+            if save_latent_tensor:
+                latent_tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "latent_tensors",
+                )
+                makedirs(latent_tensor_path, exist_ok=True)
 
             if for_pythae:
                 prediction_df, metrics = self.task_manager.test_pythae(
-                model, dataloader, criterion, use_labels=use_labels
-            )
+                    model, 
+                    dataloader, 
+                    criterion, 
+                    use_labels=use_labels, 
+                    save_reconstruction_tensor=save_reconstruction_tensor,
+                    save_reconstruction_nifti=save_reconstruction_nifti,
+                    save_latent_tensor=save_latent_tensor,
+                    tensor_path=tensor_path,
+                    nifti_path=nifti_path,
+                    latent_tensor_path=latent_tensor_path,
+                )
             else:
                 prediction_df, metrics = self.task_manager.test(
                     model, dataloader, criterion, use_labels=use_labels
@@ -2316,3 +2369,4 @@ class MapsManager:
                 )
             )
         return map_pt
+
