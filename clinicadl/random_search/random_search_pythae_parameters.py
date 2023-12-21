@@ -6,8 +6,8 @@ RS_PYTHAE_DICT = {
         "flows": "choice",
     },
     "pythae_VAE_IAF": {
-        "n_made_blocks": "randint",
-        "n_hidden_in_made": "randint",
+        "n_made_blocks": "choice",
+        "n_hidden_in_made": "choice",
         "hidden_size": "choice",
     },
     "pythae_BetaTCVAE": {
