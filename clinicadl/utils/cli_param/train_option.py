@@ -81,6 +81,14 @@ compensation = cli_param.option_group.reproducibility_group.option(
     # default="memory",
     type=click.Choice(["memory", "time"]),
 )
+save_all_models = cli_param.option_group.reproducibility_group.option(
+    "--save_all_models",
+    type=bool,
+    is_flag=True,
+    help="save gjseorimgsorg",
+    default=False,
+)
+
 # Model
 architecture = cli_param.option_group.model_group.option(
     "-a",

@@ -1303,7 +1303,7 @@ class MapsManager:
                     best_dict,
                     split,
                     network=network,
-                    save_all_models=save_all_models,
+                    save_all_models=self.parameters["save_all_models"],
                 )
                 self._write_weights(
                     {
@@ -1314,7 +1314,7 @@ class MapsManager:
                     None,
                     split,
                     filename="optimizer.pth.tar",
-                    save_all_models=False,
+                    save_all_models=self.parameters["save_all_models"],
                 )
 
             epoch += 1
