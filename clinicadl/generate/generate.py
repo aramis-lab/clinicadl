@@ -258,6 +258,7 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
+
         home = Path.home()
         cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
