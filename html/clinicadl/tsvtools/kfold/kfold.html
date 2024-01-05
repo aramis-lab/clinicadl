@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>clinicadl.tsvtools.kfold.kfold API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>clinicadl.tsvtools.kfold.kfold</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># coding: utf8
+
+import os
+import shutil
+from copy import copy
+from logging import getLogger
+from os import makedirs, path
+from pathlib import Path
+from typing import List
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import StratifiedKFold
+
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.tsvtools_utils import (
+    df_to_tsv,
+    extract_baseline,
+    remove_sub_labels,
+    retrieve_longitudinal,
+)
+
+sex_dict = {&#34;M&#34;: 0, &#34;F&#34;: 1}
+logger = getLogger(&#34;clinicadl&#34;)
+
+
+def write_splits(
+    diagnosis_df: pd.DataFrame,
+    split_label: str,
+    n_splits: int,
+    subset_name: str,
+    results_directory: str,
+):
+    &#34;&#34;&#34;
+    Split data at the subject-level in training and test to have equivalent distributions in split_label.
+    Writes test and train Dataframes.
+
+    Parameters
+    ----------
+    diagnosis_df: Dataframe
+        Columns must include [&#39;participant_id&#39;, &#39;session_id&#39;, &#39;diagnosis&#39;]
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset split.
+    results_directory: str (path)
+        Path to the results directory.
+
+    &#34;&#34;&#34;
+
+    baseline_df = extract_baseline(diagnosis_df)
+
+    if split_label is None:
+        diagnoses_list = list(baseline_df.diagnosis)
+        unique = list(set(diagnoses_list))
+        y = np.array([unique.index(x) for x in diagnoses_list])
+    else:
+        stratification_list = list(baseline_df[split_label])
+        unique = list(set(stratification_list))
+        y = np.array([unique.index(x) for x in stratification_list])
+
+    splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
+
+    for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
+        train_index, test_index = indices
+
+        test_df = baseline_df.iloc[test_index]
+        train_df = baseline_df.iloc[train_index]
+        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+
+        train_df.reset_index(inplace=True, drop=True)
+        test_df.reset_index(inplace=True, drop=True)
+
+        train_df = train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        test_df = test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        long_train_df = long_train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+
+        os.makedirs(path.join(results_directory, f&#34;split-{i}&#34;))
+
+        train_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, &#34;train_baseline.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )
+        test_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, f&#34;{subset_name}_baseline.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )
+
+        long_train_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, &#34;train.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )
+
+
+def split_diagnoses(
+    data_tsv: str,
+    n_splits: int = 5,
+    subset_name: str = None,
+    stratification: str = None,
+):
+    &#34;&#34;&#34;
+    Performs a k-fold split for each label independently on the subject level.
+    The output (the tsv file) will have two new columns :
+        - split, with the number of the split the subject is in.
+        - datagroup, with the name of the group (train or subset_name) the subject is in.
+
+    The train group will contain baseline and longitudinal sessions,
+    whereas the test group will only include the baseline sessions for each split.
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv file extracted by clinicadl tsvtool getlabels.
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    stratification: str
+        Name of variable used to stratify k-fold.
+    &#34;&#34;&#34;
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = f&#34;{n_splits}_fold&#34;
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f&#34;{n_splits}_fold_{split_numero}&#34;
+    results_directory = parents_path / folder_name
+    makedirs(results_directory)
+
+    commandline_to_json(
+        {
+            &#34;output_dir&#34;: results_directory,
+            &#34;n_splits&#34;: n_splits,
+            &#34;subset_name&#34;: subset_name,
+            &#34;stratification&#34;: stratification,
+        },
+        filename=&#34;kfold.json&#34;,
+    )
+
+    # Read files
+    from os.path import join
+
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep=&#34;\t&#34;)
+    list_columns = diagnosis_df.columns.values
+
+    if (
+        &#34;diagnosis&#34; not in list_columns
+        or &#34;age&#34; not in list_columns
+        or &#34;sex&#34; not in list_columns
+    ):
+        parents_path = path.abspath(parents_path)
+        while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+            parents_path = Path(parents_path).parents[0]
+
+        labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+        diagnosis_df = pd.merge(
+            diagnosis_df,
+            labels_df,
+            how=&#34;inner&#34;,
+            on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+        )
+
+    write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
+
+    logger.info(f&#34;K-fold split is done.&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="clinicadl.tsvtools.kfold.kfold.split_diagnoses"><code class="name flex">
+<span>def <span class="ident">split_diagnoses</span></span>(<span>data_tsv: str, n_splits: int = 5, subset_name: str = None, stratification: str = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Performs a k-fold split for each label independently on the subject level.
+The output (the tsv file) will have two new columns :
+- split, with the number of the split the subject is in.
+- datagroup, with the name of the group (train or subset_name) the subject is in.</p>
+<p>The train group will contain baseline and longitudinal sessions,
+whereas the test group will only include the baseline sessions for each split.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_tsv</code></strong> :&ensp;<code>str (path)</code></dt>
+<dd>Path to the tsv file extracted by clinicadl tsvtool getlabels.</dd>
+<dt><strong><code>n_splits</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of splits in the k-fold cross-validation.</dd>
+<dt><strong><code>subset_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the subset that is complementary to train.</dd>
+<dt><strong><code>stratification</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of variable used to stratify k-fold.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_diagnoses(
+    data_tsv: str,
+    n_splits: int = 5,
+    subset_name: str = None,
+    stratification: str = None,
+):
+    &#34;&#34;&#34;
+    Performs a k-fold split for each label independently on the subject level.
+    The output (the tsv file) will have two new columns :
+        - split, with the number of the split the subject is in.
+        - datagroup, with the name of the group (train or subset_name) the subject is in.
+
+    The train group will contain baseline and longitudinal sessions,
+    whereas the test group will only include the baseline sessions for each split.
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv file extracted by clinicadl tsvtool getlabels.
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    stratification: str
+        Name of variable used to stratify k-fold.
+    &#34;&#34;&#34;
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = f&#34;{n_splits}_fold&#34;
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f&#34;{n_splits}_fold_{split_numero}&#34;
+    results_directory = parents_path / folder_name
+    makedirs(results_directory)
+
+    commandline_to_json(
+        {
+            &#34;output_dir&#34;: results_directory,
+            &#34;n_splits&#34;: n_splits,
+            &#34;subset_name&#34;: subset_name,
+            &#34;stratification&#34;: stratification,
+        },
+        filename=&#34;kfold.json&#34;,
+    )
+
+    # Read files
+    from os.path import join
+
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep=&#34;\t&#34;)
+    list_columns = diagnosis_df.columns.values
+
+    if (
+        &#34;diagnosis&#34; not in list_columns
+        or &#34;age&#34; not in list_columns
+        or &#34;sex&#34; not in list_columns
+    ):
+        parents_path = path.abspath(parents_path)
+        while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+            parents_path = Path(parents_path).parents[0]
+
+        labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+        diagnosis_df = pd.merge(
+            diagnosis_df,
+            labels_df,
+            how=&#34;inner&#34;,
+            on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+        )
+
+    write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
+
+    logger.info(f&#34;K-fold split is done.&#34;)</code></pre>
+</details>
+</dd>
+<dt id="clinicadl.tsvtools.kfold.kfold.write_splits"><code class="name flex">
+<span>def <span class="ident">write_splits</span></span>(<span>diagnosis_df: pandas.core.frame.DataFrame, split_label: str, n_splits: int, subset_name: str, results_directory: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Split data at the subject-level in training and test to have equivalent distributions in split_label.
+Writes test and train Dataframes.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>diagnosis_df</code></strong> :&ensp;<code>Dataframe</code></dt>
+<dd>Columns must include ['participant_id', 'session_id', 'diagnosis']</dd>
+<dt><strong><code>split_label</code></strong> :&ensp;<code>str</code></dt>
+<dd>Label on which the split is done (categorical variables)</dd>
+<dt><strong><code>n_splits</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of splits in the k-fold cross-validation.</dd>
+<dt><strong><code>subset_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the subset split.</dd>
+<dt><strong><code>results_directory</code></strong> :&ensp;<code>str (path)</code></dt>
+<dd>Path to the results directory.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_splits(
+    diagnosis_df: pd.DataFrame,
+    split_label: str,
+    n_splits: int,
+    subset_name: str,
+    results_directory: str,
+):
+    &#34;&#34;&#34;
+    Split data at the subject-level in training and test to have equivalent distributions in split_label.
+    Writes test and train Dataframes.
+
+    Parameters
+    ----------
+    diagnosis_df: Dataframe
+        Columns must include [&#39;participant_id&#39;, &#39;session_id&#39;, &#39;diagnosis&#39;]
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset split.
+    results_directory: str (path)
+        Path to the results directory.
+
+    &#34;&#34;&#34;
+
+    baseline_df = extract_baseline(diagnosis_df)
+
+    if split_label is None:
+        diagnoses_list = list(baseline_df.diagnosis)
+        unique = list(set(diagnoses_list))
+        y = np.array([unique.index(x) for x in diagnoses_list])
+    else:
+        stratification_list = list(baseline_df[split_label])
+        unique = list(set(stratification_list))
+        y = np.array([unique.index(x) for x in stratification_list])
+
+    splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
+
+    for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
+        train_index, test_index = indices
+
+        test_df = baseline_df.iloc[test_index]
+        train_df = baseline_df.iloc[train_index]
+        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+
+        train_df.reset_index(inplace=True, drop=True)
+        test_df.reset_index(inplace=True, drop=True)
+
+        train_df = train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        test_df = test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        long_train_df = long_train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+
+        os.makedirs(path.join(results_directory, f&#34;split-{i}&#34;))
+
+        train_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, &#34;train_baseline.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )
+        test_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, f&#34;{subset_name}_baseline.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )
+
+        long_train_df.to_csv(
+            path.join(results_directory, f&#34;split-{i}&#34;, &#34;train.tsv&#34;),
+            sep=&#34;\t&#34;,
+            index=False,
+        )</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="clinicadl.tsvtools.kfold" href="index.html">clinicadl.tsvtools.kfold</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="clinicadl.tsvtools.kfold.kfold.split_diagnoses" href="#clinicadl.tsvtools.kfold.kfold.split_diagnoses">split_diagnoses</a></code></li>
+<li><code><a title="clinicadl.tsvtools.kfold.kfold.write_splits" href="#clinicadl.tsvtools.kfold.kfold.write_splits">write_splits</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

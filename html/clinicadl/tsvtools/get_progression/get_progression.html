@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>clinicadl.tsvtools.get_progression.get_progression API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>clinicadl.tsvtools.get_progression.get_progression</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+from copy import copy
+from logging import getLogger
+from os import path
+from pathlib import Path
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
+
+from clinicadl.tsvtools.get_labels import infer_or_drop_diagnosis
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.tsvtools_utils import (
+    after_end_screening,
+    cleaning_nan_diagnoses,
+    find_label,
+    first_session,
+    last_session,
+    merged_tsv_reader,
+    neighbour_session,
+)
+
+logger = getLogger(&#34;clinicadl&#34;)
+
+
+def get_progression(
+    data_tsv: str,
+    horizon_time: int = 36,
+    stability_dict: dict = None,
+):
+
+    &#34;&#34;&#34;
+    A method to get the progression for each sessions depending on their stability on the time horizon
+    Outputs are written in data_tsv
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to a tsv file with columns including [&#34;participants_id&#34;, &#34;session_id&#34;, &#34;dignosis&#34;]
+    horizon_time: int
+        Time horizon in months
+    stability_dict: dict
+        Dictionnary explaining the progression of the disease. If None, it uses the Alzheimer&#39;s one : {CN: 0, MCI: 1, AD: 2}
+
+    &#34;&#34;&#34;
+
+    # Reading files
+    bids_df = merged_tsv_reader(data_tsv)
+
+    if &#34;diagnosis&#34; not in bids_df.columns:
+
+        parents_path = path.abspath(data_tsv)
+        while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+            parents_path = Path(parents_path).parents[0]
+            labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+            bids_df = pd.merge(
+                bids_df,
+                labels_df,
+                how=&#34;inner&#34;,
+                on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+            )
+        if &#34;dx1&#34; in bids_df.columns:
+            bids_df.rename(columns={&#34;dx1&#34;: &#34;diagnosis&#34;}, inplace=True)
+
+    bids_df.set_index([&#34;participant_id&#34;, &#34;session_id&#34;], inplace=True)
+    bids_df = infer_or_drop_diagnosis(bids_df)
+
+    # Check possible double change in diagnosis in time or if ther is only one session for a subject
+    # This subjects were removed in the old getlabels.
+    # We can add an option to remove them, or remove them all the time or never remove them
+    # We can also give two file.stv, one with unknown and unstable subjects and one without
+
+    stability_dict = {&#34;CN&#34;: 0, &#34;MCI&#34;: 1, &#34;AD&#34;: 2, &#34;Dementia&#34;: 2}
+    nb_subjects = 0
+    # print(bids_df.columns.values)
+    # if &#34;group&#34; is in bids_df.columns.values :
+    #     diagnosis_str = &#34;group&#34;
+    # elif &#34;diagnosis&#34; is in bids_df.columns.values :
+    #     diagnosis_str = &#34;diagnosis&#34;
+
+    # #bids_df[&#34;group&#34;] = &#34;UK&#34;
+    bids_df[&#34;progression&#34;] = &#34;UK&#34;
+    bids_copy_df = copy(bids_df)
+
+    # Do not take into account the case of missing diag = nan
+
+    for subject, subject_df in bids_df.groupby(level=0):
+        session_list = [session for _, session in subject_df.index.values]
+        session_list.sort()
+        for _, session in subject_df.index.values:
+            diagnosis = subject_df.loc[(subject, session), &#34;diagnosis&#34;]
+            diagnosis_dict = stability_dict[diagnosis]
+            session_nb = int(session[5::])
+            horizon_session_nb = session_nb + horizon_time
+            if horizon_session_nb &lt; 10:
+                horizon_session = &#34;ses-M00&#34; + str(horizon_session_nb)
+            elif 10 &lt;= horizon_session_nb &lt; 100:
+                horizon_session = &#34;ses-M0&#34; + str(horizon_session_nb)
+            else:
+                horizon_session = &#34;ses-M&#34; + str(horizon_session_nb)
+            # print(session, &#39;--&gt;&#39;, horizon_session)exit
+
+            # CASE 1 : if the  session after &#39;horizon_time&#39; months is a session the subject has done
+            if horizon_session in session_list:
+                horizon_diagnosis = subject_df.loc[
+                    (subject, horizon_session), &#34;diagnosis&#34;
+                ]
+                horizon_diagnosis_dict = stability_dict[horizon_diagnosis]
+
+                if horizon_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif horizon_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif horizon_diagnosis_dict == diagnosis_dict:
+                    update_diagnosis = &#34;s&#34;
+
+            # CASE 2 : if the session after &#39;horizon_time&#39; months doesn&#39;t exist because it is after the last session of the subject
+            elif after_end_screening(horizon_session, session_list):
+                last_diagnosis = subject_df.loc[
+                    (subject, last_session(session_list)), &#34;diagnosis&#34;
+                ]
+                # This section must be discussed --&gt; removed in Jorge&#39;s paper
+                last_diagnosis_dict = stability_dict[last_diagnosis]
+                if last_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif last_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif last_diagnosis_dict == diagnosis_dict:
+                    update_diagnosis = &#34;s&#34;
+
+            # CASE 3 : if the session after &#39;horizon_time&#39; months doesn&#39;t exist but ther are sessions before and after this time.
+            else:
+                prev_session = neighbour_session(horizon_session, session_list, -1)
+                post_session = neighbour_session(horizon_session, session_list, +1)
+
+                prev_diagnosis = subject_df.loc[(subject, prev_session), &#34;diagnosis&#34;]
+                prev_diagnosis_dict = stability_dict[prev_diagnosis]
+
+                if prev_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif prev_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif prev_diagnosis_dict == diagnosis_dict:
+                    post_diagnosis = subject_df.loc[
+                        (subject, post_session), &#34;diagnosis&#34;
+                    ]
+                    post_diagnosis_dict = stability_dict[post_diagnosis]
+                    if post_diagnosis_dict &gt; diagnosis_dict:
+                        update_diagnosis = &#34;p&#34;
+                    elif post_diagnosis_dict &lt; diagnosis_dict:
+                        update_diagnosis = &#34;r&#34;
+                    elif post_diagnosis_dict == diagnosis_dict:
+                        update_diagnosis = &#34;s&#34;
+            bids_copy_df.loc[(subject, session), &#34;progression&#34;] = update_diagnosis
+
+        # Add unstable session for subjects with multiple regression or conversion
+        # The subjects will be unstable only from the time of the conversion (if regression before) or regression (if conversion before)
+
+        status = 0
+        unstable = False
+        for session_str in session_list:
+            subgroup_str = bids_copy_df.loc[(subject, session_str), &#34;progression&#34;]
+            if subgroup_str == &#34;p&#34;:
+                if status &lt; 0:
+                    unstable = True
+                status = 1
+            if subgroup_str == &#34;r&#34;:
+                if status &gt; 0:
+                    unstable = True
+                status = -1
+        if unstable:
+            nb_subjects += 1
+            for session_str in session_list:
+                bids_copy_df.loc[(subject, session_str), &#34;progression&#34;] = &#34;us&#34;
+
+        # Add unknown subgroup for each last_session
+        session_list = [session for _, session in subject_df.index.values]
+
+        last_session_str = last_session(session_list)
+        if bids_copy_df.loc[(subject, last_session_str), &#34;progression&#34;] != &#34;us&#34;:
+            bids_copy_df.loc[(subject, last_session_str), &#34;progression&#34;] = &#34;uk&#34;
+
+    logger.info(f&#34;Unstable subjects: {nb_subjects}&#34;)
+
+    bids_copy_df.to_csv(data_tsv, sep=&#34;\t&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="clinicadl.tsvtools.get_progression.get_progression.get_progression"><code class="name flex">
+<span>def <span class="ident">get_progression</span></span>(<span>data_tsv: str, horizon_time: int = 36, stability_dict: dict = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A method to get the progression for each sessions depending on their stability on the time horizon
+Outputs are written in data_tsv</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_tsv</code></strong> :&ensp;<code>str (path)</code></dt>
+<dd>Path to a tsv file with columns including ["participants_id", "session_id", "dignosis"]</dd>
+<dt><strong><code>horizon_time</code></strong> :&ensp;<code>int</code></dt>
+<dd>Time horizon in months</dd>
+<dt><strong><code>stability_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionnary explaining the progression of the disease. If None, it uses the Alzheimer's one : {CN: 0, MCI: 1, AD: 2}</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_progression(
+    data_tsv: str,
+    horizon_time: int = 36,
+    stability_dict: dict = None,
+):
+
+    &#34;&#34;&#34;
+    A method to get the progression for each sessions depending on their stability on the time horizon
+    Outputs are written in data_tsv
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to a tsv file with columns including [&#34;participants_id&#34;, &#34;session_id&#34;, &#34;dignosis&#34;]
+    horizon_time: int
+        Time horizon in months
+    stability_dict: dict
+        Dictionnary explaining the progression of the disease. If None, it uses the Alzheimer&#39;s one : {CN: 0, MCI: 1, AD: 2}
+
+    &#34;&#34;&#34;
+
+    # Reading files
+    bids_df = merged_tsv_reader(data_tsv)
+
+    if &#34;diagnosis&#34; not in bids_df.columns:
+
+        parents_path = path.abspath(data_tsv)
+        while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+            parents_path = Path(parents_path).parents[0]
+            labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+            bids_df = pd.merge(
+                bids_df,
+                labels_df,
+                how=&#34;inner&#34;,
+                on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+            )
+        if &#34;dx1&#34; in bids_df.columns:
+            bids_df.rename(columns={&#34;dx1&#34;: &#34;diagnosis&#34;}, inplace=True)
+
+    bids_df.set_index([&#34;participant_id&#34;, &#34;session_id&#34;], inplace=True)
+    bids_df = infer_or_drop_diagnosis(bids_df)
+
+    # Check possible double change in diagnosis in time or if ther is only one session for a subject
+    # This subjects were removed in the old getlabels.
+    # We can add an option to remove them, or remove them all the time or never remove them
+    # We can also give two file.stv, one with unknown and unstable subjects and one without
+
+    stability_dict = {&#34;CN&#34;: 0, &#34;MCI&#34;: 1, &#34;AD&#34;: 2, &#34;Dementia&#34;: 2}
+    nb_subjects = 0
+    # print(bids_df.columns.values)
+    # if &#34;group&#34; is in bids_df.columns.values :
+    #     diagnosis_str = &#34;group&#34;
+    # elif &#34;diagnosis&#34; is in bids_df.columns.values :
+    #     diagnosis_str = &#34;diagnosis&#34;
+
+    # #bids_df[&#34;group&#34;] = &#34;UK&#34;
+    bids_df[&#34;progression&#34;] = &#34;UK&#34;
+    bids_copy_df = copy(bids_df)
+
+    # Do not take into account the case of missing diag = nan
+
+    for subject, subject_df in bids_df.groupby(level=0):
+        session_list = [session for _, session in subject_df.index.values]
+        session_list.sort()
+        for _, session in subject_df.index.values:
+            diagnosis = subject_df.loc[(subject, session), &#34;diagnosis&#34;]
+            diagnosis_dict = stability_dict[diagnosis]
+            session_nb = int(session[5::])
+            horizon_session_nb = session_nb + horizon_time
+            if horizon_session_nb &lt; 10:
+                horizon_session = &#34;ses-M00&#34; + str(horizon_session_nb)
+            elif 10 &lt;= horizon_session_nb &lt; 100:
+                horizon_session = &#34;ses-M0&#34; + str(horizon_session_nb)
+            else:
+                horizon_session = &#34;ses-M&#34; + str(horizon_session_nb)
+            # print(session, &#39;--&gt;&#39;, horizon_session)exit
+
+            # CASE 1 : if the  session after &#39;horizon_time&#39; months is a session the subject has done
+            if horizon_session in session_list:
+                horizon_diagnosis = subject_df.loc[
+                    (subject, horizon_session), &#34;diagnosis&#34;
+                ]
+                horizon_diagnosis_dict = stability_dict[horizon_diagnosis]
+
+                if horizon_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif horizon_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif horizon_diagnosis_dict == diagnosis_dict:
+                    update_diagnosis = &#34;s&#34;
+
+            # CASE 2 : if the session after &#39;horizon_time&#39; months doesn&#39;t exist because it is after the last session of the subject
+            elif after_end_screening(horizon_session, session_list):
+                last_diagnosis = subject_df.loc[
+                    (subject, last_session(session_list)), &#34;diagnosis&#34;
+                ]
+                # This section must be discussed --&gt; removed in Jorge&#39;s paper
+                last_diagnosis_dict = stability_dict[last_diagnosis]
+                if last_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif last_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif last_diagnosis_dict == diagnosis_dict:
+                    update_diagnosis = &#34;s&#34;
+
+            # CASE 3 : if the session after &#39;horizon_time&#39; months doesn&#39;t exist but ther are sessions before and after this time.
+            else:
+                prev_session = neighbour_session(horizon_session, session_list, -1)
+                post_session = neighbour_session(horizon_session, session_list, +1)
+
+                prev_diagnosis = subject_df.loc[(subject, prev_session), &#34;diagnosis&#34;]
+                prev_diagnosis_dict = stability_dict[prev_diagnosis]
+
+                if prev_diagnosis_dict &gt; diagnosis_dict:
+                    update_diagnosis = &#34;p&#34;
+                elif prev_diagnosis_dict &lt; diagnosis_dict:
+                    update_diagnosis = &#34;r&#34;
+                elif prev_diagnosis_dict == diagnosis_dict:
+                    post_diagnosis = subject_df.loc[
+                        (subject, post_session), &#34;diagnosis&#34;
+                    ]
+                    post_diagnosis_dict = stability_dict[post_diagnosis]
+                    if post_diagnosis_dict &gt; diagnosis_dict:
+                        update_diagnosis = &#34;p&#34;
+                    elif post_diagnosis_dict &lt; diagnosis_dict:
+                        update_diagnosis = &#34;r&#34;
+                    elif post_diagnosis_dict == diagnosis_dict:
+                        update_diagnosis = &#34;s&#34;
+            bids_copy_df.loc[(subject, session), &#34;progression&#34;] = update_diagnosis
+
+        # Add unstable session for subjects with multiple regression or conversion
+        # The subjects will be unstable only from the time of the conversion (if regression before) or regression (if conversion before)
+
+        status = 0
+        unstable = False
+        for session_str in session_list:
+            subgroup_str = bids_copy_df.loc[(subject, session_str), &#34;progression&#34;]
+            if subgroup_str == &#34;p&#34;:
+                if status &lt; 0:
+                    unstable = True
+                status = 1
+            if subgroup_str == &#34;r&#34;:
+                if status &gt; 0:
+                    unstable = True
+                status = -1
+        if unstable:
+            nb_subjects += 1
+            for session_str in session_list:
+                bids_copy_df.loc[(subject, session_str), &#34;progression&#34;] = &#34;us&#34;
+
+        # Add unknown subgroup for each last_session
+        session_list = [session for _, session in subject_df.index.values]
+
+        last_session_str = last_session(session_list)
+        if bids_copy_df.loc[(subject, last_session_str), &#34;progression&#34;] != &#34;us&#34;:
+            bids_copy_df.loc[(subject, last_session_str), &#34;progression&#34;] = &#34;uk&#34;
+
+    logger.info(f&#34;Unstable subjects: {nb_subjects}&#34;)
+
+    bids_copy_df.to_csv(data_tsv, sep=&#34;\t&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="clinicadl.tsvtools.get_progression" href="index.html">clinicadl.tsvtools.get_progression</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="clinicadl.tsvtools.get_progression.get_progression.get_progression" href="#clinicadl.tsvtools.get_progression.get_progression.get_progression">get_progression</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>clinicadl.utils.task_manager.classification API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>clinicadl.utils.task_manager.classification</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from logging import getLogger
+
+import numpy as np
+import pandas as pd
+import torch
+from torch import nn
+from torch.nn.functional import softmax
+from torch.utils.data import sampler
+
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+
+logger = getLogger(&#34;clinicadl.task_manager&#34;)
+
+from clinicadl.utils.task_manager.task_manager import TaskManager
+
+
+class ClassificationManager(TaskManager):
+    def __init__(
+        self,
+        mode,
+        n_classes=None,
+        df=None,
+        label=None,
+    ):
+        if n_classes is None:
+            n_classes = self.output_size(None, df, label)
+        self.n_classes = n_classes
+        super().__init__(mode, n_classes)
+
+    @property
+    def columns(self):
+        return [
+            &#34;participant_id&#34;,
+            &#34;session_id&#34;,
+            f&#34;{self.mode}_id&#34;,
+            &#34;true_label&#34;,
+            &#34;predicted_label&#34;,
+        ] + [f&#34;proba{i}&#34; for i in range(self.n_classes)]
+
+    @property
+    def evaluation_metrics(self):
+        return [&#34;accuracy&#34;, &#34;sensitivity&#34;, &#34;specificity&#34;, &#34;PPV&#34;, &#34;NPV&#34;, &#34;BA&#34;]
+
+    @property
+    def save_outputs(self):
+        return False
+
+    def generate_test_row(self, idx, data, outputs):
+
+        prediction = torch.argmax(outputs[idx].data).item()
+        normalized_output = softmax(outputs[idx], dim=0)
+        return [
+            [
+                data[&#34;participant_id&#34;][idx],
+                data[&#34;session_id&#34;][idx],
+                data[f&#34;{self.mode}_id&#34;][idx].item(),
+                data[&#34;label&#34;][idx].item(),
+                prediction,
+            ]
+            + [normalized_output[i].item() for i in range(self.n_classes)]
+        ]
+
+    def compute_metrics(self, results_df):
+        return self.metrics_module.apply(
+            results_df.true_label.values,
+            results_df.predicted_label.values,
+        )
+
+    @staticmethod
+    def generate_label_code(df, label):
+        unique_labels = list(set(getattr(df, label)))
+        unique_labels.sort()
+        return {str(key): value for value, key in enumerate(unique_labels)}
+
+    @staticmethod
+    def output_size(input_size, df, label):
+        label_code = ClassificationManager.generate_label_code(df, label)
+        return len(label_code)
+
+    @staticmethod
+    def generate_sampler(dataset, sampler_option=&#34;random&#34;, n_bins=5):
+        df = dataset.df
+        labels = df[dataset.label].unique()
+        codes = set()
+        for label in labels:
+            codes.add(dataset.label_code[label])
+        count = np.zeros(len(codes))
+
+        for idx in df.index:
+            label = df.loc[idx, dataset.label]
+            key = dataset.label_fn(label)
+            count[key] += 1
+
+        weight_per_class = 1 / np.array(count)
+        weights = []
+
+        for idx, label in enumerate(df[dataset.label].values):
+            key = dataset.label_fn(label)
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+        if sampler_option == &#34;random&#34;:
+            return sampler.RandomSampler(weights)
+        elif sampler_option == &#34;weighted&#34;:
+            return sampler.WeightedRandomSampler(weights, len(weights))
+        else:
+            raise NotImplementedError(
+                f&#34;The option {sampler_option} for sampler on classification task is not implemented&#34;
+            )
+
+    def ensemble_prediction(
+        self,
+        performance_df,
+        validation_df,
+        selection_threshold=None,
+        use_labels=True,
+        method=&#34;soft&#34;,
+    ):
+        &#34;&#34;&#34;
+        Computes hard or soft voting based on the probabilities in performance_df. Weights are computed based
+        on the balanced accuracies of validation_df.
+
+        ref: S. Raschka. Python Machine Learning., 2015
+
+        Args:
+            performance_df (pd.DataFrame): results that need to be assembled.
+            validation_df (pd.DataFrame): results on the validation set used to compute the performance
+                of each separate part of the image.
+            selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
+                if their associated performance is too low.
+            use_labels (bool): If True, metrics are computed and the label column values must be different
+                from None.
+            method (str): method to assemble the results. Current implementation proposes soft or hard-voting.
+
+        Returns:
+            df_final (pd.DataFrame) the results on the image level
+            results (Dict[str, float]) the metrics on the image level
+        &#34;&#34;&#34;
+
+        def check_prediction(row):
+            if row[&#34;true_label&#34;] == row[&#34;predicted_label&#34;]:
+                return 1
+            else:
+                return 0
+
+        if method == &#34;soft&#34;:
+            # Compute the sub-level accuracies on the validation set:
+            validation_df[&#34;accurate_prediction&#34;] = validation_df.apply(
+                lambda x: check_prediction(x), axis=1
+            )
+            sub_level_accuracies = validation_df.groupby(f&#34;{self.mode}_id&#34;)[
+                &#34;accurate_prediction&#34;
+            ].mean()
+            if selection_threshold is not None:
+                sub_level_accuracies[sub_level_accuracies &lt; selection_threshold] = 0
+            weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+        elif method == &#34;hard&#34;:
+            n_modes = validation_df[f&#34;{self.mode}_id&#34;].nunique()
+            weight_series = pd.DataFrame(np.ones((n_modes, 1)))
+        else:
+            raise NotImplementedError(
+                f&#34;Ensemble method {method} was not implemented. &#34;
+                f&#34;Please choose in [&#39;hard&#39;, &#39;soft&#39;].&#34;
+            )
+
+        # Sort to allow weighted average computation
+        performance_df.sort_values(
+            [&#34;participant_id&#34;, &#34;session_id&#34;, f&#34;{self.mode}_id&#34;], inplace=True
+        )
+        weight_series.sort_index(inplace=True)
+
+        # Soft majority vote
+        df_final = pd.DataFrame(columns=self.columns)
+        for (subject, session), subject_df in performance_df.groupby(
+            [&#34;participant_id&#34;, &#34;session_id&#34;]
+        ):
+            label = subject_df[&#34;true_label&#34;].unique().item()
+            proba_list = [
+                np.average(subject_df[f&#34;proba{i}&#34;], weights=weight_series)
+                for i in range(self.n_classes)
+            ]
+            prediction = proba_list.index(max(proba_list))
+            row = [[subject, session, 0, label, prediction] + proba_list]
+            row_df = pd.DataFrame(row, columns=self.columns)
+            df_final = df_final.append(row_df)
+
+        if use_labels:
+            results = self.compute_metrics(df_final)
+        else:
+            results = None
+
+        return df_final, results
+
+    @staticmethod
+    def get_criterion(criterion=None):
+        compatible_losses = [&#34;CrossEntropyLoss&#34;, &#34;MultiMarginLoss&#34;]
+        if criterion is None:
+            return nn.CrossEntropyLoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f&#34;Classification loss must be chosen in {compatible_losses}.&#34;
+            )
+        return getattr(nn, criterion)()
+
+    @staticmethod
+    def get_default_network():
+        return &#34;Conv5_FC3&#34;</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="clinicadl.utils.task_manager.classification.ClassificationManager"><code class="flex name class">
+<span>class <span class="ident">ClassificationManager</span></span>
+<span>(</span><span>mode, n_classes=None, df=None, label=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ClassificationManager(TaskManager):
+    def __init__(
+        self,
+        mode,
+        n_classes=None,
+        df=None,
+        label=None,
+    ):
+        if n_classes is None:
+            n_classes = self.output_size(None, df, label)
+        self.n_classes = n_classes
+        super().__init__(mode, n_classes)
+
+    @property
+    def columns(self):
+        return [
+            &#34;participant_id&#34;,
+            &#34;session_id&#34;,
+            f&#34;{self.mode}_id&#34;,
+            &#34;true_label&#34;,
+            &#34;predicted_label&#34;,
+        ] + [f&#34;proba{i}&#34; for i in range(self.n_classes)]
+
+    @property
+    def evaluation_metrics(self):
+        return [&#34;accuracy&#34;, &#34;sensitivity&#34;, &#34;specificity&#34;, &#34;PPV&#34;, &#34;NPV&#34;, &#34;BA&#34;]
+
+    @property
+    def save_outputs(self):
+        return False
+
+    def generate_test_row(self, idx, data, outputs):
+
+        prediction = torch.argmax(outputs[idx].data).item()
+        normalized_output = softmax(outputs[idx], dim=0)
+        return [
+            [
+                data[&#34;participant_id&#34;][idx],
+                data[&#34;session_id&#34;][idx],
+                data[f&#34;{self.mode}_id&#34;][idx].item(),
+                data[&#34;label&#34;][idx].item(),
+                prediction,
+            ]
+            + [normalized_output[i].item() for i in range(self.n_classes)]
+        ]
+
+    def compute_metrics(self, results_df):
+        return self.metrics_module.apply(
+            results_df.true_label.values,
+            results_df.predicted_label.values,
+        )
+
+    @staticmethod
+    def generate_label_code(df, label):
+        unique_labels = list(set(getattr(df, label)))
+        unique_labels.sort()
+        return {str(key): value for value, key in enumerate(unique_labels)}
+
+    @staticmethod
+    def output_size(input_size, df, label):
+        label_code = ClassificationManager.generate_label_code(df, label)
+        return len(label_code)
+
+    @staticmethod
+    def generate_sampler(dataset, sampler_option=&#34;random&#34;, n_bins=5):
+        df = dataset.df
+        labels = df[dataset.label].unique()
+        codes = set()
+        for label in labels:
+            codes.add(dataset.label_code[label])
+        count = np.zeros(len(codes))
+
+        for idx in df.index:
+            label = df.loc[idx, dataset.label]
+            key = dataset.label_fn(label)
+            count[key] += 1
+
+        weight_per_class = 1 / np.array(count)
+        weights = []
+
+        for idx, label in enumerate(df[dataset.label].values):
+            key = dataset.label_fn(label)
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+        if sampler_option == &#34;random&#34;:
+            return sampler.RandomSampler(weights)
+        elif sampler_option == &#34;weighted&#34;:
+            return sampler.WeightedRandomSampler(weights, len(weights))
+        else:
+            raise NotImplementedError(
+                f&#34;The option {sampler_option} for sampler on classification task is not implemented&#34;
+            )
+
+    def ensemble_prediction(
+        self,
+        performance_df,
+        validation_df,
+        selection_threshold=None,
+        use_labels=True,
+        method=&#34;soft&#34;,
+    ):
+        &#34;&#34;&#34;
+        Computes hard or soft voting based on the probabilities in performance_df. Weights are computed based
+        on the balanced accuracies of validation_df.
+
+        ref: S. Raschka. Python Machine Learning., 2015
+
+        Args:
+            performance_df (pd.DataFrame): results that need to be assembled.
+            validation_df (pd.DataFrame): results on the validation set used to compute the performance
+                of each separate part of the image.
+            selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
+                if their associated performance is too low.
+            use_labels (bool): If True, metrics are computed and the label column values must be different
+                from None.
+            method (str): method to assemble the results. Current implementation proposes soft or hard-voting.
+
+        Returns:
+            df_final (pd.DataFrame) the results on the image level
+            results (Dict[str, float]) the metrics on the image level
+        &#34;&#34;&#34;
+
+        def check_prediction(row):
+            if row[&#34;true_label&#34;] == row[&#34;predicted_label&#34;]:
+                return 1
+            else:
+                return 0
+
+        if method == &#34;soft&#34;:
+            # Compute the sub-level accuracies on the validation set:
+            validation_df[&#34;accurate_prediction&#34;] = validation_df.apply(
+                lambda x: check_prediction(x), axis=1
+            )
+            sub_level_accuracies = validation_df.groupby(f&#34;{self.mode}_id&#34;)[
+                &#34;accurate_prediction&#34;
+            ].mean()
+            if selection_threshold is not None:
+                sub_level_accuracies[sub_level_accuracies &lt; selection_threshold] = 0
+            weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+        elif method == &#34;hard&#34;:
+            n_modes = validation_df[f&#34;{self.mode}_id&#34;].nunique()
+            weight_series = pd.DataFrame(np.ones((n_modes, 1)))
+        else:
+            raise NotImplementedError(
+                f&#34;Ensemble method {method} was not implemented. &#34;
+                f&#34;Please choose in [&#39;hard&#39;, &#39;soft&#39;].&#34;
+            )
+
+        # Sort to allow weighted average computation
+        performance_df.sort_values(
+            [&#34;participant_id&#34;, &#34;session_id&#34;, f&#34;{self.mode}_id&#34;], inplace=True
+        )
+        weight_series.sort_index(inplace=True)
+
+        # Soft majority vote
+        df_final = pd.DataFrame(columns=self.columns)
+        for (subject, session), subject_df in performance_df.groupby(
+            [&#34;participant_id&#34;, &#34;session_id&#34;]
+        ):
+            label = subject_df[&#34;true_label&#34;].unique().item()
+            proba_list = [
+                np.average(subject_df[f&#34;proba{i}&#34;], weights=weight_series)
+                for i in range(self.n_classes)
+            ]
+            prediction = proba_list.index(max(proba_list))
+            row = [[subject, session, 0, label, prediction] + proba_list]
+            row_df = pd.DataFrame(row, columns=self.columns)
+            df_final = df_final.append(row_df)
+
+        if use_labels:
+            results = self.compute_metrics(df_final)
+        else:
+            results = None
+
+        return df_final, results
+
+    @staticmethod
+    def get_criterion(criterion=None):
+        compatible_losses = [&#34;CrossEntropyLoss&#34;, &#34;MultiMarginLoss&#34;]
+        if criterion is None:
+            return nn.CrossEntropyLoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f&#34;Classification loss must be chosen in {compatible_losses}.&#34;
+            )
+        return getattr(nn, criterion)()
+
+    @staticmethod
+    def get_default_network():
+        return &#34;Conv5_FC3&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="clinicadl.utils.task_manager.task_manager.TaskManager" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager">TaskManager</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="clinicadl.utils.task_manager.classification.ClassificationManager.ensemble_prediction"><code class="name flex">
+<span>def <span class="ident">ensemble_prediction</span></span>(<span>self, performance_df, validation_df, selection_threshold=None, use_labels=True, method='soft')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes hard or soft voting based on the probabilities in performance_df. Weights are computed based
+on the balanced accuracies of validation_df.</p>
+<p>ref: S. Raschka. Python Machine Learning., 2015</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>performance_df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>results that need to be assembled.</dd>
+<dt><strong><code>validation_df</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+<dd>results on the validation set used to compute the performance
+of each separate part of the image.</dd>
+<dt><strong><code>selection_threshold</code></strong> :&ensp;<code>float</code></dt>
+<dd>with soft-voting method, allows to exclude some parts of the image
+if their associated performance is too low.</dd>
+<dt><strong><code>use_labels</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True, metrics are computed and the label column values must be different
+from None.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>str</code></dt>
+<dd>method to assemble the results. Current implementation proposes soft or hard-voting.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>df_final (pd.DataFrame) the results on the image level
+results (Dict[str, float]) the metrics on the image level</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ensemble_prediction(
+    self,
+    performance_df,
+    validation_df,
+    selection_threshold=None,
+    use_labels=True,
+    method=&#34;soft&#34;,
+):
+    &#34;&#34;&#34;
+    Computes hard or soft voting based on the probabilities in performance_df. Weights are computed based
+    on the balanced accuracies of validation_df.
+
+    ref: S. Raschka. Python Machine Learning., 2015
+
+    Args:
+        performance_df (pd.DataFrame): results that need to be assembled.
+        validation_df (pd.DataFrame): results on the validation set used to compute the performance
+            of each separate part of the image.
+        selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
+            if their associated performance is too low.
+        use_labels (bool): If True, metrics are computed and the label column values must be different
+            from None.
+        method (str): method to assemble the results. Current implementation proposes soft or hard-voting.
+
+    Returns:
+        df_final (pd.DataFrame) the results on the image level
+        results (Dict[str, float]) the metrics on the image level
+    &#34;&#34;&#34;
+
+    def check_prediction(row):
+        if row[&#34;true_label&#34;] == row[&#34;predicted_label&#34;]:
+            return 1
+        else:
+            return 0
+
+    if method == &#34;soft&#34;:
+        # Compute the sub-level accuracies on the validation set:
+        validation_df[&#34;accurate_prediction&#34;] = validation_df.apply(
+            lambda x: check_prediction(x), axis=1
+        )
+        sub_level_accuracies = validation_df.groupby(f&#34;{self.mode}_id&#34;)[
+            &#34;accurate_prediction&#34;
+        ].mean()
+        if selection_threshold is not None:
+            sub_level_accuracies[sub_level_accuracies &lt; selection_threshold] = 0
+        weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+    elif method == &#34;hard&#34;:
+        n_modes = validation_df[f&#34;{self.mode}_id&#34;].nunique()
+        weight_series = pd.DataFrame(np.ones((n_modes, 1)))
+    else:
+        raise NotImplementedError(
+            f&#34;Ensemble method {method} was not implemented. &#34;
+            f&#34;Please choose in [&#39;hard&#39;, &#39;soft&#39;].&#34;
+        )
+
+    # Sort to allow weighted average computation
+    performance_df.sort_values(
+        [&#34;participant_id&#34;, &#34;session_id&#34;, f&#34;{self.mode}_id&#34;], inplace=True
+    )
+    weight_series.sort_index(inplace=True)
+
+    # Soft majority vote
+    df_final = pd.DataFrame(columns=self.columns)
+    for (subject, session), subject_df in performance_df.groupby(
+        [&#34;participant_id&#34;, &#34;session_id&#34;]
+    ):
+        label = subject_df[&#34;true_label&#34;].unique().item()
+        proba_list = [
+            np.average(subject_df[f&#34;proba{i}&#34;], weights=weight_series)
+            for i in range(self.n_classes)
+        ]
+        prediction = proba_list.index(max(proba_list))
+        row = [[subject, session, 0, label, prediction] + proba_list]
+        row_df = pd.DataFrame(row, columns=self.columns)
+        df_final = df_final.append(row_df)
+
+    if use_labels:
+        results = self.compute_metrics(df_final)
+    else:
+        results = None
+
+    return df_final, results</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="clinicadl.utils.task_manager.task_manager.TaskManager" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager">TaskManager</a></b></code>:
+<ul class="hlist">
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.columns" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.columns">columns</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.compute_metrics" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.compute_metrics">compute_metrics</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.evaluation_metrics" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.evaluation_metrics">evaluation_metrics</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.generate_label_code" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.generate_label_code">generate_label_code</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.generate_sampler" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.generate_sampler">generate_sampler</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.generate_test_row" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.generate_test_row">generate_test_row</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.get_criterion" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.get_criterion">get_criterion</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.get_default_network" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.get_default_network">get_default_network</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.output_size" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.output_size">output_size</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.save_outputs" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.save_outputs">save_outputs</a></code></li>
+<li><code><a title="clinicadl.utils.task_manager.task_manager.TaskManager.test" href="task_manager.html#clinicadl.utils.task_manager.task_manager.TaskManager.test">test</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="clinicadl.utils.task_manager" href="index.html">clinicadl.utils.task_manager</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="clinicadl.utils.task_manager.classification.ClassificationManager" href="#clinicadl.utils.task_manager.classification.ClassificationManager">ClassificationManager</a></code></h4>
+<ul class="">
+<li><code><a title="clinicadl.utils.task_manager.classification.ClassificationManager.ensemble_prediction" href="#clinicadl.utils.task_manager.classification.ClassificationManager.ensemble_prediction">ensemble_prediction</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

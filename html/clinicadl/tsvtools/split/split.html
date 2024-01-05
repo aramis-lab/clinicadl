@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>clinicadl.tsvtools.split.split API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>clinicadl.tsvtools.split.split</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># coding: utf8
+
+import os
+import shutil
+from copy import copy
+from logging import getLogger
+from os import makedirs, path
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from scipy.stats import ttest_ind
+from sklearn.model_selection import StratifiedShuffleSplit
+
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.tsvtools_utils import (
+    category_conversion,
+    chi2,
+    complementary_list,
+    df_to_tsv,
+    extract_baseline,
+    find_label,
+    remove_sub_labels,
+    remove_unicity,
+    retrieve_longitudinal,
+)
+
+sex_dict = {&#34;M&#34;: 0, &#34;F&#34;: 1}
+logger = getLogger(&#34;clinicadl&#34;)
+
+
+def create_split(
+    diagnosis_df,
+    split_label,
+    n_test,
+    p_age_threshold=0.80,
+    p_sex_threshold=0.80,
+    supplementary_train_df=None,
+    ignore_demographics=False,
+):
+
+    &#34;&#34;&#34;
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+
+    Parameters
+    ----------
+    diagnosis_df: DataFrame
+        Columns including [&#39;participant_id&#39;, &#39;session_id&#39;, &#39;group&#39;]
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_test: float
+        If &gt; 1 number of subjects to put in the test set.
+        If &lt; 1 proportion of subjects to put in the test set.
+    p_age_threshold: float
+        Threshold for the t-test on age.
+    p_sex_threshold: float
+        Threshold for the chi2 test on sex.
+    supplementary_train_df: DataFrame
+        Add data that must be included in the train set.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
+
+    Returns
+    -------
+    train_df: DataFrame
+        Subjects in the train set
+    test_df: DataFrame
+        Subjects in the test set
+    &#34;&#34;&#34;
+    if supplementary_train_df is not None:
+        sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
+        sup_train_age = [float(x) for x in supplementary_train_df.age.values]
+    else:
+        sup_train_sex = []
+        sup_train_age = []
+
+    baseline_df = extract_baseline(diagnosis_df)
+    if n_test &gt;= 1:
+        n_test = int(n_test)
+    else:
+        n_test = int(n_test * len(baseline_df))
+
+    if not {split_label}.issubset(set(baseline_df.columns.values)):
+        raise ClinicaDLArgumentError(
+            f&#34;The column {split_label} is missing.&#34;
+            f&#34;Please add it using the --variables_of_interest flag in getlabels.&#34;
+        )
+
+    if not ignore_demographics:
+        try:
+            sex_label = find_label(baseline_df.columns.values, &#34;sex&#34;)
+            age_label = find_label(baseline_df.columns.values, &#34;age&#34;)
+        except ClinicaDLArgumentError:
+            raise ClinicaDLArgumentError(
+                &#34;This dataset do not have age or sex values. &#34;
+                &#34;Please add the flag --ignore_demographics to split &#34;
+                &#34;without trying to balance age or sex distributions.&#34;
+            )
+
+        sex = list(baseline_df[sex_label].values)
+        age = list(baseline_df[age_label].values)
+        category = list(baseline_df[split_label].values)
+        category = category_conversion(category)
+        category = remove_unicity(category)
+
+        flag_selection = True
+        n_try = 0
+
+        while flag_selection:
+
+            splits = StratifiedShuffleSplit(n_splits=1, test_size=n_test)
+            for train_index, test_index in splits.split(category, category):
+
+                # Find the value for different demographics (age &amp; sex)
+                if len(set(age)) != 1:
+                    age_test = [float(age[idx]) for idx in test_index]
+                    age_train = [float(age[idx]) for idx in train_index] + sup_train_age
+                    _, p_age = ttest_ind(age_test, age_train, nan_policy=&#34;omit&#34;)
+                else:
+                    p_age = 1
+
+                if len(set(sex)) != 1:
+                    sex_test = [sex_dict[sex[idx]] for idx in test_index]
+                    sex_train = [
+                        sex_dict[sex[idx]] for idx in train_index
+                    ] + sup_train_sex
+                    _, p_sex = chi2(sex_test, sex_train)
+                else:
+                    p_sex = 1
+
+                logger.info(f&#34;p_age={p_age:.2f}, p_sex={p_sex:.4f}&#34;)
+
+                if p_sex &gt;= p_sex_threshold and p_age &gt;= p_age_threshold:
+                    flag_selection = False
+                    test_df = baseline_df.loc[test_index]
+                    train_df = baseline_df.loc[train_index]
+                    if supplementary_train_df is not None:
+                        train_df = pd.concat([train_df, supplementary_train_df])
+                        train_df.reset_index(drop=True, inplace=True)
+
+                n_try += 1
+        logger.info(f&#34;Split was found after {n_try} trials.&#34;)
+
+    else:
+        idx = np.arange(len(baseline_df))
+        idx_test = np.random.choice(idx, size=n_test, replace=False)
+        idx_test.sort()
+        idx_train = complementary_list(idx, idx_test)
+        test_df = baseline_df.loc[idx_test]
+        train_df = baseline_df.loc[idx_train]
+
+    return train_df, test_df
+
+
+def split_diagnoses(
+    data_tsv,
+    n_test=100,
+    subset_name=&#34;test&#34;,
+    p_age_threshold=0.80,
+    p_sex_threshold=0.80,
+    categorical_split_variable=None,
+    ignore_demographics=False,
+    verbose=0,
+    not_only_baseline=True,
+):
+    &#34;&#34;&#34;
+    Performs a single split for each label independently on the subject level.
+    There will be two TSV file for the train set (baseline and longitudinal),
+    whereas there will only be one TSV file for the test set (baseline sessions).
+
+    The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv containing data extracted by clinicadl tsvtools getlabels.
+    n_test: float
+        If &gt;= 1, number of subjects to put in set with name &#39;subset_name&#39;.
+        If &lt; 1, proportion of subjects to put in set with name &#39;subset_name&#39;.
+        If 0, no training set is created and the whole dataset is considered as one set with name &#39;subset_name&#39;.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    p_age_threshold: float
+        The threshold used for the T-test on age distributions.
+    p_sex_threshold: float
+        The threshold used for the T-test on sex distributions.
+    categorical_split_variable: str
+        Name of a categorical variable to perform a stratified split.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
+    verbose: int
+        Level of verbosity.
+
+    Informations
+    ------------
+    writes three files per &lt;label&gt;.tsv file present in data_tsv:
+        - data_tsv/train/&lt;label&gt;.tsv
+        - data_tsv/train/&lt;label&gt;_baseline.tsv
+        - data_tsv/&lt;subset_name&gt;/&lt;label&gt;_baseline.tsv
+    &#34;&#34;&#34;
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = f&#34;split&#34;
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f&#34;split_{split_numero}&#34;
+    results_path = parents_path / folder_name
+    makedirs(results_path)
+
+    commandline_to_json(
+        {
+            &#34;output_dir&#34;: results_path,
+            &#34;n_test&#34;: n_test,
+            &#34;subset_name&#34;: subset_name,
+            &#34;p_age_threshold&#34;: p_age_threshold,
+            &#34;p_sex_threshold&#34;: p_sex_threshold,
+            &#34;categorical_split_variable&#34;: categorical_split_variable,
+            &#34;ignore_demographics&#34;: ignore_demographics,
+        },
+        filename=&#34;split.json&#34;,
+    )
+
+    # The baseline session must be kept before or we are taking all the sessions to mix them
+
+    if categorical_split_variable is None:
+        categorical_split_variable = &#34;diagnosis&#34;
+    else:
+        categorical_split_variable.append(&#34;diagnosis&#34;)
+
+    # Read files
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep=&#34;\t&#34;)
+    list_columns = diagnosis_df.columns.values
+
+    if n_test &gt; 0:
+        if (
+            &#34;diagnosis&#34; not in list_columns
+            or &#34;age&#34; not in list_columns
+            or &#34;sex&#34; not in list_columns
+        ):
+            parents_path = path.abspath(parents_path)
+            while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+                parents_path = Path(parents_path).parents[0]
+
+            labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how=&#34;inner&#34;,
+                on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+            )
+
+        train_df, test_df = create_split(
+            diagnosis_df,
+            split_label=categorical_split_variable,
+            n_test=n_test,
+            p_age_threshold=p_age_threshold,
+            p_sex_threshold=p_sex_threshold,
+            ignore_demographics=ignore_demographics,
+        )
+
+        # train_df= train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        # test_df= test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+
+        name = f&#34;{subset_name}_baseline.tsv&#34;
+        df_to_tsv(name, results_path, test_df, baseline=True)
+
+        if not_only_baseline:
+            name = f&#34;{subset_name}.tsv&#34;
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            # long_test_df = long_test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+            df_to_tsv(name, results_path, long_test_df)
+
+    else:
+        train_df = extract_baseline(diagnosis_df)
+        # train_df = train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        if not_only_baseline:
+            long_train_df = diagnosis_df
+
+    name = &#34;train_baseline.tsv&#34;
+    df_to_tsv(name, str(results_path), train_df, baseline=True)
+
+    long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+    # long_train_df = long_train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+    name = &#34;train.tsv&#34;
+    df_to_tsv(name, str(results_path), long_train_df)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="clinicadl.tsvtools.split.split.create_split"><code class="name flex">
+<span>def <span class="ident">create_split</span></span>(<span>diagnosis_df, split_label, n_test, p_age_threshold=0.8, p_sex_threshold=0.8, supplementary_train_df=None, ignore_demographics=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>diagnosis_df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Columns including ['participant_id', 'session_id', 'group']</dd>
+<dt><strong><code>split_label</code></strong> :&ensp;<code>str</code></dt>
+<dd>Label on which the split is done (categorical variables)</dd>
+<dt><strong><code>n_test</code></strong> :&ensp;<code>float</code></dt>
+<dd>If &gt; 1 number of subjects to put in the test set.
+If &lt; 1 proportion of subjects to put in the test set.</dd>
+<dt><strong><code>p_age_threshold</code></strong> :&ensp;<code>float</code></dt>
+<dd>Threshold for the t-test on age.</dd>
+<dt><strong><code>p_sex_threshold</code></strong> :&ensp;<code>float</code></dt>
+<dd>Threshold for the chi2 test on sex.</dd>
+<dt><strong><code>supplementary_train_df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Add data that must be included in the train set.</dd>
+<dt><strong><code>ignore_demographics</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True the diagnoses are split without taking into account the demographics
+distributions (age, sex).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>train_df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Subjects in the train set</dd>
+<dt><strong><code>test_df</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>Subjects in the test set</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_split(
+    diagnosis_df,
+    split_label,
+    n_test,
+    p_age_threshold=0.80,
+    p_sex_threshold=0.80,
+    supplementary_train_df=None,
+    ignore_demographics=False,
+):
+
+    &#34;&#34;&#34;
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+
+    Parameters
+    ----------
+    diagnosis_df: DataFrame
+        Columns including [&#39;participant_id&#39;, &#39;session_id&#39;, &#39;group&#39;]
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_test: float
+        If &gt; 1 number of subjects to put in the test set.
+        If &lt; 1 proportion of subjects to put in the test set.
+    p_age_threshold: float
+        Threshold for the t-test on age.
+    p_sex_threshold: float
+        Threshold for the chi2 test on sex.
+    supplementary_train_df: DataFrame
+        Add data that must be included in the train set.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
+
+    Returns
+    -------
+    train_df: DataFrame
+        Subjects in the train set
+    test_df: DataFrame
+        Subjects in the test set
+    &#34;&#34;&#34;
+    if supplementary_train_df is not None:
+        sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
+        sup_train_age = [float(x) for x in supplementary_train_df.age.values]
+    else:
+        sup_train_sex = []
+        sup_train_age = []
+
+    baseline_df = extract_baseline(diagnosis_df)
+    if n_test &gt;= 1:
+        n_test = int(n_test)
+    else:
+        n_test = int(n_test * len(baseline_df))
+
+    if not {split_label}.issubset(set(baseline_df.columns.values)):
+        raise ClinicaDLArgumentError(
+            f&#34;The column {split_label} is missing.&#34;
+            f&#34;Please add it using the --variables_of_interest flag in getlabels.&#34;
+        )
+
+    if not ignore_demographics:
+        try:
+            sex_label = find_label(baseline_df.columns.values, &#34;sex&#34;)
+            age_label = find_label(baseline_df.columns.values, &#34;age&#34;)
+        except ClinicaDLArgumentError:
+            raise ClinicaDLArgumentError(
+                &#34;This dataset do not have age or sex values. &#34;
+                &#34;Please add the flag --ignore_demographics to split &#34;
+                &#34;without trying to balance age or sex distributions.&#34;
+            )
+
+        sex = list(baseline_df[sex_label].values)
+        age = list(baseline_df[age_label].values)
+        category = list(baseline_df[split_label].values)
+        category = category_conversion(category)
+        category = remove_unicity(category)
+
+        flag_selection = True
+        n_try = 0
+
+        while flag_selection:
+
+            splits = StratifiedShuffleSplit(n_splits=1, test_size=n_test)
+            for train_index, test_index in splits.split(category, category):
+
+                # Find the value for different demographics (age &amp; sex)
+                if len(set(age)) != 1:
+                    age_test = [float(age[idx]) for idx in test_index]
+                    age_train = [float(age[idx]) for idx in train_index] + sup_train_age
+                    _, p_age = ttest_ind(age_test, age_train, nan_policy=&#34;omit&#34;)
+                else:
+                    p_age = 1
+
+                if len(set(sex)) != 1:
+                    sex_test = [sex_dict[sex[idx]] for idx in test_index]
+                    sex_train = [
+                        sex_dict[sex[idx]] for idx in train_index
+                    ] + sup_train_sex
+                    _, p_sex = chi2(sex_test, sex_train)
+                else:
+                    p_sex = 1
+
+                logger.info(f&#34;p_age={p_age:.2f}, p_sex={p_sex:.4f}&#34;)
+
+                if p_sex &gt;= p_sex_threshold and p_age &gt;= p_age_threshold:
+                    flag_selection = False
+                    test_df = baseline_df.loc[test_index]
+                    train_df = baseline_df.loc[train_index]
+                    if supplementary_train_df is not None:
+                        train_df = pd.concat([train_df, supplementary_train_df])
+                        train_df.reset_index(drop=True, inplace=True)
+
+                n_try += 1
+        logger.info(f&#34;Split was found after {n_try} trials.&#34;)
+
+    else:
+        idx = np.arange(len(baseline_df))
+        idx_test = np.random.choice(idx, size=n_test, replace=False)
+        idx_test.sort()
+        idx_train = complementary_list(idx, idx_test)
+        test_df = baseline_df.loc[idx_test]
+        train_df = baseline_df.loc[idx_train]
+
+    return train_df, test_df</code></pre>
+</details>
+</dd>
+<dt id="clinicadl.tsvtools.split.split.split_diagnoses"><code class="name flex">
+<span>def <span class="ident">split_diagnoses</span></span>(<span>data_tsv, n_test=100, subset_name='test', p_age_threshold=0.8, p_sex_threshold=0.8, categorical_split_variable=None, ignore_demographics=False, verbose=0, not_only_baseline=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Performs a single split for each label independently on the subject level.
+There will be two TSV file for the train set (baseline and longitudinal),
+whereas there will only be one TSV file for the test set (baseline sessions).</p>
+<p>The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_tsv</code></strong> :&ensp;<code>str (path)</code></dt>
+<dd>Path to the tsv containing data extracted by clinicadl tsvtools getlabels.</dd>
+<dt><strong><code>n_test</code></strong> :&ensp;<code>float</code></dt>
+<dd>If &gt;= 1, number of subjects to put in set with name 'subset_name'.
+If &lt; 1, proportion of subjects to put in set with name 'subset_name'.
+If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.</dd>
+<dt><strong><code>subset_name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the subset that is complementary to train.</dd>
+<dt><strong><code>p_age_threshold</code></strong> :&ensp;<code>float</code></dt>
+<dd>The threshold used for the T-test on age distributions.</dd>
+<dt><strong><code>p_sex_threshold</code></strong> :&ensp;<code>float</code></dt>
+<dd>The threshold used for the T-test on sex distributions.</dd>
+<dt><strong><code>categorical_split_variable</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of a categorical variable to perform a stratified split.</dd>
+<dt><strong><code>ignore_demographics</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True the diagnoses are split without taking into account the demographics
+distributions (age, sex).</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>int</code></dt>
+<dd>Level of verbosity.</dd>
+</dl>
+<h2 id="informations">Informations</h2>
+<p>writes three files per <label>.tsv file present in data_tsv:
+- data_tsv/train/<label>.tsv
+- data_tsv/train/<label>_baseline.tsv
+- data_tsv/<subset_name>/<label>_baseline.tsv</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_diagnoses(
+    data_tsv,
+    n_test=100,
+    subset_name=&#34;test&#34;,
+    p_age_threshold=0.80,
+    p_sex_threshold=0.80,
+    categorical_split_variable=None,
+    ignore_demographics=False,
+    verbose=0,
+    not_only_baseline=True,
+):
+    &#34;&#34;&#34;
+    Performs a single split for each label independently on the subject level.
+    There will be two TSV file for the train set (baseline and longitudinal),
+    whereas there will only be one TSV file for the test set (baseline sessions).
+
+    The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
+
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv containing data extracted by clinicadl tsvtools getlabels.
+    n_test: float
+        If &gt;= 1, number of subjects to put in set with name &#39;subset_name&#39;.
+        If &lt; 1, proportion of subjects to put in set with name &#39;subset_name&#39;.
+        If 0, no training set is created and the whole dataset is considered as one set with name &#39;subset_name&#39;.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    p_age_threshold: float
+        The threshold used for the T-test on age distributions.
+    p_sex_threshold: float
+        The threshold used for the T-test on sex distributions.
+    categorical_split_variable: str
+        Name of a categorical variable to perform a stratified split.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
+    verbose: int
+        Level of verbosity.
+
+    Informations
+    ------------
+    writes three files per &lt;label&gt;.tsv file present in data_tsv:
+        - data_tsv/train/&lt;label&gt;.tsv
+        - data_tsv/train/&lt;label&gt;_baseline.tsv
+        - data_tsv/&lt;subset_name&gt;/&lt;label&gt;_baseline.tsv
+    &#34;&#34;&#34;
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = f&#34;split&#34;
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f&#34;split_{split_numero}&#34;
+    results_path = parents_path / folder_name
+    makedirs(results_path)
+
+    commandline_to_json(
+        {
+            &#34;output_dir&#34;: results_path,
+            &#34;n_test&#34;: n_test,
+            &#34;subset_name&#34;: subset_name,
+            &#34;p_age_threshold&#34;: p_age_threshold,
+            &#34;p_sex_threshold&#34;: p_sex_threshold,
+            &#34;categorical_split_variable&#34;: categorical_split_variable,
+            &#34;ignore_demographics&#34;: ignore_demographics,
+        },
+        filename=&#34;split.json&#34;,
+    )
+
+    # The baseline session must be kept before or we are taking all the sessions to mix them
+
+    if categorical_split_variable is None:
+        categorical_split_variable = &#34;diagnosis&#34;
+    else:
+        categorical_split_variable.append(&#34;diagnosis&#34;)
+
+    # Read files
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep=&#34;\t&#34;)
+    list_columns = diagnosis_df.columns.values
+
+    if n_test &gt; 0:
+        if (
+            &#34;diagnosis&#34; not in list_columns
+            or &#34;age&#34; not in list_columns
+            or &#34;sex&#34; not in list_columns
+        ):
+            parents_path = path.abspath(parents_path)
+            while not os.path.exists(path.join(parents_path, &#34;labels.tsv&#34;)):
+                parents_path = Path(parents_path).parents[0]
+
+            labels_df = pd.read_csv(path.join(parents_path, &#34;labels.tsv&#34;), sep=&#34;\t&#34;)
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how=&#34;inner&#34;,
+                on=[&#34;participant_id&#34;, &#34;session_id&#34;],
+            )
+
+        train_df, test_df = create_split(
+            diagnosis_df,
+            split_label=categorical_split_variable,
+            n_test=n_test,
+            p_age_threshold=p_age_threshold,
+            p_sex_threshold=p_sex_threshold,
+            ignore_demographics=ignore_demographics,
+        )
+
+        # train_df= train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        # test_df= test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+
+        name = f&#34;{subset_name}_baseline.tsv&#34;
+        df_to_tsv(name, results_path, test_df, baseline=True)
+
+        if not_only_baseline:
+            name = f&#34;{subset_name}.tsv&#34;
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            # long_test_df = long_test_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+            df_to_tsv(name, results_path, long_test_df)
+
+    else:
+        train_df = extract_baseline(diagnosis_df)
+        # train_df = train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+        if not_only_baseline:
+            long_train_df = diagnosis_df
+
+    name = &#34;train_baseline.tsv&#34;
+    df_to_tsv(name, str(results_path), train_df, baseline=True)
+
+    long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+    # long_train_df = long_train_df[[&#34;participant_id&#34;, &#34;session_id&#34;]]
+    name = &#34;train.tsv&#34;
+    df_to_tsv(name, str(results_path), long_train_df)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="clinicadl.tsvtools.split" href="index.html">clinicadl.tsvtools.split</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="clinicadl.tsvtools.split.split.create_split" href="#clinicadl.tsvtools.split.split.create_split">create_split</a></code></li>
+<li><code><a title="clinicadl.tsvtools.split.split.split_diagnoses" href="#clinicadl.tsvtools.split.split.split_diagnoses">split_diagnoses</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

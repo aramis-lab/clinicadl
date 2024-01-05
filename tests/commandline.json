@@ -1,0 +1,7 @@
+{
+    "caps_dir": "/Users/camille.brianceau/aramis/data_tuto_23/tuto_final_test/data_adni/CAPS_example",
+    "preprocessing": "t1-linear",
+    "n_subjects": 6,
+    "n_proc": 2,
+    "atrophy_percent": 60.0
+}
