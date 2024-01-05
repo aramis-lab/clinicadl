@@ -57,7 +57,6 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
 def load_and_check_tsv(
     tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
     from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
