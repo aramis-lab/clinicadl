@@ -21,6 +21,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     Returns:
         dictionary of values ready to use for the MapsManager
     """
+    print("test")
     if config_file is None:
         # read default values
         clinicadl_root_dir = (Path(__file__) / "../..").resolve()
