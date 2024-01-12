@@ -27,7 +27,6 @@ def push_to_hf_hub(
     loss_list: str = ["best-loss"],
     paper_link: str = None,
 ):
-
     if not hf_hub_is_available():
         raise ModuleNotFoundError(
             "`huggingface_hub` package must be installed to push your model to the HF hub. "
