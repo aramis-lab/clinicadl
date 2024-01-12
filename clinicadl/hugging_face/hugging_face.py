@@ -198,6 +198,7 @@ def create_readme(
     list_lines.append(f"**kl_weight**: {default_dict['kl_weight']}  \n")
     list_lines.append(f"**normalization**: {default_dict['normalization']}  \n")
 
+    print("test")
     for name in train_dict.keys():
         list_lines.append(f"**{name}**: {train_dict[name]}  \n")
     file.writelines(list_lines)
