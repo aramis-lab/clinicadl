@@ -14,6 +14,12 @@ from clinicadl.utils.maps_manager import MapsManager
     default=None,
     # help="Path to your repo on the Hugging Face hub.",
 )
+@click.argument(
+    "maps_name",
+    type=str,
+    default="maps",
+    # help="Path to your repo on the Hugging Face hub.",
+)
 @click.option(
     "--model_name",
     type=str,
@@ -30,17 +36,15 @@ from clinicadl.utils.maps_manager import MapsManager
 def cli(
     input_maps_directory,
     hf_hub_path,
+    maps_name,
     model_name,
     dataset,
 ):
-    # maps_manager = MapsManager(input_maps_directory, verbose=None)
     from .hugging_face import push_to_hf_hub
-
-    # network = maps_manager.get_model()
-    # model_name = maps_manager.parameters["architecture"]
 
     push_to_hf_hub(
         hf_hub_path=hf_hub_path,
+        maps_name=maps_name,
         maps_dir=input_maps_directory,
         model_name=model_name,
         dataset=dataset,

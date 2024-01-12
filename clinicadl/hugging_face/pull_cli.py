@@ -7,22 +7,26 @@ from clinicadl.utils.maps_manager import MapsManager
 
 
 @click.command(name="pull", no_args_is_help=True)
-@cli_param.argument.output_maps
 @click.argument(
     "hf_hub_path",
     type=str,
     default=None,
     # help="Path to your repo on the Hugging Face hub.",
 )
-def cli(
-    output_maps_directory,
-    hf_hub_path,
-):
+@click.argument(
+    "maps_name",
+    type=str,
+    default="maps",
+    # help="Path to your repo on the Hugging Face hub.",
+)
+@cli_param.argument.output_maps
+def cli(hf_hub_path, maps_name, output_maps_directory):
     from .hugging_face import load_from_hf_hub
 
     load_from_hf_hub(
         output_maps=output_maps_directory,
         hf_hub_path=hf_hub_path,
+        maps_name=maps_name,
     )
 
 

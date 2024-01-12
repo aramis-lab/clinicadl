@@ -1,14 +1,7 @@
 import importlib
 import os
-import shutil
-import tempfile
-import warnings
 from logging import getLogger
 from pathlib import Path
-
-import cloudpickle
-import torch
-from torch import nn
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.maps_manager_utils import (
@@ -20,40 +13,21 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 logger = getLogger("clinicadl")
 
 
-model_card_template = """---
-language: en
-tags:
-- clinicadl
-license: MIT
----
-"""
+def hf_hub_is_available():
+    return importlib.util.find_spec("huggingface_hub") is not None
 
 
 def push_to_hf_hub(
     hf_hub_path: str,
+    maps_name: str,
     maps_dir: Path,
     model_name: str,
     dataset: [],
     split_list: list = [0],
     loss_list: str = ["best-loss"],
-):  # pragma: no cover
-    """Method allowing to save your model directly on the huggung face hub.
-    You will need to have the `huggingface_hub` package installed and a valid Hugging Face
-    account. You can install the package using
+    paper_link: str = None,
+):
 
-    .. code-block:: bash
-
-        python -m pip install huggingface_hub
-
-    end then login using
-
-    .. code-block:: bash
-
-        huggingface-cli login
-
-    Args:
-        hf_hub_path (str): path to your repo on the Hugging Face hub.
-    """
     if not hf_hub_is_available():
         raise ModuleNotFoundError(
             "`huggingface_hub` package must be installed to push your model to the HF hub. "
@@ -63,32 +37,51 @@ def push_to_hf_hub(
 
     else:
         from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
+
+    if paper_link is not None:
+        model_card_ = f"""---
+language: en
+arxiv: {paper_link}
+library_name: clinicadl
+tags:
+- clinicadl
+license: mit
+---
+"""
+    else:
+        model_card_ = """---
+language: en
+library_name: clinicadl
+tags:
+- clinicadl
+license: mit
+---
+"""
+
     config_file = maps_dir / "maps.json"
-    n_splits, validation = create_readme(config_file=config_file, model_name=model_name)
-    if validation == "KfoldSplit":
-        split_list = [f"split-{n}" for n in n_splits]
-    elif validation == "Split":
-        split_list = []
+    n_splits, validation = create_readme(
+        config_file=config_file, model_name=model_name, model_card=model_card_
+    )
+
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
-
-    # tempdir = tempfile.mkdtemp()
-
-    # network.save(tempdir)
-
-    # model_files = os.listdir(maps_dir)
 
     api = HfApi()
     hf_operations = []
 
-    id_ = hf_hub_path
-    # api.create_repo(id_, token="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")
+    id_ = os.path.join(hf_hub_path, model_name)
 
-    # api.upload_folder(
-    #     folder_path=str(maps_dir),
-    #     # path_in_repo="my-dataset/train", # Upload to a specific folder
-    #     repo_id=hf_hub_path,
-    #     repo_type="model",
-    # )
+    user = api.whoami()
+    list_orgs = [x["name"] for x in user["orgs"]]
+
+    if hf_hub_path == "clinicadl-test":
+        if "clinicadl-test" not in list_orgs:
+            raise ClinicaDLArgumentError(
+                "You're not in the ClinicaDL organization on Hugging Face. Please follow the link to request to join the organization: https://huggingface.co/clinicadl-test"
+            )
+    elif hf_hub_path != user["name"]:
+        raise ClinicaDLArgumentError(
+            f"You're logged as {user['name']} in Hugging Face and you are trying to push a model under {hf_hub_path} logging."
+        )
 
     hf_operations = [
         CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="README.md"),
@@ -96,12 +89,6 @@ def push_to_hf_hub(
             path_in_repo="maps.json", path_or_fileobj=maps_dir / "maps.json"
         ),
     ]
-
-    # ...     CommitOperationAdd(path_in_repo="weights.h5", path_or_fileobj="~/repo/weights-final.h5"),
-    # ...     CommitOperationDelete(path_in_repo="old-weights.h5"),
-    # ...     CommitOperationDelete(path_in_repo="logs/"),
-    # ...     CommitOperationCopy(src_path_in_repo="image.png", path_in_repo="duplicate_image.png"),
-    # ...
 
     for split in range(n_splits):
         hf_operations.append(
@@ -112,8 +99,6 @@ def push_to_hf_hub(
                 ),
             )
         )
-
-    import os
 
     for root, dirs, files in os.walk(maps_dir, topdown=False):
         for name in files:
@@ -133,16 +118,6 @@ def push_to_hf_hub(
                     ),
                 )
             )
-
-        # for name in dirs:
-        #     print(os.path.join(root, name))
-    # for file in ["maps.json", "environment.txt", "information.log"]:
-    #     hf_operations.append(
-    #         CommitOperationAdd(
-    #             path_in_repo=file,
-    #             path_or_fileobj=str(maps_dir / file),
-    #         )
-    #     )
 
     try:
         api.create_commit(
@@ -167,21 +142,38 @@ def push_to_hf_hub(
         )
 
 
-def create_readme(config_file: Path = None, model_name: str = "test"):
+def create_readme(
+    config_file: Path = None, model_name: str = "test", model_card: str = None
+):
     if not config_file.is_file():
         raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
     import json
 
-    json_path = Path("/Users/camille.brianceau/aramis/clinicadl/test.json")
-    with json_path.open(mode="r") as f:
-        default_dict = json.load(f)
+    import toml
+
+    clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+    config_path = (
+        Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
+    )
+    config_dict = toml.load(config_path)
     train_dict = read_json(config_file)
+
+    task = train_dict["network_task"]
+    config_dict = remove_unused_tasks(config_dict, task)
+    config_dict = change_str_to_path(config_dict)
+
+    default_dict = dict()
+    for config_section in config_dict:
+        for key in config_dict[config_section]:
+            default_dict[key] = config_dict[config_section][key]
+
     train_dict = change_str_to_path(train_dict)
     for name in train_dict:
         default_dict[name] = train_dict[name]
 
     file = open("README.md", "w")
     list_lines = []
+    list_lines.append(model_card)
     list_lines.append(f"# Model Card for {model_name}  \n")
     list_lines.append(
         f"This model was trained with ClinicaDL. You can find here the   \n"
@@ -214,52 +206,8 @@ def create_readme(config_file: Path = None, model_name: str = "test"):
     return default_dict["n_splits"], default_dict["validation"]
 
 
-def save_model(network: nn.Module, dir_path: str):
-    """Method to save the model at a specific location. It saves, the model weights as a
-    ``models.pt`` file along with the model config as a ``model_config.json`` file. If the
-    model to save used custom encoder (resp. decoder) provided by the user, these are also
-    saved as ``decoder.pkl`` (resp. ``decoder.pkl``).
-
-    Args:
-    dir_path (str): The path where the model should be saved. If the path
-            path does not exist a folder will be created at the provided location.
-    """
-
-    env_spec = EnvironmentConfig(
-        python_version=f"{sys.version_info[0]}.{sys.version_info[1]}"
-    )
-    model_dict = {"model_state_dict": deepcopy(network.state_dict())}
-
-    if not os.path.exists(dir_path):
-        try:
-            os.makedirs(dir_path)
-
-        except FileNotFoundError as e:
-            raise e
-
-    env_spec.save_json(dir_path, "environment")
-    network.model_config.save_json(dir_path, "model_config")
-
-    # only save .pkl if custom architecture provided
-    if not network.model_config.uses_default_encoder:
-        with open(os.path.join(dir_path, "encoder.pkl"), "wb") as fp:
-            cloudpickle.register_pickle_by_value(inspect.getmodule(network.encoder))
-            cloudpickle.dump(network.encoder, fp)
-
-    if not network.model_config.uses_default_decoder:
-        with open(os.path.join(dir_path, "decoder.pkl"), "wb") as fp:
-            cloudpickle.register_pickle_by_value(inspect.getmodule(network.decoder))
-            cloudpickle.dump(network.decoder, fp)
-
-    torch.save(model_dict, os.path.join(dir_path, "model.pt"))
-
-
-def hf_hub_is_available():
-    return importlib.util.find_spec("huggingface_hub") is not None
-
-
 def load_from_hf_hub(
-    output_maps: Path, hf_hub_path: str, allow_pickle=False
+    output_maps: Path, hf_hub_path: str, maps_name: str
 ):  # pragma: no cover
     """Class method to be used to load a pretrained model from the Hugging Face hub
 
@@ -286,59 +234,23 @@ def load_from_hf_hub(
         )
 
     else:
-        from huggingface_hub import hf_hub_download
+        from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 
-    logger.info(f"Downloading {hf_hub_path} files for rebuilding...")
+    api = HfApi()
+    id_ = os.path.join(hf_hub_path, maps_name)
+    user = api.whoami()
+    list_orgs = [x["name"] for x in user["orgs"]]
 
-    environment_json = hf_hub_download(
-        repo_id=hf_hub_path, filename="maps.json", local_dir=output_maps
-    )
-    print(environment_json)
-    # #model_config_json = hf_hub_download(repo_id=hf_hub_path, filename="model_config.json")
+    if hf_hub_path == "clinicadl-test":
+        if "clinicadl-test" not in list_orgs:
+            raise ClinicaDLArgumentError(
+                "You're not in the ClinicaDL organization on Hugging Face. Please follow the link to request to join the organization: https://huggingface.co/clinicadl-test"
+            )
+    elif hf_hub_path != user["name"]:
+        raise ClinicaDLArgumentError(
+            f"You're logged as {user['name']} in Hugging Face and you are trying to push a model under {hf_hub_path} logging."
+        )
+    else:
+        logger.info(f"Downloading {hf_hub_path} files for rebuilding...")
 
-    # _ = hf_hub_download(repo_id=hf_hub_path, filename="model.pt")
-
-    # model_config = cls._load_model_config_from_folder(dir_path)
-    # dir_path = os.path.dirname(config_path)
-    # if (
-    #     cls.__name__ + "Config" != model_config.name
-    #     and cls.__name__ + "_Config" != model_config.name
-    # ):
-    #     warnings.warn(
-    #         f"You are trying to load a "
-    #         f"`{ cls.__name__}` while a "
-    #         f"`{model_config.name}` is given."
-    #     )
-
-    # model_weights = cls._load_model_weights_from_folder(dir_path)
-
-    # if (
-    #     not model_config.uses_default_encoder or not model_config.uses_default_decoder
-    # ) and not allow_pickle:
-    #     warnings.warn(
-    #         "You are about to download pickled files from the HF hub that may have "
-    #         "been created by a third party and so could potentially harm your computer. If you "
-    #         "are sure that you want to download them set `allow_pickle=true`."
-    #     )
-
-    # else:
-    #     if not model_config.uses_default_encoder:
-    #         _ = hf_hub_download(repo_id=hf_hub_path, filename="encoder.pkl")
-    #         encoder = cls._load_custom_encoder_from_folder(dir_path)
-
-    #     else:
-    #         encoder = None
-
-    #     if not model_config.uses_default_decoder:
-    #         _ = hf_hub_download(repo_id=hf_hub_path, filename="decoder.pkl")
-    #         decoder = cls._load_custom_decoder_from_folder(dir_path)
-
-    #     else:
-    #         decoder = None
-
-    #     logger.info(f"Successfully downloaded {cls.__name__} model!")
-
-    #     model = cls(model_config, encoder=encoder, decoder=decoder)
-    #     model.load_state_dict(model_weights)
-
-    #     return model
+    environment_json = snapshot_download(repo_id=id_, local_dir=output_maps)
