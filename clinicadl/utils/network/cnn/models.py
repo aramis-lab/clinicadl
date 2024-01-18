@@ -469,3 +469,15 @@ class Conv5_FC3_SSDA(CNN_SSDA):
             n_classes=output_size,
             gpu=gpu,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
+    @staticmethod
+    def get_dimension():
+        return "2D or 3D"
+
+    @staticmethod
+    def get_task():
+        return ["classification", "regression"]

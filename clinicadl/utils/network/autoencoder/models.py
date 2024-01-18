@@ -90,3 +90,15 @@ class CAE_half(AutoEncoder):
         super(CAE_half, self).__init__(
             encoder=self.encoder, decoder=self.decoder, gpu=gpu
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@dxhxw"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
