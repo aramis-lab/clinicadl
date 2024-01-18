@@ -42,9 +42,9 @@ from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
-
-
 level_list: List[str] = ["warning", "info", "debug"]
+
+
 # TODO save weights on CPU for better compatibility
 
 
@@ -67,10 +67,6 @@ class MapsManager:
             Logging level ("debug", "info", "warning")
         """
         self.maps_path = maps_path.resolve()
-        if verbose is not None:
-            if verbose not in level_list:
-                raise ValueError(f"verbose value {verbose} must be in {level_list}.")
-            setup_logging(level_list.index(verbose))
 
         # Existing MAPS
         if parameters is None:
@@ -109,7 +105,6 @@ class MapsManager:
 
                 self.write_parameters(self.maps_path, self.parameters)
                 self._write_requirements_version()
-
                 self._write_training_data()
                 self._write_train_val_groups()
                 self._write_information()
@@ -127,14 +122,17 @@ class MapsManager:
         """
         Performs the training task for a defined list of splits
 
-        Args:
-            split_list: list of splits on which the training task is performed.
-                Default trains all splits of the cross-validation.
-            overwrite: If True previously trained splits that are going to be trained
-                are erased.
+        Parameters
+        ----------
+        split_list: List[int]
+            list of splits on which the training task is performed.
+            Default trains all splits of the cross-validation.
+        overwrite: bool
+            If True previously trained splits that are going to be trained are erased.
 
-        Raises:
-            MAPSError: If splits specified in input already exist and overwrite is False.
+        Raises
+        ------
+        Raises MAPSError, if splits specified in input already exist and overwrite is False.
         """
         existing_splits = []
 
@@ -550,6 +548,7 @@ class MapsManager:
                 label_code=self.label_code,
                 label=self.label,
             )
+
             test_loader = DataLoader(
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
@@ -1264,32 +1263,32 @@ class MapsManager:
                         metrics_valid,
                     )
 
-            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
-            if self.track_exp == "wandb":
-                run.log_metrics(
-                    run._wandb,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            # logger.info(
+            #     f"{self.mode} level training loss is {metrics_train['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # logger.info(
+            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # if self.track_exp == "wandb":
+            #     run.log_metrics(
+            #         run._wandb,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
 
-            if self.track_exp == "mlflow":
-                run.log_metrics(
-                    run._mlflow,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # if self.track_exp == "mlflow":
+            #     run.log_metrics(
+            #         run._mlflow,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
@@ -2716,8 +2715,11 @@ class MapsManager:
 
         model = model_class(**kwargs)
         logger.debug(f"Model:\n{model.layers}")
-        device = model.device
-        logger.info(f"Working on {device}")
+
+        device = "cpu"
+        if device != model.device:
+            device = model.device
+            logger.info(f"Working on {device}")
         current_epoch = 0
 
         if resume:
@@ -2940,35 +2942,35 @@ class MapsManager:
         json_path = self.maps_path / "maps.json"
         return read_json(json_path)
 
-    def get_model(
-        self, split: int = 0, selection_metric: str = None, network: int = None
-    ) -> Network:
-        selection_metric = self._check_selection_metric(split, selection_metric)
-        if self.multi_network:
-            if network is None:
-                raise ClinicaDLArgumentError(
-                    "Please precise the network number that must be loaded."
-                )
-        return self._init_model(
-            self.maps_path,
-            selection_metric,
-            split,
-            network=network,
-            nb_unfrozen_layer=self.nb_unfrozen_layer,
-        )[0]
+    # def get_model(
+    #     self, split: int = 0, selection_metric: str = None, network: int = None
+    # ) -> Network:
+    #     selection_metric = self._check_selection_metric(split, selection_metric)
+    #     if self.multi_network:
+    #         if network is None:
+    #             raise ClinicaDLArgumentError(
+    #                 "Please precise the network number that must be loaded."
+    #             )
+    #     return self._init_model(
+    #         self.maps_path,
+    #         selection_metric,
+    #         split,
+    #         network=network,
+    #         nb_unfrozen_layer=self.nb_unfrozen_layer,
+    #     )[0]
 
-    def get_best_epoch(
-        self, split: int = 0, selection_metric: str = None, network: int = None
-    ) -> int:
-        selection_metric = self._check_selection_metric(split, selection_metric)
-        if self.multi_network:
-            if network is None:
-                raise ClinicaDLArgumentError(
-                    "Please precise the network number that must be loaded."
-                )
-        return self.get_state_dict(split=split, selection_metric=selection_metric)[
-            "epoch"
-        ]
+    # def get_best_epoch(
+    #     self, split: int = 0, selection_metric: str = None, network: int = None
+    # ) -> int:
+    #     selection_metric = self._check_selection_metric(split, selection_metric)
+    #     if self.multi_network:
+    #         if network is None:
+    #             raise ClinicaDLArgumentError(
+    #                 "Please precise the network number that must be loaded."
+    #             )
+    #     return self.get_state_dict(split=split, selection_metric=selection_metric)[
+    #         "epoch"
+    #     ]
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None

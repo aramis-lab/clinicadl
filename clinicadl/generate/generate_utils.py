@@ -71,6 +71,9 @@ def load_and_check_tsv(
                     "the data file is not in the correct format."
                     "Columns should include ['participant_id', 'session_id']"
                 )
+            if "cohort" not in list(df.columns.values):
+                df["cohort"] = "single"
+
         else:
             tsv_df = pd.read_csv(tsv_path, sep="\t")
             check_multi_cohort_tsv(tsv_df, "labels")
