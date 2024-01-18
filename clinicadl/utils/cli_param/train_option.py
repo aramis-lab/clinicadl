@@ -82,11 +82,9 @@ compensation = cli_param.option_group.reproducibility_group.option(
     type=click.Choice(["memory", "time"]),
 )
 save_all_models = cli_param.option_group.reproducibility_group.option(
-    "--save_all_models",
+    "--save_all_models/--save_only_best_model",
     type=bool,
-    is_flag=True,
-    help="save gjseorimgsorg",
-    default=False,
+    help="If provided, enables the saving of models weights for each epochs.",
 )
 
 # Model

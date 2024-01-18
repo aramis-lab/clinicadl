@@ -2431,7 +2431,7 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
-        save_all_models=False,
+        save_all_models: bool = False,
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
