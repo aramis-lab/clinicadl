@@ -86,7 +86,6 @@ class MapsManager:
 
         # Initiate MAPS
         else:
-
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
