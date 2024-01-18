@@ -93,7 +93,7 @@ class CAE_half(AutoEncoder):
 
     @staticmethod
     def get_input_size():
-        return ""
+        return "1@dxhxw"
 
     @staticmethod
     def get_dimension():
