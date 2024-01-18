@@ -549,6 +549,7 @@ class MapsManager:
                 label_code=self.label_code,
                 label=self.label,
             )
+
             test_loader = DataLoader(
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
@@ -1263,32 +1264,32 @@ class MapsManager:
                         metrics_valid,
                     )
 
-            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            logger.info(
-                f"{self.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
-            if self.track_exp == "wandb":
-                run.log_metrics(
-                    run._wandb,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            # logger.info(
+            #     f"{self.mode} level training loss is {metrics_train['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # logger.info(
+            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # if self.track_exp == "wandb":
+            #     run.log_metrics(
+            #         run._wandb,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
 
-            if self.track_exp == "mlflow":
-                run.log_metrics(
-                    run._mlflow,
-                    self.track_exp,
-                    self.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # if self.track_exp == "mlflow":
+            #     run.log_metrics(
+            #         run._mlflow,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
@@ -2715,8 +2716,11 @@ class MapsManager:
 
         model = model_class(**kwargs)
         logger.debug(f"Model:\n{model.layers}")
-        device = model.device
-        logger.info(f"Working on {device}")
+
+        device = "cpu"
+        if device != model.device:
+            device = model.device
+            logger.info(f"Working on {device}")
         current_epoch = 0
 
         if resume:
