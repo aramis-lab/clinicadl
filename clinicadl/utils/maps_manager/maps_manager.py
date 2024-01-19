@@ -37,7 +37,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 )
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
-from clinicadl.utils.preprocessing import path_encoder
+from clinicadl.utils.preprocessing import path_decoder, path_encoder
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
@@ -75,7 +75,7 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             test_parameters = self.get_parameters()
-            # test_parameters = change_str_to_path(test_parameters)
+            # test_parameters = path_decoder(test_parameters)
             self.parameters = add_default_values(test_parameters)
             self.ssda_network = False  # A MODIFIER
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
@@ -101,7 +101,6 @@ class MapsManager:
                 (maps_path / "groups").mkdir(parents=True)
 
                 logger.info(f"A new MAPS was created at {maps_path}")
-
                 self.write_parameters(self.maps_path, self.parameters)
                 self._write_requirements_version()
                 self._write_training_data()

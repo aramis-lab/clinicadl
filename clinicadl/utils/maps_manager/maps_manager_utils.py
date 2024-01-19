@@ -5,6 +5,7 @@ from typing import Any, Dict
 import toml
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.utils.preprocessing import path_decoder, path_encoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -23,6 +24,8 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     # from clinicadl.utils.preprocessing import path_decoder
     config_dict = toml.load(config_path)
+    # config_dict = path_decoder(config_dict)
+    # print(config_dict)
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
@@ -38,6 +41,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     else:
         user_dict["validation"] = "SingleSplit"
 
+    user_dict = path_decoder(user_dict)
     return user_dict
 
 
@@ -58,7 +62,6 @@ def read_json(json_path: Path) -> Dict[str, Any]:
 
     with json_path.open(mode="r") as f:
         parameters = json.load(f, object_hook=path_decoder)
-
     # Types of retro-compatibility
     # Change arg name: ex network --> model
     # Change arg value: ex for preprocessing: mni --> t1-extensive
