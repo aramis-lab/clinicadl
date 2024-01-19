@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_utils import multiply_list
 

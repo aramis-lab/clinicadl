@@ -14,7 +14,6 @@ import pandas as pd
 import torch
 import torchio as tio
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
-from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 

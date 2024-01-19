@@ -28,17 +28,16 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
-    change_path_to_str,
     change_str_to_path,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
+from clinicadl.utils.preprocessing import path_encoder
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
@@ -76,7 +75,7 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             test_parameters = self.get_parameters()
-            test_parameters = change_str_to_path(test_parameters)
+            # test_parameters = change_str_to_path(test_parameters)
             self.parameters = add_default_values(test_parameters)
             self.ssda_network = False  # A MODIFIER
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
@@ -2077,7 +2076,7 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
         self.parameters = add_default_values(parameters)
-        self.parameters = change_str_to_path(parameters)
+        # self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
         elif self.parameters["amp"]:
@@ -2304,15 +2303,15 @@ class MapsManager:
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
 
-        parameters = change_path_to_str(parameters)
         # save to json file
-        json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
-        with json_path.open(mode="w") as f:
-            f.write(json_data)
-        parameters = change_str_to_path(parameters)
+
+        with json_path.open(mode="w") as json_file:
+            json.dump(
+                parameters, json_file, skipkeys=True, indent=4, default=path_encoder
+            )
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -2932,9 +2931,11 @@ class MapsManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
+        from clinicadl.utils.preprocessing import path_decoder
+
         with json_path.open(mode="r") as f:
-            parameters = json.load(f)
-        parameters = change_str_to_path(parameters)
+            parameters = json.load(f, object_hook=path_decoder)
+        # parameters = change_str_to_path(parameters)
         return df, parameters
 
     def get_parameters(self):
@@ -2942,35 +2943,35 @@ class MapsManager:
         json_path = self.maps_path / "maps.json"
         return read_json(json_path)
 
-    # def get_model(
-    #     self, split: int = 0, selection_metric: str = None, network: int = None
-    # ) -> Network:
-    #     selection_metric = self._check_selection_metric(split, selection_metric)
-    #     if self.multi_network:
-    #         if network is None:
-    #             raise ClinicaDLArgumentError(
-    #                 "Please precise the network number that must be loaded."
-    #             )
-    #     return self._init_model(
-    #         self.maps_path,
-    #         selection_metric,
-    #         split,
-    #         network=network,
-    #         nb_unfrozen_layer=self.nb_unfrozen_layer,
-    #     )[0]
+    def get_model(
+        self, split: int = 0, selection_metric: str = None, network: int = None
+    ) -> Network:
+        selection_metric = self._check_selection_metric(split, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ClinicaDLArgumentError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self._init_model(
+            self.maps_path,
+            selection_metric,
+            split,
+            network=network,
+            nb_unfrozen_layer=self.nb_unfrozen_layer,
+        )[0]
 
-    # def get_best_epoch(
-    #     self, split: int = 0, selection_metric: str = None, network: int = None
-    # ) -> int:
-    #     selection_metric = self._check_selection_metric(split, selection_metric)
-    #     if self.multi_network:
-    #         if network is None:
-    #             raise ClinicaDLArgumentError(
-    #                 "Please precise the network number that must be loaded."
-    #             )
-    #     return self.get_state_dict(split=split, selection_metric=selection_metric)[
-    #         "epoch"
-    #     ]
+    def get_best_epoch(
+        self, split: int = 0, selection_metric: str = None, network: int = None
+    ) -> int:
+        selection_metric = self._check_selection_metric(split, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ClinicaDLArgumentError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self.get_state_dict(split=split, selection_metric=selection_metric)[
+            "epoch"
+        ]
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None
@@ -3144,7 +3145,6 @@ class MapsManager:
         return map_pt
 
     def _init_callbacks(self):
-        from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
