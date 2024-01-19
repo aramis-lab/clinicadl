@@ -65,6 +65,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "valid_longitudinal",
         "weight_decay",
         "sampler",
+        "save_all_models",
         "seed",
         "split",
         "caps_target",
