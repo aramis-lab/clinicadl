@@ -41,7 +41,7 @@ class ReconstructionManager(TaskManager):
             row.append(metrics[metric])
         return [row]
 
-    def compute_metrics(self, results_df):
+    def compute_metrics(self, results_df, ci = False):
         metrics = dict()
         for metric in self.evaluation_metrics:
             metrics[metric] = results_df[metric].mean()

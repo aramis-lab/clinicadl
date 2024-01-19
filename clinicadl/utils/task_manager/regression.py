@@ -44,10 +44,11 @@ class RegressionManager(TaskManager):
             ]
         ]
 
-    def compute_metrics(self, results_df):
+    def compute_metrics(self, results_df, ci):
         return self.metrics_module.apply(
             results_df.true_label.values,
             results_df.predicted_label.values,
+            ci = ci,
         )
 
     @staticmethod

@@ -1739,13 +1739,13 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+                model, dataloader, criterion, use_labels=use_labels, amp=amp, ci = True
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {metrics['Metric_values'][-1]} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -2558,12 +2558,12 @@ class MapsManager:
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
             if not metrics_path.is_file():
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
+                pd.DataFrame(metrics).T.to_csv(
+                    metrics_path, index=False, sep="\t", header=None
                 )
             else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=False
+                pd.DataFrame(metrics).T.to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=None
                 )
 
     def _ensemble_to_tsv(
@@ -2612,6 +2612,10 @@ class MapsManager:
             use_labels=use_labels,
         )
 
+        print(df_final)
+        col = df_final['true_label']
+        df_final['predicted_label']
+
         if df_final is not None:
             df_final.to_csv(
                 performance_dir / f"{data_group}_image_level_prediction.tsv",
@@ -2619,7 +2623,7 @@ class MapsManager:
                 sep="\t",
             )
         if metrics is not None:
-            pd.DataFrame(metrics, index=[0]).to_csv(
+            pd.DataFrame(metrics).to_csv(
                 performance_dir / f"{data_group}_image_level_metrics.tsv",
                 index=False,
                 sep="\t",

@@ -42,7 +42,7 @@ class ClassificationManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+        return ["BA", "accuracy","F1_score", "sensitivity", "specificity", "PPV", "NPV"]
 
     @property
     def save_outputs(self):
@@ -62,10 +62,11 @@ class ClassificationManager(TaskManager):
             + [normalized_output[i].item() for i in range(self.n_classes)]
         ]
 
-    def compute_metrics(self, results_df):
+    def compute_metrics(self, results_df, ci):
         return self.metrics_module.apply(
             results_df.true_label.values,
             results_df.predicted_label.values,
+            ci = ci
         )
 
     @staticmethod
@@ -223,6 +224,8 @@ class ClassificationManager(TaskManager):
             row = [[subject, session, 0, label, prediction] + proba_list]
             row_df = pd.DataFrame(row, columns=self.columns)
             df_final = pd.concat([df_final, row_df])
+        
+        print(df_final)
 
         if use_labels:
             results = self.compute_metrics(df_final)

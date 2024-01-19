@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Dict, List
+from sklearn.utils import resample
 
 import numpy as np
 
@@ -11,6 +12,7 @@ metric_optimum = {
     "specificity": "max",
     "PPV": "max",
     "NPV": "max",
+    "F1_score": "max",
     "BA": "max",
     "PSNR": "max",
     "SSIM": "max",
@@ -40,7 +42,49 @@ class MetricModule:
                     f"The metric {metric} is not implemented in the module."
                 )
 
-    def apply(self, y, y_pred):
+
+    def compute_confidence_interval(self,
+                                y, 
+                                y_pred, 
+                                metric_fn, 
+                                class_number=None, 
+                                confidence_level=0.95, 
+                                num_bootstrap_samples=1000):
+
+    
+        """
+        Compute confidence interval for a given metric using bootstrapping.
+
+        Args:
+            y (array-like): True labels.
+            y_pred (array-like): Predicted labels.
+            metric_fn (callable): Metric function.
+            class_number (int, optional): Class number for class-specific metrics.
+            confidence_level (float, optional): Desired confidence level for intervals.
+            num_bootstrap_samples (int, optional): Number of bootstrap samples.
+
+        Returns:
+            Tuple[float, float, float]: Lower bound, upper bound, and standard error of the metric.
+        """
+        bootstrap_samples = np.zeros(num_bootstrap_samples)
+
+        for i in range(num_bootstrap_samples):
+            indices = np.random.choice(len(y), len(y), replace=True)
+            y_bootstrap, y_pred_bootstrap = y[indices], y_pred[indices]
+
+            if class_number is not None:
+                bootstrap_samples[i] = metric_fn(y_bootstrap, y_pred_bootstrap, class_number)
+            else:
+                bootstrap_samples[i] = metric_fn(y_bootstrap, y_pred_bootstrap)
+
+        lower_ci, upper_ci = np.percentile(bootstrap_samples, 
+                                        [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
+        
+        standard_error = np.std(bootstrap_samples)
+
+        return lower_ci, upper_ci, standard_error
+
+    def apply(self, y, y_pred, ci):
         """
         This is a function to calculate the different metrics based on the list of true label and predicted label
 
@@ -55,21 +99,66 @@ class MetricModule:
             y = np.array(y)
             y_pred = np.array(y_pred)
 
+            metric_names = ["Metrics"]
+            metric_values = ["Values"]  # Collect metric values
+            lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
+            upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
+            se_values = ["SE"]  # Collect standard error values
             for metric_key, metric_fn in self.metrics.items():
+                
                 metric_args = list(metric_fn.__code__.co_varnames)
                 if "class_number" in metric_args and self.n_classes > 2:
                     for class_number in range(self.n_classes):
-                        results[f"{metric_key}-{class_number}"] = metric_fn(
+                        if ci : 
+                            metric_result = metric_fn(y, y_pred, class_number)
+                            lower_ci, upper_ci, standard_error = self.compute_confidence_interval(y, y_pred, metric_fn, class_number)
+
+                            metric_values.append(metric_result)
+                            lower_ci_values.append(lower_ci)
+                            upper_ci_values.append(upper_ci)
+                            se_values.append(standard_error)
+                            metric_names.append(f"{metric_key}-{class_number}")
+                        else: 
+                            results[f"{metric_key}-{class_number}"] = metric_fn(
                             y, y_pred, class_number
                         )
+
                 elif "class_number" in metric_args:
-                    results[f"{metric_key}"] = metric_fn(y, y_pred, 0)
+                    if ci:
+                        metric_result = metric_fn(y, y_pred, 0)
+                        metric_values.append(metric_result)
+                        lower_ci, upper_ci, standard_error = self.compute_confidence_interval(y, y_pred, metric_fn, 0)
+                        lower_ci_values.append(lower_ci)
+                        upper_ci_values.append(upper_ci)
+                        se_values.append(standard_error)
+                        metric_names.append(f"{metric_key}")
+                    else:
+                        results[f"{metric_key}"] = metric_fn(y, y_pred, 0)
+
                 else:
-                    results[metric_key] = metric_fn(y, y_pred)
+                    if ci:
+                        metric_result = metric_fn(y, y_pred)
+                        metric_values.append(metric_result)
+                        lower_ci, upper_ci, standard_error = self.compute_confidence_interval(y, y_pred, metric_fn)
+                        lower_ci_values.append(lower_ci)
+                        upper_ci_values.append(upper_ci)
+                        se_values.append(standard_error)
+                        metric_names.append(f"{metric_key}")
+                    else:
+                        results[f"{metric_key}"] = metric_fn(y, y_pred)
+
+            if ci:
+                # Construct the final results dictionary
+                results["Metric_names"] = metric_names
+                results["Metric_values"] = metric_values
+                results["Lower_CI"] = lower_ci_values
+                results["Upper_CI"] = upper_ci_values
+                results["SE"] = se_values
+
         else:
             results = dict()
 
-        return results
+        return results      
 
     @staticmethod
     def mae_fn(y, y_pred):
@@ -179,6 +268,24 @@ class MetricModule:
             return true_negative / (true_negative + false_negative)
         else:
             return 0.0
+    
+    @staticmethod
+    def f1_score_fn(y, y_pred, class_number):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+            class_number (int): number of the class studied
+        Returns:
+            (float) F1 score
+        """
+        
+        precision = MetricModule.ppv_fn(y, y_pred, class_number)
+        recall = MetricModule.sensitivity_fn(y, y_pred, class_number)
+
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+
+        return f1_score
 
     @staticmethod
     def ba_fn(y, y_pred, class_number):
