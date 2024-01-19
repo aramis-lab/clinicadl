@@ -57,7 +57,6 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     from clinicadl.utils.preprocessing import path_decoder
 
     with json_path.open(mode="r") as f:
-
         parameters = json.load(f, object_hook=path_decoder)
 
     # Types of retro-compatibility

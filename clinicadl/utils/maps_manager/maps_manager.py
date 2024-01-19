@@ -3145,7 +3145,6 @@ class MapsManager:
         return map_pt
 
     def _init_callbacks(self):
-
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
 
