@@ -24,7 +24,7 @@ def path_decoder(obj):
                         or key2.endswith("location")
                     ):
 
-                        if value2 == "" or value2 == False:
+                        if value2 == "" or value2 is False:
                             obj[key][key2] = False
                         else:
                             obj[key][key2] = Path(value2)
@@ -37,7 +37,7 @@ def path_decoder(obj):
                     or key.endswith("json")
                     or key.endswith("location")
                 ):
-                    if value == "" or value == False:
+                    if value == "" or value is False:
                         obj[key] = False
                     else:
                         obj[key] = Path(value)

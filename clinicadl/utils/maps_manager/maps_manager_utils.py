@@ -212,7 +212,7 @@ def change_str_to_path(
                 or key.endswith("json")
                 or key.endswith("location")
             ):
-                if value == "" or value == False:
+                if value == "" or value is False:
                     toml_dict[key] = False
                 else:
                     toml_dict[key] = Path(value)
