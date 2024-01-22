@@ -1,5 +1,7 @@
 # coding: utf8
 
+from typing import List
+
 import click
 
 from clinicadl.generate.generate_cli import cli as generate_cli
@@ -19,6 +21,8 @@ CONTEXT_SETTINGS = dict(
     help_option_names=["-h", "--help"],
 )
 
+level_list: List[str] = ["warning", "info", "debug"]
+
 
 @click.group(context_settings=CONTEXT_SETTINGS, no_args_is_help=True)
 @click.version_option()
@@ -31,7 +35,7 @@ def cli(verbose):
 
     Do not hesitate to create an issue to report a bug or suggest an improvement.
     """
-    setup_logging(verbose=verbose)
+    setup_logging(verbose)
 
 
 cli.add_command(tsvtools_cli)

@@ -38,9 +38,9 @@ from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
-
-
 level_list: List[str] = ["warning", "info", "debug"]
+
+
 # TODO save weights on CPU for better compatibility
 
 
@@ -89,14 +89,17 @@ class MapsManager:
         """
         Performs the training task for a defined list of splits
 
-        Args:
-            split_list: list of splits on which the training task is performed.
-                Default trains all splits of the cross-validation.
-            overwrite: If True previously trained splits that are going to be trained
-                are erased.
+        Parameters
+        ----------
+        split_list: List[int]
+            list of splits on which the training task is performed.
+            Default trains all splits of the cross-validation.
+        overwrite: bool
+            If True previously trained splits that are going to be trained are erased.
 
-        Raises:
-            MAPSError: If splits specified in input already exist and overwrite is False.
+        Raises
+        ------
+        Raises MAPSError, if splits specified in input already exist and overwrite is False.
         """
         self.data_config.change_str_to_path()
         existing_splits = []
@@ -521,6 +524,7 @@ class MapsManager:
                 label_code=self.label_code,
                 label=self.label,
             )
+
             test_loader = DataLoader(
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
@@ -1254,32 +1258,33 @@ class MapsManager:
                         metrics_valid,
                     )
 
-            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            logger.info(
-                f"{self.data_config.mode} level training loss is {metrics_train['loss']} "
-                f"at the end of iteration {i}"
-            )
-            logger.info(
-                f"{self.data_config.mode} level validation loss is {metrics_valid['loss']} "
-                f"at the end of iteration {i}"
-            )
-            if self.data_config.track_exp == "wandb":
-                run.log_metrics(
-                    run._wandb,
-                    self.data_config.track_exp,
-                    self.data_config.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            # logger.info(
+            #     f"{self.mode} level training loss is {metrics_train['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # logger.info(
+            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
+            #     f"at the end of iteration {i}"
+            # )
+            # if self.track_exp == "wandb":
+            #     run.log_metrics(
+            #         run._wandb,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
 
-            if self.data_config.track_exp == "mlflow":
-                run.log_metrics(
-                    run._mlflow,
-                    self.data_config.track_exp,
-                    self.data_config.network_task,
-                    metrics_train,
-                    metrics_valid,
-                )
+            # if self.track_exp == "mlflow":
+            #     run.log_metrics(
+            #         run._mlflow,
+            #         self.track_exp,
+            #         self.network_task,
+            #         metrics_train,
+            #         metrics_valid,
+            #     )
+
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
@@ -1294,6 +1299,7 @@ class MapsManager:
                     best_dict,
                     split,
                     network=network,
+                    save_all_models=self.parameters["save_all_models"],
                 )
                 self._write_weights(
                     self.data_config.split_name,
@@ -1306,6 +1312,7 @@ class MapsManager:
                     None,
                     split,
                     filename="optimizer.pth.tar",
+                    save_all_models=self.parameters["save_all_models"],
                 )
 
             epoch += 1
@@ -1626,6 +1633,7 @@ class MapsManager:
                 best_dict,
                 split,
                 network=network,
+                save_all_models=False,
             )
             self._write_weights(
                 {
@@ -1636,6 +1644,7 @@ class MapsManager:
                 None,
                 split,
                 filename="optimizer.pth.tar",
+                save_all_models=False,
             )
 
             epoch += 1
@@ -2341,6 +2350,7 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
+        save_all_models: bool = False,
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
@@ -2357,6 +2367,13 @@ class MapsManager:
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = checkpoint_dir / filename
         torch.save(state, checkpoint_path)
+
+        if save_all_models:
+            all_models_dir = (
+                self.maps_path / f"{self.split_name}-{split}" / "all_models"
+            )
+            all_models_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
 
         best_filename = "model.pth.tar"
         if network is not None:
@@ -2556,8 +2573,6 @@ class MapsManager:
             )
 
     ###############################
-
-    ###############################
     # Getters                     #
     ###############################
     def _print_description_log(
@@ -2647,6 +2662,10 @@ class MapsManager:
         return self.get_state_dict(split=split, selection_metric=selection_metric)[
             "epoch"
         ]
+    def get_parameters(self):
+        """Returns the training parameters dictionary."""
+        json_path = self.maps_path / "maps.json"
+        return read_json(json_path)
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None

@@ -4,6 +4,11 @@
 
 # ClinicaDL Documentation
 
+!!! tip "ClinicaDL tutorial"
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/) 
+    to try **ClinicaDL** directly in a Google Colab instance!
+
+
 ## What is ClinicaDL ?
 
 **ClinicaDL** is an open-source deep learning software for reproducible neuroimaging processing. It can be seen as the deep learning extension of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/), an open-source Python library for neuroimaging preprocessing and analysis. The combination of **ClinicaDL** and **Clinica** allows performing an end-to-end neuroimaging analysis, from the download of raw data sets to the interpretation of trained networks, including neuroimaging preprocessing, quality check, label definition, architecture search, and network training and evaluation.
@@ -20,15 +25,11 @@ brain images in the context of Alzheimer's disease. This is why some functions
 of ClinicaDL can still be specific to Alzheimer's disease context. 
 
 
-For moreinformation on this clinical context, please refer to [our
+For more information on this clinical context, please refer to [our
 tutorial](https://aramislab.paris.inria.fr/clinicadl/tuto/).
 
 If you are new to ClinicaDL, please consider reading the [First steps
 section](./Introduction.md) before starting your project!
-
-!!! tip "ClinicaDL tutorial"
-    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/) 
-    to try **ClinicaDL** directly in a Google Colab instance!
 
 ## Installation
 
@@ -74,7 +75,7 @@ format (ready to use with **ClinicaDL >= 1.0.4**). Models trained with previous
 versions of ClinicaDL are also available. For more details concerning the
 parameters used to create these models please refer to the supplementary
 material of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)],
-particularly the etable 4.  All the original pretrained models, produced for
+particularly the table 4.  All the original pretrained models, produced for
 the aforementioned publication are also available in this [Zenodo
 record](https://zenodo.org/record/3491003) (note that models in this format are
 not useful anymore with current version of ClinicaDL). 

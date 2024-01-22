@@ -430,3 +430,15 @@ class Vanilla3DdenseVAE(BaseVAE):
             recons_weight=recons_weight,
             kl_weight=kl_weight,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@dxhxw"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]

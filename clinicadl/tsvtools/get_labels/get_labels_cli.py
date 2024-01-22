@@ -84,7 +84,7 @@ def cli(
         remove_smc=not keep_smc,
         missing_mods=missing_mods,
         merged_tsv=merged_tsv,
-        remove_unique_session=remove_unique_session,
+        remove_unique_session_=remove_unique_session,
         output_dir=output_directory,
         caps_directory=caps_directory,
     )
