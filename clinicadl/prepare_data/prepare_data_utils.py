@@ -72,10 +72,15 @@ def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
     from clinica.utils.input_files import (
+        DWI_PREPROC_BRAINMASK,
+        DWI_PREPROC_NII,
         FLAIR_T2W_LINEAR,
         FLAIR_T2W_LINEAR_CROPPED,
+        T1W_EXTENSIVE,
         T1W_LINEAR,
         T1W_LINEAR_CROPPED,
+        T2W_LINEAR,
+        T2W_LINEAR_CROPPED,
         pet_linear_nii,
     )
 
@@ -86,12 +91,24 @@ def compute_folder_and_file_type(
         else:
             file_type = T1W_LINEAR_CROPPED
 
+    elif parameters["preprocessing"] == "t2-linear":
+        mod_subfolder = "t2_linear"
+        if parameters["use_uncropped_image"]:
+            file_type = T2W_LINEAR
+        else:
+            file_type = T2W_LINEAR_CROPPED
+
+    elif parameters["preprocessing"] == "t1-extensive":
+        mod_subfolder = "t1_extensive"
+        file_type = T1W_EXTENSIVE
+
     elif parameters["preprocessing"] == "flair-linear":
         mod_subfolder = "flair_linear"
         if parameters["use_uncropped_image"]:
             file_type = FLAIR_T2W_LINEAR
         else:
             file_type = FLAIR_T2W_LINEAR_CROPPED
+
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(
@@ -99,6 +116,14 @@ def compute_folder_and_file_type(
             parameters["suvr_reference_region"],
             parameters["use_uncropped_image"],
         )
+
+    elif parameters["preprocessing"] == "dwi":
+        mod_subfolder = "dwi"
+        if parameters["brain_mask"]:
+            file_type = DWI_PREPROC_BRAINMASK
+        else:
+            file_type = DWI_PREPROC_NII
+
     elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
         file_type = {
