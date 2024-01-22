@@ -51,89 +51,88 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 @dataclass
 class DataConfig(dict):
-    gpu: bool = True
-    n_proc: int = 2
-    batch_size: int = 8
-    evaluation_steps: int = 0
-    fully_sharded_data_parallel: bool = False
-    amp: bool = False
-    seed: int = 0
-    deterministic: bool = False
-    compensation: str = "memory"  # Only used if deterministic = true
-    track_exp: str = ""
-    transfer_path: Path = Path("")
-    transfer_selection_metric: str = "loss"
-    use_extracted_features: bool = False
-    n_splits: int = 0
-    split: list = Field(default_factory=list)
-    optimizer: str = "Adam"
-    epochs: int = 20
-    learning_rate: float = 1e-4
-    weight_decay: float = 1e-4
-    patience: int = 0
-    tolerance: float = 0.0
     accumulation_steps: int = 1
-    profiler: bool = False
-    emissions_calculator: bool = False
-    validation: Literal["KFoldSplit", "SingleSplit"] = "SingleSplit"
+    amp: bool = False
     architecture: str = "default"
-    multi_network: bool = False
-    ssda_network: bool = False
+    baseline: bool = False
+    batch_size: int = 8
+    caps_directory: Path = None
+    caps_target: Path = ""
+    compensation: str = "memory"  # Only used if deterministic = true
+    custom_suffix: str = "custom"
+    data_augmentation: bool = False
+    deterministic: bool = False
+    diagnoses: list = Field(default_factory=list)
+    discarded_slices: int = 1
     dropout: float = Field(0.0, ge=0.0, le=1.0)  # between 0 and 1
-    latent_space_size: int = 128
+    epochs: int = 20
+    existing_maps: bool = False
+    existing_maps: bool = False  # Duplicate entry
     feature_size: int = 1024
-    n_conv: int = 4
+    file_type: str = ""
+    fully_sharded_data_parallel: bool = False
+    gpu: bool = True
     io_layer_channels: int = 8
-    recons_weight: int = 1
     kl_weight: int = 1
-    normalization: str = "batch"
-    network_task: str = "classification"
-    selection_metrics: list = Field(default_factory=list)
     label: str = "diagnosis"
     label_code: dict = Field(default_factory=dict)
-    selection_threshold: float = 0.0  # Will only be used if num_networks != 1
+    latent_space_size: int = 128
+    learning_rate: float = 1e-4
     loss: str = "CrossEntropyLoss"
-    nb_unfrozen_layer: int = 0
-    existing_maps: bool = False
-    multi_cohort: bool = False
-    diagnoses: list = Field(default_factory=list)
-    baseline: bool = False
-    normalize: bool = True
-    data_augmentation: bool = False
-    sampler: str = "random"
-    size_reduction: bool = False
-    size_reduction_factor = 2
-    caps_target: Path = ""
-    tsv_target_lab: str = ""
-    tsv_target_unlab: str = ""
-    caps_directory: Path = None
     maps_path: Path = ""
-    tsv_path: Path = None
-    custom_suffix: str = "custom"
-    discarded_slices: int = 1
-    extract_json: str = ""
-    file_type: str = ""
     mode: str = None
+    multi_cohort: bool = False
+    multi_network: bool = False
+    n_conv: int = 4
+    n_proc: int = 2
+    n_splits: int = 0
+    nb_unfrozen_layer: int = 0
+    normalize: bool = True
+    normalization: str = "batch"
     patch_size: int = 128
-    prepare_dl: bool = False
+    patience: int = 0
+    preparation_dl: bool = False
+    prepare_dl: bool = False  # Duplicate entry
     preprocessing: str = None
-    preprocessing_json: str = ""
     preprocessing_dict: dict = Field(default_factory=dict)
     preprocessing_dict_target: str = ""
-    roi_custom_mask_pattern: str = ""
-    roi_custom_suffix: str = ""
-    roi_custom_pattern: str = ""
-    roi_custom_template: str = ""
+    preprocessing_json: str = ""
+    profiler: bool = False
     roi_background_value: int = 0
+    roi_custom_mask_pattern: str = ""
+    roi_custom_pattern: str = ""
+    roi_custom_suffix: str = ""
+    roi_custom_template: str = ""
     roi_list: list = Field(default_factory=list)
-    stride_size: int = 2
+    sampler: str = "random"
+    seed: int = 0
+    selection_metrics: list = Field(default_factory=list)
+    selection_threshold: float = 0.0  # Will only be used if num_networks != 1
+    shuffle: bool = True  # Adding a missing parameter (assuming it's meant to be there)
+    size_reduction: bool = False
+    size_reduction_factor = 2
     slice_direction: str = ""
     slice_mode: str = ""
+    slices: int = 2  # Adding a missing parameter (assuming it's meant to be there)
+    ssda_network: bool = False
+    stride_size: int = 2
     suvr_reference_region: str = ""
+    tensorboard: bool = (
+        True  # Adding a missing parameter (assuming it's meant to be there)
+    )
+    tolerance: float = 0.0
+    tracker_exp: str = ""
+    transfer_path: Path = Path("")
+    transfer_selection_metric: str = "loss"
     tracer: str = "18FFDG"
+    tsv_path: Path = None
+    tsv_target_lab: str = ""
+    tsv_target_unlab: str = ""
     uncropped_roi: bool = False
+    use_extracted_features: bool = False
     use_uncropped_image: bool = False
-    existing_maps: bool = False
+    validation: Literal["KFoldSplit", "SingleSplit"] = "SingleSplit"
+    weight_decay: float = 1e-4
 
     def __init__(
         self,
