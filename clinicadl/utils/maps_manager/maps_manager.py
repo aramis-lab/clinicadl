@@ -2662,6 +2662,7 @@ class MapsManager:
         return self.get_state_dict(split=split, selection_metric=selection_metric)[
             "epoch"
         ]
+
     def get_parameters(self):
         """Returns the training parameters dictionary."""
         json_path = self.maps_path / "maps.json"
