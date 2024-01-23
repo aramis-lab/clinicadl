@@ -6,7 +6,7 @@ import numpy as np
 
 metric_optimum = {
     "MAE": "min",
-    "MSE": "min",
+    "RMSE": "min",
     "accuracy": "max",
     "sensitivity": "max",
     "specificity": "max",
@@ -43,46 +43,75 @@ class MetricModule:
                 )
 
 
-    def compute_confidence_interval(self,
-                                y, 
-                                y_pred, 
-                                metric_fn, 
-                                class_number=None, 
-                                confidence_level=0.95, 
-                                num_bootstrap_samples=1000):
+    # def compute_confidence_interval(self, y, y_pred, metric_fn, class_number=None, confidence_level=0.95, num_bootstrap_samples=1000):
+    #     # Generate a matrix of random indices for bootstrapping
+    #     indices_matrix = np.random.choice(len(y), (num_bootstrap_samples, len(y)), replace=True)
 
-    
-        """
-        Compute confidence interval for a given metric using bootstrapping.
+    #     # Index the true labels (y) and predicted labels (y_pred) using the generated indices matrix
+    #     y_bootstrap_matrix, y_pred_bootstrap_matrix = y[indices_matrix], y_pred[indices_matrix]
 
-        Args:
-            y (array-like): True labels.
-            y_pred (array-like): Predicted labels.
-            metric_fn (callable): Metric function.
-            class_number (int, optional): Class number for class-specific metrics.
-            confidence_level (float, optional): Desired confidence level for intervals.
-            num_bootstrap_samples (int, optional): Number of bootstrap samples.
+    #     # Define a lambda function to compute the metric for each bootstrap sample along axis 1
+    #     compute_metric = (
+    #         lambda x: metric_fn(x, y_pred_bootstrap_matrix, class_number)
+    #         if class_number is not None
+    #         else metric_fn(x, y_pred_bootstrap_matrix)
+    #     )
 
-        Returns:
-            Tuple[float, float, float]: Lower bound, upper bound, and standard error of the metric.
-        """
+    #     #import ipdb; ipdb.set_trace()
+    #     # Compute the metric for each bootstrap sample along axis 1
+    #     bootstrap_samples = np.apply_along_axis(compute_metric, axis=1, arr=y_bootstrap_matrix)
+
+    #     # Calculate confidence interval and standard error 
+    #     lower_ci, upper_ci = np.percentile(bootstrap_samples, [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
+    #     standard_error = np.std(bootstrap_samples)
+
+    #     return lower_ci, upper_ci, standard_error
+
+    # def compute_confidence_interval(self, y, y_pred, metric_fn, class_number=None, confidence_level=0.95, num_bootstrap_samples=1000):
+    #     # Generate a matrix of random indices for bootstrapping
+    #     indices_matrix = np.random.choice(len(y), (num_bootstrap_samples, len(y)), replace=True)
+
+    #     # Index the true labels (y) and predicted labels (y_pred) using the generated indices matrix
+    #     y_bootstrap_matrix, y_pred_bootstrap_matrix = y[indices_matrix], y_pred[indices_matrix]
+
+    #     # Define a lambda function to compute the metric for each bootstrap sample along axis 1
+    #     compute_metric = (
+    #         lambda x, y_pred_matrix: metric_fn(x, y_pred_matrix, class_number)
+    #         if class_number is not None
+    #         else metric_fn(x, y_pred_matrix)
+    #     )
+
+    #     # Apply the function to each pair of rows in y_bootstrap_matrix and y_pred_bootstrap_matrix
+    #     bootstrap_samples = np.apply_along_axis(compute_metric, axis=1, arr=y_bootstrap_matrix, y_pred_matrix=y_pred_bootstrap_matrix)
+
+    #     # Calculate confidence interval and standard error
+    #     lower_ci, upper_ci = np.percentile(bootstrap_samples, [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
+    #     standard_error = np.std(bootstrap_samples)
+
+    #     return lower_ci, upper_ci, standard_error
+
+    def compute_confidence_interval(self, y, y_pred, metric_fn, class_number=None, confidence_level=0.95, num_bootstrap_samples=3000):
+        
         bootstrap_samples = np.zeros(num_bootstrap_samples)
 
         for i in range(num_bootstrap_samples):
             indices = np.random.choice(len(y), len(y), replace=True)
+
+
             y_bootstrap, y_pred_bootstrap = y[indices], y_pred[indices]
 
             if class_number is not None:
-                bootstrap_samples[i] = metric_fn(y_bootstrap, y_pred_bootstrap, class_number)
+                metric_result = metric_fn(y_bootstrap, y_pred_bootstrap, class_number)
             else:
-                bootstrap_samples[i] = metric_fn(y_bootstrap, y_pred_bootstrap)
+                metric_result = metric_fn(y_bootstrap, y_pred_bootstrap)
 
-        lower_ci, upper_ci = np.percentile(bootstrap_samples, 
-                                        [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
-        
+            bootstrap_samples[i] = metric_result
+
+        lower_ci, upper_ci = np.percentile(bootstrap_samples, [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
         standard_error = np.std(bootstrap_samples)
 
         return lower_ci, upper_ci, standard_error
+
 
     def apply(self, y, y_pred, ci):
         """
@@ -91,6 +120,7 @@ class MetricModule:
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            ci (bool) : If True confidence intervals are reported
         Returns:
             (Dict[str:float]) metrics results
         """
@@ -104,12 +134,13 @@ class MetricModule:
             lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
             upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
             se_values = ["SE"]  # Collect standard error values
+            
             for metric_key, metric_fn in self.metrics.items():
                 
                 metric_args = list(metric_fn.__code__.co_varnames)
                 if "class_number" in metric_args and self.n_classes > 2:
                     for class_number in range(self.n_classes):
-                        if ci : 
+                        if ci :  
                             metric_result = metric_fn(y, y_pred, class_number)
                             lower_ci, upper_ci, standard_error = self.compute_confidence_interval(y, y_pred, metric_fn, class_number)
 
@@ -173,16 +204,35 @@ class MetricModule:
         return np.mean(np.abs(y - y_pred))
 
     @staticmethod
-    def mse_fn(y, y_pred):
+    def rmse_fn(y, y_pred):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
         Returns:
-            (float) mean squared error
+            (float) root mean squared error
         """
 
-        return np.mean(np.square(y - y_pred))
+        return np.sqrt(np.mean(np.square(y - y_pred)))
+    
+    @staticmethod
+    def r2_score_fn(y, y_pred):
+        """
+        Calculate the R-squared (coefficient of determination) score.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+
+        Returns:
+            (float) R-squared score
+        """
+        mean_y = np.mean(y)
+        total_sum_squares = np.sum((y - mean_y) ** 2)
+        residual_sum_squares = np.sum((y - y_pred) ** 2)
+        r2_score = 1 - (residual_sum_squares / total_sum_squares) if total_sum_squares != 0 else 0
+
+        return r2_score
 
     @staticmethod
     def accuracy_fn(y, y_pred):
@@ -302,6 +352,82 @@ class MetricModule:
             MetricModule.sensitivity_fn(y, y_pred, class_number)
             + MetricModule.specificity_fn(y, y_pred, class_number)
         ) / 2
+
+    @staticmethod
+    def mcc_fn(y, y_pred, class_number):
+        """
+        Calculate the Matthews correlation coefficient (MCC) for a specific class.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Matthews correlation coefficient for the specified class
+        """
+        true_positive = np.sum((y_pred == class_number) & (y == class_number))
+        true_negative = np.sum((y_pred != class_number) & (y != class_number))
+        false_positive = np.sum((y_pred == class_number) & (y != class_number))
+        false_negative = np.sum((y_pred != class_number) & (y == class_number))
+        denominator = np.sqrt((true_positive + false_positive) * (true_positive + false_negative) * (true_negative + false_positive) * (true_negative + false_negative))
+        mcc = (true_positive * true_negative - false_positive * false_negative) / denominator if denominator != 0 else 0
+        return mcc
+
+    @staticmethod
+    def mk_fn(y, y_pred, class_number):
+        """
+        Calculate Markedness (MK) for a specific class.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Markedness for the specified class
+        """
+        precision = MetricModule.ppv_fn(y, y_pred, class_number)
+        npv = MetricModule.npv_fn(y, y_pred, class_number)
+        mk = precision + npv - 1
+        return mk
+
+    
+    @staticmethod
+    def lr_plus_fn(y, y_pred, class_number):
+        """
+        Calculate Positive Likelihood Ratio (LR+).
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Positive Likelihood Ratio
+        """
+        sensitivity = MetricModule.sensitivity_fn(y, y_pred, class_number)
+        specificity = MetricModule.specificity_fn(y, y_pred, class_number)
+        lr_plus = sensitivity / (1 - specificity) if (1 - specificity) != 0 else 0
+        return lr_plus
+
+    @staticmethod
+    def lr_minus_fn(y, y_pred, class_number):
+        """
+        Calculate Negative Likelihood Ratio (LR-).
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Negative Likelihood Ratio
+        """
+        sensitivity = MetricModule.sensitivity_fn(y, y_pred, class_number)
+        specificity = MetricModule.specificity_fn(y, y_pred, class_number)
+        lr_minus = (1 - sensitivity) / specificity if specificity != 0 else 0
+        return lr_minus
 
     @staticmethod
     def confusion_matrix_fn(y, y_pred):

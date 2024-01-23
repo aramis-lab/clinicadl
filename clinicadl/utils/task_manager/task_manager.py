@@ -235,7 +235,6 @@ class TaskManager:
             metrics_dict = self.compute_metrics(results_df, ci = ci)
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
-
                 if ci:
                     metrics_dict["Metric_names"].append(loss_component)
                     metrics_dict["Metric_values"].append(total_loss[loss_component].item())

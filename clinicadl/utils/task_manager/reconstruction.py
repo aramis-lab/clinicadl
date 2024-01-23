@@ -22,7 +22,7 @@ class ReconstructionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE", "PSNR", "SSIM"]
+        return ["MAE", "RMSE", "PSNR", "SSIM"]
 
     @property
     def save_outputs(self):
@@ -31,7 +31,7 @@ class ReconstructionManager(TaskManager):
     def generate_test_row(self, idx, data, outputs):
         y = data["image"][idx]
         y_pred = outputs[idx].cpu()
-        metrics = self.metrics_module.apply(y, y_pred)
+        metrics = self.metrics_module.apply(y, y_pred, ci=False)
         row = [
             data["participant_id"][idx],
             data["session_id"][idx],
@@ -42,10 +42,50 @@ class ReconstructionManager(TaskManager):
         return [row]
 
     def compute_metrics(self, results_df, ci = False):
+        
         metrics = dict()
-        for metric in self.evaluation_metrics:
-            metrics[metric] = results_df[metric].mean()
-        return metrics
+
+        if ci:
+
+            from scipy.stats import bootstrap 
+            from numpy import mean as np_mean
+
+            metric_names = ["Metrics"]
+            metric_values = ["Values"]  
+            lower_ci_values = ["Lower bound CI"]  
+            upper_ci_values = ["Upper bound CI"]  
+            se_values = ["SE"] 
+            
+            for metric in self.evaluation_metrics:
+
+                metric_vals = results_df[metric]
+                
+                metric_result = metric_vals.mean()
+
+                metric_vals = (metric_vals, )
+                res = bootstrap(metric_vals, np_mean, confidence_level=0.95, method="percentile")
+                lower_ci, upper_ci = res.confidence_interval
+                standard_error = res.standard_error
+
+                metric_names.append(metric)
+                metric_values.append(metric_result)
+                lower_ci_values.append(lower_ci)
+                upper_ci_values.append(upper_ci)
+                se_values.append(standard_error)
+
+            metrics["Metric_names"] = metric_names
+            metrics["Metric_values"] = metric_values
+            metrics["Lower_CI"] = lower_ci_values
+            metrics["Upper_CI"] = upper_ci_values
+            metrics["SE"] = se_values
+                
+            return metrics
+
+        else:  
+            for metric in self.evaluation_metrics:
+                metrics[metric] = results_df[metric].mean()
+            return metrics
+
 
     @staticmethod
     def output_size(input_size, df, label):

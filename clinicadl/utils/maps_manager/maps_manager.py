@@ -1331,6 +1331,7 @@ class MapsManager:
             self.selection_metrics,
             amp=self.amp,
             network=network,
+           # ci = False,
         )
         self._test_loader(
             valid_loader,
@@ -1340,6 +1341,7 @@ class MapsManager:
             self.selection_metrics,
             amp=self.amp,
             network=network,
+            #ci = False,
         )
 
         if self.task_manager.save_outputs:
@@ -1698,6 +1700,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
+        ci = True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1739,13 +1742,19 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp, ci = True
+                model, dataloader, criterion, use_labels=use_labels, amp=amp, ci = ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                if ci:
+                    loss_to_log = metrics['Metric_values'][-1]
+                else:
+                    loss_to_log = metrics['loss']
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['Metric_values'][-1]} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -2557,13 +2566,24 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
+
+            # if data_group == "train" or data_group == "validation":
+            #     pd_metrics = pd.DataFrame(metrics, index = [0])
+            #     header = True
+            # else:
+            #     pd_metrics = pd.DataFrame(metrics).T
+            #     header = False
+
+            pd_metrics = pd.DataFrame(metrics).T
+            header = False
+            #import ipdb; ipdb.set_trace()
             if not metrics_path.is_file():
-                pd.DataFrame(metrics).T.to_csv(
-                    metrics_path, index=False, sep="\t", header=None
+                pd_metrics.to_csv(
+                    metrics_path, index=False, sep="\t", header=header
                 )
             else:
-                pd.DataFrame(metrics).T.to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=None
+                pd_metrics.to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=header
                 )
 
     def _ensemble_to_tsv(
@@ -2612,7 +2632,6 @@ class MapsManager:
             use_labels=use_labels,
         )
 
-        print(df_final)
         col = df_final['true_label']
         df_final['predicted_label']
 

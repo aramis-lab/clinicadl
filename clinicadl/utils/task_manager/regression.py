@@ -27,7 +27,7 @@ class RegressionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE"]
+        return ["R2_score", "MAE", "RMSE"]
 
     @property
     def save_outputs(self):
