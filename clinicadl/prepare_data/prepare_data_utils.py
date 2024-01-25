@@ -16,6 +16,8 @@ def get_parameters_dict(
     custom_suffix: str,
     tracer: str,
     suvr_reference_region: str,
+    dti_measure: str,
+    dti_space: str,
 ) -> Dict[str, Any]:
     """
     Parameters
@@ -53,6 +55,9 @@ def get_parameters_dict(
     if modality == "pet-linear":
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
+    if modality == "dwi-dti":
+        parameters["dti_space"] = dti_space
+        parameters["dti_measure"] = dti_measure
 
     parameters["extract_json"] = compute_extract_json(extract_json)
 
@@ -72,8 +77,6 @@ def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
     from clinica.utils.input_files import (
-        DWI_PREPROC_BRAINMASK,
-        DWI_PREPROC_NII,
         FLAIR_T2W_LINEAR,
         FLAIR_T2W_LINEAR_CROPPED,
         T1W_EXTENSIVE,
@@ -81,6 +84,7 @@ def compute_folder_and_file_type(
         T1W_LINEAR_CROPPED,
         T2W_LINEAR,
         T2W_LINEAR_CROPPED,
+        dwi_dti,
         pet_linear_nii,
     )
 
@@ -117,12 +121,13 @@ def compute_folder_and_file_type(
             parameters["use_uncropped_image"],
         )
 
-    elif parameters["preprocessing"] == "dwi":
-        mod_subfolder = "dwi"
-        if parameters["brain_mask"]:
-            file_type = DWI_PREPROC_BRAINMASK
-        else:
-            file_type = DWI_PREPROC_NII
+    elif parameters["preprocessing"] == "dwi-dti":
+        mod_subfolder = "dti"
+        if parameters["dti_space"] == "native":
+            file_type = dwi_dti(parameters["dti_measure"], space="*")
+        elif parameters["dti_space"] == "normalized":
+            file_type = dwi_dti(parameters["dti_measure"], space="T1w")
+        print(file_type)
 
     elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"

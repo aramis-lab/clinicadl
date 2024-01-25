@@ -44,7 +44,6 @@ modality = click.argument(
             "t1-linear",
             "t2-linear",
             "t1-extensive",
-            "dwi",
             "dwi-dti",
             "pet-linear",
             "flair-linear",
