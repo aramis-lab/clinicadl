@@ -17,12 +17,19 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    check_caps_folder(caps_directory)
-    logger.debug(f"CAPS directory: {caps_directory}.")
-    is_bids_dir = False
+    if parameters["from_bids"]:
+        logger.debug(f"BIDS directory: {caps_directory}.")
+        is_bids_dir = True
+    else:
+        check_caps_folder(caps_directory)
+        logger.debug(f"CAPS directory: {caps_directory}.")
+        is_bids_dir = False
+
     sessions, subjects = get_subject_session_list(
         caps_directory, tsv_file, is_bids_dir, False, None
     )
+    print(sessions)
+    print(subjects)
     if parameters["prepare_dl"]:
         logger.info(
             f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
@@ -45,6 +52,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     )
     mod_subfolder, file_type = compute_folder_and_file_type(parameters)
     parameters["file_type"] = file_type
+    print("mod subfolder", mod_subfolder)
+    print("file_type", file_type)
+    print(caps_directory.as_posix())
 
     # Input file:
     input_files = clinica_file_reader(

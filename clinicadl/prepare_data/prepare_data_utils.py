@@ -16,6 +16,7 @@ def get_parameters_dict(
     custom_suffix: str,
     tracer: str,
     suvr_reference_region: str,
+    from_bids: bool,
 ) -> Dict[str, Any]:
     """
     Parameters
@@ -55,6 +56,7 @@ def get_parameters_dict(
         parameters["suvr_reference_region"] = suvr_reference_region
 
     parameters["extract_json"] = compute_extract_json(extract_json)
+    parameters["from_bids"] = from_bids
 
     return parameters
 
@@ -72,44 +74,88 @@ def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
     from clinica.utils.input_files import (
+        DWI_NII,
         FLAIR_T2W_LINEAR,
         FLAIR_T2W_LINEAR_CROPPED,
+        FMAP_MAGNITUDE1_NII,
+        FMAP_PHASEDIFF_NII,
         T1W_LINEAR,
         T1W_LINEAR_CROPPED,
+        T1W_NII,
+        Flair_T2W_NII,
+        bids_pet_nii,
         pet_linear_nii,
     )
 
-    if parameters["preprocessing"] == "t1-linear":
-        mod_subfolder = "t1_linear"
-        if parameters["use_uncropped_image"]:
-            file_type = T1W_LINEAR
-        else:
-            file_type = T1W_LINEAR_CROPPED
+    if parameters["from_bids"]:
+        if parameters["preprocessing"] == "t1-linear":
+            mod_subfolder = "t1_linear"
+            file_type = T1W_NII
 
-    elif parameters["preprocessing"] == "flair-linear":
-        mod_subfolder = "flair_linear"
-        if parameters["use_uncropped_image"]:
-            file_type = FLAIR_T2W_LINEAR
+        elif parameters["preprocessing"] == "flair-linear":
+            mod_subfolder = "flair_linear"
+            file_type = Flair_T2W_NII
+
+        elif parameters["preprocessing"] == "pet-linear":
+            mod_subfolder = "pet_linear"
+            file_type = bids_pet_nii(parameters["tracer"])
+
+        elif parameters["preprocessing"] == "fmap-magnitude1":
+            mod_subfolder = "fmap_magnitude1"
+            file_type = FMAP_MAGNITUDE1_NII  # FMAP
+
+        elif parameters["preprocessing"] == "fmap-phasediff":
+            mod_subfolder = "fmap_phasediff"
+            file_type = FMAP_PHASEDIFF_NII
+
+        elif parameters["preprocessing"] == "dwi":
+            mod_subfolder = "dwi"
+            file_type = DWI_NII
+
+        elif parameters["preprocessing"] == "custom":
+            mod_subfolder = "custom"
+            file_type = {
+                "pattern": f"*{parameters['custom_suffix']}",
+                "description": "Custom suffix",
+            }
+
         else:
-            file_type = FLAIR_T2W_LINEAR_CROPPED
-    elif parameters["preprocessing"] == "pet-linear":
-        mod_subfolder = "pet_linear"
-        file_type = pet_linear_nii(
-            parameters["tracer"],
-            parameters["suvr_reference_region"],
-            parameters["use_uncropped_image"],
-        )
-    elif parameters["preprocessing"] == "custom":
-        mod_subfolder = "custom"
-        file_type = {
-            "pattern": f"*{parameters['custom_suffix']}",
-            "description": "Custom suffix",
-        }
-        parameters["use_uncropped_image"] = None
+            raise NotImplementedError(
+                f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from BIDS directory."
+            )
+
     else:
-        raise NotImplementedError(
-            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented."
-        )
+        if parameters["preprocessing"] == "t1-linear":
+            mod_subfolder = "t1_linear"
+            if parameters["use_uncropped_image"]:
+                file_type = T1W_LINEAR
+            else:
+                file_type = T1W_LINEAR_CROPPED
+
+        elif parameters["preprocessing"] == "flair-linear":
+            mod_subfolder = "flair_linear"
+            if parameters["use_uncropped_image"]:
+                file_type = FLAIR_T2W_LINEAR
+            else:
+                file_type = FLAIR_T2W_LINEAR_CROPPED
+        elif parameters["preprocessing"] == "pet-linear":
+            mod_subfolder = "pet_linear"
+            file_type = pet_linear_nii(
+                parameters["tracer"],
+                parameters["suvr_reference_region"],
+                parameters["use_uncropped_image"],
+            )
+        elif parameters["preprocessing"] == "custom":
+            mod_subfolder = "custom"
+            file_type = {
+                "pattern": f"*{parameters['custom_suffix']}",
+                "description": "Custom suffix",
+            }
+            parameters["use_uncropped_image"] = None
+        else:
+            raise NotImplementedError(
+                f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
+            )
 
     return mod_subfolder, file_type
 
