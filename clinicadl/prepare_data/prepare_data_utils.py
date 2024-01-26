@@ -79,7 +79,6 @@ def compute_folder_and_file_type(
     from clinica.utils.input_files import (
         FLAIR_T2W_LINEAR,
         FLAIR_T2W_LINEAR_CROPPED,
-        T1W_EXTENSIVE,
         T1W_LINEAR,
         T1W_LINEAR_CROPPED,
         T2W_LINEAR,
@@ -101,10 +100,6 @@ def compute_folder_and_file_type(
             file_type = T2W_LINEAR
         else:
             file_type = T2W_LINEAR_CROPPED
-
-    elif parameters["preprocessing"] == "t1-extensive":
-        mod_subfolder = "t1_extensive"
-        file_type = T1W_EXTENSIVE
 
     elif parameters["preprocessing"] == "flair-linear":
         mod_subfolder = "flair_linear"
