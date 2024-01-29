@@ -31,21 +31,22 @@ class ReconstructionManager(TaskManager):
     def generate_test_row(self, idx, data, outputs):
         y = data["image"][idx]
         y_pred = outputs[idx].cpu()
-        metrics = self.metrics_module.apply(y, y_pred, ci=False)
+        metrics = self.metrics_module.apply(y, y_pred, report_ci=False)
         row = [
             data["participant_id"][idx],
             data["session_id"][idx],
             data[f"{self.mode}_id"][idx].item(),
         ]
+
         for metric in self.evaluation_metrics:
             row.append(metrics[metric])
         return [row]
 
-    def compute_metrics(self, results_df, ci = False):
+    def compute_metrics(self, results_df, report_ci = False):
         
         metrics = dict()
 
-        if ci:
+        if report_ci:
 
             from scipy.stats import bootstrap 
             from numpy import mean as np_mean
@@ -63,7 +64,11 @@ class ReconstructionManager(TaskManager):
                 metric_result = metric_vals.mean()
 
                 metric_vals = (metric_vals, )
-                res = bootstrap(metric_vals, np_mean, confidence_level=0.95, method="percentile")
+                res = bootstrap(metric_vals, 
+                                np_mean, 
+                                n_resamples = 3000,
+                                confidence_level=0.95, 
+                                method="percentile")
                 lower_ci, upper_ci = res.confidence_interval
                 standard_error = res.standard_error
 

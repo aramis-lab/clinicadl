@@ -1331,7 +1331,6 @@ class MapsManager:
             self.selection_metrics,
             amp=self.amp,
             network=network,
-           # ci = False,
         )
         self._test_loader(
             valid_loader,
@@ -1341,7 +1340,6 @@ class MapsManager:
             self.selection_metrics,
             amp=self.amp,
             network=network,
-            #ci = False,
         )
 
         if self.task_manager.save_outputs:
@@ -1700,7 +1698,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
-        ci = True,
+        report_ci = True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1742,13 +1740,13 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp, ci = ci
+                model, dataloader, criterion, use_labels=use_labels, amp=amp, report_ci = report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
 
-                if ci:
+                if report_ci:
                     loss_to_log = metrics['Metric_values'][-1]
                 else:
                     loss_to_log = metrics['loss']
@@ -1779,6 +1777,7 @@ class MapsManager:
         gpu=None,
         network=None,
         target=False,
+        report_ci = True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1820,12 +1819,19 @@ class MapsManager:
                 dataloader,
                 criterion,
                 target=target,
+                report_ci = report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                if report_ci:
+                    loss_to_log = metrics['Metric_values'][-1]
+                else:
+                    loss_to_log = metrics['loss']
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             # Replace here
