@@ -4,6 +4,7 @@ from pathlib import Path
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
+    from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
     from joblib import Parallel, delayed
     from torch import save as save_tensor
@@ -11,25 +12,23 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
-    from .prepare_data_utils import (
-        check_mask_list,
-        compute_folder_and_file_type,
-        container_from_filename,
-    )
+    from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
 
     logger = getLogger("clinicadl.prepare_data")
-    print(parameters["from_bids"])
+
     # Get subject and session list
-    if parameters["from_bids"]:
-        logger.debug(f"BIDS directory: {caps_directory}.")
+    if parameters["from_bids"] is not None:
+        input_directory = Path(parameters["from_bids"])
+        logger.debug(f"BIDS directory: {input_directory}.")
         is_bids_dir = True
     else:
-        check_caps_folder(caps_directory)
-        logger.debug(f"CAPS directory: {caps_directory}.")
+        input_directory = caps_directory
+        check_caps_folder(input_directory)
+        logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
 
     subjects, sessions = get_subject_session_list(
-        caps_directory, tsv_file, is_bids_dir, False, None
+        input_directory, tsv_file, is_bids_dir, False, None
     )
     if parameters["prepare_dl"]:
         logger.info(
@@ -55,15 +54,12 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     parameters["file_type"] = file_type
     # Input file:
     input_files = clinica_file_reader(
-        subjects, sessions, caps_directory.as_posix(), file_type
+        subjects, sessions, input_directory.as_posix(), file_type
     )[0]
     logger.debug(f"Selected image file name list: {input_files}.")
-    print(f"input_files: {input_files}")
 
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
-        print("container", container)
-        print("subfolder", subfolder)
         for filename, tensor in output_mode:
             output_file_dir = (
                 caps_directory
@@ -83,7 +79,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             from .prepare_data_utils import extract_images
 
             logger.debug(f"Processing of {file}.")
-            container = container_from_filename(file, parameters["from_bids"])
+            container = container_from_filename(file)
             subfolder = "image_based"
             output_mode = extract_images(Path(file))
             logger.debug(f"Image extracted.")
@@ -97,7 +93,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             from .prepare_data_utils import extract_slices
 
             logger.debug(f"  Processing of {file}.")
-            container = container_from_filename(file, parameters["from_bids"])
+            container = container_from_filename(file)
             subfolder = "slice_based"
             output_mode = extract_slices(
                 Path(file),
@@ -116,7 +112,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             from .prepare_data_utils import extract_patches
 
             logger.debug(f"  Processing of {file}.")
-            container = container_from_filename(file, parameters["from_bids"])
+            container = container_from_filename(file)
             subfolder = "patch_based"
             output_mode = extract_patches(
                 Path(file),
@@ -134,7 +130,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             from .prepare_data_utils import extract_roi
 
             logger.debug(f"  Processing of {file}.")
-            container = container_from_filename(file, parameters["from_bids"])
+            container = container_from_filename(file)
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
                 if not parameters["roi_custom_template"]:
@@ -152,7 +148,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                 ]
 
             parameters["masks_location"] = (
-                caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
+                input_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
             if len(parameters["roi_list"]) == 0:

@@ -176,8 +176,7 @@ custom_suffix = click.option(
 from_bids = click.option(
     "-fb",
     "--from_bids",
-    is_flag=True,
-    default=False,
+    type=str,
     help="Use a BIDS directory for input.",
 )
 
