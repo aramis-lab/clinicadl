@@ -294,6 +294,14 @@ learning_rate = cli_param.option_group.optimization_group.option(
     # default=1e-4,
     help="Learning rate of the optimization.",
 )
+adaptive_learning_rate = cli_param.option_group.optimization_group.option(
+    "--adaptive_lr",
+    "-alr",
+    type=bool,
+    help="Whether to diminish the learning rate",
+    is_flag=True,
+    default=False,
+)
 weight_decay = cli_param.option_group.optimization_group.option(
     "--weight_decay",
     "-wd",

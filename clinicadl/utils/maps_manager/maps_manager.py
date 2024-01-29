@@ -1118,13 +1118,13 @@ class MapsManager:
         epoch = beginning_epoch
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
-        self.parameters["adaptive_lr"] = True
+
         if self.parameters["adaptive_lr"]:
             from torch.optim.lr_scheduler import ReduceLROnPlateau
 
             # Initialize the ReduceLROnPlateau scheduler
             scheduler = ReduceLROnPlateau(
-                optimizer, mode="min", factor=0.1, patience=5, verbose=True
+                optimizer, mode="min", factor=0.1, verbose=True
             )
 
         scaler = GradScaler(enabled=self.amp)
@@ -1324,11 +1324,9 @@ class MapsManager:
                     save_all_models=self.parameters["save_all_models"],
                 )
             if self.parameters["adaptive_lr"]:
-                print("loss valid", metrics_valid["loss"])
                 scheduler.step(
                     metrics_valid["loss"]
                 )  # Update learning rate based on validation loss
-                print("optimizer.lr", optimizer.param_groups[0]["lr"])
 
             epoch += 1
 
