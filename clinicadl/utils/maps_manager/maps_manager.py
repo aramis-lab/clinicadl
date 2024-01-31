@@ -212,6 +212,7 @@ class MapsManager:
         save_tensor: bool = False,
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
+        skip_leak_check: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -264,6 +265,7 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
+            skip_leak_check=skip_leak_check,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -2239,6 +2241,7 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        skip_leak_check=False,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -2295,7 +2298,10 @@ class MapsManager:
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            self._check_leakage(data_group, df)
+            if skip_leak_check:
+                logger.info("Skipping data leakage check")
+            else:
+                self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
