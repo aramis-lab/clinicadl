@@ -56,24 +56,23 @@ tags:
 license: mit
 ---
 """
+    if hf_hub_path == "clinicadl" or hf_hub_path == "Clinicadl":
+        hf_hub_path = "ClinicaDL"
 
     config_file = maps_dir / "maps.json"
     n_splits, validation = create_readme(
         config_file=config_file, model_name=model_name, model_card=model_card_
     )
-
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
-
     api = HfApi()
     hf_operations = []
-
     id_ = os.path.join(hf_hub_path, model_name)
-
     user = api.whoami()
     list_orgs = [x["name"] for x in user["orgs"]]
+    print(list_orgs)
 
-    if hf_hub_path == "clinicadl-test":
-        if "clinicadl-test" not in list_orgs:
+    if hf_hub_path == "ClinicaDL":
+        if "ClinicaDL" not in list_orgs:
             raise ClinicaDLArgumentError(
                 "You're not in the ClinicaDL organization on Hugging Face. Please follow the link to request to join the organization: https://huggingface.co/clinicadl-test"
             )
@@ -83,7 +82,7 @@ license: mit
         )
 
     hf_operations = [
-        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="README.md"),
+        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="tmp_README.md"),
         CommitOperationAdd(
             path_in_repo="maps.json", path_or_fileobj=maps_dir / "maps.json"
         ),
@@ -139,6 +138,7 @@ license: mit
             repo_id=id_,
             operations=hf_operations,
         )
+    os.remove("tmp_README.md")
 
 
 def create_readme(
@@ -170,7 +170,7 @@ def create_readme(
     for name in train_dict:
         default_dict[name] = train_dict[name]
 
-    file = open("README.md", "w")
+    file = open("tmp_README.md", "w")
     list_lines = []
     list_lines.append(model_card)
     list_lines.append(f"# Model Card for {model_name}  \n")
@@ -198,7 +198,6 @@ def create_readme(
     list_lines.append(f"**kl_weight**: {default_dict['kl_weight']}  \n")
     list_lines.append(f"**normalization**: {default_dict['normalization']}  \n")
 
-    print("test")
     for name in train_dict.keys():
         list_lines.append(f"**{name}**: {train_dict[name]}  \n")
     file.writelines(list_lines)
