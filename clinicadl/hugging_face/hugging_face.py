@@ -19,12 +19,9 @@ def hf_hub_is_available():
 
 def push_to_hf_hub(
     hf_hub_path: str,
-    maps_name: str,
     maps_dir: Path,
     model_name: str,
     dataset: [],
-    split_list: list = [0],
-    loss_list: str = ["best-loss"],
     paper_link: str = None,
 ):
     if not hf_hub_is_available():
@@ -146,7 +143,6 @@ def create_readme(
 ):
     if not config_file.is_file():
         raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
-    import json
 
     import toml
 
