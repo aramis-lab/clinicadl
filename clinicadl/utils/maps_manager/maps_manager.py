@@ -238,8 +238,11 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
+        print(split_list)
         if not split_list:
+            print("in")
             split_list = self._find_splits()
+        print(split_list)
         logger.debug(f"List of splits {split_list}")
 
         _, all_transforms = get_transforms(
@@ -257,6 +260,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
+
         self._check_data_group(
             data_group,
             caps_directory,
@@ -264,8 +268,10 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
+            split_list=split_list,
         )
         for split in split_list:
+
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(data_group, split)
             # Find label code if not given
@@ -2239,6 +2245,7 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        split_list=None,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -2266,7 +2273,8 @@ class MapsManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_dir)
-                    split_list = self._find_splits()
+                    if not split_list:
+                        split_list = self._find_splits()
                     for split in split_list:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
