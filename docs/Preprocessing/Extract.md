@@ -29,12 +29,13 @@ which have the same arguments:
   can be `t1-linear`, `flair-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
-Each sub-command has its own set of options. There are three generic options:
+Each sub-command has its own set of options. There are four generic options:
 
 - `--subjects_sessions_tsv` (Path) is a path to a TSV file listing participant and session IDs. 
 - `--extract_json` (str) is the name of the JSON file that will be created to store all the information
   of the extraction step. Default will name the JSON file `extract_{time_stamp}.json`.
 - `--n_proc` (int) is the number of workers used to parallelize tensor extraction. Default: `2`.
+- `--from_bids` (Path) is a path to a BIDS from which the CAPS will be created. It creates a CAPS with only the tensors extracted to avoid any preprocessing. 
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to
