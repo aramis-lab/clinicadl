@@ -1,16 +1,42 @@
 import inspect
+import linecache
+import logging
 from dataclasses import dataclass
+from functools import partial
 from logging import Logger
 from textwrap import dedent
 from types import CodeType, FunctionType, MethodType
-from typing import Any, Optional, Set
+from typing import Any, Optional, Set, Union
+from uuid import uuid4
 
 import torch
 import torch.distributed as dist
-from torch.nn import Module
+from packaging.version import Version
+from torch.nn import Module, Sequential
 from torch.nn.parallel import DistributedDataParallel
+from torch.optim import Optimizer
+
+try:
+    from torch.distributed.fsdp import (
+        FullOptimStateDictConfig,
+        FullStateDictConfig,
+        FullyShardedDataParallel,
+        MixedPrecision,
+        ShardingStrategy,
+        StateDictType,
+    )
+    from torch.distributed.fsdp.wrap import (
+        _module_wrap_policy,
+        size_based_auto_wrap_policy,
+    )
+except ImportError:
+    fsdp_available = False
+else:
+    fsdp_available = True
 
 from . import cluster
+
+logger = logging.getLogger("DDP")
 
 
 @dataclass
@@ -104,7 +130,8 @@ def monkeypatch(model: Module) -> None:
             monkeypatched_code = dedent(
                 source_code.replace("self.forward", "self._forward")
             )
-            compiled_code = compile(monkeypatched_code, "<string>", "exec")
+            filename = f"<dynamic-{int(uuid4())}>"
+            compiled_code = compile(monkeypatched_code, filename, "exec")
 
             # If the function has default arguments, then the code of the function
             # will not be the first constant in the defined code but will be after
@@ -114,6 +141,16 @@ def monkeypatch(model: Module) -> None:
                     break
             else:
                 raise ValueError("Expected to find code object, did not find any.")
+
+            # Store the patched code source in the cache so that it can be retrieved
+            # later on by inspect.getsource. Otherwise, inspect would not be
+            # able to get source code from dynamically generated functions.
+            linecache.cache[filename] = (
+                len(monkeypatched_code),
+                None,
+                [line + "\n" for line in monkeypatched_code.splitlines()],
+                filename,
+            )
 
             # Convert code to a method bound to the given model.
             function = FunctionType(
@@ -130,11 +167,61 @@ def monkeypatch(model: Module) -> None:
     model.forward = MethodType(forward, model)
 
 
-class DDP(DistributedDataParallel):
-    def __init__(self, model: Module, *args, **kwargs):
-        monkeypatch(model)
-        super().__init__(model, *args, **kwargs)
+if fsdp_available:
 
+    class FSDP(FullyShardedDataParallel):
+        def __init__(self, model: Module, amp: bool = False):
+            sharding_strategy = ShardingStrategy.FULL_SHARD
+            if amp:
+                mixed_precision = MixedPrecision(
+                    param_dtype=torch.float16,
+                    reduce_dtype=torch.float16,
+                    buffer_dtype=torch.float16,
+                    keep_low_precision_grads=False,
+                )
+            else:
+                mixed_precision = None
+
+            def custom_wrap_policy(*args, **kwargs):
+                return _module_wrap_policy(
+                    *args, **kwargs, module_classes=(Sequential,)
+                ) or size_based_auto_wrap_policy(*args, **kwargs, min_num_params=1e5)
+
+            super().__init__(
+                model,
+                sharding_strategy=sharding_strategy,
+                mixed_precision=mixed_precision,
+                cpu_offload=None,
+                auto_wrap_policy=custom_wrap_policy,
+            )
+            self.set_state_dict_type(
+                self,
+                StateDictType.FULL_STATE_DICT,
+                FullStateDictConfig(offload_to_cpu=True, rank0_only=True),
+                FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=True),
+            )
+
+        def transfer_weights(self, *args, **kwargs):
+            raise RuntimeError("Please transfer weights before converting to FSDP.")
+
+        def optim_state_dict(self, optimizer: Optimizer):
+            return super().optim_state_dict(self, optimizer)
+
+        def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+            optim_state_dict = self.optim_state_dict_to_load(
+                optim_state_dict=state_dict,
+                model=self,
+                optim=optimizer,
+            )
+            optimizer.load_state_dict(optim_state_dict)
+
+else:
+
+    class FSDP(object):
+        pass
+
+
+class ClinicaDDP(DistributedDataParallel):
     def _forward(self, *args, **kwargs):
         return self.module._forward(*args, **kwargs)
 
@@ -146,6 +233,50 @@ class DDP(DistributedDataParallel):
 
     def state_dict(self):
         return self.module.state_dict()
+
+    def optim_state_dict(self, optimizer: Optimizer):
+        return optimizer.state_dict()
+
+    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+        optimizer.load_state_dict(state_dict)
+
+
+class DDP:
+    def __new__(
+        cls, model: Module, fsdp: bool = False, amp: bool = False
+    ) -> Union[ClinicaDDP, FSDP]:
+        monkeypatch(model)
+
+        if fsdp:
+            if Version(torch.__version__) < Version("2.0.0"):
+                logger.warning(
+                    "We do not support FullyShardedDataParallel before Pytorch 2."
+                    " Falling back to standard distributed data parallelism."
+                )
+                return ClinicaDDP(model)
+
+            if fsdp_available:
+                return FSDP(model, amp=amp)
+            else:
+                logger.warning(
+                    "FSDP is not available on your system, falling back "
+                    "to standard distributed data parallelism."
+                )
+                return ClinicaDDP(model)
+        else:
+            return ClinicaDDP(model)
+
+    def optim_state_dict(self, optimizer: Optimizer):
+        ...
+
+    def state_dict(self):
+        ...
+
+    def load_state_dict(self, state_dict: dict):
+        ...
+
+    def load_optim_state_dict(self, optimizer: Optimizer, state_dict: dict):
+        ...
 
 
 def get_backend(gpu: bool = False) -> str:
