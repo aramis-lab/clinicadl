@@ -24,6 +24,7 @@ from .task_utils import task_launcher
 @train_option.seed
 @train_option.deterministic
 @train_option.compensation
+@train_option.save_all_models
 # Model
 @train_option.architecture
 @train_option.multi_network

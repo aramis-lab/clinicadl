@@ -81,6 +81,12 @@ compensation = cli_param.option_group.reproducibility_group.option(
     # default="memory",
     type=click.Choice(["memory", "time"]),
 )
+save_all_models = cli_param.option_group.reproducibility_group.option(
+    "--save_all_models/--save_only_best_model",
+    type=bool,
+    help="If provided, enables the saving of models weights for each epochs.",
+)
+
 # Model
 architecture = cli_param.option_group.model_group.option(
     "-a",
