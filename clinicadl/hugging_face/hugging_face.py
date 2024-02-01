@@ -57,7 +57,7 @@ license: mit
         hf_hub_path = "ClinicaDL"
 
     config_file = maps_dir / "maps.json"
-    n_splits, validation = create_readme(
+    n_splits = create_readme(
         config_file=config_file, model_name=model_name, model_card=model_card_
     )
     logger.info(f"Uploading {model_name} model to {hf_hub_path} repo in HF hub...")
@@ -151,54 +151,54 @@ def create_readme(
         Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
     )
     config_dict = toml.load(config_path)
+
     train_dict = read_json(config_file)
+    train_dict = change_str_to_path(train_dict)
 
     task = train_dict["network_task"]
+
     config_dict = remove_unused_tasks(config_dict, task)
     config_dict = change_str_to_path(config_dict)
-
-    default_dict = dict()
-    for config_section in config_dict:
-        for key in config_dict[config_section]:
-            default_dict[key] = config_dict[config_section][key]
-
-    train_dict = change_str_to_path(train_dict)
-    for name in train_dict:
-        default_dict[name] = train_dict[name]
 
     file = open("tmp_README.md", "w")
     list_lines = []
     list_lines.append(model_card)
     list_lines.append(f"# Model Card for {model_name}  \n")
     list_lines.append(
-        f"This model was trained with ClinicaDL. You can find here the   \n"
+        f"This model was trained with ClinicaDL. You can find here all the information.\n"
     )
 
     list_lines.append(f"## General information  \n")
 
-    if default_dict["multi_cohort"]:
+    if train_dict["multi_cohort"]:
         list_lines.append(
             f"This model was trained on several datasets at the same time.   \n"
         )
-
-    list_lines.append(f"## Architecture  \n")
     list_lines.append(
-        f"This model was trained for **{default_dict['network_task']}** and the architecture chosen is **{default_dict['architecture']}**.  \n"
+        f"This model was trained for **{task}** and the architecture chosen is **{train_dict['architecture']}**.  \n"
     )
-    list_lines.append(f"**dropout**: {default_dict['dropout']}  \n")
-    list_lines.append(f"**latent_space_size**: {default_dict['latent_space_size']}  \n")
-    list_lines.append(f"**feature_size**: {default_dict['feature_size']}  \n")
-    list_lines.append(f"**n_conv**: {default_dict['n_conv']}  \n")
-    list_lines.append(f"**io_layer_channels**: {default_dict['io_layer_channels']}  \n")
-    list_lines.append(f"**recons_weight**: {default_dict['recons_weight']}  \n")
-    list_lines.append(f"**kl_weight**: {default_dict['kl_weight']}  \n")
-    list_lines.append(f"**normalization**: {default_dict['normalization']}  \n")
 
-    for name in train_dict.keys():
-        list_lines.append(f"**{name}**: {train_dict[name]}  \n")
+    for config_section in config_dict:
+        list_lines.append(f"### {config_section}  \n")
+        for key in config_dict[config_section]:
+            if key == "preprocessing_dict":
+                list_lines.append(f"### Preprocessing  \n")
+                for key_bis in config_dict[config_section][key]:
+                    list_lines.append(
+                        f"**{key_bis}**: {config_dict[config_section][key][key_bis]}  \n"
+                    )
+            else:
+                if key in train_dict:
+                    config_dict[config_section][key] = train_dict[key]
+                    train_dict.pop(key)
+                list_lines.append(f"**{key}**: {config_dict[config_section][key]}  \n")
+    list_lines.append(f"### Other information  \n")
+    for key in train_dict:
+        list_lines.append(f"**{key}**: {train_dict[key]}  \n")
+
     file.writelines(list_lines)
     file.close()
-    return default_dict["n_splits"], default_dict["validation"]
+    return config_dict["Cross_validation"]["n_splits"]
 
 
 def load_from_hf_hub(
