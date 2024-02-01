@@ -63,40 +63,40 @@ class CallbacksHandler:
     def callback_list(self):
         return "\n".join(cb.__class__.__name__ for cb in self.callbacks)
 
-    def on_train_begin(self, parameters, **kwargs):
-        self.call_event("on_train_begin", parameters, **kwargs)
+    def on_train_begin(self, data_config, **kwargs):
+        self.call_event("on_train_begin", data_config, **kwargs)
 
-    def on_train_end(self, parameters, **kwargs):
-        self.call_event("on_train_end", parameters, **kwargs)
+    def on_train_end(self, data_config, **kwargs):
+        self.call_event("on_train_end", data_config, **kwargs)
 
-    def on_epoch_begin(self, parameters, **kwargs):
-        self.call_event("on_epoch_begin", parameters, **kwargs)
+    def on_epoch_begin(self, data_config, **kwargs):
+        self.call_event("on_epoch_begin", data_config, **kwargs)
 
-    def on_epoch_end(self, parameters, **kwargs):
-        self.call_event("on_epoch_end", parameters, **kwargs)
+    def on_epoch_end(self, data_config, **kwargs):
+        self.call_event("on_epoch_end", data_config, **kwargs)
 
-    def on_batch_begin(self, parameters, **kwargs):
-        self.call_event("on_batch_begin", parameters, **kwargs)
+    def on_batch_begin(self, data_config, **kwargs):
+        self.call_event("on_batch_begin", data_config, **kwargs)
 
-    def on_batch_end(self, parameters, **kwargs):
-        self.call_event("on_batch_end", parameters, **kwargs)
+    def on_batch_end(self, data_config, **kwargs):
+        self.call_event("on_batch_end", data_config, **kwargs)
 
-    def on_loss_begin(self, parameters, **kwargs):
-        self.call_event("on_loss_begin", parameters, **kwargs)
+    def on_loss_begin(self, data_config, **kwargs):
+        self.call_event("on_loss_begin", data_config, **kwargs)
 
-    def on_loss_end(self, parameters, **kwargs):
-        self.call_event("on_loss_end", parameters, **kwargs)
+    def on_loss_end(self, data_config, **kwargs):
+        self.call_event("on_loss_end", data_config, **kwargs)
 
-    def on_step_begin(self, parameters, **kwargs):
-        self.call_event("on_step_begin", parameters, **kwargs)
+    def on_step_begin(self, data_config, **kwargs):
+        self.call_event("on_step_begin", data_config, **kwargs)
 
-    def on_step_end(self, parameters, **kwargs):
-        self.call_event("on_step_end", parameters, **kwargs)
+    def on_step_end(self, data_config, **kwargs):
+        self.call_event("on_step_end", data_config, **kwargs)
 
-    def call_event(self, event, parameters, **kwargs):
+    def call_event(self, event, data_config, **kwargs):
         for callback in self.callbacks:
             result = getattr(callback, event)(
-                parameters,
+                data_config,
                 # model=self.model,
                 **kwargs,
             )
@@ -113,12 +113,12 @@ class CallbacksHandler:
 
 
 class CodeCarbonTracker(Callback):
-    def on_train_begin(self, parameters, **kwargs):
+    def on_train_begin(self, data_config, **kwargs):
         from codecarbon import EmissionsTracker
 
         # my_logger = LoggerOutput(logger, logging.WARNING)
         self.tracker = EmissionsTracker()
         self.tracker.start()
 
-    def on_train_end(self, parameters, **kwargs):
+    def on_train_end(self, data_config, **kwargs):
         self.tracker.stop()
