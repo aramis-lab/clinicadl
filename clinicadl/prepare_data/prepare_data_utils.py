@@ -89,6 +89,45 @@ def compute_folder_and_file_type(
             mod_subfolder = parameters["preprocessing"]
             file_type = bids_nii(parameters["preprocessing"])
 
+<<<<<<< HEAD
+=======
+    elif parameters["preprocessing"] == "t2-linear":
+        mod_subfolder = "t2_linear"
+        if parameters["use_uncropped_image"]:
+            file_type = T2W_LINEAR
+        else:
+            file_type = T2W_LINEAR_CROPPED
+
+    elif parameters["preprocessing"] == "flair-linear":
+        mod_subfolder = "flair_linear"
+        if parameters["use_uncropped_image"]:
+            file_type = FLAIR_T2W_LINEAR
+        else:
+            file_type = FLAIR_T2W_LINEAR_CROPPED
+
+    elif parameters["preprocessing"] == "pet-linear":
+        mod_subfolder = "pet_linear"
+        file_type = pet_linear_nii(
+            parameters["tracer"],
+            parameters["suvr_reference_region"],
+            parameters["use_uncropped_image"],
+        )
+
+    elif parameters["preprocessing"] == "dwi-dti":
+        mod_subfolder = "dti"
+        if parameters["dti_space"] == "native":
+            file_type = dwi_dti(parameters["dti_measure"], space="*")
+        elif parameters["dti_space"] == "normalized":
+            file_type = dwi_dti(parameters["dti_measure"], space="T1w")
+
+    elif parameters["preprocessing"] == "custom":
+        mod_subfolder = "custom"
+        file_type = {
+            "pattern": f"*{parameters['custom_suffix']}",
+            "description": "Custom suffix",
+        }
+        parameters["use_uncropped_image"] = None
+>>>>>>> 3e70dd56 (remove forgotten prints)
     else:
         if parameters["preprocessing"] == "t1-linear":
             mod_subfolder = "t1_linear"
