@@ -122,7 +122,6 @@ def compute_folder_and_file_type(
             file_type = dwi_dti(parameters["dti_measure"], space="*")
         elif parameters["dti_space"] == "normalized":
             file_type = dwi_dti(parameters["dti_measure"], space="T1w")
-        print(file_type)
 
     elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
