@@ -558,3 +558,16 @@ def extract_roi_path(img_path: Path, mask_path: Path, uncrop_output: bool) -> st
     output_pattern = compute_output_pattern(mask_path, not uncrop_output)
 
     return f"{sub_ses_prefix}_{output_pattern}_{input_suffix}.pt"
+
+
+TEMPLATE_DICT = {
+    "t1-linear": "MNI152NLin2009cSym",
+    "pet-linear": "MNI152NLin2009cSym",
+    "flair-linear": "MNI152NLin2009cSym",
+}
+
+PATTERN_DICT = {
+    "t1-linear": "res-1x1x1",
+    "pet-linear": "res-1x1x1",
+    "flair-linear": "res-1x1x1",
+}
