@@ -4,6 +4,7 @@
 This file generates data for trivial or intractable (random) data for binary classification.
 """
 import tarfile
+from collections import namedtuple
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -13,13 +14,12 @@ import numpy as np
 import pandas as pd
 import torch
 import torchio as tio
-from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
-from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.clinica_utils import clinicadl_file_reader, fetch_file
 from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -35,6 +35,8 @@ from .generate_utils import (
 )
 
 logger = getLogger("clinicadl.generate")
+
+RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
 
 
 def generate_random_dataset(
@@ -126,7 +128,7 @@ def generate_random_dataset(
     )
 
     image_path = Path(
-        clinica_file_reader(
+        clinicadl_file_reader(
             [participant_id], [session_id], caps_dict[cohort], file_type
         )[0][0]
     )
@@ -311,7 +313,7 @@ def generate_trivial_dataset(
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
         image_path = Path(
-            clinica_file_reader(
+            clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
             )[0][0]
         )
@@ -607,7 +609,7 @@ def generate_hypometabolic_dataset(
     sessions = [data_df.loc[i, "session_id"] for i in range(n_subjects)]
     cohort = caps_directory
 
-    images_paths = clinica_file_reader(participants, sessions, cohort, file_type)[0]
+    images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
     image_nii = nib.load(images_paths[0])
 
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
@@ -765,7 +767,7 @@ def generate_artifacts_dataset(
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
         image_path = Path(
-            clinica_file_reader(
+            clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
             )[0][0]
         )

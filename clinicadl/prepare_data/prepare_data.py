@@ -3,12 +3,15 @@ from pathlib import Path
 
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
-    from clinica.utils.inputs import check_caps_folder, clinica_file_reader
-    from clinica.utils.nipype import container_from_filename
-    from clinica.utils.participant import get_subject_session_list
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
+    from clinicadl.utils.clinica_utils import (
+        check_caps_folder,
+        clinicadl_file_reader,
+        container_from_filename,
+        get_subject_session_list,
+    )
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
@@ -47,7 +50,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinica_file_reader(
+    input_files = clinicadl_file_reader(
         subjects, sessions, caps_directory.as_posix(), file_type
     )[0]
     logger.debug(f"Selected image file name list: {input_files}.")

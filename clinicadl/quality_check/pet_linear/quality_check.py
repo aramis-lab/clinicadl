@@ -10,10 +10,15 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 import pandas as pd
-from clinica.utils.input_files import pet_linear_nii
-from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
-from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
+
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+    get_subject_session_list,
+    pet_linear_nii,
+)
 
 from .utils import get_metric
 
@@ -101,7 +106,7 @@ def quality_check(
         ref_region,
         use_uncropped_image,
     )
-    input_files = clinica_file_reader(subjects, sessions, caps_dir, file_type)[0]
+    input_files = clinicadl_file_reader(subjects, sessions, caps_dir, file_type)[0]
 
     def write_output_data(file):
         file = Path(file)

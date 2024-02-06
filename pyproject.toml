@@ -28,7 +28,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-clinica = "^0.7.7"
+#clinica = "^0.7.7"
 torch = "^2.1.0"
 torchvision = "*"
 tensorboard = "*"

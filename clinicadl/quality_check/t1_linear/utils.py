@@ -6,11 +6,10 @@ from pathlib import Path
 
 import nibabel as nib
 import torch
-from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED
-from clinica.utils.inputs import clinica_file_reader
 from torch.utils.data import Dataset
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
 
 
 class QCDataset(Dataset):
@@ -50,7 +49,7 @@ class QCDataset(Dataset):
             "preprocessing": "t1-linear",
             "mode": "image",
             "use_uncropped_image": use_uncropped_image,
-            "file_type": T1W_LINEAR if use_uncropped_image else T1W_LINEAR_CROPPED,
+            "file_type": linear_nii("T1w", use_uncropped_image),
             "use_tensor": use_extracted_tensors,
         }
 
@@ -64,7 +63,7 @@ class QCDataset(Dataset):
         if self.use_extracted_tensors:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_output = clinica_file_reader(
+            image_output = clinicadl_file_reader(
                 [subject], [session], self.img_dir, file_type
             )[0]
             image_path = Path(image_output[0])
@@ -84,11 +83,11 @@ class QCDataset(Dataset):
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-            image_path = clinica_file_reader(
+            image_path = clinicadl_file_reader(
                 [subject],
                 [session],
                 self.img_dir,
-                T1W_LINEAR if self.use_uncropped_image else T1W_LINEAR_CROPPED,
+                linear_nii("T1w", self.use_uncropped_image),
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)
@@ -167,8 +166,7 @@ class QCDataset(Dataset):
 
     def pt_transform(self, image):
         import numpy as np
-        from skimage import transform
-        from torch.nn.functional import interpolate, pad
+        from torch.nn.functional import interpolate
 
         image = self.normalization(image) - 0.5
         image = image[0, :, :, :]

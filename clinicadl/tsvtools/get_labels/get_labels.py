@@ -277,7 +277,7 @@ def get_labels(
         Path to the directory where the output labels.tsv will be stored.
     """
 
-    from clinica.utils.inputs import check_bids_folder
+    from clinicadl.utils.clinica_utils import check_bids_folder
 
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -307,10 +307,9 @@ def get_labels(
         missing_mods_directory = missing_mods
 
     if not missing_mods_directory.is_dir():
-        from clinica.iotools.utils.data_handling import compute_missing_mods
-
-        check_bids_folder(bids_directory)
-        compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
+        raise ValueError(
+            f"The missing_mods directory doesn't exist: {missing_mods}, please give another directory."
+        )
 
     logger.info(
         f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
@@ -324,24 +323,8 @@ def get_labels(
                 f"A merged_tsv file already exists at {merged_tsv}. It will be used to run the command."
             )
         else:
-            from clinica.iotools.utils.data_handling import create_merge_file
-
-            logger.info("Running Clinica merge TSV pipeline.")
-
-            check_bids_folder(bids_directory)
-            create_merge_file(
-                bids_directory,
-                merged_tsv,
-                caps_dir=caps_directory,
-                pipelines=None,
-                ignore_scan_files=None,
-                ignore_sessions_files=None,
-                volume_atlas_selection=None,
-                freesurfer_atlas_selection=None,
-                pvc_restriction=None,
-                tsv_file=None,
-                group_selection=False,
-                tracers_selection=False,
+            raise ValueError(
+                "We can't find any merged tsv files, please give another path."
             )
 
     logger.info(f"output of clinica iotools merge-tsv: {merged_tsv}")
