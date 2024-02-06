@@ -277,8 +277,6 @@ def get_labels(
         Path to the directory where the output labels.tsv will be stored.
     """
 
-    from clinicadl.utils.clinica_utils import check_bids_folder
-
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True, exist_ok=True)
 

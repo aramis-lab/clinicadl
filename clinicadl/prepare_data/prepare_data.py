@@ -157,18 +157,22 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                     parameters["masks_location"],
                     parameters["roi_list"],
                     parameters["roi_mask_pattern"],
-                    None
-                    if parameters["use_uncropped_image"] is None
-                    else not parameters["use_uncropped_image"],
+                    (
+                        None
+                        if parameters["use_uncropped_image"] is None
+                        else not parameters["use_uncropped_image"]
+                    ),
                 )
 
             output_mode = extract_roi(
                 Path(file),
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_mask_pattern"],
-                cropped_input=None
-                if parameters["use_uncropped_image"] is None
-                else not parameters["use_uncropped_image"],
+                cropped_input=(
+                    None
+                    if parameters["use_uncropped_image"] is None
+                    else not parameters["use_uncropped_image"]
+                ),
                 roi_names=parameters["roi_list"],
                 uncrop_output=parameters["uncropped_roi"],
             )

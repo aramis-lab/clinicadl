@@ -1,6 +1,7 @@
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
+
 from logging import getLogger
 from pathlib import Path
 
