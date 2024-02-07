@@ -90,9 +90,9 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                         ]
                     if prev_diagnosis == post_diagnosis:
                         found_diag_interpol += 1
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = prev_diagnosis
+                        bids_copy_df.loc[(subject, session), "diagnosis"] = (
+                            prev_diagnosis
+                        )
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
                         nb_drop += 1
