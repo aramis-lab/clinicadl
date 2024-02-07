@@ -133,7 +133,7 @@ def generate_random_dataset(
         )[0][0]
     )
     image_nii = nib.load(image_path)
-    image = image_nii.get_data()
+    image = image_nii.get_fdata()
 
     # Create output tsv file
     participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
