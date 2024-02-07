@@ -98,7 +98,7 @@ def quality_check(
     ]
 
     results_df = pd.DataFrame(columns=columns)
-    sessions, subjects = get_subject_session_list(
+    subjects, sessions = get_subject_session_list(
         caps_dir, participants_tsv, False, False, None
     )
     file_type = pet_linear_nii(

@@ -1,55 +1,27 @@
 import hashlib
 import os
+import shutil
+import ssl
+import tempfile
 from collections import namedtuple
-from enum import Enum
 from functools import partial
 from glob import glob
-from os import PathLike, path
-from pathlib import Path
+from pathlib import Path, PurePath
+from time import localtime, strftime, time
 from typing import Callable, Dict, List, Optional, Tuple
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLBIDSError,
+    ClinicaDLCAPSError,
+)
+from clinicadl.utils.logger import cprint
 
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
-
-
-class LoggingLevel(str, Enum):
-    debug = "debug"
-    info = "info"
-    warning = "warning"
-    error = "error"
-    critical = "critical"
-
-
-def cprint(msg: str, lvl: str = "info") -> None:
-    """
-    Print message to the console at the desired logging level.
-
-    Args:
-        msg (str): Message to print.
-        lvl (str): Logging level between "debug", "info", "warning", "error" and "critical".
-                   The default value is "info".
-    """
-    from logging import getLogger
-
-    # Use the package level logger.
-    logger = getLogger("clinica")
-
-    # Log message as info level.
-    if lvl == LoggingLevel.debug:
-        logger.debug(msg=msg)
-    elif lvl == LoggingLevel.info:
-        logger.info(msg=msg)
-    elif lvl == LoggingLevel.warning:
-        logger.warning(msg=msg)
-    elif lvl == LoggingLevel.error:
-        logger.error(msg=msg)
-    elif lvl == LoggingLevel.critical:
-        logger.critical(msg=msg)
-    else:
-        pass
 
 
 def linear_nii(modality: str, uncropped_image: bool):
@@ -91,17 +63,15 @@ def pet_linear_nii(acq_label, suvr_reference_region, uncropped_image):
         description = "_desc-Crop"
 
     information = {
-        "pattern": os.path.join(
-            "pet_linear",
-            f"*_trc-{acq_label}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz",
-        ),
+        "pattern": Path("pet_linear")  # os.path.join(
+        / f"*_trc-{acq_label}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz",
         "description": "",
         "needed_pipeline": "pet-linear",
     }
     return information
 
 
-def container_from_filename(bids_or_caps_filename: str) -> str:
+def container_from_filename(bids_or_caps_filename: Path) -> Path:
     """Extract container from BIDS or CAPS file.
 
     Parameters
@@ -133,10 +103,10 @@ def container_from_filename(bids_or_caps_filename: str) -> str:
         )
     subject = m.group(1)
     session = m.group(2)
-    return os.path.join("subjects", subject, session)
+    return Path("subjects") / subject / session
 
 
-def read_participant_tsv(tsv_file: str) -> Tuple[List[str], List[str]]:
+def read_participant_tsv(tsv_file: Path) -> Tuple[List[str], List[str]]:
     """Extract participant IDs and session IDs from TSV file.
 
     Parameters
@@ -194,11 +164,11 @@ def read_participant_tsv(tsv_file: str) -> Tuple[List[str], List[str]]:
 
 
 def get_subject_session_list(
-    input_dir: PathLike,
-    subject_session_file: Optional[PathLike] = None,
+    input_dir: Path,
+    subject_session_file: Optional[Path] = None,
     is_bids_dir: bool = True,
     use_session_tsv: bool = False,
-    tsv_dir: Optional[PathLike] = None,
+    tsv_dir: Optional[Path] = None,
 ) -> Tuple[List[str], List[str]]:
     """Parse a BIDS or CAPS directory to get the subjects and sessions.
 
@@ -246,12 +216,9 @@ def get_subject_session_list(
     However, if your pipeline needs both T1w and DWI files, you will need to check
     with e.g. clinica_file_reader_function.
     """
-    import tempfile
-    from pathlib import Path
-    from time import localtime, strftime, time
 
     if not subject_session_file:
-        output_dir = Path(tsv_dir) if tsv_dir else Path(tempfile.mkdtemp())
+        output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
         tsv_file = f"subjects_sessions_list_{timestamp}.tsv"
         subject_session_file = output_dir / tsv_file
@@ -267,7 +234,11 @@ def get_subject_session_list(
 
 
 def create_subs_sess_list(
-    input_dir, output_dir, file_name=None, is_bids_dir=True, use_session_tsv=False
+    input_dir: Path,
+    output_dir: Path,
+    file_name: str = None,
+    is_bids_dir: bool = True,
+    use_session_tsv: bool = False,
 ):
     """Create the file subject_session_list.tsv that contains the list of the visits for each subject for a BIDS or CAPS compliant dataset.
 
@@ -280,18 +251,18 @@ def create_subs_sess_list(
         use_session_tsv (boolean): Specify if the list uses the sessions listed in the sessions.tsv files
     """
 
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     if not file_name:
         file_name = "subjects_sessions_list.tsv"
-    subjs_sess_tsv = open(path.join(output_dir, file_name), "w")
+    subjs_sess_tsv = open(output_dir / file_name, "w")
     subjs_sess_tsv.write("participant_id" + "\t" + "session_id" + "\n")
 
     if is_bids_dir:
         path_to_search = input_dir
     else:
-        path_to_search = path.join(input_dir, "subjects")
-    subjects_paths = glob(path.join(path_to_search, "*sub-*"))
+        path_to_search = input_dir / "subjects"
+    subjects_paths = glob(path_to_search / "*sub-*")
 
     # Sort the subjects list
     subjects_paths.sort()
@@ -300,22 +271,20 @@ def create_subs_sess_list(
         raise IOError("Dataset empty or not BIDS/CAPS compliant.")
 
     for sub_path in subjects_paths:
-        subj_id = sub_path.split(os.sep)[-1]
+        subj_id = sub_path.name
 
         if use_session_tsv:
-            session_df = pd.read_csv(
-                path.join(sub_path, subj_id + "_sessions.tsv"), sep="\t"
-            )
+            session_df = pd.read_csv(sub_path / subj_id + "_sessions.tsv", sep="\t")
             session_df.dropna(how="all", inplace=True)
             session_list = sorted(list(session_df["session_id"].to_numpy()))
             for session in session_list:
                 subjs_sess_tsv.write(subj_id + "\t" + session + "\n")
 
         else:
-            sess_list = glob(path.join(sub_path, "*ses-*"))
+            sess_list = glob(sub_path / "*ses-*")
 
             for ses_path in sorted(sess_list):
-                session_name = ses_path.split(os.sep)[-1]
+                session_name = ses_path.name
                 subjs_sess_tsv.write(subj_id + "\t" + session_name + "\n")
 
     subjs_sess_tsv.close()
@@ -338,20 +307,20 @@ def insensitive_glob(pattern_glob: str, recursive: Optional[bool] = False) -> Li
     List[str] :
         Insensitive-to-the-case pattern.
     """
-    from glob import glob
 
-    def either(c: str) -> str:
+    def make_case_insensitive_pattern(c: str) -> str:
         return "[%s%s]" % (c.lower(), c.upper()) if c.isalpha() else c
 
-    return glob("".join(map(either, pattern_glob)), recursive=recursive)
+    insensitive_pattern = "".join(map(make_case_insensitive_pattern, pattern_glob))
+    return glob(insensitive_pattern, recursive=recursive)
 
 
-def determine_caps_or_bids(input_dir: os.PathLike) -> bool:
+def determine_caps_or_bids(input_dir: Path) -> bool:
     """Determine if the `input_dir` is a CAPS or a BIDS folder.
 
     Parameters
     ----------
-    input_dir : os.PathLike
+    input_dir : Path
         The input folder.
 
     Returns
@@ -360,7 +329,6 @@ def determine_caps_or_bids(input_dir: os.PathLike) -> bool:
         True if `input_dir` is a BIDS folder, False if `input_dir`
         is a CAPS folder or could not be determined.
     """
-    input_dir = Path(input_dir)
     subjects_dir = input_dir / "subjects"
     groups_dir = input_dir / "groups"
 
@@ -371,13 +339,9 @@ def determine_caps_or_bids(input_dir: os.PathLike) -> bool:
     return len(subjects_sub_folders) > 0
 
 
-def _list_subjects_sub_folders(
-    root_dir: os.PathLike, groups_dir: os.PathLike
-) -> List[os.PathLike]:
+def _list_subjects_sub_folders(root_dir: Path, groups_dir: Path) -> List[Path]:
     # from clinica.utils.stream import cprint
 
-    root_dir = Path(root_dir)
-    groups_dir = Path(groups_dir)
     warning_msg = (
         f"Could not determine if {groups_dir.parent} is a CAPS or BIDS directory. "
         "Clinica will assume this is a CAPS directory."
@@ -391,7 +355,7 @@ def _list_subjects_sub_folders(
     return subjects_sub_folders
 
 
-def _common_checks(directory: os.PathLike, folder_type: str) -> None:
+def _common_checks(directory: Path, folder_type: str) -> None:
     """Utility function which performs checks common to BIDS and CAPS folder structures.
 
     Parameters
@@ -402,16 +366,15 @@ def _common_checks(directory: os.PathLike, folder_type: str) -> None:
     folder_type : {"BIDS", "CAPS"}
         The type of directory.
     """
-    from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
-    if not isinstance(directory, (os.PathLike, str)):
+    if not isinstance(directory, (Path, str)):
         raise ValueError(
             f"Argument you provided to check_{folder_type.lower()}_folder() is not a string."
         )
 
     error = ClinicaDLBIDSError if folder_type == "BIDS" else ClinicaDLCAPSError
 
-    if not os.path.isdir(directory):
+    if not directory.is_dir():
         raise error(
             f"The {folder_type} directory you gave is not a folder.\n"
             "Error explanations:\n"
@@ -420,7 +383,7 @@ def _common_checks(directory: os.PathLike, folder_type: str) -> None:
         )
 
 
-def check_bids_folder(bids_directory: os.PathLike) -> None:
+def check_bids_folder(bids_directory: Path) -> None:
     """Check if provided `bids_directory` is a BIDS folder.
 
     Parameters
@@ -442,9 +405,7 @@ def check_bids_folder(bids_directory: os.PathLike) -> None:
         If the provided folder does not contain at least one directory whose
         name starts with 'sub-'.
     """
-    from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
-    bids_directory = Path(bids_directory)
     _common_checks(bids_directory, "BIDS")
 
     if (bids_directory / "subjects").is_dir():
@@ -466,12 +427,12 @@ def check_bids_folder(bids_directory: os.PathLike) -> None:
         )
 
 
-def check_caps_folder(caps_directory: os.PathLike) -> None:
+def check_caps_folder(caps_directory: Path) -> None:
     """Check if provided `caps_directory`is a CAPS folder.
 
     Parameters
     ----------
-    caps_directory : os.PathLike
+    caps_directory : Path
         The input folder to check.
 
     Raises
@@ -492,7 +453,6 @@ def check_caps_folder(caps_directory: os.PathLike) -> None:
     """
     from clinicadl.utils.exceptions import ClinicaDLCAPSError
 
-    caps_directory = Path(caps_directory)
     _common_checks(caps_directory, "CAPS")
 
     sub_folders = [f for f in caps_directory.iterdir() if f.name.startswith("sub-")]
@@ -512,7 +472,7 @@ def check_caps_folder(caps_directory: os.PathLike) -> None:
 
 
 def find_sub_ses_pattern_path(
-    input_directory: os.PathLike,
+    input_directory: Path,
     subject: str,
     session: str,
     error_encountered: list,
@@ -596,7 +556,7 @@ def find_sub_ses_pattern_path(
         results.append(current_glob_found[0])
 
 
-def _are_multiple_runs(files: List[str]) -> bool:
+def _are_multiple_runs(files: List[Path]) -> bool:
     """Returns whether the files in the provided list only differ through their run number.
 
     The provided files must have exactly the same parent paths, extensions, and BIDS entities
@@ -612,9 +572,7 @@ def _are_multiple_runs(files: List[str]) -> bool:
     bool :
         True if the provided files only differ through their run number, False otherwise.
     """
-    from pathlib import Path
-
-    files = [Path(_) for _ in files]
+    # files = [Path(_) for _ in files]
     # Exit quickly if less than one file or if at least one file does not have the entity run
     if len(files) < 2 or any(["_run-" not in f.name for f in files]):
         return False
@@ -657,7 +615,6 @@ def get_filename_no_ext(filename: str) -> str:
     >>> get_filename_no_ext("sub-01/ses-M000/sub-01_ses-M000.tar.gz")
     'sub-01_ses-M000'
     """
-    from pathlib import PurePath
 
     stem = PurePath(filename).stem
     while "." in stem:
@@ -854,7 +811,7 @@ def _format_errors(errors: List, information: Dict) -> str:
 def clinicadl_file_reader(
     subjects: List[str],
     sessions: List[str],
-    input_directory: os.PathLike,
+    input_directory: Path,
     information: Dict,
     raise_exception: Optional[bool] = True,
     n_procs: Optional[int] = 1,
@@ -996,7 +953,6 @@ def clinicadl_file_reader(
 
     _check_information(information)
     pattern = information["pattern"]
-    input_directory = Path(input_directory)
     is_bids = determine_caps_or_bids(input_directory)
     if is_bids:
         check_bids_folder(input_directory)
@@ -1028,7 +984,7 @@ def clinicadl_file_reader(
 
 
 def _read_files_parallel(
-    input_directory: os.PathLike,
+    input_directory: Path,
     subjects: List[str],
     sessions: List[str],
     is_bids: bool,
@@ -1060,7 +1016,7 @@ def _read_files_parallel(
 
 
 def _read_files_sequential(
-    input_directory: os.PathLike,
+    input_directory: Path,
     subjects: List[str],
     sessions: List[str],
     is_bids: bool,
@@ -1075,7 +1031,7 @@ def _read_files_sequential(
     return results, errors_encountered
 
 
-def _sha256(path):
+def _sha256(path: Path):
     """Calculate the sha256 hash of the file at path."""
     sha256hash = hashlib.sha256()
     chunk_size = 8192
@@ -1088,7 +1044,7 @@ def _sha256(path):
     return sha256hash.hexdigest()
 
 
-def fetch_file(remote: RemoteFileStructure, dirname: Optional[str]) -> str:
+def fetch_file(remote: RemoteFileStructure, dirname: Optional[Path]) -> Path:
     """Download a specific file and save it into the resources folder of the package.
 
     Parameters
@@ -1104,19 +1060,12 @@ def fetch_file(remote: RemoteFileStructure, dirname: Optional[str]) -> str:
     file_path : str
         Absolute file path.
     """
-    import os.path
-    import shutil
-    import ssl
-    from urllib.error import URLError
-    from urllib.request import Request, urlopen
 
-    # from clinica.utils.stream import cprint
-
-    if not os.path.exists(dirname):
+    if not dirname.exists():
         cprint(msg="Path to the file does not exist", lvl="warning")
         cprint(msg="Stop Clinica and handle this error", lvl="warning")
 
-    file_path = os.path.join(dirname, remote.filename)
+    file_path = dirname / remote.filename
     # Download the file from `url` and save it locally under `file_name`:
     gcontext = ssl.SSLContext()
     req = Request(remote.url + remote.filename)
