@@ -63,8 +63,10 @@ def pet_linear_nii(acq_label, suvr_reference_region, uncropped_image):
         description = "_desc-Crop"
 
     information = {
-        "pattern": Path("pet_linear")  # os.path.join(
-        / f"*_trc-{acq_label}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz",
+        "pattern": str(
+            Path("pet_linear")
+            / f"*_trc-{acq_label}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
+        ),
         "description": "",
         "needed_pipeline": "pet-linear",
     }

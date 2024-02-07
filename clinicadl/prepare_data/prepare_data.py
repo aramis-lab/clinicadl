@@ -50,9 +50,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinicadl_file_reader(
-        subjects, sessions, caps_directory.as_posix(), file_type
-    )[0]
+    input_files = clinicadl_file_reader(subjects, sessions, caps_directory, file_type)[
+        0
+    ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):

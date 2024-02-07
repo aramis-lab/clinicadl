@@ -102,7 +102,7 @@ class QCDataset(Dataset):
         import torch
         from skimage import transform
 
-        sample = np.array(image.get_data())
+        sample = np.array(image.get_fdata())
 
         # normalize input
         _min = np.min(sample)
