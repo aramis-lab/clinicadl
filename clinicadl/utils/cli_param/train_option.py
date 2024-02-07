@@ -295,7 +295,7 @@ learning_rate = cli_param.option_group.optimization_group.option(
     help="Learning rate of the optimization.",
 )
 adaptive_learning_rate = cli_param.option_group.optimization_group.option(
-    "--adaptive_lr",
+    "--adaptive_learning_rate",
     "-alr",
     type=bool,
     help="Whether to diminish the learning rate",
