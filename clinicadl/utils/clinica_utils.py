@@ -557,7 +557,6 @@ def find_sub_ses_pattern_path(
     """
 
     input_directory = Path(input_directory)
-    print("test_input_directory", input_directory)
     if is_bids:
         origin_pattern = input_directory / subject / session
     else:

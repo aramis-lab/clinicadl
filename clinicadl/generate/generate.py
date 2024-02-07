@@ -318,7 +318,7 @@ def generate_trivial_dataset(
             )[0][0]
         )
         image_nii = nib.load(image_path)
-        image = image_nii.get_data()
+        image = image_nii.get_fdata()
 
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
@@ -339,7 +339,7 @@ def generate_trivial_dataset(
 
         path_to_mask = mask_path / f"mask-{label + 1}.nii"
         if path_to_mask.is_file():
-            atlas_to_mask = nib.load(path_to_mask).get_data()
+            atlas_to_mask = nib.load(path_to_mask).get_fdata()
         else:
             raise ValueError("masks need to be named mask-1.nii and mask-2.nii")
 

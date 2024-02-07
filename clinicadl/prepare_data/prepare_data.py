@@ -23,7 +23,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     check_caps_folder(caps_directory)
     logger.debug(f"CAPS directory: {caps_directory}.")
     is_bids_dir = False
-    sessions, subjects = get_subject_session_list(
+    subjects, sessions = get_subject_session_list(
         caps_directory, tsv_file, is_bids_dir, False, None
     )
     if parameters["prepare_dl"]:
