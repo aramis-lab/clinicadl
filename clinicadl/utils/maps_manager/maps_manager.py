@@ -239,11 +239,8 @@ class MapsManager:
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
         """
-        print(split_list)
         if not split_list:
-            print("in")
             split_list = self._find_splits()
-        print(split_list)
         logger.debug(f"List of splits {split_list}")
 
         _, all_transforms = get_transforms(
