@@ -262,7 +262,7 @@ def create_subs_sess_list(
         path_to_search = input_dir
     else:
         path_to_search = input_dir / "subjects"
-    subjects_paths = glob(path_to_search / "*sub-*")
+    subjects_paths = glob(str(path_to_search / "*sub-*"))
 
     # Sort the subjects list
     subjects_paths.sort()
@@ -281,7 +281,7 @@ def create_subs_sess_list(
                 subjs_sess_tsv.write(subj_id + "\t" + session + "\n")
 
         else:
-            sess_list = glob(sub_path / "*ses-*")
+            sess_list = glob(str(sub_path / "*ses-*"))
 
             for ses_path in sorted(sess_list):
                 session_name = ses_path.name
