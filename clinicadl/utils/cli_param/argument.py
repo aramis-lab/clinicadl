@@ -41,3 +41,8 @@ modality = click.argument(
     "modality",
     type=click.Choice(["t1-linear", "pet-linear", "flair-linear", "custom"]),
 )
+
+modality_bids = click.argument(
+    "modality_bids",
+    type=click.Choice(["t1", "pet", "flair", "dwi", "custom"]),
+)

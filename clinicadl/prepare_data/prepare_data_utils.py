@@ -77,8 +77,6 @@ def compute_folder_and_file_type(
         DWI_NII,
         FLAIR_T2W_LINEAR,
         FLAIR_T2W_LINEAR_CROPPED,
-        FMAP_MAGNITUDE1_NII,
-        FMAP_PHASEDIFF_NII,
         T1W_LINEAR,
         T1W_LINEAR_CROPPED,
         T1W_NII,
@@ -88,25 +86,17 @@ def compute_folder_and_file_type(
     )
 
     if parameters["from_bids"]:
-        if parameters["preprocessing"] == "t1-linear":
-            mod_subfolder = "t1_linear"
+        if parameters["preprocessing"] == "t1":
+            mod_subfolder = "T1"
             file_type = T1W_NII
 
-        elif parameters["preprocessing"] == "flair-linear":
-            mod_subfolder = "flair_linear"
+        elif parameters["preprocessing"] == "flair":
+            mod_subfolder = "flair"
             file_type = Flair_T2W_NII
 
-        elif parameters["preprocessing"] == "pet-linear":
+        elif parameters["preprocessing"] == "pet":
             mod_subfolder = "pet_linear"
             file_type = bids_pet_nii(parameters["tracer"])
-
-        elif parameters["preprocessing"] == "fmap-magnitude1":
-            mod_subfolder = "fmap_magnitude1"
-            file_type = FMAP_MAGNITUDE1_NII  # FMAP
-
-        elif parameters["preprocessing"] == "fmap-phasediff":
-            mod_subfolder = "fmap_phasediff"
-            file_type = FMAP_PHASEDIFF_NII
 
         elif parameters["preprocessing"] == "dwi":
             mod_subfolder = "dwi"
