@@ -92,7 +92,6 @@ class MetricModule:
         Returns:
             (float) mean squared error
         """
-
         return np.mean(np.square(y - y_pred))
 
     @staticmethod
