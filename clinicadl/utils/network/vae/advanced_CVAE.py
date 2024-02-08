@@ -136,3 +136,15 @@ class CVAE_3D_final_conv(Network):
             "kl_loss": kl_loss,
         }
         return reconstructed, loss_dict
+
+    @staticmethod
+    def get_input_size():
+        return "1@169x208x179"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]

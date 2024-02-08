@@ -158,7 +158,7 @@ split-<i>
 
 ### Level 3 - model application to data groups
 
-The last level corresponds to the content of `best-<metric>`. In this folder, the weights of the model is available (`best_model.pth.tar`)
+The last level corresponds to the content of `best-<metric>`. In this folder, the weights of the model are available (`best_model.pth.tar`)
 and their application to different data groups can be found:
 
 ```Text

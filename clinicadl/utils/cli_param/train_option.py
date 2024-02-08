@@ -81,6 +81,12 @@ compensation = cli_param.option_group.reproducibility_group.option(
     # default="memory",
     type=click.Choice(["memory", "time"]),
 )
+save_all_models = cli_param.option_group.reproducibility_group.option(
+    "--save_all_models/--save_only_best_model",
+    type=bool,
+    help="If provided, enables the saving of models weights for each epochs.",
+)
+
 # Model
 architecture = cli_param.option_group.model_group.option(
     "-a",
@@ -287,6 +293,14 @@ learning_rate = cli_param.option_group.optimization_group.option(
     type=float,
     # default=1e-4,
     help="Learning rate of the optimization.",
+)
+adaptive_learning_rate = cli_param.option_group.optimization_group.option(
+    "--adaptive_learning_rate",
+    "-alr",
+    type=bool,
+    help="Whether to diminish the learning rate",
+    is_flag=True,
+    default=False,
 )
 weight_decay = cli_param.option_group.optimization_group.option(
     "--weight_decay",

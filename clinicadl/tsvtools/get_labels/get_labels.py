@@ -28,7 +28,7 @@ from clinicadl.utils.tsvtools_utils import (
     neighbour_session,
 )
 
-logger = getLogger("clinicadl.tsvtools.get_labels")
+logger = getLogger("clinicadl.tsvtools")
 
 
 def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
@@ -243,7 +243,7 @@ def get_labels(
     remove_smc: bool = True,
     merged_tsv: Path = None,
     missing_mods: Path = None,
-    remove_unique_session: bool = False,
+    remove_unique_session_: bool = False,
     output_dir: Path = None,
     caps_directory: Path = None,
 ):
@@ -295,7 +295,7 @@ def get_labels(
             "remove_smc": remove_smc,
             "missing_mods": missing_mods,
             "merged_tsv": merged_tsv,
-            "remove_unique_session": remove_unique_session,
+            "remove_unique_session": remove_unique_session_,
             "caps_directory": caps_directory,
         },
         filename="labels.json",
@@ -349,7 +349,7 @@ def get_labels(
     # Reading files
     if not merged_tsv.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
-    bids_df = pd.read_csv(merged_tsv, sep="\t")
+    bids_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 
@@ -418,7 +418,7 @@ def get_labels(
     variables_list.append("baseline_diagnosis")
 
     bids_df = bids_df[variables_list]
-    if remove_unique_session:
+    if remove_unique_session_:
         bids_df = remove_unique_session(bids_df)
 
     variables_list.remove("baseline_diagnosis")

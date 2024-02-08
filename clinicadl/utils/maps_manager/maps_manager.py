@@ -42,9 +42,9 @@ from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
-
-
 level_list: List[str] = ["warning", "info", "debug"]
+
+
 # TODO save weights on CPU for better compatibility
 
 
@@ -67,10 +67,6 @@ class MapsManager:
             Logging level ("debug", "info", "warning")
         """
         self.maps_path = maps_path.resolve()
-        if verbose is not None:
-            if verbose not in level_list:
-                raise ValueError(f"verbose value {verbose} must be in {level_list}.")
-            setup_logging(level_list.index(verbose))
 
         # Existing MAPS
         if parameters is None:
@@ -83,6 +79,7 @@ class MapsManager:
             test_parameters = change_str_to_path(test_parameters)
             self.parameters = add_default_values(test_parameters)
             self.ssda_network = False  # A MODIFIER
+            self.save_all_models = self.parameters["save_all_models"]
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -109,7 +106,6 @@ class MapsManager:
 
                 self.write_parameters(self.maps_path, self.parameters)
                 self._write_requirements_version()
-
                 self._write_training_data()
                 self._write_train_val_groups()
                 self._write_information()
@@ -127,14 +123,17 @@ class MapsManager:
         """
         Performs the training task for a defined list of splits
 
-        Args:
-            split_list: list of splits on which the training task is performed.
-                Default trains all splits of the cross-validation.
-            overwrite: If True previously trained splits that are going to be trained
-                are erased.
+        Parameters
+        ----------
+        split_list: List[int]
+            list of splits on which the training task is performed.
+            Default trains all splits of the cross-validation.
+        overwrite: bool
+            If True previously trained splits that are going to be trained are erased.
 
-        Raises:
-            MAPSError: If splits specified in input already exist and overwrite is False.
+        Raises
+        ------
+        Raises MAPSError, if splits specified in input already exist and overwrite is False.
         """
         existing_splits = []
 
@@ -213,6 +212,7 @@ class MapsManager:
         save_tensor: bool = False,
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
+        skip_leak_check: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -258,6 +258,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
+
         self._check_data_group(
             data_group,
             caps_directory,
@@ -265,6 +266,8 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
+            split_list=split_list,
+            skip_leak_check=skip_leak_check,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -550,6 +553,7 @@ class MapsManager:
                 label_code=self.label_code,
                 label=self.label,
             )
+
             test_loader = DataLoader(
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
@@ -1122,6 +1126,14 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        if self.parameters["adaptive_learning_rate"]:
+            from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+            # Initialize the ReduceLROnPlateau scheduler
+            scheduler = ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.1, verbose=True
+            )
+
         scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
@@ -1226,28 +1238,7 @@ class MapsManager:
                 model.train()
                 train_loader.dataset.train()
 
-                # if cluster.master:
-                #     log_writer.step(
-                #         epoch, i, metrics_train, metrics_valid, len(train_loader)
-                #     )
-                # logger.info(
-                #     f"{self.mode} level training loss is {metrics_train['loss']} "
-                #     f"at the end of iteration {i}"
-                # )
-                # logger.info(
-                #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                #     f"at the end of iteration {i}"
-                # )
-
-            # log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            # logger.info(
-            #     f"{self.mode} level training loss is {metrics_train['loss']} "
-            #     f"at the end of iteration {i}"
-            # )
-            # logger.info(
-            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
-            #     f"at the end of iteration {i}"
-            # )
+               
             self.callback_handler.on_epoch_end(
                 self.parameters,
                 metrics_train=metrics_train,
@@ -1268,6 +1259,7 @@ class MapsManager:
                     best_dict,
                     split,
                     network=network,
+                    save_all_models=self.parameters["save_all_models"],
                 )
                 self._write_weights(
                     {
@@ -1278,7 +1270,12 @@ class MapsManager:
                     None,
                     split,
                     filename="optimizer.pth.tar",
+                    save_all_models=self.parameters["save_all_models"],
                 )
+            if self.parameters["adaptive_learning_rate"]:
+                scheduler.step(
+                    metrics_valid["loss"]
+                )  # Update learning rate based on validation loss
 
             epoch += 1
 
@@ -1595,6 +1592,7 @@ class MapsManager:
                 best_dict,
                 split,
                 network=network,
+                save_all_models=False,
             )
             self._write_weights(
                 {
@@ -1605,6 +1603,7 @@ class MapsManager:
                 None,
                 split,
                 filename="optimizer.pth.tar",
+                save_all_models=False,
             )
 
             epoch += 1
@@ -2196,6 +2195,8 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        split_list=None,
+        skip_leak_check=False,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -2223,7 +2224,8 @@ class MapsManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_dir)
-                    split_list = self._find_splits()
+                    if not split_list:
+                        split_list = self._find_splits()
                     for split in split_list:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
@@ -2252,7 +2254,10 @@ class MapsManager:
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            self._check_leakage(data_group, df)
+            if skip_leak_check:
+                logger.info("Skipping data leakage check")
+            else:
+                self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
@@ -2387,6 +2392,7 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
+        save_all_models: bool = False,
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
@@ -2403,6 +2409,13 @@ class MapsManager:
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = checkpoint_dir / filename
         torch.save(state, checkpoint_path)
+
+        if save_all_models:
+            all_models_dir = (
+                self.maps_path / f"{self.split_name}-{split}" / "all_models"
+            )
+            all_models_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
 
         best_filename = "model.pth.tar"
         if network is not None:
@@ -2677,8 +2690,11 @@ class MapsManager:
 
         model = model_class(**kwargs)
         logger.debug(f"Model:\n{model.layers}")
-        device = model.device
-        logger.info(f"Working on {device}")
+
+        device = "cpu"
+        if device != model.device:
+            device = model.device
+            logger.info(f"Working on {device}")
         current_epoch = 0
 
         if resume:
@@ -2901,35 +2917,35 @@ class MapsManager:
         json_path = self.maps_path / "maps.json"
         return read_json(json_path)
 
-    def get_model(
-        self, split: int = 0, selection_metric: str = None, network: int = None
-    ) -> Network:
-        selection_metric = self._check_selection_metric(split, selection_metric)
-        if self.multi_network:
-            if network is None:
-                raise ClinicaDLArgumentError(
-                    "Please precise the network number that must be loaded."
-                )
-        return self._init_model(
-            self.maps_path,
-            selection_metric,
-            split,
-            network=network,
-            nb_unfrozen_layer=self.nb_unfrozen_layer,
-        )[0]
+    # def get_model(
+    #     self, split: int = 0, selection_metric: str = None, network: int = None
+    # ) -> Network:
+    #     selection_metric = self._check_selection_metric(split, selection_metric)
+    #     if self.multi_network:
+    #         if network is None:
+    #             raise ClinicaDLArgumentError(
+    #                 "Please precise the network number that must be loaded."
+    #             )
+    #     return self._init_model(
+    #         self.maps_path,
+    #         selection_metric,
+    #         split,
+    #         network=network,
+    #         nb_unfrozen_layer=self.nb_unfrozen_layer,
+    #     )[0]
 
-    def get_best_epoch(
-        self, split: int = 0, selection_metric: str = None, network: int = None
-    ) -> int:
-        selection_metric = self._check_selection_metric(split, selection_metric)
-        if self.multi_network:
-            if network is None:
-                raise ClinicaDLArgumentError(
-                    "Please precise the network number that must be loaded."
-                )
-        return self.get_state_dict(split=split, selection_metric=selection_metric)[
-            "epoch"
-        ]
+    # def get_best_epoch(
+    #     self, split: int = 0, selection_metric: str = None, network: int = None
+    # ) -> int:
+    #     selection_metric = self._check_selection_metric(split, selection_metric)
+    #     if self.multi_network:
+    #         if network is None:
+    #             raise ClinicaDLArgumentError(
+    #                 "Please precise the network number that must be loaded."
+    #             )
+    #     return self.get_state_dict(split=split, selection_metric=selection_metric)[
+    #         "epoch"
+    #     ]
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None

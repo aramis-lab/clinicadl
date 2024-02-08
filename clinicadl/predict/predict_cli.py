@@ -73,6 +73,13 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
     is_flag=True,
     help="""Save the latent representation of the image.""",
 )
+@click.option(
+    "--skip_leak_check",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Skip the data leakage check.",
+)
 @cli_param.option.split
 @cli_param.option.selection_metrics
 @cli_param.option.use_gpu
@@ -99,6 +106,7 @@ def cli(
     save_tensor,
     save_nifti,
     save_latent_tensor,
+    skip_leak_check,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -136,4 +144,5 @@ def cli(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
+        skip_leak_check=skip_leak_check,
     )
