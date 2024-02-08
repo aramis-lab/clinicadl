@@ -47,13 +47,13 @@ def image_bids_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids=bids_directory,
     )
     DeepLearningPrepareData(
         caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
@@ -113,7 +113,6 @@ def patch_bids_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids=bids_directory,
     )
     parameters["patch_size"] = patch_size
     parameters["stride_size"] = stride_size
@@ -123,6 +122,7 @@ def patch_bids_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
@@ -198,7 +198,6 @@ def slice_bids_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids=bids_directory,
     )
     parameters["slice_direction"] = slice_direction
     parameters["slice_mode"] = slice_mode
@@ -209,6 +208,7 @@ def slice_bids_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
@@ -288,7 +288,6 @@ def roi_bids_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids=bids_directory,
     )
     parameters["roi_list"] = roi_list
     parameters["uncropped_roi"] = roi_uncrop_output
@@ -300,6 +299,7 @@ def roi_bids_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
@@ -310,7 +310,9 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="prepare-data", no_args_is_help=True)
+@click.group(
+    cls=RegistrationOrderGroup, name="prepare-data-from-bids", no_args_is_help=True
+)
 def cli() -> None:
     """Extract Pytorch tensors from nifti images."""
     pass

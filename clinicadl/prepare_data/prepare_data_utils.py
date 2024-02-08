@@ -16,7 +16,6 @@ def get_parameters_dict(
     custom_suffix: str,
     tracer: str,
     suvr_reference_region: str,
-    from_bids: bool,
 ) -> Dict[str, Any]:
     """
     Parameters
@@ -56,7 +55,6 @@ def get_parameters_dict(
         parameters["suvr_reference_region"] = suvr_reference_region
 
     parameters["extract_json"] = compute_extract_json(extract_json)
-    parameters["from_bids"] = from_bids
 
     return parameters
 
@@ -71,7 +69,7 @@ def compute_extract_json(extract_json: str) -> str:
 
 
 def compute_folder_and_file_type(
-    parameters: Dict[str, Any]
+    parameters: Dict[str, Any], from_bids: Path = None
 ) -> Tuple[str, Dict[str, str]]:
     from clinica.utils.input_files import (
         DWI_NII,
@@ -85,7 +83,7 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    if "from_bids" in parameters:
+    if from_bids is not None:
         if parameters["preprocessing"] == "t1":
             mod_subfolder = "T1"
             file_type = T1W_NII

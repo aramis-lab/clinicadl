@@ -19,7 +19,6 @@ from .prepare_data_utils import get_parameters_dict
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.from_bids
 def image_cli(
     caps_directory: Path,
     modality: str,
@@ -30,7 +29,6 @@ def image_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    from_bids: bool = False,
 ):
     """Extract image from nifti images.
 
@@ -47,7 +45,6 @@ def image_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids,
     )
     DeepLearningPrepareData(
         caps_directory=caps_directory,
@@ -82,7 +79,6 @@ def image_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.from_bids
 def patch_cli(
     caps_directory: Path,
     modality: str,
@@ -96,7 +92,6 @@ def patch_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    from_bids: bool = False,
 ):
     """Extract patch from nifti images.
 
@@ -113,7 +108,6 @@ def patch_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids,
     )
     parameters["patch_size"] = patch_size
     parameters["stride_size"] = stride_size
@@ -166,7 +160,6 @@ def patch_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.from_bids
 def slice_cli(
     caps_directory: Path,
     modality: str,
@@ -181,7 +174,6 @@ def slice_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    from_bids: bool = False,
 ):
     """Extract slice from nifti images.
 
@@ -198,7 +190,6 @@ def slice_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids,
     )
     parameters["slice_direction"] = slice_direction
     parameters["slice_mode"] = slice_mode
@@ -255,7 +246,6 @@ def slice_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.from_bids
 def roi_cli(
     caps_directory: Path,
     modality: str,
@@ -271,7 +261,6 @@ def roi_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    from_bids: bool = False,
 ):
     """Extract roi from nifti images.
 
@@ -288,7 +277,6 @@ def roi_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        from_bids,
     )
     parameters["roi_list"] = roi_list
     parameters["uncropped_roi"] = roi_uncrop_output
@@ -310,9 +298,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(
-    cls=RegistrationOrderGroup, name="prepare-data-from-bids", no_args_is_help=True
-)
+@click.group(cls=RegistrationOrderGroup, name="prepare-data", no_args_is_help=True)
 def cli() -> None:
     """Extract Pytorch tensors from nifti images."""
     pass

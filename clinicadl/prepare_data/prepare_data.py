@@ -2,7 +2,9 @@ from logging import getLogger
 from pathlib import Path
 
 
-def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
+def DeepLearningPrepareData(
+    caps_directory: Path, tsv_file: Path, n_proc, parameters, from_bids=None
+):
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
@@ -17,8 +19,11 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    if "from_bids" in parameters:
-        input_directory = Path(parameters["from_bids"])
+    if from_bids is not None:
+        try:
+            input_directory = Path(from_bids)
+        except ClinicaDLArgumentError:
+            logger.warning("Your BIDS directory doesn't exist.")
         logger.debug(f"BIDS directory: {input_directory}.")
         is_bids_dir = True
     else:
@@ -27,7 +32,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
 
-    subjects, sessions = get_subject_session_list(
+    sessions, subjects = get_subject_session_list(
         input_directory, tsv_file, is_bids_dir, False, None
     )
     if parameters["prepare_dl"]:
@@ -50,7 +55,8 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger.debug(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
-    mod_subfolder, file_type = compute_folder_and_file_type(parameters)
+
+    mod_subfolder, file_type = compute_folder_and_file_type(parameters, from_bids)
     parameters["file_type"] = file_type
     # Input file:
     input_files = clinica_file_reader(
