@@ -48,6 +48,7 @@ from .task_utils import task_launcher
 @train_option.optimizer
 @train_option.epochs
 @train_option.learning_rate
+@train_option.adaptive_learning_rate
 @train_option.weight_decay
 @train_option.dropout
 @train_option.patience
