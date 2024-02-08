@@ -72,6 +72,7 @@ This can be useful for the `reconstruction` task, for which the user may want to
       Default will reuse the same label as in the training task.
     - `--overwrite` (bool) is a flag allowing to overwrite a data group to redefine it. All results obtained
     for this data group will be erased.
+    - `--skip_leak_check` (bool) is a flag allowing to skip the data leakage check if you don't have the TSV file from the training. This is not a good practice but sometimes, data can't be shared so this check can't be done. 
 
 ## Outputs
 
