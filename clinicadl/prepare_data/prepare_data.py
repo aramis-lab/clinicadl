@@ -17,7 +17,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    if parameters["from_bids"] is not None:
+    if "from_bids" in parameters:
         input_directory = Path(parameters["from_bids"])
         logger.debug(f"BIDS directory: {input_directory}.")
         is_bids_dir = True
