@@ -19,7 +19,11 @@ from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.clinica_utils import clinicadl_file_reader, fetch_file
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+)
 from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -35,8 +39,6 @@ from .generate_utils import (
 )
 
 logger = getLogger("clinicadl.generate")
-
-RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
 
 
 def generate_random_dataset(

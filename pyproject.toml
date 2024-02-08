@@ -28,7 +28,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-#clinica = "^0.7.7"
 torch = "^2.1.0"
 torchvision = "*"
 tensorboard = "*"
@@ -44,7 +43,7 @@ pynvml = "*"
 torchio = "^0.18.90"
 urllib3= "<2.0.0"
 nilearn = "^0.9.2"
-#protobuf = "<3.2.0"
+
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

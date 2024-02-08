@@ -24,9 +24,9 @@ from clinicadl.utils.logger import cprint
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
 
 
-def linear_nii(modality: str, uncropped_image: bool):
+def linear_nii(modality: str, uncropped_image: bool) -> dict:
 
-    if modality not in ["T1w", "T2w", "flair"]:
+    if modality not in ("T1w", "T2w", "flair"):
         raise ClinicaDLArgumentError(
             f"ClinicaDL is Unable to read this modality ({modality}) of images"
         )
@@ -55,7 +55,9 @@ def linear_nii(modality: str, uncropped_image: bool):
     return information
 
 
-def pet_linear_nii(acq_label, suvr_reference_region, uncropped_image):
+def pet_linear_nii(
+    acq_label: str, suvr_reference_region: str, uncropped_image: bool
+) -> dict:
 
     if uncropped_image:
         description = ""
@@ -216,7 +218,7 @@ def get_subject_session_list(
         ['ses-M000', 'ses-M000'], ['sub-CLNC01', 'sub-CLNC02'].
 
     However, if your pipeline needs both T1w and DWI files, you will need to check
-    with e.g. clinica_file_reader_function.
+    with e.g. clinicadl_file_reader_function.
     """
 
     if not subject_session_file:
@@ -264,7 +266,6 @@ def create_subs_sess_list(
         path_to_search = input_dir
     else:
         path_to_search = input_dir / "subjects"
-    # subjects_paths = glob(str(path_to_search / "*sub-*"))
     subjects_paths = list(path_to_search.glob("*sub-*"))
 
     # Sort the subjects list
@@ -284,11 +285,10 @@ def create_subs_sess_list(
                 subjs_sess_tsv.write(subj_id + "\t" + session + "\n")
 
         else:
-            # sess_list = glob(str(sub_path / "*ses-*"))
             sess_list = list(sub_path.glob("*ses-*"))
 
             for ses_path in sorted(sess_list):
-                session_name = ses_path.name  # ses_path.split(os.sep)[-1]
+                session_name = ses_path.name
                 subjs_sess_tsv.write(subj_id + "\t" + session_name + "\n")
 
     subjs_sess_tsv.close()
@@ -344,7 +344,6 @@ def determine_caps_or_bids(input_dir: Path) -> bool:
 
 
 def _list_subjects_sub_folders(root_dir: Path, groups_dir: Path) -> List[Path]:
-    # from clinica.utils.stream import cprint
 
     warning_msg = (
         f"Could not determine if {groups_dir.parent} is a CAPS or BIDS directory. "
@@ -400,7 +399,7 @@ def check_bids_folder(bids_directory: Path) -> None:
     ValueError :
         If `bids_directory` is not a string.
 
-    ClinicaBIDSError :
+    ClinicaDLBIDSError :
         If the provided path does not exist, or is not a directory.
         If the provided path is a CAPS folder (BIDS and CAPS could
         be swapped by user). We simply check that there is not a folder
@@ -576,7 +575,7 @@ def _are_multiple_runs(files: List[Path]) -> bool:
     bool :
         True if the provided files only differ through their run number, False otherwise.
     """
-    # files = [Path(_) for _ in files]
+
     # Exit quickly if less than one file or if at least one file does not have the entity run
     if len(files) < 2 or any(["_run-" not in f.name for f in files]):
         return False
@@ -647,15 +646,15 @@ def _get_entities(files: List[Path], common_suffix: str) -> dict:
         The entities dictionary.
     """
 
-    found_entities = dict()
+    from collections import defaultdict
+
+    found_entities = defaultdict(set)
+    # found_entities = dict()
     for f in files:
         entities = get_filename_no_ext(f.name).rstrip(common_suffix).split("_")
         for entity in entities:
             entity_name, entity_value = entity.split("-")
-            if entity_name in found_entities:
-                found_entities[entity_name].add(entity_value)
-            else:
-                found_entities[entity_name] = {entity_value}
+            found_entities[entity_name].add(entity_value)
 
     return found_entities
 
@@ -871,7 +870,7 @@ def clinicadl_file_reader(
         for more details.
         If the length of `subjects` is different from the length of `sessions`.
 
-    ClinicaCAPSError or ClinicaBIDSError
+    ClinicaDLCAPSError or ClinicaDLBIDSError
         If multiples files are found for 1 subject/session, or if no file is found.
 
         .. note::
@@ -882,12 +881,12 @@ def clinicadl_file_reader(
     This function is case-insensitive, meaning that the pattern argument can, for example,
     contain upper case letters that do not exist in the existing file path.
 
-    You should always use `clinica_file_reader` in the following manner:
+    You should always use `clinicadl_file_reader` in the following manner:
 
     .. code-block:: python
 
          try:
-            file_list = clinica_file_reader(...)
+            file_list = clinicadl_file_reader(...)
          except ClinicaException as e:
             # Deal with the error
 
@@ -900,7 +899,7 @@ def clinicadl_file_reader(
     File `orig_nu.mgz` from FreeSurfer of subject `sub-ADNI011S4105`, session `ses-M00`
     located in mri folder of FreeSurfer output :
 
-    >>> clinica_file_reader(
+    >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
             ['ses-M00'],
             caps_directory,
@@ -917,7 +916,7 @@ def clinicadl_file_reader(
     File `sub-ADNI011S4105_ses-M00_trc-18FFDG_pet.nii.gz` in BIDS directory.
     Here, filename depends on subject and session name :
 
-    >>> clinica_file_reader(
+    >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
             ['ses-M00'],
             bids_directory,
@@ -934,7 +933,7 @@ def clinicadl_file_reader(
 
     This will fail :
 
-    >>> clinica_file_reader(
+    >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
             ['ses-M00'],
             caps,
