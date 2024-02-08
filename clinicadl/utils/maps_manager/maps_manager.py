@@ -1121,6 +1121,14 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        if self.parameters["adaptive_learning_rate"]:
+            from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+            # Initialize the ReduceLROnPlateau scheduler
+            scheduler = ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.1, verbose=True
+            )
+
         scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
@@ -1317,6 +1325,10 @@ class MapsManager:
                     filename="optimizer.pth.tar",
                     save_all_models=self.parameters["save_all_models"],
                 )
+            if self.parameters["adaptive_learning_rate"]:
+                scheduler.step(
+                    metrics_valid["loss"]
+                )  # Update learning rate based on validation loss
 
             epoch += 1
 

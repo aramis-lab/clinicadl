@@ -95,6 +95,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     Default: `Adam`.
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.
+    - `--adaptive_learning_rate` (bool) Enables the learning rate to be reduced by 10 when the validation loss hasn't changed during 10 epochs. Default: `False`.
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
     - `--patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience. Default: `0`.
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
