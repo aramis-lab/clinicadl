@@ -85,7 +85,7 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    if parameters["from_bids"]:
+    if "from_bids" in parameters:
         if parameters["preprocessing"] == "t1":
             mod_subfolder = "T1"
             file_type = T1W_NII
