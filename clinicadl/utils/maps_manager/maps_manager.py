@@ -1698,7 +1698,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
-        report_ci = True,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1740,16 +1740,20 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp, report_ci = report_ci
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=amp,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
 
-                if report_ci:
-                    loss_to_log = metrics['Metric_values'][-1]
-                else:
-                    loss_to_log = metrics['loss']
+                loss_to_log = (
+                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                )
 
                 logger.info(
                     f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
@@ -1777,7 +1781,7 @@ class MapsManager:
         gpu=None,
         network=None,
         target=False,
-        report_ci = True,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1815,20 +1819,16 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test_da(
-                model,
-                dataloader,
-                criterion,
-                target=target,
-                report_ci = report_ci
+                model, dataloader, criterion, target=target, report_ci=report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
 
                 if report_ci:
-                    loss_to_log = metrics['Metric_values'][-1]
+                    loss_to_log = metrics["Metric_values"][-1]
                 else:
-                    loss_to_log = metrics['loss']
+                    loss_to_log = metrics["loss"]
 
                 logger.info(
                     f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
@@ -2055,6 +2055,7 @@ class MapsManager:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
+            #####################
             # Soft voting
             if self.num_networks > 1:
                 self._ensemble_to_tsv(
@@ -2572,7 +2573,6 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
-
             # if data_group == "train" or data_group == "validation":
             #     pd_metrics = pd.DataFrame(metrics, index = [0])
             #     header = True
@@ -2582,11 +2582,9 @@ class MapsManager:
 
             pd_metrics = pd.DataFrame(metrics).T
             header = False
-            #import ipdb; ipdb.set_trace()
+            # import ipdb; ipdb.set_trace()
             if not metrics_path.is_file():
-                pd_metrics.to_csv(
-                    metrics_path, index=False, sep="\t", header=header
-                )
+                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=header)
             else:
                 pd_metrics.to_csv(
                     metrics_path, index=False, sep="\t", mode="a", header=header
@@ -2638,8 +2636,8 @@ class MapsManager:
             use_labels=use_labels,
         )
 
-        col = df_final['true_label']
-        df_final['predicted_label']
+        col = df_final["true_label"]
+        df_final["predicted_label"]
 
         if df_final is not None:
             df_final.to_csv(
@@ -2648,7 +2646,7 @@ class MapsManager:
                 sep="\t",
             )
         if metrics is not None:
-            pd.DataFrame(metrics).to_csv(
+            pd.DataFrame(metrics, index=[0]).to_csv(
                 performance_dir / f"{data_group}_image_level_metrics.tsv",
                 index=False,
                 sep="\t",

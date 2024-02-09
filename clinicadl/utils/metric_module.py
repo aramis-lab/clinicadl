@@ -1,8 +1,8 @@
 from logging import getLogger
 from typing import Dict, List
-from sklearn.utils import resample
 
 import numpy as np
+from sklearn.utils import resample
 
 metric_optimum = {
     "MAE": "min",
@@ -41,7 +41,7 @@ class MetricModule:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
                 )
-    
+
     def apply(self, y, y_pred, report_ci):
         """
         This is a function to calculate the different metrics based on the list of true label and predicted label
@@ -66,24 +66,31 @@ class MetricModule:
             lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
             upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
             se_values = ["SE"]  # Collect standard error values
-            
+
             for metric_key, metric_fn in self.metrics.items():
-                
                 metric_args = list(metric_fn.__code__.co_varnames)
 
-                class_numbers = range(self.n_classes) if "class_number" in metric_args and self.n_classes > 2 else [0]
+                class_numbers = (
+                    range(self.n_classes)
+                    if "class_number" in metric_args and self.n_classes > 2
+                    else [0]
+                )
 
                 for class_number in class_numbers:
-
                     metric_result = metric_fn(y, y_pred, class_number)
 
-                    if report_ci:
-                        res = bootstrap((y, y_pred), 
-                                        lambda y, y_pred : metric_fn(y, y_pred, class_number),
-                                        n_resamples = 3000,
-                                        confidence_level=0.95, 
-                                        method="percentile", 
-                                        paired=True)       
+                    if (
+                        report_ci and len(y) >= 2
+                    ):  # Compute confidence intervals only if there are at least two samples in the data.
+
+                        res = bootstrap(
+                            (y, y_pred),
+                            lambda y, y_pred: metric_fn(y, y_pred, class_number),
+                            n_resamples=3000,
+                            confidence_level=0.95,
+                            method="percentile",
+                            paired=True,
+                        )
 
                         lower_ci, upper_ci = res.confidence_interval
                         standard_error = res.standard_error
@@ -92,9 +99,17 @@ class MetricModule:
                         lower_ci_values.append(lower_ci)
                         upper_ci_values.append(upper_ci)
                         se_values.append(standard_error)
-                        metric_names.append(f"{metric_key}-{class_number}" if len(class_numbers) > 1 else f"{metric_key}")
+                        metric_names.append(
+                            f"{metric_key}-{class_number}"
+                            if len(class_numbers) > 1
+                            else f"{metric_key}"
+                        )
                     else:
-                        results[f"{metric_key}-{class_number}" if len(class_numbers) > 1 else f"{metric_key}"] = metric_result
+                        results[
+                            f"{metric_key}-{class_number}"
+                            if len(class_numbers) > 1
+                            else f"{metric_key}"
+                        ] = metric_result
 
             if report_ci:
                 # Construct the final results dictionary
@@ -131,7 +146,7 @@ class MetricModule:
         """
 
         return np.sqrt(np.mean(np.square(y - y_pred)))
-    
+
     @staticmethod
     def r2_score_fn(y, y_pred, *args):
         """
@@ -147,7 +162,11 @@ class MetricModule:
         mean_y = np.mean(y)
         total_sum_squares = np.sum((y - mean_y) ** 2)
         residual_sum_squares = np.sum((y - y_pred) ** 2)
-        r2_score = 1 - (residual_sum_squares / total_sum_squares) if total_sum_squares != 0 else 0
+        r2_score = (
+            1 - (residual_sum_squares / total_sum_squares)
+            if total_sum_squares != 0
+            else 0
+        )
 
         return r2_score
 
@@ -235,7 +254,7 @@ class MetricModule:
             return true_negative / (true_negative + false_negative)
         else:
             return 0.0
-    
+
     @staticmethod
     def f1_score_fn(y, y_pred, class_number):
         """
@@ -246,11 +265,15 @@ class MetricModule:
         Returns:
             (float) F1 score
         """
-        
+
         precision = MetricModule.ppv_fn(y, y_pred, class_number)
         recall = MetricModule.sensitivity_fn(y, y_pred, class_number)
 
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+        f1_score = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) != 0
+            else 0
+        )
 
         return f1_score
 
@@ -287,8 +310,18 @@ class MetricModule:
         true_negative = np.sum((y_pred != class_number) & (y != class_number))
         false_positive = np.sum((y_pred == class_number) & (y != class_number))
         false_negative = np.sum((y_pred != class_number) & (y == class_number))
-        denominator = np.sqrt((true_positive + false_positive) * (true_positive + false_negative) * (true_negative + false_positive) * (true_negative + false_negative))
-        mcc = (true_positive * true_negative - false_positive * false_negative) / denominator if denominator != 0 else 0
+        denominator = np.sqrt(
+            (true_positive + false_positive)
+            * (true_positive + false_negative)
+            * (true_negative + false_positive)
+            * (true_negative + false_negative)
+        )
+        mcc = (
+            (true_positive * true_negative - false_positive * false_negative)
+            / denominator
+            if denominator != 0
+            else 0
+        )
         return mcc
 
     @staticmethod
@@ -309,7 +342,6 @@ class MetricModule:
         mk = precision + npv - 1
         return mk
 
-    
     @staticmethod
     def lr_plus_fn(y, y_pred, class_number):
         """

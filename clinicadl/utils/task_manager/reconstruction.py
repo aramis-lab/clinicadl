@@ -42,35 +42,39 @@ class ReconstructionManager(TaskManager):
             row.append(metrics[metric])
         return [row]
 
-    def compute_metrics(self, results_df, report_ci = False):
-        
+    def compute_metrics(self, results_df, report_ci=False):
         metrics = dict()
 
         if report_ci:
-
-            from scipy.stats import bootstrap 
             from numpy import mean as np_mean
+            from scipy.stats import bootstrap
 
             metric_names = ["Metrics"]
-            metric_values = ["Values"]  
-            lower_ci_values = ["Lower bound CI"]  
-            upper_ci_values = ["Upper bound CI"]  
-            se_values = ["SE"] 
-            
-            for metric in self.evaluation_metrics:
+            metric_values = ["Values"]
+            lower_ci_values = ["Lower bound CI"]
+            upper_ci_values = ["Upper bound CI"]
+            se_values = ["SE"]
 
+            for metric in self.evaluation_metrics:
                 metric_vals = results_df[metric]
-                
+
                 metric_result = metric_vals.mean()
 
-                metric_vals = (metric_vals, )
-                res = bootstrap(metric_vals, 
-                                np_mean, 
-                                n_resamples = 3000,
-                                confidence_level=0.95, 
-                                method="percentile")
-                lower_ci, upper_ci = res.confidence_interval
-                standard_error = res.standard_error
+                metric_vals = (metric_vals,)
+                if (
+                    len(results_df) >= 2
+                ):  # Compute confidence intervals only if there are at least two samples in the data.
+                    res = bootstrap(
+                        metric_vals,
+                        np_mean,
+                        n_resamples=3000,
+                        confidence_level=0.95,
+                        method="percentile",
+                    )
+                    lower_ci, upper_ci = res.confidence_interval
+                    standard_error = res.standard_error
+                else:
+                    lower_ci, upper_ci, standard_error = "N/A"
 
                 metric_names.append(metric)
                 metric_values.append(metric_result)
@@ -83,14 +87,13 @@ class ReconstructionManager(TaskManager):
             metrics["Lower_CI"] = lower_ci_values
             metrics["Upper_CI"] = upper_ci_values
             metrics["SE"] = se_values
-                
+
             return metrics
 
-        else:  
+        else:
             for metric in self.evaluation_metrics:
                 metrics[metric] = results_df[metric].mean()
             return metrics
-
 
     @staticmethod
     def output_size(input_size, df, label):
