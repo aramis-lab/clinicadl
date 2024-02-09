@@ -5,6 +5,44 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## ClinicaDL 1.5.1
+
+### Fixed
+
+* Fix retrocompatibility for new option in maps.json,
+
+### Changed
+
+* Change MapsManager architecture by adding Callbacks, 
+
+### New
+
+* Add `--fully_sharded_data_parallelism` option,
+* Add `--emisions_calculator` option with codecarbon,
+* Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop.
+  
+
+## ClinicaDL 1.5.0
+
+### Fixed
+
+* Fix `adapt` command 
+
+### Changed
+
+* SSIM is now executed on GPU when possible
+
+### New
+
+* Add new command `generate artifacts` to generate noise/contract/motion
+* Add options for data augmentation
+* Add fine-tuning option
+* Add `--amp` for automatic mixed precision
+* Add `--track_exp` option to track your parameters during training with MLflow or WandB
+  
+
+
 ## ClinicaDL 1.4.0
 
 ### Fixed

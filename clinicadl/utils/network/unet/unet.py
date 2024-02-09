@@ -74,6 +74,10 @@ class FinalLayer(nn.Module):
 
 
 class GeneratorUNet(Network):
+    """
+    Generator Unet.
+    """
+
     def __init__(self, gpu):
         super(GeneratorUNet, self).__init__(gpu=gpu)
 
@@ -114,3 +118,15 @@ class GeneratorUNet(Network):
         loss = criterion(recon_images, images)
 
         return recon_images, {"loss": loss}
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128x128"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]

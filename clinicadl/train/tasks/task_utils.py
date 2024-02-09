@@ -34,34 +34,44 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     # Change value in train dict depending on user provided options
     standard_options_list = [
         "accumulation_steps",
+        "adaptive_learning_rate",
         "amp",
         "architecture",
         "baseline",
         "batch_size",
+        "compensation",
         "data_augmentation",
         "deterministic",
         "diagnoses",
         "dropout",
         "epochs",
         "evaluation_steps",
+        "fully_sharded_data_parallel",
         "gpu",
         "learning_rate",
         "multi_cohort",
         "multi_network",
+        "ssda_network",
         "n_proc",
         "n_splits",
+        "nb_unfrozen_layer",
         "normalize",
         "optimizer",
         "patience",
         "profiler",
         "tolerance",
+        "track_exp",
+        "transfer_path",
         "transfer_selection_metric",
         "weight_decay",
         "sampler",
+        "save_all_models",
         "seed",
         "split",
-        "compensation",
-        "transfer_path",
+        "caps_target",
+        "tsv_target_lab",
+        "tsv_target_unlab",
+        "preprocessing_dict_target",
     ]
     all_options_list = standard_options_list + task_options_list
 
@@ -76,6 +86,13 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             / "tensor_extraction"
             / kwargs["preprocessing_json"]
         )
+
+        if train_dict["ssda_network"]:
+            preprocessing_json_target = (
+                Path(kwargs["caps_target"])
+                / "tensor_extraction"
+                / kwargs["preprocessing_dict_target"]
+            )
     else:
         caps_dict = CapsDataset.create_caps_dict(
             train_dict["caps_directory"], train_dict["multi_cohort"]
@@ -95,11 +112,32 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
                 f"in {caps_dict}."
             )
+        # To CHECK AND CHANGE
+        if train_dict["ssda_network"]:
+            caps_target = Path(kwargs["caps_target"])
+            preprocessing_json_target = (
+                caps_target / "tensor_extraction" / kwargs["preprocessing_dict_target"]
+            )
+
+            if preprocessing_json_target.is_file():
+                logger.info(
+                    f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."
+                )
+                json_found = True
+            if not json_found:
+                raise ValueError(
+                    f"Preprocessing JSON {kwargs['preprocessing_json_target']} was not found for any CAPS "
+                    f"in {caps_target}."
+                )
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
     train_dict["preprocessing_dict"] = preprocessing_dict
     train_dict["mode"] = preprocessing_dict["mode"]
+
+    if train_dict["ssda_network"]:
+        preprocessing_dict_target = read_preprocessing(preprocessing_json_target)
+        train_dict["preprocessing_dict_target"] = preprocessing_dict_target
 
     # Add default values if missing
     if (

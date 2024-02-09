@@ -23,8 +23,7 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: Path
 
 def read_preprocessing(json_path: Path) -> Dict[str, Any]:
     if not json_path.name.endswith(".json"):
-        json_path += ".json"
-        json_path = json_path
+        json_path = json_path.with_suffix(".json")
 
     if not json_path.is_file():
         raise FileNotFoundError(errno.ENOENT, json_path)

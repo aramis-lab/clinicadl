@@ -44,6 +44,17 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
+fully_sharded_data_parallel = cli_param.option_group.computational_group.option(
+    "--fully_sharded_data_parallel",
+    "-fsdp",
+    type=bool,
+    is_flag=True,
+    help="Enables Fully Sharded Data Parallel with Pytorch to save memory at the cost of communications. "
+    "Currently this only enables ZeRO Stage 1 but will be entirely replaced by FSDP in a later patch, "
+    "this flag is already set to FSDP to that the zero flag is never actually removed.",
+    default=False,
+)
+
 amp = cli_param.option_group.computational_group.option(
     "--amp/--no-amp",
     type=bool,
@@ -70,6 +81,12 @@ compensation = cli_param.option_group.reproducibility_group.option(
     # default="memory",
     type=click.Choice(["memory", "time"]),
 )
+save_all_models = cli_param.option_group.reproducibility_group.option(
+    "--save_all_models/--save_only_best_model",
+    type=bool,
+    help="If provided, enables the saving of models weights for each epochs.",
+)
+
 # Model
 architecture = cli_param.option_group.model_group.option(
     "-a",
@@ -83,6 +100,12 @@ multi_network = cli_param.option_group.model_group.option(
     type=bool,
     default=None,
     help="If provided uses a multi-network framework.",
+)
+ssda_network = cli_param.option_group.model_group.option(
+    "--ssda_network/--single_network",
+    type=bool,
+    default=None,
+    help="If provided uses a ssda-network framework.",
 )
 # Task
 label = cli_param.option_group.task_group.option(
@@ -169,7 +192,21 @@ normalize = cli_param.option_group.data_group.option(
 data_augmentation = cli_param.option_group.data_group.option(
     "--data_augmentation",
     "-da",
-    type=click.Choice(["None", "Noise", "Erasing", "CropPad", "Smoothing"]),
+    type=click.Choice(
+        [
+            "None",
+            "Noise",
+            "Erasing",
+            "CropPad",
+            "Smoothing",
+            "Motion",
+            "Ghosting",
+            "Spike",
+            "BiasField",
+            "RandomBlur",
+            "RandomSwap",
+        ]
+    ),
     # default=(),
     multiple=True,
     help="Randomly applies transforms on the training set.",
@@ -180,6 +217,34 @@ sampler = cli_param.option_group.data_group.option(
     type=click.Choice(["random", "weighted"]),
     # default="random",
     help="Sampler used to load the training data set.",
+)
+caps_target = cli_param.option_group.data_group.option(
+    "--caps_target",
+    "-d",
+    type=str,
+    default=None,
+    help="CAPS of target data.",
+)
+tsv_target_lab = cli_param.option_group.data_group.option(
+    "--tsv_target_lab",
+    "-d",
+    type=str,
+    default=None,
+    help="TSV of labeled target data.",
+)
+tsv_target_unlab = cli_param.option_group.data_group.option(
+    "--tsv_target_unlab",
+    "-d",
+    type=str,
+    default=None,
+    help="TSV of unllabeled target data.",
+)
+preprocessing_dict_target = cli_param.option_group.data_group.option(
+    "--preprocessing_dict_target",
+    "-d",
+    type=str,
+    default=None,
+    help="Path to json taget.",
 )
 # Cross validation
 n_splits = cli_param.option_group.cross_validation.option(
@@ -229,6 +294,14 @@ learning_rate = cli_param.option_group.optimization_group.option(
     # default=1e-4,
     help="Learning rate of the optimization.",
 )
+adaptive_learning_rate = cli_param.option_group.optimization_group.option(
+    "--adaptive_learning_rate",
+    "-alr",
+    type=bool,
+    help="Whether to diminish the learning rate",
+    is_flag=True,
+    default=False,
+)
 weight_decay = cli_param.option_group.optimization_group.option(
     "--weight_decay",
     "-wd",
@@ -268,6 +341,18 @@ profiler = cli_param.option_group.optimization_group.option(
     help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
     "It will make an execution trace and some statistics about the CPU and GPU usage.",
 )
+track_exp = cli_param.option_group.optimization_group.option(
+    "--track_exp",
+    "-te",
+    type=click.Choice(
+        [
+            "wandb",
+            "mlflow",
+            "",
+        ]
+    ),
+    help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
+)
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
     "-tp",
@@ -282,4 +367,18 @@ transfer_selection_metric = cli_param.option_group.transfer_learning_group.optio
     type=str,
     # default="loss",
     help="Metric used to select the model for transfer learning in the MAPS defined by transfer_path.",
+)
+nb_unfrozen_layer = cli_param.option_group.transfer_learning_group.option(
+    "-nul",
+    "--nb_unfrozen_layer",
+    type=int,
+    default=0,
+    help="Number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.",
+)
+# informations
+emissions_calculator = cli_param.option_group.informations_group.option(
+    "--calculate_emissions/--dont_calculate_emissions",
+    type=bool,
+    default=None,
+    help="Flag to allow calculate the carbon emissions during training.",
 )

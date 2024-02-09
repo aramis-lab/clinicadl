@@ -86,7 +86,7 @@ class SplitManager:
             found_diagnoses = set()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = tsv_df.loc[idx, "path"]
+                cohort_path = Path(tsv_df.loc[idx, "path"])
                 cohort_diagnoses = (
                     tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
                 )
@@ -134,7 +134,6 @@ class SplitManager:
         logger.debug(f"Validation data loaded at {valid_path}")
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
-
         if self.baseline:
             train_path = train_path / "train_baseline.tsv"
         else:
@@ -195,8 +194,9 @@ class SplitManager:
                 )
             except:
                 pass
-
-        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
+        train_df = train_df[
+            train_df.diagnosis.isin(cohort_diagnoses)
+        ]  # TO MODIFY with train
         valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
 
         train_df.reset_index(inplace=True, drop=True)

@@ -63,6 +63,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--amp/--no-amp` (bool) Enables Pytorch's Automatic Mixed Precision with float16. Saves some memory and might speedup training with modern GPUs. We do not allow AMP on CPU. Default: `False`.
+    - `--fully_sharded_data_parallel` (bool) Enables Zero Redundancy Optimizer with Pytorch to save memory at the cost of communications. Currently only Stage 1. In the future will be Stage 3. Requires using multiple GPUs Default: `False`.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
@@ -94,6 +95,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     Default: `Adam`.
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.
+    - `--adaptive_learning_rate` (bool) Enables the learning rate to be reduced by 10 when the validation loss hasn't changed during 10 epochs. Default: `False`.
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
     - `--patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience. Default: `0`.
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
@@ -104,7 +106,11 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 - **Transfer learning parameters**
     - `--transfer_path` (Path) is the path to the model used for transfer learning.
     - `--transfer_selection_metric` (str) is the transfer learning selection metric.
+    - `--nb_unfrozen_layer` (int) is the number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
+- **Track an experiment**
+    - `--track_exp` (str) is the name of the experiment tracker you want to use. Must be chosen between `wandb` (Weight & Biases) and `mlflow`. As mlflow and W&B are not ClinicaDL dependencies, you must install the one chosen on your own (by running `pip install wandb/mlflow`).
+    For more information, check out the documentation of [W&B](https://docs.wandb.ai) or [Mlflow](https://mlflow.org/docs/latest/index.html)
 
 <!---
 !!! tip
@@ -211,6 +217,7 @@ compensation = "memory" # Only used if deterministic = true
 [Transfer_learning]
 transfer_path = ""
 transfer_selection_metric = "loss"
+nb_unfrozen_layer = 0
 
 [Mode]
 # require to manually generate preprocessing json

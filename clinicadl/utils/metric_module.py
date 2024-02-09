@@ -50,7 +50,6 @@ class MetricModule:
         Returns:
             (Dict[str:float]) metrics results
         """
-
         if y is not None and y_pred is not None:
             results = dict()
             y = np.array(y)
@@ -93,7 +92,6 @@ class MetricModule:
         Returns:
             (float) mean squared error
         """
-
         return np.mean(np.square(y - y_pred))
 
     @staticmethod
@@ -230,9 +228,9 @@ class MetricModule:
         from clinicadl.utils.pytorch_ssim import ssim, ssim3D
 
         if len(y) == 3:
-            return ssim(y, y_pred)
+            return ssim(y, y_pred).item()
         else:
-            return ssim3D(y, y_pred)
+            return ssim3D(y, y_pred).item()
 
     @staticmethod
     def psnr_fn(y, y_pred):

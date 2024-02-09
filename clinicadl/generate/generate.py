@@ -50,7 +50,7 @@ def generate_random_dataset(
     uncropped_image: bool = False,
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
-):
+) -> None:
     """
     Generates a random dataset.
 
@@ -89,6 +89,7 @@ def generate_random_dataset(
     tsv file describing this output
 
     """
+
     commandline_to_json(
         {
             "output_dir": output_dir,
@@ -100,6 +101,11 @@ def generate_random_dataset(
             "sigma": sigma,
         }
     )
+
+    SESSION_ID = "ses-M00"
+    AGE_BL_DEFAULT = 60
+    SEX_DEFAULT = "F"
+
     # Transform caps_directory in dict
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
 
@@ -131,13 +137,17 @@ def generate_random_dataset(
     participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
     session_id_list = ["ses-M00"] * 2 * n_subjects
     diagnosis_list = ["AD"] * n_subjects + ["CN"] * n_subjects
-    data = np.array([participant_id_list, session_id_list, diagnosis_list])
-    data = data.T
+
     output_df = pd.DataFrame(
-        data, columns=["participant_id", "session_id", "diagnosis"]
+        {
+            "participant_id": participant_id_list,
+            "session_id": session_id_list,
+            "diagnosis": diagnosis_list,
+        }
     )
-    output_df["age_bl"] = 60
-    output_df["sex"] = "F"
+
+    output_df["age_bl"] = AGE_BL_DEFAULT
+    output_df["sex"] = SEX_DEFAULT
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     input_filename = image_path.name
@@ -151,10 +161,10 @@ def generate_random_dataset(
             noisy_image, header=image_nii.header, affine=image_nii.affine
         )
         noisy_image_nii_path = (
-            output_dir / "subjects" / participant_id / "ses-M00" / "t1_linear"
+            output_dir / "subjects" / participant_id / SESSION_ID / "t1_linear"
         )
 
-        noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
+        noisy_image_nii_filename = f"{participant_id}_{SESSION_ID}_{filename_pattern}"
         noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
         nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
@@ -241,16 +251,6 @@ def generate_trivial_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
-    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
-    FILE1 = RemoteFileStructure(
-        filename="AAL2.tar.gz",
-        url=url_aramis,
-        checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
-    )
-    cache_clinicadl.mkdir(parents=True, exist_ok=True)
-
     if n_subjects > len(data_df):
         raise IndexError(
             f"The number of subjects {n_subjects} cannot be higher "
@@ -258,6 +258,16 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
+        home = Path.home()
+        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
+        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+        FILE1 = RemoteFileStructure(
+            filename="AAL2.tar.gz",
+            url=url_aramis,
+            checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
+        )
+        cache_clinicadl.mkdir(parents=True, exist_ok=True)
+
         if not (cache_clinicadl / "AAL2").is_dir():
             print("Downloading AAL2 masks...")
             try:
@@ -325,7 +335,11 @@ def generate_trivial_dataset(
 
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        atlas_to_mask = nib.load(mask_path / f"mask-{label + 1}.nii").get_data()
+        path_to_mask = mask_path / f"mask-{label + 1}.nii"
+        if path_to_mask.is_file():
+            atlas_to_mask = nib.load(path_to_mask).get_data()
+        else:
+            raise ValueError("masks need to be named mask-1.nii and mask-2.nii")
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(
@@ -659,7 +673,7 @@ def generate_hypometabolic_dataset(
     )
 
 
-def generate_motion_dataset(
+def generate_artifacts_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_proc: int,
@@ -669,28 +683,50 @@ def generate_motion_dataset(
     uncropped_image: bool = False,
     tracer: str = "fdg",
     suvr_reference_region: str = "pons",
+    contrast: bool = False,
+    gamma: List = [-0.2, -0.05],
+    motion: bool = False,
     translation: List = [2, 4],
     rotation: List = [2, 4],
     num_transforms: int = 2,
+    noise: bool = False,
+    noise_std: List = [5, 15],
 ):
     """
-    Generates a fully separable dataset.
-    Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Generates a dataset, based on the images of the CAPS directory, where
+    all the images are corrupted with a combination of motion, contrast and
+    noise artefacts using torchio simulations.
     Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        tracer: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+        caps_directory:  Path
+            Path to the CAPS directory.
+        output_dir: Path
+            Folder containing the synthetic dataset in CAPS format.
+        n_proc: int
+            Number of cores used during the task.
+        tsv_path: Path
+            Path to tsv file of list of subjects/sessions.
+        preprocessing: str
+            Preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: bool
+            If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: bool
+            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        tracer: str
+            Name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: str
+            Name of the reference region when using `pet-linear` preprocessing.
+        translation: List
+            Translation range in mm of simulated movements.
+        rotation : List
+            Rotation range in degree of simulated movement.
+        num_transformes: int
+            Number of simulated movements.
+        gamma: List
+            Gamma range of simulated contrast.
+        noise_std: List
+            Stadndard deviation of simulated noise.
     Returns:
         Folder structure where images are stored in CAPS format.
-    Raises:
-        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 
     commandline_to_json(
@@ -705,7 +741,6 @@ def generate_motion_dataset(
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
-    data_df = extract_baseline(data_df)
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
@@ -717,8 +752,15 @@ def generate_motion_dataset(
     file_type = find_file_type(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
+    artifacts_list = []
+    if motion:
+        artifacts_list.append("motion")
+    if contrast:
+        artifacts_list.append("contrast")
+    if noise:
+        artifacts_list.append("noise")
 
-    def create_motion_image(data_idx, output_df):
+    def create_artifacts_image(data_idx, output_df):
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
@@ -729,38 +771,60 @@ def generate_motion_dataset(
         )
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
+        subject_name = input_filename.split("_")[:1][0]
+        session_name = input_filename.split("_")[1:2][0]
 
-        motion_image_nii_dir = (
-            output_dir
-            / "subjects"
-            / f"{participant_id}-RM{data_idx}"
-            / session_id
-            / preprocessing
+        artif_image_nii_dir = (
+            output_dir / "subjects" / subject_name / session_name / preprocessing
         )
-        motion_image_nii_filename = (
-            f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
-        )
+        artif_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        motion_image_nii_dir.mkdir(parents=True, exist_ok=True)
+        artifacts_tio = []
+        arti_ext = ""
+        for artif in artifacts_list:
+            if artif == "motion":
+                artifacts_tio.append(
+                    tio.RandomMotion(
+                        degrees=(rotation[0], rotation[1]),
+                        translation=(translation[0], translation[1]),
+                        num_transforms=num_transforms,
+                    )
+                )
+                arti_ext += "mot-"
+            elif artif == "noise":
+                artifacts_tio.append(
+                    tio.RandomNoise(
+                        std=(noise_std[0], noise_std[1]),
+                    )
+                )
+                arti_ext += "noi-"
+            elif artif == "contrast":
+                artifacts_tio.append(tio.RandomGamma(log_gamma=(gamma[0], gamma[1])))
+                arti_ext += "con-"
 
-        motion = tio.RandomMotion(
-            degrees=(rotation[0], rotation[1]),
-            translation=(translation[0], translation[1]),
-            num_transforms=num_transforms,
-        )
+        if filename_pattern.endswith(".nii.gz"):
+            file_suffix = ".nii.gz"
+            filename_pattern = Path(Path(filename_pattern).stem).stem
+        elif filename_pattern.endswith(".nii"):
+            file_suffix = ".nii"
+            filename_pattern = Path(filename_pattern).stem
 
-        motion_image = motion(tio.ScalarImage(image_path))
-        motion_image.save(motion_image_nii_dir / motion_image_nii_filename)
+        artif_image_nii_filename = f"{subject_name}_{session_name}_{filename_pattern}_art-{arti_ext[:-1]}{file_suffix}"
+
+        artifacts = tio.transforms.Compose(artifacts_tio)
+
+        artif_image = artifacts(tio.ScalarImage(image_path))
+        artif_image.save(artif_image_nii_dir / artif_image_nii_filename)
 
         # Append row to output tsv
-        row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
+        row = [subject_name, session_name, artifacts_list]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
         return output_df
 
     results_df = Parallel(n_jobs=n_proc)(
-        delayed(create_motion_image)(data_idx, output_df)
+        delayed(create_artifacts_image)(data_idx, output_df)
         for data_idx in range(len(data_df))
     )
     output_df = pd.DataFrame()
@@ -771,6 +835,4 @@ def generate_motion_dataset(
 
     write_missing_mods(output_dir, output_df)
 
-    logger.info(
-        f"Images corrupted with motion artefacts were generated at {output_dir}"
-    )
+    logger.info(f"Images corrupted with artefacts were generated at {output_dir}")

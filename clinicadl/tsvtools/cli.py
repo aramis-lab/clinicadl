@@ -10,15 +10,14 @@ from .kfold.kfold_cli import cli as kfold_cli
 from .prepare_experiment.prepare_experiment_cli import cli as prepare_experiment_cli
 from .split.split_cli import cli as split_cli
 
+# class RegistrationOrderGroup(click.Group):
+#     """CLI group which lists commands by order or registration."""
 
-class RegistrationOrderGroup(click.Group):
-    """CLI group which lists commands by order or registration."""
-
-    def list_commands(self, ctx):
-        return self.commands.keys()
+#     def list_commands(self, ctx):
+#         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="tsvtools", no_args_is_help=True)
+@click.group(name="tsvtools", no_args_is_help=True)
 def cli() -> None:
     """
     Manipulation of TSV files to prepare and manage input data.
