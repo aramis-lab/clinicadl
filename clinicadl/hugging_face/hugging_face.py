@@ -32,7 +32,6 @@ def push_to_hf_hub(
     model_name: str,
     paper_link: str = None,
 ):
-
     hf_hub_is_available()
 
     if paper_link is not None:
