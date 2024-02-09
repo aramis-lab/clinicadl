@@ -11,13 +11,11 @@ from clinicadl.utils.maps_manager import MapsManager
     "hf_hub_path",
     type=str,
     default=None,
-    # help="Path to your repo on the Hugging Face hub.",
 )
 @click.argument(
     "maps_name",
     type=str,
     default="maps",
-    # help="Path to your repo on the Hugging Face hub.",
 )
 @cli_param.argument.output_maps
 def cli(hf_hub_path, maps_name, output_maps_directory):

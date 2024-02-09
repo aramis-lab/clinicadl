@@ -3,6 +3,8 @@ import os
 from logging import getLogger
 from pathlib import Path
 
+import toml
+
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     change_str_to_path,
@@ -14,25 +16,24 @@ logger = getLogger("clinicadl")
 
 
 def hf_hub_is_available():
-    return importlib.util.find_spec("huggingface_hub") is not None
-
-
-def push_to_hf_hub(
-    hf_hub_path: str,
-    maps_dir: Path,
-    model_name: str,
-    dataset: [],
-    paper_link: str = None,
-):
-    if not hf_hub_is_available():
+    if importlib.util.find_spec("huggingface_hub") is not None:
+        from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
+    else:
         raise ModuleNotFoundError(
             "`huggingface_hub` package must be installed to push your model to the HF hub. "
             "Run `python -m pip install huggingface_hub` and log in to your account with "
             "`huggingface-cli login`."
         )
 
-    else:
-        from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
+
+def push_to_hf_hub(
+    hf_hub_path: str,
+    maps_dir: Path,
+    model_name: str,
+    paper_link: str = None,
+):
+
+    hf_hub_is_available()
 
     if paper_link is not None:
         model_card_ = f"""---
@@ -53,8 +54,7 @@ tags:
 license: mit
 ---
 """
-    if hf_hub_path == "clinicadl" or hf_hub_path == "Clinicadl":
-        hf_hub_path = "ClinicaDL"
+    hf_hub_path = "ClinicaDL" if hf_hub_path.lower() == "clinicadl" else hf_hub_path
 
     config_file = maps_dir / "maps.json"
     n_splits = create_readme(
@@ -66,7 +66,6 @@ license: mit
     id_ = os.path.join(hf_hub_path, model_name)
     user = api.whoami()
     list_orgs = [x["name"] for x in user["orgs"]]
-    print(list_orgs)
 
     if hf_hub_path == "ClinicaDL":
         if "ClinicaDL" not in list_orgs:
@@ -78,8 +77,9 @@ license: mit
             f"You're logged as {user['name']} in Hugging Face and you are trying to push a model under {hf_hub_path} logging."
         )
 
+    tmp_file = "tmp_README.md"
     hf_operations = [
-        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj="tmp_README.md"),
+        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=tmp_file),
         CommitOperationAdd(
             path_in_repo="maps.json", path_or_fileobj=maps_dir / "maps.json"
         ),
@@ -95,11 +95,8 @@ license: mit
             )
         )
 
-    for root, dirs, files in os.walk(maps_dir, topdown=False):
+    for root, dirs, files in maps_dir.rglob("*"):
         for name in files:
-            print(root[(len(str(maps_dir))) :] + "/" + name)
-
-            # print(os.path.join((root[(len(str(maps_dir))):], name)))
             hf_operations.append(
                 CommitOperationAdd(
                     path_in_repo=str(
@@ -125,7 +122,7 @@ license: mit
     except:
         from huggingface_hub import create_repo
 
-        repo_name = os.path.basename(os.path.normpath(maps_dir))
+        repo_name = maps_dir.name
         logger.info(f"Creating {repo_name} in the HF hub since it does not exist...")
         create_repo(repo_id=id_)
         logger.info(f"Successfully created {repo_name} in the HF hub!")
@@ -135,7 +132,9 @@ license: mit
             repo_id=id_,
             operations=hf_operations,
         )
-    os.remove("tmp_README.md")
+
+    if tmp_file.exists():
+        tmp_file.unlink()
 
 
 def create_readme(
@@ -143,8 +142,6 @@ def create_readme(
 ):
     if not config_file.is_file():
         raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
-
-    import toml
 
     clinicadl_root_dir = (Path(__file__) / "../..").resolve()
     config_path = (
@@ -206,37 +203,23 @@ def load_from_hf_hub(
 ):  # pragma: no cover
     """Class method to be used to load a pretrained model from the Hugging Face hub
 
-    Args:
-        hf_hub_path (str): The path where the model should have been be saved on the
-            hugginface hub.
+    Parameters
+    ----------
+    output_path: str,
 
-    .. note::
-        This function requires the folder to contain:
-
-        - | a ``model_config.json`` and a ``model.pt`` if no custom architectures were provided
-
-        **or**
-
-        - | a ``model_config.json``, a ``model.pt`` and a ``encoder.pkl`` (resp.
-            ``decoder.pkl``) if a custom encoder (resp. decoder) was provided
+    hf_hub_path: (str)
+        The path where the model should have been be saved on thehugginface hub.
+    maps_name: str
     """
 
-    if not hf_hub_is_available():
-        raise ModuleNotFoundError(
-            "`huggingface_hub` package must be installed to load models from the HF hub. "
-            "Run `python -m pip install huggingface_hub` and log in to your account with "
-            "`huggingface-cli login`."
-        )
-
-    else:
-        from huggingface_hub import HfApi, hf_hub_download, snapshot_download
+    hf_hub_is_available()
 
     api = HfApi()
     id_ = os.path.join(hf_hub_path, maps_name)
     user = api.whoami()
     list_orgs = [x["name"] for x in user["orgs"]]
 
-    if hf_hub_path == "clinicadl-test":
+    if hf_hub_path == "ClinicaDL":
         if "clinicadl-test" not in list_orgs:
             raise ClinicaDLArgumentError(
                 "You're not in the ClinicaDL organization on Hugging Face. Please follow the link to request to join the organization: https://huggingface.co/clinicadl-test"
