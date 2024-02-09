@@ -16,8 +16,16 @@ logger = getLogger("clinicadl")
 
 
 def hf_hub_is_available():
-    if importlib.util.find_spec("huggingface_hub") is not None:
-        from huggingface_hub import CommitOperationAdd, HfApi, upload_folder
+    return importlib.util.find_spec("huggingface_hub") is not None
+
+
+def push_to_hf_hub(
+    hf_hub_path: str,
+    maps_dir: Path,
+    model_name: str,
+):
+    if hf_hub_is_available():
+        from huggingface_hub import CommitOperationAdd, HfApi
     else:
         raise ModuleNotFoundError(
             "`huggingface_hub` package must be installed to push your model to the HF hub. "
@@ -25,27 +33,8 @@ def hf_hub_is_available():
             "`huggingface-cli login`."
         )
 
-
-def push_to_hf_hub(
-    hf_hub_path: str,
-    maps_dir: Path,
-    model_name: str,
-    paper_link: str = None,
-):
-    hf_hub_is_available()
-
-    if paper_link is not None:
-        model_card_ = f"""---
-language: en
-arxiv: {paper_link}
-library_name: clinicadl
-tags:
-- clinicadl
-license: mit
+    model_card_ = """
 ---
-"""
-    else:
-        model_card_ = """---
 language: en
 library_name: clinicadl
 tags:
@@ -94,7 +83,7 @@ license: mit
             )
         )
 
-    for root, dirs, files in maps_dir.rglob("*"):
+    for root, dirs, files in os.walk(maps_dir, topdown=False):
         for name in files:
             hf_operations.append(
                 CommitOperationAdd(
@@ -132,8 +121,8 @@ license: mit
             operations=hf_operations,
         )
 
-    if tmp_file.exists():
-        tmp_file.unlink()
+    if Path(tmp_file).exists():
+        Path(tmp_file).unlink()
 
 
 def create_readme(
@@ -211,7 +200,16 @@ def load_from_hf_hub(
     maps_name: str
     """
 
-    hf_hub_is_available()
+    if hf_hub_is_available():
+        from huggingface_hub import HfApi, snapshot_download
+    else:
+        raise ModuleNotFoundError(
+            "`huggingface_hub` package must be installed to push your model to the HF hub. "
+            "Run `python -m pip install huggingface_hub` and log in to your account with "
+            "`huggingface-cli login`."
+        )
+
+    hf_hub_path = "ClinicaDL" if hf_hub_path.lower() == "clinicadl" else hf_hub_path
 
     api = HfApi()
     id_ = os.path.join(hf_hub_path, maps_name)
@@ -219,13 +217,13 @@ def load_from_hf_hub(
     list_orgs = [x["name"] for x in user["orgs"]]
 
     if hf_hub_path == "ClinicaDL":
-        if "clinicadl-test" not in list_orgs:
+        if "ClinicaDL" not in list_orgs:
             raise ClinicaDLArgumentError(
                 "You're not in the ClinicaDL organization on Hugging Face. Please follow the link to request to join the organization: https://huggingface.co/clinicadl-test"
             )
     elif hf_hub_path != user["name"]:
-        raise ClinicaDLArgumentError(
-            f"You're logged as {user['name']} in Hugging Face and you are trying to push a model under {hf_hub_path} logging."
+        logger.warning(
+            f"You're logged as {user['name']} in Hugging Face and you are trying to pull a model from {hf_hub_path}."
         )
     else:
         logger.info(f"Downloading {hf_hub_path} files for rebuilding...")
