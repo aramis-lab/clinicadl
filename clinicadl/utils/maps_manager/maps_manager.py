@@ -2303,22 +2303,24 @@ class MapsManager:
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
                     f"To erase {data_group} please set overwrite to True."
                 )
-        else:
-            if (
-                caps_directory is None or df is None
-            ):  # Data group does not exist yet / was overwritten + missing data
-                raise ClinicaDLArgumentError(
-                    f"The data group {data_group} does not already exist. "
-                    f"Please specify a caps_directory and a tsv_path to create this data group."
-                )
-            else:  # Data group does not exist yet / was overwritten + all data is provided
-                if skip_leak_check:
-                    logger.info("Skipping data leakage check")
-                else:
-                    self._check_leakage(data_group, df)
-                self._write_data_group(
-                    data_group, df, caps_directory, multi_cohort, label=label
-                )
+
+        elif not group_dir.is_dir() and (
+            caps_directory is None or df is None
+        ):  # Data group does not exist yet / was overwritten + missing data
+            raise ClinicaDLArgumentError(
+                f"The data group {data_group} does not already exist. "
+                f"Please specify a caps_directory and a tsv_path to create this data group."
+            )
+        elif (
+            not group_dir.is_dir()
+        ):  # Data group does not exist yet / was overwritten + all data is provided
+            if skip_leak_check:
+                logger.info("Skipping data leakage check")
+            else:
+                self._check_leakage(data_group, df)
+            self._write_data_group(
+                data_group, df, caps_directory, multi_cohort, label=label
+            )
 
     ###############################
     # File writers                #
@@ -2947,6 +2949,7 @@ class MapsManager:
         split is only needed if data_group is train or validation.
         """
         group_path = self.maps_path / "groups" / data_group
+        print(group_path)
         if not group_path.is_dir():
             raise MAPSError(
                 f"Data group {data_group} is not defined. "
