@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## ClinicaDL 1.6.0
+
+### Fixed
+
+* Fix t1-volume quality-check empty tsv issue,
+* Fix bug with adapt pipeline,
+* Fix `predict —-overwrite` issue deleting the result on all the splis, 
+
+
+### Changed
+
+* Remove Clinica dependency,
+* Update the `--fully_sharded_data_parallelism` option,
+* Change MapsManager architecture by adding more Callbacks, 
+* Update python to v3.11 and pytorch to v2.0,
+
+### New
+
+* Add missing methods in models classes,
+* Add `--save_model` option to save model weight at each epochs,
+* Add `--skip_leak_check` option to skip data leakage check,
+* Add `--adaptive_learning_rate` option, 
+* Add `prepare-data-from-bids` pipeline to extract tensor from bids to caps,
+* Add dwi modality, 
+* Add `hugging-face push/pull` pipelines to share models on HuggingFace,
+* Add `--longitudinal_validation` to use longitudinal data for the validation,
+* Add confidence intervals and metrics 
+
 ## ClinicaDL 1.5.1
 
 ### Fixed
