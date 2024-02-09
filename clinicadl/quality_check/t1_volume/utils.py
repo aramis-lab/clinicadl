@@ -63,11 +63,15 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
     results_df = pd.DataFrame(columns=columns)
 
     subjects = list((caps_dir / "subjects").iterdir())
-    subjects = [subject for subject in subjects if str(subject)[:4:] == "sub-"]
+    subjects = [
+        subject.stem for subject in subjects if str(subject.stem)[:4:] == "sub-"
+    ]
     for subject in subjects:
         subject_path = caps_dir / "subjects" / subject
         sessions = list(subject_path.iterdir())
-        sessions = [session for session in sessions if str(session)[:4:] == "ses-"]
+        sessions = [
+            session.stem for session in sessions if str(session.stem)[:4:] == "ses-"
+        ]
         for session in sessions:
             image_path = (
                 subject_path
@@ -76,12 +80,13 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
                 / "spm"
                 / "segmentation"
                 / "normalized_space"
-                / subject
-                + "_"
-                + session
-                + "_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+                / (
+                    subject
+                    + "_"
+                    + session
+                    + "_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+                )
             )
-
             if image_path.is_file():
                 # GM analysis
                 image_nii = nib.load(image_path)
