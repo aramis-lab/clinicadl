@@ -304,16 +304,16 @@ class MapsManager:
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label if label is None else label,
-                        label_code=self.label_code
-                        if label_code == "default"
-                        else label_code,
+                        label_code=(
+                            self.label_code if label_code == "default" else label_code
+                        ),
                         cnn_index=network,
                     )
                     test_loader = DataLoader(
                         data_test,
-                        batch_size=batch_size
-                        if batch_size is not None
-                        else self.batch_size,
+                        batch_size=(
+                            batch_size if batch_size is not None else self.batch_size
+                        ),
                         shuffle=False,
                         sampler=DistributedSampler(
                             data_test,
@@ -371,16 +371,16 @@ class MapsManager:
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label if label is None else label,
-                    label_code=self.label_code
-                    if label_code == "default"
-                    else label_code,
+                    label_code=(
+                        self.label_code if label_code == "default" else label_code
+                    ),
                 )
 
                 test_loader = DataLoader(
                     data_test,
-                    batch_size=batch_size
-                    if batch_size is not None
-                    else self.batch_size,
+                    batch_size=(
+                        batch_size if batch_size is not None else self.batch_size
+                    ),
                     shuffle=False,
                     sampler=DistributedSampler(
                         data_test,
@@ -2313,13 +2313,12 @@ class MapsManager:
                 )
             else:  # Data group does not exist yet / was overwritten + all data is provided
                 if skip_leak_check:
-                  logger.info("Skipping data leakage check")
+                    logger.info("Skipping data leakage check")
                 else:
-                  self._check_leakage(data_group, df)
+                    self._check_leakage(data_group, df)
                 self._write_data_group(
-                  data_group, df, caps_directory, multi_cohort, label=label
+                    data_group, df, caps_directory, multi_cohort, label=label
                 )
-
 
     ###############################
     # File writers                #
@@ -2407,12 +2406,14 @@ class MapsManager:
         self.write_parameters(
             group_path,
             {
-                "caps_directory": caps_directory
-                if caps_directory is not None
-                else self.caps_directory,
-                "multi_cohort": multi_cohort
-                if multi_cohort is not None
-                else self.multi_cohort,
+                "caps_directory": (
+                    caps_directory
+                    if caps_directory is not None
+                    else self.caps_directory
+                ),
+                "multi_cohort": (
+                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                ),
             },
         )
 
