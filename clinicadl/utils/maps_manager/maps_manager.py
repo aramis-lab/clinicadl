@@ -2670,9 +2670,6 @@ class MapsManager:
             use_labels=use_labels,
         )
 
-        col = df_final["true_label"]
-        df_final["predicted_label"]
-
         if df_final is not None:
             df_final.to_csv(
                 performance_dir / f"{data_group}_image_level_prediction.tsv",

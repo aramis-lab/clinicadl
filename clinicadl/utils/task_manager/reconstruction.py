@@ -43,57 +43,54 @@ class ReconstructionManager(TaskManager):
         return [row]
 
     def compute_metrics(self, results_df, report_ci=False):
+        if not report_ci:
+            return {
+                metric: results_df[metric].mean() for metric in self.evaluation_metrics
+            }
+
+        from numpy import mean as np_mean
+        from scipy.stats import bootstrap
+
         metrics = dict()
+        metric_names = ["Metrics"]
+        metric_values = ["Values"]
+        lower_ci_values = ["Lower bound CI"]
+        upper_ci_values = ["Upper bound CI"]
+        se_values = ["SE"]
 
-        if report_ci:
-            from numpy import mean as np_mean
-            from scipy.stats import bootstrap
+        for metric in self.evaluation_metrics:
+            metric_vals = results_df[metric]
 
-            metric_names = ["Metrics"]
-            metric_values = ["Values"]
-            lower_ci_values = ["Lower bound CI"]
-            upper_ci_values = ["Upper bound CI"]
-            se_values = ["SE"]
+            metric_result = metric_vals.mean()
 
-            for metric in self.evaluation_metrics:
-                metric_vals = results_df[metric]
+            metric_vals = (metric_vals,)
+            # Compute confidence intervals only if there are at least two samples in the data.
+            if len(results_df) >= 2:
+                res = bootstrap(
+                    metric_vals,
+                    np_mean,
+                    n_resamples=3000,
+                    confidence_level=0.95,
+                    method="percentile",
+                )
+                lower_ci, upper_ci = res.confidence_interval
+                standard_error = res.standard_error
+            else:
+                lower_ci, upper_ci, standard_error = "N/A"
 
-                metric_result = metric_vals.mean()
+            metric_names.append(metric)
+            metric_values.append(metric_result)
+            lower_ci_values.append(lower_ci)
+            upper_ci_values.append(upper_ci)
+            se_values.append(standard_error)
 
-                metric_vals = (metric_vals,)
-                if (
-                    len(results_df) >= 2
-                ):  # Compute confidence intervals only if there are at least two samples in the data.
-                    res = bootstrap(
-                        metric_vals,
-                        np_mean,
-                        n_resamples=3000,
-                        confidence_level=0.95,
-                        method="percentile",
-                    )
-                    lower_ci, upper_ci = res.confidence_interval
-                    standard_error = res.standard_error
-                else:
-                    lower_ci, upper_ci, standard_error = "N/A"
+        metrics["Metric_names"] = metric_names
+        metrics["Metric_values"] = metric_values
+        metrics["Lower_CI"] = lower_ci_values
+        metrics["Upper_CI"] = upper_ci_values
+        metrics["SE"] = se_values
 
-                metric_names.append(metric)
-                metric_values.append(metric_result)
-                lower_ci_values.append(lower_ci)
-                upper_ci_values.append(upper_ci)
-                se_values.append(standard_error)
-
-            metrics["Metric_names"] = metric_names
-            metrics["Metric_values"] = metric_values
-            metrics["Lower_CI"] = lower_ci_values
-            metrics["Upper_CI"] = upper_ci_values
-            metrics["SE"] = se_values
-
-            return metrics
-
-        else:
-            for metric in self.evaluation_metrics:
-                metrics[metric] = results_df[metric].mean()
-            return metrics
+        return metrics
 
     @staticmethod
     def output_size(input_size, df, label):

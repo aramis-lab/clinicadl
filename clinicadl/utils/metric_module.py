@@ -35,8 +35,10 @@ class MetricModule:
         ]
         self.metrics = dict()
         for metric in metrics:
-            if f"{metric.lower()}_fn" in list_fn:
-                self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
+            if f"compute_{metric.lower()}" in list_fn:
+                self.metrics[metric] = getattr(
+                    MetricModule, f"compute_{metric.lower()}"
+                )
             else:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
@@ -79,10 +81,8 @@ class MetricModule:
                 for class_number in class_numbers:
                     metric_result = metric_fn(y, y_pred, class_number)
 
-                    if (
-                        report_ci and len(y) >= 2
-                    ):  # Compute confidence intervals only if there are at least two samples in the data.
-
+                    # Compute confidence intervals only if there are at least two samples in the data.
+                    if report_ci and len(y) >= 2:
                         res = bootstrap(
                             (y, y_pred),
                             lambda y, y_pred: metric_fn(y, y_pred, class_number),
@@ -124,7 +124,7 @@ class MetricModule:
         return results
 
     @staticmethod
-    def mae_fn(y, y_pred, *args):
+    def compute_mae(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -136,7 +136,7 @@ class MetricModule:
         return np.mean(np.abs(y - y_pred))
 
     @staticmethod
-    def rmse_fn(y, y_pred, *args):
+    def compute_rmse(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -148,7 +148,7 @@ class MetricModule:
         return np.sqrt(np.mean(np.square(y - y_pred)))
 
     @staticmethod
-    def r2_score_fn(y, y_pred, *args):
+    def compute_r2_score(y, y_pred, *args):
         """
         Calculate the R-squared (coefficient of determination) score.
 
@@ -171,7 +171,7 @@ class MetricModule:
         return r2_score
 
     @staticmethod
-    def accuracy_fn(y, y_pred, *args):
+    def compute_accuracy(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -184,7 +184,7 @@ class MetricModule:
         return true / len(y)
 
     @staticmethod
-    def sensitivity_fn(y, y_pred, class_number):
+    def compute_sensitivity(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -202,7 +202,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def specificity_fn(y, y_pred, class_number):
+    def compute_specificity(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -220,7 +220,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ppv_fn(y, y_pred, class_number):
+    def compute_ppv(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -238,7 +238,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def npv_fn(y, y_pred, class_number):
+    def compute_npv(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -256,7 +256,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def f1_score_fn(y, y_pred, class_number):
+    def compute_f1_score(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -266,8 +266,8 @@ class MetricModule:
             (float) F1 score
         """
 
-        precision = MetricModule.ppv_fn(y, y_pred, class_number)
-        recall = MetricModule.sensitivity_fn(y, y_pred, class_number)
+        precision = MetricModule.compute_ppv(y, y_pred, class_number)
+        recall = MetricModule.compute_sensitivity(y, y_pred, class_number)
 
         f1_score = (
             2 * (precision * recall) / (precision + recall)
@@ -278,7 +278,7 @@ class MetricModule:
         return f1_score
 
     @staticmethod
-    def ba_fn(y, y_pred, class_number):
+    def compute_ba(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -289,12 +289,12 @@ class MetricModule:
         """
 
         return (
-            MetricModule.sensitivity_fn(y, y_pred, class_number)
-            + MetricModule.specificity_fn(y, y_pred, class_number)
+            MetricModule.compute_sensitivity(y, y_pred, class_number)
+            + MetricModule.compute_specificity(y, y_pred, class_number)
         ) / 2
 
     @staticmethod
-    def mcc_fn(y, y_pred, class_number):
+    def compute_mcc(y, y_pred, class_number):
         """
         Calculate the Matthews correlation coefficient (MCC) for a specific class.
 
@@ -325,7 +325,7 @@ class MetricModule:
         return mcc
 
     @staticmethod
-    def mk_fn(y, y_pred, class_number):
+    def compute_mk(y, y_pred, class_number):
         """
         Calculate Markedness (MK) for a specific class.
 
@@ -337,13 +337,13 @@ class MetricModule:
         Returns:
             (float) Markedness for the specified class
         """
-        precision = MetricModule.ppv_fn(y, y_pred, class_number)
-        npv = MetricModule.npv_fn(y, y_pred, class_number)
+        precision = MetricModule.compute_ppv(y, y_pred, class_number)
+        npv = MetricModule.compute_npv(y, y_pred, class_number)
         mk = precision + npv - 1
         return mk
 
     @staticmethod
-    def lr_plus_fn(y, y_pred, class_number):
+    def compute_lr_plus(y, y_pred, class_number):
         """
         Calculate Positive Likelihood Ratio (LR+).
 
@@ -355,13 +355,13 @@ class MetricModule:
         Returns:
             (float) Positive Likelihood Ratio
         """
-        sensitivity = MetricModule.sensitivity_fn(y, y_pred, class_number)
-        specificity = MetricModule.specificity_fn(y, y_pred, class_number)
+        sensitivity = MetricModule.compute_sensitivity(y, y_pred, class_number)
+        specificity = MetricModule.compute_specificity(y, y_pred, class_number)
         lr_plus = sensitivity / (1 - specificity) if (1 - specificity) != 0 else 0
         return lr_plus
 
     @staticmethod
-    def lr_minus_fn(y, y_pred, class_number):
+    def compute_lr_minus(y, y_pred, class_number):
         """
         Calculate Negative Likelihood Ratio (LR-).
 
@@ -373,13 +373,13 @@ class MetricModule:
         Returns:
             (float) Negative Likelihood Ratio
         """
-        sensitivity = MetricModule.sensitivity_fn(y, y_pred, class_number)
-        specificity = MetricModule.specificity_fn(y, y_pred, class_number)
+        sensitivity = MetricModule.compute_sensitivity(y, y_pred, class_number)
+        specificity = MetricModule.compute_specificity(y, y_pred, class_number)
         lr_minus = (1 - sensitivity) / specificity if specificity != 0 else 0
         return lr_minus
 
     @staticmethod
-    def confusion_matrix_fn(y, y_pred, *args):
+    def compute_confusion_matrix(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -400,7 +400,7 @@ class MetricModule:
         }
 
     @staticmethod
-    def ssim_fn(y, y_pred, *args):
+    def compute_ssim(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -416,7 +416,7 @@ class MetricModule:
             return ssim3D(y, y_pred).item()
 
     @staticmethod
-    def psnr_fn(y, y_pred, *args):
+    def compute_psnr(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -429,7 +429,7 @@ class MetricModule:
         return peak_signal_noise_ratio(y, y_pred)
 
     @staticmethod
-    def lncc_fn(y, y_pred, *args):
+    def compute_lncc(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
