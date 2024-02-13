@@ -162,20 +162,3 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
             print(f"Input size: {input_size}")
             print("Model layers:")
             print(model.layers)
-
-
-def bids_to_caps(bids_dir: Path, caps_dir: Path) -> None:
-    import shutil
-
-    if caps_dir.exists():
-        raise ClinicaDLArgumentError(
-            f"{caps_dir} already exists. Please choose another name for your caps directory."
-        )
-    else:
-        caps_dir.mkdir(parents=True, exist_ok=True)
-        subjects_dir = caps_dir / "subjects"
-        subjects_dir.mkdir(parents=True, exist_ok=True)
-
-        for subject_bids_path in bids_dir.glob("sub-*"):
-            subject_caps_path = subjects_dir / subject_bids_path.name
-            destination = shutil.copytree(subject_bids_path, subject_caps_path)

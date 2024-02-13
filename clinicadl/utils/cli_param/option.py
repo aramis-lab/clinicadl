@@ -174,12 +174,6 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
-from_bids = click.option(
-    "-fb",
-    "--from_bids",
-    type=str,
-    help="Use a BIDS directory for input.",
-)
 
 # PREDICT & INTERPRET
 # Data group
