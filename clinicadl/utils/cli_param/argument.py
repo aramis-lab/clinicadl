@@ -1,4 +1,5 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
+
 from pathlib import Path
 
 import click

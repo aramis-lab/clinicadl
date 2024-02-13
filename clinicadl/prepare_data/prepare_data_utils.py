@@ -71,6 +71,7 @@ def compute_extract_json(extract_json: str) -> str:
 def compute_folder_and_file_type(
     parameters: Dict[str, Any], from_bids: Path = None
 ) -> Tuple[str, Dict[str, str]]:
+    from clinicadl.generate.generate_utils import linear_nii, pet_linear_nii
     from clinica.utils.input_files import (
         DWI_NII,
         FLAIR_T2W_LINEAR,
@@ -113,38 +114,32 @@ def compute_folder_and_file_type(
             )
 
     else:
-        if parameters["preprocessing"] == "t1-linear":
-            mod_subfolder = "t1_linear"
-            if parameters["use_uncropped_image"]:
-                file_type = T1W_LINEAR
-            else:
-                file_type = T1W_LINEAR_CROPPED
+      if parameters["preprocessing"] == "t1-linear":
+          mod_subfolder = "t1_linear"
+          file_type = linear_nii("T1w", parameters["use_uncropped_image"])
 
-        elif parameters["preprocessing"] == "flair-linear":
-            mod_subfolder = "flair_linear"
-            if parameters["use_uncropped_image"]:
-                file_type = FLAIR_T2W_LINEAR
-            else:
-                file_type = FLAIR_T2W_LINEAR_CROPPED
-        elif parameters["preprocessing"] == "pet-linear":
-            mod_subfolder = "pet_linear"
-            file_type = pet_linear_nii(
-                parameters["tracer"],
-                parameters["suvr_reference_region"],
-                parameters["use_uncropped_image"],
-            )
-        elif parameters["preprocessing"] == "custom":
-            mod_subfolder = "custom"
-            file_type = {
-                "pattern": f"*{parameters['custom_suffix']}",
-                "description": "Custom suffix",
-            }
-            parameters["use_uncropped_image"] = None
-        else:
+      elif parameters["preprocessing"] == "flair-linear":
+          mod_subfolder = "flair_linear"
+          file_type = linear_nii("flair", parameters["use_uncropped_image"])
+
+      elif parameters["preprocessing"] == "pet-linear":
+          mod_subfolder = "pet_linear"
+          file_type = pet_linear_nii(
+              parameters["tracer"],
+              parameters["suvr_reference_region"],
+              parameters["use_uncropped_image"],
+          )
+      elif parameters["preprocessing"] == "custom":
+          mod_subfolder = "custom"
+          file_type = {
+              "pattern": f"*{parameters['custom_suffix']}",
+              "description": "Custom suffix",
+          }
+          parameters["use_uncropped_image"] = None
+      else:
             raise NotImplementedError(
                 f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
             )
-
     return mod_subfolder, file_type
 
 

@@ -212,6 +212,7 @@ class MapsManager:
         save_tensor: bool = False,
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
+        skip_leak_check: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -257,6 +258,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
+
         self._check_data_group(
             data_group,
             caps_directory,
@@ -264,6 +266,8 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
+            split_list=split_list,
+            skip_leak_check=skip_leak_check,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -300,16 +304,16 @@ class MapsManager:
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label if label is None else label,
-                        label_code=self.label_code
-                        if label_code == "default"
-                        else label_code,
+                        label_code=(
+                            self.label_code if label_code == "default" else label_code
+                        ),
                         cnn_index=network,
                     )
                     test_loader = DataLoader(
                         data_test,
-                        batch_size=batch_size
-                        if batch_size is not None
-                        else self.batch_size,
+                        batch_size=(
+                            batch_size if batch_size is not None else self.batch_size
+                        ),
                         shuffle=False,
                         sampler=DistributedSampler(
                             data_test,
@@ -367,16 +371,16 @@ class MapsManager:
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label if label is None else label,
-                    label_code=self.label_code
-                    if label_code == "default"
-                    else label_code,
+                    label_code=(
+                        self.label_code if label_code == "default" else label_code
+                    ),
                 )
 
                 test_loader = DataLoader(
                     data_test,
-                    batch_size=batch_size
-                    if batch_size is not None
-                    else self.batch_size,
+                    batch_size=(
+                        batch_size if batch_size is not None else self.batch_size
+                    ),
                     shuffle=False,
                     sampler=DistributedSampler(
                         data_test,
@@ -1119,6 +1123,14 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        if self.parameters["adaptive_learning_rate"]:
+            from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+            # Initialize the ReduceLROnPlateau scheduler
+            scheduler = ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.1, verbose=True
+            )
+
         scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
@@ -1315,6 +1327,10 @@ class MapsManager:
                     filename="optimizer.pth.tar",
                     save_all_models=self.parameters["save_all_models"],
                 )
+            if self.parameters["adaptive_learning_rate"]:
+                scheduler.step(
+                    metrics_valid["loss"]
+                )  # Update learning rate based on validation loss
 
             epoch += 1
 
@@ -2239,6 +2255,8 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        split_list=None,
+        skip_leak_check=False,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -2266,7 +2284,8 @@ class MapsManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_dir)
-                    split_list = self._find_splits()
+                    if not split_list:
+                        split_list = self._find_splits()
                     for split in split_list:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
@@ -2295,7 +2314,10 @@ class MapsManager:
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            self._check_leakage(data_group, df)
+            if skip_leak_check:
+                logger.info("Skipping data leakage check")
+            else:
+                self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
@@ -2386,12 +2408,14 @@ class MapsManager:
         self.write_parameters(
             group_path,
             {
-                "caps_directory": caps_directory
-                if caps_directory is not None
-                else self.caps_directory,
-                "multi_cohort": multi_cohort
-                if multi_cohort is not None
-                else self.multi_cohort,
+                "caps_directory": (
+                    caps_directory
+                    if caps_directory is not None
+                    else self.caps_directory
+                ),
+                "multi_cohort": (
+                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                ),
             },
         )
 

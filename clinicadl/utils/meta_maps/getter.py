@@ -1,6 +1,7 @@
 """
 Produces a tsv file to analyze the performance of one launch of the random search.
 """
+
 from pathlib import Path
 
 import pandas as pd
