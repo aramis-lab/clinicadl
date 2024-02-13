@@ -5,10 +5,15 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
+from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
+from clinicadl.utils.clinica_utils import (
+    create_subs_sess_list,
+    linear_nii,
+    pet_linear_nii,
+)
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
@@ -19,10 +24,7 @@ def find_file_type(
     suvr_reference_region: str,
 ) -> Dict[str, str]:
     if preprocessing == "t1-linear":
-        if uncropped_image:
-            file_type = T1W_LINEAR
-        else:
-            file_type = T1W_LINEAR_CROPPED
+        file_type = linear_nii("T1w", uncropped_image)
     elif preprocessing == "pet-linear":
         if acq_label is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
@@ -59,11 +61,6 @@ def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
 def load_and_check_tsv(
     tsv_path: str, caps_dict: Dict[str, str], output_path: str
 ) -> pd.DataFrame:
-    from os.path import join
-
-    from clinica.iotools.utils.data_handling import create_subs_sess_list
-
-    from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
 
     if tsv_path is not None:
         if len(caps_dict) == 1:

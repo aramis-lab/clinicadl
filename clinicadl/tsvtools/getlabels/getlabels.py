@@ -137,9 +137,9 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                         ]
                     if prev_diagnosis == post_diagnosis:
                         found_diag_interpol += 1
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = prev_diagnosis
+                        bids_copy_df.loc[(subject, session), "diagnosis"] = (
+                            prev_diagnosis
+                        )
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
 
@@ -309,10 +309,9 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                             update_diagnosis = stability_dict[last_diagnosis] + "MCI"
                         else:
                             update_diagnosis = "uMCI"
-                        # print(update_diagnosis)
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = update_diagnosis
+                        bids_copy_df.loc[(subject, session), "diagnosis"] = (
+                            update_diagnosis
+                        )
 
                     else:
                         prev_session = neighbour_session(
@@ -336,10 +335,9 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                                 update_diagnosis = "uMCI"
                             else:
                                 update_diagnosis = "sMCI"
-                        # print(update_diagnosis)
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = update_diagnosis
+                        bids_copy_df.loc[(subject, session), "diagnosis"] = (
+                            update_diagnosis
+                        )
 
     return bids_copy_df
 

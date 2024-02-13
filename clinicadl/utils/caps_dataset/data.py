@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
 
 from clinicadl.extract.extract_utils import (
@@ -28,6 +27,7 @@ from clinicadl.extract.extract_utils import (
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
@@ -118,9 +118,8 @@ class CapsDataset(Dataset):
         return len(self.df) * self.elem_per_image
 
     @staticmethod
-    def create_caps_dict(caps_directory: str, multi_cohort: bool) -> Dict[str, str]:
-
-        from clinica.utils.inputs import check_caps_folder
+    def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
+        from clinicadl.utils.clinica_utils import check_caps_folder
 
         if multi_cohort:
             if not caps_directory.endswith(".tsv"):
@@ -153,16 +152,18 @@ class CapsDataset(Dataset):
         Returns:
             image_path: path to the tensor containing the whole image.
         """
-        from clinica.utils.inputs import clinica_file_reader
+        from clinicadl.utils.clinica_utils import clinicadl_file_reader
 
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinicadl_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            logger.debug(f"clinica_file_reader output: {image_path_list}")
-            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
+            logger.debug(f"clinicadl_file_reader output: {results}")
+            filepath = Path(results[0][0])
+            image_filename = filepath.name.replace(".nii.gz", ".pt")
+
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],
@@ -175,10 +176,10 @@ class CapsDataset(Dataset):
             )
             image_path = path.join(image_dir, image_filename)
         # Try to find .pt file
-        except ClinicaCAPSError:
+        except ClinicaDLCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list, _ = clinica_file_reader(
+            results = clinicadl_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
             image_path = image_path_list[0]
@@ -225,7 +226,8 @@ class CapsDataset(Dataset):
             image tensor of the full image first image.
         """
         import nibabel as nib
-        from clinica.utils.inputs import clinica_file_reader
+
+        from clinicadl.utils.clinica_utils import clinicadl_file_reader
 
         participant_id = self.df.loc[0, "participant_id"]
         session_id = self.df.loc[0, "session_id"]
@@ -236,7 +238,7 @@ class CapsDataset(Dataset):
             image = torch.load(image_path)
         except IndexError:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinicadl_file_reader(
                 [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
             image_nii = nib.load(image_path_list[0])

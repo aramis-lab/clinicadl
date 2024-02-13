@@ -6,6 +6,12 @@ from os import path
 
 import nibabel as nib
 import torch
+
+from torch.utils.data import Dataset
+
+from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
+
 import torch.nn as nn
 from clinica.utils.input_files import T1W_LINEAR_CROPPED
 from clinica.utils.inputs import clinica_file_reader
@@ -191,8 +197,9 @@ class QCDataset(Dataset):
         preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
-            "use_uncropped_image": False,
-            "file_type": T1W_LINEAR_CROPPED,
+            "use_uncropped_image": use_uncropped_image,
+            "file_type": linear_nii("T1w", use_uncropped_image),
+            "use_tensor": use_extracted_tensors,
         }
         self.tensor_dataset = CapsDatasetImage(
             img_dir,
@@ -207,13 +214,33 @@ class QCDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.use_extracted_tensors:
-            image = self.tensor_dataset[idx]
+            file_type = self.preprocessing_dict["file_type"]
+            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            image_output = clinicadl_file_reader(
+                [subject], [session], self.img_dir, file_type
+            )[0]
+            image_path = Path(image_output[0])
+            image_filename = image_path.name
+            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            image_dir = (
+                self.img_dir
+                / "subjects"
+                / subject
+                / session
+                / "deeplearning_prepare_data"
+                / "image_based"
+                / folder
+            )
+
+            image_path = image_dir / image_filename
+            image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-            subject = self.df.loc[idx, "participant_id"]
-            session = self.df.loc[idx, "session_id"]
-            image_path = clinica_file_reader(
-                [subject], [session], self.img_dir, T1W_LINEAR_CROPPED
+            image_path = clinicadl_file_reader(
+                [subject],
+                [session],
+                self.img_dir,
+                linear_nii("T1w", self.use_uncropped_image),
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)
@@ -228,7 +255,7 @@ class QCDataset(Dataset):
         import torch
         from skimage import transform
 
-        sample = np.array(image.get_data())
+        sample = np.array(image.get_fdata())
 
         # normalize input
         _min = np.min(sample)
@@ -290,7 +317,8 @@ class QCDataset(Dataset):
         ).unsqueeze_(0)
 
     def pt_transform(self, image):
-        from torch.nn.functional import interpolate, pad
+        import numpy as np
+        from torch.nn.functional import interpolate
 
         image = self.normalization(image) - 0.5
         image = image[0, :, :, :]

@@ -1,16 +1,16 @@
 from logging import getLogger
 
 
-def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
-    import os
-    from os import path
-
-    from clinica.utils.inputs import check_caps_folder, clinica_file_reader
-    from clinica.utils.nipype import container_from_filename
-    from clinica.utils.participant import get_subject_session_list
+def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
+    from clinicadl.utils.clinica_utils import (
+        check_caps_folder,
+        clinicadl_file_reader,
+        container_from_filename,
+        get_subject_session_list,
+    )
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
@@ -22,7 +22,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     check_caps_folder(caps_directory)
     logger.debug(f"CAPS directory : {caps_directory}.")
     is_bids_dir = False
-    sessions, subjects = get_subject_session_list(
+    subjects, sessions = get_subject_session_list(
         caps_directory, tsv_file, is_bids_dir, False, None
     )
     if parameters["prepare_dl"]:
@@ -49,7 +49,9 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)[0]
+    input_files = clinicadl_file_reader(subjects, sessions, caps_directory, file_type)[
+        0
+    ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
@@ -154,17 +156,21 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                     parameters["masks_location"],
                     parameters["roi_list"],
                     parameters["roi_mask_pattern"],
-                    None
-                    if parameters["use_uncropped_image"] is None
-                    else not parameters["use_uncropped_image"],
+                    (
+                        None
+                        if parameters["use_uncropped_image"] is None
+                        else not parameters["use_uncropped_image"]
+                    ),
                 )
             output_mode = extract_roi(
                 file,
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_mask_pattern"],
-                cropped_input=None
-                if parameters["use_uncropped_image"] is None
-                else not parameters["use_uncropped_image"],
+                cropped_input=(
+                    None
+                    if parameters["use_uncropped_image"] is None
+                    else not parameters["use_uncropped_image"]
+                ),
                 roi_names=parameters["roi_list"],
                 uncrop_output=parameters["uncropped_roi"],
             )

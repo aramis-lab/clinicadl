@@ -63,14 +63,16 @@ def compute_extract_json(extract_json: str) -> str:
 def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
-    from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
+    from clinicadl.generate.generate_utils import linear_nii, pet_linear_nii
 
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
-        if parameters["use_uncropped_image"]:
-            file_type = T1W_LINEAR
-        else:
-            file_type = T1W_LINEAR_CROPPED
+        file_type = linear_nii("T1w", parameters["use_uncropped_image"])
+
+    elif parameters["preprocessing"] == "flair-linear":
+        mod_subfolder = "flair_linear"
+        file_type = linear_nii("flair", parameters["use_uncropped_image"])
+
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(

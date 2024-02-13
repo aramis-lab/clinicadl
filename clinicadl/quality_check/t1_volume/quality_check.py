@@ -4,6 +4,7 @@ Automatically reject images incorrectly preprocessed by t1-volume (Unified Segme
 2) percentage of non zero values < 15 % or > 50 %
 3) frontal similarity of T1 volume with the template < 0.40
 """
+
 from logging import getLogger
 from os import path
 

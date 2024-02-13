@@ -359,17 +359,17 @@ class MapsManager:
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label if label is None else label,
-                        label_code=self.label_code
-                        if label_code == "default"
-                        else label_code,
+                        label_code=(
+                            self.label_code if label_code == "default" else label_code
+                        ),
                         cnn_index=network,
                         for_pythae=pythae,
                     )
                     test_loader = DataLoader(
                         data_test,
-                        batch_size=batch_size
-                        if batch_size is not None
-                        else self.batch_size,
+                        batch_size=(
+                            batch_size if batch_size is not None else self.batch_size
+                        ),
                         shuffle=False,
                         num_workers=n_proc if n_proc is not None else self.n_proc,
                     )
@@ -417,9 +417,9 @@ class MapsManager:
 
                 test_loader = DataLoader(
                     data_test,
-                    batch_size=batch_size
-                    if batch_size is not None
-                    else self.batch_size,
+                    batch_size=(
+                        batch_size if batch_size is not None else self.batch_size
+                    ),
                     shuffle=False,
                     num_workers=n_proc if n_proc is not None else self.n_proc,
                 )
@@ -1718,12 +1718,14 @@ class MapsManager:
         self.write_parameters(
             group_path,
             {
-                "caps_directory": caps_directory
-                if caps_directory is not None
-                else self.caps_directory,
-                "multi_cohort": multi_cohort
-                if multi_cohort is not None
-                else self.multi_cohort,
+                "caps_directory": (
+                    caps_directory
+                    if caps_directory is not None
+                    else self.caps_directory
+                ),
+                "multi_cohort": (
+                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                ),
             },
         )
 
