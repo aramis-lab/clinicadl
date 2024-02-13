@@ -24,6 +24,60 @@ from clinicadl.utils.logger import cprint
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
 
 
+def bids_nii(
+    modality: str = "t1",
+    tracer: str = None,
+    reconstruction: str = None,
+) -> dict:
+    """Return the query dict required to capture PET scans.
+
+    Parameters
+    ----------
+    tracer : Tracer, optional
+        If specified, the query will only match PET scans acquired
+        with the requested tracer.
+        If None, the query will match all PET sans independently of
+        the tracer used.
+
+    reconstruction : ReconstructionMethod, optional
+        If specified, the query will only match PET scans reconstructed
+        with the specified method.
+        If None, the query will match all PET scans independently of the
+        reconstruction method used.
+
+    Returns
+    -------
+    dict :
+        The query dictionary to get PET scans.
+    """
+    import os
+
+    modalities = ("t1", "dwi", "pet", "flair")
+    if modality not in modalities:
+        raise ClinicaDLArgumentError(
+            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {modalities}"
+        )
+    elif modality == "pet":
+        trc = "" if tracer is None else f"_trc-{tracer}"
+        rec = "" if reconstruction is None else f"_rec-{reconstruction}"
+        description = f"PET data"
+        if tracer:
+            description += f" with {tracer} tracer"
+        if reconstruction:
+            description += f" and reconstruction method {reconstruction}"
+
+        return {
+            "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
+            "description": description,
+        }
+    elif modality == "t1":
+        return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
+    elif modality == "flair":
+        return {"pattern": "sub-*_ses-*_flair.nii*", "description": "FLAIR T2w MRI"}
+    elif modality == "dwi":
+        return {"pattern": "dwi/sub-*_ses-*_dwi.nii*", "description": "DWI NIfTI"}
+
+
 def linear_nii(modality: str, uncropped_image: bool) -> dict:
 
     if modality not in ("T1w", "T2w", "flair"):
