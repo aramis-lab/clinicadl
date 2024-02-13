@@ -2,7 +2,14 @@ from logging import getLogger
 from pathlib import Path
 
 
-def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
+def DeepLearningPrepareData(
+    caps_directory: Path,
+    tsv_file: Path,
+    n_proc: int,
+    parameters: dict,
+    from_bids: str = None,
+):
+
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
@@ -20,12 +27,23 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    check_caps_folder(caps_directory)
-    logger.debug(f"CAPS directory: {caps_directory}.")
-    is_bids_dir = False
+    if from_bids is not None:
+        try:
+            input_directory = Path(from_bids)
+        except ClinicaDLArgumentError:
+            logger.warning("Your BIDS directory doesn't exist.")
+        logger.debug(f"BIDS directory: {input_directory}.")
+        is_bids_dir = True
+    else:
+        input_directory = caps_directory
+        check_caps_folder(input_directory)
+        logger.debug(f"CAPS directory: {input_directory}.")
+        is_bids_dir = False
+
     subjects, sessions = get_subject_session_list(
-        caps_directory, tsv_file, is_bids_dir, False, None
+        input_directory, tsv_file, is_bids_dir, False, None
     )
+
     if parameters["prepare_dl"]:
         logger.info(
             f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
@@ -46,11 +64,11 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger.debug(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
-    mod_subfolder, file_type = compute_folder_and_file_type(parameters)
-    parameters["file_type"] = file_type
 
+    mod_subfolder, file_type = compute_folder_and_file_type(parameters, from_bids)
+    parameters["file_type"] = file_type
     # Input file:
-    input_files = clinicadl_file_reader(subjects, sessions, caps_directory, file_type)[
+    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
         0
     ]
     logger.debug(f"Selected image file name list: {input_files}.")
@@ -145,7 +163,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                 ]
 
             parameters["masks_location"] = (
-                caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
+                input_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
             if len(parameters["roi_list"]) == 0:
