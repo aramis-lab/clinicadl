@@ -219,3 +219,51 @@ def change_str_to_path(
                 else:
                     toml_dict[key] = Path(value)
     return toml_dict
+
+
+def change_path_to_str(
+    toml_dict: Dict[str, Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    For all paths in the dictionnary, it changes the type from pathlib.Path to str.
+
+    Paramaters
+    ----------
+    toml_dict: Dict[str, Dict[str, Any]]
+        Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
+
+    Returns
+    -------
+        Updated TOML dictionary with type(path)=str
+    """
+    for key, value in toml_dict.items():
+        if type(value) == Dict:
+            for key2, value2 in value.items():
+                if (
+                    key2.endswith("tsv")
+                    or key2.endswith("dir")
+                    or key2.endswith("directory")
+                    or key2.endswith("path")
+                    or key2.endswith("json")
+                    or key2.endswith("location")
+                ):
+                    if value2 == False:
+                        toml_dict[value][key2] = ""
+                    elif isinstance(value2, Path):
+                        toml_dict[value][key2] = value2.as_posix()
+        else:
+            if (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
+                if value == False:
+                    toml_dict[key] = ""
+                elif isinstance(value, Path):
+                    toml_dict[key] = value.as_posix()
+        if isinstance(value, Path):
+            toml_dict[key] = value.as_posix()
+    return toml_dict
