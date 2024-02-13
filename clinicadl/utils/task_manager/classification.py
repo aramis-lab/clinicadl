@@ -238,7 +238,7 @@ class ClassificationManager(TaskManager):
             df_final = pd.concat([df_final, row_df])
 
         if use_labels:
-            results = self.compute_metrics(df_final, report_ci=False)
+            results = self.compute_metrics(df_final)
         else:
             results = None
 

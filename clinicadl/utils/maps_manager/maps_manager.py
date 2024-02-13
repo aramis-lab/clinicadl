@@ -2075,7 +2075,6 @@ class MapsManager:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
-            #####################
             # Soft voting
             if self.num_networks > 1:
                 self._ensemble_to_tsv(
@@ -2607,22 +2606,18 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
-            # if data_group == "train" or data_group == "validation":
-            #     pd_metrics = pd.DataFrame(metrics, index = [0])
-            #     header = True
-            # else:
-            #     pd_metrics = pd.DataFrame(metrics).T
-            #     header = False
-
-            pd_metrics = pd.DataFrame(metrics).T
-            header = False
-            # import ipdb; ipdb.set_trace()
-            if not metrics_path.is_file():
-                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=header)
+            if data_group == "train" or data_group == "validation":
+                pd_metrics = pd.DataFrame(metrics, index=[0])
+                header = True
             else:
-                pd_metrics.to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=header
-                )
+                pd_metrics = pd.DataFrame(metrics).T
+                header = False
+
+            # pd_metrics = pd.DataFrame(metrics).T
+            # header = False
+            pd_metrics.to_csv(
+                metrics_path, index=False, sep="\t", mode="a", header=header
+            )
 
     def _ensemble_to_tsv(
         self,

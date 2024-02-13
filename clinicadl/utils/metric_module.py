@@ -56,18 +56,24 @@ class MetricModule:
             (Dict[str:float]) metrics results
         """
         if y is not None and y_pred is not None:
-            results = dict()
+            results = {
+                "Metric_names": ["Metrics"],
+                "Metric_values": ["Values"],
+                "Lower_CI": ["Lower bound CI"],
+                "Upper_CI": ["Upper bound CI"],
+                "SE": ["SE"],
+            }
             y = np.array(y)
             y_pred = np.array(y_pred)
 
-            if report_ci:
-                from scipy.stats import bootstrap
+            # if report_ci:
+            #     from scipy.stats import bootstrap
 
-            metric_names = ["Metrics"]
-            metric_values = ["Values"]  # Collect metric values
-            lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
-            upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
-            se_values = ["SE"]  # Collect standard error values
+            # metric_names = ["Metrics"]
+            # metric_values = ["Values"]  # Collect metric values
+            # lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
+            # upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
+            # se_values = ["SE"]  # Collect standard error values
 
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
@@ -83,6 +89,8 @@ class MetricModule:
 
                     # Compute confidence intervals only if there are at least two samples in the data.
                     if report_ci and len(y) >= 2:
+                        from scipy.stats import bootstrap
+
                         res = bootstrap(
                             (y, y_pred),
                             lambda y, y_pred: metric_fn(y, y_pred, class_number),
@@ -93,13 +101,12 @@ class MetricModule:
                         )
 
                         lower_ci, upper_ci = res.confidence_interval
-                        standard_error = res.standard_error
 
-                        metric_values.append(metric_result)
-                        lower_ci_values.append(lower_ci)
-                        upper_ci_values.append(upper_ci)
-                        se_values.append(standard_error)
-                        metric_names.append(
+                        results["Metric_values"].append(metric_result)
+                        results["Lower_CI"].append(lower_ci)
+                        results["Upper_CI"].append(upper_ci)
+                        results["SE"].append(res.standard_error)
+                        results["Metric_names"].append(
                             f"{metric_key}-{class_number}"
                             if len(class_numbers) > 1
                             else f"{metric_key}"
@@ -111,13 +118,13 @@ class MetricModule:
                             else f"{metric_key}"
                         ] = metric_result
 
-            if report_ci:
-                # Construct the final results dictionary
-                results["Metric_names"] = metric_names
-                results["Metric_values"] = metric_values
-                results["Lower_CI"] = lower_ci_values
-                results["Upper_CI"] = upper_ci_values
-                results["SE"] = se_values
+            # if report_ci:
+            #     # Construct the final results dictionary
+            #     results["Metric_names"] = metric_names
+            #     results["Metric_values"] = metric_values
+            #     results["Lower_CI"] = lower_ci_values
+            #     results["Upper_CI"] = upper_ci_values
+            #     results["SE"] = se_values
         else:
             results = dict()
 
