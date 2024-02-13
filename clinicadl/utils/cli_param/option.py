@@ -3,7 +3,8 @@
 from pathlib import Path
 
 import click
-from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
+
+LIST_SUVR_REFERENCE_REGIONS = ["pons", "cerebellumPons", "pons2", "cerebellumPons2"]
 
 # TSV TOOLS
 diagnoses = click.option(

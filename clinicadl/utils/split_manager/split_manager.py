@@ -3,8 +3,8 @@ from logging import getLogger
 from pathlib import Path
 
 import pandas as pd
-from clinica.utils.inputs import check_caps_folder
 
+from clinicadl.utils.clinica_utils import check_caps_folder
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
