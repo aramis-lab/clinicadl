@@ -29,13 +29,44 @@ which have the same arguments:
   can be `t1-linear`, `flair-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
+## `prepare-data-from-bids`- Extract tensors from a BIDS
+You can also extract the tensor from BIDS directory using this pipeline. In this case, you don't need to execute the [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/) pipeline
+and so use unpreprocessed images with the PyTorch deep learning librairy.
+
+
+## Running the pipeline
+The pipeline can be run with the following command line:
+
+```{.sourceCode .bash}
+clinicadl prepare-data-from-bids [image|patch|slice|roi] [OPTIONS] BIDS_DIRECTORY CAPS_DIRECTORY MODALITY
+```
+
+The command has four sub-commands:
+
+- `image` to convert the whole 3D image,
+- `patch` to extract 3D patches walking through the entire image, 
+- `roi` to extract a list of regions defined by masks at the root in `CAPS_DIRECTORY`,
+- `slice` to extract 2D slices from the image.
+
+which have the same arguments:
+
+- `BIDS_DIRECTORY` (Path) is the folder in a [BIDS
+  hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/BIDS/)
+  containing the images
+- `CAPS_DIRECTORY` (Path) is the folder in a [CAPS
+  hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
+  containing the output tensors.
+- `MODALITY` (str) is the type of the images. It
+  can be `t1`, `flair` or `pet`. You can choose `custom` if you want to get a
+  tensor from a custom filename.
+
+## options for both `prepare-data` and `prepare-data-from-bids` pipelines
 Each sub-command has its own set of options. There are four generic options:
 
 - `--subjects_sessions_tsv` (Path) is a path to a TSV file listing participant and session IDs. 
 - `--extract_json` (str) is the name of the JSON file that will be created to store all the information
   of the extraction step. Default will name the JSON file `extract_{time_stamp}.json`.
 - `--n_proc` (int) is the number of workers used to parallelize tensor extraction. Default: `2`.
-- `--from_bids` (Path) is a path to a BIDS from which the CAPS will be created. It creates a CAPS with only the tensors extracted to avoid any preprocessing. 
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to
