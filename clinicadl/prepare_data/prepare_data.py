@@ -2,9 +2,14 @@ from logging import getLogger
 from pathlib import Path
 
 
+def DeepLearningPrepareData(
+    caps_directory: Path,
+    tsv_file: Path,
+    n_proc: int,
+    parameters: dict,
+    from_bids: str = None,
+):
 
-def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
-  
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
@@ -35,9 +40,10 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
 
-    sessions, subjects = get_subject_session_list(
+    subjects, sessions = get_subject_session_list(
         input_directory, tsv_file, is_bids_dir, False, None
     )
+
     if parameters["prepare_dl"]:
         logger.info(
             f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
@@ -62,7 +68,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     mod_subfolder, file_type = compute_folder_and_file_type(parameters, from_bids)
     parameters["file_type"] = file_type
     # Input file:
-    input_files = clinicadl_file_reader(subjects, sessions, caps_directory, file_type)[
+    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
         0
     ]
     logger.debug(f"Selected image file name list: {input_files}.")
