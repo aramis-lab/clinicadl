@@ -28,3 +28,11 @@ class ClinicaDLDataLeakageError(ClinicaDLException):
 
 class ClinicaDLTSVError(ClinicaDLException):
     """Base class for tsv files exceptions."""
+
+
+class ClinicaDLBIDSError(ClinicaDLException):
+    """Base class for tsv files exceptions."""
+
+
+class ClinicaDLCAPSError(ClinicaDLException):
+    """Base class for tsv files exceptions."""
