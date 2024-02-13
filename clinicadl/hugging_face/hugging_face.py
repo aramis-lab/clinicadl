@@ -104,6 +104,7 @@ license: mit
             commit_message=f"Uploading {model_name} in {maps_dir}",
             repo_id=id_,
             operations=hf_operations,
+            private=True,
         )
         logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
 
