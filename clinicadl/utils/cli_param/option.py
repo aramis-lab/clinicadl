@@ -174,6 +174,21 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
+dti_measure = click.option(
+    "--dti_measure",
+    "-dm",
+    type=click.Choice(["FA", "MD", "AD", "RD"]),
+    help="Possible DTI measures.",
+    default="FA",
+)
+dti_space = click.option(
+    "--dti_space",
+    "-ds",
+    type=click.Choice(["native", "normalized"]),
+    help="Possible DTI space.",
+    default="native",
+)
+
 
 # PREDICT & INTERPRET
 # Data group
