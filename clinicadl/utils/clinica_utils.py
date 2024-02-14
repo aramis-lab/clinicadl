@@ -4,11 +4,12 @@ import shutil
 import ssl
 import tempfile
 from collections import namedtuple
+from enum import Enum
 from functools import partial
 from glob import glob
 from pathlib import Path, PurePath
 from time import localtime, strftime, time
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -107,6 +108,42 @@ def linear_nii(modality: str, uncropped_image: bool) -> dict:
         "needed_pipeline": needed_pipeline,
     }
     return information
+
+
+class DTIBasedMeasure(str, Enum):
+    """Possible DTI measures."""
+
+    FRACTIONAL_ANISOTROPY = "FA"
+    MEAN_DIFFUSIVITY = "MD"
+    AXIAL_DIFFUSIVITY = "AD"
+    RADIAL_DIFFUSIVITY = "RD"
+
+
+def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -> dict:
+    """Return the query dict required to capture DWI DTI images.
+
+    Parameters
+    ----------
+    measure : DTIBasedMeasure or str
+        The DTI based measure to consider.
+
+    space : str, optional
+        The space to consider.
+        By default, all spaces are considered (i.e. '*' is used in regexp).
+
+    Returns
+    -------
+    dict :
+        The query dictionary to get DWI DTI images.
+    """
+    measure = DTIBasedMeasure(measure)
+    space = space or "*"
+
+    return {
+        "pattern": f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
+        "description": f"DTI-based {measure.value} in space {space}.",
+        "needed_pipeline": "dwi_dti",
+    }
 
 
 def pet_linear_nii(
