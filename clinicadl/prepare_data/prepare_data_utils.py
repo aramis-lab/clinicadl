@@ -16,6 +16,8 @@ def get_parameters_dict(
     custom_suffix: str,
     tracer: str,
     suvr_reference_region: str,
+    dti_measure: str,
+    dti_space: str,
 ) -> Dict[str, Any]:
     """
     Parameters
@@ -53,6 +55,9 @@ def get_parameters_dict(
     if modality == "pet-linear":
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
+    if modality == "dwi-dti":
+        parameters["dti_space"] = dti_space
+        parameters["dti_measure"] = dti_measure
 
     parameters["extract_json"] = compute_extract_json(extract_json)
 
@@ -71,7 +76,12 @@ def compute_extract_json(extract_json: str) -> str:
 def compute_folder_and_file_type(
     parameters: Dict[str, Any], from_bids: Path = None
 ) -> Tuple[str, Dict[str, str]]:
-    from clinicadl.utils.clinica_utils import bids_nii, linear_nii, pet_linear_nii
+    from clinicadl.utils.clinica_utils import (
+        bids_nii,
+        dwi_dti,
+        linear_nii,
+        pet_linear_nii,
+    )
 
     if from_bids is not None:
         if parameters["preprocessing"] == "custom":
@@ -99,6 +109,12 @@ def compute_folder_and_file_type(
                 parameters["tracer"],
                 parameters["suvr_reference_region"],
                 parameters["use_uncropped_image"],
+            )
+        elif parameters["preprocessing"] == "dwi-dti":
+            mod_subfolder = "dwi_dti"
+            file_type = dwi_dti(
+                parameters["measure"],
+                parameters["space"],
             )
         elif parameters["preprocessing"] == "custom":
             mod_subfolder = "custom"
