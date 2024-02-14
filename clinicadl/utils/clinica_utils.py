@@ -109,6 +109,7 @@ def linear_nii(modality: str, uncropped_image: bool) -> dict:
     }
     return information
 
+
 class DTIBasedMeasure(str, Enum):
     """Possible DTI measures."""
 
@@ -143,6 +144,7 @@ def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -
         "description": f"DTI-based {measure.value} in space {space}.",
         "needed_pipeline": "dwi_dti",
     }
+
 
 def pet_linear_nii(
     acq_label: str, suvr_reference_region: str, uncropped_image: bool

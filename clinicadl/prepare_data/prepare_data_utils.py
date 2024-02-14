@@ -83,7 +83,6 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-
     if from_bids is not None:
         if parameters["preprocessing"] == "custom":
             mod_subfolder = "custom"
