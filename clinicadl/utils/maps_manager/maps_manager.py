@@ -1085,7 +1085,6 @@ class MapsManager:
             resume (bool): If True the job is resumed from the checkpoint.
         """
         self._init_callbacks()
-        self.callback_handler.on_train_begin(self.parameters)
         model, beginning_epoch = self._init_model(
             split=split,
             resume=resume,
@@ -1096,10 +1095,14 @@ class MapsManager:
         model = DDP(model)
         criterion = self.task_manager.get_criterion(self.loss)
 
-        logger.info(f"Criterion for {self.network_task} is {criterion}")
-
         optimizer = self._init_optimizer(model, split=split, resume=resume)
-        logger.debug(f"Optimizer used for training is {optimizer}")
+        self.callback_handler.on_train_begin(
+            self.parameters,
+            criterion=criterion,
+            optimizer=optimizer,
+            split=split,
+            maps_path=self.maps_path,
+        )
 
         model.train()
         train_loader.dataset.train()
@@ -1134,18 +1137,8 @@ class MapsManager:
         scaler = GradScaler(enabled=self.amp)
         profiler = self._init_profiler()
 
-        if self.parameters["track_exp"] == "wandb":
-            from clinicadl.utils.tracking_exp import WandB_handler
-
-            run = WandB_handler(split, self.parameters, self.maps_path.name)
-
-        if self.parameters["track_exp"] == "mlflow":
-            from clinicadl.utils.tracking_exp import Mlflow_handler
-
-            run = Mlflow_handler(split, self.parameters, self.maps_path.name)
-
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
-            logger.info(f"Beginning epoch {epoch}.")
+            # self.callback_handler.on_epoch_begin(self.parameters, epoch = epoch)
 
             if isinstance(train_loader.sampler, DistributedSampler):
                 # It should always be true for a random sampler. But just in case
@@ -1245,63 +1238,14 @@ class MapsManager:
                 model.train()
                 train_loader.dataset.train()
 
-                if cluster.master:
-                    log_writer.step(
-                        epoch, i, metrics_train, metrics_valid, len(train_loader)
-                    )
-                logger.info(
-                    f"{self.mode} level training loss is {metrics_train['loss']} "
-                    f"at the end of iteration {i}"
-                )
-                logger.info(
-                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                    f"at the end of iteration {i}"
-                )
+            self.callback_handler.on_epoch_end(
+                self.parameters,
+                metrics_train=metrics_train,
+                metrics_valid=metrics_valid,
+                mode=self.mode,
+                i=i,
+            )
 
-                if self.track_exp == "wandb":
-                    run.log_metrics(
-                        run._wandb,
-                        self.track_exp,
-                        self.network_task,
-                        metrics_train,
-                        metrics_valid,
-                    )
-
-                if self.track_exp == "mlflow":
-                    run.log_metrics(
-                        run._mlflow,
-                        self.track_exp,
-                        self.network_task,
-                        metrics_train,
-                        metrics_valid,
-                    )
-
-            # log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            # logger.info(
-            #     f"{self.mode} level training loss is {metrics_train['loss']} "
-            #     f"at the end of iteration {i}"
-            # )
-            # logger.info(
-            #     f"{self.mode} level validation loss is {metrics_valid['loss']} "
-            #     f"at the end of iteration {i}"
-            # )
-            # if self.track_exp == "wandb":
-            #     run.log_metrics(
-            #         run._wandb,
-            #         self.track_exp,
-            #         self.network_task,
-            #         metrics_train,
-            #         metrics_valid,
-            #     )
-
-            # if self.track_exp == "mlflow":
-            #     run.log_metrics(
-            #         run._mlflow,
-            #         self.track_exp,
-            #         self.network_task,
-            #         metrics_train,
-            #         metrics_valid,
-            #     )
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
@@ -1333,12 +1277,6 @@ class MapsManager:
                 )  # Update learning rate based on validation loss
 
             epoch += 1
-
-        if self.parameters["track_exp"] == "mlflow":
-            run._mlflow.end_run()
-
-        if self.parameters["track_exp"] == "wandb":
-            run._wandb.finish()
 
         del model
         self._test_loader(
@@ -1377,7 +1315,8 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-        self.callback_handler.on_train_end(self.parameters)
+
+        self.callback_handler.on_train_end(parameters=self.parameters)
 
     def _train_ssdann(
         self,
@@ -3181,7 +3120,11 @@ class MapsManager:
         return map_pt
 
     def _init_callbacks(self):
-        from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
+        from clinicadl.utils.callbacks.callbacks import (
+            Callback,
+            CallbacksHandler,
+            LoggerCallback,
+        )
 
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
@@ -3193,5 +3136,10 @@ class MapsManager:
 
             self.callback_handler.add_callback(CodeCarbonTracker())
 
-        # self.callback_handler.add_callback(ProgressBarCallback())
+        if self.parameters["track_exp"]:
+            from clinicadl.utils.callbacks.callbacks import Tracker
+
+            self.callback_handler.add_callback(Tracker)
+
+        self.callback_handler.add_callback(LoggerCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
