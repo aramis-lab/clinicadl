@@ -426,7 +426,7 @@ class MapsManager:
 
             if cluster.master:
                 self._ensemble_prediction(
-                    data_group, split, selection_metrics, use_labels
+                    data_group, split, selection_metrics, use_labels, skip_leak_check
                 )
 
     def interpret(
@@ -1990,6 +1990,7 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
+        skip_leak_check=False,
     ):
         """Computes the results on the image-level."""
 
@@ -1998,14 +1999,14 @@ class MapsManager:
 
         for selection_metric in selection_metrics:
             # Soft voting
-            if self.num_networks > 1:
+            if self.num_networks > 1 and not skip_leak_check:
                 self._ensemble_to_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
                 )
-            elif self.mode != "image":
+            elif self.mode != "image" and not skip_leak_check:
                 self._mode_to_image_tsv(
                     split,
                     selection=selection_metric,
@@ -2241,7 +2242,7 @@ class MapsManager:
                     f"To erase {data_group} please set overwrite to True."
                 )
 
-        if not group_dir.is_dir() and (
+        elif not group_dir.is_dir() and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(

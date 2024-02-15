@@ -2,6 +2,7 @@
 import click
 
 from clinicadl.generate.generate_cli import cli as generate_cli
+from clinicadl.hugging_face.hugging_face_cli import cli as hf_cli
 from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
 from clinicadl.prepare_data.prepare_data_cli import cli as prepare_data_cli
@@ -45,6 +46,7 @@ cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)
 cli.add_command(random_search_cli)
+cli.add_command(hf_cli)
 
 if __name__ == "__main__":
     cli()
