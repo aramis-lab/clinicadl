@@ -428,7 +428,7 @@ class MapsManager:
 
             if cluster.master:
                 self._ensemble_prediction(
-                    data_group, split, selection_metrics, use_labels
+                    data_group, split, selection_metrics, use_labels, skip_leak_check
                 )
 
     def interpret(
@@ -2053,6 +2053,7 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
+        skip_leak_check=False,
     ):
         """Computes the results on the image-level."""
 
@@ -2061,14 +2062,14 @@ class MapsManager:
 
         for selection_metric in selection_metrics:
             # Soft voting
-            if self.num_networks > 1:
+            if self.num_networks > 1 and not skip_leak_check:
                 self._ensemble_to_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
                 )
-            elif self.mode != "image":
+            elif self.mode != "image" and not skip_leak_check:
                 self._mode_to_image_tsv(
                     split,
                     selection=selection_metric,
@@ -2949,7 +2950,6 @@ class MapsManager:
         split is only needed if data_group is train or validation.
         """
         group_path = self.maps_path / "groups" / data_group
-        print(group_path)
         if not group_path.is_dir():
             raise MAPSError(
                 f"Data group {data_group} is not defined. "
