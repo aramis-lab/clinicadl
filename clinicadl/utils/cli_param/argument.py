@@ -1,4 +1,5 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
+
 from pathlib import Path
 
 import click
@@ -39,5 +40,25 @@ preprocessing_json = click.argument("preprocessing_json", type=str)
 # EXTRACT
 modality = click.argument(
     "modality",
-    type=click.Choice(["t1-linear", "pet-linear", "flair-linear", "custom"]),
+    type=click.Choice(
+        [
+            "t1-linear",
+            "t2-linear",
+            "t1-extensive",
+            "dwi-dti",
+            "pet-linear",
+            "flair-linear",
+            "custom",
+        ]
+    ),
+)
+
+modality_bids = click.argument(
+    "modality_bids",
+    type=click.Choice(["t1", "pet", "flair", "dwi", "custom"]),
+)
+
+modality_bids = click.argument(
+    "modality_bids",
+    type=click.Choice(["t1", "pet", "flair", "dwi", "custom"]),
 )

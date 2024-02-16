@@ -10,8 +10,9 @@ from .prepare_data_utils import get_parameters_dict
 
 
 @click.command(name="image", no_args_is_help=True)
+@cli_param.argument.bids_directory
 @cli_param.argument.caps_directory
-@cli_param.argument.modality
+@cli_param.argument.modality_bids
 @cli_param.option.n_proc
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.extract_json
@@ -19,11 +20,10 @@ from .prepare_data_utils import get_parameters_dict
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.dti_measure
-@cli_param.option.dti_space
-def image_cli(
+def image_bids_cli(
+    bids_directory: Path,
     caps_directory: Path,
-    modality: str,
+    modality_bids: str,
     n_proc: int,
     subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
@@ -31,8 +31,6 @@ def image_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    dti_measure: str = "FA",
-    dti_space: str = "*",
 ):
     """Extract image from nifti images.
 
@@ -41,7 +39,7 @@ def image_cli(
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
-        modality,
+        modality_bids,
         "image",
         False,
         extract_json,
@@ -49,20 +47,20 @@ def image_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        dti_measure,
-        dti_space,
     )
     DeepLearningPrepareData(
         caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
 @click.command(name="patch", no_args_is_help=True)
+@cli_param.argument.bids_directory
 @cli_param.argument.caps_directory
-@cli_param.argument.modality
+@cli_param.argument.modality_bids
 @cli_param.option.n_proc
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
@@ -85,11 +83,10 @@ def image_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.dti_measure
-@cli_param.option.dti_space
-def patch_cli(
+def patch_bids_cli(
+    bids_directory: Path,
     caps_directory: Path,
-    modality: str,
+    modality_bids: str,
     n_proc: int,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[Path] = None,
@@ -100,8 +97,6 @@ def patch_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    dti_measure: str = "FA",
-    dti_space: str = "*",
 ):
     """Extract patch from nifti images.
 
@@ -110,7 +105,7 @@ def patch_cli(
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
-        modality,
+        modality_bids,
         "patch",
         save_features,
         extract_json,
@@ -118,8 +113,6 @@ def patch_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        dti_measure,
-        dti_space,
     )
     parameters["patch_size"] = patch_size
     parameters["stride_size"] = stride_size
@@ -129,12 +122,14 @@ def patch_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
 @click.command(name="slice", no_args_is_help=True)
+@cli_param.argument.bids_directory
 @cli_param.argument.caps_directory
-@cli_param.argument.modality
+@cli_param.argument.modality_bids
 @cli_param.option.n_proc
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
@@ -172,11 +167,10 @@ def patch_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.dti_measure
-@cli_param.option.dti_space
-def slice_cli(
+def slice_bids_cli(
+    bids_directory: Path,
     caps_directory: Path,
-    modality: str,
+    modality_bids: str,
     n_proc: int,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[Path] = None,
@@ -188,8 +182,6 @@ def slice_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    dti_measure: str = "FA",
-    dti_space: str = "*",
 ):
     """Extract slice from nifti images.
 
@@ -198,7 +190,7 @@ def slice_cli(
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
-        modality,
+        modality_bids,
         "slice",
         save_features,
         extract_json,
@@ -206,8 +198,6 @@ def slice_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        dti_measure,
-        dti_space,
     )
     parameters["slice_direction"] = slice_direction
     parameters["slice_mode"] = slice_mode
@@ -218,12 +208,14 @@ def slice_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
 @click.command(name="roi", no_args_is_help=True)
+@cli_param.argument.bids_directory
 @cli_param.argument.caps_directory
-@cli_param.argument.modality
+@cli_param.argument.modality_bids
 @cli_param.option.n_proc
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
@@ -264,11 +256,10 @@ def slice_cli(
 @cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
-@cli_param.option.dti_measure
-@cli_param.option.dti_space
-def roi_cli(
+def roi_bids_cli(
+    bids_directory: Path,
     caps_directory: Path,
-    modality: str,
+    modality_bids: str,
     n_proc: int,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[Path] = None,
@@ -281,8 +272,6 @@ def roi_cli(
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
-    dti_measure: str = "FA",
-    dti_space: str = "*",
 ):
     """Extract roi from nifti images.
 
@@ -291,7 +280,7 @@ def roi_cli(
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
-        modality,
+        modality_bids,
         "roi",
         save_features,
         extract_json,
@@ -299,8 +288,6 @@ def roi_cli(
         custom_suffix,
         tracer,
         suvr_reference_region,
-        dti_measure,
-        dti_space,
     )
     parameters["roi_list"] = roi_list
     parameters["uncropped_roi"] = roi_uncrop_output
@@ -312,6 +299,7 @@ def roi_cli(
         tsv_file=subjects_sessions_tsv,
         n_proc=n_proc,
         parameters=parameters,
+        from_bids=bids_directory,
     )
 
 
@@ -322,16 +310,18 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="prepare-data", no_args_is_help=True)
+@click.group(
+    cls=RegistrationOrderGroup, name="prepare-data-from-bids", no_args_is_help=True
+)
 def cli() -> None:
     """Extract Pytorch tensors from nifti images."""
     pass
 
 
-cli.add_command(image_cli)
-cli.add_command(slice_cli)
-cli.add_command(patch_cli)
-cli.add_command(roi_cli)
+cli.add_command(image_bids_cli)
+cli.add_command(slice_bids_cli)
+cli.add_command(patch_bids_cli)
+cli.add_command(roi_bids_cli)
 
 
 if __name__ == "__main__":

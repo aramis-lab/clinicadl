@@ -3,7 +3,10 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+)
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     change_str_to_path,
     read_json,

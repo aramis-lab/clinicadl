@@ -5,9 +5,13 @@ from typing import List
 import click
 
 from clinicadl.generate.generate_cli import cli as generate_cli
+from clinicadl.hugging_face.hugging_face_cli import cli as hf_cli
 from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
 from clinicadl.prepare_data.prepare_data_cli import cli as prepare_data_cli
+from clinicadl.prepare_data.prepare_data_from_bids_cli import (
+    cli as prepare_data_from_bids_cli,
+)
 from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
 from clinicadl.train.train_cli import cli as train_cli
@@ -42,10 +46,12 @@ cli.add_command(tsvtools_cli)
 cli.add_command(train_cli)
 cli.add_command(generate_cli)
 cli.add_command(prepare_data_cli)
+cli.add_command(prepare_data_from_bids_cli)
 cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)
 cli.add_command(random_search_cli)
+cli.add_command(hf_cli)
 
 if __name__ == "__main__":
     cli()

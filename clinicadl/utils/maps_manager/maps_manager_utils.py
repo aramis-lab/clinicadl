@@ -261,4 +261,6 @@ def change_path_to_str(
                     toml_dict[key] = ""
                 elif isinstance(value, Path):
                     toml_dict[key] = value.as_posix()
+        if isinstance(value, Path):
+            toml_dict[key] = value.as_posix()
     return toml_dict
