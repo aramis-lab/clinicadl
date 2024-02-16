@@ -17,21 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Remove Clinica dependency,
-* Update the `--fully_sharded_data_parallelism` option,
+* Remove Clinica dependency
 * Change MapsManager architecture by adding more Callbacks, 
 * Update python to v3.11 and pytorch to v2.0,
 
 ### New
 
 * Add missing methods in models classes,
-* Add `--save_model` option to save model weight at each epochs,
+* Add `--save_all_models` option to save models weights at each epochs,
 * Add `--skip_leak_check` option to skip data leakage check,
 * Add `--adaptive_learning_rate` option, 
 * Add `prepare-data-from-bids` pipeline to extract tensor from bids to caps,
-* Add dwi modality, 
+* Add dti modality, 
 * Add `hugging-face push/pull` pipelines to share models on HuggingFace,
-* Add `--longitudinal_validation` to use longitudinal data for the validation,
 * Add confidence intervals and metrics 
 
 ## ClinicaDL 1.5.1
