@@ -258,7 +258,6 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
-
         self._check_data_group(
             data_group,
             caps_directory,
@@ -2239,7 +2238,6 @@ class MapsManager:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    shutil.rmtree(group_dir)
                     if not split_list:
                         split_list = self._find_splits()
                     for split in split_list:
