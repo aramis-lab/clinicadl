@@ -3102,7 +3102,6 @@ class MapsManager:
             prediction_dir / f"{data_group}_{mode}_level_prediction.tsv",
             sep="\t",
         )
-        print(df)
         df.set_index(["participant_id", "session_id"], inplace=True, drop=True)
         return df
 
