@@ -258,7 +258,6 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
-        # tests
         self._check_data_group(
             data_group,
             caps_directory,
@@ -1657,6 +1656,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1698,13 +1698,23 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=amp,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                loss_to_log = (
+                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                )
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -1729,6 +1739,7 @@ class MapsManager:
         gpu=None,
         network=None,
         target=False,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1766,16 +1777,19 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test_da(
-                model,
-                dataloader,
-                criterion,
-                target=target,
+                model, dataloader, criterion, target=target, report_ci=report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                if report_ci:
+                    loss_to_log = metrics["Metric_values"][-1]
+                else:
+                    loss_to_log = metrics["loss"]
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             # Replace here
@@ -2000,6 +2014,7 @@ class MapsManager:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
+            #####################
             # Soft voting
             if self.num_networks > 1 and not skip_leak_check:
                 self._ensemble_to_tsv(
@@ -2223,7 +2238,6 @@ class MapsManager:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    shutil.rmtree(group_dir)
                     if not split_list:
                         split_list = self._find_splits()
                     for split in split_list:
@@ -2533,13 +2547,21 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
+            # if data_group == "train" or data_group == "validation":
+            #     pd_metrics = pd.DataFrame(metrics, index = [0])
+            #     header = True
+            # else:
+            #     pd_metrics = pd.DataFrame(metrics).T
+            #     header = False
+
+            pd_metrics = pd.DataFrame(metrics).T
+            header = False
+            # import ipdb; ipdb.set_trace()
             if not metrics_path.is_file():
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
-                )
+                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=header)
             else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=False
+                pd_metrics.to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=header
                 )
 
     def _ensemble_to_tsv(
