@@ -2600,7 +2600,7 @@ class MapsManager:
             performance_dir / f"{data_group}_{self.mode}_level_prediction.tsv"
         )
         if not performance_path.is_dir():
-            results_df.to_csv(performance_path, index=False, sep="\t", header=True)
+            results_df.to_csv(performance_path, index=False, sep="\t")
         else:
             results_df.to_csv(
                 performance_path, index=False, sep="\t", mode="a", header=False
@@ -2611,7 +2611,7 @@ class MapsManager:
             pd_metrics = pd.DataFrame(metrics).T
 
             if not metrics_path.is_file():
-                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=True)
+                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=False)
             else:
                 pd_metrics.to_csv(
                     metrics_path, index=False, sep="\t", mode="a", header=False
