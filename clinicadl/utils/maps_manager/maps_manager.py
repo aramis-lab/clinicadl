@@ -1657,6 +1657,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1698,13 +1699,23 @@ class MapsManager:
             model = DDP(model)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=amp,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                loss_to_log = (
+                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                )
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -1729,6 +1740,7 @@ class MapsManager:
         gpu=None,
         network=None,
         target=False,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1766,16 +1778,19 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test_da(
-                model,
-                dataloader,
-                criterion,
-                target=target,
+                model, dataloader, criterion, target=target, report_ci=report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                if report_ci:
+                    loss_to_log = metrics["Metric_values"][-1]
+                else:
+                    loss_to_log = metrics["loss"]
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             # Replace here
@@ -2524,7 +2539,7 @@ class MapsManager:
         performance_path = (
             performance_dir / f"{data_group}_{self.mode}_level_prediction.tsv"
         )
-        if not performance_path.is_file():
+        if not performance_path.is_dir():
             results_df.to_csv(performance_path, index=False, sep="\t")
         else:
             results_df.to_csv(
@@ -2533,12 +2548,12 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
+            pd_metrics = pd.DataFrame(metrics).T
+
             if not metrics_path.is_file():
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
-                )
+                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=False)
             else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
+                pd_metrics.to_csv(
                     metrics_path, index=False, sep="\t", mode="a", header=False
                 )
 

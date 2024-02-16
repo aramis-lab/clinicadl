@@ -181,6 +181,7 @@ class TaskManager:
         criterion: _Loss,
         use_labels: bool = True,
         amp: bool = False,
+        report_ci=False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -231,10 +232,21 @@ class TaskManager:
         if not use_labels:
             metrics_dict = None
         else:
-            metrics_dict = self.compute_metrics(results_df)
+            metrics_dict = self.compute_metrics(results_df, report_ci=report_ci)
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
-                metrics_dict[loss_component] = total_loss[loss_component].item()
+                if report_ci:
+                    metrics_dict["Metric_names"].append(loss_component)
+                    metrics_dict["Metric_values"].append(
+                        total_loss[loss_component].item()
+                    )
+                    metrics_dict["Lower_CI"].append("N/A")
+                    metrics_dict["Upper_CI"].append("N/A")
+                    metrics_dict["SE"].append("N/A")
+
+                else:
+                    metrics_dict[loss_component] = total_loss[loss_component].item()
+
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
@@ -247,6 +259,7 @@ class TaskManager:
         alpha: float = 0,
         use_labels: bool = True,
         target: bool = True,
+        report_ci=False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -283,8 +296,17 @@ class TaskManager:
         if not use_labels:
             metrics_dict = None
         else:
-            metrics_dict = self.compute_metrics(results_df)
-            metrics_dict["loss"] = total_loss
+            metrics_dict = self.compute_metrics(results_df, report_ci=report_ci)
+            if report_ci:
+                metrics_dict["Metric_names"].append("loss")
+                metrics_dict["Metric_values"].append(total_loss)
+                metrics_dict["Lower_CI"].append("N/A")
+                metrics_dict["Upper_CI"].append("N/A")
+                metrics_dict["SE"].append("N/A")
+
+            else:
+                metrics_dict["loss"] = total_loss
+
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
