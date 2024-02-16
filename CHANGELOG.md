@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Fix t1-volume quality-check empty tsv issue,
 * Fix bug with adapt pipeline,
-* Fix `predict —-overwrite` issue deleting the result on all the splis, 
+* Fix `predict —-overwrite` issue, 
 
 
 ### Changed
