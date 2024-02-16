@@ -106,9 +106,11 @@ class MetricModule:
                         )
                     else:
                         results[
-                            f"{metric_key}-{class_number}"
-                            if len(class_numbers) > 1
-                            else f"{metric_key}"
+                            (
+                                f"{metric_key}-{class_number}"
+                                if len(class_numbers) > 1
+                                else f"{metric_key}"
+                            )
                         ] = metric_result
 
             if report_ci:
