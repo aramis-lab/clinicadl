@@ -2606,9 +2606,8 @@ class MapsManager:
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
             pd_metrics = pd.DataFrame(metrics).T
-            header = False
             pd_metrics.to_csv(
-                metrics_path, index=False, sep="\t", mode="a", header=header
+                metrics_path, index=False, sep="\t", mode="a", header=False
             )
 
     def _ensemble_to_tsv(
