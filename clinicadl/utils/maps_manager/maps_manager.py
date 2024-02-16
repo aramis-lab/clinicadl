@@ -258,7 +258,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
         criterion = self.task_manager.get_criterion(self.loss)
-
+        # tests
         self._check_data_group(
             data_group,
             caps_directory,
