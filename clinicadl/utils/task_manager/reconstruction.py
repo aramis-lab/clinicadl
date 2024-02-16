@@ -51,12 +51,13 @@ class ReconstructionManager(TaskManager):
         from numpy import mean as np_mean
         from scipy.stats import bootstrap
 
-        metrics = dict()
-        metric_names = ["Metrics"]
-        metric_values = ["Values"]
-        lower_ci_values = ["Lower bound CI"]
-        upper_ci_values = ["Upper bound CI"]
-        se_values = ["SE"]
+        metrics = {
+            "Metric_names": ["Metrics"],
+            "Metric_values": ["Values"],
+            "Lower_CI": ["Lower bound CI"],
+            "Upper_CI": ["Upper bound CI"],
+            "SE": ["SE"],
+        }
 
         for metric in self.evaluation_metrics:
             metric_vals = results_df[metric]
@@ -78,17 +79,11 @@ class ReconstructionManager(TaskManager):
             else:
                 lower_ci, upper_ci, standard_error = "N/A"
 
-            metric_names.append(metric)
-            metric_values.append(metric_result)
-            lower_ci_values.append(lower_ci)
-            upper_ci_values.append(upper_ci)
-            se_values.append(standard_error)
-
-        metrics["Metric_names"] = metric_names
-        metrics["Metric_values"] = metric_values
-        metrics["Lower_CI"] = lower_ci_values
-        metrics["Upper_CI"] = upper_ci_values
-        metrics["SE"] = se_values
+            metrics["Metric_names"].append(metric)
+            metrics["Metric_values"].append(metric_result)
+            metrics["Lower_CI"].append(lower_ci)
+            metrics["Upper_CI"].append(upper_ci)
+            metrics["SE"].append(standard_error)
 
         return metrics
 

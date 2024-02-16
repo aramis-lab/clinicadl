@@ -66,15 +66,6 @@ class MetricModule:
             y = np.array(y)
             y_pred = np.array(y_pred)
 
-            # if report_ci:
-            #     from scipy.stats import bootstrap
-
-            # metric_names = ["Metrics"]
-            # metric_values = ["Values"]  # Collect metric values
-            # lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
-            # upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
-            # se_values = ["SE"]  # Collect standard error values
-
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
 
@@ -118,13 +109,6 @@ class MetricModule:
                             else f"{metric_key}"
                         ] = metric_result
 
-            # if report_ci:
-            #     # Construct the final results dictionary
-            #     results["Metric_names"] = metric_names
-            #     results["Metric_values"] = metric_values
-            #     results["Lower_CI"] = lower_ci_values
-            #     results["Upper_CI"] = upper_ci_values
-            #     results["SE"] = se_values
         else:
             results = dict()
 

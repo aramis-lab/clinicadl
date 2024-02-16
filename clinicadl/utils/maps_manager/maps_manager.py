@@ -2597,24 +2597,14 @@ class MapsManager:
         performance_path = (
             performance_dir / f"{data_group}_{self.mode}_level_prediction.tsv"
         )
-        if not performance_path.is_file():
-            results_df.to_csv(performance_path, index=False, sep="\t")
-        else:
-            results_df.to_csv(
-                performance_path, index=False, sep="\t", mode="a", header=False
-            )
+        results_df.to_csv(
+            performance_path, index=False, sep="\t", mode="a", header=False
+        )
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
-            if data_group == "train" or data_group == "validation":
-                pd_metrics = pd.DataFrame(metrics, index=[0])
-                header = True
-            else:
-                pd_metrics = pd.DataFrame(metrics).T
-                header = False
-
-            # pd_metrics = pd.DataFrame(metrics).T
-            # header = False
+            pd_metrics = pd.DataFrame(metrics).T
+            header = False
             pd_metrics.to_csv(
                 metrics_path, index=False, sep="\t", mode="a", header=header
             )
