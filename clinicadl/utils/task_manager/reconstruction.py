@@ -22,7 +22,7 @@ class ReconstructionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE", "PSNR", "SSIM"]
+        return ["MAE", "RMSE", "PSNR", "SSIM"]
 
     @property
     def save_outputs(self):
@@ -31,20 +31,65 @@ class ReconstructionManager(TaskManager):
     def generate_test_row(self, idx, data, outputs):
         y = data["image"][idx]
         y_pred = outputs[idx].cpu()
-        metrics = self.metrics_module.apply(y, y_pred)
+        metrics = self.metrics_module.apply(y, y_pred, report_ci=False)
         row = [
             data["participant_id"][idx],
             data["session_id"][idx],
             data[f"{self.mode}_id"][idx].item(),
         ]
+
         for metric in self.evaluation_metrics:
             row.append(metrics[metric])
         return [row]
 
-    def compute_metrics(self, results_df):
+    def compute_metrics(self, results_df, report_ci=False):
+        if not report_ci:
+            return {
+                metric: results_df[metric].mean() for metric in self.evaluation_metrics
+            }
+
+        from numpy import mean as np_mean
+        from scipy.stats import bootstrap
+
         metrics = dict()
+        metric_names = ["Metrics"]
+        metric_values = ["Values"]
+        lower_ci_values = ["Lower bound CI"]
+        upper_ci_values = ["Upper bound CI"]
+        se_values = ["SE"]
+
         for metric in self.evaluation_metrics:
-            metrics[metric] = results_df[metric].mean()
+            metric_vals = results_df[metric]
+
+            metric_result = metric_vals.mean()
+
+            metric_vals = (metric_vals,)
+            # Compute confidence intervals only if there are at least two samples in the data.
+            if len(results_df) >= 2:
+                res = bootstrap(
+                    metric_vals,
+                    np_mean,
+                    n_resamples=3000,
+                    confidence_level=0.95,
+                    method="percentile",
+                )
+                lower_ci, upper_ci = res.confidence_interval
+                standard_error = res.standard_error
+            else:
+                lower_ci, upper_ci, standard_error = "N/A"
+
+            metric_names.append(metric)
+            metric_values.append(metric_result)
+            lower_ci_values.append(lower_ci)
+            upper_ci_values.append(upper_ci)
+            se_values.append(standard_error)
+
+        metrics["Metric_names"] = metric_names
+        metrics["Metric_values"] = metric_values
+        metrics["Lower_CI"] = lower_ci_values
+        metrics["Upper_CI"] = upper_ci_values
+        metrics["SE"] = se_values
+
         return metrics
 
     @staticmethod

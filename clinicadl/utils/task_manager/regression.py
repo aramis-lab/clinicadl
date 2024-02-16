@@ -27,7 +27,7 @@ class RegressionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE"]
+        return ["R2_score", "MAE", "RMSE"]
 
     @property
     def save_outputs(self):
@@ -44,10 +44,11 @@ class RegressionManager(TaskManager):
             ]
         ]
 
-    def compute_metrics(self, results_df):
+    def compute_metrics(self, results_df, report_ci):
         return self.metrics_module.apply(
             results_df.true_label.values,
             results_df.predicted_label.values,
+            report_ci=report_ci,
         )
 
     @staticmethod
@@ -155,7 +156,7 @@ class RegressionManager(TaskManager):
             df_final = pd.concat([df_final, row_df])
 
         if use_labels:
-            results = self.compute_metrics(df_final)
+            results = self.compute_metrics(df_final, report_ci=False)
         else:
             results = None
 
