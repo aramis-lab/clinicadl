@@ -20,7 +20,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     task = user_dict["network_task"]
     # read default values
-    clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
+    clinicadl_root_dir = Path(__file__).parents[2]
     config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     # from clinicadl.utils.preprocessing import path_decoder
     config_dict = toml.load(config_path)
