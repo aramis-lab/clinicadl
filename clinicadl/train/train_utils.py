@@ -26,7 +26,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     """
     if config_file is None:
         # read default values
-        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        clinicadl_root_dir = Path(__file__).parents[1]
         config_path = (
             Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
@@ -45,7 +45,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
             del user_dict["Random_Search"]
 
         # read default values
-        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        clinicadl_root_dir = Path(__file__).parents[1]
         config_path = (
             Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
