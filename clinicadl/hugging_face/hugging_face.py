@@ -132,10 +132,8 @@ def create_readme(
     if not config_file.is_file():
         raise ClinicaDLArgumentError("There is no maps.json file in your repository.")
 
-    clinicadl_root_dir = (Path(__file__) / "../..").resolve()
-    config_path = (
-        Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-    )
+    clinicadl_root_dir = Path(__file__).parents[1]
+    config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     config_dict = toml.load(config_path)
 
     train_dict = read_json(config_file)
