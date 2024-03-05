@@ -27,9 +27,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     if config_file is None:
         # read default values
         clinicadl_root_dir = Path(__file__).parents[1]
-        config_path = (
-            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-        )
+        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
         config_dict = change_str_to_path(config_dict)
@@ -46,9 +44,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
 
         # read default values
         clinicadl_root_dir = Path(__file__).parents[1]
-        config_path = (
-            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-        )
+        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
         config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if user_dict is not None:
