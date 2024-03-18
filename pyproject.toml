@@ -68,7 +68,6 @@ optional = true
 mkdocs = "^1.1"
 mkdocs-material = "*"
 pymdown-extensions = "*"
-mkdocs-pymdownx-material-extras = "*"
 
 [tool.poetry.scripts]
 clinicadl = "clinicadl.cmdline:cli"

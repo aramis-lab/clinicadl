@@ -12,15 +12,13 @@ build:
     python: "3.11"
   jobs:
     post_create_environment:
-      # Install Poetry
+      # Install Poetry 1.7
+      # TODO: Investigate why pipeline is broken with 1.8
       - pip install poetry==1.7.1
       # Do not use virtual environments
       - poetry config virtualenvs.create false
       # Install docs group of dependencies
       - poetry install --only docs
-      #- pip install mkdocs
-      #- pip install mkdocs-material
-      #- pip install pymdown-extensions
 
 mkdocs:
   configuration: mkdocs.yml
