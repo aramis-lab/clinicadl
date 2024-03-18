@@ -13,11 +13,14 @@ build:
   jobs:
     post_create_environment:
       # Install Poetry
-      - pip install poetry
+      #- pip install poetry
       # Do not use virtual environments
-      - poetry config virtualenvs.create false
+      #- poetry config virtualenvs.create false
       # Install docs group of dependencies
-      - poetry install --only docs
+      #- poetry install --only docs
+      - pip install mkdocs
+      - pip install mkdocs-material
+      - pip install pymdown-extensions
 
 mkdocs:
   configuration: mkdocs.yml
