@@ -7,7 +7,36 @@ from typing import Any, Dict
 def path_encoder(obj):
     if isinstance(obj, Path):
         return str(obj)
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                for key2, value2 in value.items():
+                    if (
+                        key2.endswith("tsv")
+                        or key2.endswith("dir")
+                        or key2.endswith("directory")
+                        or key2.endswith("path")
+                        or key2.endswith("json")
+                        or key2.endswith("location")
+                    ):
+                        if value2 == False:
+                            obj[value][key2] = ""
+                        elif isinstance(value2, Path):
+                            obj[value][key2] = value2.as_posix()
+            else:
+                if (
+                    key.endswith("tsv")
+                    or key.endswith("dir")
+                    or key.endswith("directory")
+                    or key.endswith("path")
+                    or key.endswith("json")
+                    or key.endswith("location")
+                ):
+                    if value == False:
+                        obj[key] = ""
+                    elif isinstance(value, Path):
+                        obj[key] = value.as_posix()
+    return obj
 
 
 def path_decoder(obj):
