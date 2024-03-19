@@ -263,7 +263,7 @@ def generate_trivial_dataset(
 
     if mask_path is None:
         home = Path.home()
-        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
+        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
             filename="AAL2.tar.gz",
@@ -574,7 +574,7 @@ def generate_hypometabolic_dataset(
         "svppa": "44f2e00bf2d2d09b532cb53e3ba61d6087b4114768cc8ae3330ea84c4b7e0e6a",
     }
     home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"  # noqa (typo in resources)
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
     FILE1 = RemoteFileStructure(
         filename=f"mask_hypo_{pathology}.nii",
@@ -587,7 +587,7 @@ def generate_hypometabolic_dataset(
         # mask_path = fetch_file(FILE1, cache_clinicadl)
         try:
             mask_path = fetch_file(FILE1, cache_clinicadl)
-        except:
+        except Exception:
             DownloadError(
                 """Unable to download masks, please download them
                 manually at https://aramislab.paris.inria.fr/files/data/masks/

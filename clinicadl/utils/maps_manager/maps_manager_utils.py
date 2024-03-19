@@ -173,12 +173,12 @@ def remove_unused_tasks(
 
 
 def change_str_to_path(
-    toml_dict: Dict[str, Dict[str, Any]]
+    toml_dict: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
     """
-    For all paths in the dictionnary, it changes the type from str to pathlib.Path.
+    For all paths in the dictionary, it changes the type from str to pathlib.Path.
 
-    Paramaters
+    Parameters
     ----------
     toml_dict: Dict[str, Dict[str, Any]]
         Dictionary of options as written in a TOML file, with type(path)=str
@@ -219,12 +219,12 @@ def change_str_to_path(
 
 
 def change_path_to_str(
-    toml_dict: Dict[str, Dict[str, Any]]
+    toml_dict: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
     """
-    For all paths in the dictionnary, it changes the type from pathlib.Path to str.
+    For all paths in the dictionary, it changes the type from pathlib.Path to str.
 
-    Paramaters
+    Parameters
     ----------
     toml_dict: Dict[str, Dict[str, Any]]
         Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
@@ -244,7 +244,7 @@ def change_path_to_str(
                     or key2.endswith("json")
                     or key2.endswith("location")
                 ):
-                    if value2 == False:
+                    if not value2:
                         toml_dict[value][key2] = ""
                     elif isinstance(value2, Path):
                         toml_dict[value][key2] = value2.as_posix()
@@ -257,7 +257,7 @@ def change_path_to_str(
                 or key.endswith("json")
                 or key.endswith("location")
             ):
-                if value == False:
+                if not value:
                     toml_dict[key] = ""
                 elif isinstance(value, Path):
                     toml_dict[key] = value.as_posix()
