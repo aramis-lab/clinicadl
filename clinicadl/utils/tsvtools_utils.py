@@ -20,9 +20,9 @@ def merged_tsv_reader(merged_tsv_path: Path) -> pd.DataFrame:
 
     # To handle bids with 2 and 3 digits
     bids_df["session_id"] = bids_df["session_id"].apply(
-        lambda session: session[:5] + "0" + session[5:7]
-        if len(session) == 7
-        else session
+        lambda session: (
+            session[:5] + "0" + session[5:7] if len(session) == 7 else session
+        )
     )
 
     return bids_df
