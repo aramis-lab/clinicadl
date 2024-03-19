@@ -25,7 +25,7 @@ def test_pet_linear_nii(
     from clinicadl.utils.clinica_utils import pet_linear_nii
 
     assert(
-        pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)["pattern"] == {
+        pet_linear_nii(acq_label, suvr_reference_region, uncropped_image) == {
             "description": "",
             "needed_pipeline": "pet-linear",
             "pattern": expected_pattern,
