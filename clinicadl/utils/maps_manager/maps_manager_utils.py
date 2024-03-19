@@ -179,9 +179,9 @@ def remove_unused_tasks(
 #     toml_dict: Dict[str, Dict[str, Any]]
 # ) -> Dict[str, Dict[str, Any]]:
 #     """
-#     For all paths in the dictionnary, it changes the type from str to pathlib.Path.
+#     For all paths in the dictionary, it changes the type from str to pathlib.Path.
 
-#     Paramaters
+#     Parameters
 #     ----------
 #     toml_dict: Dict[str, Dict[str, Any]]
 #         Dictionary of options as written in a TOML file, with type(path)=str
@@ -225,9 +225,9 @@ def remove_unused_tasks(
 #     toml_dict: Dict[str, Dict[str, Any]]
 # ) -> Dict[str, Dict[str, Any]]:
 #     """
-#     For all paths in the dictionnary, it changes the type from pathlib.Path to str.
+#     For all paths in the dictionary, it changes the type from pathlib.Path to str.
 
-#     Paramaters
+#     Parameters
 #     ----------
 #     toml_dict: Dict[str, Dict[str, Any]]
 #         Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
@@ -267,4 +267,3 @@ def remove_unused_tasks(
 #         if isinstance(value, Path):
 #             toml_dict[key] = value.as_posix()
 #     return toml_dict
-
