@@ -6,8 +6,7 @@ from pathlib import Path
 import toml
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.maps_manager.maps_manager_utils import (
-    change_str_to_path,
+from clinicadl.utils.maps_manager.maps_manager_utils import (  # change_str_to_path,
     read_json,
     remove_unused_tasks,
 )
