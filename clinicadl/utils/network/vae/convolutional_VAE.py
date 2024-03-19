@@ -1,4 +1,4 @@
-""" Credits to Benoit Sauty de Chalon @bsauty """
+"""Credits to Benoit Sauty de Chalon @bsauty"""
 
 import torch
 import torch.nn as nn

@@ -8,7 +8,7 @@ set -e
 set +x
 
 ENV_EXISTS=0
-# Verify that the conda enviroment correponding to the branch exists, otherwise
+# Verify that the conda environment corresponding to the branch exists, otherwise
 # create it.
 ENVS=$(conda env list | awk '{print $1}' )
 echo $ENVS

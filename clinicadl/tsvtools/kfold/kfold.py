@@ -160,7 +160,7 @@ def split_diagnoses(
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except:
+            except Exception:
                 raise ClinicaDLTSVError(
                     f"Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
                     "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."

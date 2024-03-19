@@ -9,9 +9,6 @@ from torch.utils.data import sampler
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-
-logger = getLogger("clinicadl.task_manager")
-
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 logger = getLogger("clinicadl.task_manager")

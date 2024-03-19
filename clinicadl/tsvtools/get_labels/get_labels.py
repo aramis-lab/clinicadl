@@ -10,6 +10,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
+
 from copy import copy
 from logging import getLogger
 from pathlib import Path
@@ -90,9 +91,9 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                         ]
                     if prev_diagnosis == post_diagnosis:
                         found_diag_interpol += 1
-                        bids_copy_df.loc[(subject, session), "diagnosis"] = (
-                            prev_diagnosis
-                        )
+                        bids_copy_df.loc[
+                            (subject, session), "diagnosis"
+                        ] = prev_diagnosis
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
                         nb_drop += 1

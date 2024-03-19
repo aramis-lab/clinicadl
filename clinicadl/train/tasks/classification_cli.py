@@ -64,7 +64,7 @@ from .task_utils import task_launcher
 @train_option.selection_metrics
 @train_option.selection_threshold
 @train_option.classification_loss
-# informations
+# information
 @train_option.emissions_calculator
 def cli(**kwargs):
     """

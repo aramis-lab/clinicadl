@@ -291,7 +291,7 @@ def df_to_tsv(name: str, results_path: Path, df, baseline: bool = False) -> None
         DataFrame you want to write in a TSV file.
         Columns must include ["participant_id", "session_id"].
     baseline: bool
-        If True, ther is only baseline session for each subject.
+        If True, there is only baseline session for each subject.
     """
 
     df.sort_values(by=["participant_id", "session_id"], inplace=True)

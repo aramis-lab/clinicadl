@@ -24,7 +24,7 @@ launched, in the following order:
   obtained during the **generate** test (`clinica run deeplearning-prepare-data
   ./dataset/random_example t1-linear image`) or you can [download it
   here](https://aramislab.paris.inria.fr/files/data/databases/tuto/RandomCaps.tar.gz).
-  This test verifies that the output files exist. <!--([the previoulsy trained
+  This test verifies that the output files exist. <!--([the previously trained
   models are available
   here](https://aramislab.paris.inria.fr/clinicadl/files/models/)).-->
 - **train** test (`test_train.py`): it runs training over the synthetic dataset

@@ -59,7 +59,6 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
 def load_and_check_tsv(
     tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-
     if tsv_path is not None:
         if len(caps_dict) == 1:
             df = pd.read_csv(tsv_path, sep="\t")

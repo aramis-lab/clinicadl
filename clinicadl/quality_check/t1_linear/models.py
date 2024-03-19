@@ -328,7 +328,7 @@ class ResNet_DarqQC(nn.Module):
                 if isinstance(param, Parameter):
                     param = param.data
                 # convert to mono weight
-                # collaps parameters along second dimension, emulating grayscale feature
+                # collapse parameters along second dimension, emulating grayscale feature
                 mono_param = param.sum(1, keepdim=True)
                 if self.use_ref:
                     own_state[name].copy_(torch.cat((mono_param, mono_param), 1))
@@ -599,7 +599,7 @@ class SqueezeNetQC(nn.Module):
                 if isinstance(param, Parameter):
                     param = param.data
                 # convert to mono weight
-                # collaps parameters along second dimension, emulating grayscale feature
+                # collapse parameters along second dimension, emulating grayscale feature
                 mono_param = param.sum(1, keepdim=True)
                 if self.use_ref:
                     own_state[name].copy_(torch.cat((mono_param, mono_param), 1))
