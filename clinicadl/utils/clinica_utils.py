@@ -80,7 +80,6 @@ def bids_nii(
 
 
 def linear_nii(modality: str, uncropped_image: bool) -> dict:
-
     if modality not in ("T1w", "T2w", "flair"):
         raise ClinicaDLArgumentError(
             f"ClinicaDL is Unable to read this modality ({modality}) of images"
@@ -99,7 +98,7 @@ def linear_nii(modality: str, uncropped_image: bool) -> dict:
 
     information = {
         "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality}.nii.gz",
-        "description": f"{modality} Image registred in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
+        "description": f"{modality} Image registered in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
         + (
             ""
             if uncropped_image
@@ -149,7 +148,6 @@ def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -
 def pet_linear_nii(
     acq_label: str, suvr_reference_region: str, uncropped_image: bool
 ) -> dict:
-
     if uncropped_image:
         description = ""
     else:
@@ -435,7 +433,6 @@ def determine_caps_or_bids(input_dir: Path) -> bool:
 
 
 def _list_subjects_sub_folders(root_dir: Path, groups_dir: Path) -> List[Path]:
-
     warning_msg = (
         f"Could not determine if {groups_dir.parent} is a CAPS or BIDS directory. "
         "Clinica will assume this is a CAPS directory."
@@ -797,7 +794,6 @@ def _get_extension(filename: Path) -> str:
 
 
 def _get_suffix(filename: Path) -> str:
-
     return f"_{get_filename_no_ext(filename.name).split('_')[-1]}"
 
 

@@ -31,8 +31,7 @@ which have the same arguments:
 
 ## `prepare-data-from-bids`- Extract tensors from a BIDS
 You can also extract the tensor from BIDS directory using this pipeline. In this case, you don't need to execute the [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/) pipeline
-and so use unpreprocessed images with the PyTorch deep learning librairy.
-
+and so use unpreprocessed images with the PyTorch deep learning library.
 
 ## Running the pipeline
 The pipeline can be run with the following command line:

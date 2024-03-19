@@ -24,5 +24,5 @@ task_group = OptionGroup(
 )
 informations_group = OptionGroup(
     "Informative options",
-    help=" Allow to get some more informations during the training.",
+    help=" Allow to get some more information during the training.",
 )

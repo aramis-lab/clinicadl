@@ -11,13 +11,13 @@ You can find the ClinicaDL organization [here](https://huggingface.co/ClinicaDL)
 
 !!! warning "Sharing limitations"
     Depending on the data, you can not be authorized to share all the MAPS, 
-    because it includes TSV files with patient informations.
+    because it includes TSV files with patient information.
 
 ## `push` - Push your MAPS to Hugging Face 
 
 ### Description
 
-This commnandline will create a new repository in Hugging face or update the repository with the given name. 
+This commandline will create a new repository in Hugging face or update the repository with the given name. 
 
 ### Running the task
 
@@ -41,7 +41,7 @@ clinicadl hugging-face push clinicadl /DATA/maps maps-test
 
 ### Description
 
-This commnandline will download a new repository from Hugging face. 
+This commandline will download a new repository from Hugging face. 
 
 ### Running the task
 

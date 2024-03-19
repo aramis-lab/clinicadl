@@ -9,7 +9,6 @@ def DeepLearningPrepareData(
     parameters: dict,
     from_bids: str = None,
 ):
-
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 

@@ -1,4 +1,4 @@
-"""Training Callbacks for training monitoring integrated in `pythae` (inspired from 
+"""Training Callbacks for training monitoring integrated in `pythae` (inspired from
 https://github.com/huggingface/transformers/blob/master/src/transformers/trainer_callback.py)"""
 
 import importlib
