@@ -1138,7 +1138,7 @@ def _sha256(path: Path):
     return sha256hash.hexdigest()
 
 
-def fetch_file(remote: RemoteFileStructure, dirname: Optional[Path]) -> Path:
+def fetch_file(remote: RemoteFileStructure, dirname: Path) -> Path:
     """Download a specific file and save it into the resources folder of the package.
 
     Parameters
