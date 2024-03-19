@@ -277,7 +277,7 @@ def generate_trivial_dataset(
             try:
                 mask_path_tar = fetch_file(FILE1, cache_clinicadl)
                 tar_file = tarfile.open(mask_path_tar)
-                print("File: " + mask_path_tar)
+                print(f"File: {mask_path_tar}")
                 try:
                     tar_file.extractall(cache_clinicadl)
                     tar_file.close()
