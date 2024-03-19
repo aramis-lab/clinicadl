@@ -153,8 +153,7 @@ class SplitManager:
         list_columns = train_df.columns.values
 
         if (
-            "diagnosis"
-            not in list_columns
+            "diagnosis" not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
@@ -173,13 +172,12 @@ class SplitManager:
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except:
+            except Exception:
                 pass
 
         list_columns = valid_df.columns.values
         if (
-            "diagnosis"
-            not in list_columns
+            "diagnosis" not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
@@ -198,7 +196,7 @@ class SplitManager:
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except:
+            except Exception:
                 pass
         train_df = train_df[
             train_df.diagnosis.isin(cohort_diagnoses)

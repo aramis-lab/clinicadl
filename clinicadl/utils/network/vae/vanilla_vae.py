@@ -78,7 +78,7 @@ class VanillaDenseVAE(BaseVAE):
 
 class VanillaSpatialVAE(BaseVAE):
     """
-    This network is a 3D convolutional variational autoencoder with a spacial latent space.
+    This network is a 3D convolutional variational autoencoder with a spatial latent space.
 
     reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
@@ -148,7 +148,7 @@ class VanillaSpatialVAE(BaseVAE):
 
 class Vanilla3DspacialVAE(BaseVAE):
     """
-    This network is a 3D convolutional variational autoencoder with a spacial latent space.
+    This network is a 3D convolutional variational autoencoder with a spatial latent space.
 
     reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114

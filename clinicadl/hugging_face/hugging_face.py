@@ -108,7 +108,7 @@ license: mit
         )
         logger.info(f"Successfully uploaded {model_name} to {maps_dir} repo in HF hub!")
 
-    except:
+    except Exception:
         from huggingface_hub import create_repo
 
         repo_name = maps_dir.name

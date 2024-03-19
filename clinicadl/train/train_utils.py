@@ -145,10 +145,10 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         )
 
         if model_layers:
-            chanel, shape_list = input_size.split("@")
+            channel, shape_list = input_size.split("@")
             args.remove("self")
             kwargs = dict()
-            kwargs["input_size"] = [int(chanel)] + [
+            kwargs["input_size"] = [int(channel)] + [
                 int(x) for x in shape_list.split("x")
             ]
             kwargs["gpu"] = False

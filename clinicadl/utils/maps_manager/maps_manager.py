@@ -963,7 +963,7 @@ class MapsManager:
             # Create index lists for target labeled dataset
             labeled_indices = list(range(len(data_train_target_labeled)))
 
-            # Oversample the indices for the target labeld dataset to match the size of the labeled source dataset
+            # Oversample the indices for the target labelled dataset to match the size of the labeled source dataset
             data_train_source_size = len(data_train_source) // self.batch_size
             labeled_oversampled_indices = labeled_indices * (
                 data_train_source_size // len(labeled_indices)
@@ -1155,7 +1155,7 @@ class MapsManager:
                     with sync:
                         with autocast(enabled=self.amp):
                             _, loss_dict = model(data, criterion)
-                        logger.debug(f"Train loss dictionnary {loss_dict}")
+                        logger.debug(f"Train loss dictionary {loss_dict}")
                         loss = loss_dict["loss"]
                         scaler.scale(loss).backward()
 
@@ -1399,7 +1399,7 @@ class MapsManager:
                 _, _, loss_dict = model.compute_outputs_and_loss(
                     data_source, data_target, data_target_unl, criterion, alpha
                 )  # TO CHECK
-                logger.debug(f"Train loss dictionnary {loss_dict}")
+                logger.debug(f"Train loss dictionary {loss_dict}")
                 loss = loss_dict["loss"]
                 loss.backward()
                 if (i + 1) % self.accumulation_steps == 0:
@@ -1416,7 +1416,7 @@ class MapsManager:
                     ):
                         evaluation_flag = False
 
-                        # Evaluate on taget data
+                        # Evaluate on target data
                         logger.info("Evaluation on target data")
                         _, metrics_train_target = self.task_manager.test_da(
                             model,

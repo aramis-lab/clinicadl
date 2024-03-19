@@ -185,7 +185,7 @@ Options:
 ### Output tree
 
 The command will generate a new folder `k-fold` stored in the same directory as the `DATA_TSV` file and containing the different split folders. Each of these files contains the keys (`participants_id`, `session_id`).
-For each key, it explicits which set it belongs to for each split according to the following structure (example for a 2-fold validation):
+For each key, it is expliciting which set it belongs to for each split according to the following structure (example for a 2-fold validation):
 ```
 └── 2_fold
         ├── split_0

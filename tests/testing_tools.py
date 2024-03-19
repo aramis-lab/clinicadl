@@ -114,7 +114,7 @@ def compare_folders(outdir: PathLike, refdir: PathLike, tmp_path: PathLike) -> b
     Compares the file hierarchy of two folders.
 
         Args:
-            outdir: path to the fisrt fodler.
+            outdir: path to the first fodler.
             refdir: path to the second folder.
             tmp_path: path to a temporary folder.
     """

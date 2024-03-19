@@ -245,8 +245,8 @@ def split_diagnoses(
     verbose: int
         Level of verbosity.
 
-    Informations
-    ------------
+    Information
+    -----------
     writes three files per <label>.tsv file present in data_tsv:
         - data_tsv/train/<label>.tsv
         - data_tsv/train/<label>_baseline.tsv
@@ -322,7 +322,7 @@ def split_diagnoses(
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except:
+            except Exception:
                 raise ClinicaDLTSVError(
                     f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
                     "the output of clinicadl get-labels to get it."

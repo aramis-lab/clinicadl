@@ -27,11 +27,11 @@ def get_progression(
     Parameters
     ----------
     data_tsv: str (path)
-        Path to a tsv file with columns including ["participants_id", "session_id", "dignosis"]
+        Path to a tsv file with columns including ["participants_id", "session_id", "diagnosis"]
     horizon_time: int
         Time horizon in months
     stability_dict: dict
-        Dictionnary explaining the progression of the disease. If None, it uses the Alzheimer's one : {CN: 0, MCI: 1, AD: 2}
+        Dictionary explaining the progression of the disease. If None, it uses the Alzheimer's one : {CN: 0, MCI: 1, AD: 2}
 
     """
 
@@ -56,7 +56,7 @@ def get_progression(
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     bids_df = infer_or_drop_diagnosis(bids_df)
 
-    # Check possible double change in diagnosis in time or if ther is only one session for a subject
+    # Check possible double change in diagnosis in time or if there is only one session for a subject
     # This subjects were removed in the old getlabels.
     # We can add an option to remove them, or remove them all the time or never remove them
     # We can also give two file.stv, one with unknown and unstable subjects and one without
@@ -118,7 +118,7 @@ def get_progression(
                 elif last_diagnosis_dict == diagnosis_dict:
                     update_diagnosis = "s"
 
-            # CASE 3 : if the session after 'horizon_time' months doesn't exist but ther are sessions before and after this time.
+            # CASE 3 : if the session after 'horizon_time' months doesn't exist but there are sessions before and after this time.
             else:
                 prev_session = neighbour_session(horizon_session, session_list, -1)
                 post_session = neighbour_session(horizon_session, session_list, +1)
