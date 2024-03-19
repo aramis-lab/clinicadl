@@ -1,8 +1,8 @@
 # coding: utf8
 
 """
-    This file contains a set of functional tests designed to check the correct execution of the pipeline and the
-    different functions available in ClinicaDL
+This file contains a set of functional tests designed to check the correct execution of the pipeline and the
+different functions available in ClinicaDL
 """
 
 import pytest

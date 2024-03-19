@@ -3,6 +3,7 @@
 """
 This file generates data for trivial or intractable (random) data for binary classification.
 """
+
 import tarfile
 from collections import namedtuple
 from logging import getLogger
