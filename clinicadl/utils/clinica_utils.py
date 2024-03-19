@@ -156,7 +156,7 @@ def pet_linear_nii(
     information = {
         "pattern": str(
             Path("pet_linear")
-            / f"*_trc-{acq_label}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
+            / f"*_trc-{acq_label}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
         ),
         "description": "",
         "needed_pipeline": "pet-linear",
