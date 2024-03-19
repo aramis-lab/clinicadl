@@ -19,7 +19,7 @@ def path_encoder(obj):
                         or key2.endswith("json")
                         or key2.endswith("location")
                     ):
-                        if value2 == False:
+                        if not value2:
                             obj[value][key2] = ""
                         elif isinstance(value2, Path):
                             obj[value][key2] = value2.as_posix()
@@ -32,7 +32,7 @@ def path_encoder(obj):
                     or key.endswith("json")
                     or key.endswith("location")
                 ):
-                    if value == False:
+                    if not value:
                         obj[key] = ""
                     elif isinstance(value, Path):
                         obj[key] = value.as_posix()
