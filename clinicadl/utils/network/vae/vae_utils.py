@@ -32,7 +32,7 @@ def VAEContinuousBernoulliLoss(input, reconstruction, mu, logVar):
 def sumlogC(x, eps=1e-5):
     """
     Numerically stable implementation of
-    sum of logarithm of Continous Bernoulli
+    sum of logarithm of continuous Bernoulli
     constant C, using Taylor 2nd degree approximation
 
     Parameter
