@@ -30,9 +30,8 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import (
+from clinicadl.utils.maps_manager.maps_manager_utils import (  # change_str_to_path,
     add_default_values,
-    change_str_to_path,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest

@@ -137,12 +137,12 @@ def create_readme(
     config_dict = toml.load(config_path)
 
     train_dict = read_json(config_file)
-    train_dict = change_str_to_path(train_dict)
+    # train_dict = change_str_to_path(train_dict)
 
     task = train_dict["network_task"]
 
     config_dict = remove_unused_tasks(config_dict, task)
-    config_dict = change_str_to_path(config_dict)
+    # config_dict = change_str_to_path(config_dict)
 
     file = open("tmp_README.md", "w")
     list_lines = []
