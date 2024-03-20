@@ -52,13 +52,6 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     nb_drop = 0
 
     for subject, subject_df in bids_df.groupby(level=0):
-        session_list = []
-        for _, session in subject_df.index.values:
-            if not session.isdigit():
-                subject_df.drop((subject, session), axis=0, inplace=True)
-                bids_copy_df.drop((subject, session), axis=0, inplace=True)
-                nb_drop += 1
-
         session_list = [session for _, session in subject_df.index.values]
 
         for _, session in subject_df.index.values:
@@ -332,11 +325,22 @@ def get_labels(
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
 
     bids_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
+
+    nb_drop_bad_session = 0
+    for index, row in bids_df.iterrows():
+        if not row["session_id"].startswith("ses-M"):
+            bids_df.drop(index, axis=0, inplace=True)
+            nb_drop_bad_session += 1
+    logger.info(
+        f"Dropped subjects (bad session name, example ses-Nv): {nb_drop_bad_session}"
+    )
+
     bids_df["session_index"] = (
         bids_df["session_id"].str.replace("ses-M", "").astype("int")
     )
+
     bids_df.set_index(["participant_id", "session_index"], inplace=True)
-    variables_list = []
+    variables_list = ["session_id"]
 
     if "dx1" in bids_df.columns:
         bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
@@ -407,15 +411,16 @@ def get_labels(
         bids_df = remove_unique_session(bids_df)
 
     variables_list.remove("baseline_diagnosis")
+
     output_df = bids_df[variables_list]
     output_df = infer_or_drop_diagnosis(output_df)
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
 
-    output_df.reset_index()
-    output_df.drop("session_index", axis=1)
-    output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    output_df.reset_index(inplace=True)
+    output_df.sort_values(by=["participant_id", "session_index"], inplace=True)
+    output_df.drop("session_index", axis=1, inplace=True)
     output_df.to_csv(output_tsv, sep="\t")
 
     logger.info(f"Results are stored in {output_dir}.")
