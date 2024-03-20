@@ -12,17 +12,17 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 logger = getLogger("clinicadl")
 
 
-def merged_tsv_reader(merged_tsv_path: Path):
-    if not merged_tsv_path.is_file():
-        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
-    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
+# def merged_tsv_reader(merged_tsv_path: Path):
+#     if not merged_tsv_path.is_file():
+#         raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
+#     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
-    for i in bids_df.index:
-        session = bids_df["session_id"][i]
-        if len(session) == 7:
-            bids_df.loc[(i), "session_id"] = session[:5] + "0" + session[5:7]
+#     for i in bids_df.index:
+#         session = bids_df["session_id"][i]
+#         if len(session) == 7:
+#             bids_df.loc[(i), "session_id"] = session[:5] + "0" + session[5:7]
 
-    return bids_df
+#     return bids_df
 
 
 def neighbour_session(session, session_list, neighbour):
