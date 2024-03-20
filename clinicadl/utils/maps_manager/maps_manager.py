@@ -30,7 +30,7 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import (  # change_str_to_path,
+from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
@@ -2050,7 +2050,6 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
         self.parameters = add_default_values(parameters)
-        # self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
         elif self.parameters["amp"]:
@@ -2932,7 +2931,6 @@ class MapsManager:
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)
-        # parameters = change_str_to_path(parameters)
         return df, parameters
 
     def get_parameters(self):

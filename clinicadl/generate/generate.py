@@ -5,7 +5,6 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 
 import tarfile
-from collections import namedtuple
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -71,6 +70,8 @@ def generate_random_dataset(
         Folder containing the synthetic dataset in CAPS format.
     n_subjects: int
         Number of subjects in each class of the synthetic dataset
+    n_procs: int
+        Number of cores used during the task.
     tsv_path: Path
         Path to tsv file of list of subjects/sessions.
     mean: float
@@ -130,35 +131,28 @@ def generate_random_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    image_path = Path(
-        clinicadl_file_reader(
-            [participant_id], [session_id], caps_dict[cohort], file_type
-        )[0][0]
+    image_paths = clinicadl_file_reader(
+        [participant_id], [session_id], caps_dict[cohort], file_type
     )
-    image_nii = nib.load(image_path)
+    image_nii = nib.load(image_paths[0][0])
     image = image_nii.get_fdata()
-
-    # Create output tsv file
-    participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
-    session_id_list = ["ses-M00"] * 2 * n_subjects
-    diagnosis_list = ["AD"] * n_subjects + ["CN"] * n_subjects
 
     output_df = pd.DataFrame(
         {
-            "participant_id": participant_id_list,
-            "session_id": session_id_list,
-            "diagnosis": diagnosis_list,
+            "participant_id": [f"sub-RAND{i}" for i in range(2 * n_subjects)],
+            "session_id": [SESSION_ID] * 2 * n_subjects,
+            "diagnosis": ["AD"] * n_subjects + ["CN"] * n_subjects,
+            "age_bl": AGE_BL_DEFAULT,
+            "sex": SEX_DEFAULT,
         }
     )
 
-    output_df["age_bl"] = AGE_BL_DEFAULT
-    output_df["sex"] = SEX_DEFAULT
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
-    input_filename = image_path.name
-    filename_pattern = "_".join(input_filename.split("_")[2::])
+    input_filename = Path(image_paths[0][0]).name
+    filename_pattern = "_".join(input_filename.split("_")[2:])
 
-    def create_random_image(subject_id):
+    def create_random_image(subject_id: str | int) -> None:
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = f"sub-RAND{subject_id}"
         noisy_image = image + gauss
@@ -194,7 +188,7 @@ def generate_trivial_dataset(
     uncropped_image: bool = False,
     tracer: str = "fdg",
     suvr_reference_region: str = "pons",
-):
+) -> None:
     """
     Generates a fully separable dataset.
 
@@ -211,6 +205,8 @@ def generate_trivial_dataset(
         Folder containing the synthetic dataset in CAPS format.
     n_subjects: int
         Number of subjects in each class of the synthetic dataset.
+    n_procs: int
+        Number of cores used during the task.
     tsv_path: Path
         Path to tsv file of list of subjects/sessions.
     preprocessing: str
@@ -263,8 +259,7 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
-        home = Path.home()
-        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
+        cache_clinicadl = Path.home() / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
             filename="AAL2.tar.gz",
@@ -308,7 +303,9 @@ def generate_trivial_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    def create_trivial_image(subject_id, output_df):
+    def create_trivial_image(
+        subject_id: str | int, output_df: pd.DataFrame
+    ) -> pd.DataFrame:
         data_idx = subject_id // 2
         label = subject_id % 2
 
@@ -383,18 +380,32 @@ def generate_shepplogan_dataset(
     extract_json: str = None,
     samples: int = 100,
     smoothing: bool = True,
-):
+) -> None:
     """
     Creates a CAPS data set of synthetic data based on Shepp-Logan phantom.
     Source NifTi files are not extracted, but directly the slices as tensors.
 
-    Args:
-        output_dir: path to the CAPS created.
-        img_size: size of the square image.
-        labels_distribution: gives the proportions of the three subtypes (ordered in a tuple) for each label.
-        extract_json: name of the JSON file in which generation details are stored.
-        samples: number of samples generated per class.
-        smoothing: if True, an additional random smoothing is performed on top of all operations on each image.
+    Parameters
+    ----------
+    output_dir: Path
+        Path to the CAPS created.
+    img_size: int
+        Size of the square image.
+    n_procs: int
+        Number of cores used during the task.
+    labels_distribution: dictionary
+        Gives the proportions of the three subtypes (ordered in a tuple) for each label.
+    extract_json: str
+        Name of the JSON file in which generation details are stored.
+    samples: int
+        Number of samples generated per class.
+    smoothing: bool
+        If True, an additional random smoothing is performed on top of all operations on each image.
+
+    Returns
+    -------
+        Folder structure where images are stored in CAPS format.
+
     """
 
     check_and_clean(output_dir / "subjects")
@@ -412,7 +423,9 @@ def generate_shepplogan_dataset(
 
     for label_id, label in enumerate(labels_distribution.keys()):
 
-        def create_shepplogan_image(subject_id, data_df):
+        def create_shepplogan_image(
+            subject_id: str | int, data_df: pd.DataFrame
+        ) -> pd.DataFrame:
             # for j in range(samples):
             participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
             session_id = "ses-M00"
@@ -504,7 +517,7 @@ def generate_hypometabolic_dataset(
     anomaly_degree: float = 30,
     sigma: int = 5,
     uncropped_image: bool = False,
-):
+) -> None:
     """
     Generates a dataset, based on the images of the CAPS directory, where all
     the images are processed using a mask to generate a specific pathology.
@@ -623,7 +636,9 @@ def generate_hypometabolic_dataset(
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
-    def generate_hypometabolic_image(subject_id, output_df):
+    def generate_hypometabolic_image(
+        subject_id: str | int, output_df: pd.DataFrame
+    ) -> pd.DataFrame:
         image_path = Path(images_paths[subject_id])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
@@ -696,40 +711,43 @@ def generate_artifacts_dataset(
     num_transforms: int = 2,
     noise: bool = False,
     noise_std: List = [5, 15],
-):
+) -> None:
     """
     Generates a dataset, based on the images of the CAPS directory, where
     all the images are corrupted with a combination of motion, contrast and
     noise artefacts using torchio simulations.
-    Args:
-        caps_directory:  Path
-            Path to the CAPS directory.
-        output_dir: Path
-            Folder containing the synthetic dataset in CAPS format.
-        n_proc: int
-            Number of cores used during the task.
-        tsv_path: Path
-            Path to tsv file of list of subjects/sessions.
-        preprocessing: str
-            Preprocessing performed. Must be in ['linear', 'extensive'].
-        multi_cohort: bool
-            If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: bool
-            If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        tracer: str
-            Name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: str
-            Name of the reference region when using `pet-linear` preprocessing.
-        translation: List
-            Translation range in mm of simulated movements.
-        rotation : List
-            Rotation range in degree of simulated movement.
-        num_transformes: int
-            Number of simulated movements.
-        gamma: List
-            Gamma range of simulated contrast.
-        noise_std: List
-            Stadndard deviation of simulated noise.
+
+    Parameters
+    ----------
+    caps_directory:  Path
+        Path to the CAPS directory.
+    output_dir: Path
+        Folder containing the synthetic dataset in CAPS format.
+    n_proc: int
+        Number of cores used during the task.
+    tsv_path: Path
+        Path to tsv file of list of subjects/sessions.
+    preprocessing: str
+        Preprocessing performed. Must be in ['linear', 'extensive'].
+    multi_cohort: bool
+        If True caps_directory is the path to a TSV file linking cohort names and paths.
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    tracer: str
+        Name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        Name of the reference region when using `pet-linear` preprocessing.
+    translation: List
+        Translation range in mm of simulated movements.
+    rotation : List
+        Rotation range in degree of simulated movement.
+    num_transformes: int
+        Number of simulated movements.
+    gamma: List
+        Gamma range of simulated contrast.
+    noise_std: List
+        Stadndard deviation of simulated noise.
+
     Returns:
         Folder structure where images are stored in CAPS format.
     """
@@ -765,7 +783,7 @@ def generate_artifacts_dataset(
     if noise:
         artifacts_list.append("noise")
 
-    def create_artifacts_image(data_idx, output_df):
+    def create_artifacts_image(data_idx: int, output_df: pd.DataFrame) -> pd.DataFrame:
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]

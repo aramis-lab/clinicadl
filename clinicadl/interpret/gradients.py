@@ -14,7 +14,9 @@ class VanillaBackProp:
         self.model.eval()
         self.device = next(model.parameters()).device
 
-    def generate_gradients(self, input_batch, target_class, amp=False, **kwargs):
+    def generate_gradients(
+        self, input_batch, target_class, amp: bool = False, **kwargs
+    ):
         # Forward
         input_batch = input_batch.to(self.device)
         input_batch.requires_grad = True
