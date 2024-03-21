@@ -637,7 +637,7 @@ class MapsManager:
     ###################################
     # High-level functions templates  #
     ###################################
-    def _train_single(self, split_list=None, resume=False):
+    def _train_single(self, split_list: List[int] = None, resume: bool = False):
         """
         Trains a single CNN for all inputs.
 
@@ -871,10 +871,7 @@ class MapsManager:
         )
 
         split_manager = self._init_split_manager(split_list)
-
-        split_manager_target_lab = self._init_split_manager_ssda(
-            self.caps_target, self.tsv_target_lab, split_list
-        )
+        split_manager_target_lab = self._init_split_manager(split_list, True)
 
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -1646,8 +1643,8 @@ class MapsManager:
         self,
         dataloader,
         criterion,
-        data_group,
-        split,
+        data_group: str,
+        split: int,
         selection_metrics,
         use_labels=True,
         gpu=None,
@@ -2786,7 +2783,7 @@ class MapsManager:
 
         return optimizer
 
-    def _init_split_manager(self, split_list=None):
+    def _init_split_manager(self, split_list=None, ssda_bool: bool = False):
         from clinicadl.utils import split_manager
 
         split_class = getattr(split_manager, self.validation)
@@ -2800,6 +2797,11 @@ class MapsManager:
         kwargs = {"split_list": split_list}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
+
+        if ssda_bool:
+            kwargs["caps_directory"] = self.caps_target
+            kwargs["tsv_path"] = self.tsv_target_lab
+
         return split_class(**kwargs)
 
     def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
@@ -2823,7 +2825,7 @@ class MapsManager:
 
         return split_class(**kwargs)
 
-    def _init_task_manager(self, df=None, n_classes=None):
+    def _init_task_manager(self, df: pd.DataFrame = None, n_classes: int = None):
         from clinicadl.utils.task_manager import (
             ClassificationManager,
             ReconstructionManager,
@@ -2876,9 +2878,9 @@ class MapsManager:
     ###############################
     def _print_description_log(
         self,
-        data_group,
-        split,
-        selection_metric,
+        data_group: str,
+        split: int,
+        selection_metric: str,
     ):
         """
         Print the description log associated to a prediction or interpretation.
@@ -2969,19 +2971,30 @@ class MapsManager:
         ]
 
     def get_state_dict(
-        self, split=0, selection_metric=None, network=None, map_location=None
+        self,
+        split=0,
+        selection_metric: str = None,
+        network: int = None,
+        map_location: str = None,
     ):
         """
         Get the model trained corresponding to one split and one metric evaluated on the validation set.
 
-        Args:
-            split (int): Index of the split used for training.
-            selection_metric (str): name of the metric used for the selection.
-            network (int): Index of the network trained (used in multi-network setting only).
-            map_location (str): torch.device object or a string containing a device tag,
-                it indicates the location where all tensors should be loaded.
-                (see https://pytorch.org/docs/stable/generated/torch.load.html).
-        Returns:
+        Parameters
+        ----------
+        split: int
+            Index of the split used for training.
+        selection_metric: str
+            name of the metric used for the selection.
+        network: int
+            Index of the network trained (used in multi-network setting only).
+        map_location: str
+            torch.device object or a string containing a device tag,
+            it indicates the location where all tensors should be loaded.
+            (see https://pytorch.org/docs/stable/generated/torch.load.html).
+
+        Returns
+        -------
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = self._check_selection_metric(split, selection_metric)
@@ -3013,7 +3026,12 @@ class MapsManager:
         return torch.load(model_path, map_location=map_location)
 
     def get_prediction(
-        self, data_group, split=0, selection_metric=None, mode="image", verbose=False
+        self,
+        data_group: str,
+        split: int = 0,
+        selection_metric: str = None,
+        mode: str = "image",
+        verbose: bool = False,
     ):
         """
         Get the individual predictions for each participant corresponding to one group
@@ -3050,7 +3068,12 @@ class MapsManager:
         return df
 
     def get_metrics(
-        self, data_group, split=0, selection_metric=None, mode="image", verbose=True
+        self,
+        data_group: str,
+        split: int = 0,
+        selection_metric: str = None,
+        mode: str = "image",
+        verbose: bool = True,
     ):
         """
         Get the metrics corresponding to a group of participants identified by its data_group.
@@ -3084,14 +3107,14 @@ class MapsManager:
 
     def get_interpretation(
         self,
-        data_group,
-        name,
-        split=0,
-        selection_metric=None,
-        verbose=True,
-        participant_id=None,
-        session_id=None,
-        mode_id=0,
+        data_group: str,
+        name: str,
+        split: int = 0,
+        selection_metric: str = None,
+        verbose: bool = True,
+        participant_id: str = None,
+        session_id: str = None,
+        mode_id: int = 0,
     ) -> torch.Tensor:
         """
         Get the individual interpretation maps for one session if participant_id and session_id are filled.

@@ -87,7 +87,21 @@ def DeepLearningPrepareData(
             save_tensor(tensor, output_file)
             logger.debug(f"Output tensor saved at {output_file}")
 
-    if parameters["prepare_dl"]:
+    if parameters["mode"] == "image" or not parameters["prepare_dl"]:
+
+        def prepare_image(file):
+            from .prepare_data_utils import extract_images
+
+            logger.debug(f"Processing of {file}.")
+            container = container_from_filename(file)
+            subfolder = "image_based"
+            output_mode = extract_images(Path(file))
+            logger.debug(f"Image extracted.")
+            write_output_imgs(output_mode, container, subfolder)
+
+        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
+
+    elif parameters["prepare_dl"]:
         if parameters["mode"] == "slice":
 
             def prepare_slice(file):
@@ -193,24 +207,10 @@ def DeepLearningPrepareData(
 
             Parallel(n_jobs=n_proc)(delayed(prepare_roi)(file) for file in input_files)
 
-        else:
-            raise NotImplementedError(
-                f"Extraction is not implemented for mode {parameters['mode']}."
-            )
-
-    if parameters["mode"] == "image" or not parameters["prepare_dl"]:
-
-        def prepare_image(file):
-            from .prepare_data_utils import extract_images
-
-            logger.debug(f"Processing of {file}.")
-            container = container_from_filename(file)
-            subfolder = "image_based"
-            output_mode = extract_images(Path(file))
-            logger.debug(f"Image extracted.")
-            write_output_imgs(output_mode, container, subfolder)
-
-        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
+    else:
+        raise NotImplementedError(
+            f"Extraction is not implemented for mode {parameters['mode']}."
+        )
 
     # Save parameters dictionary
     preprocessing_json_path = write_preprocessing(parameters, caps_directory)

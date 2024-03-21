@@ -152,7 +152,7 @@ def generate_random_dataset(
     input_filename = Path(image_paths[0][0]).name
     filename_pattern = "_".join(input_filename.split("_")[2:])
 
-    def create_random_image(subject_id: str | int) -> None:
+    def create_random_image(subject_id: int) -> None:
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = f"sub-RAND{subject_id}"
         noisy_image = image + gauss
@@ -303,9 +303,7 @@ def generate_trivial_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    def create_trivial_image(
-        subject_id: str | int, output_df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def create_trivial_image(subject_id: int, output_df: pd.DataFrame) -> pd.DataFrame:
         data_idx = subject_id // 2
         label = subject_id % 2
 
@@ -424,7 +422,7 @@ def generate_shepplogan_dataset(
     for label_id, label in enumerate(labels_distribution.keys()):
 
         def create_shepplogan_image(
-            subject_id: str | int, data_df: pd.DataFrame
+            subject_id: int, data_df: pd.DataFrame
         ) -> pd.DataFrame:
             # for j in range(samples):
             participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
@@ -637,7 +635,7 @@ def generate_hypometabolic_dataset(
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     def generate_hypometabolic_image(
-        subject_id: str | int, output_df: pd.DataFrame
+        subject_id: int, output_df: pd.DataFrame
     ) -> pd.DataFrame:
         image_path = Path(images_paths[subject_id])
         image_nii = nib.load(image_path)
