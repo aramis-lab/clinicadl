@@ -33,6 +33,7 @@ from .task_utils import task_launcher
 @train_option.multi_cohort
 @train_option.diagnoses
 @train_option.baseline
+@train_option.valid_longitudinal
 @train_option.normalize
 @train_option.data_augmentation
 @train_option.sampler

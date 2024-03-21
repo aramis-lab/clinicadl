@@ -11,6 +11,7 @@ class KFoldSplit(SplitManager):
         diagnoses,
         n_splits,
         baseline=False,
+        valid_longitudinal=False,
         multi_cohort=False,
         split_list=None,
     ):
@@ -19,6 +20,7 @@ class KFoldSplit(SplitManager):
             tsv_path,
             diagnoses,
             baseline,
+            valid_longitudinal,
             multi_cohort,
             split_list,
         )

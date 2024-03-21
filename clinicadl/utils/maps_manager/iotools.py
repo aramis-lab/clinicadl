@@ -252,6 +252,7 @@ def check_and_complete(options, random_search=False):
         "transfer_learning_path": "",
         "transfer_learning_selection": "best_loss",
         "gpu": True,
+        "valid_longitudinal": False,
         "wd_bool": True,
         "weight_decay": 4,
         "sampler": "random",

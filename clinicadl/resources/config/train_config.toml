@@ -62,6 +62,7 @@ use_extracted_features = false
 multi_cohort = false
 diagnoses = ["AD", "CN"]
 baseline = false
+valid_longitudinal = false
 normalize = true
 data_augmentation = false
 sampler = "random"
