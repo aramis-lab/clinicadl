@@ -65,6 +65,12 @@ ssda_network = click.option(
     show_default=True,
     help="ssda training.",
 )
+valid_longitudinal = click.option(
+    "--valid_longitudinal/--valid_baseline",
+    type=bool,
+    default=None,
+    help="If provided, not only the baseline sessions are used for validation (careful with this bad habits).",
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",

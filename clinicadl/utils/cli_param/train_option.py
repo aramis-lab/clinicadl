@@ -184,7 +184,7 @@ baseline = cli_param.option_group.data_group.option(
     help="If provided, only the baseline sessions are used for training.",
 )
 valid_longitudinal = cli_param.option_group.data_group.option(
-    "--valid_longitudinal/--not_valid_longitudinal",
+    "--valid_longitudinal/--valid_baseline",
     type=bool,
     default=None,
     help="If provided, not only the baseline sessions are used for validation (careful with this bad habits).",
