@@ -6,8 +6,7 @@ import toml
 
 from clinicadl.train.train_utils import build_train_dict
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.maps_manager.maps_manager_utils import change_str_to_path
-from clinicadl.utils.preprocessing import read_preprocessing
+from clinicadl.utils.preprocessing import path_decoder, read_preprocessing
 
 
 def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
@@ -25,7 +24,7 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
     for key in toml_options["Random_Search"]:
         space_dict[key] = toml_options["Random_Search"][key]
 
-    space_dict = change_str_to_path(space_dict)
+    space_dict = path_decoder(space_dict)
     # Check presence of mandatory arguments
     mandatory_arguments = [
         "network_task",

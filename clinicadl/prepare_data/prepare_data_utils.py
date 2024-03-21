@@ -52,10 +52,10 @@ def get_parameters_dict(
 
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
-    if modality == "pet-linear":
+    elif modality == "pet-linear":
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
-    if modality == "dwi-dti":
+    elif modality == "dwi-dti":
         parameters["dti_space"] = dti_space
         parameters["dti_measure"] = dti_measure
 
@@ -351,7 +351,9 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
 ############
 # ROI    #
 ############
-def check_mask_list(masks_location: Path, roi_list, mask_pattern, cropping):
+def check_mask_list(
+    masks_location: Path, roi_list: List[str], mask_pattern: str, cropping: bool
+) -> None:
     import nibabel as nib
     import numpy as np
 
@@ -375,13 +377,19 @@ def find_mask_path(
     """
     Finds masks corresponding to the pattern asked and containing the adequate cropping description
 
-    Args:
-        masks_location: directory containing the masks.
-        roi: name of the region.
-        mask_pattern: pattern which should be found in the filename of the mask.
-        cropping: if True the original image should contain the substring 'desc-Crop'.
+    Parameters
+    ----------
+    masks_location: Path
+        Directory containing the masks.
+    roi: str
+        Name of the region.
+    mask_pattern: str
+        Pattern which should be found in the filename of the mask.
+    cropping: bool
+        If True the original image should contain the substring 'desc-Crop'.
 
-    Returns:
+    Returns
+    -------
         path of the mask or None if nothing was found.
         a human-friendly description of the pattern looked for.
     """
@@ -410,13 +418,18 @@ def find_mask_path(
         return min(candidates2), desc
 
 
-def compute_output_pattern(mask_path: Path, crop_output):
+def compute_output_pattern(mask_path: Path, crop_output: bool):
     """
     Computes the output pattern of the region cropped (without the source file prefix)
-    Args:
-        mask_path: path to the masks
-        crop_output: If True the output is cropped, and the descriptor CropRoi must exist
-    Returns:
+    Parameters
+    ----------
+    mask_path: Path
+        Path to the masks
+    crop_output: bool
+        If True the output is cropped, and the descriptor CropRoi must exist
+
+    Returns
+    -------
         the output pattern
     """
 
@@ -456,17 +469,27 @@ def extract_roi(
     """Extracts regions of interest defined by masks
     This function extracts regions of interest from preprocessed nifti images.
     The regions are defined using binary masks that must be located in the CAPS
-    at `masks/tpl-<template>`.
-    Args:
-        nii_path: path to the NifTi input image.
-        masks_location: path to the masks
-        mask_pattern: pattern to identify the masks
-        cropped_input: if the input is cropped or not (contains desc-Crop)
-        roi_names: list of the names of the regions that will be extracted.
-        uncrop_output: if True, the final region is not cropped.
-    Returns:
-        list of tuples containing the path to the extracted ROI
-            and the tensor of the corresponding ROI.
+    at `masks/tpl-<template>`
+
+    Parameters
+    ----------
+    nii_path: Path
+        Path to the NifTi input image.
+    masks_location: Path
+        Path to the masks
+    mask_pattern: str
+        Pattern to identify the masks
+    cropped_input: bool
+        If the input is cropped or not (contains desc-Crop)
+    roi_names: List[str]
+        List of the names of the regions that will be extracted.
+    uncrop_output: bool
+        If True, the final region is not cropped.
+
+    Returns
+    -------
+    list of tuples containing the path to the extracted ROI
+        and the tensor of the corresponding ROI.
     """
     import nibabel as nib
 
