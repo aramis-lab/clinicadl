@@ -1,10 +1,9 @@
 import os
 import shutil
-from os import path
-from os.path import join
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from clinicadl.utils.tsvtools_utils import extract_baseline
 from tests.testing_tools import compare_folders
@@ -15,6 +14,35 @@ Check the absence of data leakage
     2) No intersection between train and test sets
     3) Absence of MCI train subjects in test sets of subcategories of MCI
 """
+
+
+@pytest.fixture(
+    params=[
+        "test_getlabels",
+        "test_split",
+        "test_analysis",
+        "test_get_progression",
+        "test_prepare_experiment",
+        "test_get_metadata",
+    ]
+)
+def test_name(request):
+    return request.param
+
+
+def test_tsvtools(cmdopt, tmp_path, test_name):
+    if test_name == "test_getlabels":
+        run_test_getlabels(cmdopt, tmp_path)
+    elif test_name == "test_split":
+        run_test_split(cmdopt, tmp_path)
+    elif test_name == "test_analysis":
+        run_test_analysis(cmdopt, tmp_path)
+    elif test_name == "test_prepare_experiment":
+        run_test_prepare_experiment(cmdopt, tmp_path)
+    elif test_name == "test_get_progression":
+        run_test_get_progression(cmdopt, tmp_path)
+    elif test_name == "test_get_metadata":
+        run_test_get_metadata(cmdopt, tmp_path)
 
 
 def check_is_subject_unique(labels_path_baseline: Path):
@@ -77,7 +105,7 @@ def run_test_suite(data_tsv, n_splits):
                         check_is_independant(train_baseline_tsv, test_baseline_tsv)
 
 
-def test_getlabels(cmdopt, tmp_path):
+def run_test_getlabels(cmdopt, tmp_path):
     """Checks that getlabels is working and that it is coherent with
     previous version in reference_path."""
 
@@ -113,7 +141,7 @@ def test_getlabels(cmdopt, tmp_path):
     assert out_df.equals(ref_df)
 
 
-def test_split(cmdopt, tmp_path):
+def run_test_split(cmdopt, tmp_path):
     """Checks that:
     -  split and kfold are working
     -  the loading functions can find the output
@@ -150,7 +178,7 @@ def test_split(cmdopt, tmp_path):
     run_test_suite(tmp_out_dir, n_splits)
 
 
-def test_analysis(cmdopt, tmp_path):
+def run_test_analysis(cmdopt, tmp_path):
     """Checks that analysis can be performed."""
 
     base_dir = Path(cmdopt["input"])
@@ -175,7 +203,7 @@ def test_analysis(cmdopt, tmp_path):
     assert out_df.equals(ref_df)
 
 
-def test_get_progression(cmdopt, tmp_path):
+def run_test_get_progression(cmdopt, tmp_path):
     """Checks that get-progression can be performed"""
 
     base_dir = Path(cmdopt["input"])
@@ -199,7 +227,7 @@ def test_get_progression(cmdopt, tmp_path):
     assert out_df.equals(ref_df)
 
 
-def test_prepare_experiment(cmdopt, tmp_path):
+def run_test_prepare_experiment(cmdopt, tmp_path):
     """Checks that:
     -  split and kfold are working
     -  the loading functions can find the output
@@ -229,7 +257,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
     run_test_suite(tmp_out_dir, n_valid)
 
 
-def test_get_metadata(cmdopt, tmp_path):
+def run_test_get_metadata(cmdopt, tmp_path):
     """Checks that get-metadata can be performed"""
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
