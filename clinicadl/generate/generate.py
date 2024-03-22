@@ -107,7 +107,7 @@ def generate_random_dataset(
         }
     )
 
-    SESSION_ID = "ses-M00"
+    SESSION_ID = "ses-M000"
     AGE_BL_DEFAULT = 60
     SEX_DEFAULT = "F"
 
@@ -140,7 +140,7 @@ def generate_random_dataset(
 
     # Create output tsv file
     participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
-    session_id_list = ["ses-M00"] * 2 * n_subjects
+    session_id_list = ["ses-M000"] * 2 * n_subjects
     diagnosis_list = ["AD"] * n_subjects + ["CN"] * n_subjects
 
     output_df = pd.DataFrame(
@@ -415,7 +415,7 @@ def generate_shepplogan_dataset(
         def create_shepplogan_image(subject_id, data_df):
             # for j in range(samples):
             participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
-            session_id = "ses-M00"
+            session_id = "ses-M000"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]
             )
