@@ -59,10 +59,10 @@ An example of TSV file is:
 
 | **participant_id** | **session_id** | **pass_probability**   |
 |--------------------|----------------|------------------------|
-| sub-CLNC01         | ses-M00        | 0.9936990737915039     |
-| sub-CLNC02         | ses-M00        | 0.9772214889526367     |
-| sub-CLNC03         | ses-M00        | 0.7292165160179138     |
-| sub-CLNC04         | ses-M00        | 0.1549495905637741     |
+| sub-CLNC01         | ses-M000        | 0.9936990737915039     |
+| sub-CLNC02         | ses-M000        | 0.9772214889526367     |
+| sub-CLNC03         | ses-M000        | 0.7292165160179138     |
+| sub-CLNC04         | ses-M000        | 0.1549495905637741     |
 | ...                |  ...           |  ...                   |
 
 ## `quality-check t1-volume` - Evaluate `t1-volume` registration and gray matter segmentation
@@ -161,8 +161,8 @@ An example of TSV file is:
 
 | **participant_id** | **session_id** | **pass_probability**   | **pass**  |
 |--------------------|----------------|------------------------|-----------|
-| sub-CLNC01         | ses-M00        | 0.9936990737915039     | True      |
-| sub-CLNC02         | ses-M00        | 0.9772214889526367     | True      |
-| sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
-| sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
+| sub-CLNC01         | ses-M000        | 0.9936990737915039     | True      |
+| sub-CLNC02         | ses-M000        | 0.9772214889526367     | True      |
+| sub-CLNC03         | ses-M000        | 0.7292165160179138     | True      |
+| sub-CLNC04         | ses-M000        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
