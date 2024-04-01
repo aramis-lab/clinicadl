@@ -1292,6 +1292,7 @@ class MapsManager:
                     filename="optimizer.pth.tar",
                     save_all_models=self.parameters["save_all_models"],
                 )
+            dist.barrier()
 
             epoch += 1
 
@@ -1856,8 +1857,8 @@ class MapsManager:
 
             nb_imgs = len(dataset)
             for i in [
-                *range(cluster.rank, nb_modes, cluster.world_size),
-                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+                *range(cluster.rank, nb_imgs, cluster.world_size),
+                *range(int(nb_imgs % cluster.world_size <= cluster.rank)),
             ]:
                 data = dataset[i]
                 image = data["image"]
@@ -1983,9 +1984,6 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            assert (
-                not self.fully_sharded_data_parallel
-            ), "FSDP cannot be used to compute latent tensors."
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
             model.eval()
 
@@ -2005,7 +2003,10 @@ class MapsManager:
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(cluster.rank, nb_modes, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")

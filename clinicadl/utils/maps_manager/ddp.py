@@ -12,7 +12,7 @@ from uuid import uuid4
 import torch
 import torch.distributed as dist
 from packaging.version import Version
-from torch.nn import Module, Sequential
+from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import Optimizer
 
@@ -25,10 +25,7 @@ try:
         ShardingStrategy,
         StateDictType,
     )
-    from torch.distributed.fsdp.wrap import (
-        _module_wrap_policy,
-        size_based_auto_wrap_policy,
-    )
+    from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 except ImportError:
     fsdp_available = False
 else:
@@ -175,24 +172,21 @@ if fsdp_available:
             if amp:
                 mixed_precision = MixedPrecision(
                     param_dtype=torch.float16,
-                    reduce_dtype=torch.float16,
-                    buffer_dtype=torch.float16,
+                    reduce_dtype=torch.float32,
+                    buffer_dtype=torch.float32,
                     keep_low_precision_grads=False,
                 )
             else:
                 mixed_precision = None
-
-            def custom_wrap_policy(*args, **kwargs):
-                return _module_wrap_policy(
-                    *args, **kwargs, module_classes=(Sequential,)
-                ) or size_based_auto_wrap_policy(*args, **kwargs, min_num_params=1e5)
 
             super().__init__(
                 model,
                 sharding_strategy=sharding_strategy,
                 mixed_precision=mixed_precision,
                 cpu_offload=None,
-                auto_wrap_policy=custom_wrap_policy,
+                auto_wrap_policy=partial(
+                    size_based_auto_wrap_policy, min_num_params=1,
+                )
             )
             self.set_state_dict_type(
                 self,

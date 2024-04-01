@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Sampler
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.metric_module import MetricModule
 from clinicadl.utils.network.network import Network
+from clinicadl.utils.maps_manager.ddp import cluster
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
@@ -234,7 +235,7 @@ class TaskManager:
             metrics_dict = self.compute_metrics(results_df)
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
-                metrics_dict[loss_component] = total_loss[loss_component].item()
+                metrics_dict[loss_component] = total_loss[loss_component].item() / cluster.world_size
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
