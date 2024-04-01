@@ -3,7 +3,9 @@
 """
 This file generates data for trivial or intractable (random) data for binary classification.
 """
+
 import tarfile
+from collections import namedtuple
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -13,13 +15,16 @@ import numpy as np
 import pandas as pd
 import torch
 import torchio as tio
-from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
-from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+)
 from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -102,7 +107,7 @@ def generate_random_dataset(
         }
     )
 
-    SESSION_ID = "ses-M00"
+    SESSION_ID = "ses-M000"
     AGE_BL_DEFAULT = 60
     SEX_DEFAULT = "F"
 
@@ -126,16 +131,16 @@ def generate_random_dataset(
     )
 
     image_path = Path(
-        clinica_file_reader(
+        clinicadl_file_reader(
             [participant_id], [session_id], caps_dict[cohort], file_type
         )[0][0]
     )
     image_nii = nib.load(image_path)
-    image = image_nii.get_data()
+    image = image_nii.get_fdata()
 
     # Create output tsv file
     participant_id_list = [f"sub-RAND{i}" for i in range(2 * n_subjects)]
-    session_id_list = ["ses-M00"] * 2 * n_subjects
+    session_id_list = ["ses-M000"] * 2 * n_subjects
     diagnosis_list = ["AD"] * n_subjects + ["CN"] * n_subjects
 
     output_df = pd.DataFrame(
@@ -259,7 +264,7 @@ def generate_trivial_dataset(
 
     if mask_path is None:
         home = Path.home()
-        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
+        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
             filename="AAL2.tar.gz",
@@ -273,7 +278,7 @@ def generate_trivial_dataset(
             try:
                 mask_path_tar = fetch_file(FILE1, cache_clinicadl)
                 tar_file = tarfile.open(mask_path_tar)
-                print("File: " + mask_path_tar)
+                print(f"File: {mask_path_tar}")
                 try:
                     tar_file.extractall(cache_clinicadl)
                     tar_file.close()
@@ -311,12 +316,12 @@ def generate_trivial_dataset(
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
         image_path = Path(
-            clinica_file_reader(
+            clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
             )[0][0]
         )
         image_nii = nib.load(image_path)
-        image = image_nii.get_data()
+        image = image_nii.get_fdata()
 
         input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
@@ -337,7 +342,7 @@ def generate_trivial_dataset(
 
         path_to_mask = mask_path / f"mask-{label + 1}.nii"
         if path_to_mask.is_file():
-            atlas_to_mask = nib.load(path_to_mask).get_data()
+            atlas_to_mask = nib.load(path_to_mask).get_fdata()
         else:
             raise ValueError("masks need to be named mask-1.nii and mask-2.nii")
 
@@ -410,7 +415,7 @@ def generate_shepplogan_dataset(
         def create_shepplogan_image(subject_id, data_df):
             # for j in range(samples):
             participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
-            session_id = "ses-M00"
+            session_id = "ses-M000"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]
             )
@@ -570,7 +575,7 @@ def generate_hypometabolic_dataset(
         "svppa": "44f2e00bf2d2d09b532cb53e3ba61d6087b4114768cc8ae3330ea84c4b7e0e6a",
     }
     home = Path.home()
-    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"  # noqa (typo in resources)
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
     FILE1 = RemoteFileStructure(
         filename=f"mask_hypo_{pathology}.nii",
@@ -583,7 +588,7 @@ def generate_hypometabolic_dataset(
         # mask_path = fetch_file(FILE1, cache_clinicadl)
         try:
             mask_path = fetch_file(FILE1, cache_clinicadl)
-        except:
+        except Exception:
             DownloadError(
                 """Unable to download masks, please download them
                 manually at https://aramislab.paris.inria.fr/files/data/masks/
@@ -607,7 +612,7 @@ def generate_hypometabolic_dataset(
     sessions = [data_df.loc[i, "session_id"] for i in range(n_subjects)]
     cohort = caps_directory
 
-    images_paths = clinica_file_reader(participants, sessions, cohort, file_type)[0]
+    images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
     image_nii = nib.load(images_paths[0])
 
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
@@ -765,7 +770,7 @@ def generate_artifacts_dataset(
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
         image_path = Path(
-            clinica_file_reader(
+            clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
             )[0][0]
         )

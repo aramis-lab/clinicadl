@@ -3,7 +3,8 @@
 from pathlib import Path
 
 import click
-from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
+
+LIST_SUVR_REFERENCE_REGIONS = ["pons", "cerebellumPons", "pons2", "cerebellumPons2"]
 
 # TSV TOOLS
 diagnoses = click.option(
@@ -173,6 +174,21 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
+dti_measure = click.option(
+    "--dti_measure",
+    "-dm",
+    type=click.Choice(["FA", "MD", "AD", "RD"]),
+    help="Possible DTI measures.",
+    default="FA",
+)
+dti_space = click.option(
+    "--dti_space",
+    "-ds",
+    type=click.Choice(["native", "normalized"]),
+    help="Possible DTI space.",
+    default="native",
+)
+
 
 # PREDICT & INTERPRET
 # Data group

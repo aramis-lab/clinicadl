@@ -212,6 +212,7 @@ class MapsManager:
         save_tensor: bool = False,
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
+        skip_leak_check: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -264,6 +265,8 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
+            split_list=split_list,
+            skip_leak_check=skip_leak_check,
         )
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -300,16 +303,16 @@ class MapsManager:
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label if label is None else label,
-                        label_code=self.label_code
-                        if label_code == "default"
-                        else label_code,
+                        label_code=(
+                            self.label_code if label_code == "default" else label_code
+                        ),
                         cnn_index=network,
                     )
                     test_loader = DataLoader(
                         data_test,
-                        batch_size=batch_size
-                        if batch_size is not None
-                        else self.batch_size,
+                        batch_size=(
+                            batch_size if batch_size is not None else self.batch_size
+                        ),
                         shuffle=False,
                         sampler=DistributedSampler(
                             data_test,
@@ -367,16 +370,16 @@ class MapsManager:
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label if label is None else label,
-                    label_code=self.label_code
-                    if label_code == "default"
-                    else label_code,
+                    label_code=(
+                        self.label_code if label_code == "default" else label_code
+                    ),
                 )
 
                 test_loader = DataLoader(
                     data_test,
-                    batch_size=batch_size
-                    if batch_size is not None
-                    else self.batch_size,
+                    batch_size=(
+                        batch_size if batch_size is not None else self.batch_size
+                    ),
                     shuffle=False,
                     sampler=DistributedSampler(
                         data_test,
@@ -424,7 +427,7 @@ class MapsManager:
 
             if cluster.master:
                 self._ensemble_prediction(
-                    data_group, split, selection_metrics, use_labels
+                    data_group, split, selection_metrics, use_labels, skip_leak_check
                 )
 
     def interpret(
@@ -960,7 +963,7 @@ class MapsManager:
             # Create index lists for target labeled dataset
             labeled_indices = list(range(len(data_train_target_labeled)))
 
-            # Oversample the indices for the target labeld dataset to match the size of the labeled source dataset
+            # Oversample the indices for the target labelled dataset to match the size of the labeled source dataset
             data_train_source_size = len(data_train_source) // self.batch_size
             labeled_oversampled_indices = labeled_indices * (
                 data_train_source_size // len(labeled_indices)
@@ -1081,7 +1084,6 @@ class MapsManager:
             resume (bool): If True the job is resumed from the checkpoint.
         """
         self._init_callbacks()
-        self.callback_handler.on_train_begin(self.parameters)
         model, beginning_epoch = self._init_model(
             split=split,
             resume=resume,
@@ -1092,10 +1094,14 @@ class MapsManager:
         model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
         criterion = self.task_manager.get_criterion(self.loss)
 
-        logger.info(f"Criterion for {self.network_task} is {criterion}")
-
         optimizer = self._init_optimizer(model, split=split, resume=resume)
-        logger.debug(f"Optimizer used for training is {optimizer}")
+        self.callback_handler.on_train_begin(
+            self.parameters,
+            criterion=criterion,
+            optimizer=optimizer,
+            split=split,
+            maps_path=self.maps_path,
+        )
 
         model.train()
         train_loader.dataset.train()
@@ -1125,15 +1131,19 @@ class MapsManager:
         if self.parameters["track_exp"] == "wandb":
             from clinicadl.utils.tracking_exp import WandB_handler
 
-            run = WandB_handler(split, self.parameters, self.maps_path.name)
+        if self.parameters["adaptive_learning_rate"]:
+            from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-        if self.parameters["track_exp"] == "mlflow":
-            from clinicadl.utils.tracking_exp import Mlflow_handler
+            # Initialize the ReduceLROnPlateau scheduler
+            scheduler = ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.1, verbose=True
+            )
 
-            run = Mlflow_handler(split, self.parameters, self.maps_path.name)
+        scaler = GradScaler(enabled=self.amp)
+        profiler = self._init_profiler()
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
-            logger.info(f"Beginning epoch {epoch}.")
+            # self.callback_handler.on_epoch_begin(self.parameters, epoch = epoch)
 
             if isinstance(train_loader.sampler, DistributedSampler):
                 # It should always be true for a random sampler. But just in case
@@ -1151,7 +1161,7 @@ class MapsManager:
                     with sync:
                         with autocast(enabled=self.std_amp):
                             _, loss_dict = model(data, criterion)
-                        logger.debug(f"Train loss dictionnary {loss_dict}")
+                        logger.debug(f"Train loss dictionary {loss_dict}")
                         loss = loss_dict["loss"]
                         scaler.scale(loss).backward()
 
@@ -1233,36 +1243,13 @@ class MapsManager:
                 model.train()
                 train_loader.dataset.train()
 
-                if cluster.master:
-                    log_writer.step(
-                        epoch, i, metrics_train, metrics_valid, len(train_loader)
-                    )
-                logger.info(
-                    f"{self.mode} level training loss is {metrics_train['loss']} "
-                    f"at the end of iteration {i}"
-                )
-                logger.info(
-                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                    f"at the end of iteration {i}"
-                )
-
-                if self.track_exp == "wandb":
-                    run.log_metrics(
-                        run._wandb,
-                        self.track_exp,
-                        self.network_task,
-                        metrics_train,
-                        metrics_valid,
-                    )
-
-                if self.track_exp == "mlflow":
-                    run.log_metrics(
-                        run._mlflow,
-                        self.track_exp,
-                        self.network_task,
-                        metrics_train,
-                        metrics_valid,
-                    )
+            self.callback_handler.on_epoch_end(
+                self.parameters,
+                metrics_train=metrics_train,
+                metrics_valid=metrics_valid,
+                mode=self.mode,
+                i=i,
+            )
 
             model_weights = {
                 "model": model.state_dict(),
@@ -1294,13 +1281,12 @@ class MapsManager:
                 )
             dist.barrier()
 
+            if self.parameters["adaptive_learning_rate"]:
+                scheduler.step(
+                    metrics_valid["loss"]
+                )  # Update learning rate based on validation loss
+
             epoch += 1
-
-        if self.parameters["track_exp"] == "mlflow":
-            run._mlflow.end_run()
-
-        if self.parameters["track_exp"] == "wandb":
-            run._wandb.finish()
 
         del model
         self._test_loader(
@@ -1339,7 +1325,8 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-        self.callback_handler.on_train_end(self.parameters)
+
+        self.callback_handler.on_train_end(parameters=self.parameters)
 
     def _train_ssdann(
         self,
@@ -1423,7 +1410,7 @@ class MapsManager:
                 _, _, loss_dict = model.compute_outputs_and_loss(
                     data_source, data_target, data_target_unl, criterion, alpha
                 )  # TO CHECK
-                logger.debug(f"Train loss dictionnary {loss_dict}")
+                logger.debug(f"Train loss dictionary {loss_dict}")
                 loss = loss_dict["loss"]
                 loss.backward()
                 if (i + 1) % self.accumulation_steps == 0:
@@ -1440,7 +1427,7 @@ class MapsManager:
                     ):
                         evaluation_flag = False
 
-                        # Evaluate on taget data
+                        # Evaluate on target data
                         logger.info("Evaluation on target data")
                         _, metrics_train_target = self.task_manager.test_da(
                             model,
@@ -1680,6 +1667,7 @@ class MapsManager:
         gpu=None,
         amp=False,
         network=None,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1721,13 +1709,23 @@ class MapsManager:
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels, amp=amp
+                model,
+                dataloader,
+                criterion,
+                use_labels=use_labels,
+                amp=amp,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                loss_to_log = (
+                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                )
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -1752,6 +1750,7 @@ class MapsManager:
         gpu=None,
         network=None,
         target=False,
+        report_ci=True,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1789,16 +1788,19 @@ class MapsManager:
                 network=network,
             )
             prediction_df, metrics = self.task_manager.test_da(
-                model,
-                dataloader,
-                criterion,
-                target=target,
+                model, dataloader, criterion, target=target, report_ci=report_ci
             )
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
+
+                if report_ci:
+                    loss_to_log = metrics["Metric_values"][-1]
+                else:
+                    loss_to_log = metrics["loss"]
+
                 logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             # Replace here
@@ -2029,6 +2031,7 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
+        skip_leak_check=False,
     ):
         """Computes the results on the image-level."""
 
@@ -2036,15 +2039,16 @@ class MapsManager:
             selection_metrics = self._find_selection_metrics(split)
 
         for selection_metric in selection_metrics:
+            #####################
             # Soft voting
-            if self.num_networks > 1:
+            if self.num_networks > 1 and not skip_leak_check:
                 self._ensemble_to_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
                 )
-            elif self.mode != "image":
+            elif self.mode != "image" and not skip_leak_check:
                 self._mode_to_image_tsv(
                     split,
                     selection=selection_metric,
@@ -2231,6 +2235,8 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        split_list=None,
+        skip_leak_check=False,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -2257,8 +2263,8 @@ class MapsManager:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    shutil.rmtree(group_dir)
-                    split_list = self._find_splits()
+                    if not split_list:
+                        split_list = self._find_splits()
                     for split in split_list:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
@@ -2277,7 +2283,7 @@ class MapsManager:
                     f"To erase {data_group} please set overwrite to True."
                 )
 
-        if not group_dir.is_dir() and (
+        elif not group_dir.is_dir() and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
@@ -2287,7 +2293,10 @@ class MapsManager:
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            self._check_leakage(data_group, df)
+            if skip_leak_check:
+                logger.info("Skipping data leakage check")
+            else:
+                self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
@@ -2378,12 +2387,14 @@ class MapsManager:
         self.write_parameters(
             group_path,
             {
-                "caps_directory": caps_directory
-                if caps_directory is not None
-                else self.caps_directory,
-                "multi_cohort": multi_cohort
-                if multi_cohort is not None
-                else self.multi_cohort,
+                "caps_directory": (
+                    caps_directory
+                    if caps_directory is not None
+                    else self.caps_directory
+                ),
+                "multi_cohort": (
+                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                ),
             },
         )
 
@@ -2561,13 +2572,21 @@ class MapsManager:
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
         if metrics is not None:
+            # if data_group == "train" or data_group == "validation":
+            #     pd_metrics = pd.DataFrame(metrics, index = [0])
+            #     header = True
+            # else:
+            #     pd_metrics = pd.DataFrame(metrics).T
+            #     header = False
+
+            pd_metrics = pd.DataFrame(metrics).T
+            header = False
+            # import ipdb; ipdb.set_trace()
             if not metrics_path.is_file():
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
-                )
+                pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=header)
             else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=False
+                pd_metrics.to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=header
                 )
 
     def _ensemble_to_tsv(
@@ -3142,7 +3161,11 @@ class MapsManager:
         return map_pt
 
     def _init_callbacks(self):
-        from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
+        from clinicadl.utils.callbacks.callbacks import (
+            Callback,
+            CallbacksHandler,
+            LoggerCallback,
+        )
 
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
@@ -3154,7 +3177,12 @@ class MapsManager:
 
             self.callback_handler.add_callback(CodeCarbonTracker())
 
-        # self.callback_handler.add_callback(ProgressBarCallback())
+        if self.parameters["track_exp"]:
+            from clinicadl.utils.callbacks.callbacks import Tracker
+
+            self.callback_handler.add_callback(Tracker)
+
+        self.callback_handler.add_callback(LoggerCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
 
     @property

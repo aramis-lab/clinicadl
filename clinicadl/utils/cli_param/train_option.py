@@ -244,7 +244,7 @@ preprocessing_dict_target = cli_param.option_group.data_group.option(
     "-d",
     type=str,
     default=None,
-    help="Path to json taget.",
+    help="Path to json target.",
 )
 # Cross validation
 n_splits = cli_param.option_group.cross_validation.option(
@@ -293,6 +293,14 @@ learning_rate = cli_param.option_group.optimization_group.option(
     type=float,
     # default=1e-4,
     help="Learning rate of the optimization.",
+)
+adaptive_learning_rate = cli_param.option_group.optimization_group.option(
+    "--adaptive_learning_rate",
+    "-alr",
+    type=bool,
+    help="Whether to diminish the learning rate",
+    is_flag=True,
+    default=False,
 )
 weight_decay = cli_param.option_group.optimization_group.option(
     "--weight_decay",
@@ -367,7 +375,7 @@ nb_unfrozen_layer = cli_param.option_group.transfer_learning_group.option(
     default=0,
     help="Number of layer that will be retrain during training. For example, if it is 2, the last two layers of the model will not be freezed.",
 )
-# informations
+# information
 emissions_calculator = cli_param.option_group.informations_group.option(
     "--calculate_emissions/--dont_calculate_emissions",
     type=bool,

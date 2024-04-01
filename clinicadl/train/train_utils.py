@@ -3,7 +3,10 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+)
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     change_str_to_path,
     read_json,
@@ -23,10 +26,8 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     """
     if config_file is None:
         # read default values
-        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
-        config_path = (
-            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-        )
+        clinicadl_root_dir = Path(__file__).parents[1]
+        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
         config_dict = change_str_to_path(config_dict)
@@ -42,10 +43,8 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
             del user_dict["Random_Search"]
 
         # read default values
-        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
-        config_path = (
-            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-        )
+        clinicadl_root_dir = Path(__file__).parents[1]
+        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
         config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if user_dict is not None:
@@ -146,10 +145,10 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         )
 
         if model_layers:
-            chanel, shape_list = input_size.split("@")
+            channel, shape_list = input_size.split("@")
             args.remove("self")
             kwargs = dict()
-            kwargs["input_size"] = [int(chanel)] + [
+            kwargs["input_size"] = [int(channel)] + [
                 int(x) for x in shape_list.split("x")
             ]
             kwargs["gpu"] = False

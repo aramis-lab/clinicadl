@@ -1,5 +1,6 @@
 import logging
 import sys
+from enum import Enum
 from pathlib import Path
 
 
@@ -70,3 +71,40 @@ def setup_logging(verbose: bool = False) -> None:
         file_handler.setFormatter(debug_file_formatter)
         logger.addHandler(file_handler)
         logger.warning(f"Debug log will be saved at {Path.cwd() / debug_file_name}")
+
+
+class LoggingLevel(str, Enum):
+    debug = "debug"
+    info = "info"
+    warning = "warning"
+    error = "error"
+    critical = "critical"
+
+
+def cprint(msg: str, lvl: str = "info") -> None:
+    """
+    Print message to the console at the desired logging level.
+
+    Args:
+        msg (str): Message to print.
+        lvl (str): Logging level between "debug", "info", "warning", "error" and "critical".
+                   The default value is "info".
+    """
+    from logging import getLogger
+
+    # Use the package level logger.
+    logger = getLogger("clinicadl.clinica")
+
+    # Log message as info level.
+    if lvl == LoggingLevel.debug:
+        logger.debug(msg=msg)
+    elif lvl == LoggingLevel.info:
+        logger.info(msg=msg)
+    elif lvl == LoggingLevel.warning:
+        logger.warning(msg=msg)
+    elif lvl == LoggingLevel.error:
+        logger.error(msg=msg)
+    elif lvl == LoggingLevel.critical:
+        logger.critical(msg=msg)
+    else:
+        pass

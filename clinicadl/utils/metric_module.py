@@ -2,15 +2,17 @@ from logging import getLogger
 from typing import Dict, List
 
 import numpy as np
+from sklearn.utils import resample
 
 metric_optimum = {
     "MAE": "min",
-    "MSE": "min",
+    "RMSE": "min",
     "accuracy": "max",
     "sensitivity": "max",
     "specificity": "max",
     "PPV": "max",
     "NPV": "max",
+    "F1_score": "max",
     "BA": "max",
     "PSNR": "max",
     "SSIM": "max",
@@ -33,20 +35,23 @@ class MetricModule:
         ]
         self.metrics = dict()
         for metric in metrics:
-            if f"{metric.lower()}_fn" in list_fn:
-                self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
+            if f"compute_{metric.lower()}" in list_fn:
+                self.metrics[metric] = getattr(
+                    MetricModule, f"compute_{metric.lower()}"
+                )
             else:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
                 )
 
-    def apply(self, y, y_pred):
+    def apply(self, y, y_pred, report_ci):
         """
         This is a function to calculate the different metrics based on the list of true label and predicted label
 
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            report_ci (bool) : If True confidence intervals are reported
         Returns:
             (Dict[str:float]) metrics results
         """
@@ -55,24 +60,73 @@ class MetricModule:
             y = np.array(y)
             y_pred = np.array(y_pred)
 
+            if report_ci:
+                from scipy.stats import bootstrap
+
+            metric_names = ["Metrics"]
+            metric_values = ["Values"]  # Collect metric values
+            lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
+            upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
+            se_values = ["SE"]  # Collect standard error values
+
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
-                if "class_number" in metric_args and self.n_classes > 2:
-                    for class_number in range(self.n_classes):
-                        results[f"{metric_key}-{class_number}"] = metric_fn(
-                            y, y_pred, class_number
+
+                class_numbers = (
+                    range(self.n_classes)
+                    if "class_number" in metric_args and self.n_classes > 2
+                    else [0]
+                )
+
+                for class_number in class_numbers:
+                    metric_result = metric_fn(y, y_pred, class_number)
+
+                    # Compute confidence intervals only if there are at least two samples in the data.
+                    if report_ci and len(y) >= 2:
+                        res = bootstrap(
+                            (y, y_pred),
+                            lambda y, y_pred: metric_fn(y, y_pred, class_number),
+                            n_resamples=3000,
+                            confidence_level=0.95,
+                            method="percentile",
+                            paired=True,
                         )
-                elif "class_number" in metric_args:
-                    results[f"{metric_key}"] = metric_fn(y, y_pred, 0)
-                else:
-                    results[metric_key] = metric_fn(y, y_pred)
+
+                        lower_ci, upper_ci = res.confidence_interval
+                        standard_error = res.standard_error
+
+                        metric_values.append(metric_result)
+                        lower_ci_values.append(lower_ci)
+                        upper_ci_values.append(upper_ci)
+                        se_values.append(standard_error)
+                        metric_names.append(
+                            f"{metric_key}-{class_number}"
+                            if len(class_numbers) > 1
+                            else f"{metric_key}"
+                        )
+                    else:
+                        results[
+                            (
+                                f"{metric_key}-{class_number}"
+                                if len(class_numbers) > 1
+                                else f"{metric_key}"
+                            )
+                        ] = metric_result
+
+            if report_ci:
+                # Construct the final results dictionary
+                results["Metric_names"] = metric_names
+                results["Metric_values"] = metric_values
+                results["Lower_CI"] = lower_ci_values
+                results["Upper_CI"] = upper_ci_values
+                results["SE"] = se_values
         else:
             results = dict()
 
         return results
 
     @staticmethod
-    def mae_fn(y, y_pred):
+    def compute_mae(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -84,19 +138,42 @@ class MetricModule:
         return np.mean(np.abs(y - y_pred))
 
     @staticmethod
-    def mse_fn(y, y_pred):
+    def compute_rmse(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
         Returns:
-            (float) mean squared error
+            (float) root mean squared error
         """
 
-        return np.mean(np.square(y - y_pred))
+        return np.sqrt(np.mean(np.square(y - y_pred)))
 
     @staticmethod
-    def accuracy_fn(y, y_pred):
+    def compute_r2_score(y, y_pred, *args):
+        """
+        Calculate the R-squared (coefficient of determination) score.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+
+        Returns:
+            (float) R-squared score
+        """
+        mean_y = np.mean(y)
+        total_sum_squares = np.sum((y - mean_y) ** 2)
+        residual_sum_squares = np.sum((y - y_pred) ** 2)
+        r2_score = (
+            1 - (residual_sum_squares / total_sum_squares)
+            if total_sum_squares != 0
+            else 0
+        )
+
+        return r2_score
+
+    @staticmethod
+    def compute_accuracy(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -109,7 +186,7 @@ class MetricModule:
         return true / len(y)
 
     @staticmethod
-    def sensitivity_fn(y, y_pred, class_number):
+    def compute_sensitivity(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -127,7 +204,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def specificity_fn(y, y_pred, class_number):
+    def compute_specificity(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -145,7 +222,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ppv_fn(y, y_pred, class_number):
+    def compute_ppv(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -163,7 +240,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def npv_fn(y, y_pred, class_number):
+    def compute_npv(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -181,7 +258,29 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ba_fn(y, y_pred, class_number):
+    def compute_f1_score(y, y_pred, class_number):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+            class_number (int): number of the class studied
+        Returns:
+            (float) F1 score
+        """
+
+        precision = MetricModule.compute_ppv(y, y_pred, class_number)
+        recall = MetricModule.compute_sensitivity(y, y_pred, class_number)
+
+        f1_score = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) != 0
+            else 0
+        )
+
+        return f1_score
+
+    @staticmethod
+    def compute_ba(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
@@ -192,12 +291,97 @@ class MetricModule:
         """
 
         return (
-            MetricModule.sensitivity_fn(y, y_pred, class_number)
-            + MetricModule.specificity_fn(y, y_pred, class_number)
+            MetricModule.compute_sensitivity(y, y_pred, class_number)
+            + MetricModule.compute_specificity(y, y_pred, class_number)
         ) / 2
 
     @staticmethod
-    def confusion_matrix_fn(y, y_pred):
+    def compute_mcc(y, y_pred, class_number):
+        """
+        Calculate the Matthews correlation coefficient (MCC) for a specific class.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Matthews correlation coefficient for the specified class
+        """
+        true_positive = np.sum((y_pred == class_number) & (y == class_number))
+        true_negative = np.sum((y_pred != class_number) & (y != class_number))
+        false_positive = np.sum((y_pred == class_number) & (y != class_number))
+        false_negative = np.sum((y_pred != class_number) & (y == class_number))
+        denominator = np.sqrt(
+            (true_positive + false_positive)
+            * (true_positive + false_negative)
+            * (true_negative + false_positive)
+            * (true_negative + false_negative)
+        )
+        mcc = (
+            (true_positive * true_negative - false_positive * false_negative)
+            / denominator
+            if denominator != 0
+            else 0
+        )
+        return mcc
+
+    @staticmethod
+    def compute_mk(y, y_pred, class_number):
+        """
+        Calculate Markedness (MK) for a specific class.
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Markedness for the specified class
+        """
+        precision = MetricModule.compute_ppv(y, y_pred, class_number)
+        npv = MetricModule.compute_npv(y, y_pred, class_number)
+        mk = precision + npv - 1
+        return mk
+
+    @staticmethod
+    def compute_lr_plus(y, y_pred, class_number):
+        """
+        Calculate Positive Likelihood Ratio (LR+).
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Positive Likelihood Ratio
+        """
+        sensitivity = MetricModule.compute_sensitivity(y, y_pred, class_number)
+        specificity = MetricModule.compute_specificity(y, y_pred, class_number)
+        lr_plus = sensitivity / (1 - specificity) if (1 - specificity) != 0 else 0
+        return lr_plus
+
+    @staticmethod
+    def compute_lr_minus(y, y_pred, class_number):
+        """
+        Calculate Negative Likelihood Ratio (LR-).
+
+        Args:
+            y (List): List of actual labels
+            y_pred (List): List of predicted labels
+            class_number (int): Number of the class studied
+
+        Returns:
+            (float) Negative Likelihood Ratio
+        """
+        sensitivity = MetricModule.compute_sensitivity(y, y_pred, class_number)
+        specificity = MetricModule.compute_specificity(y, y_pred, class_number)
+        lr_minus = (1 - sensitivity) / specificity if specificity != 0 else 0
+        return lr_minus
+
+    @staticmethod
+    def compute_confusion_matrix(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -218,7 +402,7 @@ class MetricModule:
         }
 
     @staticmethod
-    def ssim_fn(y, y_pred):
+    def compute_ssim(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -234,7 +418,7 @@ class MetricModule:
             return ssim3D(y, y_pred).item()
 
     @staticmethod
-    def psnr_fn(y, y_pred):
+    def compute_psnr(y, y_pred, *args):
         """
         Args:
             y (List): list of labels
@@ -247,7 +431,7 @@ class MetricModule:
         return peak_signal_noise_ratio(y, y_pred)
 
     @staticmethod
-    def lncc_fn(y, y_pred):
+    def compute_lncc(y, y_pred, *args):
         """
         Args:
             y (List): list of labels

@@ -174,7 +174,7 @@ class Interface(object):
         for obj_name in dir(module):
             obj = getattr(module, obj_name)
             if isclass(obj) and issubclass(obj, API) and obj is not API:
-                # obj is the class so we instanciate it
+                # obj is the class so we instantiate it
                 self.register_API(obj())
             elif isinstance(obj, API) and obj.__class__ is not API:
                 # obj is already the instance

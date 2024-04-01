@@ -16,6 +16,8 @@ def get_parameters_dict(
     custom_suffix: str,
     tracer: str,
     suvr_reference_region: str,
+    dti_measure: str,
+    dti_space: str,
 ) -> Dict[str, Any]:
     """
     Parameters
@@ -53,6 +55,9 @@ def get_parameters_dict(
     if modality == "pet-linear":
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
+    if modality == "dwi-dti":
+        parameters["dti_space"] = dti_space
+        parameters["dti_measure"] = dti_measure
 
     parameters["extract_json"] = compute_extract_json(extract_json)
 
@@ -69,48 +74,59 @@ def compute_extract_json(extract_json: str) -> str:
 
 
 def compute_folder_and_file_type(
-    parameters: Dict[str, Any]
+    parameters: Dict[str, Any], from_bids: Path = None
 ) -> Tuple[str, Dict[str, str]]:
-    from clinica.utils.input_files import (
-        FLAIR_T2W_LINEAR,
-        FLAIR_T2W_LINEAR_CROPPED,
-        T1W_LINEAR,
-        T1W_LINEAR_CROPPED,
+    from clinicadl.utils.clinica_utils import (
+        bids_nii,
+        dwi_dti,
+        linear_nii,
         pet_linear_nii,
     )
 
-    if parameters["preprocessing"] == "t1-linear":
-        mod_subfolder = "t1_linear"
-        if parameters["use_uncropped_image"]:
-            file_type = T1W_LINEAR
+    if from_bids is not None:
+        if parameters["preprocessing"] == "custom":
+            mod_subfolder = "custom"
+            file_type = {
+                "pattern": f"*{parameters['custom_suffix']}",
+                "description": "Custom suffix",
+            }
         else:
-            file_type = T1W_LINEAR_CROPPED
+            mod_subfolder = parameters["preprocessing"]
+            file_type = bids_nii(parameters["preprocessing"])
 
-    elif parameters["preprocessing"] == "flair-linear":
-        mod_subfolder = "flair_linear"
-        if parameters["use_uncropped_image"]:
-            file_type = FLAIR_T2W_LINEAR
-        else:
-            file_type = FLAIR_T2W_LINEAR_CROPPED
-    elif parameters["preprocessing"] == "pet-linear":
-        mod_subfolder = "pet_linear"
-        file_type = pet_linear_nii(
-            parameters["tracer"],
-            parameters["suvr_reference_region"],
-            parameters["use_uncropped_image"],
-        )
-    elif parameters["preprocessing"] == "custom":
-        mod_subfolder = "custom"
-        file_type = {
-            "pattern": f"*{parameters['custom_suffix']}",
-            "description": "Custom suffix",
-        }
-        parameters["use_uncropped_image"] = None
     else:
-        raise NotImplementedError(
-            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented."
-        )
+        if parameters["preprocessing"] == "t1-linear":
+            mod_subfolder = "t1_linear"
+            file_type = linear_nii("T1w", parameters["use_uncropped_image"])
 
+        elif parameters["preprocessing"] == "flair-linear":
+            mod_subfolder = "flair_linear"
+            file_type = linear_nii("flair", parameters["use_uncropped_image"])
+
+        elif parameters["preprocessing"] == "pet-linear":
+            mod_subfolder = "pet_linear"
+            file_type = pet_linear_nii(
+                parameters["tracer"],
+                parameters["suvr_reference_region"],
+                parameters["use_uncropped_image"],
+            )
+        elif parameters["preprocessing"] == "dwi-dti":
+            mod_subfolder = "dwi_dti"
+            file_type = dwi_dti(
+                parameters["measure"],
+                parameters["space"],
+            )
+        elif parameters["preprocessing"] == "custom":
+            mod_subfolder = "custom"
+            file_type = {
+                "pattern": f"*{parameters['custom_suffix']}",
+                "description": "Custom suffix",
+            }
+            parameters["use_uncropped_image"] = None
+        else:
+            raise NotImplementedError(
+                f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
+            )
     return mod_subfolder, file_type
 
 

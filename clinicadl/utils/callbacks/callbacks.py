@@ -122,3 +122,100 @@ class CodeCarbonTracker(Callback):
 
     def on_train_end(self, parameters, **kwargs):
         self.tracker.stop()
+
+
+class Tracker(Callback):
+    def on_train_begin(self, parameters, **kwargs):
+        if parameters["track_exp"] == "wandb":
+            from clinicadl.utils.tracking_exp import WandB_handler
+
+            self.run = WandB_handler(
+                kwargs["split"], parameters, kwargs["maps_path"].name
+            )
+
+        if parameters["track_exp"] == "mlflow":
+            from clinicadl.utils.tracking_exp import Mlflow_handler
+
+            self.run = Mlflow_handler(
+                kwargs["split"], parameters, kwargs["maps_path"].name
+            )
+
+    def on_epoch_end(self, parameters, **kwargs):
+        if parameters["track_exp"] == "wandb":
+            self.run.log_metrics(
+                self.run._wandb,
+                parameters["track_exp"],
+                parameters["network_task"],
+                kwargs["metrics_train"],
+                kwargs["metrics_valid"],
+            )
+
+        if parameters["track_exp"] == "mlflow":
+            self.run.log_metrics(
+                self.run._mlflow,
+                parameters["track_exp"],
+                parameters["network_task"],
+                kwargs["metrics_train"],
+                kwargs["metrics_valid"],
+            )
+
+    def on_train_end(self, parameters, **kwargs):
+        if parameters["track_exp"] == "mlflow":
+            self.run._mlflow.end_run()
+
+        if parameters["track_exp"] == "wandb":
+            self.run._wandb.finish()
+
+
+class LoggerCallback(Callback):
+    def on_train_begin(self, parameters, **kwargs):
+        logger.info(
+            f"Criterion for {parameters['network_task']} is {(kwargs['criterion'])}"
+        )
+        logger.debug(f"Optimizer used for training is {kwargs['optimizer']}")
+
+    def on_epoch_begin(self, parameters, **kwargs):
+        logger.info(f"Beginning epoch {kwargs['epoch']}.")
+
+    def on_epoch_end(self, parameters, **kwargs):
+        logger.info(
+            f"{kwargs['mode']} level training loss is {kwargs['metrics_train']['loss']} "
+            f"at the end of iteration {kwargs['i']}"
+        )
+        logger.info(
+            f"{kwargs['mode']} level validation loss is {kwargs['metrics_valid']['loss']} "
+            f"at the end of iteration {kwargs['i']}"
+        )
+
+    def on_train_end(self, parameters, **kwargs):
+        logger.info("tests")
+
+
+# class ProfilerHandler(Callback):
+#     def on_train_begin(self, parameters, **kwargs):
+#         if self.profiler:
+#             from contextlib import nullcontext
+#             from datetime import datetime
+#             from clinicadl.utils.maps_manager.cluster.profiler import (
+#                 ProfilerActivity,
+#                 profile,
+#                 schedule,
+#                 tensorboard_trace_handler,
+#             )
+
+#             time = datetime.now().strftime("%H:%M:%S")
+#             filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+#             dist.broadcast_object_list(filename, src=0)
+#             profiler = profile(
+#                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+#                 schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+#                 on_trace_ready=tensorboard_trace_handler(filename[0]),
+#                 profile_memory=True,
+#                 record_shapes=False,
+#                 with_stack=False,
+#                 with_flops=False,
+#             )
+#         else:
+#             profiler = nullcontext()
+#             profiler.step = lambda *args, **kwargs: None
+#         return profiler

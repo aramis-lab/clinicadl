@@ -10,6 +10,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
+
 import os
 from copy import copy
 from logging import getLogger
@@ -197,7 +198,7 @@ def stable_selection(bids_df: pd.DataFrame, diagnosis: str = "AD") -> pd.DataFra
     for subject, subject_df in bids_df.groupby(level=0):
         subject_drop = False
         try:
-            diagnosis_bl = subject_df.loc[(subject, "ses-M00"), "baseline_diagnosis"]
+            diagnosis_bl = subject_df.loc[(subject, "ses-M000"), "baseline_diagnosis"]
         except KeyError:
             raise KeyError(
                 f"The baseline session is necessary for labels selection. It is missing for subject {subject}."

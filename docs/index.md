@@ -60,6 +60,9 @@ command line.
 - `clinicadl train resume` - [Resume a prematurely stopped job](./Train/Resume.md)
 - `clinicadl train custom` - [Custom experiments](./Contribute/Custom/)
 
+### Share pretrained models
+- `clinicadl hugging-face` - [Share an experiment with hugging-face](./Train/Share.md)
+
 ### Inference using pretrained models
 - `clinicadl predict` - [Predict one image or a list of images with your previously trained network](Predict.md)
 

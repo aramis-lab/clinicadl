@@ -47,6 +47,7 @@ from .task_utils import task_launcher
 @train_option.optimizer
 @train_option.epochs
 @train_option.learning_rate
+@train_option.adaptive_learning_rate
 @train_option.weight_decay
 @train_option.dropout
 @train_option.patience
@@ -61,7 +62,7 @@ from .task_utils import task_launcher
 # Task-related
 @train_option.selection_metrics
 @train_option.reconstruction_loss
-# informations
+# information
 @train_option.emissions_calculator
 def cli(**kwargs):
     """

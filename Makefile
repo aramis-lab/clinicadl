@@ -30,7 +30,7 @@ clean.test:
 doc: clean.doc env.doc
 	@$(POETRY) run mkdocs build
 
-## env			: Bootstap an environment.
+## env			: Bootstrap an environment.
 .PHONY: env
 env: env.dev
 

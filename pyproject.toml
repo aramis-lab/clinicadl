@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.5.1"
+version = "1.6.0"
 description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
 license = "MIT"
 authors = ["ARAMIS Lab"]
@@ -28,7 +28,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-clinica = "^0.7.7"
 torch = "^2.1.0"
 torchvision = "*"
 tensorboard = "*"
@@ -43,11 +42,10 @@ click-option-group = "^0.5"
 pynvml = "*"
 torchio = "^0.18.90"
 urllib3= "<2.0.0"
-#protobuf = "<3.2.0"
+nilearn = "^0.9.2"
+
 
 [tool.poetry.group.dev.dependencies]
-black = "*"
-isort = "*"
 pre-commit = "*"
 pytest = "*"
 pytest-timeout = "*"
@@ -76,38 +74,29 @@ clinicadl = "clinicadl.cmdline:cli"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
+target-version = "py38"
 line-length = 88
-target-version = ['py36', 'py37', 'py38']
-include = '\.pyi?$'
-force-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | \.pytest_cache
-  | _build
-  | buck-out
-  | build
-  | dist
-  | docs
-  | README.md
-  | MANIFEST.in
-  | LICENSE.txt
-  | clinicadl/VERSION
-)/
-'''
-exclude = '''
-/(
-    README.md
-  | MANIFEST.in
-  | LICENSE.txt
-  | clinicadl/VERSION
-)/
-'''
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "I",
+]
+ignore = ["E203", "E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["clinicadl"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.codespell]
+summary = ''
+skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml"
+quiet-level = 3
+ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources"

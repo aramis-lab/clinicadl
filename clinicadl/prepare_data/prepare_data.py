@@ -2,13 +2,22 @@ from logging import getLogger
 from pathlib import Path
 
 
-def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
-    from clinica.utils.inputs import check_caps_folder, clinica_file_reader
-    from clinica.utils.nipype import container_from_filename
-    from clinica.utils.participant import get_subject_session_list
+def DeepLearningPrepareData(
+    caps_directory: Path,
+    tsv_file: Path,
+    n_proc: int,
+    parameters: dict,
+    from_bids: str = None,
+):
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
+    from clinicadl.utils.clinica_utils import (
+        check_caps_folder,
+        clinicadl_file_reader,
+        container_from_filename,
+        get_subject_session_list,
+    )
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
@@ -17,12 +26,23 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    check_caps_folder(caps_directory)
-    logger.debug(f"CAPS directory: {caps_directory}.")
-    is_bids_dir = False
-    sessions, subjects = get_subject_session_list(
-        caps_directory, tsv_file, is_bids_dir, False, None
+    if from_bids is not None:
+        try:
+            input_directory = Path(from_bids)
+        except ClinicaDLArgumentError:
+            logger.warning("Your BIDS directory doesn't exist.")
+        logger.debug(f"BIDS directory: {input_directory}.")
+        is_bids_dir = True
+    else:
+        input_directory = caps_directory
+        check_caps_folder(input_directory)
+        logger.debug(f"CAPS directory: {input_directory}.")
+        is_bids_dir = False
+
+    subjects, sessions = get_subject_session_list(
+        input_directory, tsv_file, is_bids_dir, False, None
     )
+
     if parameters["prepare_dl"]:
         logger.info(
             f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
@@ -43,13 +63,13 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     logger.debug(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
-    mod_subfolder, file_type = compute_folder_and_file_type(parameters)
-    parameters["file_type"] = file_type
 
+    mod_subfolder, file_type = compute_folder_and_file_type(parameters, from_bids)
+    parameters["file_type"] = file_type
     # Input file:
-    input_files = clinica_file_reader(
-        subjects, sessions, caps_directory.as_posix(), file_type
-    )[0]
+    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
+        0
+    ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
@@ -142,7 +162,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                 ]
 
             parameters["masks_location"] = (
-                caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
+                input_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
             if len(parameters["roi_list"]) == 0:
@@ -154,18 +174,22 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                     parameters["masks_location"],
                     parameters["roi_list"],
                     parameters["roi_mask_pattern"],
-                    None
-                    if parameters["use_uncropped_image"] is None
-                    else not parameters["use_uncropped_image"],
+                    (
+                        None
+                        if parameters["use_uncropped_image"] is None
+                        else not parameters["use_uncropped_image"]
+                    ),
                 )
 
             output_mode = extract_roi(
                 Path(file),
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_mask_pattern"],
-                cropped_input=None
-                if parameters["use_uncropped_image"] is None
-                else not parameters["use_uncropped_image"],
+                cropped_input=(
+                    None
+                    if parameters["use_uncropped_image"] is None
+                    else not parameters["use_uncropped_image"]
+                ),
                 roi_names=parameters["roi_list"],
                 uncrop_output=parameters["uncropped_roi"],
             )
