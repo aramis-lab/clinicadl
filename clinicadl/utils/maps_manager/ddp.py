@@ -185,8 +185,9 @@ if fsdp_available:
                 mixed_precision=mixed_precision,
                 cpu_offload=None,
                 auto_wrap_policy=partial(
-                    size_based_auto_wrap_policy, min_num_params=1,
-                )
+                    size_based_auto_wrap_policy,
+                    min_num_params=1,
+                ),
             )
             self.set_state_dict_type(
                 self,
