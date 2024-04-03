@@ -63,6 +63,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "track_exp",
         "transfer_path",
         "transfer_selection_metric",
+        "valid_longitudinal",
         "weight_decay",
         "sampler",
         "save_all_models",

@@ -88,19 +88,24 @@ def extract_baseline(diagnosis_df, set_index=True):
     from copy import deepcopy
 
     if set_index:
-        all_df = diagnosis_df.set_index(["participant_id", "session_id"])
+        all_df = deepcopy(diagnosis_df)
+        all_df.set_index(["participant_id", "session_id"], inplace=True)
     else:
         all_df = deepcopy(diagnosis_df)
 
     result_df = pd.DataFrame()
     for subject, subject_df in all_df.groupby(level=0):
-        baseline = first_session(subject_df)
-        subject_baseline_df = pd.DataFrame(
-            data=[[subject, baseline] + subject_df.loc[(subject, baseline)].tolist()],
-            columns=["participant_id", "session_id"]
-            + subject_df.columns.values.tolist(),
-        )
-        result_df = pd.concat([result_df, subject_baseline_df])
+        if subject != "participant_id":
+            baseline = first_session(subject_df)
+
+            subject_baseline_df = pd.DataFrame(
+                data=[
+                    [subject, baseline] + subject_df.loc[(subject, baseline)].tolist()
+                ],
+                columns=["participant_id", "session_id"]
+                + subject_df.columns.values.tolist(),
+            )
+            result_df = pd.concat([result_df, subject_baseline_df])
 
     result_df.reset_index(inplace=True, drop=True)
     return result_df

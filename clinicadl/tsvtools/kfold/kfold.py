@@ -21,6 +21,7 @@ def write_splits(
     n_splits: int,
     subset_name: str,
     results_directory: Path,
+    valid_longitudinal: bool = False,
 ):
     """
     Split data at the subject-level in training and test to have equivalent distributions in split_label.
@@ -57,12 +58,11 @@ def write_splits(
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
         train_index, test_index = indices
 
-        test_df = baseline_df.iloc[test_index]
         train_df = baseline_df.iloc[train_index]
         long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
-
         train_df.reset_index(inplace=True, drop=True)
-        test_df.reset_index(inplace=True, drop=True)
+
+        test_df = baseline_df.iloc[test_index]
 
         # train_df = train_df[["participant_id", "session_id"]]
         # test_df = test_df[["participant_id", "session_id"]]
@@ -86,6 +86,15 @@ def write_splits(
             sep="\t",
             index=False,
         )
+        if valid_longitudinal:
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            test_df.reset_index(inplace=True, drop=True)
+
+            long_test_df.to_csv(
+                results_directory / f"split-{i}" / f"{subset_name}.tsv",
+                sep="\t",
+                index=False,
+            )
 
 
 def split_diagnoses(
@@ -94,6 +103,7 @@ def split_diagnoses(
     subset_name: str = None,
     stratification: str = None,
     merged_tsv: Path = None,
+    valid_longitudinal: bool = False,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
@@ -176,6 +186,13 @@ def split_diagnoses(
                 how="inner",
                 on=["participant_id", "session_id"],
             )
-    write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
+    write_splits(
+        diagnosis_df,
+        stratification,
+        n_splits,
+        subset_name,
+        results_directory,
+        valid_longitudinal=valid_longitudinal,
+    )
 
     logger.info(f"K-fold split is done.")

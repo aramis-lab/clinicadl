@@ -108,7 +108,7 @@ def generate_random_dataset(
         }
     )
 
-    SESSION_ID = "ses-M00"
+    SESSION_ID = "ses-M000"
     AGE_BL_DEFAULT = 60
     SEX_DEFAULT = "F"
 
@@ -426,7 +426,7 @@ def generate_shepplogan_dataset(
         ) -> pd.DataFrame:
             # for j in range(samples):
             participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
-            session_id = "ses-M00"
+            session_id = "ses-M000"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]
             )

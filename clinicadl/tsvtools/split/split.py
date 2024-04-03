@@ -212,9 +212,8 @@ def split_diagnoses(
     p_sex_threshold=0.80,
     categorical_split_variable=None,
     ignore_demographics=False,
-    verbose=0,
-    not_only_baseline=True,
     multi_diagnoses=False,
+    valid_longitudinal=False,
 ):
     """
     Performs a single split for each label independently on the subject level.
@@ -297,10 +296,9 @@ def split_diagnoses(
         name = f"{subset_name}_baseline.tsv"
         df_to_tsv(name, results_path, test_df, baseline=True)
 
-        if not_only_baseline:
+        if valid_longitudinal:
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
             name = f"{subset_name}.tsv"
-            # long_test_df = long_test_df[["participant_id", "session_id"]]
             df_to_tsv(name, results_path, long_test_df)
 
     elif n_test > 0:
@@ -345,7 +343,7 @@ def split_diagnoses(
         name = f"{subset_name}_baseline.tsv"
         df_to_tsv(name, results_path, test_df, baseline=True)
 
-        if not_only_baseline:
+        if valid_longitudinal:
             name = f"{subset_name}.tsv"
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
             # long_test_df = long_test_df[["participant_id", "session_id"]]
@@ -354,7 +352,7 @@ def split_diagnoses(
     else:
         train_df = extract_baseline(diagnosis_df)
         # train_df = train_df[["participant_id", "session_id"]]
-        if not_only_baseline:
+        if valid_longitudinal:
             long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"

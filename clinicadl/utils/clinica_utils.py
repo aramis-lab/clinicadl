@@ -156,7 +156,7 @@ def pet_linear_nii(
     information = {
         "pattern": str(
             Path("pet_linear")
-            / f"*_trc-{tracer}_pet_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
+            / f"*_trc-{acq_label}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
         ),
         "description": "",
         "needed_pipeline": "pet-linear",
@@ -590,7 +590,7 @@ def find_sub_ses_pattern_path(
         Name given to the folder of a participant (ex: sub-ADNI002S0295).
 
     session : str
-        Name given to the folder of a session (ex: ses-M00).
+        Name given to the folder of a session (ex: ses-M000).
 
     error_encountered : List
         List to which errors encountered in this function are added.
@@ -983,12 +983,12 @@ def clinicadl_file_reader(
 
     You have the full name of a file.
 
-    File `orig_nu.mgz` from FreeSurfer of subject `sub-ADNI011S4105`, session `ses-M00`
+    File `orig_nu.mgz` from FreeSurfer of subject `sub-ADNI011S4105`, session `ses-M000`
     located in mri folder of FreeSurfer output :
 
     >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
-            ['ses-M00'],
+            ['ses-M000'],
             caps_directory,
             {
                 'pattern': 'freesurfer_cross_sectional/sub-*_ses-*/mri/orig_nu.mgz',
@@ -996,23 +996,23 @@ def clinicadl_file_reader(
                 'needed_pipeline': 't1-freesurfer'
             }
         )
-    ['/caps/subjects/sub-ADNI011S4105/ses-M00/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M00/mri/orig_nu.mgz']
+    ['/caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M000/mri/orig_nu.mgz']
 
     You have a partial name of the file.
 
-    File `sub-ADNI011S4105_ses-M00_trc-18FFDG_pet.nii.gz` in BIDS directory.
+    File `sub-ADNI011S4105_ses-M000_trc-18FFDG_pet.nii.gz` in BIDS directory.
     Here, filename depends on subject and session name :
 
     >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
-            ['ses-M00'],
+            ['ses-M000'],
             bids_directory,
             {
                 'pattern': '*18FFDG_pet.nii*',
                 'description': 'FDG PET data'
             }
         )
-    ['/bids/sub-ADNI011S4105/ses-M00/pet/sub-ADNI011S4105_ses-M00_trc-18FFDG_pet.nii.gz']
+    ['/bids/sub-ADNI011S4105/ses-M000/pet/sub-ADNI011S4105_ses-M000_trc-18FFDG_pet.nii.gz']
 
     Tricky example.
 
@@ -1022,7 +1022,7 @@ def clinicadl_file_reader(
 
     >>> clinicadl_file_reader(
             ['sub-ADNI011S4105'],
-            ['ses-M00'],
+            ['ses-M000'],
             caps,
             {
                 'pattern': 'rh.white',
@@ -1031,13 +1031,13 @@ def clinicadl_file_reader(
             }
         )
     * More than 1 file found::
-            /caps/subjects/sub-ADNI011S4105/ses-M00/t1/freesurfer_cross_sectional/fsaverage/surf/rh.white
-            /caps/subjects/sub-ADNI011S4105/ses-M00/t1/freesurfer_cross_sectional/rh.EC_average/surf/rh.white
-            /caps/subjects/sub-ADNI011S4105/ses-M00/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M00/surf/rh.white
+            /caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/fsaverage/surf/rh.white
+            /caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/rh.EC_average/surf/rh.white
+            /caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M000/surf/rh.white
 
     Correct usage (e.g. in pet-surface): pattern string must be 'sub-*_ses-*/surf/rh.white',
     or even more precise: 't1/freesurfer_cross_sectional/sub-*_ses-*/surf/rh.white'
-    It then gives: ['/caps/subjects/sub-ADNI011S4105/ses-M00/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M00/surf/rh.white']
+    It then gives: ['/caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M000/surf/rh.white']
     """
     from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
