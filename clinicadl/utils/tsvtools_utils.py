@@ -92,6 +92,7 @@ def extract_baseline(diagnosis_df, set_index=True):
     result_df = pd.DataFrame()
     for subject, subject_df in all_df.groupby(level=0):
         baseline = first_session(subject_df)
+        print(subject, baseline)
         subject_baseline_df = pd.DataFrame(
             data=[[subject, baseline] + subject_df.loc[(subject, baseline)].tolist()],
             columns=["participant_id", "session_id"]
