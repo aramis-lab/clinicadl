@@ -26,12 +26,14 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
 )
+@cli_param.option.valid_longitudinal
 def cli(
     data_tsv,
     n_splits,
     subset_name,
     stratification,
     merged_tsv,
+    valid_longitudinal,
 ):
     """Performs a k-fold split to prepare training.
 
@@ -47,6 +49,7 @@ def cli(
         subset_name=subset_name,
         stratification=stratification,
         merged_tsv=merged_tsv,
+        valid_longitudinal=valid_longitudinal,
     )
 
 

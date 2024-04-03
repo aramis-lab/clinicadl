@@ -6,6 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="split", no_args_is_help=True)
 @cli_param.argument.data_tsv
 @cli_param.option.subset_name
+@cli_param.option.valid_longitudinal
 @click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
@@ -44,13 +45,6 @@ from clinicadl.utils import cli_param
     type=str,
 )
 @click.option(
-    "--not_only_keep_baseline",
-    help="If given will store the file with all subjects",
-    default=False,
-    is_flag=True,
-    type=bool,
-)
-@click.option(
     "--multi-diagnoses",
     help="If given, all columns are used to balance the split, not only age and sex",
     default=False,
@@ -60,12 +54,12 @@ from clinicadl.utils import cli_param
 def cli(
     data_tsv,
     subset_name,
+    valid_longitudinal,
     n_test,
     p_sex_threshold,
     p_age_threshold,
     ignore_demographics,
     categorical_split_variable,
-    not_only_keep_baseline,
     multi_diagnoses,
 ):
     """Performs a single split to prepare training.
@@ -84,8 +78,8 @@ def cli(
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=categorical_split_variable,
-        not_only_baseline=not_only_keep_baseline,
         multi_diagnoses=multi_diagnoses,
+        valid_longitudinal=valid_longitudinal,
     )
 
 
