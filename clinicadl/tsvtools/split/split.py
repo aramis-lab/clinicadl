@@ -212,7 +212,6 @@ def split_diagnoses(
     p_sex_threshold=0.80,
     categorical_split_variable=None,
     ignore_demographics=False,
-    verbose=0,
     multi_diagnoses=False,
     valid_longitudinal=False,
 ):
