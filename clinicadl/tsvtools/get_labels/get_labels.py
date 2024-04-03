@@ -421,6 +421,6 @@ def get_labels(
     output_df.reset_index(inplace=True)
     output_df.sort_values(by=["participant_id", "session_index"], inplace=True)
     output_df.drop("session_index", axis=1, inplace=True)
-    output_df.to_csv(output_tsv, sep="\t")
+    output_df.to_csv(output_tsv, sep="\t", index=False)
 
     logger.info(f"Results are stored in {output_dir}.")
