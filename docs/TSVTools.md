@@ -37,10 +37,10 @@ Other functions of `tsvtools` may also try to have similar distributions accordi
 
 | participant_id | session_id | diagnosis | age | sex | ... |
 | -------------- | ---------- | --------- | --- | --- | --- |
-| sub-CLNC0001  | ses-M00 | MCI | 72 | M | ... |
-| sub-CLNC0001  | ses-M12 | MCI | 65 | F | ... |
-| sub-CLNC0001  | ses-M36 | AD | 66 | F | ... |
-| sub-CLNC0002  | ses-M00 | CN | 89 | F | ... |
+| sub-CLNC0001  | ses-M000 | MCI | 72 | M | ... |
+| sub-CLNC0001  | ses-M012 | MCI | 65 | F | ... |
+| sub-CLNC0001  | ses-M036 | AD | 66 | F | ... |
+| sub-CLNC0002  | ses-M000 | CN | 89 | F | ... |
 
 
 ### Running the task
@@ -256,30 +256,30 @@ This pipeline provides the progression of Alzheimer's disease based on the list 
 
     | participant_id | session_id | diagnosis | ... |
     | -------------- | ---------- | --------- | --- |
-    | sub-ADNI135S6586  | ses-M00 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M12 | CN | ... |
-    | sub-ADNI135S6586  | ses-M36 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M48 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M60 | CN | ... |
-    | sub-ADNI135S6586  | ses-M72 | AD | ... |
+    | sub-ADNI135S6586  | ses-M000 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M012 | CN | ... |
+    | sub-ADNI135S6586  | ses-M036 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M048 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M060 | CN | ... |
+    | sub-ADNI135S6586  | ses-M072 | AD | ... |
 
     The participant is unstable, but if, for some reasons, you dropped some sessions, you can end up with the following list:
 
     | participant_id | session_id | diagnosis | ... |
     | -------------- | ---------- | --------- | --- |
-    | sub-ADNI135S6586  | ses-M00 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M36 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M48 | MCI | ... |
-    | sub-ADNI135S6586  | ses-M72 | AD | ... |
+    | sub-ADNI135S6586  | ses-M000 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M036 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M048 | MCI | ... |
+    | sub-ADNI135S6586  | ses-M072 | AD | ... |
 
     Then, if you try to get the progression, the command will return the following list:
 
     | participant_id | session_id | diagnosis | progression |
     | -------------- | ---------- | --------- | --- |
-    | sub-ADNI135S6586  | ses-M00 | MCI | p |
-    | sub-ADNI135S6586  | ses-M36 | MCI | p |
-    | sub-ADNI135S6586  | ses-M48 | MCI | p |
-    | sub-ADNI135S6586  | ses-M72 | AD | s |
+    | sub-ADNI135S6586  | ses-M000 | MCI | p |
+    | sub-ADNI135S6586  | ses-M036 | MCI | p |
+    | sub-ADNI135S6586  | ses-M048 | MCI | p |
+    | sub-ADNI135S6586  | ses-M072 | AD | s |
 
     What is wrong because the participant is unstable.
 
