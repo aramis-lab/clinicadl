@@ -631,7 +631,7 @@ class MapsManager:
                         import nibabel as nib
                         from numpy import eye
 
-                        output_nii = nib.Nifti1Image(mode_map, eye(4))
+                        output_nii = nib.Nifti1Image(mode_map.numpy(), eye(4))
                         nib.save(
                             output_nii,
                             results_path / f"mean_{self.mode}-{i}_map.nii.gz",
