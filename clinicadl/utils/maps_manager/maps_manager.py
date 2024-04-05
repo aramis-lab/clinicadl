@@ -2975,7 +2975,7 @@ class MapsManager:
         split=0,
         selection_metric: str = None,
         network: int = None,
-        map_location: str = None,
+        map_location: Optional[str] = None,
     ):
         """
         Get the model trained corresponding to one split and one metric evaluated on the validation set.
