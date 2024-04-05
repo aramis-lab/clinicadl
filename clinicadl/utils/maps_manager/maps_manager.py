@@ -2973,7 +2973,7 @@ class MapsManager:
     def get_state_dict(
         self,
         split=0,
-        selection_metric: str = None,
+        selection_metric: Optional[str] = None,
         network: Optional[int] = None,
         map_location: Optional[str] = None,
     ):
