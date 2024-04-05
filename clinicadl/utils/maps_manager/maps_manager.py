@@ -162,11 +162,14 @@ class MapsManager:
         """
         Resumes the training task for a defined list of splits.
 
-        Args:
-            split_list: list of splits on which the training task is performed.
+        Parameters
+        ----------
+        split_list: List
+            list of splits on which the training task is performed.
                 Default trains all splits.
 
-        Raises:
+        Raises
+        ------
             MAPSError: If splits specified in input do not exist.
         """
         missing_splits = []
@@ -637,7 +640,9 @@ class MapsManager:
     ###################################
     # High-level functions templates  #
     ###################################
-    def _train_single(self, split_list: Optional[List[int]] = None, resume: bool = False):
+    def _train_single(
+        self, split_list: Optional[List[int]] = None, resume: bool = False
+    ):
         """
         Trains a single CNN for all inputs.
 
@@ -2825,7 +2830,9 @@ class MapsManager:
 
         return split_class(**kwargs)
 
-    def _init_task_manager(self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None):
+    def _init_task_manager(
+        self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
+    ):
         from clinicadl.utils.task_manager import (
             ClassificationManager,
             ReconstructionManager,
