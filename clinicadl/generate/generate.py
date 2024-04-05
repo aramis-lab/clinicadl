@@ -389,7 +389,7 @@ def generate_shepplogan_dataset(
         Path to the CAPS created.
     img_size: int
         Size of the square image.
-    n_procs: int
+    n_proc: int
         Number of cores used during the task.
     labels_distribution: dictionary
         Gives the proportions of the three subtypes (ordered in a tuple) for each label.
