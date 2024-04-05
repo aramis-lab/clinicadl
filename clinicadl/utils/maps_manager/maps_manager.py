@@ -3110,7 +3110,7 @@ class MapsManager:
         data_group: str,
         name: str,
         split: int = 0,
-        selection_metric: str = None,
+        selection_metric: Optional[str] = None,
         verbose: bool = True,
         participant_id: str = None,
         session_id: str = None,
