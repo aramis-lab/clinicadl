@@ -170,7 +170,8 @@ class MapsManager:
 
         Raises
         ------
-            MAPSError: If splits specified in input do not exist.
+        MAPSError:
+            If splits specified in input do not exist.
         """
         missing_splits = []
         split_manager = self._init_split_manager(split_list)
