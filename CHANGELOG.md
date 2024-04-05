@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Fix sorting particpants sessions with 2 digit,
+* Fix `interpret —-save_nifti` issue, 
+* Fix BIDS file format for pet,
+
+
+### Changed
+
+* Change 2 digits session label to 3 digits,
+* Change black and isort for ruff and codespell,
+* Update type hint and docstring,
+
+### New
+
+* Add `--fsdp` option 
+* Add `--valid_longitudinal` option to allow the validation on longitudinal data,
+
+
+
+## ClinicaDL 1.6.0
+
+### Fixed
+
 * Fix t1-volume quality-check empty tsv issue,
 * Fix bug with adapt pipeline,
 * Fix `predict —-overwrite` issue, 
