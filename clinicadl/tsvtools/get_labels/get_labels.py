@@ -40,7 +40,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     Parameters
     ----------
     bids_df: DataFrame
-        Columns including ['participant_id', 'session_id', 'diagnosis'].
+        Columns including ['participant_id', 'session_index', 'diagnosis'].
 
     Returns
     -------
@@ -52,26 +52,17 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     nb_drop = 0
 
     for subject, subject_df in bids_df.groupby(level=0):
-        session_list = []
-        for _, session in subject_df.index.values:
-            x = session[5::]
-            if not x.isdigit():
-                subject_df.drop((subject, session), axis=0, inplace=True)
-                bids_copy_df.drop((subject, session), axis=0, inplace=True)
-                nb_drop += 1
-
         session_list = [session for _, session in subject_df.index.values]
 
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
-            session_nb = session
 
             if isinstance(diagnosis, float):
                 if session == last_session(session_list):
                     bids_copy_df.drop(index=(_, session), axis=0, inplace=True)
                     nb_drop += 1
                 else:
-                    prev_session = neighbour_session(session_nb, session_list, -1)
+                    prev_session = neighbour_session(session, session_list, -1)
                     prev_diagnosis = bids_df.loc[(subject, prev_session), "diagnosis"]
                     while isinstance(
                         prev_diagnosis, float
@@ -80,7 +71,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                         prev_diagnosis = bids_df.loc[
                             (subject, prev_session), "diagnosis"
                         ]
-                    post_session = neighbour_session(session_nb, session_list, +1)
+                    post_session = neighbour_session(session, session_list, +1)
                     post_diagnosis = bids_df.loc[(subject, post_session), "diagnosis"]
                     while isinstance(
                         post_diagnosis, float
@@ -129,7 +120,9 @@ def mod_selection(
     if mod is not None:
         for subject, session in bids_df.index.values:
             try:
-                mod_present = missing_mods_dict[session].loc[subject, mod]
+                mod_present = missing_mods_dict[
+                    bids_copy_df.loc[(subject, session), "session_id"]
+                ].loc[subject, mod]
                 if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
                     nb_subjects += 1
@@ -226,7 +219,10 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: Path) -> pd.DataF
         for subject, session in bids_df.index.values:
             subject_qc_df = restriction_df[
                 (restriction_df.participant_id == subject)
-                & (restriction_df.session_id == session)
+                & (
+                    restriction_df.session_id
+                    == bids_copy_df.loc[(subject, session), "session_id"]
+                )
             ]
             if len(subject_qc_df) != 1:
                 bids_copy_df.drop((subject, session), inplace=True)
@@ -325,15 +321,26 @@ def get_labels(
             raise ValueError(
                 "We can't find any merged tsv files, please give another path."
             )
-
-    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv}")
-
-    # Reading files
-    if not merged_tsv.is_file():
+    elif not merged_tsv.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+
     bids_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
-    bids_df.set_index(["participant_id", "session_id"], inplace=True)
-    variables_list = []
+
+    nb_drop_bad_session = 0
+    for index, row in bids_df.iterrows():
+        if not row["session_id"].startswith("ses-M"):
+            bids_df.drop(index, axis=0, inplace=True)
+            nb_drop_bad_session += 1
+    logger.info(
+        f"Dropped subjects (bad session name, example ses-Nv): {nb_drop_bad_session}"
+    )
+
+    bids_df["session_index"] = (
+        bids_df["session_id"].str.replace("ses-M", "").astype("int")
+    )
+
+    bids_df.set_index(["participant_id", "session_index"], inplace=True)
+    variables_list = ["session_id"]
 
     if "dx1" in bids_df.columns:
         bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
@@ -404,14 +411,16 @@ def get_labels(
         bids_df = remove_unique_session(bids_df)
 
     variables_list.remove("baseline_diagnosis")
+
     output_df = bids_df[variables_list]
     output_df = infer_or_drop_diagnosis(output_df)
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
 
-    output_df.reset_index()
-    output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
-    output_df.to_csv(output_tsv, sep="\t")
+    output_df.reset_index(inplace=True)
+    output_df.sort_values(by=["participant_id", "session_index"], inplace=True)
+    output_df.drop("session_index", axis=1, inplace=True)
+    output_df.to_csv(output_tsv, sep="\t", index=False)
 
     logger.info(f"Results are stored in {output_dir}.")
