@@ -2974,7 +2974,7 @@ class MapsManager:
         self,
         split=0,
         selection_metric: str = None,
-        network: int = None,
+        network: Optional[int] = None,
         map_location: Optional[str] = None,
     ):
         """
