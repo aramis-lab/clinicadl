@@ -3113,7 +3113,7 @@ class MapsManager:
         selection_metric: Optional[str] = None,
         verbose: bool = True,
         participant_id: Optional[str] = None,
-        session_id: str = None,
+        session_id: Optional[str] = None,
         mode_id: int = 0,
     ) -> torch.Tensor:
         """
