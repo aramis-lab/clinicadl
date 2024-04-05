@@ -2,7 +2,7 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    "acq_label,suvr_reference_region,uncropped_image,expected_pattern",
+    "tracer,suvr_reference_region,uncropped_image,expected_pattern",
     [
         (
             "18FFDG",
@@ -19,11 +19,11 @@ import pytest
     ],
 )
 def test_pet_linear_nii(
-    acq_label, suvr_reference_region, uncropped_image, expected_pattern
+    tracer, suvr_reference_region, uncropped_image, expected_pattern
 ):
     from clinicadl.utils.clinica_utils import pet_linear_nii
 
-    assert pet_linear_nii(acq_label, suvr_reference_region, uncropped_image) == {
+    assert pet_linear_nii(tracer, suvr_reference_region, uncropped_image) == {
         "description": "",
         "needed_pipeline": "pet-linear",
         "pattern": expected_pattern,

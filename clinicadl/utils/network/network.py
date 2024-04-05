@@ -1,6 +1,5 @@
 import abc
 from logging import getLogger
-from typing import List
 
 import torch.cuda
 from torch import nn

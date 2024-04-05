@@ -1,5 +1,3 @@
-from typing import List
-
 import click
 
 from clinicadl.utils import cli_param

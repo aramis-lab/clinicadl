@@ -42,7 +42,7 @@ def find_file_type(
     return file_type
 
 
-def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
+def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:
     missing_path = output_dir / "missing_mods"
     missing_path.mkdir(parents=True, exist_ok=True)
 
@@ -154,7 +154,7 @@ def im_loss_roi_gaussian_distribution(
 
 
 # Generate SheppLogan
-def generate_scales(size):
+def generate_scales(size: str) -> tuple[float, float]:
     if size == "large":
         return random.uniform(1, 1.2), random.uniform(1, 1.2)
     elif size == "small":
@@ -318,7 +318,7 @@ def generate_shepplogan_phantom(
     return img
 
 
-def mask_processing(mask, percentage, sigma):
+def mask_processing(mask, percentage: float, sigma: float):
     inverse_mask = 1 - mask
     inverse_mask[inverse_mask == 0] = 1 - percentage / 100
     gaussian_mask = gaussian_filter(inverse_mask, sigma=sigma)

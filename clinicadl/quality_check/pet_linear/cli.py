@@ -43,7 +43,7 @@ def cli(
 
     OUTPUT_TSV is the path to TSV output file.
 
-    ACQ_LABEL is the label given to the PET acquisition, specifying the tracer used (trc-<tracer>).
+    TRACER is the label given to the PET acquisition, specifying the tracer used (trc-<tracer>).
 
     SUVR_REFERENCE_REGION is the reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
     """

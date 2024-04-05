@@ -50,7 +50,7 @@ compensation = "memory" # Only used if deterministic = true
 track_exp = ""
 
 [Transfer_learning]
-transfer_path = ""
+transfer_path = false
 transfer_selection_metric = "loss"
 nb_unfrozen_layer = 0
 

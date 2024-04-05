@@ -1,7 +1,4 @@
 # coding: utf8
-
-from typing import List
-
 import click
 
 from clinicadl.generate.generate_cli import cli as generate_cli
@@ -24,8 +21,6 @@ CONTEXT_SETTINGS = dict(
     # Display help string with -h, in addition to --help.
     help_option_names=["-h", "--help"],
 )
-
-level_list: List[str] = ["warning", "info", "debug"]
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, no_args_is_help=True)

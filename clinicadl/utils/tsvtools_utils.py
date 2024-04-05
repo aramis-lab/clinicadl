@@ -12,15 +12,18 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 logger = getLogger("clinicadl")
 
 
-def merged_tsv_reader(merged_tsv_path: Path):
+def merged_tsv_reader(merged_tsv_path: Path) -> pd.DataFrame:
     if not merged_tsv_path.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
+
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
-    for i in bids_df.index:
-        session = bids_df["session_id"][i]
-        if len(session) == 7:
-            bids_df.loc[(i), "session_id"] = session[:5] + "0" + session[5:7]
+    # To handle bids with 2 and 3 digits
+    bids_df["session_id"] = bids_df["session_id"].apply(
+        lambda session: (
+            session[:5] + "0" + session[5:7] if len(session) == 7 else session
+        )
+    )
 
     return bids_df
 
@@ -123,7 +126,7 @@ def chi2(x_test, x_train):
     return T, p
 
 
-def add_demographics(df, demographics_df, diagnosis):
+def add_demographics(df, demographics_df, diagnosis) -> pd.DataFrame:
     out_df = pd.DataFrame()
     tmp_demo_df = copy(demographics_df)
     tmp_demo_df.reset_index(inplace=True)
@@ -224,11 +227,14 @@ def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     Printing the number of missing diagnoses and filling it partially for ADNI datasets
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    Parameters
+    ----------
+    bids_df: pd.DataFrame
+        DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
 
-    Returns:
-        cleaned DataFrame
+    Returns
+    -------
+    A cleaned DataFrame
     """
     bids_copy_df = copy(bids_df)
 

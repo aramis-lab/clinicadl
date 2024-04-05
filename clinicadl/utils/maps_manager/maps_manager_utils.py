@@ -5,6 +5,7 @@ from typing import Any, Dict
 import toml
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.utils.preprocessing import path_decoder, path_encoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -21,7 +22,10 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     # read default values
     clinicadl_root_dir = Path(__file__).parents[2]
     config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
+    # from clinicadl.utils.preprocessing import path_decoder
     config_dict = toml.load(config_path)
+    # config_dict = path_decoder(config_dict)
+    # print(config_dict)
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
@@ -37,6 +41,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     else:
         user_dict["validation"] = "SingleSplit"
 
+    user_dict = path_decoder(user_dict)
     return user_dict
 
 
@@ -44,15 +49,19 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     """
     Ensures retro-compatibility between the different versions of ClinicaDL.
 
-    Args:
-        json_path: path to the JSON file summing the parameters of a MAPS.
+    Parameters
+    ----------
+    json_path: Path
+        path to the JSON file summing the parameters of a MAPS.
 
-    Returns:
-        dictionary of training parameters.
+    Returns
+    -------
+    A dictionary of training parameters.
     """
-    with json_path.open(mode="r") as f:
-        parameters = json.load(f)
+    from clinicadl.utils.preprocessing import path_decoder
 
+    with json_path.open(mode="r") as f:
+        parameters = json.load(f, object_hook=path_decoder)
     # Types of retro-compatibility
     # Change arg name: ex network --> model
     # Change arg value: ex for preprocessing: mni --> t1-extensive
@@ -63,9 +72,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         "minmaxnormalization": "normalize",
         "num_workers": "n_proc",
     }
-    retro_change_value = {
-        # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
-    }
+
     retro_add = {
         "optimizer": "Adam",
         "loss": None,
@@ -75,10 +82,6 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         if old_name in parameters:
             parameters[new_name] = parameters[old_name]
             del parameters[old_name]
-
-    for name, change_values in retro_change_value.items():
-        if parameters[name] in change_values:
-            parameters[name] = change_values[parameters[name]]
 
     for name, value in retro_add.items():
         if name not in parameters:
@@ -169,98 +172,4 @@ def remove_unused_tasks(
         if other_task.capitalize() in toml_dict:
             del toml_dict[other_task.capitalize()]
 
-    return toml_dict
-
-
-def change_str_to_path(
-    toml_dict: Dict[str, Dict[str, Any]],
-) -> Dict[str, Dict[str, Any]]:
-    """
-    For all paths in the dictionary, it changes the type from str to pathlib.Path.
-
-    Parameters
-    ----------
-    toml_dict: Dict[str, Dict[str, Any]]
-        Dictionary of options as written in a TOML file, with type(path)=str
-
-    Returns
-    -------
-        Updated TOML dictionary with type(path)=pathlib.Path
-    """
-    for key, value in toml_dict.items():
-        if type(value) == Dict:
-            for key2, value2 in value.items():
-                if (
-                    key2.endswith("tsv")
-                    or key2.endswith("dir")
-                    or key2.endswith("directory")
-                    or key2.endswith("path")
-                    or key2.endswith("json")
-                    or key2.endswith("location")
-                ):
-                    if value2 == "":
-                        toml_dict[value][key2] = False
-                    else:
-                        toml_dict[value][key2] = Path(value2)
-        else:
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if value == "":
-                    toml_dict[key] = False
-                else:
-                    toml_dict[key] = Path(value)
-    return toml_dict
-
-
-def change_path_to_str(
-    toml_dict: Dict[str, Dict[str, Any]],
-) -> Dict[str, Dict[str, Any]]:
-    """
-    For all paths in the dictionary, it changes the type from pathlib.Path to str.
-
-    Parameters
-    ----------
-    toml_dict: Dict[str, Dict[str, Any]]
-        Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
-
-    Returns
-    -------
-        Updated TOML dictionary with type(path)=str
-    """
-    for key, value in toml_dict.items():
-        if type(value) == Dict:
-            for key2, value2 in value.items():
-                if (
-                    key2.endswith("tsv")
-                    or key2.endswith("dir")
-                    or key2.endswith("directory")
-                    or key2.endswith("path")
-                    or key2.endswith("json")
-                    or key2.endswith("location")
-                ):
-                    if not value2:
-                        toml_dict[value][key2] = ""
-                    elif isinstance(value2, Path):
-                        toml_dict[value][key2] = value2.as_posix()
-        else:
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if not value:
-                    toml_dict[key] = ""
-                elif isinstance(value, Path):
-                    toml_dict[key] = value.as_posix()
-        if isinstance(value, Path):
-            toml_dict[key] = value.as_posix()
     return toml_dict

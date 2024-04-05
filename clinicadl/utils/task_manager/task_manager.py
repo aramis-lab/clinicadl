@@ -187,14 +187,22 @@ class TaskManager:
         """
         Computes the predictions and evaluation metrics.
 
-        Args:
-            model: the model trained.
-            dataloader: wrapper of a CapsDataset.
-            criterion: function to calculate the loss.
-            use_labels: If True the true_label will be written in output DataFrame
-                and metrics dict will be created.
-            amp: If True, enables Pytorch's automatic mixed precision.
-        Returns:
+        Parameters
+        ----------
+        model: Network
+            The model trained.
+        dataloader: DataLoader
+            Wrapper of a CapsDataset.
+        criterion:  _Loss
+            Function to calculate the loss.
+        use_labels: bool
+            If True the true_label will be written in output DataFrame
+            and metrics dict will be created.
+        amp: bool
+            If True, enables Pytorch's automatic mixed precision.
+
+        Returns
+        -------
             the results and metrics on the image level.
         """
         model.eval()
