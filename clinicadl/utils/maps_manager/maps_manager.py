@@ -3071,7 +3071,7 @@ class MapsManager:
         self,
         data_group: str,
         split: int = 0,
-        selection_metric: str = None,
+        selection_metric: Optional[str] = None,
         mode: str = "image",
         verbose: bool = True,
     ):
