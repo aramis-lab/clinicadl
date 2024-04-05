@@ -2825,7 +2825,7 @@ class MapsManager:
 
         return split_class(**kwargs)
 
-    def _init_task_manager(self, df: pd.DataFrame = None, n_classes: int = None):
+    def _init_task_manager(self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None):
         from clinicadl.utils.task_manager import (
             ClassificationManager,
             ReconstructionManager,
