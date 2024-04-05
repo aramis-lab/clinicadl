@@ -637,7 +637,7 @@ class MapsManager:
     ###################################
     # High-level functions templates  #
     ###################################
-    def _train_single(self, split_list: List[int] = None, resume: bool = False):
+    def _train_single(self, split_list: Optional[List[int]] = None, resume: bool = False):
         """
         Trains a single CNN for all inputs.
 
