@@ -70,7 +70,7 @@ def generate_random_dataset(
         Folder containing the synthetic dataset in CAPS format.
     n_subjects: int
         Number of subjects in each class of the synthetic dataset
-    n_procs: int
+    n_proc: int
         Number of cores used during the task.
     tsv_path: Path
         Path to tsv file of list of subjects/sessions.
