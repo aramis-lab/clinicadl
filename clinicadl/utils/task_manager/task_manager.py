@@ -10,6 +10,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.maps_manager.ddp import cluster
 from clinicadl.utils.metric_module import MetricModule
 from clinicadl.utils.network.network import Network
 
@@ -235,17 +236,17 @@ class TaskManager:
             metrics_dict = self.compute_metrics(results_df, report_ci=report_ci)
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
+                loss_value = total_loss[loss_component].item() / cluster.world_size
+
                 if report_ci:
                     metrics_dict["Metric_names"].append(loss_component)
-                    metrics_dict["Metric_values"].append(
-                        total_loss[loss_component].item()
-                    )
+                    metrics_dict["Metric_values"].append(loss_value)
                     metrics_dict["Lower_CI"].append("N/A")
                     metrics_dict["Upper_CI"].append("N/A")
                     metrics_dict["SE"].append("N/A")
 
                 else:
-                    metrics_dict[loss_component] = total_loss[loss_component].item()
+                    metrics_dict[loss_component] = loss_value
 
         torch.cuda.empty_cache()
 

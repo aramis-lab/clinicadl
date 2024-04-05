@@ -1091,7 +1091,7 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
             nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
-        model = DDP(model)
+        model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
         criterion = self.task_manager.get_criterion(self.loss)
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
@@ -1125,6 +1125,12 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        scaler = GradScaler(enabled=self.std_amp)
+        profiler = self._init_profiler()
+
+        if self.parameters["track_exp"] == "wandb":
+            from clinicadl.utils.tracking_exp import WandB_handler
+
         if self.parameters["adaptive_learning_rate"]:
             from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -1153,7 +1159,7 @@ class MapsManager:
                     update: bool = (i + 1) % self.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
-                        with autocast(enabled=self.amp):
+                        with autocast(enabled=self.std_amp):
                             _, loss_dict = model(data, criterion)
                         logger.debug(f"Train loss dictionary {loss_dict}")
                         loss = loss_dict["loss"]
@@ -1175,10 +1181,10 @@ class MapsManager:
                             evaluation_flag = False
 
                             _, metrics_train = self.task_manager.test(
-                                model, train_loader, criterion, amp=self.amp
+                                model, train_loader, criterion, amp=self.std_amp
                             )
                             _, metrics_valid = self.task_manager.test(
-                                model, valid_loader, criterion, amp=self.amp
+                                model, valid_loader, criterion, amp=self.std_amp
                             )
 
                             model.train()
@@ -1228,10 +1234,10 @@ class MapsManager:
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
                 _, metrics_train = self.task_manager.test(
-                    model, train_loader, criterion, amp=self.amp
+                    model, train_loader, criterion, amp=self.std_amp
                 )
                 _, metrics_valid = self.task_manager.test(
-                    model, valid_loader, criterion, amp=self.amp
+                    model, valid_loader, criterion, amp=self.std_amp
                 )
 
                 model.train()
@@ -1245,31 +1251,36 @@ class MapsManager:
                 i=i,
             )
 
+            model_weights = {
+                "model": model.state_dict(),
+                "epoch": epoch,
+                "name": self.architecture,
+            }
+            optimizer_weights = {
+                "optimizer": model.optim_state_dict(optimizer),
+                "epoch": epoch,
+                "name": self.architecture,
+            }
+
             if cluster.master:
                 # Save checkpoints and best models
                 best_dict = retain_best.step(metrics_valid)
                 self._write_weights(
-                    {
-                        "model": model.state_dict(),
-                        "epoch": epoch,
-                        "name": self.architecture,
-                    },
+                    model_weights,
                     best_dict,
                     split,
                     network=network,
                     save_all_models=self.parameters["save_all_models"],
                 )
                 self._write_weights(
-                    {
-                        "optimizer": optimizer.state_dict(),
-                        "epoch": epoch,
-                        "name": self.optimizer,
-                    },
+                    optimizer_weights,
                     None,
                     split,
                     filename="optimizer.pth.tar",
                     save_all_models=self.parameters["save_all_models"],
                 )
+            dist.barrier()
+
             if self.parameters["adaptive_learning_rate"]:
                 scheduler.step(
                     metrics_valid["loss"]
@@ -1284,7 +1295,7 @@ class MapsManager:
             "train",
             split,
             self.selection_metrics,
-            amp=self.amp,
+            amp=self.std_amp,
             network=network,
         )
         self._test_loader(
@@ -1293,7 +1304,7 @@ class MapsManager:
             "validation",
             split,
             self.selection_metrics,
-            amp=self.amp,
+            amp=self.std_amp,
             network=network,
         )
 
@@ -1307,7 +1318,7 @@ class MapsManager:
                 network=network,
             )
             self._compute_output_tensors(
-                train_loader.dataset,
+                valid_loader.dataset,
                 "validation",
                 split,
                 self.selection_metrics,
@@ -1695,7 +1706,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             prediction_df, metrics = self.task_manager.test(
                 model,
@@ -1832,7 +1843,8 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             nifti_path = (
                 self.maps_path
@@ -1846,12 +1858,15 @@ class MapsManager:
             dist.barrier()
 
             nb_imgs = len(dataset)
-            for i in range(cluster.rank, nb_imgs, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_imgs, cluster.world_size),
+                *range(int(nb_imgs % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.amp):
-                    output = model.predict(x)
+                with autocast(enabled=self.std_amp):
+                    output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
@@ -1897,7 +1912,8 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             tensor_path = (
                 self.maps_path
@@ -1915,12 +1931,15 @@ class MapsManager:
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(cluster.rank, nb_modes, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.amp):
-                    output = model.predict(x)
+                with autocast(enabled=self.std_amp):
+                    output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
@@ -1967,7 +1986,8 @@ class MapsManager:
                 network=network,
                 nb_unfrozen_layer=self.nb_unfrozen_layer,
             )
-            model = DDP(model)
+            model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
+            model.eval()
 
             tensor_path = (
                 self.maps_path
@@ -1985,12 +2005,17 @@ class MapsManager:
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(cluster.rank, nb_modes, cluster.world_size):
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                with autocast(enabled=self.amp):
-                    _, latent, _ = model._forward(image.unsqueeze(0).to(model.device))
+                with autocast(enabled=self.std_amp):
+                    _, latent, _ = model.module._forward(
+                        image.unsqueeze(0).to(model.device)
+                    )
                 latent = latent.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
@@ -2759,7 +2784,7 @@ class MapsManager:
 
         return model, current_epoch
 
-    def _init_optimizer(self, model, split=None, resume=False):
+    def _init_optimizer(self, model: DDP, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
 
         optimizer_cls = getattr(torch.optim, self.optimizer)
@@ -2769,14 +2794,7 @@ class MapsManager:
             weight_decay=self.weight_decay,
         )
 
-        if not self.fully_sharded_data_parallel:
-            optimizer = optimizer_cls(parameters, **optimizer_kwargs)
-        else:
-            from torch.distributed.optim import ZeroRedundancyOptimizer
-
-            optimizer = ZeroRedundancyOptimizer(
-                parameters, optimizer_class=optimizer_cls, **optimizer_kwargs
-            )
+        optimizer = optimizer_cls(parameters, **optimizer_kwargs)
 
         if resume:
             checkpoint_path = (
@@ -2786,7 +2804,7 @@ class MapsManager:
                 / "optimizer.pth.tar"
             )
             checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
-            optimizer.load_state_dict(checkpoint_state["optimizer"])
+            model.load_optim_state_dict(optimizer, checkpoint_state["optimizer"])
 
         return optimizer
 
@@ -3166,3 +3184,12 @@ class MapsManager:
 
         self.callback_handler.add_callback(LoggerCallback())
         # self.callback_handler.add_callback(MetricConsolePrinterCallback())
+
+    @property
+    def std_amp(self) -> bool:
+        """
+        Returns whether or not the standard PyTorch AMP should be enabled. It helps
+        distinguishing the base DDP with AMP and the usage of FSDP with AMP which
+        then calls the internal FSDP AMP mechanisms.
+        """
+        return self.amp and not self.fully_sharded_data_parallel

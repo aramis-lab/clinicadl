@@ -56,6 +56,7 @@ def setup_logging(verbose: bool = False) -> None:
     err_handler.addFilter(StdLevelFilter(err=True))
     err_handler.setFormatter(err_formatter)
 
+    logger.handlers = []
     logger.addHandler(console_handler)
     logger.addHandler(err_handler)
 
