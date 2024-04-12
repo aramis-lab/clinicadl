@@ -39,7 +39,7 @@ logger = getLogger("clinicadl")
 # Datasets loaders
 #################################
 class CapsDataset(Dataset):
-    """Abstract class for all derived CapsDatasets."""
+    """Abstract class for all derived CapsDatasets.test refacto"""
 
     def __init__(
         self,
