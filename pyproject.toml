@@ -43,6 +43,7 @@ pynvml = "*"
 torchio = "^0.18.90"
 urllib3= "<2.0.0"
 nilearn = "^0.9.2"
+pydantic = "^2.7.0"
 
 
 [tool.poetry.group.dev.dependencies]
