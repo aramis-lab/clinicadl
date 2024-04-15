@@ -46,7 +46,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class PredictManager:
-    def __init__(self, maps_manager: MapsManager, predict_config):
+    def __init__(self, maps_manager: MapsManager):
         self.maps_manager = maps_manager
         # self.predict_config = PredictConfig()
 
