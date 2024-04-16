@@ -296,7 +296,7 @@ class Trainer:
                     first_network += 1
                     resume = False
 
-            for network in range(first_network, self.num_networks):
+            for network in range(first_network, self.maps_manager.num_networks):
                 logger.info(f"Train network {network}")
 
                 data_train = return_dataset(
