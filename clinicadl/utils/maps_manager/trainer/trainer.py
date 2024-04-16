@@ -446,7 +446,7 @@ class Trainer:
             logger.debug("Loading target unlabelled training data...")
             data_target_unlabeled = return_dataset(
                 Path(self.maps_manager.caps_target),
-                pd.read_csv(self.tsv_target_unlab, sep="\t"),
+                pd.read_csv(self.maps_manager.tsv_target_unlab, sep="\t"),
                 self.maps_manager.preprocessing_dict_target,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -512,7 +512,7 @@ class Trainer:
                 batch_size=self.maps_manager.batch_size,
                 sampler=train_source_sampler,
                 # shuffle=True,  # len(data_train_source) < len(data_train_target_labeled),
-                num_workers=self.n_proc,
+                num_workers=self.maps_manager.n_proc,
                 worker_init_fn=pl_worker_init_function,
                 drop_last=True,
             )
@@ -937,7 +937,7 @@ class Trainer:
             transfer_selection=self.maps_manager.transfer_selection_metric,
         )
 
-        criterion = self.maps_manager.task_manager.get_criterion(self.loss)
+        criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         logger.debug(f"Criterion for {self.maps_manager.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
 
@@ -1080,11 +1080,11 @@ class Trainer:
                             len(train_source_loader),
                         )
                         logger.info(
-                            f"{self.mode} level training loss for source data is {metrics_train_source['loss']} "
+                            f"{self.maps_manager.mode} level training loss for source data is {metrics_train_source['loss']} "
                             f"at the end of iteration {i}"
                         )
                         logger.info(
-                            f"{self.mode} level validation loss for source data is {metrics_valid_source['loss']} "
+                            f"{self.maps_manager.mode} level validation loss for source data is {metrics_valid_source['loss']} "
                             f"at the end of iteration {i}"
                         )
 
