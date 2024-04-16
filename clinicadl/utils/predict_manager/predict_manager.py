@@ -98,7 +98,7 @@ class PredictManager:
             label_code: dictionary linking the target values to a node number.
         """
         if not split_list:
-            split_list = self._find_splits()
+            split_list = self.maps_manager._find_splits()
         logger.debug(f"List of splits {split_list}")
 
         _, all_transforms = get_transforms(
@@ -613,7 +613,7 @@ class PredictManager:
             )
 
         if not split_list:
-            split_list = self._find_splits()
+            split_list = self.maps_manager._find_splits()
         logger.debug(f"List of splits {split_list}")
 
         if self.maps_manager.multi_network:
@@ -741,14 +741,6 @@ class PredictManager:
                             / f"mean_{self.maps_manager.mode}-{i}_map.nii.gz",
                         )
 
-    def _find_splits(self):
-        """Find which splits were trained in the MAPS."""
-        return [
-            int(split.name.split("-")[1])
-            for split in list(self.maps_manager.maps_path.iterdir())
-            if split.name.startswith(f"{self.maps_manager.split_name}-")
-        ]
-
     def _check_data_group(
         self,
         data_group,
@@ -786,7 +778,7 @@ class PredictManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     if not split_list:
-                        split_list = self._find_splits()
+                        split_list = self.maps_manager._find_splits()
                     for split in split_list:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split

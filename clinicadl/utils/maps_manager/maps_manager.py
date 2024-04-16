@@ -1438,6 +1438,14 @@ class MapsManager:
                 torch.save(output, tensor_path / output_filename)
                 logger.debug(f"File saved at {[input_filename, output_filename]}")
 
+    def _find_splits(self):
+        """Find which splits were trained in the MAPS."""
+        return [
+            int(split.name.split("-")[1])
+            for split in list(self.maps_manager.maps_path.iterdir())
+            if split.name.startswith(f"{self.maps_manager.split_name}-")
+        ]
+
     def _ensemble_prediction(
         self,
         data_group,
