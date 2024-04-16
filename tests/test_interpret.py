@@ -78,4 +78,4 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     predict_manager = PredictManager(maps_manager)
     for method in method_dict.keys():
         predict_manager.interpret("train", f"test-{method}", method)
-        interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
+        interpret_map = predict_manager.get_interpretation("train", f"test-{method}")
