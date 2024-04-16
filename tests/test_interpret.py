@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
 from tests.testing_tools import clean_folder, compare_folders
 
 
@@ -74,6 +75,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
     assert train_error
     maps_manager = MapsManager(maps_path, verbose="debug")
+    predict_manager = PredictManager(maps_manager)
     for method in method_dict.keys():
-        maps_manager.interpret("train", f"test-{method}", method)
-        interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
+        predict_manager.interpret("train", f"test-{method}", method)
+        interpret_map = predict_manager.get_interpretation("train", f"test-{method}")
