@@ -7,6 +7,7 @@ from logging import getLogger
 from pathlib import Path
 
 from clinicadl import MapsManager
+from clinicadl.utils.maps_manager.trainer import Trainer
 
 
 def replace_arg(options, key_name, value):
@@ -19,6 +20,7 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
 
     verbose_list = ["warning", "info", "debug"]
     maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
+    trainer = Trainer(maps_manager)
 
     existing_split_list = maps_manager._find_splits()
     stopped_splits = [
@@ -58,6 +60,6 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
         f"Absent splits {absent_splits}"
     )
     if len(stopped_splits) > 0:
-        maps_manager.resume(stopped_splits)
+        trainer.resume(stopped_splits)
     if len(absent_splits) > 0:
-        maps_manager.train(absent_splits, overwrite=True)
+        trainer.train(absent_splits, overwrite=True)
