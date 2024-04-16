@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 from clinicadl import MapsManager
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 
 def interpret(
@@ -85,8 +86,8 @@ def interpret(
         verbose_str = verbose_list[verbose]
 
     maps_manager = MapsManager(maps_dir, verbose=verbose_str)
-
-    maps_manager.interpret(
+    predict_manager = PredictManager(maps_manager)
+    predict_manager.interpret(
         data_group=data_group,
         name=name,
         method=method,
