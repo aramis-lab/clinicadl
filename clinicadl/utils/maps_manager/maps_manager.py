@@ -1571,14 +1571,6 @@ class MapsManager:
         else:
             return "split"
 
-    def _find_splits(self):
-        """Find which splits were trained in the MAPS."""
-        return [
-            int(split.name.split("-")[1])
-            for split in list(self.maps_path.iterdir())
-            if split.name.startswith(f"{self.split_name}-")
-        ]
-
     def _find_selection_metrics(self, split):
         """Find which selection metrics are available in MAPS for a given split."""
 
@@ -1613,105 +1605,6 @@ class MapsManager:
                     f"Please choose among is the available metrics {available_metrics}."
                 )
         return selection_metric
-
-    def _check_leakage(self, data_group, test_df):
-        """
-        Checks that no intersection exist between the participants used for training and those used for testing.
-
-        Args:
-            data_group (str): name of the data group
-            test_df (pd.DataFrame): Table of participant_id / session_id of the data group
-        Raises:
-            ClinicaDLDataLeakageError: if data_group not in ["train", "validation"] and there is an intersection
-                between the participant IDs in test_df and the ones used for training.
-        """
-        if data_group not in ["train", "validation"]:
-            train_path = self.maps_path / "groups" / "train+validation.tsv"
-            train_df = pd.read_csv(train_path, sep="\t")
-            participants_train = set(train_df.participant_id.values)
-            participants_test = set(test_df.participant_id.values)
-            intersection = participants_test & participants_train
-
-            if len(intersection) > 0:
-                raise ClinicaDLDataLeakageError(
-                    "Your evaluation set contains participants who were already seen during "
-                    "the training step. The list of common participants is the following: "
-                    f"{intersection}."
-                )
-
-    def _check_data_group(
-        self,
-        data_group,
-        caps_directory=None,
-        df=None,
-        multi_cohort=False,
-        overwrite=False,
-        label=None,
-        split_list=None,
-        skip_leak_check=False,
-    ):
-        """
-        Check if a data group is already available if other arguments are None.
-        Else creates a new data_group.
-
-        Args:
-            data_group (str): name of the data group
-            caps_directory  (str): input CAPS directory
-            df (pd.DataFrame): Table of participant_id / session_id of the data group
-            multi_cohort (bool): indicates if the input data comes from several CAPS
-            overwrite (bool): If True former definition of data group is erased
-            label (str): label name if applicable
-
-        Raises:
-            MAPSError when trying to overwrite train or validation data groups
-            ClinicaDLArgumentError:
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
-        """
-        group_dir = self.maps_path / "groups" / data_group
-        logger.debug(f"Group path {group_dir}")
-        if group_dir.is_dir():  # Data group already exists
-            if overwrite:
-                if data_group in ["train", "validation"]:
-                    raise MAPSError("Cannot overwrite train or validation data group.")
-                else:
-                    if not split_list:
-                        split_list = self._find_splits()
-                    for split in split_list:
-                        selection_metrics = self._find_selection_metrics(split)
-                        for selection in selection_metrics:
-                            results_path = (
-                                self.maps_path
-                                / f"{self.split_name}-{split}"
-                                / f"best-{selection}"
-                                / data_group
-                            )
-                            if results_path.is_dir():
-                                shutil.rmtree(results_path)
-            elif df is not None or caps_directory is not None:
-                raise ClinicaDLArgumentError(
-                    f"Data group {data_group} is already defined. "
-                    f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {data_group} please set overwrite to True."
-                )
-
-        elif not group_dir.is_dir() and (
-            caps_directory is None or df is None
-        ):  # Data group does not exist yet / was overwritten + missing data
-            raise ClinicaDLArgumentError(
-                f"The data group {data_group} does not already exist. "
-                f"Please specify a caps_directory and a tsv_path to create this data group."
-            )
-        elif (
-            not group_dir.is_dir()
-        ):  # Data group does not exist yet / was overwritten + all data is provided
-            if skip_leak_check:
-                logger.info("Skipping data leakage check")
-            else:
-                self._check_leakage(data_group, df)
-            self._write_data_group(
-                data_group, df, caps_directory, multi_cohort, label=label
-            )
 
     ###############################
     # File writers                #
@@ -2338,41 +2231,6 @@ class MapsManager:
         log_path = log_dir / "description.log"
         with log_path.open(mode="r") as f:
             content = f.read()
-
-    def get_group_info(
-        self, data_group: str, split: int = None
-    ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-        """
-        Gets information from corresponding data group
-        (list of participant_id / session_id + configuration parameters).
-        split is only needed if data_group is train or validation.
-        """
-        group_path = self.maps_path / "groups" / data_group
-        if not group_path.is_dir():
-            raise MAPSError(
-                f"Data group {data_group} is not defined. "
-                f"Please run a prediction to create this data group."
-            )
-        if data_group in ["train", "validation"]:
-            if split is None:
-                raise MAPSError(
-                    f"Information on train or validation data can only be "
-                    f"loaded if a split number is given"
-                )
-            elif not (group_path / f"{self.split_name}-{split}").is_dir():
-                raise MAPSError(
-                    f"Split {split} is not available for data group {data_group}."
-                )
-            else:
-                group_path = group_path / f"{self.split_name}-{split}"
-
-        df = pd.read_csv(group_path / "data.tsv", sep="\t")
-        json_path = group_path / "maps.json"
-        from clinicadl.utils.preprocessing import path_decoder
-
-        with json_path.open(mode="r") as f:
-            parameters = json.load(f, object_hook=path_decoder)
-        return df, parameters
 
     def get_parameters(self):
         """Returns the training parameters dictionary."""
