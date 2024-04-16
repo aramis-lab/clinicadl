@@ -1,31 +1,30 @@
+from __future__ import annotations
+
 import shutil
 from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import pandas as pd
 import torch
 import torch.distributed as dist
-from maps_manager.maps_manager import MapsManager
 from torch.cuda.amp import GradScaler, autocast
-from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-# for typing
-from clinicadl.utils.callbacks.callbacks import Callback
-from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
-    return_dataset,
-)
+from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
+
+if TYPE_CHECKING:
+    from clinicadl.utils.callbacks.callbacks import Callback
+    from clinicadl.utils.maps_manager import MapsManager
 
 logger = getLogger("clinicadl.maps_manager")
 
@@ -36,7 +35,12 @@ class Trainer:
     def __init__(
         self,
         maps_manager: MapsManager,
-    ):
+    ) -> None:
+        """
+        Parameters
+        ----------
+        maps_manager : MapsManager
+        """
         self.maps_manager = maps_manager
 
     def train(
@@ -89,7 +93,10 @@ class Trainer:
         else:
             self._train_single(split_list, resume=False)
 
-    def resume(self, split_list: Optional[List[int]] = None) -> None:
+    def resume(
+        self,
+        split_list: Optional[List[int]] = None,
+    ) -> None:
         """
         Resumes the training task for a defined list of splits.
 
@@ -97,7 +104,7 @@ class Trainer:
         ----------
         split_list : Optional[List[int]] (optional, default=None)
             List of splits on which the training task is performed.
-            If None, training task is performed on all splits.
+            If None, the training task is performed on all splits.
 
         Raises
         ------
@@ -140,7 +147,7 @@ class Trainer:
         ----------
         split_list : Optional[List[int]] (optional, default=None)
             List of splits on which the training task is performed.
-            Default trains all splits of the cross-validation.
+            If None, performs training on all splits of the cross-validation.
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
@@ -183,7 +190,7 @@ class Trainer:
                 label=self.maps_manager.label,
                 label_code=self.maps_manager.label_code,
             )
-            train_sampler = self.task_manager.generate_sampler(
+            train_sampler = self.maps_manager.task_manager.generate_sampler(
                 data_train,
                 self.maps_manager.sampler,
                 dp_degree=cluster.world_size,
@@ -250,7 +257,7 @@ class Trainer:
         ----------
         split_list : Optional[List[int]] (optional, default=None)
             List of splits on which the training task is performed.
-            Default trains all splits of the cross-validation.
+            If None, performs training on all splits of the cross-validation.
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
@@ -380,7 +387,7 @@ class Trainer:
         ----------
         split_list : Optional[List[int]] (optional, default=None)
             List of splits on which the training task is performed.
-            Default trains all splits of the cross-validation.
+            If None, performs training on all splits of the cross-validation.
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
@@ -890,7 +897,7 @@ class Trainer:
         valid_loader: DataLoader,
         valid_source_loader: DataLoader,
         split: int,
-        network=None,
+        network: Optional[Any] = None,
         resume: bool = False,
         evaluate_source: bool = True,  # TO MODIFY
     ):
@@ -911,7 +918,7 @@ class Trainer:
             _description_
         split : int
             _description_
-        network : _type_ (optional, default=None)
+        network : Optional[Any] (optional, default=None)
             _description_
         resume : bool (optional, default=False)
             _description_
@@ -1248,10 +1255,7 @@ class Trainer:
         """
         Initializes training callbacks.
         """
-        from clinicadl.utils.callbacks.callbacks import (
-            CallbacksHandler,
-            LoggerCallback,
-        )
+        from clinicadl.utils.callbacks.callbacks import CallbacksHandler, LoggerCallback
 
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
@@ -1276,7 +1280,7 @@ class Trainer:
         model: DDP,
         split: int = None,
         resume: bool = False,
-    ) -> Optimizer:
+    ) -> torch.optim.Optimizer:
         """
         Initializes the optimizer.
 
@@ -1326,7 +1330,7 @@ class Trainer:
         torch.profiler.profile
             Profiler context manager.
         """
-        if self.profiler:
+        if self.maps_manager.profiler:
             from clinicadl.utils.maps_manager.cluster.profiler import (
                 ProfilerActivity,
                 profile,
