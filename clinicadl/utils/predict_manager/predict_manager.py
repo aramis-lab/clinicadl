@@ -1,11 +1,8 @@
 import json
 import shutil
-import subprocess
-from contextlib import nullcontext
-from datetime import datetime
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import torch
@@ -14,34 +11,20 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
     return_dataset,
 )
-from clinicadl.utils.cmdline_utils import check_gpu
-from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
-    ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
-from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
-from clinicadl.utils.maps_manager.maps_manager_utils import (
-    add_default_values,
-    read_json,
-)
-from clinicadl.utils.metric_module import RetainBest
-from clinicadl.utils.network.network import Network
-from clinicadl.utils.predict_manager.predict_config import PredictConfig
-from clinicadl.utils.preprocessing import path_decoder, path_encoder
-from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-logger = getLogger("clinicadl.maps_manager")
+logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 
 
@@ -72,30 +55,58 @@ class PredictManager:
         save_latent_tensor: bool = False,
         skip_leak_check: bool = False,
     ):
-        """
-        Performs the prediction task on a subset of caps_directory defined in a TSV file.
+        """Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
-        Args:
-            data_group: name of the data group tested.
-            caps_directory: path to the CAPS folder. For more information please refer to
-                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-                Default will load the value of an existing data group
-            tsv_path: path to a TSV file containing the list of participants and sessions to test.
-                Default will load the DataFrame of an existing data group
-            split_list: list of splits to test. Default perform prediction on all splits available.
-            selection_metrics (list[str]): list of selection metrics to test.
+        Parameters
+        ----------
+        data_group : str
+            name of the data group tested.
+        caps_directory : Path (optional, default=None)
+            path to the CAPS folder. For more information please refer to
+            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+            Default will load the value of an existing data group
+        tsv_path : Path (optional, default=None)
+            path to a TSV file containing the list of participants and sessions to test.
+            Default will load the DataFrame of an existing data group
+        split_list : List[int] (optional, default=None)
+            list of splits to test. Default perform prediction on all splits available.
+        selection_metrics : List[str] (optional, default=None)
+            list of selection metrics to test.
                 Default performs the prediction on all selection metrics available.
-            multi_cohort: If True considers that tsv_path is the path to a multi-cohort TSV.
-            diagnoses: List of diagnoses to load if tsv_path is a split_directory.
-                Default uses the same as in training step.
-            use_labels: If True, the labels must exist in test meta-data and metrics are computed.
-            batch_size: If given, sets the value of batch_size, else use the same as in training step.
-            n_proc: If given, sets the value of num_workers, else use the same as in training step.
-            gpu: If given, a new value for the device of the model will be computed.
-            amp: If enabled, uses Automatic Mixed Precision (requires GPU usage).
-            overwrite: If True erase the occurrences of data_group.
-            label: Target label used for training (if network_task in [`regression`, `classification`]).
-            label_code: dictionary linking the target values to a node number.
+        multi_cohort : bool (optional, default=False)
+            If True considers that tsv_path is the path to a multi-cohort TSV.
+        diagnoses : List[str] (optional, default=())
+            List of diagnoses to load if tsv_path is a split_directory.
+            Default uses the same as in training step.
+        use_labels : bool (optional, default=True)
+            If True, the labels must exist in test meta-data and metrics are computed.
+        batch_size : int (optional, default=None)
+            If given, sets the value of batch_size, else use the same as in training step.
+        n_proc : int (optional, default=None)
+            If given, sets the value of num_workers, else use the same as in training step.
+        gpu : bool (optional, default=None)
+            If given, a new value for the device of the model will be computed.
+        amp : bool (optional, default=False)
+            If enabled, uses Automatic Mixed Precision (requires GPU usage).
+        overwrite : bool (optional, default=False)
+            If True erase the occurrences of data_group.
+        label : str (optional, default=None)
+            Target label used for training (if network_task in [`regression`, `classification`]).
+        label_code : Optional[Dict[str, int]] (optional, default="default")
+            dictionary linking the target values to a node number.
+        save_tensor : bool (optional, default=False)
+            If true, save the tensor predicted for reconstruction task
+        save_nifti : bool (optional, default=False)
+            If true, save the nifti associated to the prediction for reconstruction task.
+        save_latent_tensor : bool (optional, default=False)
+            If true, save the tensor from the latent space for reconstruction task.
+        skip_leak_check : bool (optional, default=False)
+            If true, skip the leak check (not recommended).
+
+        Examples
+        --------
+        >>> _input_
+        _output_
         """
         if not split_list:
             split_list = self.maps_manager._find_splits()
@@ -227,6 +238,60 @@ class PredictManager:
         save_nifti,
         selection_metrics,
     ):
+        """_summary_
+
+        Parameters
+        ----------
+        group_parameters : _type_
+            _description_
+        group_df : _type_
+            _description_
+        all_transforms : _type_
+            _description_
+        use_labels : _type_
+            _description_
+        label : _type_
+            _description_
+        label_code : _type_
+            _description_
+        batch_size : _type_
+            _description_
+        n_proc : _type_
+            _description_
+        criterion : _type_
+            _description_
+        data_group : _type_
+            _description_
+        split : _type_
+            _description_
+        split_selection_metrics : _type_
+            _description_
+        gpu : _type_
+            _description_
+        amp : _type_
+            _description_
+        save_tensor : _type_
+            _description_
+        save_latent_tensor : _type_
+            _description_
+        save_nifti : _type_
+            _description_
+        selection_metrics : _type_
+            _description_
+
+        Examples
+        --------
+        >>> _input_
+        _output_
+
+        Notes
+        -----
+        _notes_
+
+        See Also
+        --------
+        - _related_
+        """
         for network in range(self.maps_manager.num_networks):
             data_test = return_dataset(
                 group_parameters["caps_directory"],
@@ -320,6 +385,60 @@ class PredictManager:
         save_nifti,
         selection_metrics,
     ):
+        """_summary_
+
+        Parameters
+        ----------
+        group_parameters : _type_
+            _description_
+        group_df : _type_
+            _description_
+        all_transforms : _type_
+            _description_
+        use_labels : _type_
+            _description_
+        label : _type_
+            _description_
+        label_code : _type_
+            _description_
+        batch_size : _type_
+            _description_
+        n_proc : _type_
+            _description_
+        criterion : _type_
+            _description_
+        data_group : _type_
+            _description_
+        split : _type_
+            _description_
+        split_selection_metrics : _type_
+            _description_
+        gpu : _type_
+            _description_
+        amp : _type_
+            _description_
+        save_tensor : _type_
+            _description_
+        save_latent_tensor : _type_
+            _description_
+        save_nifti : _type_
+            _description_
+        selection_metrics : _type_
+            _description_
+
+        Examples
+        --------
+        >>> _input_
+        _output_
+
+        Notes
+        -----
+        _notes_
+
+        See Also
+        --------
+        - _related_
+        """
         data_test = return_dataset(
             group_parameters["caps_directory"],
             group_df,
@@ -386,24 +505,32 @@ class PredictManager:
     def _compute_latent_tensors(
         self,
         dataset,
-        data_group,
-        split,
-        selection_metrics,
-        nb_images=None,
-        gpu=None,
-        network=None,
+        data_group: str,
+        split: int,
+        selection_metrics: list[str],
+        nb_images: int = None,
+        gpu: bool = None,
+        network: int = None,
     ):
         """
         Compute the output tensors and saves them in the MAPS.
 
-        Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
-            data_group (str): name of the data group used for the task.
-            split (int): split number.
-            selection_metrics (list[str]): metrics used for model selection.
-            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
+        Parameters
+        ----------
+        dataset : _type_
+            wrapper of the data set.
+        data_group : _type_
+            name of the data group used for the task.
+        split : _type_
+            split number.
+        selection_metrics : _type_
+            metrics used for model selection.
+        nb_images : _type_ (optional, default=None)
+            number of full images to write. Default computes the outputs of the whole data set.
+        gpu : _type_ (optional, default=None)
+            If given, a new value for the device of the model will be computed.
+        network : _type_ (optional, default=None)
+            Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
             # load the best trained model during the training
@@ -460,23 +587,33 @@ class PredictManager:
     def _compute_output_nifti(
         self,
         dataset,
-        data_group,
-        split,
-        selection_metrics,
-        gpu=None,
-        network=None,
+        data_group: str,
+        split: int,
+        selection_metrics: list[str],
+        gpu: bool = None,
+        network: int = None,
     ):
-        """
-        Computes the output nifti images and saves them in the MAPS.
+        """Computes the output nifti images and saves them in the MAPS.
 
-        Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
-            data_group (str): name of the data group used for the task.
-            split (int): split number.
-            selection_metrics (list[str]): metrics used for model selection.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        # Raise an error if mode is not image
+        Parameters
+        ----------
+        dataset : _type_
+            _description_
+        data_group : str
+            name of the data group used for the task.
+        split : int
+            split number.
+        selection_metrics : list[str]
+            metrics used for model selection.
+        gpu : bool (optional, default=None)
+            If given, a new value for the device of the model will be computed.
+        network : int (optional, default=None)
+            Index of the network tested (only used in multi-network setting).
+
+        Raises
+        --------
+        ClinicaDLException if not an image
+
         """
         import nibabel as nib
         from numpy import eye
@@ -533,75 +670,84 @@ class PredictManager:
 
     def interpret(
         self,
-        data_group,
-        name,
-        method,
+        data_group: str,
+        name: str,
+        method: str,
         caps_directory: Path = None,
         tsv_path: Path = None,
-        split_list=None,
-        selection_metrics=None,
-        multi_cohort=False,
-        diagnoses=(),
-        target_node=0,
-        save_individual=False,
-        batch_size=None,
-        n_proc=None,
-        gpu=None,
-        amp=False,
-        overwrite=False,
-        overwrite_name=False,
-        level=None,
-        save_nifti=False,
+        split_list: list[int] = None,
+        selection_metrics: list[str] = None,
+        multi_cohort: bool = False,
+        diagnoses: list[str] = (),
+        target_node: int = 0,
+        save_individual: bool = False,
+        batch_size: int = None,
+        n_proc: int = None,
+        gpu: bool = None,
+        amp: bool = False,
+        overwrite: bool = False,
+        overwrite_name: bool = False,
+        level: int = None,
+        save_nifti: bool = False,
     ):
-        """
-        Performs the interpretation task on a subset of caps_directory defined in a TSV file.
+        """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
 
         Parameters
         ----------
-        data_group: str
+        data_group : str
             Name of the data group interpreted.
-        name: str
+        name : str
             Name of the interpretation procedure.
-        method: str
+        method : str
             Method used for extraction (ex: gradients, grad-cam...).
-        caps_directory: str (Path)
+        caps_directory : Path (optional, default=None)
             Path to the CAPS folder. For more information please refer to
             [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
             Default will load the value of an existing data group.
-        tsv_path: str (Path)
+        tsv_path : Path (optional, default=None)
             Path to a TSV file containing the list of participants and sessions to test.
             Default will load the DataFrame of an existing data group.
-        split_list: list of int
+        split_list : list[int] (optional, default=None)
             List of splits to interpret. Default perform interpretation on all splits available.
-        selection_metrics: list of str
+        selection_metrics : list[str] (optional, default=None)
             List of selection metrics to interpret.
             Default performs the interpretation on all selection metrics available.
-        multi_cohort: bool
+        multi_cohort : bool (optional, default=False)
             If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses: list of str
+        diagnoses : list[str] (optional, default=())
             List of diagnoses to load if tsv_path is a split_directory.
             Default uses the same as in training step.
-        target_node: int
+        target_node : int (optional, default=0)
             Node from which the interpretation is computed.
-        save_individual: bool
+        save_individual : bool (optional, default=False)
             If True saves the individual map of each participant / session couple.
-        batch_size: int
+        batch_size : int (optional, default=None)
             If given, sets the value of batch_size, else use the same as in training step.
-        n_proc: int
+        n_proc : int (optional, default=None)
             If given, sets the value of num_workers, else use the same as in training step.
-        gpu: bool
+        gpu : bool (optional, default=None)
             If given, a new value for the device of the model will be computed.
-        amp: bool
+        amp : bool (optional, default=False)
             If enabled, uses Automatic Mixed Precision (requires GPU usage).
-        overwrite: bool
+        overwrite : bool (optional, default=False)
             If True erase the occurrences of data_group.
-        overwrite_name: bool
+        overwrite_name : bool (optional, default=False)
             If True erase the occurrences of name.
-        level: int
+        level : int (optional, default=None)
             Layer number in the convolutional part after which the feature map is chosen.
-        save_nifi : bool
+        save_nifti : bool (optional, default=False)
             If True, save the interpretation map in nifti format.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not implemented
+        NotImplementedError
+            If the interpretaion of multi network is asked
+        MAPSError
+            If the interpretation has already been determined.
+
         """
 
         from clinicadl.interpret.gradients import method_dict
@@ -743,32 +889,46 @@ class PredictManager:
 
     def _check_data_group(
         self,
-        data_group,
-        caps_directory=None,
-        df=None,
-        multi_cohort=False,
-        overwrite=False,
-        label=None,
-        split_list=None,
-        skip_leak_check=False,
+        data_group: str,
+        caps_directory: str = None,
+        df: pd.DataFrame = None,
+        multi_cohort: bool = False,
+        overwrite: bool = False,
+        label: str = None,
+        split_list: list[int] = None,
+        skip_leak_check: bool = False,
     ):
-        """
-        Check if a data group is already available if other arguments are None.
+        """Check if a data group is already available if other arguments are None.
         Else creates a new data_group.
 
-        Args:
-            data_group (str): name of the data group
-            caps_directory  (str): input CAPS directory
-            df (pd.DataFrame): Table of participant_id / session_id of the data group
-            multi_cohort (bool): indicates if the input data comes from several CAPS
-            overwrite (bool): If True former definition of data group is erased
-            label (str): label name if applicable
+        Parameters
+        ----------
+        data_group : str
+            name of the data group
+        caps_directory : str (optional, default=None)
+            input CAPS directory
+        df : pd.DataFrame (optional, default=None)
+            Table of participant_id / session_id of the data group
+        multi_cohort : bool (optional, default=False)
+            indicates if the input data comes from several CAPS
+        overwrite : bool (optional, default=False)
+            If True former definition of data group is erased
+        label : str (optional, default=None)
+            label name if applicable
+        split_list : list[int] (optional, default=None)
+            _description_
+        skip_leak_check : bool (optional, default=False)
+            _description_
 
-        Raises:
-            MAPSError when trying to overwrite train or validation data groups
-            ClinicaDLArgumentError:
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
+        Raises
+        ------
+        MAPSError
+            when trying to overwrite train or validation data groups
+        ClinicaDLArgumentError
+            when caps_directory or df are given but data group already exists
+        ClinicaDLArgumentError
+            when caps_directory or df are not given and data group does not exist
+
         """
         group_dir = self.maps_manager.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
@@ -820,10 +980,30 @@ class PredictManager:
     def get_group_info(
         self, data_group: str, split: int = None
     ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-        """
-        Gets information from corresponding data group
+        """Gets information from corresponding data group
         (list of participant_id / session_id + configuration parameters).
         split is only needed if data_group is train or validation.
+
+        Parameters
+        ----------
+        data_group : str
+            _description_
+        split : int (optional, default=None)
+            _description_
+
+        Returns
+        -------
+        Tuple[pd.DataFrame, Dict[str, Any]]
+            _description_
+
+        Raises
+        ------
+        MAPSError
+            _description_
+        MAPSError
+            _description_
+        MAPSError
+            _description_
         """
         group_path = self.maps_manager.maps_path / "groups" / data_group
         if not group_path.is_dir():
@@ -852,16 +1032,21 @@ class PredictManager:
             parameters = json.load(f, object_hook=path_decoder)
         return df, parameters
 
-    def _check_leakage(self, data_group, test_df):
-        """
-        Checks that no intersection exist between the participants used for training and those used for testing.
+    def _check_leakage(self, data_group: str, test_df: pd.DataFrame):
+        """Checks that no intersection exist between the participants used for training and those used for testing.
 
-        Args:
-            data_group (str): name of the data group
-            test_df (pd.DataFrame): Table of participant_id / session_id of the data group
-        Raises:
-            ClinicaDLDataLeakageError: if data_group not in ["train", "validation"] and there is an intersection
-                between the participant IDs in test_df and the ones used for training.
+        Parameters
+        ----------
+        data_group : str
+            name of the data group
+        test_df : pd.DataFrame
+            Table of participant_id / session_id of the data group
+
+        Raises
+        ------
+        ClinicaDLDataLeakageError
+            if data_group not in ["train", "validation"] and there is an intersection
+            between the participant IDs in test_df and the ones used for training.
         """
         if data_group not in ["train", "validation"]:
             train_path = self.maps_manager.maps_path / "groups" / "train+validation.tsv"
@@ -885,15 +1070,21 @@ class PredictManager:
         multi_cohort: bool = None,
         label=None,
     ):
-        """
-        Check that a data_group is not already written and writes the characteristics of the data group
+        """Check that a data_group is not already written and writes the characteristics of the data group
         (TSV file with a list of participant / session + JSON file containing the CAPS and the preprocessing).
 
-        Args:
-            data_group (str): name whose presence is checked.
-            df (pd.DataFrame): DataFrame containing the participant_id and session_id (and label if use_labels is True)
-            caps_directory (str): caps_directory if different from the training caps_directory,
-            multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
+        Parameters
+        ----------
+        data_group : _type_
+            name whose presence is checked.
+        df : _type_
+            DataFrame containing the participant_id and session_id (and label if use_labels is True)
+        caps_directory : Path (optional, default=None)
+            caps_directory if different from the training caps_directory,
+        multi_cohort : bool (optional, default=None)
+            multi_cohort used if different from the training multi_cohort.
+        label : _type_ (optional, default=None)
+            _description_
         """
         group_path = self.maps_path / "groups" / data_group
         group_path.mkdir(parents=True)
