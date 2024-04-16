@@ -1443,8 +1443,8 @@ class MapsManager:
         """Find which splits were trained in the MAPS."""
         return [
             int(split.name.split("-")[1])
-            for split in list(self.maps_manager.maps_path.iterdir())
-            if split.name.startswith(f"{self.maps_manager.split_name}-")
+            for split in list(self.maps_path.iterdir())
+            if split.name.startswith(f"{self.split_name}-")
         ]
 
     def _ensemble_prediction(
