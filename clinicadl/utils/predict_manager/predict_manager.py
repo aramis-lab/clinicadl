@@ -813,7 +813,7 @@ class PredictManager:
                 logger.info("Skipping data leakage check")
             else:
                 self._check_leakage(data_group, df)
-            self.maps_manager._write_data_group(
+            self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
 
@@ -876,3 +876,105 @@ class PredictManager:
                     "the training step. The list of common participants is the following: "
                     f"{intersection}."
                 )
+
+    def _write_data_group(
+        self,
+        data_group,
+        df,
+        caps_directory: Path = None,
+        multi_cohort: bool = None,
+        label=None,
+    ):
+        """
+        Check that a data_group is not already written and writes the characteristics of the data group
+        (TSV file with a list of participant / session + JSON file containing the CAPS and the preprocessing).
+
+        Args:
+            data_group (str): name whose presence is checked.
+            df (pd.DataFrame): DataFrame containing the participant_id and session_id (and label if use_labels is True)
+            caps_directory (str): caps_directory if different from the training caps_directory,
+            multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
+        """
+        group_path = self.maps_path / "groups" / data_group
+        group_path.mkdir(parents=True)
+
+        columns = ["participant_id", "session_id", "cohort"]
+        if self.label in df.columns.values:
+            columns += [self.label]
+        if label is not None and label in df.columns.values:
+            columns += [label]
+
+        df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
+        self.write_parameters(
+            group_path,
+            {
+                "caps_directory": (
+                    caps_directory
+                    if caps_directory is not None
+                    else self.caps_directory
+                ),
+                "multi_cohort": (
+                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                ),
+            },
+        )
+
+
+# this function is never used ???
+
+# def get_interpretation(
+#     self,
+#     data_group: str,
+#     name: str,
+#     split: int = 0,
+#     selection_metric: Optional[str] = None,
+#     verbose: bool = True,
+#     participant_id: Optional[str] = None,
+#     session_id: Optional[str] = None,
+#     mode_id: int = 0,
+# ) -> torch.Tensor:
+#     """
+#     Get the individual interpretation maps for one session if participant_id and session_id are filled.
+#     Else load the mean interpretation map.
+
+#     Args:
+#         data_group (str): Name of the data group used for the interpretation task.
+#         name (str): name of the interpretation task.
+#         split (int): Index of the split used for training.
+#         selection_metric (str): Metric used for best weights selection.
+#         verbose (bool): if True will print associated prediction.log.
+#         participant_id (str): ID of the participant (if not given load mean map).
+#         session_id (str): ID of the session (if not give load the mean map).
+#         mode_id (int): Index of the mode used.
+#     Returns:
+#         (torch.Tensor): Tensor of the interpretability map.
+#     """
+
+#     selection_metric = self.maps_manager._check_selection_metric(split, selection_metric)
+#     if verbose:
+#         self.maps_manager._print_description_log(data_group, split, selection_metric)
+#     map_dir = (
+#         self.maps_manager.maps_path
+#         / f"{self.maps_manager.split_name}-{split}"
+#         / f"best-{selection_metric}"
+#         / data_group
+#         / f"interpret-{name}"
+#     )
+#     if not map_dir.is_dir():
+#         raise MAPSError(
+#             f"No prediction corresponding to data group {data_group} and "
+#             f"interpretation {name} was found."
+#         )
+#     if participant_id is None and session_id is None:
+#         map_pt = torch.load(map_dir / f"mean_{self.maps_manager.mode}-{mode_id}_map.pt")
+#     elif participant_id is None or session_id is None:
+#         raise ValueError(
+#             f"To load the mean interpretation map, "
+#             f"please do not give any participant_id or session_id.\n "
+#             f"Else specify both parameters"
+#         )
+#     else:
+#         map_pt = torch.load(
+#             map_dir / f"{participant_id}_{session_id}_{self.maps_manager.mode}-{mode_id}_map.pt"
+#         )
+#     return map_pt
