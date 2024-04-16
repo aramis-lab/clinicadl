@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 import torch
@@ -14,10 +14,8 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.utils.callbacks.callbacks import Callback, CallbacksHandler
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
-    load_data_test,
     return_dataset,
 )
 from clinicadl.utils.cmdline_utils import check_gpu
@@ -25,7 +23,6 @@ from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
-    ClinicaDLDataLeakageError,
     MAPSError,
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
@@ -35,8 +32,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
-from clinicadl.utils.network.network import Network
-from clinicadl.utils.preprocessing import path_decoder, path_encoder
+from clinicadl.utils.preprocessing import path_encoder
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
