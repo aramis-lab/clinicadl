@@ -11,6 +11,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.predict.predict_config import PredictConfig
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -31,29 +32,11 @@ level_list: List[str] = ["warning", "info", "debug"]
 class PredictManager:
     def __init__(self, maps_manager: MapsManager):
         self.maps_manager = maps_manager
-        # self.predict_config = PredictConfig()
 
     def predict(
         self,
-        data_group: str,
-        caps_directory: Path = None,
-        tsv_path: Path = None,
-        split_list: List[int] = None,
-        selection_metrics: List[str] = None,
-        multi_cohort: bool = False,
-        diagnoses: List[str] = (),
-        use_labels: bool = True,
-        batch_size: int = None,
-        n_proc: int = None,
-        gpu: bool = None,
-        amp: bool = False,
-        overwrite: bool = False,
-        label: str = None,
+        predict_config: PredictConfig,
         label_code: Optional[Dict[str, int]] = "default",
-        save_tensor: bool = False,
-        save_nifti: bool = False,
-        save_latent_tensor: bool = False,
-        skip_leak_check: bool = False,
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
@@ -108,9 +91,10 @@ class PredictManager:
         >>> _input_
         _output_
         """
-        if not split_list:
-            split_list = self.maps_manager._find_splits()
-        logger.debug(f"List of splits {split_list}")
+
+        if not predict_config.split_list:
+            predict_config.split_list = self.maps_manager._find_splits()
+        logger.debug(f"List of splits {predict_config.split_list}")
 
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
@@ -120,50 +104,57 @@ class PredictManager:
         )
 
         group_df = None
-        if tsv_path is not None:
+        if predict_config.tsv_path is not None:
             group_df = load_data_test(
-                tsv_path,
-                diagnoses if len(diagnoses) != 0 else self.maps_manager.diagnoses,
-                multi_cohort=multi_cohort,
+                predict_config.tsv_path,
+                predict_config.diagnoses
+                if len(predict_config.diagnoses) != 0
+                else self.maps_manager.diagnoses,
+                multi_cohort=predict_config.multi_cohort,
             )
+
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(
-            data_group,
-            caps_directory,
+            predict_config.data_group,
+            predict_config.caps_directory,
             group_df,
-            multi_cohort,
-            overwrite,
-            label=label,
-            split_list=split_list,
-            skip_leak_check=skip_leak_check,
+            predict_config.multi_cohort,
+            predict_config.overwrite,
+            label=predict_config.label,
+            split_list=predict_config.split_list,
+            skip_leak_check=predict_config.skip_leak_check,
         )
-        for split in split_list:
+        for split in predict_config.split_list:
             logger.info(f"Prediction of split {split}")
-            group_df, group_parameters = self.get_group_info(data_group, split)
+            group_df, group_parameters = self.get_group_info(
+                predict_config.data_group, split
+            )
             # Find label code if not given
             if (
-                label is not None
-                and label != self.maps_manager.label
+                predict_config.label is not None
+                and predict_config.label != self.maps_manager.label
                 and label_code == "default"
             ):
-                self.maps_manager.task_manager.generate_label_code(group_df, label)
+                self.maps_manager.task_manager.generate_label_code(
+                    group_df, predict_config.label
+                )
 
             # Erase previous TSV files on master process
-            if not selection_metrics:
+            if not predict_config.selection_metrics:
                 split_selection_metrics = self.maps_manager._find_selection_metrics(
                     split
                 )
             else:
-                split_selection_metrics = selection_metrics
+                split_selection_metrics = predict_config.selection_metrics
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection}"
-                    / data_group
+                    / predict_config.data_group
                 )
 
-                tsv_pattern = f"{data_group}*.tsv"
+                tsv_pattern = f"{predict_config.data_group}*.tsv"
 
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
@@ -173,21 +164,11 @@ class PredictManager:
                     group_parameters,
                     group_df,
                     all_transforms,
-                    use_labels,
-                    label,
                     label_code,
-                    batch_size,
-                    n_proc,
                     criterion,
-                    data_group,
                     split,
                     split_selection_metrics,
-                    gpu,
-                    amp,
-                    save_tensor,
-                    save_latent_tensor,
-                    save_nifti,
-                    selection_metrics,
+                    predict_config,
                 )
 
             else:
@@ -195,26 +176,20 @@ class PredictManager:
                     group_parameters,
                     group_df,
                     all_transforms,
-                    use_labels,
-                    label,
                     label_code,
-                    batch_size,
-                    n_proc,
                     criterion,
-                    data_group,
                     split,
                     split_selection_metrics,
-                    gpu,
-                    amp,
-                    save_tensor,
-                    save_latent_tensor,
-                    save_nifti,
-                    selection_metrics,
+                    predict_config,
                 )
 
             if cluster.master:
                 self.maps_manager._ensemble_prediction(
-                    data_group, split, selection_metrics, use_labels, skip_leak_check
+                    predict_config.data_group,
+                    split,
+                    predict_config.selection_metrics,
+                    predict_config.use_labels,
+                    predict_config.skip_leak_check,
                 )
 
     def _predict_multi(
@@ -222,21 +197,11 @@ class PredictManager:
         group_parameters,
         group_df,
         all_transforms,
-        use_labels,
-        label,
         label_code,
-        batch_size,
-        n_proc,
         criterion,
-        data_group,
         split,
         split_selection_metrics,
-        gpu,
-        amp,
-        save_tensor,
-        save_latent_tensor,
-        save_nifti,
-        selection_metrics,
+        predict_config,
     ):
         """_summary_
 
@@ -299,8 +264,10 @@ class PredictManager:
                 self.maps_manager.preprocessing_dict,
                 all_transformations=all_transforms,
                 multi_cohort=group_parameters["multi_cohort"],
-                label_presence=use_labels,
-                label=self.maps_manager.label if label is None else label,
+                label_presence=predict_config.use_labels,
+                label=self.maps_manager.label
+                if predict_config.label is None
+                else predict_config.label,
                 label_code=(
                     self.maps_manager.label_code
                     if label_code == "default"
@@ -311,8 +278,8 @@ class PredictManager:
             test_loader = DataLoader(
                 data_test,
                 batch_size=(
-                    batch_size
-                    if batch_size is not None
+                    predict_config.batch_size
+                    if predict_config.batch_size is not None
                     else self.maps_manager.batch_size
                 ),
                 shuffle=False,
@@ -322,45 +289,47 @@ class PredictManager:
                     rank=cluster.rank,
                     shuffle=False,
                 ),
-                num_workers=n_proc if n_proc is not None else self.maps_manager.n_proc,
+                num_workers=predict_config.n_proc
+                if predict_config.n_proc is not None
+                else self.maps_manager.n_proc,
             )
             self.maps_manager._test_loader(
                 test_loader,
                 criterion,
-                data_group,
+                predict_config.data_group,
                 split,
                 split_selection_metrics,
-                use_labels=use_labels,
-                gpu=gpu,
-                amp=amp,
+                use_labels=predict_config.use_labels,
+                gpu=predict_config.gpu,
+                amp=predict_config.amp,
                 network=network,
             )
-            if save_tensor:
+            if predict_config.save_tensor:
                 logger.debug("Saving tensors")
                 self.maps_manager._compute_output_tensors(
                     data_test,
-                    data_group,
+                    predict_config.data_group,
                     split,
-                    selection_metrics,
-                    gpu=gpu,
+                    predict_config.selection_metrics,
+                    gpu=predict_config.gpu,
                     network=network,
                 )
-            if save_nifti:
+            if predict_config.save_nifti:
                 self._compute_output_nifti(
                     data_test,
-                    data_group,
+                    predict_config.data_group,
                     split,
-                    selection_metrics,
-                    gpu=gpu,
+                    predict_config.selection_metrics,
+                    gpu=predict_config.gpu,
                     network=network,
                 )
-            if save_latent_tensor:
+            if predict_config.save_latent_tensor:
                 self._compute_latent_tensors(
                     data_test,
-                    data_group,
+                    predict_config.data_group,
                     split,
-                    selection_metrics,
-                    gpu=gpu,
+                    predict_config.selection_metrics,
+                    gpu=predict_config.gpu,
                     network=network,
                 )
 
@@ -369,21 +338,11 @@ class PredictManager:
         group_parameters,
         group_df,
         all_transforms,
-        use_labels,
-        label,
         label_code,
-        batch_size,
-        n_proc,
         criterion,
-        data_group,
         split,
         split_selection_metrics,
-        gpu,
-        amp,
-        save_tensor,
-        save_latent_tensor,
-        save_nifti,
-        selection_metrics,
+        predict_config,
     ):
         """_summary_
 
@@ -445,8 +404,10 @@ class PredictManager:
             self.maps_manager.preprocessing_dict,
             all_transformations=all_transforms,
             multi_cohort=group_parameters["multi_cohort"],
-            label_presence=use_labels,
-            label=self.maps_manager.label if label is None else label,
+            label_presence=predict_config.use_labels,
+            label=self.maps_manager.label
+            if predict_config.label is None
+            else predict_config.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
@@ -455,7 +416,9 @@ class PredictManager:
         test_loader = DataLoader(
             data_test,
             batch_size=(
-                batch_size if batch_size is not None else self.maps_manager.batch_size
+                predict_config.batch_size
+                if predict_config.batch_size is not None
+                else self.maps_manager.batch_size
             ),
             shuffle=False,
             sampler=DistributedSampler(
@@ -464,42 +427,44 @@ class PredictManager:
                 rank=cluster.rank,
                 shuffle=False,
             ),
-            num_workers=n_proc if n_proc is not None else self.maps_manager.n_proc,
+            num_workers=predict_config.n_proc
+            if predict_config.n_proc is not None
+            else self.maps_manager.n_proc,
         )
         self.maps_manager._test_loader(
             test_loader,
             criterion,
-            data_group,
+            predict_config.data_group,
             split,
             split_selection_metrics,
-            use_labels=use_labels,
-            gpu=gpu,
-            amp=amp,
+            use_labels=predict_config.use_labels,
+            gpu=predict_config.gpu,
+            amp=predict_config.amp,
         )
-        if save_tensor:
+        if predict_config.save_tensor:
             logger.debug("Saving tensors")
             self.maps_manager._compute_output_tensors(
                 data_test,
-                data_group,
+                predict_config.data_group,
                 split,
-                selection_metrics,
-                gpu=gpu,
+                predict_config.selection_metrics,
+                gpu=predict_config.gpu,
             )
-        if save_nifti:
+        if predict_config.save_nifti:
             self._compute_output_nifti(
                 data_test,
-                data_group,
+                predict_config.data_group,
                 split,
-                selection_metrics,
-                gpu=gpu,
+                predict_config.selection_metrics,
+                gpu=predict_config.gpu,
             )
-        if save_latent_tensor:
+        if predict_config.save_latent_tensor:
             self._compute_latent_tensors(
                 data_test,
-                data_group,
+                predict_config.data_group,
                 split,
-                selection_metrics,
-                gpu=gpu,
+                predict_config.selection_metrics,
+                gpu=predict_config.gpu,
             )
 
     def _compute_latent_tensors(

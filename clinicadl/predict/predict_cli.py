@@ -2,8 +2,12 @@ from pathlib import Path
 
 import click
 
+from clinicadl import MapsManager
+from clinicadl.predict.predict_config import PredictConfig
 from clinicadl.utils import cli_param
+from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 
 @click.command(name="predict", no_args_is_help=True)
@@ -108,13 +112,34 @@ def cli(
     save_latent_tensor,
     skip_leak_check,
 ):
-    """Infer the outputs of a trained model on a test set.
+    """This function loads a MAPS and predicts the global metrics and individual values
+    for all the models selected using a metric in selection_metrics.
+
+    Args:
+        maps_dir: path to the MAPS.
+        data_group: name of the data group tested.
+        caps_directory: path to the CAPS folder. For more information please refer to
+            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+        tsv_path: path to a TSV file containing the list of participants and sessions to interpret.
+        use_labels: by default is True. If False no metrics tsv files will be written.
+        label: Name of the target value, if different from training.
+        gpu: if true, it uses gpu.
+        amp: If enabled, uses Automatic Mixed Precision (requires GPU usage).
+        n_proc: num_workers used in DataLoader
+        batch_size: batch size of the DataLoader
+        selection_metrics: list of metrics to find best models to be evaluated.
+        diagnoses: list of diagnoses to be tested if tsv_path is a folder.
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        overwrite: If True former definition of data group is erased
+        save_tensor: For reconstruction task only, if True it will save the reconstruction as .pt file in the MAPS.
+        save_nifti: For reconstruction task only, if True it will save the reconstruction as NIfTI file in the MAPS.
+
+    Infer the outputs of a trained model on a test set.
 
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
 
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
 
     if gpu:
         check_gpu()
@@ -123,9 +148,7 @@ def cli(
             "AMP is designed to work with modern GPUs. Please add the --gpu flag."
         )
 
-    from .predict import predict
-
-    predict(
+    predict_config = PredictConfig(
         maps_dir=input_maps_directory,
         data_group=data_group,
         caps_directory=caps_directory,
@@ -146,3 +169,26 @@ def cli(
         save_latent_tensor=save_latent_tensor,
         skip_leak_check=skip_leak_check,
     )
+
+    verbose_list = ["warning", "info", "debug"]
+
+    maps_manager = MapsManager(predict_config.maps_dir, verbose=verbose_list[0])
+    predict_manager = PredictManager(maps_manager)
+
+    # Check if task is reconstruction for "save_tensor" and "save_nifti"
+    if (
+        predict_config.save_tensor
+        and predict_manager.maps_manager.network_task != "reconstruction"
+    ):
+        raise ClinicaDLArgumentError(
+            "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
+        )
+    if (
+        predict_config.save_nifti
+        and predict_manager.maps_manager.network_task != "reconstruction"
+    ):
+        raise ClinicaDLArgumentError(
+            "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
+        )
+
+    predict_manager.predict(predict_config)
