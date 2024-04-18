@@ -50,7 +50,7 @@ class InterpretConfig(PredictInterpretConfig):
 
 
 class PredictConfig(PredictInterpretConfig):
-    label: Optional[str]
+    label: Optional[str] = None
     save_tensor: bool = False
     save_latent_tensor: bool = False
     skip_leak_check: bool = False
