@@ -2,8 +2,11 @@ from pathlib import Path
 
 import click
 
+from clinicadl import MapsManager
+from clinicadl.predict.predict_config import InterpretConfig
 from clinicadl.utils import cli_param
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -125,9 +128,7 @@ def cli(
             "AMP is designed to work with modern GPUs. Please add the --gpu flag."
         )
 
-    from .interpret import interpret
-
-    interpret(
+    interpret_config = InterpretConfig(
         maps_dir=input_maps_directory,
         data_group=data_group,
         name=name,
@@ -135,8 +136,8 @@ def cli(
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,
-        multi_cohort=multi_cohort,
         diagnoses=diagnoses,
+        multi_cohort=multi_cohort,
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,
@@ -147,5 +148,7 @@ def cli(
         overwrite_name=overwrite_name,
         level=level_grad_cam,
         save_nifti=save_nifti,
-        # verbose=verbose,
     )
+
+    predict_manager = PredictManager(interpret_config)
+    predict_manager.interpret(interpret_config)

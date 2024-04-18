@@ -75,9 +75,10 @@ def test_predict(cmdopt, tmp_path, test_name):
         with open(json_path, "w") as f:
             f.write(json_data)
 
-    maps_manager = MapsManager(model_folder, verbose="debug")
-    predict_manager = PredictManager(maps_manager)
-    predict_manager.predict(
+    from clinicadl.predict.predict_config import PredictConfig
+
+    predict_config = PredictConfig(
+        maps_dir=model_folder,
         data_group="test-RANDOM",
         caps_directory=input_dir / "caps_random",
         tsv_path=input_dir / "caps_random/data.tsv",
@@ -86,11 +87,15 @@ def test_predict(cmdopt, tmp_path, test_name):
         overwrite=True,
         diagnoses=["CN"],
     )
+    predict_manager = PredictManager(predict_config)
+    predict_manager.predict(predict_config)
 
     for mode in modes:
-        maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
+        predict_manager.maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
         if use_labels:
-            maps_manager.get_metrics(data_group="test-RANDOM", mode=mode)
+            predict_manager.maps_manager.get_metrics(
+                data_group="test-RANDOM", mode=mode
+            )
 
     assert compare_folders(
         tmp_out_dir / test_name,

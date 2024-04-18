@@ -170,25 +170,6 @@ def cli(
         skip_leak_check=skip_leak_check,
     )
 
-    verbose_list = ["warning", "info", "debug"]
-
-    maps_manager = MapsManager(predict_config.maps_dir, verbose=verbose_list[0])
-    predict_manager = PredictManager(maps_manager)
-
-    # Check if task is reconstruction for "save_tensor" and "save_nifti"
-    if (
-        predict_config.save_tensor
-        and predict_manager.maps_manager.network_task != "reconstruction"
-    ):
-        raise ClinicaDLArgumentError(
-            "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
-        )
-    if (
-        predict_config.save_nifti
-        and predict_manager.maps_manager.network_task != "reconstruction"
-    ):
-        raise ClinicaDLArgumentError(
-            "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
-        )
-
+    predict_manager = PredictManager(predict_config)
+    print("test", predict_config.caps_directory)
     predict_manager.predict(predict_config)

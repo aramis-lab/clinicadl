@@ -2,7 +2,7 @@ import json
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
@@ -11,7 +11,11 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.predict.predict_config import PredictConfig
+from clinicadl.predict.predict_config import (
+    InterpretConfig,
+    PredictConfig,
+    PredictInterpretConfig,
+)
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -30,13 +34,13 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class PredictManager:
-    def __init__(self, maps_manager: MapsManager):
-        self.maps_manager = maps_manager
+    def __init__(self, _config: PredictInterpretConfig):
+        self.maps_manager = MapsManager(_config.maps_dir)
 
     def predict(
         self,
         predict_config: PredictConfig,
-        label_code: Optional[Dict[str, int]] = "default",
+        label_code: Union[str, Dict[str, int]] = "default",
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
@@ -92,9 +96,8 @@ class PredictManager:
         _output_
         """
 
-        if not predict_config.split_list:
-            predict_config.split_list = self.maps_manager._find_splits()
-        logger.debug(f"List of splits {predict_config.split_list}")
+        predict_config.check_output_saving(self.maps_manager.network_task)
+        predict_config.adapt_config_with_maps_manager_info(self.maps_manager)
 
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
@@ -107,9 +110,7 @@ class PredictManager:
         if predict_config.tsv_path is not None:
             group_df = load_data_test(
                 predict_config.tsv_path,
-                predict_config.diagnoses
-                if len(predict_config.diagnoses) != 0
-                else self.maps_manager.diagnoses,
+                predict_config.diagnoses,
                 multi_cohort=predict_config.multi_cohort,
             )
 
@@ -130,10 +131,8 @@ class PredictManager:
                 predict_config.data_group, split
             )
             # Find label code if not given
-            if (
-                predict_config.label is not None
-                and predict_config.label != self.maps_manager.label
-                and label_code == "default"
+            if not predict_config.is_given_label_code(
+                self.maps_manager.label, label_code
             ):
                 self.maps_manager.task_manager.generate_label_code(
                     group_df, predict_config.label
@@ -398,6 +397,8 @@ class PredictManager:
         --------
         - _related_
         """
+        print("@@@@@@@@@@@@@@@@")
+        print(group_parameters)
         data_test = return_dataset(
             group_parameters["caps_directory"],
             group_df,
@@ -635,25 +636,7 @@ class PredictManager:
 
     def interpret(
         self,
-        data_group: str,
-        name: str,
-        method: str,
-        caps_directory: Path = None,
-        tsv_path: Path = None,
-        split_list: list[int] = None,
-        selection_metrics: list[str] = None,
-        multi_cohort: bool = False,
-        diagnoses: list[str] = (),
-        target_node: int = 0,
-        save_individual: bool = False,
-        batch_size: int = None,
-        n_proc: int = None,
-        gpu: bool = None,
-        amp: bool = False,
-        overwrite: bool = False,
-        overwrite_name: bool = False,
-        level: int = None,
-        save_nifti: bool = False,
+        interpret_config: InterpretConfig,
     ):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
@@ -717,15 +700,13 @@ class PredictManager:
 
         from clinicadl.interpret.gradients import method_dict
 
-        if method not in method_dict.keys():
+        if interpret_config.method not in method_dict.keys():
             raise NotImplementedError(
-                f"Interpretation method {method} is not implemented. "
+                f"Interpretation method {interpret_config.method} is not implemented. "
                 f"Please choose in {method_dict.keys()}"
             )
 
-        if not split_list:
-            split_list = self.maps_manager._find_splits()
-        logger.debug(f"List of splits {split_list}")
+        interpret_config.adapt_config_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -740,19 +721,25 @@ class PredictManager:
         )
 
         group_df = None
-        if tsv_path is not None:
+        if interpret_config.tsv_path is not None:
             group_df = load_data_test(
-                tsv_path,
-                diagnoses if len(diagnoses) != 0 else self.maps_manager.diagnoses,
-                multi_cohort=multi_cohort,
+                interpret_config.tsv_path,
+                interpret_config.diagnoses,
+                multi_cohort=interpret_config.multi_cohort,
             )
         self._check_data_group(
-            data_group, caps_directory, group_df, multi_cohort, overwrite
+            interpret_config.data_group,
+            interpret_config.caps_directory,
+            group_df,
+            interpret_config.multi_cohort,
+            interpret_config.overwrite,
         )
 
-        for split in split_list:
+        for split in interpret_config.split_list:
             logger.info(f"Interpretation of split {split}")
-            df_group, parameters_group = self.get_group_info(data_group, split)
+            df_group, parameters_group = self.get_group_info(
+                interpret_config.data_group, split
+            )
 
             data_test = return_dataset(
                 parameters_group["caps_directory"],
@@ -767,11 +754,9 @@ class PredictManager:
 
             test_loader = DataLoader(
                 data_test,
-                batch_size=batch_size
-                if batch_size is not None
-                else self.maps_manager.batch_size,
+                batch_size=interpret_config.batch_size,
                 shuffle=False,
-                num_workers=n_proc if n_proc is not None else self.maps_manager.n_proc,
+                num_workers=interpret_config.n_proc,
             )
 
             if not selection_metrics:
@@ -783,16 +768,16 @@ class PredictManager:
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection_metric}"
-                    / data_group
-                    / f"interpret-{name}"
+                    / interpret_config.data_group
+                    / f"interpret-{interpret_config.name}"
                 )
 
                 if (results_path).is_dir():
-                    if overwrite_name:
+                    if interpret_config.overwrite_name:
                         shutil.rmtree(results_path)
                     else:
                         raise MAPSError(
-                            f"Interpretation name {name} is already written. "
+                            f"Interpretation name {interpret_config.name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
@@ -801,28 +786,31 @@ class PredictManager:
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
-                    gpu=gpu,
+                    gpu=interpret_config.gpu,
                 )
 
-                interpreter = method_dict[method](model)
+                interpreter = method_dict[interpret_config.method](model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(
-                        images, target_node, level=level, amp=amp
+                        images,
+                        interpret_config.target_node,
+                        level=interpret_config.level,
+                        amp=interpret_config.amp,
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.maps_manager.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
-                        if save_individual:
+                        if interpret_config.save_individual:
                             single_path = (
                                 results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
-                            if save_nifti:
+                            if interpret_config.save_nifti:
                                 import nibabel as nib
                                 from numpy import eye
 
