@@ -98,6 +98,7 @@ class PredictManager:
 
         predict_config.check_output_saving(self.maps_manager.network_task)
         predict_config.adapt_config_with_maps_manager_info(self.maps_manager)
+        predict_config.set_optim_config(self.maps_manager)
 
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
@@ -698,7 +699,7 @@ class PredictManager:
 
         """
 
-        interpret_config.adapt_config_with_maps_manager_info(self.maps_manager)
+        interpret_config.set_optim_config(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
