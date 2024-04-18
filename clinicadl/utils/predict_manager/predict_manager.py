@@ -474,9 +474,9 @@ class PredictManager:
         data_group: str,
         split: int,
         selection_metrics: list[str],
-        nb_images: int = None,
-        gpu: bool = None,
-        network: int = None,
+        nb_images: Optional[int] = None,
+        gpu: Optional[bool] = None,
+        network: Optional[int] = None,
     ):
         """
         Compute the output tensors and saves them in the MAPS.
@@ -556,8 +556,8 @@ class PredictManager:
         data_group: str,
         split: int,
         selection_metrics: list[str],
-        gpu: bool = None,
-        network: int = None,
+        gpu: Optional[bool] = None,
+        network: Optional[int] = None,
     ):
         """Computes the output nifti images and saves them in the MAPS.
 
@@ -698,14 +698,6 @@ class PredictManager:
 
         """
 
-        from clinicadl.interpret.gradients import method_dict
-
-        if interpret_config.method not in method_dict.keys():
-            raise NotImplementedError(
-                f"Interpretation method {interpret_config.method} is not implemented. "
-                f"Please choose in {method_dict.keys()}"
-            )
-
         interpret_config.adapt_config_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
@@ -720,13 +712,8 @@ class PredictManager:
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
 
-        group_df = None
-        if interpret_config.tsv_path is not None:
-            group_df = load_data_test(
-                interpret_config.tsv_path,
-                interpret_config.diagnoses,
-                multi_cohort=interpret_config.multi_cohort,
-            )
+        group_df = interpret_config.create_groupe_df()
+
         self._check_data_group(
             interpret_config.data_group,
             interpret_config.caps_directory,
@@ -843,12 +830,12 @@ class PredictManager:
     def _check_data_group(
         self,
         data_group: str,
-        caps_directory: str = None,
-        df: pd.DataFrame = None,
+        caps_directory: Optional[Path] = None,
+        df: Optional[pd.DataFrame] = None,
         multi_cohort: bool = False,
         overwrite: bool = False,
-        label: str = None,
-        split_list: list[int] = None,
+        label: Optional[str] = None,
+        split_list: Optional[list[int]] = None,
         skip_leak_check: bool = False,
     ):
         """Check if a data group is already available if other arguments are None.
@@ -890,8 +877,8 @@ class PredictManager:
                 if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    if not split_list:
-                        split_list = self.maps_manager._find_splits()
+                    # if not split_list:
+                    #     split_list = self.maps_manager._find_splits()
                     for split in split_list:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split

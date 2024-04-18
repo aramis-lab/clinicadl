@@ -2,8 +2,14 @@ from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel
+import pandas as pd
+from pydantic import BaseModel, field_validator
 
+from clinicadl.utils.caps_dataset.data import (
+    get_transforms,
+    load_data_test,
+    return_dataset,
+)
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
@@ -24,6 +30,7 @@ class PredictInterpretConfig(BaseModel):
     amp: bool = False
     overwrite: bool = False
     save_nifti: bool = False
+    skip_leak_check: bool = False
 
     def adapt_config_with_maps_manager_info(self, maps_manager: MapsManager):
         if not self.split_list:
@@ -48,12 +55,32 @@ class InterpretConfig(PredictInterpretConfig):
     overwrite_name: bool = False
     level: int = 1
 
+    @field_validator("method")
+    @classmethod
+    def check_method_is_implemented(cls, method_value: str):
+        from clinicadl.interpret.gradients import method_dict
+
+        if method_value not in method_dict:
+            raise NotImplementedError(
+                f"Interpretation method {method_value} is not implemented. "
+                f"Please choose in {method_dict.keys()}"
+            )
+
+    def create_groupe_df(self):
+        group_df = None
+        if self.tsv_path is not None:
+            group_df = load_data_test(
+                self.tsv_path,
+                self.diagnoses,
+                multi_cohort=self.multi_cohort,
+            )
+        return group_df
+
 
 class PredictConfig(PredictInterpretConfig):
     label: Optional[str] = None
     save_tensor: bool = False
     save_latent_tensor: bool = False
-    skip_leak_check: bool = False
     split_list: Optional[List[int]]
     use_labels: bool = True
 
