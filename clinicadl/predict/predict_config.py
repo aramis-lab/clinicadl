@@ -19,10 +19,10 @@ logger = getLogger("clinicadl.predict_config")
 class PredictInterpretConfig(BaseModel):
     maps_dir: Path
     data_group: str
-    caps_directory: Optional[Path]
-    tsv_path: Optional[Path]
+    caps_directory: Optional[Path] = None
+    tsv_path: Optional[Path] = None
     selection_metrics: List[str] = ["loss"]
-    diagnoses: Optional[List[str]]
+    diagnoses: Optional[List[str]] = None
     multi_cohort: bool = False
     batch_size: int = 8
     n_proc: int = 0
@@ -81,7 +81,7 @@ class PredictConfig(PredictInterpretConfig):
     label: Optional[str] = None
     save_tensor: bool = False
     save_latent_tensor: bool = False
-    split_list: Optional[List[int]]
+    split_list: Optional[List[int]] = None
     use_labels: bool = True
 
     def check_output_saving(self, network_task: str) -> None:
