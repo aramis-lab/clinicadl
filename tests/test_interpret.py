@@ -84,5 +84,5 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
             method=method,
         )
         interpret_manager = PredictManager(interpret_config)
-        interpret_manager.interpret(interpret_config)
+        interpret_manager.interpret()
         interpret_map = interpret_manager.get_interpretation("train", f"test-{method}")

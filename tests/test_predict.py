@@ -88,7 +88,7 @@ def test_predict(cmdopt, tmp_path, test_name):
         diagnoses=["CN"],
     )
     predict_manager = PredictManager(predict_config)
-    predict_manager.predict(predict_config)
+    predict_manager.predict()
 
     for mode in modes:
         predict_manager.maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
