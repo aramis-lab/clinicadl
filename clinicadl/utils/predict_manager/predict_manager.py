@@ -35,12 +35,12 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class PredictManager:
-    def __init__(self, _config: PredictInterpretConfig):
+    def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
+        self._config = _config
 
     def predict(
         self,
-        predict_config: PredictConfig,
         label_code: Union[str, Dict[str, int]] = "default",
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -97,9 +97,10 @@ class PredictManager:
         _output_
         """
 
-        predict_config.check_output_saving(self.maps_manager.network_task)
-        predict_config.adapt_config_with_maps_manager_info(self.maps_manager)
-        predict_config.set_optim_config(self.maps_manager)
+        assert isinstance(self._config, PredictConfig)
+
+        self._config.check_output_saving(self.maps_manager.network_task)
+        self._config.adapt_config_with_maps_manager_info(self.maps_manager)
 
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
@@ -109,53 +110,45 @@ class PredictManager:
         )
 
         group_df = None
-        if predict_config.tsv_path is not None:
+        if self._config.tsv_path is not None:
             group_df = load_data_test(
-                predict_config.tsv_path,
-                predict_config.diagnoses,
-                multi_cohort=predict_config.multi_cohort,
+                self._config.tsv_path,
+                self._config.diagnoses,
+                multi_cohort=self._config.multi_cohort,
             )
 
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
-        self._check_data_group(
-            predict_config.data_group,
-            predict_config.caps_directory,
-            group_df,
-            predict_config.multi_cohort,
-            predict_config.overwrite,
-            label=predict_config.label,
-            split_list=predict_config.split_list,
-            skip_leak_check=predict_config.skip_leak_check,
-        )
-        for split in predict_config.split_list:
+        self._check_data_group(df=group_df)
+
+        for split in self._config.split_list:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
-                predict_config.data_group, split
+                self._config.data_group, split
             )
             # Find label code if not given
-            if not predict_config.is_given_label_code(
+            if not self._config.is_given_label_code(
                 self.maps_manager.label, label_code
             ):
                 self.maps_manager.task_manager.generate_label_code(
-                    group_df, predict_config.label
+                    group_df, self._config.label
                 )
 
             # Erase previous TSV files on master process
-            if not predict_config.selection_metrics:
+            if not self._config.selection_metrics:
                 split_selection_metrics = self.maps_manager._find_selection_metrics(
                     split
                 )
             else:
-                split_selection_metrics = predict_config.selection_metrics
+                split_selection_metrics = self._config.selection_metrics
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection}"
-                    / predict_config.data_group
+                    / self._config.data_group
                 )
 
-                tsv_pattern = f"{predict_config.data_group}*.tsv"
+                tsv_pattern = f"{self._config.data_group}*.tsv"
 
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
@@ -169,7 +162,6 @@ class PredictManager:
                     criterion,
                     split,
                     split_selection_metrics,
-                    predict_config,
                 )
 
             else:
@@ -181,16 +173,15 @@ class PredictManager:
                     criterion,
                     split,
                     split_selection_metrics,
-                    predict_config,
                 )
 
             if cluster.master:
                 self.maps_manager._ensemble_prediction(
-                    predict_config.data_group,
+                    self._config.data_group,
                     split,
-                    predict_config.selection_metrics,
-                    predict_config.use_labels,
-                    predict_config.skip_leak_check,
+                    self._config.selection_metrics,
+                    self._config.use_labels,
+                    self._config.skip_leak_check,
                 )
 
     def _predict_multi(
@@ -202,7 +193,6 @@ class PredictManager:
         criterion,
         split,
         split_selection_metrics,
-        predict_config,
     ):
         """_summary_
 
@@ -265,10 +255,10 @@ class PredictManager:
                 self.maps_manager.preprocessing_dict,
                 all_transformations=all_transforms,
                 multi_cohort=group_parameters["multi_cohort"],
-                label_presence=predict_config.use_labels,
+                label_presence=self._config.use_labels,
                 label=self.maps_manager.label
-                if predict_config.label is None
-                else predict_config.label,
+                if self._config.label is None
+                else self._config.label,
                 label_code=(
                     self.maps_manager.label_code
                     if label_code == "default"
@@ -279,8 +269,8 @@ class PredictManager:
             test_loader = DataLoader(
                 data_test,
                 batch_size=(
-                    predict_config.batch_size
-                    if predict_config.batch_size is not None
+                    self._config.batch_size
+                    if self._config.batch_size is not None
                     else self.maps_manager.batch_size
                 ),
                 shuffle=False,
@@ -290,47 +280,41 @@ class PredictManager:
                     rank=cluster.rank,
                     shuffle=False,
                 ),
-                num_workers=predict_config.n_proc
-                if predict_config.n_proc is not None
+                num_workers=self._config.n_proc
+                if self._config.n_proc is not None
                 else self.maps_manager.n_proc,
             )
             self.maps_manager._test_loader(
                 test_loader,
                 criterion,
-                predict_config.data_group,
+                self._config.data_group,
                 split,
                 split_selection_metrics,
-                use_labels=predict_config.use_labels,
-                gpu=predict_config.gpu,
-                amp=predict_config.amp,
+                use_labels=self._config.use_labels,
+                gpu=self._config.gpu,
+                amp=self._config.amp,
                 network=network,
             )
-            if predict_config.save_tensor:
+            if self._config.save_tensor:
                 logger.debug("Saving tensors")
                 self.maps_manager._compute_output_tensors(
                     data_test,
-                    predict_config.data_group,
+                    self._config.data_group,
                     split,
-                    predict_config.selection_metrics,
-                    gpu=predict_config.gpu,
+                    self._config.selection_metrics,
+                    gpu=self._config.gpu,
                     network=network,
                 )
-            if predict_config.save_nifti:
+            if self._config.save_nifti:
                 self._compute_output_nifti(
                     data_test,
-                    predict_config.data_group,
                     split,
-                    predict_config.selection_metrics,
-                    gpu=predict_config.gpu,
                     network=network,
                 )
-            if predict_config.save_latent_tensor:
+            if self._config.save_latent_tensor:
                 self._compute_latent_tensors(
-                    data_test,
-                    predict_config.data_group,
-                    split,
-                    predict_config.selection_metrics,
-                    gpu=predict_config.gpu,
+                    dataset=data_test,
+                    split=split,
                     network=network,
                 )
 
@@ -343,7 +327,6 @@ class PredictManager:
         criterion,
         split,
         split_selection_metrics,
-        predict_config,
     ):
         """_summary_
 
@@ -399,18 +382,17 @@ class PredictManager:
         --------
         - _related_
         """
-        print("@@@@@@@@@@@@@@@@")
-        print(group_parameters)
+
         data_test = return_dataset(
             group_parameters["caps_directory"],
             group_df,
             self.maps_manager.preprocessing_dict,
             all_transformations=all_transforms,
             multi_cohort=group_parameters["multi_cohort"],
-            label_presence=predict_config.use_labels,
+            label_presence=self._config.use_labels,
             label=self.maps_manager.label
-            if predict_config.label is None
-            else predict_config.label,
+            if self._config.label is None
+            else self._config.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
@@ -419,8 +401,8 @@ class PredictManager:
         test_loader = DataLoader(
             data_test,
             batch_size=(
-                predict_config.batch_size
-                if predict_config.batch_size is not None
+                self._config.batch_size
+                if self._config.batch_size is not None
                 else self.maps_manager.batch_size
             ),
             shuffle=False,
@@ -430,54 +412,45 @@ class PredictManager:
                 rank=cluster.rank,
                 shuffle=False,
             ),
-            num_workers=predict_config.n_proc
-            if predict_config.n_proc is not None
+            num_workers=self._config.n_proc
+            if self._config.n_proc is not None
             else self.maps_manager.n_proc,
         )
         self.maps_manager._test_loader(
             test_loader,
             criterion,
-            predict_config.data_group,
+            self._config.data_group,
             split,
             split_selection_metrics,
-            use_labels=predict_config.use_labels,
-            gpu=predict_config.gpu,
-            amp=predict_config.amp,
+            use_labels=self._config.use_labels,
+            gpu=self._config.gpu,
+            amp=self._config.amp,
         )
-        if predict_config.save_tensor:
+        if self._config.save_tensor:
             logger.debug("Saving tensors")
             self.maps_manager._compute_output_tensors(
                 data_test,
-                predict_config.data_group,
+                self._config.data_group,
                 split,
-                predict_config.selection_metrics,
-                gpu=predict_config.gpu,
+                self._config.selection_metrics,
+                gpu=self._config.gpu,
             )
-        if predict_config.save_nifti:
+        if self._config.save_nifti:
             self._compute_output_nifti(
                 data_test,
-                predict_config.data_group,
                 split,
-                predict_config.selection_metrics,
-                gpu=predict_config.gpu,
             )
-        if predict_config.save_latent_tensor:
+        if self._config.save_latent_tensor:
             self._compute_latent_tensors(
-                data_test,
-                predict_config.data_group,
-                split,
-                predict_config.selection_metrics,
-                gpu=predict_config.gpu,
+                dataset=data_test,
+                split=split,
             )
 
     def _compute_latent_tensors(
         self,
         dataset,
-        data_group: str,
         split: int,
-        selection_metrics: list[str],
         nb_images: Optional[int] = None,
-        gpu: Optional[bool] = None,
         network: Optional[int] = None,
     ):
         """
@@ -500,13 +473,13 @@ class PredictManager:
         network : _type_ (optional, default=None)
             Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in selection_metrics:
+        for selection_metric in self._config.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=gpu,
+                gpu=self._config.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -521,7 +494,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
                 / f"best-{selection_metric}"
-                / data_group
+                / self._config.data_group
                 / "latent_tensors"
             )
             if cluster.master:
@@ -555,10 +528,7 @@ class PredictManager:
     def _compute_output_nifti(
         self,
         dataset,
-        data_group: str,
         split: int,
-        selection_metrics: list[str],
-        gpu: Optional[bool] = None,
         network: Optional[int] = None,
     ):
         """Computes the output nifti images and saves them in the MAPS.
@@ -586,13 +556,13 @@ class PredictManager:
         import nibabel as nib
         from numpy import eye
 
-        for selection_metric in selection_metrics:
+        for selection_metric in self._config.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=gpu,
+                gpu=self._config.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -607,7 +577,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
                 / f"best-{selection_metric}"
-                / data_group
+                / self._config.data_group
                 / "nifti_images"
             )
             if cluster.master:
@@ -636,10 +606,7 @@ class PredictManager:
                 nib.save(input_nii, nifti_path / input_filename)
                 nib.save(output_nii, nifti_path / output_filename)
 
-    def interpret(
-        self,
-        interpret_config: InterpretConfig,
-    ):
+    def interpret(self):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
 
@@ -700,7 +667,8 @@ class PredictManager:
 
         """
 
-        interpret_config.adapt_config_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_config_with_maps_manager_info(self.maps_manager)
+        assert isinstance(self._config, InterpretConfig)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -714,20 +682,14 @@ class PredictManager:
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
 
-        group_df = interpret_config.create_groupe_df()
+        group_df = self._config.create_groupe_df()
 
-        self._check_data_group(
-            interpret_config.data_group,
-            interpret_config.caps_directory,
-            group_df,
-            interpret_config.multi_cohort,
-            interpret_config.overwrite,
-        )
+        self._check_data_group(group_df)
 
-        for split in interpret_config.split_list:
+        for split in self._config.split_list:
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
-                interpret_config.data_group, split
+                self._config.data_group, split
             )
 
             data_test = return_dataset(
@@ -743,9 +705,9 @@ class PredictManager:
 
             test_loader = DataLoader(
                 data_test,
-                batch_size=interpret_config.batch_size,
+                batch_size=self._config.batch_size,
                 shuffle=False,
-                num_workers=interpret_config.n_proc,
+                num_workers=self._config.n_proc,
             )
 
             if not selection_metrics:
@@ -757,16 +719,16 @@ class PredictManager:
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection_metric}"
-                    / interpret_config.data_group
-                    / f"interpret-{interpret_config.name}"
+                    / self._config.data_group
+                    / f"interpret-{self._config.name}"
                 )
 
                 if (results_path).is_dir():
-                    if interpret_config.overwrite_name:
+                    if self._config.overwrite_name:
                         shutil.rmtree(results_path)
                     else:
                         raise MAPSError(
-                            f"Interpretation name {interpret_config.name} is already written. "
+                            f"Interpretation name {self._config.name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
@@ -775,10 +737,10 @@ class PredictManager:
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
-                    gpu=interpret_config.gpu,
+                    gpu=self._config.gpu,
                 )
 
-                interpreter = method_dict[interpret_config.method](model)
+                interpreter = method_dict[self._config.method](model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
@@ -786,20 +748,20 @@ class PredictManager:
 
                     map_pt = interpreter.generate_gradients(
                         images,
-                        interpret_config.target_node,
-                        level=interpret_config.level,
-                        amp=interpret_config.amp,
+                        self._config.target_node,
+                        level=self._config.level,
+                        amp=self._config.amp,
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.maps_manager.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
-                        if interpret_config.save_individual:
+                        if self._config.save_individual:
                             single_path = (
                                 results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
-                            if interpret_config.save_nifti:
+                            if self._config.save_nifti:
                                 import nibabel as nib
                                 from numpy import eye
 
@@ -818,7 +780,7 @@ class PredictManager:
                         mode_map,
                         results_path / f"mean_{self.maps_manager.mode}-{i}_map.pt",
                     )
-                    if save_nifti:
+                    if self._config.save_nifti:
                         import nibabel as nib
                         from numpy import eye
 
@@ -831,14 +793,7 @@ class PredictManager:
 
     def _check_data_group(
         self,
-        data_group: str,
-        caps_directory: Optional[Path] = None,
         df: Optional[pd.DataFrame] = None,
-        multi_cohort: bool = False,
-        overwrite: bool = False,
-        label: Optional[str] = None,
-        split_list: Optional[list[int]] = None,
-        skip_leak_check: bool = False,
     ):
         """Check if a data group is already available if other arguments are None.
         Else creates a new data_group.
@@ -872,16 +827,16 @@ class PredictManager:
             when caps_directory or df are not given and data group does not exist
 
         """
-        group_dir = self.maps_manager.maps_path / "groups" / data_group
+        group_dir = self.maps_manager.maps_path / "groups" / self._config.data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if overwrite:
-                if data_group in ["train", "validation"]:
+            if self._config.overwrite:
+                if self._config.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     # if not split_list:
                     #     split_list = self.maps_manager._find_splits()
-                    for split in split_list:
+                    for split in self._config.split_list:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split
                         )
@@ -890,33 +845,37 @@ class PredictManager:
                                 self.maps_manager.maps_path
                                 / f"{self.maps_manager.split_name}-{split}"
                                 / f"best-{selection}"
-                                / data_group
+                                / self._config.data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
-            elif df is not None or caps_directory is not None:
+            elif df is not None or self._config.caps_directory is not None:
                 raise ClinicaDLArgumentError(
-                    f"Data group {data_group} is already defined. "
+                    f"Data group {self._config.data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {data_group} please set overwrite to True."
+                    f"To erase {self._config.data_group} please set overwrite to True."
                 )
 
         elif not group_dir.is_dir() and (
-            caps_directory is None or df is None
+            self._config.caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
-                f"The data group {data_group} does not already exist. "
+                f"The data group {self._config.data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            if skip_leak_check:
+            if self._config.skip_leak_check:
                 logger.info("Skipping data leakage check")
             else:
-                self._check_leakage(data_group, df)
+                self._check_leakage(self._config.data_group, df)
             self._write_data_group(
-                data_group, df, caps_directory, multi_cohort, label=label
+                self._config.data_group,
+                df,
+                self._config.caps_directory,
+                self._config.multi_cohort,
+                label=self._config.label,
             )
 
     def get_group_info(
@@ -956,8 +915,8 @@ class PredictManager:
         if data_group in ["train", "validation"]:
             if split is None:
                 raise MAPSError(
-                    f"Information on train or validation data can only be "
-                    f"loaded if a split number is given"
+                    "Information on train or validation data can only be "
+                    "loaded if a split number is given"
                 )
             elif not (group_path / f"{self.maps_manager.split_name}-{split}").is_dir():
                 raise MAPSError(
@@ -1028,26 +987,28 @@ class PredictManager:
         label : _type_ (optional, default=None)
             _description_
         """
-        group_path = self.maps_path / "groups" / data_group
+        group_path = self.maps_manager.maps_path / "groups" / data_group
         group_path.mkdir(parents=True)
 
         columns = ["participant_id", "session_id", "cohort"]
-        if self.label in df.columns.values:
-            columns += [self.label]
+        if self._config.label in df.columns.values:
+            columns += [self._config.label]
         if label is not None and label in df.columns.values:
             columns += [label]
 
         df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
-        self.write_parameters(
+        self.maps_manager.write_parameters(
             group_path,
             {
                 "caps_directory": (
                     caps_directory
                     if caps_directory is not None
-                    else self.caps_directory
+                    else self._config.caps_directory
                 ),
                 "multi_cohort": (
-                    multi_cohort if multi_cohort is not None else self.multi_cohort
+                    multi_cohort
+                    if multi_cohort is not None
+                    else self._config.multi_cohort
                 ),
             },
         )
@@ -1107,9 +1068,9 @@ class PredictManager:
             )
         elif participant_id is None or session_id is None:
             raise ValueError(
-                f"To load the mean interpretation map, "
-                f"please do not give any participant_id or session_id.\n "
-                f"Else specify both parameters"
+                "To load the mean interpretation map, "
+                "please do not give any participant_id or session_id.\n "
+                "Else specify both parameters"
             )
         else:
             map_pt = torch.load(
