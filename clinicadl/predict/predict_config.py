@@ -56,14 +56,12 @@ class InterpretConfig(PredictInterpretConfig):
     overwrite_name: bool = False
     level: Union[int, None] = 1
 
-    @field_validator("method")
-    @classmethod
-    def check_method_is_implemented(cls, method_value: str):
+    def check_method_is_implemented(self):
         from clinicadl.interpret.gradients import method_dict
 
-        if method_value not in method_dict:
+        if self.method not in method_dict:
             raise NotImplementedError(
-                f"Interpretation method {method_value} is not implemented. "
+                f"Interpretation method {self.method} is not implemented. "
                 f"Please choose in {method_dict.keys()}"
             )
 

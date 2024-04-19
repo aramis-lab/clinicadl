@@ -664,9 +664,10 @@ class PredictManager:
             If the interpretation has already been determined.
 
         """
+        assert isinstance(self._config, InterpretConfig)
 
         self._config.adapt_config_with_maps_manager_info(self.maps_manager)
-        assert isinstance(self._config, InterpretConfig)
+        self._config.check_method_is_implemented()
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -681,7 +682,6 @@ class PredictManager:
         )
 
         group_df = self._config.create_groupe_df()
-
         self._check_data_group(group_df)
 
         for split in self._config.split_list:
