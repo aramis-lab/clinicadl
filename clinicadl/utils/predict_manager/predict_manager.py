@@ -709,9 +709,11 @@ class PredictManager:
             )
 
             if not self._config.selection_metrics:
-                selection_metrics = self.maps_manager._find_selection_metrics(split)
+                self._config.selection_metrics = (
+                    self.maps_manager._find_selection_metrics(split)
+                )
 
-            for selection_metric in selection_metrics:
+            for selection_metric in self._config.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
                     self.maps_manager.maps_path
