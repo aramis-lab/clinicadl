@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import click
 
+from clinicadl.train.train_utils import extract_config_from_toml_file
 from clinicadl.utils.cli_param import train_option
 
+from .regression_config import RegressionConfig
 from .task_utils import task_launcher
 
 
@@ -61,8 +65,8 @@ from .task_utils import task_launcher
 @train_option.transfer_selection_metric
 @train_option.nb_unfrozen_layer
 # Task-related
-@train_option.label
-@train_option.selection_metrics
+@train_option.regression_label
+@train_option.regression_selection_metrics
 @train_option.regression_loss
 # information
 @train_option.emissions_calculator
@@ -83,5 +87,12 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_specific_options = ["label", "selection_metrics", "loss"]
-    task_launcher("regression", task_specific_options, **kwargs)
+    if kwargs["config_file"]:  # overwrite cli parameters with config file
+        options = extract_config_from_toml_file(
+            Path(kwargs["config_file"]),
+            "regression",
+        )
+        for arg in options:
+            kwargs[arg] = options[arg]
+    config = RegressionConfig(**kwargs)
+    task_launcher(config)

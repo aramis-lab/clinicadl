@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import click
 
+from clinicadl.train.train_utils import extract_config_from_toml_file
 from clinicadl.utils.cli_param import train_option
 
+from .classification_config import ClassificationConfig
 from .task_utils import task_launcher
 
 
@@ -61,8 +65,8 @@ from .task_utils import task_launcher
 @train_option.transfer_selection_metric
 @train_option.nb_unfrozen_layer
 # Task-related
-@train_option.label
-@train_option.selection_metrics
+@train_option.classification_label
+@train_option.classification_selection_metrics
 @train_option.selection_threshold
 @train_option.classification_loss
 # information
@@ -84,14 +88,12 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_specific_options = [
-        "label",
-        "selection_metrics",
-        "selection_threshold",
-        "loss",
-    ]
-    task_launcher("classification", task_specific_options, **kwargs)
-
-
-if __name__ == "__main__":
-    cli()
+    if kwargs["config_file"]:  # overwrite cli parameters with config file
+        options = extract_config_from_toml_file(
+            Path(kwargs["config_file"]),
+            "classification",
+        )
+        for arg in options:
+            kwargs[arg] = options[arg]
+    config = ClassificationConfig(**kwargs)
+    task_launcher(config)
