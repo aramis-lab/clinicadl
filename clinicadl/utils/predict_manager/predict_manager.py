@@ -708,7 +708,7 @@ class PredictManager:
                 num_workers=self._config.n_proc,
             )
 
-            if not selection_metrics:
+            if not self._config.selection_metrics:
                 selection_metrics = self.maps_manager._find_selection_metrics(split)
 
             for selection_metric in selection_metrics:
