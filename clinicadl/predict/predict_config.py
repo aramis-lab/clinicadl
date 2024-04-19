@@ -54,7 +54,7 @@ class InterpretConfig(PredictInterpretConfig):
     target_node: int = 0
     save_individual: bool = False
     overwrite_name: bool = False
-    level: int = 1
+    level: Union[int, None] = 1
 
     @field_validator("method")
     @classmethod

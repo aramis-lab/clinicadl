@@ -151,4 +151,4 @@ def cli(
     )
 
     predict_manager = PredictManager(interpret_config)
-    predict_manager.interpret(interpret_config)
+    predict_manager.interpret()
