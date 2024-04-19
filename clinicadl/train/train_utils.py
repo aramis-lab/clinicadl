@@ -14,72 +14,72 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 from clinicadl.utils.preprocessing import path_decoder
 
 
-def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
+def extract_config_from_toml_file(config_file: Path, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
-    If it is a TOML file, ensures that the format corresponds to the one in resources.
-    Args:
-        config_file: path to a configuration file (JSON of TOML).
-        task: task learnt by the network (example: classification, regression, reconstruction...).
-    Returns:
-        dictionary of values ready to use for the MapsManager
+
+    Ensures that the format corresponds to the TOML file template.
+
+    Parameters
+    ----------
+    config_file : Path
+        Path to a configuration file (JSON of TOML).
+    task : str
+        Task performed by the network (e.g. classification).
+
+    Returns
+    -------
+    Dict[str, Any]
+        Config dictionary with the training parameters extracted from the config file.
+
+    Raises
+    ------
+    ClinicaDLConfigurationError
+        If configuration file is not a TOML file.
+    ClinicaDLConfigurationError
+        If a section in the TOML file is not valid.
+    ClinicaDLConfigurationError
+        If an option in the TOML file is not valid.
     """
-    if config_file is None:
-        # read default values
-        clinicadl_root_dir = Path(__file__).parents[1]
-        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
-        config_dict = toml.load(config_path)
-        config_dict = remove_unused_tasks(config_dict, task)
-        config_dict = path_decoder(config_dict)
-        train_dict = dict()
-        # Fill train_dict from TOML files arguments
-        for config_section in config_dict:
-            for key in config_dict[config_section]:
-                train_dict[key] = config_dict[config_section][key]
-
-    elif config_file.suffix == ".toml":
-        user_dict = toml.load(config_file)
-        if "Random_Search" in user_dict:
-            del user_dict["Random_Search"]
-
-        # read default values
-        clinicadl_root_dir = Path(__file__).parents[1]
-        config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
-        config_dict = toml.load(config_path)
-        # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
-        if user_dict is not None:
-            user_dict = path_decoder(user_dict)
-            for section_name in user_dict:
-                if section_name not in config_dict:
-                    raise ClinicaDLConfigurationError(
-                        f"{section_name} section is not valid in TOML configuration file. "
-                        f"Please see the documentation to see the list of option in TOML configuration file."
-                    )
-                for key in user_dict[section_name]:
-                    if key not in config_dict[section_name]:
-                        raise ClinicaDLConfigurationError(
-                            f"{key} option in {section_name} is not valid in TOML configuration file. "
-                            f"Please see the documentation to see the list of option in TOML configuration file."
-                        )
-                    config_dict[section_name][key] = user_dict[section_name][key]
-
-        train_dict = dict()
-
-        # task dependent
-        config_dict = remove_unused_tasks(config_dict, task)
-
-        # Fill train_dict from TOML files arguments
-        for config_section in config_dict:
-            for key in config_dict[config_section]:
-                train_dict[key] = config_dict[config_section][key]
-
-    elif config_file.suffix == ".json":
-        train_dict = read_json(config_file)
-
-    else:
+    if config_file.suffix != ".toml":
         raise ClinicaDLConfigurationError(
-            f"config_file {config_file} should be a TOML or a JSON file."
+            f"Config file {config_file} should be a TOML file."
         )
+
+    user_dict = toml.load(config_file)
+    if "Random_Search" in user_dict:
+        del user_dict["Random_Search"]
+
+    # read default values
+    clinicadl_root_dir = Path(__file__).parents[1]
+    config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
+    config_dict = toml.load(config_path)
+    # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
+    user_dict = path_decoder(user_dict)
+    for section_name in user_dict:
+        if section_name not in config_dict:
+            raise ClinicaDLConfigurationError(
+                f"{section_name} section is not valid in TOML configuration file. "
+                f"Please see the documentation to see the list of option in TOML configuration file."
+            )
+        for key in user_dict[section_name]:
+            if key not in config_dict[section_name]:
+                raise ClinicaDLConfigurationError(
+                    f"{key} option in {section_name} is not valid in TOML configuration file. "
+                    f"Please see the documentation to see the list of option in TOML configuration file."
+                )
+            config_dict[section_name][key] = user_dict[section_name][key]
+
+    train_dict = dict()
+
+    # task dependent
+    config_dict = remove_unused_tasks(config_dict, task)
+
+    # Fill train_dict from TOML files arguments
+    for config_section in config_dict:
+        for key in config_dict[config_section]:
+            train_dict[key] = config_dict[config_section][key]
+
     return train_dict
 
 
