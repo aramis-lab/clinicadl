@@ -99,3 +99,7 @@ class PredictConfig(PredictInterpretConfig):
         return not (
             self.label is not None and self.label != _label and _label_code == "default"
         )
+
+    def check_label(self, _label: str):
+        if not self.label:
+            self.label = _label

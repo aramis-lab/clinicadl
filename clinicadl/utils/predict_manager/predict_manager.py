@@ -153,6 +153,8 @@ class PredictManager:
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
 
+            self._config.check_label(self.maps_manager.label)
+
             if self.maps_manager.multi_network:
                 self._predict_multi(
                     group_parameters,
@@ -256,9 +258,7 @@ class PredictManager:
                 all_transformations=all_transforms,
                 multi_cohort=group_parameters["multi_cohort"],
                 label_presence=self._config.use_labels,
-                label=self.maps_manager.label
-                if self._config.label is None
-                else self._config.label,
+                label=self._config.label,
                 label_code=(
                     self.maps_manager.label_code
                     if label_code == "default"
@@ -390,9 +390,7 @@ class PredictManager:
             all_transformations=all_transforms,
             multi_cohort=group_parameters["multi_cohort"],
             label_presence=self._config.use_labels,
-            label=self.maps_manager.label
-            if self._config.label is None
-            else self._config.label,
+            label=self._config.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
