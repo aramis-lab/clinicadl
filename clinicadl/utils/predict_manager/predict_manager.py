@@ -11,6 +11,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.interpret.gradients import method_dict
 from clinicadl.predict.predict_config import (
     InterpretConfig,
     PredictConfig,
@@ -699,7 +700,7 @@ class PredictManager:
 
         """
 
-        interpret_config.set_optim_config(self.maps_manager)
+        interpret_config.adapt_config_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(

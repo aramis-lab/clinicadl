@@ -22,6 +22,7 @@ class PredictInterpretConfig(BaseModel):
     caps_directory: Optional[Path] = None
     tsv_path: Optional[Path] = None
     selection_metrics: List[str] = ["loss"]
+    split_list: Optional[List[int]] = None
     diagnoses: Optional[List[str]] = None
     multi_cohort: bool = False
     batch_size: int = 8
@@ -32,7 +33,11 @@ class PredictInterpretConfig(BaseModel):
     save_nifti: bool = False
     skip_leak_check: bool = False
 
-    def set_optim_config(self, maps_manager: MapsManager) -> None:
+    def adapt_config_with_maps_manager_info(self, maps_manager: MapsManager):
+        if not self.split_list:
+            self.split_list = maps_manager._find_splits()
+        logger.debug(f"List of splits {self.split_list}")
+
         if self.diagnoses is None or len(self.diagnoses) == 0:
             self.diagnoses = maps_manager.diagnoses
 
@@ -77,13 +82,7 @@ class PredictConfig(PredictInterpretConfig):
     label: Optional[str] = None
     save_tensor: bool = False
     save_latent_tensor: bool = False
-    split_list: Optional[List[int]] = None
     use_labels: bool = True
-
-    def adapt_config_with_maps_manager_info(self, maps_manager: MapsManager):
-        if not self.split_list:
-            self.split_list = maps_manager._find_splits()
-        logger.debug(f"List of splits {self.split_list}")
 
     def check_output_saving(self, network_task: str) -> None:
         # Check if task is reconstruction for "save_tensor" and "save_nifti"
