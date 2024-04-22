@@ -19,7 +19,7 @@ class RegressionConfig(BaseTaskConfig):
     @computed_field
     def _network_task(self) -> str:
         """To have a task field that is immutable."""
-        return "reconstruction"
+        return "regression"
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
