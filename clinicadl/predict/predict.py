@@ -4,6 +4,7 @@ from typing import List
 
 from clinicadl import MapsManager
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 
 def predict(
@@ -53,16 +54,17 @@ def predict(
     verbose_list = ["warning", "info", "debug"]
 
     maps_manager = MapsManager(maps_dir, verbose=verbose_list[0])
+    predict_manager = PredictManager(maps_manager)
     # Check if task is reconstruction for "save_tensor" and "save_nifti"
-    if save_tensor and maps_manager.network_task != "reconstruction":
+    if save_tensor and predict_manager.maps_manager.network_task != "reconstruction":
         raise ClinicaDLArgumentError(
             "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
         )
-    if save_nifti and maps_manager.network_task != "reconstruction":
+    if save_nifti and predict_manager.maps_manager.network_task != "reconstruction":
         raise ClinicaDLArgumentError(
             "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
         )
-    maps_manager.predict(
+    predict_manager.predict(
         data_group,
         caps_directory=caps_directory,
         tsv_path=tsv_path,
