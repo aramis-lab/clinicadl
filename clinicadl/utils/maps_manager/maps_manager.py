@@ -529,6 +529,12 @@ class MapsManager:
         if verbose:
             logger.info(f"Path of json file: {json_path}")
 
+        # temporary: to match CLI data. TODO : change CLI data
+        for parameter in parameters:
+            if parameters[parameter] == Path("."):
+                parameters[parameter] = ""
+        ###############################
+
         with json_path.open(mode="w") as json_file:
             json.dump(
                 parameters, json_file, skipkeys=True, indent=4, default=path_encoder

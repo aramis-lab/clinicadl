@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import List, Tuple
 
-from pydantic import computed_field, field_validator
+from pydantic import PrivateAttr, field_validator
 
 from .base_training_config import BaseTaskConfig
 
@@ -14,11 +14,8 @@ class ReconstructionConfig(BaseTaskConfig):
     architecture: str = "AE_Conv5_FC3"
     loss: str = "CrossEntropyLoss"
     selection_metrics: Tuple[str, ...] = ("loss",)
-
-    @computed_field
-    def _network_task(self) -> str:
-        """To have a task field that is immutable."""
-        return "reconstruction"
+    # private
+    _network_task: str = PrivateAttr(default="reconstruction")
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):

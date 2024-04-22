@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 
 from clinicadl.train.train import train
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -95,7 +94,9 @@ def task_launcher(config: BaseTaskConfig) -> None:
 
     # temporary # TODO : change train function to give it a config object
     maps_dir = config.output_maps_directory
-    train_dict = config.model_dump()
+    train_dict = config.model_dump(
+        exclude=["output_maps_directory", "preprocessing_json", "tsv_directory"]
+    )
     train_dict["tsv_path"] = config.tsv_directory
     train_dict[
         "preprocessing_dict"
@@ -106,7 +107,9 @@ def task_launcher(config: BaseTaskConfig) -> None:
     train_dict["network_task"] = config._network_task
     if train_dict["transfer_path"] is None:
         train_dict["transfer_path"] = False
-    split_list = config.split
+    if train_dict["data_augmentation"] == ():
+        train_dict["data_augmentation"] = False
+    split_list = train_dict.pop("split")
     #############
 
     train(maps_dir, train_dict, split_list)
