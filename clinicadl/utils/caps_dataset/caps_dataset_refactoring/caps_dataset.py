@@ -71,15 +71,13 @@ class CapsDataset(Dataset):
         if not hasattr(self, "mode"):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
-
-
-        self.df = pd.read_csv(tsv_label,sep="\t")
+        self.df = pd.read_csv(tsv_label, sep="\t")
         mandatory_col = {
             "participant_id",
             "session_id",
         }
 
-        #check label presence and label to include it in the mandatory col
+        # check label presence and label to include it in the mandatory col
         if self.label_presence and self.label is not None:
             mandatory_col.add(self.label)
 
@@ -90,7 +88,6 @@ class CapsDataset(Dataset):
             )
         self.elem_per_image = self.num_elem_per_image()
         self.size = self.size_elem()
-
 
     @property
     @abc.abstractmethod
@@ -106,7 +103,7 @@ class CapsDataset(Dataset):
         Returns:
             label: value of the label usable in criterion.
         """
-        
+
         # Reconstruction case (no label)
         if self.label is None:
             return None
@@ -129,12 +126,13 @@ class CapsDataset(Dataset):
         domain_code = {"t1": 0, "flair": 1}
         return domain_code[str(target)]
 
-
     def __len__(self) -> int:
         return len(self.df) * self.elem_per_image
 
     @staticmethod
-    def create_caps_dict(caps_directory: Path, ) -> Dict[str, Path]:
+    def create_caps_dict(
+        caps_directory: Path,
+    ) -> Dict[str, Path]:
         from clinica.utils.inputs import check_caps_folder
 
         check_caps_folder(caps_directory)
@@ -157,10 +155,10 @@ class CapsDataset(Dataset):
         try:
             file_type = self.preprocessing_dict["file_type"]
             results = clinica_file_reader(
-                subjects = [participant], 
-                sessions = [session],
-                input_directory =  self.caps_directory,
-                information = file_type
+                subjects=[participant],
+                sessions=[session],
+                input_directory=self.caps_directory,
+                information=file_type,
             )
             logger.debug(f"clinica_file_reader output: {results}")
             filepath = Path(results[0][0])
@@ -302,7 +300,7 @@ class CapsDatasetImage(CapsDataset):
         label_presence: bool = True,
         label: str = None,
         label_code: Dict[str, int] = None,
-        all_transformations: Optional[Callable] = None
+        all_transformations: Optional[Callable] = None,
     ):
         """
         Args:
@@ -327,7 +325,7 @@ class CapsDatasetImage(CapsDataset):
             label_presence=label_presence,
             label=label,
             label_code=label_code,
-            transformations=all_transformations
+            transformations=all_transformations,
         )
 
         self.prepare_dl = self.preprocessing_dict["prepare_dl"]
@@ -644,7 +642,7 @@ class CapsDatasetSlice(CapsDataset):
         label: str = None,
         label_code: Dict[str, int] = None,
         all_transformations: Optional[Callable] = None,
-        multi_cohort: bool = False
+        multi_cohort: bool = False,
     ):
         """
         Args:
@@ -683,8 +681,6 @@ class CapsDatasetSlice(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
-
-        
 
     @property
     def elem_index(self):
