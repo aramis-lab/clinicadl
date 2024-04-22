@@ -40,7 +40,7 @@ class PredictManager:
 
     def predict(
         self,
-        label_code: Union[str, Dict[str, int]] = "default",
+        label_code: Union[str, dict[str, int]] = "default",
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
@@ -108,14 +108,10 @@ class PredictManager:
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
 
-        group_df = None
-        if self._config.tsv_path is not None:
-            group_df = load_data_test(
-                self._config.tsv_path,
-                self._config.diagnoses,
-                multi_cohort=self._config.multi_cohort,
-            )
-
+        group_df = self._config.create_groupe_df()
+        print(group_df)
+        self._check_data_group(group_df)
+        print(group_df)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
 
@@ -130,9 +126,7 @@ class PredictManager:
                 self._config.data_group, split
             )
             # Find label code if not given
-            if not self._config.is_given_label_code(
-                self.maps_manager.label, label_code
-            ):
+            if self._config.is_given_label_code(self.maps_manager.label, label_code):
                 self.maps_manager.task_manager.generate_label_code(
                     group_df, self._config.label
                 )

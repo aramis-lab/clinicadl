@@ -30,27 +30,10 @@ config = InterpretConfig.model_fields
     help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
 )
 # Model
-@click.option(
-    "--selection_metrics",
-    default=config["selection_metrics"].default,  # ["loss"]
-    type=config["selection_metrics"].annotation,  # str
-    multiple=True,
-    help="Load the model selected on the metrics given.",
-)
+@cli_param.option.selection_metrics
 # Data
-@click.option(
-    "--participants_tsv",
-    type=config["tsv_path"].annotation,  # Path
-    default=config["tsv_path"].default,  # None
-    help="Path to a TSV file with participants/sessions to process, "
-    "if different from the one used during network training.",
-)
-@click.option(
-    "--caps_directory",
-    type=config["caps_directory"].annotation,  # Path
-    default=config["caps_directory"].default,  # None
-    help="Input CAPS directory, if different from the one used during network training.",
-)
+@cli_param.option.participant_list
+@cli_param.option.caps_directory
 @click.option(
     "--multi_cohort",
     type=config["multi_cohort"].annotation,  # bool
@@ -58,14 +41,7 @@ config = InterpretConfig.model_fields
     is_flag=True,
     help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
 )
-@click.option(
-    "--diagnoses",
-    "-d",
-    type=config["diagnoses"].annotation,  # str
-    default=config["diagnoses"].default,  # ??
-    multiple=True,
-    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
-)
+@cli_param.option.diagnoses
 @click.option(
     "--target_node",
     type=config["target_node"].annotation,  # int

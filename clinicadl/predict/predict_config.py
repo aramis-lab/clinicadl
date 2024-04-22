@@ -29,9 +29,9 @@ class PredictInterpretConfig(BaseModel):
     data_group: str
     caps_directory: Path
     tsv_path: Path
-    selection_metrics: list[str] = ["loss"]
-    split_list: list[int] = []
-    diagnoses: list[str] = []
+    selection_metrics: Tuple[str, ...] = "loss"
+    split_list: Tuple[int, ...] = ()
+    diagnoses: Tuple[str, ...] = ("AD", "CN")
     multi_cohort: bool = False
     batch_size: int = 8
     n_proc: int = 0
@@ -61,6 +61,16 @@ class PredictInterpretConfig(BaseModel):
         if not self.n_proc:
             self.n_proc = maps_manager.n_proc
 
+    def create_groupe_df(self):
+        group_df = None
+        if self.tsv_path is not None:
+            group_df = load_data_test(
+                self.tsv_path,
+                self.diagnoses,
+                multi_cohort=self.multi_cohort,
+            )
+        return group_df
+
 
 class InterpretConfig(PredictInterpretConfig):
     name: str
@@ -80,16 +90,6 @@ class InterpretConfig(PredictInterpretConfig):
                 f"Interpretation method {_method} is not implemented. "
                 f"Please choose in {_method_dict.keys()}"
             )
-
-    def create_groupe_df(self):
-        group_df = None
-        if self.tsv_path is not None:
-            group_df = load_data_test(
-                self.tsv_path,
-                self.diagnoses,
-                multi_cohort=self.multi_cohort,
-            )
-        return group_df
 
     def get_method(self):
         return self._method_dict[self.method]
@@ -113,8 +113,11 @@ class PredictConfig(PredictInterpretConfig):
             )
 
     def is_given_label_code(self, _label: str, _label_code: Union[str, Dict[str, int]]):
-        return not (
-            self.label is not None and self.label != _label and _label_code == "default"
+        return (
+            self.label is not None
+            and self.label != ""
+            and self.label != _label
+            and _label_code == "default"
         )
 
     def check_label(self, _label: str):

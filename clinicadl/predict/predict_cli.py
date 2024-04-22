@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import get_args
 
 import click
 
@@ -15,34 +16,13 @@ config = PredictConfig.model_fields
 @click.command(name="predict", no_args_is_help=True)
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
-@click.option(
-    "--caps_directory",
-    type=config["caps_directory"].annotation,  # Path
-    default=config["caps_directory"].default,  # None
-    help="Data using CAPS structure, if different from the one used during network training.",
-)
-@click.option(
-    "--participants_tsv",
-    type=config["tsv_path"].annotation,  # Path
-    default=config["tsv_path"].default,  # None
-    help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
-    If it includes the filename will load the TSV file directly.
-    Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
-)
+@cli_param.option.caps_directory
+@cli_param.option.participant_list
 @click.option(
     "--use_labels/--no_labels",
     type=config["use_labels"].annotation,  # bool
     default=config["use_labels"].default,  # false
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
-)
-@click.option(
-    "--selection_metrics",
-    "-sm",
-    type=config["selection_metrics"].annotation,  # str list ?
-    default=config["selection_metrics"].default,  # ["loss"]
-    multiple=True,
-    help="""Allow to select a list of models based on their selection metric. Default will
-    only infer the result of the best model selected on loss.""",
 )
 @click.option(
     "--multi_cohort",
@@ -52,14 +32,7 @@ config = PredictConfig.model_fields
     help="""Allow to use multiple CAPS directories.
             In this case, CAPS_DIRECTORY and PARTICIPANTS_TSV must be paths to TSV files.""",
 )
-@click.option(
-    "--diagnoses",
-    "-d",
-    type=config["diagnoses"].annotation,  # str list ?
-    default=config["diagnoses"].default,  # ??
-    multiple=True,
-    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
-)
+@cli_param.option.diagnoses
 @click.option(
     "--label",
     type=config["label"].annotation,  # str
@@ -96,7 +69,7 @@ config = PredictConfig.model_fields
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 @cli_param.option.overwrite
-def cli(pipeline="interpret", **kwargs):
+def cli(input_maps_directory, data_group, **kwargs):
     """This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
 
@@ -134,10 +107,10 @@ def cli(pipeline="interpret", **kwargs):
         )
 
     predict_config = PredictConfig(
-        maps_dir=kwargs["input_maps_directory"],
-        data_group=kwargs["data_group"],
+        maps_dir=input_maps_directory,
+        data_group=data_group,
         caps_directory=kwargs["caps_directory"],
-        tsv_path=kwargs["tsv_path"],
+        tsv_path=kwargs["participants_tsv"],
         use_labels=kwargs["use_labels"],
         label=kwargs["label"],
         gpu=kwargs["gpu"],
