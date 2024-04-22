@@ -1,6 +1,7 @@
+from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Enum, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
