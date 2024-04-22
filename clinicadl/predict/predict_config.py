@@ -1,8 +1,7 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
-import pandas as pd
 from pydantic import BaseModel, PrivateAttr, field_validator
 
 from clinicadl.interpret.gradients import GradCam, VanillaBackProp
@@ -20,11 +19,11 @@ logger = getLogger("clinicadl.predict_config")
 class PredictInterpretConfig(BaseModel):
     maps_dir: Path
     data_group: str
-    caps_directory: Optional[Path] = None
-    tsv_path: Optional[Path] = None
-    selection_metrics: List[str] = ["loss"]
-    split_list: Optional[List[int]] = None
-    diagnoses: Optional[List[str]] = None
+    caps_directory: Path
+    tsv_path: Path
+    selection_metrics: list[str] = ["loss"]
+    split_list: list[int] = []
+    diagnoses: list[str] = []
     multi_cohort: bool = False
     batch_size: int = 8
     n_proc: int = 0
@@ -33,6 +32,12 @@ class PredictInterpretConfig(BaseModel):
     overwrite: bool = False
     save_nifti: bool = False
     skip_leak_check: bool = False
+
+    @field_validator("selection_metrics", "split_list", "diagnoses", mode="before")
+    def list_to_tuples(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
 
     def adapt_config_with_maps_manager_info(self, maps_manager: MapsManager):
         if not self.split_list:
@@ -83,7 +88,7 @@ class InterpretConfig(PredictInterpretConfig):
 
 
 class PredictConfig(PredictInterpretConfig):
-    label: Optional[str] = None
+    label: str = ""
     save_tensor: bool = False
     save_latent_tensor: bool = False
     use_labels: bool = True

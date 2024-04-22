@@ -100,7 +100,6 @@ class MapsManager:
                 self._write_train_val_groups()
                 self._write_information()
 
-        print("tests", self.parameters["gpu"])
         init_ddp(gpu=self.parameters["gpu"], logger=logger)
 
     def __getattr__(self, name):

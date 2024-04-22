@@ -24,7 +24,6 @@ config = InterpretConfig.model_fields
     type=click.Choice(
         (get_args(config["method"].annotation))
     ),  # ["gradients", "grad-cam"]
-    default=config["method"].default,
 )
 @click.option(
     "--level_grad_cam",
@@ -43,8 +42,8 @@ config = InterpretConfig.model_fields
 # Data
 @click.option(
     "--participants_tsv",
-    type=config["participants_tsv"].annotation,  # Path
-    default=config["participants_tsv"].default,  # None
+    type=config["tsv_path"].annotation,  # Path
+    default=config["tsv_path"].default,  # None
     help="Path to a TSV file with participants/sessions to process, "
     "if different from the one used during network training.",
 )
@@ -96,7 +95,7 @@ config = InterpretConfig.model_fields
     help="Overwrite the name if it already exists.",
 )
 @cli_param.option.save_nifti
-def cli(**kwargs):
+def cli(input_maps_directory, data_group, name, method, **kwargs):
     """Interpretation of trained models using saliency map method.
 
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
@@ -117,10 +116,10 @@ def cli(**kwargs):
         )
 
     interpret_config = InterpretConfig(
-        maps_dir=kwargs["input_maps_directory"],
-        data_group=kwargs["data_group"],
-        name=kwargs["name"],
-        method=kwargs["method"],
+        maps_dir=input_maps_directory,
+        data_group=data_group,
+        name=name,
+        method=method,
         caps_directory=kwargs["caps_directory"],
         tsv_path=kwargs["participants_tsv"],
         selection_metrics=kwargs["selection_metrics"],
@@ -140,3 +139,7 @@ def cli(**kwargs):
 
     predict_manager = PredictManager(interpret_config)
     predict_manager.interpret()
+
+
+if __name__ == "__main__":
+    cli()

@@ -23,8 +23,8 @@ config = PredictConfig.model_fields
 )
 @click.option(
     "--participants_tsv",
-    type=config["participants_tsv"].annotation,  # Path
-    default=config["participants_tsv"].default,  # None
+    type=config["tsv_path"].annotation,  # Path
+    default=config["tsv_path"].default,  # None
     help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
@@ -96,7 +96,7 @@ config = PredictConfig.model_fields
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 @cli_param.option.overwrite
-def cli(**kwargs):
+def cli(pipeline="interpret", **kwargs):
     """This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
 
@@ -137,7 +137,7 @@ def cli(**kwargs):
         maps_dir=kwargs["input_maps_directory"],
         data_group=kwargs["data_group"],
         caps_directory=kwargs["caps_directory"],
-        tsv_path=kwargs["participants_tsv"],
+        tsv_path=kwargs["tsv_path"],
         use_labels=kwargs["use_labels"],
         label=kwargs["label"],
         gpu=kwargs["gpu"],
@@ -157,3 +157,7 @@ def cli(**kwargs):
 
     predict_manager = PredictManager(predict_config)
     predict_manager.predict()
+
+
+if __name__ == "__main__":
+    cli()
