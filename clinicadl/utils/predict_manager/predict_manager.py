@@ -255,7 +255,7 @@ class PredictManager:
         - _related_
         """
         assert isinstance(self._config, PredictConfig)
-        assert self._config.label
+        # assert self._config.label
 
         for network in range(self.maps_manager.num_networks):
             data_test = return_dataset(

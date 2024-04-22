@@ -21,9 +21,7 @@ config = InterpretConfig.model_fields
 )
 @click.argument(
     "method",
-    type=click.Choice(
-        (get_args(config["method"].annotation))
-    ),  # ["gradients", "grad-cam"]
+    type=config["method"].annotation,  # ["gradients", "grad-cam"]
 )
 @click.option(
     "--level_grad_cam",

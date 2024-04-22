@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, Enum, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
@@ -14,6 +14,13 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
 logger = getLogger("clinicadl.predict_config")
+
+
+class InterpretationMethod(str, Enum):
+    """Possible interpretation method in clinicaDL."""
+
+    GRADIENTS = "gradients"
+    GRAD_CAM = "grad-cam"
 
 
 class PredictInterpretConfig(BaseModel):
@@ -56,11 +63,11 @@ class PredictInterpretConfig(BaseModel):
 
 class InterpretConfig(PredictInterpretConfig):
     name: str
-    method: Literal["gradients", "grad-cam"]
+    method: InterpretationMethod = InterpretationMethod.GRADIENTS
     target_node: int = 0
     save_individual: bool = False
     overwrite_name: bool = False
-    level: Union[int, None] = 1
+    level: int = 1
     _method_dict: dict = PrivateAttr(
         default={"gradients": VanillaBackProp, "grad-cam": GradCam}
     )
