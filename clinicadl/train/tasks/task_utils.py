@@ -108,7 +108,10 @@ def task_launcher(config: BaseTaskConfig) -> None:
     train_dict["network_task"] = config._network_task
     if train_dict["transfer_path"] is None:
         train_dict["transfer_path"] = False
+    if train_dict["data_augmentation"] == []:
+        train_dict["data_augmentation"] = False
     split_list = config.split
+    print(split_list)
     #############
 
     train(maps_dir, train_dict, split_list)
