@@ -95,7 +95,9 @@ def task_launcher(config: BaseTaskConfig) -> None:
 
     # temporary # TODO : change train function to give it a config object
     maps_dir = config.output_maps_directory
-    train_dict = config.model_dump()
+    train_dict = config.model_dump(
+        exclude=["output_maps_directory", "preprocessing_json", "tsv_directory"]
+    )
     train_dict["tsv_path"] = config.tsv_directory
     train_dict[
         "preprocessing_dict"
