@@ -1,10 +1,11 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import pandas as pd
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, PrivateAttr, field_validator
 
+from clinicadl.interpret.gradients import GradCam, VanillaBackProp
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -50,19 +51,21 @@ class PredictInterpretConfig(BaseModel):
 
 class InterpretConfig(PredictInterpretConfig):
     name: str
-    method: str = "gradients"
+    method: Literal["gradients", "grad-cam"]
     target_node: int = 0
     save_individual: bool = False
     overwrite_name: bool = False
     level: Union[int, None] = 1
+    _method_dict: dict = PrivateAttr(
+        default={"gradients": VanillaBackProp, "grad-cam": GradCam}
+    )
 
-    def check_method_is_implemented(self):
-        from clinicadl.interpret.gradients import method_dict
-
-        if self.method not in method_dict:
+    @field_validator("method", "_method_dict")
+    def validator_method(cls, _method, _method_dict):
+        if _method not in _method_dict:
             raise NotImplementedError(
-                f"Interpretation method {self.method} is not implemented. "
-                f"Please choose in {method_dict.keys()}"
+                f"Interpretation method {_method} is not implemented. "
+                f"Please choose in {_method_dict.keys()}"
             )
 
     def create_groupe_df(self):
@@ -74,6 +77,9 @@ class InterpretConfig(PredictInterpretConfig):
                 multi_cohort=self.multi_cohort,
             )
         return group_df
+
+    def get_method(self):
+        return self._method_dict[self.method]
 
 
 class PredictConfig(PredictInterpretConfig):

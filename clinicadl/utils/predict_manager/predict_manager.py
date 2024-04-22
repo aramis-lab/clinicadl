@@ -11,7 +11,6 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.interpret.gradients import method_dict
 from clinicadl.predict.predict_config import (
     InterpretConfig,
     PredictConfig,
@@ -119,6 +118,11 @@ class PredictManager:
 
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
+
+        assert (
+            self._config.split_list
+        )  # don't know if needed ? try to raise an exception ?
+        assert self._config.label
 
         for split in self._config.split_list:
             logger.info(f"Prediction of split {split}")
@@ -250,6 +254,9 @@ class PredictManager:
         --------
         - _related_
         """
+        assert isinstance(self._config, PredictConfig)
+        assert self._config.label
+
         for network in range(self.maps_manager.num_networks):
             data_test = return_dataset(
                 group_parameters["caps_directory"],
@@ -382,6 +389,9 @@ class PredictManager:
         --------
         - _related_
         """
+
+        assert isinstance(self._config, PredictConfig)
+        assert self._config.label
 
         data_test = return_dataset(
             group_parameters["caps_directory"],
@@ -667,7 +677,6 @@ class PredictManager:
         assert isinstance(self._config, InterpretConfig)
 
         self._config.adapt_config_with_maps_manager_info(self.maps_manager)
-        self._config.check_method_is_implemented()
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -684,6 +693,7 @@ class PredictManager:
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
 
+        assert self._config.split_list
         for split in self._config.split_list:
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
@@ -740,7 +750,7 @@ class PredictManager:
                     gpu=self._config.gpu,
                 )
 
-                interpreter = method_dict[self._config.method](model)
+                interpreter = self._config.get_method()(model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
@@ -836,6 +846,7 @@ class PredictManager:
                 else:
                     # if not split_list:
                     #     split_list = self.maps_manager._find_splits()
+                    assert self._config.split_list
                     for split in self._config.split_list:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split
