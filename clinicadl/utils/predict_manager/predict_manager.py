@@ -122,7 +122,7 @@ class PredictManager:
         assert (
             self._config.split_list
         )  # don't know if needed ? try to raise an exception ?
-        assert self._config.label
+        # assert self._config.label
 
         for split in self._config.split_list:
             logger.info(f"Prediction of split {split}")
