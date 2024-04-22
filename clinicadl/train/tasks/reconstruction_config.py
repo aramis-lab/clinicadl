@@ -12,7 +12,7 @@ class ReconstructionConfig(BaseTaskConfig):
     """Config class to handle parameters of the reconstruction task."""
 
     architecture: str = "AE_Conv5_FC3"
-    loss: str = "CrossEntropyLoss"
+    loss: str = "MSELoss"
     selection_metrics: Tuple[str, ...] = ("loss",)
     # private
     _network_task: str = PrivateAttr(default="reconstruction")
