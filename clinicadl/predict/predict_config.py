@@ -60,7 +60,7 @@ class InterpretConfig(PredictInterpretConfig):
         default={"gradients": VanillaBackProp, "grad-cam": GradCam}
     )
 
-    @field_validator("method", "_method_dict")
+    @field_validator("method", "_method_dict", check_fields=False)
     def validator_method(cls, _method, _method_dict):
         if _method not in _method_dict:
             raise NotImplementedError(
