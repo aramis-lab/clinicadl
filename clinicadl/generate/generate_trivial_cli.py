@@ -207,28 +207,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         f"Trivial dataset was generated at {trivial_config.generated_caps_directory}"
     )
 
-    """Generation of trivial dataset with addition of synthetic brain atrophy.
-
-    CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
-
-    GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
-    """
-    from .generate import generate_trivial_dataset
-
-    generate_trivial_dataset(
-        caps_directory=caps_directory,
-        tsv_path=kwargs["participants_tsv"],
-        preprocessing=kwargs["preprocessing"],
-        output_dir=generated_caps_directory,
-        n_subjects=kwargs["n_subjects"],
-        n_proc=kwargs["n_proc"],
-        mask_path=kwargs["mask_path"],
-        atrophy_percent=kwargs["atrophy_percent"],
-        uncropped_image=kwargs["use_uncropped_image"],
-        tracer=kwargs["tracer"],
-        suvr_reference_region=kwargs["suvr_reference_region"],
-    )
-
 
 if __name__ == "__main__":
     cli()
