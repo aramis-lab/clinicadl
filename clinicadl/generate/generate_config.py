@@ -109,7 +109,7 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
     num_transforms: int = 2
     noise: bool = False
     noise_std: Annotated[list[float], 2] = [5, 15]
-    rotation: Annotated[list[int], 2] = [2, 4]  # float o int ???
+    rotation: Annotated[list[float], 2] = [2, 4]  # float o int ???
     translation: Annotated[list[float], 2] = [2, 4]
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
