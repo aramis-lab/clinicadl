@@ -29,7 +29,7 @@ def quality_check(
     tracer: str,
     ref_region: str,
     use_uncropped_image: bool,
-    participants_tsv: Path = None,
+    participants_tsv: Path,
     threshold: float = 0.8,
     n_proc: int = 0,
     gpu: bool = False,
