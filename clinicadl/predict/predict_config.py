@@ -29,7 +29,7 @@ class PredictInterpretConfig(BaseModel):
     data_group: str
     caps_directory: Path
     tsv_path: Path
-    selection_metrics: Tuple[str, ...] = "loss"
+    selection_metrics: Tuple[str, ...] = ["loss"]
     split_list: Tuple[int, ...] = ()
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     multi_cohort: bool = False
