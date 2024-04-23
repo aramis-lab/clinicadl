@@ -69,11 +69,14 @@ class BaseTaskConfig(BaseModel):
     # Information
     emissions_calculator: bool = False
     # Mode
-    use_extracted_features: bool = False    # unused. TODO : remove
+    use_extracted_features: bool = False  # unused. TODO : remove
     # Private
     _preprocessing_dict: Dict[str, Any] = PrivateAttr()
     _preprocessing_dict_target: Dict[str, Any] = PrivateAttr()
     _mode: Literal["image", "patch", "roi", "slice"] = PrivateAttr()
+
+    class Config:
+        validate_assignment = True
 
     @field_validator("diagnoses", "split", "data_augmentation", mode="before")
     def list_to_tuples(cls, v):
