@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import click
+from click.core import ParameterSource
 
 from clinicadl.train.train_utils import extract_config_from_toml_file
 from clinicadl.utils.cli_param import train_option
@@ -95,6 +96,7 @@ def cli(**kwargs):
             "classification",
         )
     for arg in kwargs:
-        options[arg] = kwargs[arg]
+        if click.get_current_context().get_parameter_source(arg) == ParameterSource.COMMANDLINE:
+            options[arg] = kwargs[arg]
     config = ClassificationConfig(**options)
     task_launcher(config)
