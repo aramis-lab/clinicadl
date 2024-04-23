@@ -54,6 +54,7 @@ class GenerateConfig(BaseModel):
 class SharedGenerateConfigOne(GenerateConfig):
     caps_directory: Path = Path("")
     participants_list: Path = Path("")
+    preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
     use_uncropped_image: bool = False
 
     @field_validator("participants_list", mode="before")
@@ -71,12 +72,6 @@ class SharedGenerateConfigOne(GenerateConfig):
 
         return v
 
-
-class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
-    suvr_reference_region_cls: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    tracer_cls: Tracer = Tracer.FFDG
-
     @property
     def preprocessing(self) -> Preprocessing:
         return self.preprocessing_cls
@@ -84,6 +79,11 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
         self.preprocessing_cls = Preprocessing(value)
+
+
+class SharedGenerateConfigTwo(SharedGenerateConfigOne):
+    suvr_reference_region_cls: SUVRReferenceRegions = SUVRReferenceRegions.PONS
+    tracer_cls: Tracer = Tracer.FFDG
 
     @property
     def suvr_reference_region(self) -> SUVRReferenceRegions:

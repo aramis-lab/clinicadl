@@ -13,7 +13,7 @@ mask_path = click.option(
 )
 atrophy_percent = click.option(
     "--atrophy_percent",
-    type=config_trivial["mask_path"].annotation,
-    default=config_trivial["mask_path"].default,
+    type=config_trivial["atrophy_percent"].annotation,
+    default=config_trivial["atrophy_percent"].default,
     help="Percentage of atrophy applied.",
 )

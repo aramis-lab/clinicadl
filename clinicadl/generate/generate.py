@@ -258,7 +258,7 @@ def generate_trivial_dataset(
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
-    if mask_path is None:
+    if not mask_path.is_file():
         cache_clinicadl = Path.home() / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
@@ -504,7 +504,7 @@ def generate_shepplogan_dataset(
     logger.info(f"Shepplogan dataset was generated at {output_dir}")
 
 
-def generate_hypometabolic_dataset(
+def g__enerate_hypometabolic_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_subjects: int,
