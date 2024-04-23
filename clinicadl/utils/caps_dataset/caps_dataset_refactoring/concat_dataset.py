@@ -7,11 +7,15 @@ from torch.utils.data import ConcatDataset, Dataset, StackDataset, dataloader
 
 
 class CapsConcatDataset(ConcatDataset):
+    """Concatenation of CapsDataset"""
+
     def __init__(self, datasets: Iterable[Dataset]) -> None:
         super().__init__(datasets=datasets)
 
         mode = [d.mode for d in self.datasets]
-        if all(i == mode[0] for i in mode):
+        if all(
+            i == mode[0] for i in mode
+        ):  # check that all the CaspDataset have the same mode
             self.mode = mode[0]
         else:
             raise AttributeError(
@@ -21,9 +25,9 @@ class CapsConcatDataset(ConcatDataset):
 
 class CapsPairedDataset(StackDataset):
     def __init__(self, datasets: Union[tuple, dict]) -> None:
-        self.datasets = list(datasets)  # list de nos datasets
-        self.n_datasets = len(self.datasets)  # nombre de datasets
-        self.mode = [d.mode for d in self.datasets]  # les modes de chaques datasets
+        self.datasets = list(datasets)  # CapsDatasets list
+        self.n_datasets = len(self.datasets)  # number of CapsDatasets
+        self.mode = [d.mode for d in self.datasets]  # modes of each CapsDatasets
         super().__init__(*datasets)  # * unpack the tuples
 
 
@@ -37,9 +41,9 @@ class CapsUnpairedDataset(Dataset):
     """
 
     def __init__(self, datasets: Union[tuple, list]) -> None:
-        self.datasets = list(datasets)  # list de nos datasets
-        self.n_datasets = len(self.datasets)  # nombre de datasets
-        self.mode = [d.mode for d in self.datasets]  # les modes de chaques datasets
+        self.datasets = list(datasets)  # list of CapsDatasets
+        self.n_datasets = len(self.datasets)  # number of CapsDatasets
+        self.mode = [d.mode for d in self.datasets]  # modes of each CapsDatasets
         self.len_dataset = [
             d.__len__() for d in self.datasets
         ]  # length of each datasets
@@ -64,7 +68,7 @@ class CapsUnpairedDataset(Dataset):
 
 
 def display_controlfile(control_file: pd.DataFrame) -> None:
-    import matplotlib.pyplot
+    import matplotlib.pyplot  # must be imported to display overlay
 
     def codes_labels(labels_columns: pd.Series):
         categorical_label = pd.CategoricalIndex(labels_columns)
@@ -161,7 +165,7 @@ def hyper_dataset(control_file_path: Path, paired: bool = False) -> Dataset:
                 "For the paired dataset, you should have the same number of multicohort number"
             )
 
-        # check 2, chaque labels est contenu le nombre de fois
+        # check 2, each labels_tsv same number than multi modalities
         controlcheck2 = control_file.reset_index().set_index(["label_tsv_path"])
         controlcheck2 = controlcheck2.index.value_counts()
         check2 = all(i == controlcheck2[0] for i in controlcheck2)
@@ -171,7 +175,7 @@ def hyper_dataset(control_file_path: Path, paired: bool = False) -> Dataset:
                 "Each label file should appears the same number of time for each assembly ID"
             )
 
-        # check 3, simplement que les combinaison assembly_id, labels sont equal
+        # check 3, equal number of combination assembly_id, labels
         controlcheck3 = control_file.reset_index().set_index(["label_tsv_path"])
         index = controlcheck3.index.unique()
         check3 = all(
