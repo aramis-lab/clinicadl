@@ -16,7 +16,7 @@ from clinicadl.utils.clinica_utils import (
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 
 def find_file_type(
@@ -59,14 +59,14 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:
 def load_and_check_tsv(
     tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-    if tsv_path is not None:
+    if tsv_path.is_file():
         if len(caps_dict) == 1:
             print(tsv_path)
             df = pd.read_csv(tsv_path, sep="\t")
             if ("session_id" not in list(df.columns.values)) or (
                 "participant_id" not in list(df.columns.values)
             ):
-                raise Exception(
+                raise ClinicaDLTSVError(
                     "the data file is not in the correct format."
                     "Columns should include ['participant_id', 'session_id']"
                 )
@@ -79,7 +79,11 @@ def load_and_check_tsv(
             df = pd.DataFrame()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = tsv_df.loc[idx, "path"]
+                cohort_path = Path(tsv_df.loc[idx, "path"])
+                if not cohort_path.is_file():
+                    raise ClinicaDLTSVError(
+                        f"The cohort path: {cohort_path} doesn't lead to a file"
+                    )
                 cohort_df = pd.read_csv(cohort_path, sep="\t")
                 cohort_df["cohort"] = cohort_name
                 df = pd.concat([df, cohort_df])
