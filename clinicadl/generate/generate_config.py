@@ -72,7 +72,7 @@ class SharedGenerateConfigOne(GenerateConfig):
         return v
 
 
-class SharedGenerateConfigTwo(GenerateConfig):
+class SharedGenerateConfigTwo(SharedGenerateConfigOne):
     preprocessing: Preprocessing = Preprocessing.T1_LINEAR
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
     tracer: Tracer = Tracer.FFDG
