@@ -1,3 +1,5 @@
+from typing import get_args
+
 import click
 
 from clinicadl.generate.generate_config import GenerateSheppLonganConfig
@@ -24,7 +26,7 @@ cn_subtypes_distribution = click.option(
     "--cn_subtypes_distribution",
     "-csd",
     multiple=3,
-    type=config_shepplogan["cn_subtypes_distribution"].annotation,
+    type=get_args(config_shepplogan["cn_subtypes_distribution"].annotation)[0],
     default=config_shepplogan["cn_subtypes_distribution"].default,
     help="Probability of each subtype to be drawn in CN label.",
 )
@@ -33,7 +35,7 @@ ad_subtypes_distribution = click.option(
     "--ad_subtypes_distribution",
     "-asd",
     multiple=3,
-    type=config_shepplogan["ad_subtypes_distribution"].annotation,
+    type=get_args(config_shepplogan["ad_subtypes_distribution"].annotation)[0],
     default=config_shepplogan["ad_subtypes_distribution"].default,
     help="Probability of each subtype to be drawn in AD label.",
 )

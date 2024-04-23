@@ -1,10 +1,8 @@
-from pathlib import Path
-
 import click
 
-from clinicadl.generate.generate_config import SharedGenerateConfigTwo
+from clinicadl.generate.generate_config import SharedGenerateConfigOne
 
-config = SharedGenerateConfigTwo.model_fields
+config = SharedGenerateConfigOne.model_fields
 
 caps_directory = click.argument(
     "caps_directory", type=config["caps_directory"].annotation

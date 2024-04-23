@@ -48,7 +48,7 @@ class Pathology(str, Enum):
 class GenerateConfig(BaseModel):
     generated_caps_directory: Path = Path("")
     n_subjects: int = 300
-    n_proc: int = 0
+    n_proc: int = 1
 
 
 class SharedGenerateConfigOne(GenerateConfig):
@@ -88,11 +88,11 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
     rotation: Annotated[list[int], 2] = [2, 4]  # float o int ???
     translation: Annotated[list[float], 2] = [2, 4]
 
-    # @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
-    # def list_to_tuples(cls, v):
-    #     if isinstance(v, list):
-    #         return tuple(v)
-    #     return v
+    @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
+    def list_to_tuples(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
 
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):

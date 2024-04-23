@@ -1,3 +1,5 @@
+from typing import get_args
+
 import click
 
 from clinicadl.generate.generate_config import GenerateArtifactsConfig
@@ -14,7 +16,7 @@ contrast = click.option(
 gamma = click.option(
     "--gamma",
     multiple=2,
-    type=config_artifacts["gamma"].annotation,
+    type=get_args(config_artifacts["gamma"].annotation)[0],
     default=config_artifacts["gamma"].default,
     help="Range between -1 and 1 for gamma augmentation",
 )
@@ -29,14 +31,14 @@ motion = click.option(
 translation = click.option(
     "--translation",
     multiple=2,
-    type=config_artifacts["translation"].annotation,
+    type=get_args(config_artifacts["translation"].annotation)[0],
     default=config_artifacts["translation"].default,
     help="Range in mm for the translation",
 )
 rotation = click.option(
     "--rotation",
     multiple=2,
-    type=config_artifacts["rotation"].annotation,
+    type=get_args(config_artifacts["rotation"].annotation)[0],
     default=config_artifacts["rotation"].default,
     help="Range in degree for the rotation",
 )
@@ -57,7 +59,7 @@ noise = click.option(
 noise_std = click.option(
     "--noise_std",
     multiple=2,
-    type=config_artifacts["noise_std"].annotation,
+    type=get_args(config_artifacts["noise_std"].annotation)[0],
     default=config_artifacts["noise_std"].default,
     help="Range for noise standard deviation",
 )

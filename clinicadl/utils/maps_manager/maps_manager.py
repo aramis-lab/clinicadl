@@ -878,6 +878,8 @@ class MapsManager:
         elif transfer_path:
             logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
+            print(transfer_maps)
+            print(split)
             transfer_state = transfer_maps.get_state_dict(
                 split,
                 selection_metric=transfer_selection,
