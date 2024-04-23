@@ -499,6 +499,10 @@ class MapsManager:
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
         available_metrics = self._find_selection_metrics(split)
+        print("################################")
+        print(available_metrics)
+        print(split)
+        print("################################")
         if not selection_metric:
             if len(available_metrics) > 1:
                 raise ClinicaDLArgumentError(
