@@ -45,7 +45,7 @@ def extract_config_from_toml_file(config_file: Path, task: str) -> Dict[str, Any
         raise ClinicaDLConfigurationError(
             f"Config file {config_file} should be a TOML file."
         )
-    
+
     user_dict = toml.load(config_file)
     if "Random_Search" in user_dict:
         del user_dict["Random_Search"]
