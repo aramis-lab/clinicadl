@@ -1,9 +1,9 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Union
 
-from pydantic import BaseModel, PrivateAttr, field_validator
+from pydantic import BaseModel, field_validator
 
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
@@ -159,7 +159,7 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
         return v
 
 
-class GenerateSheppLonganConfig(GenerateConfig):
+class GenerateSheppLoganConfig(GenerateConfig):
     ad_subtypes_distribution: Annotated[list[float], 3] = [0.05, 0.85, 0.10]
     cn_subtypes_distribution: Annotated[list[float], 3] = [1.0, 0.0, 0.0]
     extract_json: str = ""

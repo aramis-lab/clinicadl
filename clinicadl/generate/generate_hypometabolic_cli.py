@@ -1,25 +1,18 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import click
 import nibabel as nib
-import numpy as np
 import pandas as pd
-import torch
-import torchio as tio
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import (
     GenerateHypometabolicConfig,
-    Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import (
     RemoteFileStructure,
@@ -27,14 +20,11 @@ from clinicadl.utils.clinica_utils import (
     fetch_file,
 )
 from clinicadl.utils.exceptions import DownloadError
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
-from clinicadl.utils.preprocessing import write_preprocessing
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
 from .generate_utils import (
     find_file_type,
-    generate_shepplogan_phantom,
-    im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
     mask_processing,
     write_missing_mods,

@@ -2,9 +2,9 @@ from typing import get_args
 
 import click
 
-from clinicadl.generate.generate_config import GenerateSheppLonganConfig
+from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 
-config_shepplogan = GenerateSheppLonganConfig.model_fields
+config_shepplogan = GenerateSheppLoganConfig.model_fields
 
 extract_json = click.option(
     "-ej",
