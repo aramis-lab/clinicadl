@@ -1,7 +1,7 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
@@ -46,7 +46,7 @@ class Pathology(str, Enum):
 
 
 class GenerateConfig(BaseModel):
-    generated_caps: Path = Path("")
+    generated_caps_directory: Path = Path("")
     n_subjects: int = 300
     n_proc: int = 0
 
@@ -57,7 +57,7 @@ class SharedGenerateConfigOne(GenerateConfig):
     use_uncropped_image: bool = False
 
     @field_validator("participants_list", mode="before")
-    def list_to_tuples(cls, v):
+    def check_tsv_file(cls, v):
         if not isinstance(v, Path):
             Path(v)
         if not v.is_file():
@@ -80,19 +80,19 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
 class GenerateArtifactsConfig(SharedGenerateConfigTwo):
     contrast: bool = False
-    gamma: Tuple[float, float] = (-0.2, -0.05)
+    gamma: Annotated[list[float], 2] = [-0.2, -0.05]
     motion: bool = False
     num_transforms: int = 2
     noise: bool = False
-    noise_std: Tuple[float, float] = (5, 15)
-    rotation: Tuple[int, int] = (2, 4)  # float o int ???
-    translation: Tuple[float, float] = (2, 4)
+    noise_std: Annotated[list[float], 2] = [5, 15]
+    rotation: Annotated[list[int], 2] = [2, 4]  # float o int ???
+    translation: Annotated[list[float], 2] = [2, 4]
 
-    @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
-    def list_to_tuples(cls, v):
-        if isinstance(v, list):
-            return tuple(v)
-        return v
+    # @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
+    # def list_to_tuples(cls, v):
+    #     if isinstance(v, list):
+    #         return tuple(v)
+    #     return v
 
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
@@ -112,7 +112,7 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
     mask_path: Path = Path("")
 
     @field_validator("mask_path", mode="before")
-    def list_to_tuples(cls, v):
+    def check_mask_file(cls, v):
         if not isinstance(v, Path):
             Path(v)
         if not v.is_file():
@@ -128,16 +128,16 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
 
 
 class GenerateSheppLonganConfig(GenerateConfig):
-    ad_subtypes_distribution: Tuple[float, float, float] = (0.05, 0.85, 0.10)
-    cn_subtypes_distribution: Tuple[float, float, float] = (1.0, 0.0, 0.0)
+    ad_subtypes_distribution: Annotated[list[float], 3] = [0.05, 0.85, 0.10]
+    cn_subtypes_distribution: Annotated[list[float], 3] = [1.0, 0.0, 0.0]
     extract_json: str = ""
     image_size: int = 128
     smoothing: bool = False
 
-    @field_validator(
-        "ad_subtypes_distribution", "cn_subtypes_distribution", mode="before"
-    )
-    def list_to_tuples(cls, v):
-        if isinstance(v, list):
-            return tuple(v)
-        return v
+    # @field_validator(
+    #     "ad_subtypes_distribution", "cn_subtypes_distribution", mode="before"
+    # )
+    # # def list_to_tuples(cls, v):
+    # #     if isinstance(v, list):
+    # #         return tuple(v)
+    # #     return v
