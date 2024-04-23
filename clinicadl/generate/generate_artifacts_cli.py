@@ -85,7 +85,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
     artif_config.n_proc = kwargs["n_proc"]
 
     multi_cohort = False  # hard coded ??????
-
     commandline_to_json(
         {
             "output_dir": artif_config.generated_caps_directory,

@@ -61,20 +61,20 @@ class SharedGenerateConfigOne(GenerateConfig):
     def check_tsv_file(cls, v):
         if not isinstance(v, Path):
             Path(v)
-        if not v.is_file():
-            raise ClinicaDLTSVError(
-                "The participants_list you gave is not a file. Please give an existing file."
-            )
-        if v.stat().st_size == 0:
-            raise ClinicaDLTSVError(
-                "The participants_list you gave is empty. Please give a non-empty file."
-            )
+        # if not v.is_file():
+        #     raise ClinicaDLTSVError(
+        #         "The participants_list you gave is not a file. Please give an existing file."
+        #     )
+        # if v.stat().st_size == 0:
+        #     raise ClinicaDLTSVError(
+        #         "The participants_list you gave is empty. Please give a non-empty file."
+        #     )
 
         return v
 
     @property
     def preprocessing(self) -> Preprocessing:
-        return self.preprocessing_cls
+        return self.preprocessing_cls.value
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
@@ -87,7 +87,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self.suvr_reference_region_cls
+        return self.suvr_reference_region_cls.value
 
     @suvr_reference_region.setter
     def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
@@ -95,7 +95,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def tracer(self) -> Tracer:
-        return self.tracer_cls
+        return self.tracer_cls.value
 
     @tracer.setter
     def tracer(self, value: Union[str, Tracer]):
@@ -126,7 +126,7 @@ class GenerateHypometabolicConfig(SharedGenerateConfigOne):
 
     @property
     def pathology(self) -> Pathology:
-        return self.pathology_cls
+        return self.pathology_cls.value
 
     @pathology.setter
     def pathology(self, value: Union[str, Pathology]):
