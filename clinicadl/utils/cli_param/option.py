@@ -14,9 +14,6 @@ from clinicadl.predict.predict_config import (
 LIST_SUVR_REFERENCE_REGIONS = ["pons", "cerebellumPons", "pons2", "cerebellumPons2"]
 
 config = PredictInterpretConfig.model_fields
-print(
-    config["split_list"].default,
-)
 
 # TSV TOOLS
 diagnoses = click.option(

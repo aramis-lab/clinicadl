@@ -79,9 +79,7 @@ class InterpretConfig(PredictInterpretConfig):
     save_individual: bool = False
     overwrite_name: bool = False
     level: int = 1
-    _method_dict: dict = PrivateAttr(
-        default={"gradients": VanillaBackProp, "grad-cam": GradCam}
-    )
+    _method_dict: dict = {"gradients": VanillaBackProp, "grad-cam": GradCam}
 
     @field_validator("method", "_method_dict", check_fields=False)
     def validator_method(cls, _method, _method_dict):
