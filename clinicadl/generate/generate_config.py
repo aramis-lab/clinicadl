@@ -73,9 +73,33 @@ class SharedGenerateConfigOne(GenerateConfig):
 
 
 class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    preprocessing: Preprocessing = Preprocessing.T1_LINEAR
-    suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    tracer: Tracer = Tracer.FFDG
+    _preprocessing: Preprocessing = Preprocessing.T1_LINEAR
+    _suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
+    _tracer: Tracer = Tracer.FFDG
+
+    @property
+    def preprocessing(self) -> Preprocessing:
+        return self._preprocessing
+
+    @preprocessing.setter
+    def preprocessing(self, value: Union[str, Preprocessing]):
+        self._preprocessing = Preprocessing(value)
+
+    @property
+    def suvr_reference_region(self) -> SUVRReferenceRegions:
+        return self._suvr_reference_region
+
+    @suvr_reference_region.setter
+    def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
+        self._suvr_reference_region = SUVRReferenceRegions(value)
+
+    @property
+    def tracer(self) -> Tracer:
+        return self._tracer
+
+    @tracer.setter
+    def tracer(self, value: Union[str, Tracer]):
+        self._tracer = Tracer(value)
 
 
 class GenerateArtifactsConfig(SharedGenerateConfigTwo):
@@ -97,8 +121,16 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
     anomaly_degree: float = 30.0
-    pathology: Pathology = Pathology.AD
+    _pathology: Pathology = Pathology.AD
     sigma: int = 5
+
+    @property
+    def pathology(self) -> Pathology:
+        return self._pathology
+
+    @pathology.setter
+    def pathology(self, value: Union[str, Pathology]):
+        self._pathology = Pathology(value)
 
 
 class GenerateRandomConfig(SharedGenerateConfigTwo):
