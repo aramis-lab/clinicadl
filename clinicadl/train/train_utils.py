@@ -45,12 +45,12 @@ def extract_config_from_toml_file(config_file: Path, task: str) -> Dict[str, Any
         raise ClinicaDLConfigurationError(
             f"Config file {config_file} should be a TOML file."
         )
-
+    
     user_dict = toml.load(config_file)
     if "Random_Search" in user_dict:
         del user_dict["Random_Search"]
 
-    # read default values
+    # get the template
     clinicadl_root_dir = Path(__file__).parents[1]
     config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     config_dict = toml.load(config_path)
@@ -68,17 +68,15 @@ def extract_config_from_toml_file(config_file: Path, task: str) -> Dict[str, Any
                     f"{key} option in {section_name} is not valid in TOML configuration file. "
                     f"Please see the documentation to see the list of option in TOML configuration file."
                 )
-            config_dict[section_name][key] = user_dict[section_name][key]
-
-    train_dict = dict()
 
     # task dependent
-    config_dict = remove_unused_tasks(config_dict, task)
+    user_dict = remove_unused_tasks(user_dict, task)
 
+    train_dict = dict()
     # Fill train_dict from TOML files arguments
-    for config_section in config_dict:
-        for key in config_dict[config_section]:
-            train_dict[key] = config_dict[config_section][key]
+    for config_section in user_dict:
+        for key in user_dict[config_section]:
+            train_dict[key] = user_dict[config_section][key]
 
     return train_dict
 

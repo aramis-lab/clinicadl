@@ -30,7 +30,7 @@ from .task_utils import task_launcher
 @train_option.compensation
 @train_option.save_all_models
 # Model
-@train_option.architecture
+@train_option.classification_architecture
 @train_option.multi_network
 @train_option.ssda_network
 # Data
@@ -88,12 +88,13 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    if kwargs["config_file"]:  # overwrite cli parameters with config file
+    options = {}
+    if kwargs["config_file"]:
         options = extract_config_from_toml_file(
             Path(kwargs["config_file"]),
             "classification",
         )
-        for arg in options:
-            kwargs[arg] = options[arg]
-    config = ClassificationConfig(**kwargs)
+    for arg in kwargs:
+        options[arg] = kwargs[arg]
+    config = ClassificationConfig(**options)
     task_launcher(config)

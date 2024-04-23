@@ -109,7 +109,9 @@ def task_launcher(config: BaseTaskConfig) -> None:
         train_dict["transfer_path"] = False
     if train_dict["data_augmentation"] == ():
         train_dict["data_augmentation"] = False
-    split_list = train_dict.pop("split")
+    split_list = list(train_dict.pop("split"))
     #############
-
+    print(maps_dir)
+    print(train_dict)
+    print(split_list)
     train(maps_dir, train_dict, split_list)
