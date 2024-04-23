@@ -94,7 +94,7 @@ class CapsDataset(Dataset):
     def elem_index(self):
         pass
 
-    def label_fn(self, target: Union[str, float, int]) -> Union[float, int]:
+    def label_fn(self, target: Union[str, float, int]) -> Optional[Union[float, int]]:
         """
         Returns the label value usable in criterion.
 
