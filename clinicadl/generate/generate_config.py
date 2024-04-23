@@ -73,33 +73,33 @@ class SharedGenerateConfigOne(GenerateConfig):
 
 
 class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    _preprocessing: Preprocessing = Preprocessing.T1_LINEAR
-    _suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    _tracer: Tracer = Tracer.FFDG
+    preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
+    suvr_reference_region_cls: SUVRReferenceRegions = SUVRReferenceRegions.PONS
+    tracer_cls: Tracer = Tracer.FFDG
 
     @property
     def preprocessing(self) -> Preprocessing:
-        return self._preprocessing
+        return self.preprocessing_cls
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
-        self._preprocessing = Preprocessing(value)
+        self.preprocessing_cls = Preprocessing(value)
 
     @property
     def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self._suvr_reference_region
+        return self.suvr_reference_region_cls
 
     @suvr_reference_region.setter
     def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
-        self._suvr_reference_region = SUVRReferenceRegions(value)
+        self.suvr_reference_region_cls = SUVRReferenceRegions(value)
 
     @property
     def tracer(self) -> Tracer:
-        return self._tracer
+        return self.tracer_cls
 
     @tracer.setter
     def tracer(self, value: Union[str, Tracer]):
-        self._tracer = Tracer(value)
+        self.tracer_cls = Tracer(value)
 
 
 class GenerateArtifactsConfig(SharedGenerateConfigTwo):
@@ -121,16 +121,16 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
     anomaly_degree: float = 30.0
-    _pathology: Pathology = Pathology.AD
+    pathology_cls: Pathology = Pathology.AD
     sigma: int = 5
 
     @property
     def pathology(self) -> Pathology:
-        return self._pathology
+        return self.pathology_cls
 
     @pathology.setter
     def pathology(self, value: Union[str, Pathology]):
-        self._pathology = Pathology(value)
+        self.pathology_cls = Pathology(value)
 
 
 class GenerateRandomConfig(SharedGenerateConfigTwo):

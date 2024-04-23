@@ -6,8 +6,8 @@ config_hypometabolic = GenerateHypometabolicConfig.model_fields
 pathology = click.option(
     "--pathology",
     "-p",
-    type=config_hypometabolic["pathology"].annotation,
-    default=config_hypometabolic["pathology"].default,
+    type=config_hypometabolic["pathology_cls"].annotation,
+    default=config_hypometabolic["pathology_cls"].default,
     help="Pathology applied. To chose in the following list: [ad, bvftd, lvppa, nfvppa, pca, svppa]",
 )
 anomaly_degree = click.option(

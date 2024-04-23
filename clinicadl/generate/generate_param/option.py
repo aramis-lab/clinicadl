@@ -16,8 +16,8 @@ n_proc = click.option(
 )
 preprocessing = click.option(
     "--preprocessing",
-    type=config["preprocessing"].annotation,
-    default=config["preprocessing"].default,
+    type=config["preprocessing_cls"].annotation,
+    default=config["preprocessing_cls"].default,
     required=True,
     help="Preprocessing used to generate synthetic data.",
 )
@@ -37,8 +37,8 @@ use_uncropped_image = click.option(
 )
 tracer = click.option(
     "--tracer",
-    type=config["tracer"].annotation,
-    default=config["tracer"].default,
+    type=config["tracer_cls"].annotation,
+    default=config["tracer_cls"].default,
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
         "Name of the tracer used for the PET acquisition (trc-<tracer>). "
@@ -48,8 +48,8 @@ tracer = click.option(
 suvr_reference_region = click.option(
     "-suvr",
     "--suvr_reference_region",
-    type=config["suvr_reference_region"].annotation,
-    default=config["suvr_reference_region"].default,
+    type=config["suvr_reference_region_cls"].annotation,
+    default=config["suvr_reference_region_cls"].default,
     help=(
         "Regions used for normalization if MODALITY is `pet-linear`. "
         "Intensity normalization using the average PET uptake in reference regions resulting in a standardized uptake "
