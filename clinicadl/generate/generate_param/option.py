@@ -23,8 +23,8 @@ preprocessing = click.option(
 )
 participants_tsv = click.option(
     "--participants_tsv",
-    type=config["preprocessing"].annotation,
-    default=config["preprocessing"].default,
+    type=config["participants_tsv"].annotation,
+    default=config["participants_tsv"].default,
     help="Path to a TSV file including a list of participants/sessions.",
 )
 use_uncropped_image = click.option(
