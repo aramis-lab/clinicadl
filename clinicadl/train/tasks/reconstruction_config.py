@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 from pydantic import PrivateAttr, field_validator
 
@@ -11,9 +11,17 @@ logger = getLogger("clinicadl.reconstruction_config")
 class ReconstructionConfig(BaseTaskConfig):
     """Config class to handle parameters of the reconstruction task."""
 
-    architecture: str = "AE_Conv5_FC3"
     loss: str = "MSELoss"
     selection_metrics: Tuple[str, ...] = ("loss",)
+    # model
+    architecture: str = "AE_Conv5_FC3"
+    latent_space_size: int = 128
+    feature_size: int = 1024
+    n_conv: int = 4
+    io_layer_channels: int = 8
+    recons_weight: int = 1
+    kl_weight: int = 1
+    normalization: Literal["batch", "group", "instance"] = "batch"
     # private
     _network_task: str = PrivateAttr(default="reconstruction")
 
