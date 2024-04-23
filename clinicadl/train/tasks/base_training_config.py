@@ -68,6 +68,8 @@ class BaseTaskConfig(BaseModel):
     nb_unfrozen_layer: int = 0
     # Information
     emissions_calculator: bool = False
+    # Mode
+    use_extracted_features: bool = False    # unused. TODO : remove
     # Private
     _preprocessing_dict: Dict[str, Any] = PrivateAttr()
     _preprocessing_dict_target: Dict[str, Any] = PrivateAttr()
