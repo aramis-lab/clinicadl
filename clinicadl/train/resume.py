@@ -7,7 +7,7 @@ from logging import getLogger
 from pathlib import Path
 
 from clinicadl import MapsManager
-from clinicadl.utils.maps_manager.trainer import Trainer
+from clinicadl.utils.trainer import Trainer
 
 
 def replace_arg(options, key_name, value):
