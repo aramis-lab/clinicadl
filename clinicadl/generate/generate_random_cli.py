@@ -1,43 +1,21 @@
 import click
 
-from clinicadl.utils import cli_param
+from clinicadl.generate import generate_param
 
 
 @click.command(name="random", no_args_is_help=True)
-@cli_param.argument.caps_directory
-@cli_param.argument.generated_caps
-@cli_param.option.preprocessing
-@cli_param.option.participant_list
-@cli_param.option.n_subjects
-@cli_param.option.n_proc
-@click.option(
-    "--mean",
-    type=float,
-    default=0,
-    help="Mean value of the gaussian noise added to synthetic images.",
-)
-@click.option(
-    "--sigma",
-    type=float,
-    default=0.5,
-    help="Standard deviation of the gaussian noise added to synthetic images.",
-)
-@cli_param.option.use_uncropped_image
-@cli_param.option.tracer
-@cli_param.option.suvr_reference_region
-def cli(
-    caps_directory,
-    generated_caps_directory,
-    preprocessing,
-    participants_tsv,
-    n_subjects,
-    n_proc,
-    mean,
-    sigma,
-    use_uncropped_image,
-    tracer,
-    suvr_reference_region,
-):
+@generate_param.argument.caps_directory
+@generate_param.argument.generated_caps_directory
+@generate_param.option.preprocessing
+@generate_param.option.participants_tsv
+@generate_param.option.n_subjects
+@generate_param.option.n_proc
+@generate_param.option.use_uncropped_image
+@generate_param.option.tracer
+@generate_param.option.suvr_reference_region
+@generate_param.option_random.mean
+@generate_param.option_random.sigma
+def cli(caps_directory, generated_caps_directory, **kwargs):
     """Addition of random gaussian noise to brain images.
 
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
@@ -48,16 +26,16 @@ def cli(
 
     generate_random_dataset(
         caps_directory=caps_directory,
-        preprocessing=preprocessing,
-        tsv_path=participants_tsv,
+        preprocessing=kwargs["preprocessing"],
+        tsv_path=kwargs["participants_tsv"],
         output_dir=generated_caps_directory,
-        n_subjects=n_subjects,
-        n_proc=n_proc,
-        mean=mean,
-        sigma=sigma,
-        uncropped_image=use_uncropped_image,
-        tracer=tracer,
-        suvr_reference_region=suvr_reference_region,
+        n_subjects=kwargs["n_subjects"],
+        n_proc=kwargs["n_proc"],
+        mean=kwargs["mean"],
+        sigma=kwargs["sigma"],
+        uncropped_image=kwargs["use_uncropped_image"],
+        tracer=kwargs["tracer"],
+        suvr_reference_region=kwargs["suvr_reference_region"],
     )
 
 
