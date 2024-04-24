@@ -13,6 +13,7 @@ extract_json = click.option(
     default=config_shepplogan["extract_json"].default,
     help="Name of the JSON file created to describe the tensor extraction. "
     "Default will use format extract_{time_stamp}.json",
+    show_default=True,
 )
 
 image_size = click.option(
@@ -20,6 +21,7 @@ image_size = click.option(
     help="Size in pixels of the squared images.",
     type=config_shepplogan["image_size"].annotation,
     default=config_shepplogan["image_size"].default,
+    show_default=True,
 )
 
 cn_subtypes_distribution = click.option(
@@ -29,6 +31,7 @@ cn_subtypes_distribution = click.option(
     type=get_args(config_shepplogan["cn_subtypes_distribution"].annotation)[0],
     default=config_shepplogan["cn_subtypes_distribution"].default,
     help="Probability of each subtype to be drawn in CN label.",
+    show_default=True,
 )
 
 ad_subtypes_distribution = click.option(
@@ -38,6 +41,7 @@ ad_subtypes_distribution = click.option(
     type=get_args(config_shepplogan["ad_subtypes_distribution"].annotation)[0],
     default=config_shepplogan["ad_subtypes_distribution"].default,
     help="Probability of each subtype to be drawn in AD label.",
+    show_default=True,
 )
 
 smoothing = click.option(
@@ -45,4 +49,5 @@ smoothing = click.option(
     type=config_shepplogan["smoothing"].annotation,
     default=config_shepplogan["smoothing"].default,
     help="Adds random smoothing to generated data.",
+    show_default=True,
 )

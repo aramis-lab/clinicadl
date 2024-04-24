@@ -10,10 +10,12 @@ mask_path = click.option(
     default=config_trivial["mask_path"].default,
     help="Path to the extracted masks to generate the two labels. "
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",
+    show_default=True,
 )
 atrophy_percent = click.option(
     "--atrophy_percent",
     type=config_trivial["atrophy_percent"].annotation,
     default=config_trivial["atrophy_percent"].default,
     help="Percentage of atrophy applied.",
+    show_default=True,
 )

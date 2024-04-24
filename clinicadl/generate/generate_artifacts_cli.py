@@ -39,23 +39,12 @@ logger = getLogger("clinicadl.generate.artifacts")
 @generate_param.option_artifacts.rotation
 @generate_param.option_artifacts.gamma
 def cli(caps_directory, generated_caps_directory, **kwargs):
-    artif_config = GenerateArtifactsConfig()
-    artif_config.caps_directory = caps_directory
-    artif_config.participants_list = kwargs["participants_tsv"]
-    artif_config.preprocessing = kwargs["preprocessing"]
-    artif_config.generated_caps_directory = generated_caps_directory
-    artif_config.use_uncropped_image = kwargs["use_uncropped_image"]
-    artif_config.tracer = kwargs["tracer"]
-    artif_config.suvr_reference_region = kwargs["suvr_reference_region"]
-    artif_config.contrast = kwargs["contrast"]
-    artif_config.gamma = kwargs["gamma"]
-    artif_config.motion = kwargs["motion"]
-    artif_config.translation = kwargs["translation"]
-    artif_config.rotation = kwargs["rotation"]
-    artif_config.num_transforms = kwargs["num_transforms"]
-    artif_config.noise = kwargs["noise"]
-    artif_config.noise_std = kwargs["noise_std"]
-    artif_config.n_proc = kwargs["n_proc"]
+    artif_config = GenerateArtifactsConfig(
+        caps_directory=caps_directory,
+        generated_caps_directory=generated_caps_directory,
+        participants_list=kwargs["participants_tsv"],
+        **kwargs,
+    )
 
     multi_cohort = False  # hard coded ??????
     commandline_to_json(

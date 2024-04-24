@@ -118,6 +118,15 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
             return tuple(v)
         return v
 
+    @field_validator("gamma", mode="before")
+    def gamma_validator(cls, v):
+        assert len(v) == 2
+        if v[0] < -1 or v[0] > v[1] or v[1] > 1:
+            raise ValueError(
+                f"gamma augmentation must range between -1 and 1, please set other values than {v}."
+            )
+        return v
+
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
     anomaly_degree: float = 30.0

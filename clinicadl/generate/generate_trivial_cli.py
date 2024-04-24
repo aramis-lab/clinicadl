@@ -41,19 +41,14 @@ logger = getLogger("clinicadl.generate.trivial")
 @generate_param.option_trivial.atrophy_percent
 @generate_param.option_trivial.mask_path
 def cli(caps_directory, generated_caps_directory, **kwargs):
-    trivial_config = GenerateTrivialConfig()
-
-    trivial_config.caps_directory = caps_directory
-    trivial_config.participants_list = kwargs["participants_tsv"]
-    trivial_config.preprocessing = kwargs["preprocessing"]
-    trivial_config.generated_caps_directory = generated_caps_directory
-    trivial_config.n_subjects = kwargs["n_subjects"]
-    trivial_config.n_proc = kwargs["n_proc"]
-    trivial_config.mask_path = kwargs["mask_path"]
-    trivial_config.atrophy_percent = kwargs["atrophy_percent"]
-    trivial_config.use_uncropped_image = kwargs["use_uncropped_image"]
-    trivial_config.tracer = kwargs["tracer"]
-    trivial_config.suvr_reference_region = kwargs["suvr_reference_region"]
+    trivial_config = GenerateTrivialConfig(
+        caps_directory=caps_directory,
+        generated_caps_directory=generated_caps_directory,
+        suvr_reference_region_cls=kwargs["suvr_reference_region"],
+        tracer_cls=kwargs["tracer"],
+        participants_list=kwargs["participants_tsv"],
+        preprocessing_cls=kwargs["preprocessing"],
+    )
 
     from clinicadl.utils.exceptions import DownloadError
 

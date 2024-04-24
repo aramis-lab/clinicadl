@@ -36,16 +36,9 @@ def cli(generated_caps_directory, **kwargs):
     3 subtypes based on Shepp-Logan phantom.
     """
 
-    shepplogan_config = GenerateSheppLoganConfig()
-
-    shepplogan_config.generated_caps_directory = generated_caps_directory
-    shepplogan_config.image_size = kwargs["image_size"]
-    shepplogan_config.n_proc = kwargs["n_proc"]
-    shepplogan_config.ad_subtypes_distribution = kwargs["ad_subtypes_distribution"]
-    shepplogan_config.cn_subtypes_distribution = kwargs["cn_subtypes_distribution"]
-    shepplogan_config.extract_json = kwargs["extract_json"]
-    shepplogan_config.n_subjects = kwargs["n_subjects"]
-    shepplogan_config.smoothing = kwargs["smoothing"]
+    shepplogan_config = GenerateSheppLoganConfig(
+        generated_caps_directory=generated_caps_directory, **kwargs
+    )
 
     labels_distribution = {
         "AD": shepplogan_config.ad_subtypes_distribution,

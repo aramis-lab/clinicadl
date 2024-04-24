@@ -10,6 +10,7 @@ from nilearn.image import resample_to_img
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import (
     GenerateHypometabolicConfig,
+    Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
@@ -55,13 +56,9 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         caps_directory=caps_directory,
         generated_caps_directory=generated_caps_directory,  # output_dir
         participants_list=kwargs["participants_tsv"],  # tsv_path
-        preprocessing_cls="pet-linear",
-        n_subjects=kwargs["n_subjects"],
-        n_proc=kwargs["n_proc"],
+        preprocessing_cls=Preprocessing("pet-linear"),
         pathology_cls=kwargs["pathology"],
-        anomaly_degree=kwargs["anomaly_degree"],
-        sigma=kwargs["sigma"],
-        use_uncropped_image=kwargs["use_uncropped_image"],
+        **kwargs,
     )
 
     commandline_to_json(

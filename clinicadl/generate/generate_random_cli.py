@@ -41,19 +41,14 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
 
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the random dataset will be saved.
     """
-    random_config = GenerateRandomConfig()
-
-    random_config.caps_directory = caps_directory
-    random_config.preprocessing = kwargs["preprocessing"]
-    random_config.participants_list = kwargs["participants_tsv"]
-    random_config.generated_caps_directory = generated_caps_directory
-    random_config.n_subjects = kwargs["n_subjects"]
-    random_config.n_proc = kwargs["n_proc"]
-    random_config.mean = kwargs["mean"]
-    random_config.sigma = kwargs["sigma"]
-    random_config.use_uncropped_image = kwargs["use_uncropped_image"]
-    random_config.tracer = kwargs["tracer"]
-    random_config.suvr_reference_region = kwargs["suvr_reference_region"]
+    random_config = GenerateRandomConfig(
+        caps_directory=caps_directory,
+        generated_caps_directory=generated_caps_directory,
+        preprocessing_cls=kwargs["preprocessing"],
+        tracer_cls=kwargs["tracer"],
+        suvr_reference_region_cls=kwargs["suvr_reference_region"],
+        **kwargs,
+    )
 
     commandline_to_json(
         {
