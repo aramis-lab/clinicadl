@@ -110,6 +110,13 @@ def task_launcher(config: BaseTaskConfig) -> None:
     if train_dict["data_augmentation"] == ():
         train_dict["data_augmentation"] = False
     split_list = train_dict.pop("split")
+    train_dict["compensation"] = config.compensation.value
+    train_dict["size_reduction_factor"] = config.size_reduction_factor.value
+    if train_dict["track_exp"]:
+        train_dict["track_exp"] = config.track_exp.value
+    train_dict["sampler"] = config.sampler.value
+    if train_dict["network_task"] == "reconstruction":
+        train_dict["normalization"] = config.normalization.value
     #############
 
     train(maps_dir, train_dict, split_list)
