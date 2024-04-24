@@ -63,7 +63,7 @@ class PredictInterpretConfig(BaseModel):
 
     def create_groupe_df(self):
         group_df = None
-        if self.tsv_path is not None:
+        if self.tsv_path is not None and self.tsv_path.is_file():
             group_df = load_data_test(
                 self.tsv_path,
                 self.diagnoses,

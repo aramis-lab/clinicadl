@@ -385,7 +385,7 @@ class PredictManager:
         """
 
         assert isinstance(self._config, PredictConfig)
-        assert self._config.label
+        # assert self._config.label
 
         data_test = return_dataset(
             group_parameters["caps_directory"],
