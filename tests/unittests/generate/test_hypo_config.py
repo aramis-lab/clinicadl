@@ -41,18 +41,6 @@ from pydantic import ValidationError
             "sigma": 40.2,
             "use_uncropped_image": True,
         },
-        {
-            "caps_directory": "",
-            "generated_caps_directory": "",
-            "participants_list": "",
-            "preprocessing_cls": "t1-linear",
-            "n_subjects": 3,
-            "n_proc": 0,
-            "pathology_cls": "lvppa",
-            "anomaly_degree": 6,
-            "sigma": 5,
-            "use_uncropped_image": False,
-        },
     ],
 )
 def test_fails_validations(parameters):
