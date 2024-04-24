@@ -366,7 +366,7 @@ class CapsDatasetPatch(CapsDataset):
     def __init__(
         self,
         caps_directory: Path,
-        data_file: pd.DataFrame,
+        tsv_label: Path,
         preprocessing_dict: Dict[str, Any],
         train_transformations: Optional[Callable] = None,
         patch_index: Optional[int] = None,
@@ -391,14 +391,9 @@ class CapsDatasetPatch(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
-        self.patch_size = preprocessing_dict["patch_size"]
-        self.stride_size = preprocessing_dict["stride_size"]
-        self.patch_index = patch_index
-        self.mode = "patch"
-        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
-            data_file,
+            tsv_label,
             preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
@@ -407,6 +402,12 @@ class CapsDatasetPatch(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
+
+        self.patch_size = self.preprocessing_dict["patch_size"]
+        self.stride_size = self.preprocessing_dict["stride_size"]
+        self.patch_index = patch_index
+        self.mode = "patch"
+        self.prepare_dl = self.preprocessing_dict["prepare_dl"]
 
     @property
     def elem_index(self):
@@ -472,7 +473,7 @@ class CapsDatasetRoi(CapsDataset):
     def __init__(
         self,
         caps_directory: Path,
-        data_file: pd.DataFrame,
+        tsv_label: Path,
         preprocessing_dict: Dict[str, Any],
         roi_index: Optional[int] = None,
         train_transformations: Optional[Callable] = None,
@@ -497,17 +498,9 @@ class CapsDatasetRoi(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
-        self.roi_index = roi_index
-        self.mode = "roi"
-        self.roi_list = preprocessing_dict["roi_list"]
-        self.uncropped_roi = preprocessing_dict["uncropped_roi"]
-        self.prepare_dl = preprocessing_dict["prepare_dl"]
-        self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
-            caps_directory, multi_cohort, preprocessing_dict
-        )
         super().__init__(
             caps_directory,
-            data_file,
+            tsv_label,
             preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
@@ -515,6 +508,14 @@ class CapsDatasetRoi(CapsDataset):
             label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
+        )
+        self.roi_index = roi_index
+        self.mode = "roi"
+        self.roi_list = self.preprocessing_dict["roi_list"]
+        self.uncropped_roi = self.preprocessing_dict["uncropped_roi"]
+        self.prepare_dl = self.preprocessing_dict["prepare_dl"]
+        self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
+            caps_directory, multi_cohort, self.preprocessing_dict
         )
 
     @property
@@ -634,7 +635,7 @@ class CapsDatasetSlice(CapsDataset):
     def __init__(
         self,
         caps_directory: Path,
-        data_file: pd.DataFrame,
+        tsv_label: Path,
         preprocessing_dict: Dict[str, Any],
         slice_index: Optional[int] = None,
         train_transformations: Optional[Callable] = None,
@@ -658,21 +659,9 @@ class CapsDatasetSlice(CapsDataset):
             all_transformations: Optional transform to be applied during training and evaluation.
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
-        self.slice_index = slice_index
-        self.slice_direction = preprocessing_dict["slice_direction"]
-        self.slice_mode = preprocessing_dict["slice_mode"]
-        self.discarded_slices = compute_discarded_slices(
-            preprocessing_dict["discarded_slices"]
-        )
-        self.num_slices = None
-        if "num_slices" in preprocessing_dict:
-            self.num_slices = preprocessing_dict["num_slices"]
-
-        self.mode = "slice"
-        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
-            data_file,
+            tsv_label,
             preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
@@ -681,6 +670,18 @@ class CapsDatasetSlice(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
+        self.slice_index = slice_index
+        self.slice_direction = self.preprocessing_dict["slice_direction"]
+        self.slice_mode = self.preprocessing_dict["slice_mode"]
+        self.discarded_slices = compute_discarded_slices(
+            self.preprocessing_dict["discarded_slices"]
+        )
+        self.num_slices = None
+        if "num_slices" in preprocessing_dict:
+            self.num_slices = self.preprocessing_dict["num_slices"]
+
+        self.mode = "slice"
+        self.prepare_dl = self.preprocessing_dict["prepare_dl"]
 
     @property
     def elem_index(self):
