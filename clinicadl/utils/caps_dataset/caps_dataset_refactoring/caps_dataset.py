@@ -450,7 +450,7 @@ class CapsDatasetPatch(CapsDataset):
 
         return sample
 
-    def num_elem_per_image(self):
+    def num_elem_per_image(self) -> int:
         if self.elem_index is not None:
             return 1
 
