@@ -1,10 +1,50 @@
+from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
 logger = getLogger("clinicadl.base_training_config")
+
+
+class Compensation(str, Enum):
+    """Available compensations in clinicaDL."""
+
+    MEMORY = "memory"
+    TIME = "time"
+
+
+class SizeReductionFactor(int, Enum):
+    """Available size reduction factors in ClinicaDL."""
+
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+
+
+class ExperimentTracking(str, Enum):
+    """Available tools for experiment tracking in ClinicaDL."""
+
+    MLFLOW = "mlflow"
+    WANDB = "wandb"
+
+
+class Sampler(str, Enum):
+    """Available samplers in ClinicaDL."""
+
+    RANDOM = "random"
+    WEIGHTED = "weighted"
+
+
+class Mode(str, Enum):
+    """Available modes in ClinicaDL."""
+
+    IMAGE = "image"
+    PATCH = "patch"
+    ROI = "roi"
+    SLICE = "slice"
 
 
 class BaseTaskConfig(BaseModel):
@@ -26,9 +66,9 @@ class BaseTaskConfig(BaseModel):
     # Reproducibility
     seed: int = 0
     deterministic: bool = False
-    compensation: Literal["memory", "time"] = "memory"
+    compensation: Compensation = Compensation.MEMORY
     save_all_models: bool = False
-    track_exp: Literal["wandb", "mlflow", ""] = ""
+    track_exp: Optional[ExperimentTracking] = None
     # Model
     multi_network: bool = False
     ssda_network: bool = False
@@ -39,9 +79,11 @@ class BaseTaskConfig(BaseModel):
     valid_longitudinal: bool = False
     normalize: bool = True
     data_augmentation: Tuple[str, ...] = ()
-    sampler: Literal["random", "weighted"] = "random"
+    sampler: Sampler = Sampler.RANDOM
     size_reduction: bool = False
-    size_reduction_factor: Literal[2, 3, 4, 5] = 2
+    size_reduction_factor: SizeReductionFactor = (
+        SizeReductionFactor.TWO
+    )  # TODO : change to optional and remove size_reduction parameter
     caps_target: Path = Path("")
     tsv_target_lab: Path = Path("")
     tsv_target_unlab: Path = Path("")
@@ -73,9 +115,9 @@ class BaseTaskConfig(BaseModel):
     # Private
     _preprocessing_dict: Dict[str, Any] = PrivateAttr()
     _preprocessing_dict_target: Dict[str, Any] = PrivateAttr()
-    _mode: Literal["image", "patch", "roi", "slice"] = PrivateAttr()
+    _mode: Mode = PrivateAttr()
 
-    class Config:
+    class ConfigDict:
         validate_assignment = True
 
     @field_validator("diagnoses", "split", "data_augmentation", mode="before")
@@ -132,8 +174,11 @@ class BaseTaskConfig(BaseModel):
         ]
         return available_transforms
 
-    @field_validator("data_augmentation")
+    @field_validator("data_augmentation", mode="before")
     def validator_data_augmentation(cls, v):
+        if v is False:
+            return ()
+
         available_transforms = cls.get_available_transforms()
         for transform in v:
             assert (

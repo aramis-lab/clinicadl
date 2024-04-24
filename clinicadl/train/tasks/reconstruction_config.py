@@ -1,11 +1,20 @@
+from enum import Enum
 from logging import getLogger
-from typing import List, Literal, Tuple
+from typing import List, Tuple
 
 from pydantic import PrivateAttr, field_validator
 
 from .base_training_config import BaseTaskConfig
 
 logger = getLogger("clinicadl.reconstruction_config")
+
+
+class Normalization(str, Enum):
+    """Available normalization layers in ClinicaDL."""
+
+    BATCH = "batch"
+    GROUP = "group"
+    INSTANCE = "instance"
 
 
 class ReconstructionConfig(BaseTaskConfig):
@@ -21,7 +30,7 @@ class ReconstructionConfig(BaseTaskConfig):
     io_layer_channels: int = 8
     recons_weight: int = 1
     kl_weight: int = 1
-    normalization: Literal["batch", "group", "instance"] = "batch"
+    normalization: Normalization = Normalization.BATCH
     # private
     _network_task: str = PrivateAttr(default="reconstruction")
 
