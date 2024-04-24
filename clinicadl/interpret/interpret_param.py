@@ -89,7 +89,7 @@ save_nifti = click.option(
     help="Save the output map(s) in the MAPS in NIfTI format.",
 )
 
-#### interpret specific ####
+# interpret specific
 name = click.argument(
     "name",
     type=config["name"].annotation,

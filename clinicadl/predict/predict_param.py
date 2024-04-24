@@ -91,7 +91,7 @@ overwrite = click.option(
 )
 
 
-#### predict specific ####
+# predict specific
 use_labels = click.option(
     "--use_labels/--no_labels",
     show_default=True,
