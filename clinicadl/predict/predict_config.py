@@ -78,7 +78,7 @@ class InterpretConfig(PredictInterpretConfig):
     target_node: int = 0
     save_individual: bool = False
     overwrite_name: bool = False
-    level: int = 1
+    level: Optional[int] = 1
 
     @property
     def method(self) -> InterpretationMethod:
