@@ -273,7 +273,7 @@ class CapsDataset(Dataset):
         """Computes the number of elements per image based on the full image."""
         pass
 
-    def size_elem(self):
+    def size_elem(self) -> int:
         """Computes the number of elements per image based on the full image."""
         return self[0]["image"].size()
 
