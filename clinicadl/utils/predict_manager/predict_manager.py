@@ -854,7 +854,10 @@ class PredictManager:
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
-            elif df is not None or self._config.caps_directory is not None:
+            elif df is not None or (
+                self._config.caps_directory is not None
+                and self._config.caps_directory != Path("")
+            ):
                 raise ClinicaDLArgumentError(
                     f"Data group {self._config.data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "

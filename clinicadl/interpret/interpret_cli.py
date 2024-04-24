@@ -94,21 +94,9 @@ def cli(input_maps_directory, data_group, name, method, **kwargs):
         data_group=data_group,
         name=name,
         method_cls=method,
-        caps_directory=kwargs["caps_directory"],
         tsv_path=kwargs["participants_tsv"],
-        selection_metrics=kwargs["selection_metrics"],
-        diagnoses=kwargs["diagnoses"],
-        multi_cohort=kwargs["multi_cohort"],
-        target_node=kwargs["target_node"],
-        save_individual=kwargs["save_individual"],
-        batch_size=kwargs["batch_size"],
-        n_proc=kwargs["n_proc"],
-        gpu=kwargs["gpu"],
-        amp=kwargs["amp"],
-        overwrite=kwargs["overwrite"],
-        overwrite_name=kwargs["overwrite_name"],
         level=kwargs["level_grad_cam"],
-        save_nifti=kwargs["save_nifti"],
+        **kwargs,
     )
 
     predict_manager = PredictManager(interpret_config)
