@@ -21,7 +21,7 @@ config = InterpretConfig.model_fields
 )
 @click.argument(
     "method",
-    type=config["method"].annotation,  # ["gradients", "grad-cam"]
+    type=config["method_cls"].annotation,  # ["gradients", "grad-cam"]
 )
 @click.option(
     "--level_grad_cam",
@@ -93,7 +93,7 @@ def cli(input_maps_directory, data_group, name, method, **kwargs):
         maps_dir=input_maps_directory,
         data_group=data_group,
         name=name,
-        method=method,
+        method_cls=method,
         caps_directory=kwargs["caps_directory"],
         tsv_path=kwargs["participants_tsv"],
         selection_metrics=kwargs["selection_metrics"],
