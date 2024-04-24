@@ -8,9 +8,7 @@ config_artifacts = GenerateArtifactsConfig.model_fields
 
 contrast = click.option(
     "--contrast/--no-contrast",
-    type=config_artifacts["contrast"].annotation,
     default=config_artifacts["contrast"].default,
-    is_flag=True,
     help="",
     show_default=True,
 )
@@ -25,9 +23,7 @@ gamma = click.option(
 # Motion
 motion = click.option(
     "--motion/--no-motion",
-    type=config_artifacts["motion"].annotation,
     default=config_artifacts["motion"].default,
-    is_flag=True,
     help="",
     show_default=True,
 )
@@ -57,9 +53,7 @@ num_transforms = click.option(
 # Noise
 noise = click.option(
     "--noise/--no-noise",
-    type=config_artifacts["noise"].annotation,
     default=config_artifacts["noise"].default,
-    is_flag=True,
     help="",
     show_default=True,
 )

@@ -46,7 +46,6 @@ ad_subtypes_distribution = click.option(
 
 smoothing = click.option(
     "--smoothing/--no-smoothing",
-    type=config_shepplogan["smoothing"].annotation,
     default=config_shepplogan["smoothing"].default,
     help="Adds random smoothing to generated data.",
     show_default=True,

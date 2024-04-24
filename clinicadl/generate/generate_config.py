@@ -1,7 +1,7 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Annotated, Union
+from typing import Annotated, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
@@ -46,14 +46,17 @@ class Pathology(str, Enum):
 
 
 class GenerateConfig(BaseModel):
-    generated_caps_directory: Path = Path("")
+    generated_caps_directory: Path
     n_subjects: int = 300
     n_proc: int = 1
 
+    class ConfigDict:
+        validate_assignment = True
+
 
 class SharedGenerateConfigOne(GenerateConfig):
-    caps_directory: Path = Path("")
-    participants_list: Path = Path("")
+    caps_directory: Path
+    participants_list: Optional[Path] = None
     preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
     use_uncropped_image: bool = False
 
@@ -61,15 +64,6 @@ class SharedGenerateConfigOne(GenerateConfig):
     def check_tsv_file(cls, v):
         if not isinstance(v, Path):
             Path(v)
-        # if not v.is_file():
-        #     raise ClinicaDLTSVError(
-        #         "The participants_list you gave is not a file. Please give an existing file."
-        #     )
-        # if v.stat().st_size == 0:
-        #     raise ClinicaDLTSVError(
-        #         "The participants_list you gave is empty. Please give a non-empty file."
-        #     )
-
         return v
 
     @property
@@ -150,20 +144,21 @@ class GenerateRandomConfig(SharedGenerateConfigTwo):
 
 class GenerateTrivialConfig(SharedGenerateConfigTwo):
     atrophy_percent: float = 60.0
-    mask_path: Path = Path("")
+    mask_path: Optional[Path] = None
 
     @field_validator("mask_path", mode="before")
     def check_mask_file(cls, v):
-        if not isinstance(v, Path):
-            Path(v)
-        if not v.is_file():
-            raise ClinicaDLTSVError(
-                "The participants_list you gave is not a file. Please give an existing file."
-            )
-        if v.stat().st_size == 0:
-            raise ClinicaDLTSVError(
-                "The participants_list you gave is empty. Please give a non-empty file."
-            )
+        if v:
+            if not isinstance(v, Path):
+                Path(v)
+            if not v.is_file():
+                raise ClinicaDLTSVError(
+                    "The participants_list you gave is not a file. Please give an existing file."
+                )
+            if v.stat().st_size == 0:
+                raise ClinicaDLTSVError(
+                    "The participants_list you gave is empty. Please give a non-empty file."
+                )
 
         return v
 

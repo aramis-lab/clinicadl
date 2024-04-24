@@ -39,6 +39,35 @@ logger = getLogger("clinicadl.generate.artifacts")
 @generate_param.option_artifacts.rotation
 @generate_param.option_artifacts.gamma
 def cli(caps_directory, generated_caps_directory, **kwargs):
+    """Addition of artifacts (noise, motion or contrast) to brain images.
+
+    Parameters
+    ----------
+    caps_directory : _type_
+
+        _description_
+    generated_caps_directory : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Examples
+    --------
+    >>> _input_
+    _output_
+
+    Notes
+    -----
+    _notes_
+
+    See Also
+    --------
+    - _related_
+    """
+
     artif_config = GenerateArtifactsConfig(
         caps_directory=caps_directory,
         generated_caps_directory=generated_caps_directory,

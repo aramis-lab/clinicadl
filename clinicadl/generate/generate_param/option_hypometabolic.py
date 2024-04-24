@@ -6,7 +6,7 @@ config_hypometabolic = GenerateHypometabolicConfig.model_fields
 pathology = click.option(
     "--pathology",
     "-p",
-    type=config_hypometabolic["pathology_cls"].annotation,
+    type=click.Choice(list(config_hypometabolic["pathology_cls"].annotation)),
     default=config_hypometabolic["pathology_cls"].default.value,
     help="Pathology applied. To chose in the following list: [ad, bvftd, lvppa, nfvppa, pca, svppa]",
     show_default=True,
