@@ -34,7 +34,7 @@ class PredictInterpretConfig(BaseModel):
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     multi_cohort: bool = False
     batch_size: int = 8
-    n_proc: int = 0
+    n_proc: int = 1
     gpu: bool = True
     amp: bool = False
     overwrite: bool = False
