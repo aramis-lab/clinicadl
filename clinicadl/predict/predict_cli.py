@@ -4,8 +4,8 @@ from typing import get_args
 import click
 
 from clinicadl import MapsManager
+from clinicadl.predict import predict_param
 from clinicadl.predict.predict_config import PredictConfig
-from clinicadl.utils import cli_param
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.predict_manager.predict_manager import PredictManager
@@ -14,61 +14,25 @@ config = PredictConfig.model_fields
 
 
 @click.command(name="predict", no_args_is_help=True)
-@cli_param.argument.input_maps
-@cli_param.argument.data_group
-@cli_param.option.caps_directory
-@cli_param.option.participant_list
-@click.option(
-    "--use_labels/--no_labels",
-    type=config["use_labels"].annotation,  # bool
-    default=config["use_labels"].default,  # false
-    help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
-)
-@click.option(
-    "--multi_cohort",
-    type=config["multi_cohort"].annotation,  # bool
-    default=config["multi_cohort"].default,  # false
-    is_flag=True,
-    help="""Allow to use multiple CAPS directories.
-            In this case, CAPS_DIRECTORY and PARTICIPANTS_TSV must be paths to TSV files.""",
-)
-@cli_param.option.diagnoses
-@click.option(
-    "--label",
-    type=config["label"].annotation,  # str
-    default=config["label"].default,  # None
-    help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
-    "Default will reuse the same label as during the training task.",
-)
-@click.option(
-    "--save_tensor",
-    type=config["save_tensor"].annotation,  # bool
-    default=config["save_tensor"].default,  # false
-    is_flag=True,
-    help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
-)
-@cli_param.option.save_nifti
-@click.option(
-    "--save_latent_tensor",
-    type=config["save_latent_tensor"].annotation,  # bool
-    default=config["save_latent_tensor"].default,  # false
-    is_flag=True,
-    help="""Save the latent representation of the image.""",
-)
-@click.option(
-    "--skip_leak_check",
-    type=config["skip_leak_check"].annotation,  # bool
-    default=config["skip_leak_check"].default,  # false
-    is_flag=True,
-    help="Skip the data leakage check.",
-)
-@cli_param.option.split
-@cli_param.option.selection_metrics
-@cli_param.option.use_gpu
-@cli_param.option.amp
-@cli_param.option.n_proc
-@cli_param.option.batch_size
-@cli_param.option.overwrite
+@predict_param.input_maps
+@predict_param.data_group
+@predict_param.caps_directory
+@predict_param.participants_list
+@predict_param.use_labels
+@predict_param.multi_cohort
+@predict_param.diagnoses
+@predict_param.label
+@predict_param.save_tensor
+@predict_param.save_nifti
+@predict_param.save_latent_tensor
+@predict_param.skip_leak_check
+@predict_param.split
+@predict_param.selection_metrics
+@predict_param.gpu
+@predict_param.amp
+@predict_param.n_proc
+@predict_param.batch_size
+@predict_param.overwrite
 def cli(input_maps_directory, data_group, **kwargs):
     """This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
@@ -109,23 +73,8 @@ def cli(input_maps_directory, data_group, **kwargs):
     predict_config = PredictConfig(
         maps_dir=input_maps_directory,
         data_group=data_group,
-        caps_directory=kwargs["caps_directory"],
         tsv_path=kwargs["participants_tsv"],
-        use_labels=kwargs["use_labels"],
-        label=kwargs["label"],
-        gpu=kwargs["gpu"],
-        amp=kwargs["amp"],
-        n_proc=kwargs["n_proc"],
-        batch_size=kwargs["batch_size"],
         split_list=kwargs["split"],
-        selection_metrics=kwargs["selection_metrics"],
-        diagnoses=kwargs["diagnoses"],
-        multi_cohort=kwargs["multi_cohort"],
-        overwrite=kwargs["overwrite"],
-        save_tensor=kwargs["save_tensor"],
-        save_nifti=kwargs["save_nifti"],
-        save_latent_tensor=kwargs["save_latent_tensor"],
-        skip_leak_check=kwargs["skip_leak_check"],
     )
 
     predict_manager = PredictManager(predict_config)

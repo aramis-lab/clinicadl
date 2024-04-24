@@ -27,8 +27,8 @@ class InterpretationMethod(str, Enum):
 class PredictInterpretConfig(BaseModel):
     maps_dir: Path
     data_group: str
-    caps_directory: Path = Path("")
-    tsv_path: Path = Path("")
+    caps_directory: Optional[Path] = None
+    tsv_path: Optional[Path] = None
     selection_metrics: Tuple[str, ...] = ["loss"]
     split_list: Tuple[int, ...] = ()
     diagnoses: Tuple[str, ...] = ("AD", "CN")
@@ -79,6 +79,13 @@ class InterpretConfig(PredictInterpretConfig):
     save_individual: bool = False
     overwrite_name: bool = False
     level: Optional[int] = 1
+
+    @field_validator("level", mode="before")
+    def chek_level(cls, v):
+        if v < 1:
+            raise ValueError(
+                f"You must set the level to a number bigger than 1. ({v} < 1)"
+            )
 
     @property
     def method(self) -> InterpretationMethod:

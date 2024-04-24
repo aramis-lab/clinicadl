@@ -1,28 +1,18 @@
 """Common CLI options used by Clinica pipelines."""
 
 from pathlib import Path
-from typing import get_args
 
 import click
 
-from clinicadl.predict.predict_config import (
-    InterpretConfig,
-    PredictConfig,
-    PredictInterpretConfig,
-)
-
 LIST_SUVR_REFERENCE_REGIONS = ["pons", "cerebellumPons", "pons2", "cerebellumPons2"]
-
-config = PredictInterpretConfig.model_fields
 
 # TSV TOOLS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
-    type=get_args(config["diagnoses"].annotation)[0],  # str list ?
-    default=config["diagnoses"].default,  # ??
     multiple=True,
-    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
+    default=("AD", "CN"),
+    help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
 )
 modality = click.option(
     "--modality",
@@ -54,9 +44,10 @@ test_tsv = click.option(
 )
 caps_directory = click.option(
     "--caps_directory",
-    type=config["caps_directory"].annotation,  # Path
-    default=config["caps_directory"].default,  # None
-    help="Data using CAPS structure, if different from the one used during network training.",
+    "-c",
+    help="input folder of a CAPS compliant dataset",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
 )
 variables_of_interest = click.option(
     "--variables_of_interest",
@@ -83,11 +74,8 @@ valid_longitudinal = click.option(
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
-    type=config["tsv_path"].annotation,  # Path
-    default=config["tsv_path"].default,  # None
-    help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
-    If it includes the filename will load the TSV file directly.
-    Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to a TSV file including a list of participants/sessions.",
 )
 n_subjects = click.option(
     "--n_subjects",
@@ -105,29 +93,27 @@ preprocessing = click.option(
 # Computational
 use_gpu = click.option(
     "--gpu/--no-gpu",
-    type=config["gpu"].annotation,  # bool
-    default=config["gpu"].default,  # false
+    default=True,
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
 )
 n_proc = click.option(
     "-np",
     "--n_proc",
-    type=config["n_proc"].annotation,  # int
-    default=config["n_proc"].default,  # 2
+    type=int,
+    default=2,
     show_default=True,
     help="Number of cores used during the task.",
 )
 batch_size = click.option(
     "--batch_size",
-    type=config["batch_size"].annotation,  # int
-    default=config["batch_size"].default,  # 8
+    type=int,
+    default=8,
     show_default=True,
     help="Batch size for data loading.",
 )
 amp = click.option(
     "--amp/--no-amp",
-    type=config["amp"].annotation,  # bool
-    default=config["amp"].default,  # false
+    type=bool,
     help="Enables automatic mixed precision during training and inference.",
 )
 
@@ -215,33 +201,30 @@ dti_space = click.option(
 overwrite = click.option(
     "--overwrite",
     "-o",
-    type=config["overwrite"].annotation,  # bool
-    default=config["overwrite"].default,  # false
+    default=False,
     is_flag=True,
     help="Will overwrite data group if existing. Please give caps_directory and participants_tsv to"
     " define new data group.",
 )
+# Predict and interpret
+
 save_nifti = click.option(
     "--save_nifti",
-    type=config["overwrite"].annotation,  # bool
-    default=config["overwrite"].default,  # false
+    type=bool,
+    default=False,
     is_flag=True,
     help="Save the output map(s) in the MAPS in NIfTI format.",
 )
 split = click.option(
     "--split",
     "-s",
-    type=get_args(config["split_list"].annotation)[0],  # list[str]
-    default=[],  # config["split_list"].default,  # [] ?
+    type=int,
     multiple=True,
     help="Make inference on the list of given splits. By default, inference is done on all the splits.",
 )
 selection_metrics = click.option(
     "--selection_metrics",
     "-sm",
-    type=get_args(config["selection_metrics"].annotation)[0],  # str list ?
-    default=[],  # config["selection_metrics"].default,  # ["loss"]
     multiple=True,
-    help="""Allow to select a list of models based on their selection metric. Default will
-    only infer the result of the best model selected on loss.""",
+    help="""Make inference on the list of given metrics used for selection. By default, inference is done on all the metrics.""",
 )

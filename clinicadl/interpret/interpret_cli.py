@@ -3,7 +3,7 @@ from typing import get_args
 
 import click
 
-from clinicadl import MapsManager
+from clinicadl.interpret import interpret_param
 from clinicadl.predict.predict_config import InterpretConfig
 from clinicadl.utils import cli_param
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
@@ -13,62 +13,25 @@ config = InterpretConfig.model_fields
 
 
 @click.command("interpret", no_args_is_help=True)
-@cli_param.argument.input_maps
-@cli_param.argument.data_group
-@click.argument(
-    "name",
-    type=config["name"].annotation,
-)
-@click.argument(
-    "method",
-    type=config["method_cls"].annotation,  # ["gradients", "grad-cam"]
-)
-@click.option(
-    "--level_grad_cam",
-    type=click.IntRange(min=1),
-    default=None,
-    help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
-)
-# Model
-@cli_param.option.selection_metrics
-# Data
-@cli_param.option.participant_list
-@cli_param.option.caps_directory
-@click.option(
-    "--multi_cohort",
-    type=config["multi_cohort"].annotation,  # bool
-    default=config["multi_cohort"].default,  # false
-    is_flag=True,
-    help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
-)
-@cli_param.option.diagnoses
-@click.option(
-    "--target_node",
-    type=config["target_node"].annotation,  # int
-    default=config["target_node"].default,  # 0
-    help="Which target node the gradients explain. Default takes the first output node.",
-)
-@click.option(
-    "--save_individual",
-    type=config["save_individual"].annotation,  # bool
-    default=config["save_individual"].default,  # false
-    is_flag=True,
-    help="Save individual saliency maps in addition to the mean saliency map.",
-)
-@cli_param.option.n_proc
-@cli_param.option.use_gpu
-@cli_param.option.amp
-@cli_param.option.batch_size
-@cli_param.option.overwrite
-@click.option(
-    "--overwrite_name",
-    "-on",
-    is_flag=True,
-    type=config["overwrite_name"].annotation,  # bool
-    default=config["overwrite_name"].default,  # false
-    help="Overwrite the name if it already exists.",
-)
-@cli_param.option.save_nifti
+@interpret_param.input_maps
+@interpret_param.data_group
+@interpret_param.name
+@interpret_param.method
+@interpret_param.level
+@interpret_param.selection_metrics
+@interpret_param.participants_list
+@interpret_param.caps_directory
+@interpret_param.multi_cohort
+@interpret_param.diagnoses
+@interpret_param.target_node
+@interpret_param.save_individual
+@interpret_param.n_proc
+@interpret_param.gpu
+@interpret_param.amp
+@interpret_param.batch_size
+@interpret_param.overwrite
+@interpret_param.overwrite_name
+@interpret_param.save_nifti
 def cli(input_maps_directory, data_group, name, method, **kwargs):
     """Interpretation of trained models using saliency map method.
 
