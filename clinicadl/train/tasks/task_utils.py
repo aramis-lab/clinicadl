@@ -114,6 +114,8 @@ def task_launcher(config: BaseTaskConfig) -> None:
     train_dict["size_reduction_factor"] = config.size_reduction_factor.value
     if train_dict["track_exp"]:
         train_dict["track_exp"] = config.track_exp.value
+    else:
+        train_dict["track_exp"] = ""
     train_dict["sampler"] = config.sampler.value
     if train_dict["network_task"] == "reconstruction":
         train_dict["normalization"] = config.normalization.value
