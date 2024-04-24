@@ -1,13 +1,9 @@
-from pathlib import Path
-from typing import get_args
-
 import click
 
 from clinicadl.interpret import interpret_param
 from clinicadl.predict.predict_config import InterpretConfig
-from clinicadl.utils import cli_param
+from clinicadl.predict.predict_manager import PredictManager
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 config = InterpretConfig.model_fields
 

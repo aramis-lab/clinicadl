@@ -25,6 +25,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     # from clinicadl.utils.preprocessing import path_decoder
     config_dict = toml.load(config_path)
     # config_dict = path_decoder(config_dict)
+    # print(config_dict)
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)

@@ -1,14 +1,10 @@
-from pathlib import Path
-from typing import get_args
-
 import click
 
-from clinicadl import MapsManager
 from clinicadl.predict import predict_param
 from clinicadl.predict.predict_config import PredictConfig
+from clinicadl.predict.predict_manager import PredictManager
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.predict_manager.predict_manager import PredictManager
 
 config = PredictConfig.model_fields
 

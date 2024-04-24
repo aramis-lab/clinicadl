@@ -1,14 +1,12 @@
 # coding: utf8
 import json
-import os
 import shutil
 from os.path import exists
 from pathlib import Path
 
 import pytest
 
-from clinicadl import MapsManager
-from clinicadl.utils.predict_manager.predict_manager import PredictManager
+from clinicadl.predict.predict_manager import PredictManager
 from tests.testing_tools import clean_folder, compare_folders
 
 
