@@ -6,6 +6,7 @@ Automatically reject images incorrectly preprocessed pet-linear (Unified Segment
 
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import nibabel as nib
 import numpy as np
@@ -29,10 +30,9 @@ def quality_check(
     tracer: str,
     ref_region: str,
     use_uncropped_image: bool,
-    participants_tsv: Path,
+    participants_tsv: Optional[Path],
     threshold: float = 0.8,
-    n_proc: int = 0,
-    gpu: bool = False,
+    n_proc: int = 1,
 ):
     """
     Performs quality check on pet-linear pipeline.
@@ -58,7 +58,6 @@ def quality_check(
     n_proc: int
         Number of cores used during the task.
     """
-    # caps_dir= Path(caps_dir)
     logger = getLogger("clinicadl.quality_check")
 
     if Path(output_tsv).is_file():

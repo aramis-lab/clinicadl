@@ -309,8 +309,8 @@ def get_subject_session_list(
     However, if your pipeline needs both T1w and DWI files, you will need to check
     with e.g. clinicadl_file_reader_function.
     """
-    print(subject_session_file.is_file())
-    if not subject_session_file.is_file():
+
+    if subject_session_file is None or not subject_session_file.is_file():
         output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
         tsv_file = f"subjects_sessions_list_{timestamp}.tsv"

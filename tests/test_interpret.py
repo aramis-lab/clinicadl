@@ -67,7 +67,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
 
 
 def run_interpret(cnn_input, tmp_out_dir, ref_dir):
-    from clinicadl.interpret.gradients import method_dict
+    from clinicadl.predict.predict_config import InterpretationMethod
 
     maps_path = tmp_out_dir / "maps"
     if maps_path.is_dir():
@@ -76,13 +76,15 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
     assert train_error
 
-    for method in method_dict.keys():
+    for method in list(InterpretationMethod):
         interpret_config = InterpretConfig(
             maps_dir=maps_path,
             data_group="train",
             name=f"test-{method}",
-            method=method,
+            method_cls=method,
         )
         interpret_manager = PredictManager(interpret_config)
         interpret_manager.interpret()
-        interpret_map = interpret_manager.get_interpretation("train", f"test-{method}")
+        interpret_map = interpret_manager.get_interpretation(
+            "train", f"test-{interpret_config.method}"
+        )

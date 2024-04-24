@@ -74,26 +74,19 @@ class PredictInterpretConfig(BaseModel):
 
 class InterpretConfig(PredictInterpretConfig):
     name: str
-    method: InterpretationMethod = InterpretationMethod.GRADIENTS
+    method_cls: InterpretationMethod = InterpretationMethod.GRADIENTS
     target_node: int = 0
     save_individual: bool = False
     overwrite_name: bool = False
     level: int = 1
-    _method_dict: dict = PrivateAttr(
-        {"gradients": VanillaBackProp, "grad-cam": GradCam}
-    )
 
-    @field_validator("method", "_method_dict", check_fields=False)
-    def validator_method(cls, _method, _method_dict):
-        print(_method)
-        if _method not in _method_dict:
-            raise NotImplementedError(
-                f"Interpretation method {_method} is not implemented. "
-                f"Please choose in {_method_dict.keys()}"
-            )
+    @property
+    def method(self) -> InterpretationMethod:
+        return self.method_cls.value
 
-    def get_method(self):
-        return self._method_dict[self.method]
+    @method.setter
+    def method(self, value: Union[str, InterpretationMethod]):
+        self.method_cls = InterpretationMethod(value)
 
 
 class PredictConfig(PredictInterpretConfig):
