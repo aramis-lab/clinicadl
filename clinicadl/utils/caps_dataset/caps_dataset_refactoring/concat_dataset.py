@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Any, Iterable, List, Optional, Union
 
-import caps_dataset
+import caps_dataset  # type: ignore
 import pandas as pd
-from torch.utils.data import ConcatDataset, Dataset, StackDataset, dataloader
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Sampler, StackDataset
 
 
 class CapsConcatDataset(ConcatDataset):
@@ -25,6 +25,7 @@ class CapsConcatDataset(ConcatDataset):
 
 class CapsPairedDataset(StackDataset):
     def __init__(self, datasets: Union[tuple, dict]) -> None:
+        self.paired = True
         self.datasets = list(datasets)  # CapsDatasets list
         self.n_datasets = len(self.datasets)  # number of CapsDatasets
         self.mode = [d.mode for d in self.datasets]  # modes of each CapsDatasets
@@ -47,6 +48,7 @@ class CapsUnpairedDataset(Dataset):
         self.len_dataset = [
             d.__len__() for d in self.datasets
         ]  # length of each datasets
+        self.paired = False
 
     def __getitem__(self, indexes: list):
         # checks that the number of datasets is equal to the number of index
@@ -246,27 +248,126 @@ def hyper_dataset(control_file_path: Path, paired: bool = False) -> Dataset:
         return CapsPairedDataset(DatasetsToStackList)
 
 
-# from typing import List, Optional
-# class DataloaderCaps(dataloader):
+# Dataloader
 
-#     def __init__(self,
-#                  dataset: Dataset, batch_size: List[int] = 1,
-#                  shuffle: Optional[bool] = None, sampler: Union[Sampler, Iterable, None] = None,
-#                  batch_sampler: Union[Sampler[List], Iterable[List], None] = None,
-#                  num_workers: int = 0, collate_fn: Optional[_collate_fn_t] = None,
-#                  pin_memory: bool = False, drop_last: bool = False,
-#                  timeout: float = 0, worker_init_fn: Optional[_worker_init_fn_t] = None,
-#                  multiprocessing_context=None, generator=None,
-#                  *, prefetch_factor: Optional[int] = None,
-#                  persistent_workers: bool = False,
-#                  pin_memory_device: str = ""):
+# import dataclasses
 
-#         self.dataset = dataset
-#         self.batch_size = batch_size
-#         self.shuffle = shuffle
-#         self.sampler = sampler
+# @dataclasses
+# class CapsDataLoaderConfig:
 
 
-#         for i in range(dataset.n_datasets):
+class DataloaderCaps(DataLoader):
+    def __init__(
+        self,
+        dataset: Dataset,
+        batch_size: List[int] = 1,
+        shuffle: Optional[bool] = None,
+        sampler: Union[Sampler, Iterable, None] = None,
+        batch_sampler: Union[Sampler[List], Iterable[List], None] = None,
+        num_workers: int = 0,
+        collate_fn: Optional[str] = None,
+        pin_memory: bool = False,
+        drop_last: bool = False,
+        timeout: float = 0,
+        worker_init_fn: Optional[str] = None,
+        multiprocessing_context=None,
+        generator=None,
+        *,
+        prefetch_factor: Optional[int] = None,
+        persistent_workers: bool = False,
+        pin_memory_device: str = "",
+    ):
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.sampler = sampler
+        self.batch_sampler = batch_sampler
+        self.collate_fn = collate_fn
+        self.num_workers = num_workers
+        self.pin_memory = pin_memory
+        self.drop_last = drop_last
+        self.timeout = timeout
+        self.worker_init_fn = worker_init_fn
+        self.multiprocessing_context = multiprocessing_context
+        self.generator = generator
+        self.prefetch_factor = prefetch_factor
+        self.persistent_workers = persistent_workers
+        self.pin_memory_device = pin_memory_device
 
-#             dataloader_i = Dataloader
+        if hasattr(dataset, "paired"):
+            self.paired = dataset.paired
+        else:
+            self.paired = True
+
+        if self.paired:
+            dataloaders = DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=self.shuffle,
+                sampler=self.sampler,
+                batch_sampler=self.batch_sampler,
+                num_workers=self.num_workers,
+                pin_memory=self.pin_memory,
+                drop_last=self.drop_last,
+                timeout=self.timeout,
+                multiprocessing_context=self.multiprocessing_context,
+                generator=self.generator,
+                prefetch_factor=self.prefetch_factor,
+                persistent_workers=self.persistent_workers,
+                pin_memory_device=self.pin_memory_device,
+            )
+
+        else:
+            dataloaders = []
+            for i in range(dataset.n_datasets):
+                if self.sampler is not None:
+                    sampler_i = self.sampler[i]
+                else:
+                    sampler_i = None
+
+                dataloader_i = DataLoader(
+                    dataset=dataset.datasets[i],
+                    batch_size=self.batch_size,
+                    shuffle=self.shuffle,
+                    sampler=sampler_i,
+                    batch_sampler=self.batch_sampler,
+                    num_workers=self.num_workers,
+                    pin_memory=self.pin_memory,
+                    drop_last=self.drop_last,
+                    timeout=self.timeout,
+                    multiprocessing_context=self.multiprocessing_context,
+                    generator=self.generator,
+                    prefetch_factor=self.prefetch_factor,
+                    persistent_workers=self.persistent_workers,
+                    pin_memory_device=self.pin_memory_device,
+                )
+                dataloaders.append(dataloader_i)
+
+        self.dataloaders = dataloaders
+
+    def __iter__(self) -> List[str]:
+        ConcatBaseLoaderIter = []
+        if hasattr(self, "dataloaders"):
+            if self.paired:
+                return self.dataloaders.__iter__()
+            else:
+                for dataloder in self.dataloaders:
+                    print(dataloder.__iter__())
+                    ConcatBaseLoaderIter.append(dataloder.__iter__())
+                return MultiLoaderIterable(ConcatBaseLoaderIter).__iter__()
+        else:
+            raise ValueError("No Dataloader created")
+
+
+class MultiLoaderIterable:
+    def __init__(self, list_iterable_loader):
+        self.listIterableLoader = list_iterable_loader
+        self._sampler_iter = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> Any:
+        data = []
+        for iterator in self.listIterableLoader:
+            data.append(iterator.__next__())
+        return data
