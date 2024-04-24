@@ -62,8 +62,18 @@ class SharedGenerateConfigOne(GenerateConfig):
 
     @field_validator("participants_list", mode="before")
     def check_tsv_file(cls, v):
-        if not isinstance(v, Path):
-            Path(v)
+        if v is not None:
+            if not isinstance(v, Path):
+                Path(v)
+            if not v.is_file():
+                raise ClinicaDLTSVError(
+                    "The participants_list you gave is not a file. Please give an existing file."
+                )
+            if v.stat().st_size == 0:
+                raise ClinicaDLTSVError(
+                    "The participants_list you gave is empty. Please give a non-empty file."
+                )
+
         return v
 
     @property
@@ -148,7 +158,7 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
 
     @field_validator("mask_path", mode="before")
     def check_mask_file(cls, v):
-        if v:
+        if v is not None:
             if not isinstance(v, Path):
                 Path(v)
             if not v.is_file():
