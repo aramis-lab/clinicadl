@@ -1,7 +1,12 @@
-import click
+from pathlib import Path
 
+import click
+from click.core import ParameterSource
+
+from clinicadl.train.train_utils import extract_config_from_toml_file
 from clinicadl.utils.cli_param import train_option
 
+from .reconstruction_config import ReconstructionConfig
 from .task_utils import task_launcher
 
 
@@ -26,7 +31,7 @@ from .task_utils import task_launcher
 @train_option.compensation
 @train_option.save_all_models
 # Model
-@train_option.architecture
+@train_option.reconstruction_architecture
 @train_option.multi_network
 @train_option.ssda_network
 # Data
@@ -61,7 +66,7 @@ from .task_utils import task_launcher
 @train_option.transfer_selection_metric
 @train_option.nb_unfrozen_layer
 # Task-related
-@train_option.selection_metrics
+@train_option.reconstruction_selection_metrics
 @train_option.reconstruction_loss
 # information
 @train_option.emissions_calculator
@@ -82,5 +87,14 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_specific_options = ["selection_metrics", "loss"]
-    task_launcher("reconstruction", task_specific_options, **kwargs)
+    options = {}
+    if kwargs["config_file"]:
+        options = extract_config_from_toml_file(
+            Path(kwargs["config_file"]),
+            "reconstruction",
+        )
+    for arg in kwargs:
+        if click.get_current_context().get_parameter_source(arg) == ParameterSource.COMMANDLINE:
+            options[arg] = kwargs[arg]
+    config = ReconstructionConfig(**options)
+    task_launcher(config)
