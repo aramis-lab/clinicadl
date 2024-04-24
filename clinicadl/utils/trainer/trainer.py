@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from clinicadl.utils.callbacks.callbacks import Callback
     from clinicadl.utils.maps_manager import MapsManager
 
-logger = getLogger("clinicadl.maps_manager")
+logger = getLogger("clinicadl.trainer")
 
 
 class Trainer:
