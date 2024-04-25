@@ -3,7 +3,12 @@ from typing import get_args
 
 import click
 
-from clinicadl.generate.generate_config import SharedGenerateConfigTwo
+from clinicadl.generate.generate_config import (
+    Preprocessing,
+    SharedGenerateConfigTwo,
+    SUVRReferenceRegions,
+    Tracer,
+)
 
 config = SharedGenerateConfigTwo.model_fields
 
@@ -17,7 +22,7 @@ n_proc = click.option(
 )
 preprocessing = click.option(
     "--preprocessing",
-    type=click.Choice(list(config["preprocessing_cls"].annotation)),
+    type=click.Choice(Preprocessing.list()),
     default=config["preprocessing_cls"].default.value,
     required=True,
     help="Preprocessing used to generate synthetic data.",
@@ -39,7 +44,7 @@ use_uncropped_image = click.option(
 )
 tracer = click.option(
     "--tracer",
-    type=click.Choice(list(config["tracer_cls"].annotation)),
+    type=click.Choice(Tracer.list()),
     default=config["tracer_cls"].default.value,
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
@@ -51,7 +56,7 @@ tracer = click.option(
 suvr_reference_region = click.option(
     "-suvr",
     "--suvr_reference_region",
-    type=click.Choice(list(config["suvr_reference_region_cls"].annotation)),
+    type=click.Choice(SUVRReferenceRegions.list()),
     default=config["suvr_reference_region_cls"].default.value,
     help=(
         "Regions used for normalization if MODALITY is `pet-linear`. "

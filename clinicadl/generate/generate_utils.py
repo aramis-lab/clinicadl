@@ -3,13 +3,18 @@
 import random
 from copy import copy
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
+from clinicadl.generate.generate_config import (
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
 from clinicadl.utils.clinica_utils import (
     create_subs_sess_list,
@@ -20,14 +25,14 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 
 def find_file_type(
-    preprocessing: str,
+    preprocessing: Preprocessing,
     uncropped_image: bool,
-    tracer: str,
-    suvr_reference_region: str,
+    tracer: Tracer,
+    suvr_reference_region: SUVRReferenceRegions,
 ) -> Dict[str, str]:
-    if preprocessing == "t1-linear":
+    if preprocessing == Preprocessing.T1_LINEAR:
         file_type = linear_nii("T1w", uncropped_image)
-    elif preprocessing == "pet-linear":
+    elif preprocessing == Preprocessing.PET_LINEAR:
         if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
                 "`tracer` and `suvr_reference_region` must be defined "
@@ -57,7 +62,7 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:
 
 
 def load_and_check_tsv(
-    tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
+    tsv_path: Optional[Path], caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
     if tsv_path is not None and tsv_path.is_file():
         if len(caps_dict) == 1:

@@ -44,7 +44,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
     Parameters
     ----------
     caps_directory : _type_
-
         _description_
     generated_caps_directory : _type_
         _description_

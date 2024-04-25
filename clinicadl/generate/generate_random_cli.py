@@ -54,7 +54,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         {
             "output_dir": random_config.generated_caps_directory,
             "caps_dir": caps_directory,
-            "preprocessing": random_config.preprocessing,
+            "preprocessing": random_config.preprocessing.value,
             "n_subjects": random_config.n_subjects,
             "n_proc": random_config.n_proc,
             "mean": random_config.mean,

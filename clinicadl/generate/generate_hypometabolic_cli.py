@@ -65,10 +65,10 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         {
             "output_dir": hypo_config.generated_caps_directory,
             "caps_dir": hypo_config.caps_directory,
-            "preprocessing": hypo_config.preprocessing,
+            "preprocessing": hypo_config.preprocessing.value,
             "n_subjects": hypo_config.n_subjects,
             "n_proc": hypo_config.n_proc,
-            "pathology": hypo_config.pathology,
+            "pathology": hypo_config.pathology.value,
             "anomaly_degree": hypo_config.anomaly_degree,
         }
     )
@@ -101,13 +101,13 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
     cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"  # noqa (typo in resources)
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
     FILE1 = RemoteFileStructure(
-        filename=f"mask_hypo_{hypo_config.pathology}.nii",
+        filename=f"mask_hypo_{hypo_config.pathology.value}.nii",
         url=url_aramis,
-        checksum=checksum_dir[hypo_config.pathology],
+        checksum=checksum_dir[hypo_config.pathology.value],
     )
     cache_clinicadl.mkdir(parents=True, exist_ok=True)
-    if not (cache_clinicadl / f"mask_hypo_{hypo_config.pathology}.nii").is_file():
-        logger.info(f"Downloading {hypo_config.pathology} masks...")
+    if not (cache_clinicadl / f"mask_hypo_{hypo_config.pathology.value}.nii").is_file():
+        logger.info(f"Downloading {hypo_config.pathology.value} masks...")
         try:
             mask_path = fetch_file(FILE1, cache_clinicadl)
         except Exception:
@@ -118,7 +118,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             )
 
     else:
-        mask_path = cache_clinicadl / f"mask_hypo_{hypo_config.pathology}.nii"
+        mask_path = cache_clinicadl / f"mask_hypo_{hypo_config.pathology.value}.nii"
 
     mask_nii = nib.load(mask_path)
 
@@ -168,9 +168,9 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             / "subjects"
             / participants[subject_id]
             / sessions[subject_id]
-            / hypo_config.preprocessing
+            / hypo_config.preprocessing.value
         )
-        hypo_image_nii_filename = f"{input_filename}pat-{hypo_config.pathology}_deg-{int(hypo_config.anomaly_degree)}_pet.nii.gz"
+        hypo_image_nii_filename = f"{input_filename}pat-{hypo_config.pathology.value}_deg-{int(hypo_config.anomaly_degree)}_pet.nii.gz"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
@@ -182,7 +182,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         row = [
             participants[subject_id],
             sessions[subject_id],
-            hypo_config.pathology,
+            hypo_config.pathology.value,
             hypo_config.anomaly_degree,
         ]
         row_df = pd.DataFrame([row], columns=columns)
@@ -206,7 +206,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
 
     logger.info(
         f"Hypometabolic dataset was generated, with {hypo_config.anomaly_degree} % of "
-        f"dementia {hypo_config.pathology} at {hypo_config.generated_caps_directory}."
+        f"dementia {hypo_config.pathology.value} at {hypo_config.generated_caps_directory}."
     )
 
 

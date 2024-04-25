@@ -17,6 +17,10 @@ class Preprocessing(str, Enum):
     T1_EXTENSIVE = "t1-extensive"
     PET_LINEAR = "pet-linear"
 
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
 
 class SUVRReferenceRegions(str, Enum):
     """Possible SUVR reference region for pet images in clinicaDL."""
@@ -26,12 +30,20 @@ class SUVRReferenceRegions(str, Enum):
     PONS2 = "pons2"
     CEREBELLUMPONS2 = "cerebellumPons2"
 
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
 
 class Tracer(str, Enum):
     """Possible tracer for pet images in clinicaDL."""
 
     FFDG = "18FFDG"
     FAV45 = "18FAV45"
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
 
 
 class Pathology(str, Enum):
@@ -43,6 +55,10 @@ class Pathology(str, Enum):
     NFVPPA = "nfvppa"
     PCA = "pca"
     SVPPA = "svppa"
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
 
 
 class GenerateConfig(BaseModel):
@@ -78,7 +94,7 @@ class SharedGenerateConfigOne(GenerateConfig):
 
     @property
     def preprocessing(self) -> Preprocessing:
-        return self.preprocessing_cls.value
+        return self.preprocessing_cls
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
@@ -91,7 +107,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self.suvr_reference_region_cls.value
+        return self.suvr_reference_region_cls
 
     @suvr_reference_region.setter
     def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
@@ -99,7 +115,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def tracer(self) -> Tracer:
-        return self.tracer_cls.value
+        return self.tracer_cls
 
     @tracer.setter
     def tracer(self, value: Union[str, Tracer]):
@@ -139,7 +155,7 @@ class GenerateHypometabolicConfig(SharedGenerateConfigOne):
 
     @property
     def pathology(self) -> Pathology:
-        return self.pathology_cls.value
+        return self.pathology_cls
 
     @pathology.setter
     def pathology(self, value: Union[str, Pathology]):

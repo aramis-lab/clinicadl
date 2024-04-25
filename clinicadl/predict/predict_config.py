@@ -29,9 +29,9 @@ class PredictInterpretConfig(BaseModel):
     data_group: str
     caps_directory: Optional[Path] = None
     tsv_path: Optional[Path] = None
-    selection_metrics: Tuple[str, ...] = ["loss"]
-    split_list: Tuple[int, ...] = ()
-    diagnoses: Tuple[str, ...] = ("AD", "CN")
+    selection_metrics: list[str] = ["loss"]
+    split_list: list[int] = []
+    diagnoses: list[str] = ["AD", "CN"]
     multi_cohort: bool = False
     batch_size: int = 8
     n_proc: int = 1
@@ -89,17 +89,19 @@ class InterpretConfig(PredictInterpretConfig):
 
     @property
     def method(self) -> InterpretationMethod:
-        return self.method_cls.value
+        return self.method_cls
 
     @method.setter
     def method(self, value: Union[str, InterpretationMethod]):
         self.method_cls = InterpretationMethod(value)
 
-    def get_method(self):
-        if self.method == "gradients":
+    def get_method(self) -> Union[VanillaBackProp, GradCam]:
+        if self.method == InterpretationMethod.GRADIENTS:
             return VanillaBackProp
-        elif self.method == "grad-cam":
+        elif self.method == InterpretationMethod.GRAD_CAM:
             return GradCam
+        else:
+            raise ValueError(f"The method {self.method.value} is not implemented")
 
 
 class PredictConfig(PredictInterpretConfig):
