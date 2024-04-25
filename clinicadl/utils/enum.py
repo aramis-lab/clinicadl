@@ -1,31 +1,14 @@
 from enum import Enum
 
 
-class ClinicaDLEnum(str, Enum):
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
-
-
-class InterpretationMethod(ClinicaDLEnum):
+class InterpretationMethod(str, Enum):
     """Possible interpretation method in clinicaDL."""
 
     GRADIENTS = "gradients"
     GRAD_CAM = "grad-cam"
 
 
-class Preprocessing(ClinicaDLEnum):
-    """Possible preprocessing method in clinicaDL."""
-
-    T1_LINEAR = "t1-linear"
-    T1_EXTENSIVE = "t1-extensive"
-    PET_LINEAR = "pet-linear"
-    FLAIR_LINEAR = "flair-linear"
-    CUSTOM = "custom"
-    DWI_DTI = "dwi-dti"
-
-
-class SUVRReferenceRegions(ClinicaDLEnum):
+class SUVRReferenceRegions(str, Enum):
     """Possible SUVR reference region for pet images in clinicaDL."""
 
     PONS = "pons"
@@ -34,14 +17,14 @@ class SUVRReferenceRegions(ClinicaDLEnum):
     CEREBELLUMPONS2 = "cerebellumPons2"
 
 
-class Tracer(ClinicaDLEnum):
+class Tracer(str, Enum):
     """Possible tracer for pet images in clinicaDL."""
 
     FFDG = "18FFDG"
     FAV45 = "18FAV45"
 
 
-class Pathology(ClinicaDLEnum):
+class Pathology(str, Enum):
     """Possible pathology for hypometabolic generation of pet images in clinicaDL."""
 
     AD = "ad"
@@ -52,13 +35,25 @@ class Pathology(ClinicaDLEnum):
     SVPPA = "svppa"
 
 
-class Modality(ClinicaDLEnum):
-    """Possible tracer for pet images in clinicaDL."""
+class Modality(str, Enum):
+    """Possible modality for pet images in clinicaDL."""
 
     T1 = "t1"
     DWI = "dwi"
     PET = "pet"
     FLAIR = "flair"
-    T2 = "t2"
-    DTI = "dwi-dti"
+    # T2 = "t2"
+    # DTI = "dti"
+    # CUSTOM = "custom"
+
+
+class Preprocessing(str, Enum):
+    """Possible preprocessing method in clinicaDL."""
+
+    T1_LINEAR = "t1-linear"
+    T1_EXTENSIVE = "t1-extensive"
+    PET_LINEAR = "pet-linear"
+    FLAIR_LINEAR = "flair-linear"
     CUSTOM = "custom"
+    DWI_DTI = "dwi-dti"
+    T2_LINEAR = "t2-linear"

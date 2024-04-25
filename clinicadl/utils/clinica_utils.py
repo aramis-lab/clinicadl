@@ -15,8 +15,7 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-from clinicadl.generate.generate_config import SUVRReferenceRegions, Tracer
-from clinicadl.utils.enum import Modality
+from clinicadl.utils.enum import Modality, Preprocessing, SUVRReferenceRegions, Tracer
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLBIDSError,
@@ -53,17 +52,17 @@ def bids_nii(
     dict :
         The query dictionary to get PET scans.
     """
-    import os
 
-    modality = Modality(modality)
-    if tracer is not None:
-        tracer = Tracer(tracer)
-
-    if modality not in Modality:
-        raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({modality.value}) of images, please chose one from this list: {list[Modality]}"
+    try:
+        modality = Modality(modality)
+    except ClinicaDLArgumentError:
+        print(
+            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
         )
-    elif modality == Modality.PET:
+
+    if modality == Modality.PET:
+        if tracer is not None:
+            tracer = Tracer(tracer)
         trc = "" if tracer is None else f"_trc-{tracer.value}"
         rec = "" if reconstruction is None else f"_rec-{reconstruction}"
         description = "PET data"
@@ -72,38 +71,37 @@ def bids_nii(
         if reconstruction:
             description += f" and reconstruction method {reconstruction}"
 
-        dict_output = {
+        return {
             "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
             "description": description,
         }
     elif modality == Modality.T1:
-        dict_output = {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
+        return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
     elif modality == Modality.FLAIR:
-        dict_output = {
+        return {
             "pattern": "sub-*_ses-*_flair.nii*",
             "description": "FLAIR T2w MRI",
         }
     elif modality == Modality.DWI:
-        dict_output = {
+        return {
             "pattern": "dwi/sub-*_ses-*_dwi.nii*",
             "description": "DWI NIfTI",
         }
-    return dict_output
 
 
-def linear_nii(modality: Union[str, Modality], uncropped_image: bool) -> dict:
-    modality = Modality(modality)
+def linear_nii(preprocessing: Union[str, Preprocessing], uncropped_image: bool) -> dict:
+    preprocessing = Preprocessing(preprocessing)
 
-    if modality not in ("T1w", "T2w", "flair"):
+    if preprocessing not in Preprocessing.list():
         raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({modality}) of images"
+            f"ClinicaDL is Unable to read this modality ({preprocessing}) of images"
         )
-    elif modality == Modality.T1:
-        needed_pipeline = "t1-linear"
-    elif modality == Modality.T2:
-        needed_pipeline = "t2-linear"
-    elif modality == Modality.FLAIR:
-        needed_pipeline = "flair-linear"
+    elif preprocessing == Preprocessing.T1_LINEAR:
+        needed_pipeline = preprocessing.value
+    elif preprocessing == Preprocessing.T2_LINEAR:
+        needed_pipeline = preprocessing.value
+    elif preprocessing == Preprocessing.FLAIR_LINEAR:
+        needed_pipeline = preprocessing.value
 
     if uncropped_image:
         desc_crop = ""
@@ -111,8 +109,8 @@ def linear_nii(modality: Union[str, Modality], uncropped_image: bool) -> dict:
         desc_crop = "_desc-Crop"
 
     information = {
-        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
-        "description": f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
+        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{preprocessing.value}.nii.gz",
+        "description": f"{preprocessing.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
         + (
             ""
             if uncropped_image

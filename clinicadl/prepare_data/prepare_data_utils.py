@@ -109,10 +109,10 @@ def compute_folder_and_file_type(
     else:
         mod_subfolder = preprocessing.value
         if preprocessing == Preprocessing.T1_LINEAR:
-            file_type = linear_nii("T1w", parameters["use_uncropped_image"])
+            file_type = linear_nii(preprocessing, parameters["use_uncropped_image"])
 
         elif preprocessing == Preprocessing.FLAIR_LINEAR:
-            file_type = linear_nii("flair", parameters["use_uncropped_image"])
+            file_type = linear_nii(preprocessing, parameters["use_uncropped_image"])
 
         elif preprocessing == Preprocessing.PET_LINEAR:
             file_type = pet_linear_nii(

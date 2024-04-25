@@ -22,7 +22,7 @@ n_proc = click.option(
 )
 preprocessing = click.option(
     "--preprocessing",
-    type=click.Choice(Preprocessing.list()),
+    type=click.Choice(Preprocessing),
     default=config["preprocessing_cls"].default.value,
     required=True,
     help="Preprocessing used to generate synthetic data.",
@@ -44,7 +44,7 @@ use_uncropped_image = click.option(
 )
 tracer = click.option(
     "--tracer",
-    type=click.Choice(Tracer.list()),
+    type=click.Choice(Tracer),
     default=config["tracer_cls"].default.value,
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
@@ -56,7 +56,7 @@ tracer = click.option(
 suvr_reference_region = click.option(
     "-suvr",
     "--suvr_reference_region",
-    type=click.Choice(SUVRReferenceRegions.list()),
+    type=click.Choice(SUVRReferenceRegions),
     default=config["suvr_reference_region_cls"].default.value,
     help=(
         "Regions used for normalization if MODALITY is `pet-linear`. "

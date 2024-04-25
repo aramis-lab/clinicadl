@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
+from clinicadl.utils.enum import Preprocessing
 
 
 class QCDataset(Dataset):
@@ -49,7 +50,7 @@ class QCDataset(Dataset):
             "preprocessing": "t1-linear",
             "mode": "image",
             "use_uncropped_image": use_uncropped_image,
-            "file_type": linear_nii("T1w", use_uncropped_image),
+            "file_type": linear_nii(Preprocessing.T1_LINEAR, use_uncropped_image),
             "use_tensor": use_extracted_tensors,
         }
 
@@ -87,7 +88,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii("T1w", self.use_uncropped_image),
+                linear_nii(Preprocessing.T1_LINEAR, self.use_uncropped_image),
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)

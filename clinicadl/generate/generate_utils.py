@@ -3,7 +3,7 @@
 import random
 from copy import copy
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -25,22 +25,21 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 
 def find_file_type(
-    preprocessing: Preprocessing,
+    preprocessing: Union[str, Preprocessing],
     uncropped_image: bool,
     tracer: Tracer,
     suvr_reference_region: SUVRReferenceRegions,
 ) -> Dict[str, str]:
+    preprocessing = Preprocessing(preprocessing)
     if preprocessing == Preprocessing.T1_LINEAR:
-        file_type = linear_nii("T1w", uncropped_image)
+        file_type = linear_nii(preprocessing, uncropped_image)
     elif preprocessing == Preprocessing.PET_LINEAR:
         if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
                 "`tracer` and `suvr_reference_region` must be defined "
                 "when using `pet-linear` preprocessing."
             )
-        file_type = pet_linear_nii(
-            tracer.value, suvr_reference_region.value, uncropped_image
-        )
+        file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
     else:
         raise NotImplementedError(
             f"Generation of synthetic data is not implemented for preprocessing {preprocessing.value}"

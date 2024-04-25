@@ -6,7 +6,7 @@ Automatically reject images incorrectly preprocessed pet-linear (Unified Segment
 
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import nibabel as nib
 import numpy as np
@@ -20,6 +20,7 @@ from clinicadl.utils.clinica_utils import (
     get_subject_session_list,
     pet_linear_nii,
 )
+from clinicadl.utils.enum import SUVRReferenceRegions, Tracer
 
 from .utils import get_metric
 
@@ -27,8 +28,8 @@ from .utils import get_metric
 def quality_check(
     caps_dir: Path,
     output_tsv: Path,
-    tracer: str,
-    ref_region: str,
+    tracer: Union[Tracer, str],
+    ref_region: Union[SUVRReferenceRegions, str],
     use_uncropped_image: bool,
     participants_tsv: Optional[Path],
     threshold: float = 0.8,
@@ -59,6 +60,9 @@ def quality_check(
         Number of cores used during the task.
     """
     logger = getLogger("clinicadl.quality_check")
+
+    tracer = Tracer(tracer)
+    ref_region = SUVRReferenceRegions(ref_region)
 
     if Path(output_tsv).is_file():
         raise NameError("this file already exists please chose another name")
