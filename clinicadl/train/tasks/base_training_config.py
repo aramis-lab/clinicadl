@@ -8,6 +8,14 @@ from pydantic import BaseModel, PrivateAttr, field_validator
 logger = getLogger("clinicadl.base_training_config")
 
 
+class Task(str, Enum):
+    """Tasks that can be performed in ClinicaDL."""
+
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+    RECONSTRUCTION = "reconstruction"
+
+
 class Compensation(str, Enum):
     """Available compensations in clinicaDL."""
 
