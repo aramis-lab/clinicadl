@@ -71,6 +71,7 @@ def cli(input_maps_directory, data_group, **kwargs):
         data_group=data_group,
         tsv_path=kwargs["participants_tsv"],
         split_list=kwargs["split"],
+        **kwargs,
     )
 
     predict_manager = PredictManager(predict_config)

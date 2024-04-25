@@ -109,9 +109,7 @@ class PredictManager:
         )
 
         group_df = self._config.create_groupe_df()
-        print(group_df)
         self._check_data_group(group_df)
-        print(group_df)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
 
