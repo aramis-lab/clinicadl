@@ -33,15 +33,17 @@ def cli(
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
+    from clinicadl.utils.maps_manager import MapsManager
     from clinicadl.utils.maps_manager.maps_manager_utils import read_json
-
-    from .train import train
+    from clinicadl.utils.trainer import Trainer
 
     logger = getLogger("clinicadl")
     logger.info(f"Reading JSON file at path {config_json}...")
     train_dict = read_json(config_json)
 
-    train(output_maps_directory, train_dict, split)
+    maps_manager = MapsManager(output_maps_directory, train_dict, verbose=None)
+    trainer = Trainer(maps_manager)
+    trainer.train(split_list=split, overwrite=True)
 
 
 if __name__ == "__main__":
