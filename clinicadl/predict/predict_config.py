@@ -95,6 +95,12 @@ class InterpretConfig(PredictInterpretConfig):
     def method(self, value: Union[str, InterpretationMethod]):
         self.method_cls = InterpretationMethod(value)
 
+    def get_method(self):
+        if self.method == "gradients":
+            return VanillaBackProp
+        elif self.method == "grad-cam":
+            return GradCam
+
 
 class PredictConfig(PredictInterpretConfig):
     label: str = ""
