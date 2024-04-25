@@ -96,7 +96,7 @@ name = click.argument(
 )
 method = click.argument(
     "method",
-    type=click.Choice(InterpretationMethod.list()),  # ["gradients", "grad-cam"]
+    type=click.Choice(InterpretationMethod),  # ["gradients", "grad-cam"]
 )
 level = click.option(
     "--level_grad_cam",

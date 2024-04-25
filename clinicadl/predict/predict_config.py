@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
-from clinicadl.interpret.gradients import GradCam, VanillaBackProp
+from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -89,7 +89,7 @@ class InterpretConfig(PredictInterpretConfig):
     def method(self, value: Union[str, InterpretationMethod]):
         self.method_cls = InterpretationMethod(value)
 
-    def get_method(self) -> Union[VanillaBackProp, GradCam]:
+    def get_method(self) -> Gradients:
         if self.method == InterpretationMethod.GRADIENTS:
             return VanillaBackProp
         elif self.method == InterpretationMethod.GRAD_CAM:
