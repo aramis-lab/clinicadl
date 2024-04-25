@@ -1,13 +1,13 @@
-from pathlib import Path
-
 import click
-from click.core import ParameterSource
 
-from clinicadl.train.train_utils import extract_config_from_toml_file
+from clinicadl.train import preprocessing_json_reader
+from clinicadl.train.tasks.base_training_config import Task
+from clinicadl.train.train_utils import merge_cli_and_config_file_options
 from clinicadl.utils.cli_param import train_option
+from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.utils.trainer import Trainer
 
 from .regression_config import RegressionConfig
-from .task_utils import task_launcher
 
 
 @click.command(name="regression", no_args_is_help=True)
@@ -88,14 +88,41 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    options = {}
-    if kwargs["config_file"]:
-        options = extract_config_from_toml_file(
-            Path(kwargs["config_file"]),
-            "regression",
-        )
-    for arg in kwargs:
-        if click.get_current_context().get_parameter_source(arg) == ParameterSource.COMMANDLINE:
-            options[arg] = kwargs[arg]
+    options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
     config = RegressionConfig(**options)
-    task_launcher(config)
+    config = preprocessing_json_reader(
+        config
+    )  # TODO : put elsewhere. In BaseTaskConfig?
+
+    # temporary # TODO : change MAPSManager and Trainer to give them a config object
+    maps_dir = config.output_maps_directory
+    train_dict = config.model_dump(
+        exclude=["output_maps_directory", "preprocessing_json", "tsv_directory"]
+    )
+    train_dict["tsv_path"] = config.tsv_directory
+    train_dict[
+        "preprocessing_dict"
+    ] = config._preprocessing_dict  # private attributes are not dumped
+    train_dict["mode"] = config._mode
+    if config.ssda_network:
+        train_dict["preprocessing_dict_target"] = config._preprocessing_dict_target
+    train_dict["network_task"] = config._network_task
+    if train_dict["transfer_path"] is None:
+        train_dict["transfer_path"] = False
+    if train_dict["data_augmentation"] == ():
+        train_dict["data_augmentation"] = False
+    split_list = train_dict.pop("split")
+    train_dict["compensation"] = config.compensation.value
+    train_dict["size_reduction_factor"] = config.size_reduction_factor.value
+    if train_dict["track_exp"]:
+        train_dict["track_exp"] = config.track_exp.value
+    else:
+        train_dict["track_exp"] = ""
+    train_dict["sampler"] = config.sampler.value
+    if train_dict["network_task"] == "reconstruction":
+        train_dict["normalization"] = config.normalization.value
+    #############
+
+    maps_manager = MapsManager(maps_dir, train_dict, verbose=None)
+    trainer = Trainer(maps_manager)
+    trainer.train(split_list=split_list, overwrite=True)
