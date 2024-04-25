@@ -1,11 +1,10 @@
 import click
 
 from clinicadl.generate.generate_artifacts_cli import cli as generate_artifacts_cli
-
-from .generate_hypometabolic_cli import cli as generate_hypo_cli
-from .generate_random_cli import cli as generate_random_cli
-from .generate_shepplogan_cli import cli as generate_shepplogan_cli
-from .generate_trivial_cli import cli as generate_trivial_cli
+from clinicadl.generate.generate_hypometabolic_cli import cli as generate_hypo_cli
+from clinicadl.generate.generate_random_cli import cli as generate_random_cli
+from clinicadl.generate.generate_shepplogan_cli import cli as generate_shepplogan_cli
+from clinicadl.generate.generate_trivial_cli import cli as generate_trivial_cli
 
 
 class RegistrationOrderGroup(click.Group):
