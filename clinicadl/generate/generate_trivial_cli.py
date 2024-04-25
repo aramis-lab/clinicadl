@@ -41,7 +41,6 @@ logger = getLogger("clinicadl.generate.trivial")
 @generate_param.option_trivial.atrophy_percent
 @generate_param.option_trivial.mask_path
 def cli(caps_directory, generated_caps_directory, **kwargs):
-    print(kwargs["n_subjects"])
     """Generation of a trivial dataset"""
     trivial_config = GenerateTrivialConfig(
         caps_directory=caps_directory,
