@@ -1,0 +1,12 @@
+{
+  "preprocessing": "t1-linear",
+  "mode": "image",
+  "use_uncropped_image": false,
+  "prepare_dl": false,
+  "extract_json": "t1-linear_mode-image.json",
+  "file_type": {
+    "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
+    "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+    "needed_pipeline": "t1-linear"
+  }
+}
