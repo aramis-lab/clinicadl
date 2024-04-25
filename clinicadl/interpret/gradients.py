@@ -116,6 +116,3 @@ class GradCam:
         )
 
         return resize_transform(grad_cam)
-
-
-method_dict = {"gradients": VanillaBackProp, "grad-cam": GradCam}

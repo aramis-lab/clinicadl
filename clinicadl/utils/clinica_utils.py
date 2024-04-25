@@ -310,7 +310,7 @@ def get_subject_session_list(
     with e.g. clinicadl_file_reader_function.
     """
 
-    if not subject_session_file:
+    if subject_session_file is None or not Path(subject_session_file).is_file():
         output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
         tsv_file = f"subjects_sessions_list_{timestamp}.tsv"
@@ -343,7 +343,6 @@ def create_subs_sess_list(
             not (i.e. a CAPS directory)
         use_session_tsv (boolean): Specify if the list uses the sessions listed in the sessions.tsv files
     """
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if not file_name:
@@ -356,7 +355,6 @@ def create_subs_sess_list(
     else:
         path_to_search = input_dir / "subjects"
     subjects_paths = list(path_to_search.glob("*sub-*"))
-
     # Sort the subjects list
     subjects_paths.sort()
 
