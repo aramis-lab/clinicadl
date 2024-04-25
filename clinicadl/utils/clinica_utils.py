@@ -626,9 +626,7 @@ def find_sub_ses_pattern_path(
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
-    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
-    print(current_glob_found)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
         #   - there is a problem somewhere which made us catch too many files

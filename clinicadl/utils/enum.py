@@ -22,6 +22,7 @@ class Tracer(str, Enum):
 
     FFDG = "18FFDG"
     FAV45 = "18FAV45"
+    CPIB = "11CPIB"
 
 
 class Pathology(str, Enum):
@@ -43,7 +44,7 @@ class BIDSModality(str, Enum):
     PET = "pet"
     FLAIR = "flair"
     # T2 = "t2"
-    # DTI = "dti"
+    DTI = "dti"
     CUSTOM = "custom"
 
 
