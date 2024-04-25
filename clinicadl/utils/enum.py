@@ -35,8 +35,8 @@ class Pathology(str, Enum):
     SVPPA = "svppa"
 
 
-class Modality(str, Enum):
-    """Possible modality for pet images in clinicaDL."""
+class BIDSModality(str, Enum):
+    """Possible modality for images in clinicaDL."""
 
     T1 = "t1"
     DWI = "dwi"
@@ -44,7 +44,13 @@ class Modality(str, Enum):
     FLAIR = "flair"
     # T2 = "t2"
     # DTI = "dti"
-    # CUSTOM = "custom"
+    CUSTOM = "custom"
+
+
+class LinearModality(str, Enum):
+    T1W = "T1w"
+    T2W = "T2w"
+    FLAIR = "flair"
 
 
 class Preprocessing(str, Enum):
@@ -57,3 +63,12 @@ class Preprocessing(str, Enum):
     CUSTOM = "custom"
     DWI_DTI = "dwi-dti"
     T2_LINEAR = "t2-linear"
+
+
+class DTIBasedMeasure(str, Enum):
+    """Possible DTI measures."""
+
+    FRACTIONAL_ANISOTROPY = "FA"
+    MEAN_DIFFUSIVITY = "MD"
+    AXIAL_DIFFUSIVITY = "AD"
+    RADIAL_DIFFUSIVITY = "RD"

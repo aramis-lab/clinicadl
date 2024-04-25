@@ -15,7 +15,14 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-from clinicadl.utils.enum import Modality, Preprocessing, SUVRReferenceRegions, Tracer
+from clinicadl.utils.enum import (
+    BIDSModality,
+    DTIBasedMeasure,
+    LinearModality,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLBIDSError,
@@ -27,7 +34,7 @@ RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "che
 
 
 def bids_nii(
-    modality: Union[str, Modality] = Modality.T1,
+    modality: Union[str, BIDSModality] = BIDSModality.T1,
     tracer: Optional[Union[str, Tracer]] = None,
     reconstruction: Optional[str] = None,
 ) -> dict:
@@ -54,13 +61,13 @@ def bids_nii(
     """
 
     try:
-        modality = Modality(modality)
+        modality = BIDSModality(modality)
     except ClinicaDLArgumentError:
         print(
             f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
         )
 
-    if modality == Modality.PET:
+    if modality == BIDSModality.PET:
         if tracer is not None:
             tracer = Tracer(tracer)
         trc = "" if tracer is None else f"_trc-{tracer.value}"
@@ -75,33 +82,32 @@ def bids_nii(
             "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
             "description": description,
         }
-    elif modality == Modality.T1:
+    elif modality == BIDSModality.T1:
         return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
-    elif modality == Modality.FLAIR:
+    elif modality == BIDSModality.FLAIR:
         return {
             "pattern": "sub-*_ses-*_flair.nii*",
             "description": "FLAIR T2w MRI",
         }
-    elif modality == Modality.DWI:
+    elif modality == BIDSModality.DWI:
         return {
             "pattern": "dwi/sub-*_ses-*_dwi.nii*",
             "description": "DWI NIfTI",
         }
 
 
-def linear_nii(preprocessing: Union[str, Preprocessing], uncropped_image: bool) -> dict:
-    preprocessing = Preprocessing(preprocessing)
+def linear_nii(modality: Union[LinearModality, str], uncropped_image: bool) -> dict:
+    try:
+        modality = LinearModality(modality)
+    except ClinicaDLArgumentError:
+        print(f"ClinicaDL is Unable to read this modality ({modality}) of images")
 
-    if preprocessing not in Preprocessing:
-        raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({preprocessing}) of images"
-        )
-    elif preprocessing == Preprocessing.T1_LINEAR:
-        needed_pipeline = preprocessing.value
-    elif preprocessing == Preprocessing.T2_LINEAR:
-        needed_pipeline = preprocessing.value
-    elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        needed_pipeline = preprocessing.value
+    if modality == LinearModality.T1W:
+        needed_pipeline = Preprocessing.T1_LINEAR
+    elif modality == LinearModality.T2W:
+        needed_pipeline = Preprocessing.T2_LINEAR
+    elif modality == LinearModality.FLAIR:
+        needed_pipeline = Preprocessing.FLAIR_LINEAR
 
     if uncropped_image:
         desc_crop = ""
@@ -109,8 +115,8 @@ def linear_nii(preprocessing: Union[str, Preprocessing], uncropped_image: bool) 
         desc_crop = "_desc-Crop"
 
     information = {
-        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{preprocessing.value}.nii.gz",
-        "description": f"{preprocessing.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
+        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
+        "description": f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
         + (
             ""
             if uncropped_image
@@ -119,15 +125,6 @@ def linear_nii(preprocessing: Union[str, Preprocessing], uncropped_image: bool) 
         "needed_pipeline": needed_pipeline,
     }
     return information
-
-
-class DTIBasedMeasure(str, Enum):
-    """Possible DTI measures."""
-
-    FRACTIONAL_ANISOTROPY = "FA"
-    MEAN_DIFFUSIVITY = "MD"
-    AXIAL_DIFFUSIVITY = "AD"
-    RADIAL_DIFFUSIVITY = "RD"
 
 
 def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -> dict:
@@ -629,7 +626,9 @@ def find_sub_ses_pattern_path(
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
+    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+    print(current_glob_found)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
         #   - there is a problem somewhere which made us catch too many files

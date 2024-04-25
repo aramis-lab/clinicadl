@@ -17,6 +17,7 @@ from clinicadl.utils.clinica_utils import (
     pet_linear_nii,
 )
 from clinicadl.utils.enum import (
+    LinearModality,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
@@ -32,7 +33,7 @@ def find_file_type(
 ) -> Dict[str, str]:
     preprocessing = Preprocessing(preprocessing)
     if preprocessing == Preprocessing.T1_LINEAR:
-        file_type = linear_nii(preprocessing, uncropped_image)
+        file_type = linear_nii(LinearModality.T1W, uncropped_image)
     elif preprocessing == Preprocessing.PET_LINEAR:
         if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(

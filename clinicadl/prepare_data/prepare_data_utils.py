@@ -6,11 +6,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from clinicadl.utils.enum import Modality, Preprocessing, SUVRReferenceRegions, Tracer
+from clinicadl.utils.enum import (
+    BIDSModality,
+    LinearModality,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 
 
 def get_parameters_dict(
-    modality: Union[Modality, str],
+    modality: Union[BIDSModality, str],
     extract_method: str,
     save_features: bool,
     extract_json: str,
@@ -46,7 +52,7 @@ def get_parameters_dict(
         The dictionary of parameters specific to the preprocessing
     """
 
-    modality = Modality(modality)
+    modality = BIDSModality(modality)
     tracer = Tracer(tracer)
     suvr_reference_region = SUVRReferenceRegions(suvr_reference_region)
 
@@ -57,12 +63,12 @@ def get_parameters_dict(
         "prepare_dl": save_features,
     }
 
-    if modality == Modality.CUSTOM:
+    if modality == BIDSModality.CUSTOM:
         parameters["custom_suffix"] = custom_suffix
-    elif modality == Modality.PET:
+    elif modality == BIDSModality.PET:
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
-    elif modality == Modality.DTI:
+    elif modality == BIDSModality.DTI:
         parameters["dti_space"] = dti_space
         parameters["dti_measure"] = dti_measure
 
@@ -109,10 +115,14 @@ def compute_folder_and_file_type(
     else:
         mod_subfolder = preprocessing.value
         if preprocessing == Preprocessing.T1_LINEAR:
-            file_type = linear_nii(preprocessing, parameters["use_uncropped_image"])
+            file_type = linear_nii(
+                LinearModality.T1W, parameters["use_uncropped_image"]
+            )
 
         elif preprocessing == Preprocessing.FLAIR_LINEAR:
-            file_type = linear_nii(preprocessing, parameters["use_uncropped_image"])
+            file_type = linear_nii(
+                LinearModality.FLAIR, parameters["use_uncropped_image"]
+            )
 
         elif preprocessing == Preprocessing.PET_LINEAR:
             file_type = pet_linear_nii(
