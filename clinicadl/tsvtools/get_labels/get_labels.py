@@ -14,7 +14,7 @@ pipelines, leading to the removal of some subjects.
 from copy import copy
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -235,14 +235,14 @@ def get_labels(
     bids_directory: Path,
     diagnoses: List[str],
     modality: str = "t1w",
-    restriction_path: Path = None,
-    variables_of_interest: List[str] = None,
+    restriction_path: Optional[Path] = None,
+    variables_of_interest: Optional[List[str]] = None,
     remove_smc: bool = True,
-    merged_tsv: Path = None,
-    missing_mods: Path = None,
+    merged_tsv: Optional[Path] = None,
+    missing_mods: Optional[Path] = None,
     remove_unique_session_: bool = False,
-    output_dir: Path = None,
-    caps_directory: Path = None,
+    output_dir: Optional[Path] = None,
+    caps_directory: Optional[Path] = None,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
