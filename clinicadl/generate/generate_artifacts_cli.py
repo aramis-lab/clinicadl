@@ -132,7 +132,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             / "subjects"
             / subject_name
             / session_name
-            / artif_config.preprocessing
+            / artif_config.preprocessing.value
         )
         artif_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
