@@ -41,6 +41,7 @@ logger = getLogger("clinicadl.generate.trivial")
 @generate_param.option_trivial.atrophy_percent
 @generate_param.option_trivial.mask_path
 def cli(caps_directory, generated_caps_directory, **kwargs):
+    print(kwargs["n_subjects"])
     """Generation of a trivial dataset"""
     trivial_config = GenerateTrivialConfig(
         caps_directory=caps_directory,
@@ -49,6 +50,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         tracer_cls=kwargs["tracer"],
         participants_list=kwargs["participants_tsv"],
         preprocessing_cls=kwargs["preprocessing"],
+        **kwargs,
     )
 
     from clinicadl.utils.exceptions import DownloadError
@@ -64,7 +66,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         }
     )
 
-    print(trivial_config.preprocessing)
     multi_cohort = False  # ??? hard coded
 
     # Transform caps_directory in dict
@@ -83,7 +84,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
-    if not trivial_config.mask_path.is_file():
+    if not trivial_config.mask_path:
         cache_clinicadl = Path.home() / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
