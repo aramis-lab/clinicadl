@@ -20,6 +20,9 @@ class Preprocessing(ClinicaDLEnum):
     T1_LINEAR = "t1-linear"
     T1_EXTENSIVE = "t1-extensive"
     PET_LINEAR = "pet-linear"
+    FLAIR_LINEAR = "flair-linear"
+    CUSTOM = "custom"
+    DWI_DTI = "dwi-dti"
 
 
 class SUVRReferenceRegions(ClinicaDLEnum):
@@ -54,7 +57,7 @@ class Modality(ClinicaDLEnum):
 
     T1 = "t1"
     DWI = "dwi"
-    PET = "pet-linear"
+    PET = "pet"
     FLAIR = "flair"
     T2 = "t2"
     DTI = "dwi-dti"
