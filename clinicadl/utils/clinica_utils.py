@@ -92,7 +92,7 @@ def bids_nii(
 def linear_nii(preprocessing: Union[str, Preprocessing], uncropped_image: bool) -> dict:
     preprocessing = Preprocessing(preprocessing)
 
-    if preprocessing not in Preprocessing.list():
+    if preprocessing not in Preprocessing:
         raise ClinicaDLArgumentError(
             f"ClinicaDL is Unable to read this modality ({preprocessing}) of images"
         )

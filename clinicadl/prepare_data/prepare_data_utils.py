@@ -102,7 +102,7 @@ def compute_folder_and_file_type(
             mod_subfolder = preprocessing
             file_type = bids_nii(preprocessing)
 
-    elif preprocessing not in Preprocessing.list():
+    elif preprocessing not in Preprocessing:
         raise NotImplementedError(
             f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
         )
