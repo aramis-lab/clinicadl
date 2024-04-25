@@ -26,7 +26,7 @@ def image_cli(
     modality: str,
     n_proc: int,
     subjects_sessions_tsv: Optional[Path] = None,
-    extract_json: str = None,
+    extract_json: Optional[str] = None,
     use_uncropped_image: bool = False,
     tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,

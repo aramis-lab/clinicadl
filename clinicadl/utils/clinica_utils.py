@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 import pandas as pd
 
 from clinicadl.generate.generate_config import SUVRReferenceRegions, Tracer
+from clinicadl.utils.enum import Modality
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLBIDSError,
@@ -24,16 +25,6 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.logger import cprint
 
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
-
-
-class Modality(str, Enum):
-    """Possible tracer for pet images in clinicaDL."""
-
-    T1 = "t1"
-    DWI = "dwi"
-    PET = "pet"
-    FLAIR = "flair"
-    T2 = "t2"
 
 
 def bids_nii(

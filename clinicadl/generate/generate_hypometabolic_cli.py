@@ -8,17 +8,17 @@ from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.generate import generate_param
-from clinicadl.generate.generate_config import (
-    GenerateHypometabolicConfig,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
+from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import (
     RemoteFileStructure,
     clinicadl_file_reader,
     fetch_file,
+)
+from clinicadl.utils.enum import (
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
 )
 from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json

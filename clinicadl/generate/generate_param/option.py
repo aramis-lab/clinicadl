@@ -3,9 +3,9 @@ from typing import get_args
 
 import click
 
-from clinicadl.generate.generate_config import (
+from clinicadl.generate.generate_config import SharedGenerateConfigTwo
+from clinicadl.utils.enum import (
     Preprocessing,
-    SharedGenerateConfigTwo,
     SUVRReferenceRegions,
     Tracer,
 )

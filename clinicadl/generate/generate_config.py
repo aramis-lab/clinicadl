@@ -5,60 +5,15 @@ from typing import Annotated, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
+from clinicadl.utils.enum import (
+    Pathology,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl.predict_config")
-
-
-class Preprocessing(str, Enum):
-    """Possible preprocessing method in clinicaDL."""
-
-    T1_LINEAR = "t1-linear"
-    T1_EXTENSIVE = "t1-extensive"
-    PET_LINEAR = "pet-linear"
-
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
-
-
-class SUVRReferenceRegions(str, Enum):
-    """Possible SUVR reference region for pet images in clinicaDL."""
-
-    PONS = "pons"
-    CEREBELLUMPONS = "cerebellumPons"
-    PONS2 = "pons2"
-    CEREBELLUMPONS2 = "cerebellumPons2"
-
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
-
-
-class Tracer(str, Enum):
-    """Possible tracer for pet images in clinicaDL."""
-
-    FFDG = "18FFDG"
-    FAV45 = "18FAV45"
-
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
-
-
-class Pathology(str, Enum):
-    """Possible pathology for hypometabolic generation of pet images in clinicaDL."""
-
-    AD = "ad"
-    BVFTD = "bvftd"
-    LVPPA = "lvppa"
-    NFVPPA = "nfvppa"
-    PCA = "pca"
-    SVPPA = "svppa"
-
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
 
 
 class GenerateConfig(BaseModel):

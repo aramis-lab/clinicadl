@@ -1,6 +1,7 @@
 import click
 
-from clinicadl.generate.generate_config import GenerateHypometabolicConfig, Pathology
+from clinicadl.generate.generate_config import GenerateHypometabolicConfig
+from clinicadl.utils.enum import Pathology
 
 config_hypometabolic = GenerateHypometabolicConfig.model_fields
 pathology = click.option(

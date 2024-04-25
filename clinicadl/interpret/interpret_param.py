@@ -3,7 +3,7 @@ from typing import get_args
 
 import click
 
-from clinicadl.predict.predict_config import InterpretConfig
+from clinicadl.predict.predict_config import InterpretationMethod, InterpretConfig
 
 config = InterpretConfig.model_fields
 
@@ -96,9 +96,7 @@ name = click.argument(
 )
 method = click.argument(
     "method",
-    type=click.Choice(
-        list(config["method_cls"].annotation)
-    ),  # ["gradients", "grad-cam"]
+    type=click.Choice(InterpretationMethod.list()),  # ["gradients", "grad-cam"]
 )
 level = click.option(
     "--level_grad_cam",

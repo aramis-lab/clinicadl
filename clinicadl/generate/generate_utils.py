@@ -10,16 +10,16 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.generate.generate_config import (
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
 from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
 from clinicadl.utils.clinica_utils import (
     create_subs_sess_list,
     linear_nii,
     pet_linear_nii,
+)
+from clinicadl.utils.enum import (
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
 )
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
@@ -38,10 +38,12 @@ def find_file_type(
                 "`tracer` and `suvr_reference_region` must be defined "
                 "when using `pet-linear` preprocessing."
             )
-        file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
+        file_type = pet_linear_nii(
+            tracer.value, suvr_reference_region.value, uncropped_image
+        )
     else:
         raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
+            f"Generation of synthetic data is not implemented for preprocessing {preprocessing.value}"
         )
 
     return file_type

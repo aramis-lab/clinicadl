@@ -1,21 +1,23 @@
 # coding: utf8
 from pathlib import Path
 from time import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 
+from clinicadl.utils.enum import Modality, Preprocessing, SUVRReferenceRegions, Tracer
+
 
 def get_parameters_dict(
-    modality: str,
+    modality: Union[Modality, str],
     extract_method: str,
     save_features: bool,
     extract_json: str,
     use_uncropped_image: bool,
     custom_suffix: str,
-    tracer: str,
-    suvr_reference_region: str,
+    tracer: Union[Tracer, str],
+    suvr_reference_region: Union[SUVRReferenceRegions, str],
     dti_measure: str,
     dti_space: str,
 ) -> Dict[str, Any]:
@@ -43,19 +45,24 @@ def get_parameters_dict(
     Returns:
         The dictionary of parameters specific to the preprocessing
     """
+
+    modality = Modality(modality)
+    tracer = Tracer(tracer)
+    suvr_reference_region = SUVRReferenceRegions(suvr_reference_region)
+
     parameters = {
-        "preprocessing": modality,
+        "preprocessing": modality.value,
         "mode": extract_method,
         "use_uncropped_image": use_uncropped_image,
         "prepare_dl": save_features,
     }
 
-    if modality == "custom":
+    if modality == Modality.CUSTOM:
         parameters["custom_suffix"] = custom_suffix
-    elif modality == "pet-linear":
+    elif modality == Modality.PET:
         parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
-    elif modality == "dwi-dti":
+    elif modality == Modality.DTI:
         parameters["dti_space"] = dti_space
         parameters["dti_measure"] = dti_measure
 
@@ -64,7 +71,7 @@ def get_parameters_dict(
     return parameters
 
 
-def compute_extract_json(extract_json: str) -> str:
+def compute_extract_json(extract_json: Optional[str]) -> str:
     if extract_json is None:
         return f"extract_{int(time())}.json"
     elif not extract_json.endswith(".json"):
@@ -74,7 +81,7 @@ def compute_extract_json(extract_json: str) -> str:
 
 
 def compute_folder_and_file_type(
-    parameters: Dict[str, Any], from_bids: Path = None
+    parameters: Dict[str, Any], from_bids: Optional[Path] = None
 ) -> Tuple[str, Dict[str, str]]:
     from clinicadl.utils.clinica_utils import (
         bids_nii,
@@ -83,50 +90,48 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
+    preprocessing = Preprocessing(parameters["preprocessing"])
     if from_bids is not None:
-        if parameters["preprocessing"] == "custom":
-            mod_subfolder = "custom"
+        if preprocessing == Preprocessing.CUSTOM:
+            mod_subfolder = Preprocessing.CUSTOM.value
             file_type = {
                 "pattern": f"*{parameters['custom_suffix']}",
                 "description": "Custom suffix",
             }
         else:
-            mod_subfolder = parameters["preprocessing"]
-            file_type = bids_nii(parameters["preprocessing"])
+            mod_subfolder = preprocessing
+            file_type = bids_nii(preprocessing)
 
+    elif preprocessing not in Preprocessing.list():
+        raise NotImplementedError(
+            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
+        )
     else:
-        if parameters["preprocessing"] == "t1-linear":
-            mod_subfolder = "t1_linear"
+        mod_subfolder = preprocessing.value
+        if preprocessing == Preprocessing.T1_LINEAR:
             file_type = linear_nii("T1w", parameters["use_uncropped_image"])
 
-        elif parameters["preprocessing"] == "flair-linear":
-            mod_subfolder = "flair_linear"
+        elif preprocessing == Preprocessing.FLAIR_LINEAR:
             file_type = linear_nii("flair", parameters["use_uncropped_image"])
 
-        elif parameters["preprocessing"] == "pet-linear":
-            mod_subfolder = "pet_linear"
+        elif preprocessing == Preprocessing.PET_LINEAR:
             file_type = pet_linear_nii(
                 parameters["tracer"],
                 parameters["suvr_reference_region"],
                 parameters["use_uncropped_image"],
             )
-        elif parameters["preprocessing"] == "dwi-dti":
-            mod_subfolder = "dwi_dti"
+        elif preprocessing == Preprocessing.DWI_DTI:
             file_type = dwi_dti(
                 parameters["measure"],
                 parameters["space"],
             )
-        elif parameters["preprocessing"] == "custom":
-            mod_subfolder = "custom"
+        elif preprocessing == Preprocessing.CUSTOM:
             file_type = {
                 "pattern": f"*{parameters['custom_suffix']}",
                 "description": "Custom suffix",
             }
             parameters["use_uncropped_image"] = None
-        else:
-            raise NotImplementedError(
-                f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
-            )
+
     return mod_subfolder, file_type
 
 
@@ -292,7 +297,7 @@ def extract_patch_tensor(
     patch_size: int,
     stride_size: int,
     patch_index: int,
-    patches_tensor: torch.Tensor = None,
+    patches_tensor: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """Extracts a single patch from image_tensor"""
 
