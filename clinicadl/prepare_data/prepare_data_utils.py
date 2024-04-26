@@ -96,7 +96,7 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    preprocessing = Preprocessing(parameters["preprocessing"])
+    preprocessing = Preprocessing(parameters["preprocessing"].replace("-", "_"))
     if from_bids is not None:
         if preprocessing == Preprocessing.CUSTOM:
             mod_subfolder = Preprocessing.CUSTOM.value
