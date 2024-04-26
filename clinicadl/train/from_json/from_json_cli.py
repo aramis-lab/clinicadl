@@ -16,7 +16,6 @@ from clinicadl.utils import cli_param
     "--split",
     "-s",
     type=int,
-    # default=(),
     multiple=True,
     help="Train the list of given splits. By default, all the splits are trained.",
 )
@@ -33,9 +32,9 @@ def cli(
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
+    from clinicadl.train.trainer import Trainer
     from clinicadl.utils.maps_manager import MapsManager
     from clinicadl.utils.maps_manager.maps_manager_utils import read_json
-    from clinicadl.utils.trainer import Trainer
 
     logger = getLogger("clinicadl")
     logger.info(f"Reading JSON file at path {config_json}...")
@@ -44,7 +43,3 @@ def cli(
     maps_manager = MapsManager(output_maps_directory, train_dict, verbose=None)
     trainer = Trainer(maps_manager)
     trainer.train(split_list=split, overwrite=True)
-
-
-if __name__ == "__main__":
-    cli()

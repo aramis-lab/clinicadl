@@ -43,7 +43,7 @@ from pydantic import ValidationError
     ],
 )
 def test_fails_validations(parameters):
-    from clinicadl.train.tasks.base_training_config import BaseTaskConfig
+    from clinicadl.train.tasks.base_task_config import BaseTaskConfig
 
     with pytest.raises(ValidationError):
         BaseTaskConfig(**parameters)
@@ -75,6 +75,6 @@ def test_fails_validations(parameters):
     ],
 )
 def test_passes_validations(parameters):
-    from clinicadl.train.tasks.base_training_config import BaseTaskConfig
+    from clinicadl.train.tasks.base_task_config import BaseTaskConfig
 
     BaseTaskConfig(**parameters)

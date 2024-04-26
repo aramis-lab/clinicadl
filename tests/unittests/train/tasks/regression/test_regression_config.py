@@ -19,20 +19,13 @@ from pydantic import ValidationError
             "output_maps_directory": "",
             "selection_metrics": "loss",
         },
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "normalization": "abc",
-        },
     ],
 )
 def test_fails_validations(parameters):
-    from clinicadl.train.tasks.reconstruction_config import ReconstructionConfig
+    from clinicadl.train.tasks.regression import RegressionConfig
 
     with pytest.raises(ValidationError):
-        ReconstructionConfig(**parameters)
+        RegressionConfig(**parameters)
 
 
 @pytest.mark.parametrize(
@@ -43,9 +36,8 @@ def test_fails_validations(parameters):
             "preprocessing_json": "",
             "tsv_directory": "",
             "output_maps_directory": "",
-            "loss": "L1Loss",
+            "loss": "MSELoss",
             "selection_metrics": ("loss",),
-            "normalization": "batch",
         },
         {
             "caps_directory": "",
@@ -57,6 +49,6 @@ def test_fails_validations(parameters):
     ],
 )
 def test_passes_validations(parameters):
-    from clinicadl.train.tasks.reconstruction_config import ReconstructionConfig
+    from clinicadl.train.tasks.regression import RegressionConfig
 
-    ReconstructionConfig(**parameters)
+    RegressionConfig(**parameters)

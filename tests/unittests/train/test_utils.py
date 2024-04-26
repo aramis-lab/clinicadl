@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.train.tasks.base_training_config import Task
+from clinicadl.train.tasks import Task
 
 expected_classification = {
     "architecture": "default",
@@ -186,13 +186,13 @@ config_toml = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     ],
 )
 def test_extract_config_from_toml_file(config_file, task, expected_output):
-    from clinicadl.train.train_utils import extract_config_from_toml_file
+    from clinicadl.train.utils import extract_config_from_toml_file
 
     assert extract_config_from_toml_file(config_file, task) == expected_output
 
 
 def test_extract_config_from_toml_file_exceptions():
-    from clinicadl.train.train_utils import extract_config_from_toml_file
+    from clinicadl.train.utils import extract_config_from_toml_file
     from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
     with pytest.raises(ClinicaDLConfigurationError):
@@ -205,8 +205,8 @@ def test_extract_config_from_toml_file_exceptions():
 def test_preprocessing_json_reader():  # TODO : add more test on this function
     from copy import deepcopy
 
-    from clinicadl.train.tasks.base_training_config import BaseTaskConfig
-    from clinicadl.train.train_utils import preprocessing_json_reader
+    from clinicadl.train.tasks import BaseTaskConfig
+    from clinicadl.train.utils import preprocessing_json_reader
 
     preprocessing_path = "preprocessing.json"
     config = BaseTaskConfig(
@@ -243,7 +243,7 @@ def test_merge_cli_and_config_file_options():
     import click
     from click.testing import CliRunner
 
-    from clinicadl.train.train_utils import merge_cli_and_config_file_options
+    from clinicadl.train.utils import merge_cli_and_config_file_options
 
     @click.command()
     @click.option("--config_file")
