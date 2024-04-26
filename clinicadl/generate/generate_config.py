@@ -53,6 +53,8 @@ class SharedGenerateConfigOne(GenerateConfig):
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
+        if isinstance(value, str):
+            value = value.replace("-", "_")
         self.preprocessing_cls = Preprocessing(value)
 
 

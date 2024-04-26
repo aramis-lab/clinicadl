@@ -58,7 +58,7 @@ class Preprocessing(str, Enum):
     """Possible preprocessing method in clinicaDL."""
 
     T1_LINEAR = "t1_linear"
-    T1_EXTENSIVE = "t1-extensive"
+    T1_EXTENSIVE = "t1_extensive"
     PET_LINEAR = "pet_linear"
     FLAIR_LINEAR = "flair_linear"
     CUSTOM = "custom"
