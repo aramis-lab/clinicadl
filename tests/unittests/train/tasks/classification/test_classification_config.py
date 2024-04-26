@@ -29,7 +29,7 @@ from pydantic import ValidationError
     ],
 )
 def test_fails_validations(parameters):
-    from clinicadl.train.tasks.classification_config import ClassificationConfig
+    from clinicadl.train.tasks.classification import ClassificationConfig
 
     with pytest.raises(ValidationError):
         ClassificationConfig(**parameters)
@@ -57,6 +57,6 @@ def test_fails_validations(parameters):
     ],
 )
 def test_passes_validations(parameters):
-    from clinicadl.train.tasks.classification_config import ClassificationConfig
+    from clinicadl.train.tasks.classification import ClassificationConfig
 
     ClassificationConfig(**parameters)

@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 from pydantic import PrivateAttr, field_validator
 
-from .base_training_config import BaseTaskConfig
+from clinicadl.train.tasks import BaseTaskConfig
 
 logger = getLogger("clinicadl.classification_config")
 

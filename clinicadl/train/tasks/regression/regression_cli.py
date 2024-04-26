@@ -1,76 +1,78 @@
 import click
 
-from clinicadl.train import preprocessing_json_reader
-from clinicadl.train.tasks.base_training_config import Task
-from clinicadl.train.train_utils import merge_cli_and_config_file_options
-from clinicadl.utils.cli_param import train_option
+from clinicadl.train.tasks import Task, base_task_cli_options
+from clinicadl.train.trainer import Trainer
+from clinicadl.train.utils import (
+    merge_cli_and_config_file_options,
+    preprocessing_json_reader,
+)
 from clinicadl.utils.maps_manager import MapsManager
-from clinicadl.utils.trainer import Trainer
 
+from ..regression import regression_cli_options
 from .regression_config import RegressionConfig
 
 
 @click.command(name="regression", no_args_is_help=True)
 # Mandatory arguments
-@train_option.caps_directory
-@train_option.preprocessing_json
-@train_option.tsv_directory
-@train_option.output_maps
+@base_task_cli_options.caps_directory
+@base_task_cli_options.preprocessing_json
+@base_task_cli_options.tsv_directory
+@base_task_cli_options.output_maps
 # Options
-@train_option.config_file
+@base_task_cli_options.config_file
 # Computational
-@train_option.gpu
-@train_option.n_proc
-@train_option.batch_size
-@train_option.evaluation_steps
-@train_option.fully_sharded_data_parallel
-@train_option.amp
+@base_task_cli_options.gpu
+@base_task_cli_options.n_proc
+@base_task_cli_options.batch_size
+@base_task_cli_options.evaluation_steps
+@base_task_cli_options.fully_sharded_data_parallel
+@base_task_cli_options.amp
 # Reproducibility
-@train_option.seed
-@train_option.deterministic
-@train_option.compensation
-@train_option.save_all_models
+@base_task_cli_options.seed
+@base_task_cli_options.deterministic
+@base_task_cli_options.compensation
+@base_task_cli_options.save_all_models
 # Model
-@train_option.regression_architecture
-@train_option.multi_network
-@train_option.ssda_network
+@regression_cli_options.architecture
+@base_task_cli_options.multi_network
+@base_task_cli_options.ssda_network
 # Data
-@train_option.multi_cohort
-@train_option.diagnoses
-@train_option.baseline
-@train_option.valid_longitudinal
-@train_option.normalize
-@train_option.data_augmentation
-@train_option.sampler
-@train_option.caps_target
-@train_option.tsv_target_lab
-@train_option.tsv_target_unlab
-@train_option.preprocessing_dict_target
+@base_task_cli_options.multi_cohort
+@base_task_cli_options.diagnoses
+@base_task_cli_options.baseline
+@base_task_cli_options.valid_longitudinal
+@base_task_cli_options.normalize
+@base_task_cli_options.data_augmentation
+@base_task_cli_options.sampler
+@base_task_cli_options.caps_target
+@base_task_cli_options.tsv_target_lab
+@base_task_cli_options.tsv_target_unlab
+@base_task_cli_options.preprocessing_dict_target
 # Cross validation
-@train_option.n_splits
-@train_option.split
+@base_task_cli_options.n_splits
+@base_task_cli_options.split
 # Optimization
-@train_option.optimizer
-@train_option.epochs
-@train_option.learning_rate
-@train_option.adaptive_learning_rate
-@train_option.weight_decay
-@train_option.dropout
-@train_option.patience
-@train_option.tolerance
-@train_option.accumulation_steps
-@train_option.profiler
-@train_option.track_exp
+@base_task_cli_options.optimizer
+@base_task_cli_options.epochs
+@base_task_cli_options.learning_rate
+@base_task_cli_options.adaptive_learning_rate
+@base_task_cli_options.weight_decay
+@base_task_cli_options.dropout
+@base_task_cli_options.patience
+@base_task_cli_options.tolerance
+@base_task_cli_options.accumulation_steps
+@base_task_cli_options.profiler
+@base_task_cli_options.track_exp
 # transfer learning
-@train_option.transfer_path
-@train_option.transfer_selection_metric
-@train_option.nb_unfrozen_layer
+@base_task_cli_options.transfer_path
+@base_task_cli_options.transfer_selection_metric
+@base_task_cli_options.nb_unfrozen_layer
 # Task-related
-@train_option.regression_label
-@train_option.regression_selection_metrics
-@train_option.regression_loss
+@regression_cli_options.label
+@regression_cli_options.selection_metrics
+@regression_cli_options.loss
 # information
-@train_option.emissions_calculator
+@base_task_cli_options.emissions_calculator
 def cli(**kwargs):
     """
     Train a deep learning model to learn a regression task on neuroimaging data.
