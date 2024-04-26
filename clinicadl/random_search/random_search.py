@@ -5,8 +5,8 @@ Launch a random network training.
 from pathlib import Path
 
 from clinicadl.random_search.random_search_utils import get_space_dict, random_sampling
+from clinicadl.train.trainer import Trainer
 from clinicadl.utils.maps_manager import MapsManager
-from clinicadl.utils.trainer import Trainer
 
 
 def launch_search(launch_directory: Path, job_name):

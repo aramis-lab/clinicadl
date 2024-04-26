@@ -1,22 +1,38 @@
+from enum import Enum
 from logging import getLogger
 from typing import List, Tuple
 
 from pydantic import PrivateAttr, field_validator
 
-from .base_training_config import BaseTaskConfig
+from clinicadl.train.tasks import BaseTaskConfig
 
-logger = getLogger("clinicadl.regression_config")
+logger = getLogger("clinicadl.reconstruction_config")
 
 
-class RegressionConfig(BaseTaskConfig):
-    """Config class to handle parameters of the regression task."""
+class Normalization(str, Enum):
+    """Available normalization layers in ClinicaDL."""
 
-    architecture: str = "Conv5_FC3"
+    BATCH = "batch"
+    GROUP = "group"
+    INSTANCE = "instance"
+
+
+class ReconstructionConfig(BaseTaskConfig):
+    """Config class to handle parameters of the reconstruction task."""
+
     loss: str = "MSELoss"
-    label: str = "age"
     selection_metrics: Tuple[str, ...] = ("loss",)
+    # model
+    architecture: str = "AE_Conv5_FC3"
+    latent_space_size: int = 128
+    feature_size: int = 1024
+    n_conv: int = 4
+    io_layer_channels: int = 8
+    recons_weight: int = 1
+    kl_weight: int = 1
+    normalization: Normalization = Normalization.BATCH
     # private
-    _network_task: str = PrivateAttr(default="regression")
+    _network_task: str = PrivateAttr(default="reconstruction")
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
@@ -34,6 +50,9 @@ class RegressionConfig(BaseTaskConfig):
             "BCEWithLogitsLoss",
             "HuberLoss",
             "SmoothL1Loss",
+            "VAEGaussianLoss",
+            "VAEBernoulliLoss",
+            "VAEContinuousBernoulliLoss",
         ]
         return compatible_losses
 

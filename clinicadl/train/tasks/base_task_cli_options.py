@@ -2,10 +2,7 @@ from typing import get_args
 
 import click
 
-from clinicadl.train.tasks.base_training_config import BaseTaskConfig
-from clinicadl.train.tasks.classification_config import ClassificationConfig
-from clinicadl.train.tasks.reconstruction_config import ReconstructionConfig
-from clinicadl.train.tasks.regression_config import RegressionConfig
+from clinicadl.train.tasks.base_task_config import BaseTaskConfig
 from clinicadl.utils import cli_param
 
 # Arguments
@@ -26,9 +23,6 @@ config_file = click.option(
 
 # Options #
 base_config = BaseTaskConfig.model_fields
-classification_config = ClassificationConfig.model_fields
-regression_config = RegressionConfig.model_fields
-reconstruction_config = ReconstructionConfig.model_fields
 
 # Computational
 gpu = cli_param.option_group.computational_group.option(
@@ -116,103 +110,6 @@ ssda_network = cli_param.option_group.model_group.option(
     "--ssda_network/--single_network",
     default=base_config["ssda_network"].default,
     help="If provided uses a ssda-network framework.",
-    show_default=True,
-)
-# Task
-classification_architecture = cli_param.option_group.model_group.option(
-    "-a",
-    "--architecture",
-    type=classification_config["architecture"].annotation,
-    default=classification_config["architecture"].default,
-    help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
-)
-regression_architecture = cli_param.option_group.model_group.option(
-    "-a",
-    "--architecture",
-    type=regression_config["architecture"].annotation,
-    default=regression_config["architecture"].default,
-    help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
-)
-reconstruction_architecture = cli_param.option_group.model_group.option(
-    "-a",
-    "--architecture",
-    type=reconstruction_config["architecture"].annotation,
-    default=reconstruction_config["architecture"].default,
-    help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
-)
-classification_label = cli_param.option_group.task_group.option(
-    "--label",
-    type=classification_config["label"].annotation,
-    default=classification_config["label"].default,
-    help="Target label used for training.",
-    show_default=True,
-)
-regression_label = cli_param.option_group.task_group.option(
-    "--label",
-    type=regression_config["label"].annotation,
-    default=regression_config["label"].default,
-    help="Target label used for training.",
-    show_default=True,
-)
-classification_selection_metrics = cli_param.option_group.task_group.option(
-    "--selection_metrics",
-    "-sm",
-    multiple=True,
-    type=get_args(classification_config["selection_metrics"].annotation)[0],
-    default=classification_config["selection_metrics"].default,
-    help="""Allow to save a list of models based on their selection metric. Default will
-    only save the best model selected on loss.""",
-    show_default=True,
-)
-regression_selection_metrics = cli_param.option_group.task_group.option(
-    "--selection_metrics",
-    "-sm",
-    multiple=True,
-    type=get_args(regression_config["selection_metrics"].annotation)[0],
-    default=regression_config["selection_metrics"].default,
-    help="""Allow to save a list of models based on their selection metric. Default will
-    only save the best model selected on loss.""",
-    show_default=True,
-)
-reconstruction_selection_metrics = cli_param.option_group.task_group.option(
-    "--selection_metrics",
-    "-sm",
-    multiple=True,
-    type=get_args(reconstruction_config["selection_metrics"].annotation)[0],
-    default=reconstruction_config["selection_metrics"].default,
-    help="""Allow to save a list of models based on their selection metric. Default will
-    only save the best model selected on loss.""",
-    show_default=True,
-)
-selection_threshold = cli_param.option_group.task_group.option(
-    "--selection_threshold",
-    type=classification_config["selection_threshold"].annotation,
-    default=classification_config["selection_threshold"].default,
-    help="""Selection threshold for soft-voting. Will only be used if num_networks > 1.""",
-    show_default=True,
-)
-classification_loss = cli_param.option_group.task_group.option(
-    "--loss",
-    "-l",
-    type=click.Choice(ClassificationConfig.get_compatible_losses()),
-    default=classification_config["loss"].default,
-    help="Loss used by the network to optimize its training task.",
-    show_default=True,
-)
-regression_loss = cli_param.option_group.task_group.option(
-    "--loss",
-    "-l",
-    type=click.Choice(RegressionConfig.get_compatible_losses()),
-    default=regression_config["loss"].default,
-    help="Loss used by the network to optimize its training task.",
-    show_default=True,
-)
-reconstruction_loss = cli_param.option_group.task_group.option(
-    "--loss",
-    "-l",
-    type=click.Choice(ReconstructionConfig.get_compatible_losses()),
-    default=reconstruction_config["loss"].default,
-    help="Loss used by the network to optimize its training task.",
     show_default=True,
 )
 # Data
