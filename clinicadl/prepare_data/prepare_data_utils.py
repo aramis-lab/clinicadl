@@ -96,7 +96,7 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    preprocessing = Preprocessing(parameters["preprocessing"].replace("-", "_"))
+    preprocessing = Preprocessing(parameters["preprocessing"])  # replace("-", "_")
     if from_bids is not None:
         if preprocessing == Preprocessing.CUSTOM:
             mod_subfolder = Preprocessing.CUSTOM.value
@@ -113,7 +113,7 @@ def compute_folder_and_file_type(
             f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
         )
     else:
-        mod_subfolder = preprocessing.value
+        mod_subfolder = preprocessing.value.replace("-", "_")
         if preprocessing == Preprocessing.T1_LINEAR:
             file_type = linear_nii(
                 LinearModality.T1W, parameters["use_uncropped_image"]
