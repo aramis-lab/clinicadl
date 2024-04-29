@@ -5,23 +5,17 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, PrivateAttr, field_validator
 
-from clinicadl.interpret.gradients import GradCam, VanillaBackProp
+from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
     return_dataset,
 )
+from clinicadl.utils.enum import InterpretationMethod
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
 logger = getLogger("clinicadl.predict_config")
-
-
-class InterpretationMethod(str, Enum):
-    """Possible interpretation method in clinicaDL."""
-
-    GRADIENTS = "gradients"
-    GRAD_CAM = "grad-cam"
 
 
 class PredictInterpretConfig(BaseModel):
@@ -29,9 +23,9 @@ class PredictInterpretConfig(BaseModel):
     data_group: str
     caps_directory: Optional[Path] = None
     tsv_path: Optional[Path] = None
-    selection_metrics: Tuple[str, ...] = ["loss"]
-    split_list: Tuple[int, ...] = ()
-    diagnoses: Tuple[str, ...] = ("AD", "CN")
+    selection_metrics: list[str] = ["loss"]
+    split_list: list[int] = []
+    diagnoses: list[str] = ["AD", "CN"]
     multi_cohort: bool = False
     batch_size: int = 8
     n_proc: int = 1
@@ -89,17 +83,19 @@ class InterpretConfig(PredictInterpretConfig):
 
     @property
     def method(self) -> InterpretationMethod:
-        return self.method_cls.value
+        return self.method_cls
 
     @method.setter
     def method(self, value: Union[str, InterpretationMethod]):
         self.method_cls = InterpretationMethod(value)
 
-    def get_method(self):
-        if self.method == "gradients":
+    def get_method(self) -> Gradients:
+        if self.method == InterpretationMethod.GRADIENTS:
             return VanillaBackProp
-        elif self.method == "grad-cam":
+        elif self.method == InterpretationMethod.GRAD_CAM:
             return GradCam
+        else:
+            raise ValueError(f"The method {self.method.value} is not implemented")
 
 
 class PredictConfig(PredictInterpretConfig):

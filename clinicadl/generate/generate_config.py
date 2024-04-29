@@ -5,44 +5,15 @@ from typing import Annotated, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
+from clinicadl.utils.enum import (
+    Pathology,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl.predict_config")
-
-
-class Preprocessing(str, Enum):
-    """Possible preprocessing method in clinicaDL."""
-
-    T1_LINEAR = "t1-linear"
-    T1_EXTENSIVE = "t1-extensive"
-    PET_LINEAR = "pet-linear"
-
-
-class SUVRReferenceRegions(str, Enum):
-    """Possible SUVR reference region for pet images in clinicaDL."""
-
-    PONS = "pons"
-    CEREBELLUMPONS = "cerebellumPons"
-    PONS2 = "pons2"
-    CEREBELLUMPONS2 = "cerebellumPons2"
-
-
-class Tracer(str, Enum):
-    """Possible tracer for pet images in clinicaDL."""
-
-    FFDG = "18FFDG"
-    FAV45 = "18FAV45"
-
-
-class Pathology(str, Enum):
-    """Possible pathology for hypometabolic generation of pet images in clinicaDL."""
-
-    AD = "ad"
-    BVFTD = "bvftd"
-    LVPPA = "lvppa"
-    NFVPPA = "nfvppa"
-    PCA = "pca"
-    SVPPA = "svppa"
 
 
 class GenerateConfig(BaseModel):
@@ -78,10 +49,12 @@ class SharedGenerateConfigOne(GenerateConfig):
 
     @property
     def preprocessing(self) -> Preprocessing:
-        return self.preprocessing_cls.value
+        return self.preprocessing_cls
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
+        # if isinstance(value, str):
+        #     value = value.replace("-", "_")
         self.preprocessing_cls = Preprocessing(value)
 
 
@@ -91,7 +64,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self.suvr_reference_region_cls.value
+        return self.suvr_reference_region_cls
 
     @suvr_reference_region.setter
     def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
@@ -99,7 +72,7 @@ class SharedGenerateConfigTwo(SharedGenerateConfigOne):
 
     @property
     def tracer(self) -> Tracer:
-        return self.tracer_cls.value
+        return self.tracer_cls
 
     @tracer.setter
     def tracer(self, value: Union[str, Tracer]):
@@ -139,7 +112,7 @@ class GenerateHypometabolicConfig(SharedGenerateConfigOne):
 
     @property
     def pathology(self) -> Pathology:
-        return self.pathology_cls.value
+        return self.pathology_cls
 
     @pathology.setter
     def pathology(self, value: Union[str, Pathology]):
