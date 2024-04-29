@@ -52,7 +52,7 @@ class GradCam(Gradients):
     def __init__(self, model):
         from clinicadl.utils.network.sub_network import CNN
 
-        super(model).__init__
+        super().__init__(model=model)
         if not isinstance(model, CNN):
             raise ValueError("Grad-CAM was only implemented for CNN models.")
 

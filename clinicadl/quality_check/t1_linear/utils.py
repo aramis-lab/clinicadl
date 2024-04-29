@@ -47,7 +47,7 @@ class QCDataset(Dataset):
         self.normalization = MinMaxNormalization()
 
         self.preprocessing_dict = {
-            "preprocessing": "t1-linear",
+            "preprocessing": Preprocessing.T1_LINEAR.value,
             "mode": "image",
             "use_uncropped_image": use_uncropped_image,
             "file_type": linear_nii(LinearModality.T1W, use_uncropped_image),

@@ -43,7 +43,6 @@ class BIDSModality(str, Enum):
     DWI = "dwi"
     PET = "pet"
     FLAIR = "flair"
-    # T2 = "t2"
     DTI = "dti"
     CUSTOM = "custom"
 
@@ -57,13 +56,13 @@ class LinearModality(str, Enum):
 class Preprocessing(str, Enum):
     """Possible preprocessing method in clinicaDL."""
 
-    T1_LINEAR = "t1_linear"
-    T1_EXTENSIVE = "t1_extensive"
-    PET_LINEAR = "pet_linear"
-    FLAIR_LINEAR = "flair_linear"
+    T1_LINEAR = "t1-linear"
+    T1_EXTENSIVE = "t1-extensive"
+    PET_LINEAR = "pet-linear"
+    FLAIR_LINEAR = "flair-linear"
     CUSTOM = "custom"
     DWI_DTI = "dwi-dti"
-    T2_LINEAR = "t2_linear"
+    T2_LINEAR = "t2-linear"
 
 
 class DTIBasedMeasure(str, Enum):
