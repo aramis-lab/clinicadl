@@ -56,7 +56,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         caps_directory=caps_directory,
         generated_caps_directory=generated_caps_directory,  # output_dir
         participants_list=kwargs["participants_tsv"],  # tsv_path
-        preprocessing_cls=Preprocessing("pet_linear"),
+        preprocessing_cls=Preprocessing("pet-linear"),
         pathology_cls=kwargs["pathology"],
         **kwargs,
     )
