@@ -58,7 +58,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         {
             "output_dir": trivial_config.generated_caps_directory,
             "caps_dir": caps_directory,
-            "preprocessing": trivial_config.preprocessing,
+            "preprocessing": trivial_config.preprocessing.value,
             "n_subjects": trivial_config.n_subjects,
             "n_proc": trivial_config.n_proc,
             "atrophy_percent": trivial_config.atrophy_percent,
@@ -156,7 +156,7 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             / "subjects"
             / f"sub-TRIV{subject_id}"
             / session_id
-            / trivial_config.preprocessing
+            / trivial_config.preprocessing.value
         )
 
         trivial_image_nii_filename = (

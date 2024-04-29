@@ -124,7 +124,7 @@ skip_leak_check = click.option(
 split = click.option(
     "--split",
     "-s",
-    type=get_args(config["split_list"].annotation)[0],  # list[str]
+    type=get_args(config["split_list"].annotation)[0],  # list[int]
     default=config["split_list"].default,  # [] ?
     multiple=True,
     show_default=True,
