@@ -1,6 +1,7 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
+from time import time
 from typing import Annotated, Optional, Union
 
 from pydantic import BaseModel, field_validator
@@ -53,8 +54,6 @@ class SharedGenerateConfigOne(GenerateConfig):
 
     @preprocessing.setter
     def preprocessing(self, value: Union[str, Preprocessing]):
-        # if isinstance(value, str):
-        #     value = value.replace("-", "_")
         self.preprocessing_cls = Preprocessing(value)
 
 
@@ -153,10 +152,11 @@ class GenerateSheppLoganConfig(GenerateConfig):
     image_size: int = 128
     smoothing: bool = False
 
-    # @field_validator(
-    #     "ad_subtypes_distribution", "cn_subtypes_distribution", mode="before"
-    # )
-    # # def list_to_tuples(cls, v):
-    # #     if isinstance(v, list):
-    # #         return tuple(v)
-    # #     return v
+    @field_validator("extract_json", mode="before")
+    def compute_extract_json(cls, v: str):
+        if v is None:
+            return f"extract_{int(time())}.json"
+        elif not v.endswith(".json"):
+            return f"{v}.json"
+        else:
+            return v
