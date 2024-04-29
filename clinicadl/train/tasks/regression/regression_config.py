@@ -1,5 +1,6 @@
+from enum import Enum
 from logging import getLogger
-from typing import List, Tuple
+from typing import Tuple
 
 from pydantic import PrivateAttr, field_validator
 
@@ -8,13 +9,26 @@ from clinicadl.train.tasks import BaseTaskConfig
 logger = getLogger("clinicadl.regression_config")
 
 
+class RegressionLoss(str, Enum):
+    """Available regression losses in ClinicaDL."""
+
+    L1Loss = "L1Loss"
+    MSELoss = "MSELoss"
+    KLDivLoss = "KLDivLoss"
+    BCEWithLogitsLoss = "BCEWithLogitsLoss"
+    HuberLoss = "HuberLoss"
+    SmoothL1Loss = "SmoothL1Loss"
+
+
 class RegressionConfig(BaseTaskConfig):
     """Config class to handle parameters of the regression task."""
 
     architecture: str = "Conv5_FC3"
-    loss: str = "MSELoss"
+    loss: RegressionLoss = RegressionLoss.MSELoss
     label: str = "age"
-    selection_metrics: Tuple[str, ...] = ("loss",)
+    selection_metrics: Tuple[str, ...] = (
+        "loss",
+    )  # TODO : enum class for this parameter
     # private
     _network_task: str = PrivateAttr(default="regression")
 
@@ -22,27 +36,6 @@ class RegressionConfig(BaseTaskConfig):
     def list_to_tuples(cls, v):
         if isinstance(v, list):
             return tuple(v)
-        return v
-
-    @classmethod
-    def get_compatible_losses(cls) -> List[str]:
-        """To get the list of losses implemented and compatible with this task."""
-        compatible_losses = [  # TODO : connect to the Loss module
-            "L1Loss",
-            "MSELoss",
-            "KLDivLoss",
-            "BCEWithLogitsLoss",
-            "HuberLoss",
-            "SmoothL1Loss",
-        ]
-        return compatible_losses
-
-    @field_validator("loss")
-    def validator_loss(cls, v):
-        compatible_losses = cls.get_compatible_losses()
-        assert (
-            v in compatible_losses
-        ), f"Loss '{v}' can't be used for this task. Please choose among: {compatible_losses}"
         return v
 
     @field_validator("architecture")
