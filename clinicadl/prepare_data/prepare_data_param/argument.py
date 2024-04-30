@@ -12,10 +12,10 @@ from clinicadl.utils.enum import (
 config = PrepareDataConfig.model_fields
 
 caps_directory = click.argument(
-    "caps_directory", type=config["caps_directory"].annotation
+    "caps_directory",
+    type=config["caps_directory"].annotation,
 )
 preprocessing = click.argument(
     "preprocessing",
     type=click.Choice(Preprocessing),
-    help="Preprocessing used to generate synthetic data.",
 )
