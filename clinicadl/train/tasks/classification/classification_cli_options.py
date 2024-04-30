@@ -26,7 +26,7 @@ selection_metrics = cli_param.option_group.task_group.option(
     "--selection_metrics",
     "-sm",
     multiple=True,
-    type=get_type("selection_metrics", classification_config),
+    type=click.Choice(get_type("selection_metrics", classification_config)),
     default=get_default("selection_metrics", classification_config),
     help="""Allow to save a list of models based on their selection metric. Default will
     only save the best model selected on loss.""",

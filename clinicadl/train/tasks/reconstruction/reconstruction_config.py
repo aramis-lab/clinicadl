@@ -4,7 +4,7 @@ from typing import Tuple
 
 from pydantic import PrivateAttr, field_validator
 
-from clinicadl.train.tasks import BaseTaskConfig
+from clinicadl.train.tasks import BaseTaskConfig, Task
 
 logger = getLogger("clinicadl.reconstruction_config")
 
@@ -31,13 +31,21 @@ class Normalization(str, Enum):
     INSTANCE = "instance"
 
 
+class ReconstructionMetric(str, Enum):
+    """Available reconstruction metrics in ClinicaDL."""
+
+    MAE = "MAE"
+    RMSE = "RMSE"
+    PSNR = "PSNR"
+    SSIM = "SSIM"
+    LOSS = "loss"
+
+
 class ReconstructionConfig(BaseTaskConfig):
     """Config class to handle parameters of the reconstruction task."""
 
     loss: ReconstructionLoss = ReconstructionLoss.MSELoss
-    selection_metrics: Tuple[str, ...] = (
-        "loss",
-    )  # TODO : enum class for this parameter
+    selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
     # model
     architecture: str = "AE_Conv5_FC3"
     latent_space_size: int = 128
@@ -48,7 +56,7 @@ class ReconstructionConfig(BaseTaskConfig):
     kl_weight: int = 1
     normalization: Normalization = Normalization.BATCH
     # private
-    _network_task: str = PrivateAttr(default="reconstruction")
+    _network_task: Task = PrivateAttr(default=Task.RECONSTRUCTION)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
