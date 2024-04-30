@@ -1,1 +1,2 @@
-from .base_task_config import BaseTaskConfig, Task
+from .available_parameters import Task
+from .base_task_config import BaseTaskConfig
