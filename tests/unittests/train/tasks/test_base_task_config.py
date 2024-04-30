@@ -59,6 +59,13 @@ from pydantic import ValidationError
             "preprocessing_json": "",
             "tsv_directory": "",
             "output_maps_directory": "",
+            "learning_rate": 0.0,
+        },
+        {
+            "caps_directory": "",
+            "preprocessing_json": "",
+            "tsv_directory": "",
+            "output_maps_directory": "",
             "split": [-1],
         },
     ],
@@ -85,7 +92,7 @@ def test_fails_validations(parameters):
             "size_reduction_factor": 2,
             "batch_size": 1,
             "learning_rate": 1e-4,
-            "split": [1],
+            "split": [0],
         },
         {
             "caps_directory": "",

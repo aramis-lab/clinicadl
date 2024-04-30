@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr, field_validator
-from pydantic.types import PositiveFloat, PositiveInt
+from pydantic.types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 
 from .available_parameters import (
     Compensation,
@@ -32,7 +32,7 @@ class BaseTaskConfig(BaseModel):
     gpu: bool = True
     n_proc: PositiveInt = 2
     batch_size: PositiveInt = 8
-    evaluation_steps: PositiveInt = 0
+    evaluation_steps: NonNegativeInt = 0
     fully_sharded_data_parallel: bool = False
     amp: bool = False
     # Reproducibility
@@ -63,23 +63,23 @@ class BaseTaskConfig(BaseModel):
         ""
     )  ## TODO : change name in commandline. preprocessing_json_target?
     # Cross validation
-    n_splits: PositiveInt = 0
-    split: Tuple[PositiveInt, ...] = ()
+    n_splits: NonNegativeInt = 0
+    split: Tuple[NonNegativeInt, ...] = ()
     # Optimization
     optimizer: Optimizer = Optimizer.ADAM
     epochs: PositiveInt = 20
     learning_rate: PositiveFloat = 1e-4
     adaptive_learning_rate: bool = False
-    weight_decay: PositiveFloat = 1e-4
-    dropout: PositiveFloat = 0.0
-    patience: PositiveInt = 0
-    tolerance: PositiveFloat = 0.0
+    weight_decay: NonNegativeFloat = 1e-4
+    dropout: NonNegativeFloat = 0.0
+    patience: NonNegativeInt = 0
+    tolerance: NonNegativeFloat = 0.0
     accumulation_steps: PositiveInt = 1
     profiler: bool = False
     # Transfer Learning
     transfer_path: Optional[Path] = None
     transfer_selection_metric: str = "loss"
-    nb_unfrozen_layer: PositiveInt = 0
+    nb_unfrozen_layer: NonNegativeInt = 0
     # Information
     emissions_calculator: bool = False
     # Mode
