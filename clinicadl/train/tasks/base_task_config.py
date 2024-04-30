@@ -1,9 +1,10 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr, field_validator
+from pydantic.types import PositiveFloat, PositiveInt
 
 from .available_parameters import (
     Compensation,
@@ -29,9 +30,9 @@ class BaseTaskConfig(BaseModel):
     output_maps_directory: Path
     # Computational
     gpu: bool = True
-    n_proc: int = 2
-    batch_size: int = 8
-    evaluation_steps: int = 0
+    n_proc: PositiveInt = 2
+    batch_size: PositiveInt = 8
+    evaluation_steps: PositiveInt = 0
     fully_sharded_data_parallel: bool = False
     amp: bool = False
     # Reproducibility
@@ -62,23 +63,23 @@ class BaseTaskConfig(BaseModel):
         ""
     )  ## TODO : change name in commandline. preprocessing_json_target?
     # Cross validation
-    n_splits: int = 0
-    split: Tuple[int, ...] = ()
+    n_splits: PositiveInt = 0
+    split: Tuple[PositiveInt, ...] = ()
     # Optimization
     optimizer: Optimizer = Optimizer.ADAM
-    epochs: int = 20
-    learning_rate: float = 1e-4
+    epochs: PositiveInt = 20
+    learning_rate: PositiveFloat = 1e-4
     adaptive_learning_rate: bool = False
-    weight_decay: float = 1e-4
-    dropout: float = 0.0
-    patience: int = 0
-    tolerance: float = 0.0
-    accumulation_steps: int = 1
+    weight_decay: PositiveFloat = 1e-4
+    dropout: PositiveFloat = 0.0
+    patience: PositiveInt = 0
+    tolerance: PositiveFloat = 0.0
+    accumulation_steps: PositiveInt = 1
     profiler: bool = False
     # Transfer Learning
     transfer_path: Optional[Path] = None
-    transfer_selection_metric: str = "loss"  # TODO : enum class for this parameter
-    nb_unfrozen_layer: int = 0
+    transfer_selection_metric: str = "loss"
+    nb_unfrozen_layer: PositiveInt = 0
     # Information
     emissions_calculator: bool = False
     # Mode
@@ -115,3 +116,15 @@ class BaseTaskConfig(BaseModel):
             0 <= v <= 1
         ), f"dropout must be between 0 and 1 but it has been set to {v}."
         return v
+
+    @field_validator("diagnoses")
+    def validator_diagnoses(cls, v):
+        return v  # TODO : check if columns are in tsv
+
+    @field_validator("transfer_selection_metric")
+    def validator_transfer_selection_metric(cls, v):
+        return v  # TODO : check if metric is in transfer MAPS
+
+    @field_validator("split")
+    def validator_split(cls, v):
+        return v  # TODO : check that split exists (and check coherence with n_splits)
