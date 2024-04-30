@@ -40,6 +40,27 @@ from pydantic import ValidationError
             "output_maps_directory": "",
             "size_reduction_factor": 1,
         },
+        {
+            "caps_directory": "",
+            "preprocessing_json": "",
+            "tsv_directory": "",
+            "output_maps_directory": "",
+            "batch_size": -1,
+        },
+        {
+            "caps_directory": "",
+            "preprocessing_json": "",
+            "tsv_directory": "",
+            "output_maps_directory": "",
+            "learning_rate": -1e-4,
+        },
+        {
+            "caps_directory": "",
+            "preprocessing_json": "",
+            "tsv_directory": "",
+            "output_maps_directory": "",
+            "split": [-1],
+        },
     ],
 )
 def test_fails_validations(parameters):
@@ -62,6 +83,9 @@ def test_fails_validations(parameters):
             "dropout": 0.5,
             "data_augmentation": ("Noise",),
             "size_reduction_factor": 2,
+            "batch_size": 1,
+            "learning_rate": 1e-4,
+            "split": [1],
         },
         {
             "caps_directory": "",

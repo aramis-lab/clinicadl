@@ -19,6 +19,13 @@ from pydantic import ValidationError
             "output_maps_directory": "",
             "selection_metrics": "loss",
         },
+        {
+            "caps_directory": "",
+            "preprocessing_json": "",
+            "tsv_directory": "",
+            "output_maps_directory": "",
+            "selection_metrics": ["abc"],
+        },
     ],
 )
 def test_fails_validations(parameters):
