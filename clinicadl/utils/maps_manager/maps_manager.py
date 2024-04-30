@@ -14,7 +14,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
     return_dataset,
 )
 from clinicadl.utils.cmdline_utils import check_gpu
@@ -31,6 +30,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.preprocessing import path_encoder
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
+from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
