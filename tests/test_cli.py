@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from clinicadl.cmdline import cli
+from clinicadl.utils.enum import SliceDirection
 
 
 # Test to ensure that the help string, at the command line, is invoked without errors
@@ -63,7 +64,7 @@ def test_second_lv_prepare_data(prepare_data_cli_arg1, prepare_data_cli_arg2):
     arg2 = prepare_data_cli_arg2
     print(f"Testing input prepare_data cli {arg1} {arg2}")
     result = runner.invoke(cli, f"prepare-data {arg1} {arg2} -h")
-    assert result.exit_code == 0
+    assert result.exit_code == SliceDirection(0)
 
 
 # Test for the generate cli, second level

@@ -12,6 +12,13 @@ import torchio as tio
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
+from clinicadl.prepare_data.prepare_data_config import (
+    PrepareDataConfig,
+    PrepareDataImageConfig,
+    PrepareDataPatchConfig,
+    PrepareDataROIConfig,
+    PrepareDataSliceConfig,
+)
 from clinicadl.prepare_data.prepare_data_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
@@ -25,6 +32,7 @@ from clinicadl.prepare_data.prepare_data_utils import (
     extract_slice_tensor,
     find_mask_path,
 )
+from clinicadl.utils.enum import Preprocessing, SliceDirection, SliceMode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
@@ -338,6 +346,11 @@ class CapsDatasetImage(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
+        self.config = PrepareDataImageConfig(
+            caps_directory=caps_directory,
+            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+        )
 
     @property
     def elem_index(self):
@@ -415,6 +428,14 @@ class CapsDatasetPatch(CapsDataset):
             label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
+        )
+        self.config = PrepareDataPatchConfig(
+            caps_directory=caps_directory,
+            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+            save_features=preprocessing_dict["prepare_dl"],
+            patch_size=preprocessing_dict["patch_size"],
+            stride_size=preprocessing_dict["stride_size"],
         )
 
     @property
@@ -524,6 +545,15 @@ class CapsDatasetRoi(CapsDataset):
             label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
+        )
+
+        self.config = PrepareDataROIConfig(
+            caps_directory=caps_directory,
+            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+            save_features=preprocessing_dict["prepare_dl"],
+            roi_list=preprocessing_dict["roi_list"],
+            roi_uncrop_output=preprocessing_dict["uncropped_roi"],
         )
 
     @property
@@ -689,6 +719,18 @@ class CapsDatasetSlice(CapsDataset):
             label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
+        )
+
+        self.config = PrepareDataSliceConfig(
+            caps_directory=caps_directory,
+            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+            save_features=preprocessing_dict["prepare_dl"],
+            slice_direction_cls=SliceDirection(preprocessing_dict["slice_direction"]),
+            slice_mode_cls=SliceMode(preprocessing_dict["slice_mode"]),
+            discarded_slices=compute_discarded_slices(
+                preprocessing_dict["discarded_slices"]
+            ),
         )
 
     @property

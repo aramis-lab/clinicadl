@@ -68,11 +68,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
             shutil.rmtree(tmp_out_dir / "caps_patch_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_patch_flair")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
-        parameters = {
-            "mode": "patch",
-            "patch_size": 50,
-            "stride_size": 50,
-        }  # default value
         config = PrepareDataPatchConfig(
             caps_directory=input_caps_directory,
             preprocessing_cls=Preprocessing.T1_LINEAR,
@@ -84,12 +79,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
             shutil.rmtree(tmp_out_dir / "caps_slice_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_slice_flair")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
-        parameters = {
-            "mode": "slice",
-            "slice_mode": "rgb",
-            "slice_direction": 0,
-            "discarded_slices": [0, 0],
-        }  # default vbalue
         config = PrepareDataSliceConfig(
             caps_directory=input_caps_directory,
             preprocessing_cls=Preprocessing.T1_LINEAR,
@@ -101,13 +90,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
             shutil.rmtree(tmp_out_dir / "caps_roi_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_roi_flair")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
-        parameters = {
-            "mode": "roi",
-            "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
-            "uncropped_roi": False,
-            "roi_custom_template": "",
-            "roi_custom_mask_pattern": "",
-        }
         config = PrepareDataROIConfig(
             caps_directory=input_caps_directory,
             preprocessing_cls=Preprocessing.T1_LINEAR,

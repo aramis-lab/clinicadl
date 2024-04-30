@@ -8,6 +8,7 @@ import nibabel as nib
 import torch
 from torch.utils.data import Dataset
 
+from clinicadl.prepare_data.prepare_data_config import PrepareDataImageConfig
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
 from clinicadl.utils.enum import LinearModality, Preprocessing
@@ -53,6 +54,11 @@ class QCDataset(Dataset):
             "file_type": linear_nii(LinearModality.T1W, use_uncropped_image),
             "use_tensor": use_extracted_tensors,
         }
+        self.config = PrepareDataImageConfig(
+            caps_directory=Path(""),
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+            use_uncropped_image=use_uncropped_image,
+        )
 
     def __len__(self):
         return len(self.df)
@@ -69,7 +75,7 @@ class QCDataset(Dataset):
             )[0]
             image_path = Path(image_output[0])
             image_filename = image_path.name
-            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            folder, file_type = compute_folder_and_file_type(config=self.config)
             image_dir = (
                 self.img_dir
                 / "subjects"
