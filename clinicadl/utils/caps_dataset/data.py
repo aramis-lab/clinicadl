@@ -181,7 +181,7 @@ class CapsDataset(Dataset):
             filepath = Path(results[0][0])
             image_filename = filepath.name.replace(".nii.gz", ".pt")
 
-            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            folder, _ = compute_folder_and_file_type(self.config)
             image_dir = (
                 self.caps_dict[cohort]
                 / "subjects"
