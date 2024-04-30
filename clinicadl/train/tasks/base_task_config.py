@@ -1,58 +1,22 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, PrivateAttr, field_validator
+from pydantic.types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+
+from .available_parameters import (
+    Compensation,
+    ExperimentTracking,
+    Mode,
+    Optimizer,
+    Sampler,
+    SizeReductionFactor,
+    Transform,
+)
 
 logger = getLogger("clinicadl.base_training_config")
-
-
-class Task(str, Enum):
-    """Tasks that can be performed in ClinicaDL."""
-
-    CLASSIFICATION = "classification"
-    REGRESSION = "regression"
-    RECONSTRUCTION = "reconstruction"
-
-
-class Compensation(str, Enum):
-    """Available compensations in clinicaDL."""
-
-    MEMORY = "memory"
-    TIME = "time"
-
-
-class SizeReductionFactor(int, Enum):
-    """Available size reduction factors in ClinicaDL."""
-
-    TWO = 2
-    THREE = 3
-    FOUR = 4
-    FIVE = 5
-
-
-class ExperimentTracking(str, Enum):
-    """Available tools for experiment tracking in ClinicaDL."""
-
-    MLFLOW = "mlflow"
-    WANDB = "wandb"
-
-
-class Sampler(str, Enum):
-    """Available samplers in ClinicaDL."""
-
-    RANDOM = "random"
-    WEIGHTED = "weighted"
-
-
-class Mode(str, Enum):
-    """Available modes in ClinicaDL."""
-
-    IMAGE = "image"
-    PATCH = "patch"
-    ROI = "roi"
-    SLICE = "slice"
 
 
 class BaseTaskConfig(BaseModel):
@@ -66,9 +30,9 @@ class BaseTaskConfig(BaseModel):
     output_maps_directory: Path
     # Computational
     gpu: bool = True
-    n_proc: int = 2
-    batch_size: int = 8
-    evaluation_steps: int = 0
+    n_proc: PositiveInt = 2
+    batch_size: PositiveInt = 8
+    evaluation_steps: NonNegativeInt = 0
     fully_sharded_data_parallel: bool = False
     amp: bool = False
     # Reproducibility
@@ -86,7 +50,7 @@ class BaseTaskConfig(BaseModel):
     baseline: bool = False
     valid_longitudinal: bool = False
     normalize: bool = True
-    data_augmentation: Tuple[str, ...] = ()
+    data_augmentation: Tuple[Transform, ...] = ()
     sampler: Sampler = Sampler.RANDOM
     size_reduction: bool = False
     size_reduction_factor: SizeReductionFactor = (
@@ -99,23 +63,23 @@ class BaseTaskConfig(BaseModel):
         ""
     )  ## TODO : change name in commandline. preprocessing_json_target?
     # Cross validation
-    n_splits: int = 0
-    split: Tuple[int, ...] = ()
+    n_splits: NonNegativeInt = 0
+    split: Tuple[NonNegativeInt, ...] = ()
     # Optimization
-    optimizer: str = "Adam"
-    epochs: int = 20
-    learning_rate: float = 1e-4
+    optimizer: Optimizer = Optimizer.ADAM
+    epochs: PositiveInt = 20
+    learning_rate: PositiveFloat = 1e-4
     adaptive_learning_rate: bool = False
-    weight_decay: float = 1e-4
-    dropout: float = 0.0
-    patience: int = 0
-    tolerance: float = 0.0
-    accumulation_steps: int = 1
+    weight_decay: NonNegativeFloat = 1e-4
+    dropout: NonNegativeFloat = 0.0
+    patience: NonNegativeInt = 0
+    tolerance: NonNegativeFloat = 0.0
+    accumulation_steps: PositiveInt = 1
     profiler: bool = False
     # Transfer Learning
     transfer_path: Optional[Path] = None
     transfer_selection_metric: str = "loss"
-    nb_unfrozen_layer: int = 0
+    nb_unfrozen_layer: NonNegativeInt = 0
     # Information
     emissions_calculator: bool = False
     # Mode
@@ -140,58 +104,10 @@ class BaseTaskConfig(BaseModel):
             return None
         return v
 
-    @classmethod
-    def get_available_optimizers(cls) -> List[str]:
-        """To get the list of available optimizers."""
-        available_optimizers = [  # TODO : connect to PyTorch to have available optimizers
-            "Adadelta",
-            "Adagrad",
-            "Adam",
-            "AdamW",
-            "Adamax",
-            "ASGD",
-            "NAdam",
-            "RAdam",
-            "RMSprop",
-            "SGD",
-        ]
-        return available_optimizers
-
-    @field_validator("optimizer")
-    def validator_optimizer(cls, v):
-        available_optimizers = cls.get_available_optimizers()
-        assert (
-            v in available_optimizers
-        ), f"Optimizer '{v}' not supported. Please choose among: {available_optimizers}"
-        return v
-
-    @classmethod
-    def get_available_transforms(cls) -> List[str]:
-        """To get the list of available transforms."""
-        available_transforms = [  # TODO : connect to transforms module
-            "Noise",
-            "Erasing",
-            "CropPad",
-            "Smoothing",
-            "Motion",
-            "Ghosting",
-            "Spike",
-            "BiasField",
-            "RandomBlur",
-            "RandomSwap",
-        ]
-        return available_transforms
-
     @field_validator("data_augmentation", mode="before")
-    def validator_data_augmentation(cls, v):
+    def false_to_empty(cls, v):
         if v is False:
             return ()
-
-        available_transforms = cls.get_available_transforms()
-        for transform in v:
-            assert (
-                transform in available_transforms
-            ), f"Transform '{transform}' not supported. Please pick among: {available_transforms}"
         return v
 
     @field_validator("dropout")
@@ -200,3 +116,15 @@ class BaseTaskConfig(BaseModel):
             0 <= v <= 1
         ), f"dropout must be between 0 and 1 but it has been set to {v}."
         return v
+
+    @field_validator("diagnoses")
+    def validator_diagnoses(cls, v):
+        return v  # TODO : check if columns are in tsv
+
+    @field_validator("transfer_selection_metric")
+    def validator_transfer_selection_metric(cls, v):
+        return v  # TODO : check if metric is in transfer MAPS
+
+    @field_validator("split")
+    def validator_split(cls, v):
+        return v  # TODO : check that split exists (and check coherence with n_splits)
