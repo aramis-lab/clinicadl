@@ -169,13 +169,14 @@ def extract_slice_path(
     slice_mode: SliceMode,
     slice_index: int,
 ) -> str:
+    slice_dict = {0: "sag", 1: "cor", 2: "axi"}
     input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
     it_filename_suffix = it_filename_suffix.replace(".nii.gz", ".pt")
     return (
-        f"{it_filename_prefix}_axis-{slice_direction.value}"
+        f"{it_filename_prefix}_axis-{slice_dict[int(slice_direction.value)]}"
         f"_channel-{slice_mode.value}_slice-{slice_index}{it_filename_suffix}"
     )
 
