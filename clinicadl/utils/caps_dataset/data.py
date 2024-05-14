@@ -34,9 +34,11 @@ from clinicadl.prepare_data.prepare_data_utils import (
 )
 from clinicadl.utils.enum import (
     ExtractionMethod,
+    Pattern,
     Preprocessing,
     SliceDirection,
     SliceMode,
+    Template,
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -643,8 +645,8 @@ class CapsDatasetRoi(CapsDataset):
                 raise ValueError(
                     f"Please provide a name for the template when preprocessing is `custom`."
                 )
-        elif preprocessing_dict["preprocessing"] in TEMPLATE_DICT:
-            template_name = TEMPLATE_DICT[preprocessing_dict["preprocessing"]]
+        elif preprocessing_dict["preprocessing"] in [e.value for e in Template]:
+            template_name = Template(preprocessing_dict["preprocessing"])
         else:
             raise NotImplementedError(
                 f"Template of preprocessing {preprocessing_dict['preprocessing']} "
@@ -658,8 +660,8 @@ class CapsDatasetRoi(CapsDataset):
                 raise ValueError(
                     f"Please provide a pattern for the masks when preprocessing is `custom`."
                 )
-        elif preprocessing_dict["preprocessing"] in PATTERN_DICT:
-            pattern = PATTERN_DICT[preprocessing_dict["preprocessing"]]
+        elif preprocessing_dict["preprocessing"] in [e.value for e in Pattern]:
+            pattern = Pattern(preprocessing_dict["preprocessing"])
         else:
             raise NotImplementedError(
                 f"Pattern of mask for preprocessing {preprocessing_dict['preprocessing']} "
