@@ -20,8 +20,6 @@ from clinicadl.prepare_data.prepare_data_config import (
     PrepareDataSliceConfig,
 )
 from clinicadl.prepare_data.prepare_data_utils import (
-    PATTERN_DICT,
-    TEMPLATE_DICT,
     compute_discarded_slices,
     compute_folder_and_file_type,
     extract_patch_path,
@@ -78,6 +76,13 @@ class CapsDataset(Dataset):
         self.label_code = label_code
         self.preprocessing_dict = preprocessing_dict
 
+        self.config = PrepareDataConfig(
+            caps_directory=caps_directory,
+            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+            extract_method=ExtractionMethod(preprocessing_dict["mode"]),
+        )
+
         if not hasattr(self, "elem_index"):
             raise AttributeError(
                 "Child class of CapsDataset must set elem_index attribute."
@@ -101,13 +106,6 @@ class CapsDataset(Dataset):
             )
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
-
-        self.config = PrepareDataConfig(
-            caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
-            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-            extract_method=ExtractionMethod(preprocessing_dict["mode"]),
-        )
 
     @property
     @abc.abstractmethod
