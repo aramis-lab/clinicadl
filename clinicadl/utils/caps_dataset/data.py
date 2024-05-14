@@ -636,35 +636,36 @@ class CapsDatasetRoi(CapsDataset):
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-        # Find template name
-        if preprocessing_dict["preprocessing"] == "custom":
+
+        try:
+            preprocessing_ = Preprocessing(preprocessing_dict["preprocessing"])
+        except NotImplementedError:
+            print(
+                f"Template of preprocessing {preprocessing_dict['preprocessing']} "
+                f"is not defined."
+            )
+        # Find template name and pattern
+        if preprocessing_.value == "custom":
             template_name = preprocessing_dict["roi_custom_template"]
             if template_name is None:
                 raise ValueError(
                     f"Please provide a name for the template when preprocessing is `custom`."
                 )
-        elif preprocessing_dict["preprocessing"] in [e.value for e in Template]:
-            template_name = Template(preprocessing_dict["preprocessing"])
-        else:
-            raise NotImplementedError(
-                f"Template of preprocessing {preprocessing_dict['preprocessing']} "
-                f"is not defined."
-            )
 
-        # Find mask pattern
-        if preprocessing_dict["preprocessing"] == "custom":
             pattern = preprocessing_dict["roi_custom_mask_pattern"]
             if pattern is None:
                 raise ValueError(
                     f"Please provide a pattern for the masks when preprocessing is `custom`."
                 )
-        elif preprocessing_dict["preprocessing"] in [e.value for e in Pattern]:
-            pattern = Pattern(preprocessing_dict["preprocessing"])
+
         else:
-            raise NotImplementedError(
-                f"Pattern of mask for preprocessing {preprocessing_dict['preprocessing']} "
-                f"is not defined."
-            )
+            for template_ in Template:
+                if preprocessing_.name == template_.name:
+                    template_name = template_
+
+            for pattern_ in Pattern:
+                if preprocessing_.name == pattern_.name:
+                    pattern = pattern_
 
         mask_location = caps_directory / "masks" / f"tpl-{template_name}"
 
