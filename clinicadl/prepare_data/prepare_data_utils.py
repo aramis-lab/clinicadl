@@ -149,9 +149,9 @@ def extract_slice_tensor(
 ) -> torch.Tensor:
     # Allow to select the slice `slice_index` in dimension `slice_direction`
     idx_tuple = tuple(
-        [slice(None)] * (slice_direction.value + 1)
+        [slice(None)] * (int(slice_direction.value) + 1)
         + [slice_index]
-        + [slice(None)] * (2 - slice_direction.value)
+        + [slice(None)] * (2 - int(slice_direction.value))
     )
     slice_tensor = image_tensor[idx_tuple]  # shape is 1 * W * L
 
