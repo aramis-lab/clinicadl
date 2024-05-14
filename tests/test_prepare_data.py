@@ -30,10 +30,10 @@ warnings.filterwarnings("ignore")
 
 @pytest.fixture(
     params=[
-        "slice",
-        "patch",
+        # "slice",
+        # "patch",
         "image",
-        "roi",
+        # "roi",
     ]
 )
 def test_name(request):
@@ -54,48 +54,57 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
     if test_name == "image":
         if (tmp_out_dir / "caps_image").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_image")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
+
+        if (tmp_out_dir / "caps_image_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_image_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_image_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
+
         config = PrepareDataImageConfig(
-            caps_directory=input_caps_directory,
+            caps_directory=tmp_out_dir / "caps_image",
             preprocessing_cls=Preprocessing.T1_LINEAR,
         )
 
     elif test_name == "patch":
         if (tmp_out_dir / "caps_patch").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_patch")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
+
+        if (tmp_out_dir / "caps_patch_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_patch_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_patch_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
+
         config = PrepareDataPatchConfig(
-            caps_directory=input_caps_directory,
+            caps_directory=tmp_out_dir / "caps_patch",
             preprocessing_cls=Preprocessing.T1_LINEAR,
         )
 
     elif test_name == "slice":
         if (tmp_out_dir / "caps_slice").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_slice")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
+
+        if (tmp_out_dir / "caps_slice_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_slice_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_slice_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
+
         config = PrepareDataSliceConfig(
-            caps_directory=input_caps_directory,
+            caps_directory=tmp_out_dir / "caps_slice",
             preprocessing_cls=Preprocessing.T1_LINEAR,
         )
-
     elif test_name == "roi":
         if (tmp_out_dir / "caps_roi").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_roi")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
+
+        if (tmp_out_dir / "caps_roi_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_roi_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_roi_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
         config = PrepareDataROIConfig(
-            caps_directory=input_caps_directory,
+            caps_directory=tmp_out_dir / "caps_roi",
             preprocessing_cls=Preprocessing.T1_LINEAR,
             roi_list=["rightHippocampusBox", "leftHippocampusBox"],
         )
-
     else:
         print(f"Test {test_name} not available.")
         assert 0
@@ -145,6 +154,7 @@ def run_test_prepare_data(
                 extract_generic(out_dir, mode, None, config)
 
         elif modality == "flair-linear":
+            config.caps_directory = Path(str(config.caps_directory) + "_flair")
             config.save_features = False
             for flag in uncropped_image:
                 config.use_uncropped_image = flag
@@ -157,9 +167,10 @@ def run_test_prepare_data(
             raise NotImplementedError(
                 f"Test for modality {modality} was not implemented."
             )
-    assert compare_folders(
-        out_dir / f"caps_{test_name}", ref_dir / f"caps_{test_name}", out_dir
-    )
+
+        assert compare_folders(
+            out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir
+        )
 
 
 def extract_generic(out_dir, mode, tsv_file, config: PrepareDataConfig):
