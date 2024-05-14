@@ -85,7 +85,7 @@ dti_measure = click.option(
     "-dm",
     type=click.Choice(DTIMeasure),
     help="Possible DTI measures.",
-    default=config["suvr_reference_region_cls"].default.value,
+    default=config["dti_measure_cls"].default.value,
     show_default=True,
 )
 dti_space = click.option(
@@ -93,7 +93,7 @@ dti_space = click.option(
     "-ds",
     type=click.Choice(DTISpace),
     help="Possible DTI space.",
-    default=config["suvr_reference_region_cls"].default.value,
+    default=config["dti_space_cls"].default.value,
     show_default=True,
 )
 save_features = click.option(
