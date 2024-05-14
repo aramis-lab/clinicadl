@@ -802,7 +802,7 @@ class CapsDatasetSlice(CapsDataset):
 
         image = self._get_full_image()
         return (
-            image.size(self.slice_direction + 1)
+            image.size(int(self.slice_direction) + 1)
             - self.discarded_slices[0]
             - self.discarded_slices[1]
         )
