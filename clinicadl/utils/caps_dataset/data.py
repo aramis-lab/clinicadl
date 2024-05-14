@@ -711,7 +711,9 @@ class CapsDatasetSlice(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
         self.slice_index = slice_index
-        self.slice_direction = SliceDirection(preprocessing_dict["slice_direction"])
+        self.slice_direction = SliceDirection(
+            str(preprocessing_dict["slice_direction"])
+        )
         self.slice_mode = SliceMode(preprocessing_dict["slice_mode"])
         self.discarded_slices = compute_discarded_slices(
             preprocessing_dict["discarded_slices"]
@@ -739,7 +741,9 @@ class CapsDatasetSlice(CapsDataset):
             preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
             use_uncropped_image=preprocessing_dict["use_uncropped_image"],
             save_features=preprocessing_dict["prepare_dl"],
-            slice_direction_cls=SliceDirection(preprocessing_dict["slice_direction"]),
+            slice_direction_cls=SliceDirection(
+                str(preprocessing_dict["slice_direction"])
+            ),
             slice_mode_cls=SliceMode(preprocessing_dict["slice_mode"]),
             discarded_slices=compute_discarded_slices(
                 preprocessing_dict["discarded_slices"]
