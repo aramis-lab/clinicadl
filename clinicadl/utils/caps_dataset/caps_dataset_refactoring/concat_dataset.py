@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Union
 
-import caps_dataset  # type: ignore
+from clinicadl.utils.caps_dataset.caps_dataset_refactoring import (
+    caps_dataset,  # type: ignore
+)
 import pandas as pd
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, Sampler, StackDataset
 
