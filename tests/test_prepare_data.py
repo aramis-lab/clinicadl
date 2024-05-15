@@ -10,6 +10,19 @@ from typing import Any, Dict, List
 
 import pytest
 
+from clinicadl.prepare_data.prepare_data_config import (
+    PrepareDataConfig,
+    PrepareDataImageConfig,
+    PrepareDataPatchConfig,
+    PrepareDataROIConfig,
+    PrepareDataSliceConfig,
+)
+from clinicadl.utils.enum import (
+    ExtractionMethod,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from tests.testing_tools import clean_folder, compare_folders
 
 warnings.filterwarnings("ignore")
@@ -41,121 +54,134 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
     if test_name == "image":
         if (tmp_out_dir / "caps_image").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_image")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
+
+        if (tmp_out_dir / "caps_image_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_image_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_image_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
-        parameters = {"mode": "image"}
+
+        config = PrepareDataImageConfig(
+            caps_directory=tmp_out_dir / "caps_image",
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+        )
 
     elif test_name == "patch":
         if (tmp_out_dir / "caps_patch").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_patch")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
+
+        if (tmp_out_dir / "caps_patch_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_patch_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_patch_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
-        parameters = {"mode": "patch", "patch_size": 50, "stride_size": 50}
+
+        config = PrepareDataPatchConfig(
+            caps_directory=tmp_out_dir / "caps_patch",
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+        )
 
     elif test_name == "slice":
         if (tmp_out_dir / "caps_slice").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_slice")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
+
+        if (tmp_out_dir / "caps_slice_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_slice_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_slice_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
-        parameters = {
-            "mode": "slice",
-            "slice_mode": "rgb",
-            "slice_direction": 0,
-            "discarded_slices": [0, 0],
-        }
 
+        config = PrepareDataSliceConfig(
+            caps_directory=tmp_out_dir / "caps_slice",
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+        )
     elif test_name == "roi":
         if (tmp_out_dir / "caps_roi").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_roi")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
+
+        if (tmp_out_dir / "caps_roi_flair").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_roi_flair")
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_roi_flair")
-        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
-        parameters = {
-            "mode": "roi",
-            "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
-            "uncropped_roi": False,
-            "roi_custom_template": "",
-            "roi_custom_mask_pattern": "",
-        }
+        config = PrepareDataROIConfig(
+            caps_directory=tmp_out_dir / "caps_roi",
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+            roi_list=["rightHippocampusBox", "leftHippocampusBox"],
+        )
     else:
         print(f"Test {test_name} not available.")
         assert 0
 
-    run_test_prepare_data(input_dir, ref_dir, tmp_out_dir, parameters)
+    run_test_prepare_data(input_dir, ref_dir, tmp_out_dir, test_name, config)
 
 
-def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
+def run_test_prepare_data(
+    input_dir, ref_dir, out_dir, test_name: str, config: PrepareDataConfig
+):
     modalities = ["t1-linear", "pet-linear", "flair-linear"]
     uncropped_image = [True, False]
     acquisition_label = ["18FAV45", "11CPIB"]
-    parameters["prepare_dl"] = True
+    config.save_features = True
 
     for modality in modalities:
-        parameters["preprocessing"] = modality
+        config.preprocessing = Preprocessing(modality)
         if modality == "pet-linear":
-            parameters["save_features"] = True
             for acq in acquisition_label:
-                parameters["tracer"] = acq
-                parameters["suvr_reference_region"] = "pons2"
-                parameters["use_uncropped_image"] = False
-                parameters[
-                    "extract_json"
-                ] = f"{modality}-{acq}_mode-{parameters['mode']}.json"
+                config.tracer = Tracer(acq)
+                config.suvr_reference_region = SUVRReferenceRegions("pons2")
+                config.use_uncropped_image = False
+                config.extract_json = f"{modality}-{acq}_mode-{test_name}.json"
                 tsv_file = join(input_dir, f"pet_{acq}.tsv")
-                mode = parameters["mode"]
-                extract_generic(out_dir, mode, tsv_file, parameters)
+                mode = test_name
+                extract_generic(out_dir, mode, tsv_file, config)
 
         elif modality == "custom":
-            parameters["save_features"] = True
-            parameters["use_uncropped_image"] = True
-            parameters[
-                "custom_suffix"
-            ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
-            parameters["roi_custom_template"] = "Ixi549Space"
-            parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}.json"
+            config.use_uncropped_image = True
+            config.custom_suffix = (
+                "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+            )
+            if isinstance(config, PrepareDataROIConfig):
+                config.roi_custom_template = "Ixi549Space"
+            config.extract_json = f"{modality}_mode-{test_name}.json"
             tsv_file = input_dir / "subjects.tsv"
-            mode = parameters["mode"]
-            extract_generic(out_dir, mode, tsv_file, parameters)
+            mode = test_name
+            extract_generic(out_dir, mode, tsv_file, config)
 
         elif modality == "t1-linear":
-            parameters["save_features"] = True
             for flag in uncropped_image:
-                parameters["use_uncropped_image"] = flag
-                parameters[
-                    "extract_json"
-                ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
-
-                # tsv_file = input_dir / "subjects.tsv"
-                mode = parameters["mode"]
-                extract_generic(out_dir, mode, None, parameters)
+                config.use_uncropped_image = flag
+                config.extract_json = (
+                    f"{modality}_crop-{not flag}_mode-{test_name}.json"
+                )
+                mode = test_name
+                extract_generic(out_dir, mode, None, config)
 
         elif modality == "flair-linear":
-            parameters["save_features"] = False
-            parameters["prepare_dl"] = False
+            config.caps_directory = Path(str(config.caps_directory) + "_flair")
+            config.save_features = False
             for flag in uncropped_image:
-                parameters["use_uncropped_image"] = flag
-                parameters[
-                    "extract_json"
-                ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
-
-                mode = f"{parameters['mode']}_flair"
-                extract_generic(out_dir, mode, None, parameters)
+                config.use_uncropped_image = flag
+                config.extract_json = (
+                    f"{modality}_crop-{not flag}_mode-{test_name}.json"
+                )
+                mode = f"{test_name}_flair"
+                extract_generic(out_dir, mode, None, config)
         else:
             raise NotImplementedError(
                 f"Test for modality {modality} was not implemented."
             )
-    assert compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
+
+    assert compare_folders(
+        out_dir / f"caps_{test_name}_flair",
+        ref_dir / f"caps_{test_name}_flair",
+        out_dir,
+    )
+    assert compare_folders(
+        out_dir / f"caps_{test_name}", ref_dir / f"caps_{test_name}", out_dir
+    )
 
 
-def extract_generic(out_dir, mode, tsv_file, parameters):
+def extract_generic(out_dir, mode, tsv_file, config: PrepareDataConfig):
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
-    DeepLearningPrepareData(
-        caps_directory=out_dir / f"caps_{mode}",
-        tsv_file=tsv_file,
-        n_proc=1,
-        parameters=parameters,
-    )
+    config.caps_directory = out_dir / f"caps_{mode}"
+    config.tsv_file = tsv_file
+    config.n_proc = 1
+    DeepLearningPrepareData(config)

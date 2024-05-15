@@ -14,13 +14,14 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
+from clinicadl.utils.caps_dataset.data import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
+from clinicadl.utils.transforms.transforms import get_transforms
 
 if TYPE_CHECKING:
     from clinicadl.utils.callbacks.callbacks import Callback
