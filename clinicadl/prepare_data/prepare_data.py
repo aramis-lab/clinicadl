@@ -28,7 +28,6 @@ def DeepLearningPrepareData(
     config: PrepareDataConfig, from_bids: Optional[Path] = None
 ):
     logger = getLogger("clinicadl.prepare_data")
-
     # Get subject and session list
     if from_bids is not None:
         try:
@@ -197,7 +196,7 @@ def DeepLearningPrepareData(
                     Path(file),
                     masks_location=masks_location,
                     mask_pattern=roi_mask_pattern,
-                    cropped_input=config.use_uncropped_image,
+                    cropped_input=not config.use_uncropped_image,
                     roi_names=config.roi_list,
                     uncrop_output=config.roi_uncrop_output,
                 )
@@ -217,5 +216,4 @@ def DeepLearningPrepareData(
     preprocessing_json_path = write_preprocessing(
         config.model_dump(), config.caps_directory
     )
-    print(preprocessing_json_path)
     logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")
