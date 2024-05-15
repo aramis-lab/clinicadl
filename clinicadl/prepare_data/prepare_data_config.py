@@ -4,14 +4,12 @@ from pathlib import Path
 from time import time
 from typing import Annotated, Optional, Union
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
     ExtractionMethod,
-    LinearModality,
-    Pathology,
     Preprocessing,
     SliceDirection,
     SliceMode,
@@ -39,9 +37,7 @@ class PrepareDataConfig(BaseModel):
     dti_space_cls: DTISpace = DTISpace.ALL
     save_features: bool = False
     extract_method: ExtractionMethod
-
-    class ConfigDict:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("extract_json", mode="before")
     def compute_extract_json(cls, v: str):

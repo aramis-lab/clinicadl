@@ -45,7 +45,7 @@ def image_cli(
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
-    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
+    PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     image_config = PrepareDataImageConfig(
         caps_directory=caps_directory,
@@ -81,7 +81,7 @@ def patch_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
-    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
+    PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
 
     patch_config = PrepareDataPatchConfig(
@@ -118,7 +118,7 @@ def slice_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
-    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
+    PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
 
     slice_config = PrepareDataSliceConfig(
@@ -158,7 +158,7 @@ def roi_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
-    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
+    PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
 
     roi_config = PrepareDataROIConfig(

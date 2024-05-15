@@ -49,7 +49,7 @@ tracer = click.option(
     type=click.Choice(Tracer),
     default=config["tracer_cls"].default.value,
     help=(
-        "Acquisition label if MODALITY is `pet-linear`. "
+        "Acquisition label if PREPROCESSING is `pet-linear`. "
         "Name of the tracer used for the PET acquisition (trc-<tracer>). "
         "For instance it can be '18FFDG' for fluorodeoxyglucose or '18FAV45' for florbetapir."
     ),
@@ -61,7 +61,7 @@ suvr_reference_region = click.option(
     type=click.Choice(SUVRReferenceRegions),
     default=config["suvr_reference_region_cls"].default.value,
     help=(
-        "Regions used for normalization if MODALITY is `pet-linear`. "
+        "Regions used for normalization if PREPROCESSING is `pet-linear`. "
         "Intensity normalization using the average PET uptake in reference regions resulting in a standardized uptake "
         "value ratio (SUVR) map. It can be cerebellumPons or cerebellumPon2 (used for amyloid tracers) or pons or "
         "pons2 (used for 18F-FDG tracers)."
@@ -74,7 +74,7 @@ custom_suffix = click.option(
     type=config["custom_suffix"].annotation,
     default=config["custom_suffix"].default,
     help=(
-        "Suffix of output files if MODALITY is `custom`. "
+        "Suffix of output files if PREPROCESSING is `custom`. "
         "Suffix to append to filenames, for instance "
         "`graymatter_space-Ixi549Space_modulated-off_probability.nii.gz`, or "
         "`segm-whitematter_probability.nii.gz`"
