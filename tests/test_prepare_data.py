@@ -168,9 +168,7 @@ def run_test_prepare_data(
                 f"Test for modality {modality} was not implemented."
             )
 
-        assert compare_folders(
-            out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir
-        )
+    assert compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
 
 
 def extract_generic(out_dir, mode, tsv_file, config: PrepareDataConfig):
