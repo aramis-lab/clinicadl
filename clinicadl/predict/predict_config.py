@@ -1,15 +1,13 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
-from pydantic import BaseModel, PrivateAttr, field_validator
+from pydantic import BaseModel, field_validator
 
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
     load_data_test,
-    return_dataset,
 )
 from clinicadl.utils.enum import InterpretationMethod
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore

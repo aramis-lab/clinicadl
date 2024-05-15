@@ -17,7 +17,8 @@ import pandas as pd
 
 from clinicadl.utils.enum import (
     BIDSModality,
-    DTIBasedMeasure,
+    DTIMeasure,
+    DTISpace,
     LinearModality,
     Preprocessing,
     SUVRReferenceRegions,
@@ -127,7 +128,9 @@ def linear_nii(modality: Union[LinearModality, str], uncropped_image: bool) -> d
     return information
 
 
-def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -> dict:
+def dwi_dti(
+    measure: Union[str, DTIMeasure], space: Union[str, DTISpace] = None
+) -> dict:
     """Return the query dict required to capture DWI DTI images.
 
     Parameters
@@ -144,8 +147,8 @@ def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -
     dict :
         The query dictionary to get DWI DTI images.
     """
-    measure = DTIBasedMeasure(measure)
-    space = space or "*"
+    measure = DTIMeasure(measure)
+    space = DTISpace(space)
 
     return {
         "pattern": f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",

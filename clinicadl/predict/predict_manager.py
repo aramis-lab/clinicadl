@@ -14,11 +14,8 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.predict.predict_config import (
     InterpretConfig,
     PredictConfig,
-    PredictInterpretConfig,
 )
 from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
-    load_data_test,
     return_dataset,
 )
 from clinicadl.utils.exceptions import (
@@ -28,6 +25,7 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
+from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]

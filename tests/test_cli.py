@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from clinicadl.cmdline import cli
+from clinicadl.utils.enum import SliceDirection
 
 
 # Test to ensure that the help string, at the command line, is invoked without errors
