@@ -1,0 +1,46 @@
+name: CLI Tests
+
+on:
+  push:
+    branches: ["dev"]
+  pull_request:
+    branches: ["dev"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+env:
+  POETRY_VERSION: '1.6.1'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test-cli:
+    runs-on:
+      - self-hosted
+      - Linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - name: Run instantiation tests
+        run: |
+          make env.conda
+          source /builds/miniconda/etc/profile.d/conda.sh
+          conda activate "${{ github.workspace }}"/env
+          make install
+          cd tests
+          poetry run pytest --verbose \
+          --junitxml=./test-reports/test_cli_report.xml \
+          --disable-warnings \
+          --verbose \
+          test_cli.py
