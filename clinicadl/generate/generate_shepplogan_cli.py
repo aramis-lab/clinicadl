@@ -8,7 +8,6 @@ from joblib import Parallel, delayed
 
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
-from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
 
@@ -129,7 +128,7 @@ def cli(generated_caps_directory, **kwargs):
         "mode": "slice",
         "use_uncropped_image": False,
         "prepare_dl": True,
-        "extract_json": compute_extract_json(shepplogan_config.extract_json),
+        "extract_json": shepplogan_config.extract_json,
         "slice_direction": 2,
         "slice_mode": "single",
         "discarded_slices": 0,

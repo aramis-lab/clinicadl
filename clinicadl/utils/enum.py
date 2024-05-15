@@ -65,10 +65,52 @@ class Preprocessing(str, Enum):
     T2_LINEAR = "t2-linear"
 
 
-class DTIBasedMeasure(str, Enum):
+class DTIMeasure(str, Enum):
     """Possible DTI measures."""
 
     FRACTIONAL_ANISOTROPY = "FA"
     MEAN_DIFFUSIVITY = "MD"
     AXIAL_DIFFUSIVITY = "AD"
     RADIAL_DIFFUSIVITY = "RD"
+
+
+class DTISpace(str, Enum):
+    """Possible DTI spaces."""
+
+    NATIVE = "native"
+    NORMALIZED = "normalized"
+    ALL = "*"
+
+
+class ExtractionMethod(str, Enum):
+    """Possible extraction methods."""
+
+    IMAGE = "image"
+    SLICE = "slice"
+    PATCH = "patch"
+    ROI = "roi"
+
+
+class SliceDirection(str, Enum):
+    """Possible directions for a slice."""
+
+    SAGITTAL = "0"
+    CORONAL = "1"
+    AXIAL = "2"
+
+
+class SliceMode(str, Enum):
+    RGB = "rgb"
+    SINGLE = "single"
+
+
+class Template(str, Enum):
+    T1_LINEAR = "MNI152NLin2009cSym"
+    PET_LINEAR = "MNI152NLin2009cSym"
+    FLAIR_LINEAR = "MNI152NLin2009cSym"
+
+
+class Pattern(str, Enum):
+    T1_LINEAR = ("res-1x1x1",)
+    PET_LINEAR = ("res-1x1x1",)
+    FLAIR_LINEAR = ("res-1x1x1",)
