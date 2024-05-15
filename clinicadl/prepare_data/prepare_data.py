@@ -217,4 +217,5 @@ def DeepLearningPrepareData(
     preprocessing_json_path = write_preprocessing(
         config.model_dump(), config.caps_directory
     )
+    print(preprocessing_json_path)
     logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")
