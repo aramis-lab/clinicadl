@@ -1,5 +1,4 @@
 import json
-import shutil
 import subprocess
 from datetime import datetime
 from logging import getLogger
@@ -10,8 +9,6 @@ import pandas as pd
 import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.utils.caps_dataset.data import (
     return_dataset,
@@ -27,7 +24,6 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
-from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.preprocessing import path_encoder
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 from clinicadl.utils.transforms.transforms import get_transforms
@@ -69,8 +65,6 @@ class MapsManager:
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
             self.parameters = add_default_values(test_parameters)
-            self.ssda_network = False  # A MODIFIER
-            self.save_all_models = self.parameters["save_all_models"]
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -452,8 +446,6 @@ class MapsManager:
             }
         )
 
-        self.parameters["seed"] = get_seed(self.parameters["seed"])
-
         if self.parameters["num_networks"] < 2 and self.multi_network:
             raise ClinicaDLConfigurationError(
                 f"Invalid training configuration: cannot train a multi-network "
@@ -529,12 +521,6 @@ class MapsManager:
         json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
-
-        # temporary: to match CLI data. TODO : change CLI data
-        for parameter in parameters:
-            if parameters[parameter] == Path("."):
-                parameters[parameter] = ""
-        ###############################
 
         with json_path.open(mode="w") as json_file:
             json.dump(
