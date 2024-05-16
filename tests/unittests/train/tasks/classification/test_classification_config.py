@@ -1,69 +1,67 @@
 import pytest
 from pydantic import ValidationError
 
+import clinicadl.train.tasks.classification.classification_config as config
 
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "selection_threshold": 1.1,
-        },
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "loss": "abc",
-        },
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "selection_metrics": "loss",
-        },
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "selection_metrics": ["abc"],
-        },
-    ],
-)
-def test_fails_validations(parameters):
-    from clinicadl.train.tasks.classification import ClassificationConfig
 
+# Tests for customed validators #
+def test_model_config():
     with pytest.raises(ValidationError):
-        ClassificationConfig(**parameters)
+        config.ModelConfig(
+            **{
+                "architecture": "",
+                "loss": "",
+                "selection_threshold": 1.1,
+            }
+        )
 
 
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "loss": "CrossEntropyLoss",
-            "selection_threshold": 0.5,
-            "selection_metrics": ("loss",),
-        },
-        {
-            "caps_directory": "",
-            "preprocessing_json": "",
-            "tsv_directory": "",
-            "output_maps_directory": "",
-            "selection_metrics": ["loss"],
-        },
-    ],
+def test_validation_config():
+    c = config.ValidationConfig(selection_metrics=["accuracy"])
+    assert c.selection_metrics == ("accuracy",)
+
+
+# Global tests on the TrainingConfig class #
+@pytest.fixture
+def dummy_arguments():
+    args = {
+        "caps_directory": "",
+        "preprocessing_json": "",
+        "tsv_directory": "",
+        "output_maps_directory": "",
+    }
+    return args
+
+
+@pytest.fixture(
+    params=[
+        {"loss": "abc"},
+        {"selection_metrics": ("abc",)},
+        {"selection_metrics": "F1_score"},
+    ]
 )
-def test_passes_validations(parameters):
-    from clinicadl.train.tasks.classification import ClassificationConfig
+def bad_inputs(request, dummy_arguments):
+    return {**dummy_arguments, **request.param}
 
-    ClassificationConfig(**parameters)
+
+@pytest.fixture
+def good_inputs(dummy_arguments):
+    options = {
+        "loss": "MultiMarginLoss",
+        "selection_metrics": ("F1_score",),
+        "selection_threshold": 0.5,
+    }
+    return {**dummy_arguments, **options}
+
+
+def test_fails_validations(bad_inputs):
+    with pytest.raises(ValidationError):
+        config.ClassificationConfig(**bad_inputs)
+
+
+def test_passes_validations(good_inputs):
+    c = config.ClassificationConfig(**good_inputs)
+    assert c.model.loss == "MultiMarginLoss"
+    assert c.validation.selection_metrics == ("F1_score",)
+    assert c.model.selection_threshold == 0.5
+    assert c.network_task == "classification"
