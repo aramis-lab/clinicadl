@@ -25,6 +25,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     read_json,
 )
 from clinicadl.utils.preprocessing import path_encoder
+from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
