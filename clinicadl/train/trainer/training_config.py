@@ -45,6 +45,7 @@ class ComputationalConfig(BaseModel):
     amp: bool = False
     fully_sharded_data_parallel: bool = False
     gpu: bool = True
+    n_proc: PositiveInt = 2
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
@@ -156,7 +157,7 @@ class DataLoaderConfig(BaseModel):  # TODO : put in data/splitter module
     """Config class to configure the DataLoader."""
 
     batch_size: PositiveInt = 8
-    n_proc: PositiveInt = 2
+    # n_proc: PositiveInt = 2
     sampler: Sampler = Sampler.RANDOM
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
