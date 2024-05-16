@@ -6,88 +6,20 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
+from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
 from clinicadl.utils.enum import (
     BIDSModality,
     LinearModality,
     Preprocessing,
+    SliceDirection,
+    SliceMode,
     SUVRReferenceRegions,
     Tracer,
 )
 
 
-def get_parameters_dict(
-    modality: Union[BIDSModality, str],
-    extract_method: str,
-    save_features: bool,
-    extract_json: str,
-    use_uncropped_image: bool,
-    custom_suffix: str,
-    tracer: Union[Tracer, str],
-    suvr_reference_region: Union[SUVRReferenceRegions, str],
-    dti_measure: str,
-    dti_space: str,
-) -> Dict[str, Any]:
-    """
-    Parameters
-    ----------
-    modality: str
-        Preprocessing procedure performed with Clinica.
-    extract_method: str
-        Mode of extraction (image, slice, patch, roi).
-    save_features: bool
-        If True modes are extracted, else images are extracted
-        and the extraction of modes is done on-the-fly during training.
-    extract_json: str
-        Name of the JSON file created to sum up the arguments of tensor extraction.
-    use_uncropped_image: bool
-        If True the cropped version of the image is used
-        (specific to t1-linear and pet-linear).
-    custom_suffix: str
-        String used to identify images when modality is custom.
-    tracer: str
-        Name of the tracer (specific to PET pipelines).
-    suvr_reference_region: str
-        Name of the reference region for normalization specific to PET pipelines)
-    Returns:
-        The dictionary of parameters specific to the preprocessing
-    """
-
-    modality = BIDSModality(modality)
-    tracer = Tracer(tracer)
-    suvr_reference_region = SUVRReferenceRegions(suvr_reference_region)
-
-    parameters = {
-        "preprocessing": modality.value,
-        "mode": extract_method,
-        "use_uncropped_image": use_uncropped_image,
-        "prepare_dl": save_features,
-    }
-
-    if modality == BIDSModality.CUSTOM:
-        parameters["custom_suffix"] = custom_suffix
-    elif modality == BIDSModality.PET:
-        parameters["tracer"] = tracer
-        parameters["suvr_reference_region"] = suvr_reference_region
-    elif modality == BIDSModality.DTI:
-        parameters["dti_space"] = dti_space
-        parameters["dti_measure"] = dti_measure
-
-    parameters["extract_json"] = compute_extract_json(extract_json)
-
-    return parameters
-
-
-def compute_extract_json(extract_json: Optional[str]) -> str:
-    if extract_json is None:
-        return f"extract_{int(time())}.json"
-    elif not extract_json.endswith(".json"):
-        return f"{extract_json}.json"
-    else:
-        return extract_json
-
-
 def compute_folder_and_file_type(
-    parameters: Dict[str, Any], from_bids: Optional[Path] = None
+    config: PrepareDataConfig, from_bids: Optional[Path] = None
 ) -> Tuple[str, Dict[str, str]]:
     from clinicadl.utils.clinica_utils import (
         bids_nii,
@@ -96,12 +28,12 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    preprocessing = Preprocessing(parameters["preprocessing"])  # replace("-", "_")
+    preprocessing = Preprocessing(config.preprocessing)  # replace("-", "_")
     if from_bids is not None:
         if preprocessing == Preprocessing.CUSTOM:
             mod_subfolder = Preprocessing.CUSTOM.value
             file_type = {
-                "pattern": f"*{parameters['custom_suffix']}",
+                "pattern": f"*{config.custom_suffix}",
                 "description": "Custom suffix",
             }
         else:
@@ -110,37 +42,33 @@ def compute_folder_and_file_type(
 
     elif preprocessing not in Preprocessing:
         raise NotImplementedError(
-            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented from CAPS directory."
+            f"Extraction of preprocessing {config.preprocessing} is not implemented from CAPS directory."
         )
     else:
         mod_subfolder = preprocessing.value.replace("-", "_")
         if preprocessing == Preprocessing.T1_LINEAR:
-            file_type = linear_nii(
-                LinearModality.T1W, parameters["use_uncropped_image"]
-            )
+            file_type = linear_nii(LinearModality.T1W, config.use_uncropped_image)
 
         elif preprocessing == Preprocessing.FLAIR_LINEAR:
-            file_type = linear_nii(
-                LinearModality.FLAIR, parameters["use_uncropped_image"]
-            )
+            file_type = linear_nii(LinearModality.FLAIR, config.use_uncropped_image)
 
         elif preprocessing == Preprocessing.PET_LINEAR:
             file_type = pet_linear_nii(
-                parameters["tracer"],
-                parameters["suvr_reference_region"],
-                parameters["use_uncropped_image"],
+                config.tracer,
+                config.suvr_reference_region,
+                config.use_uncropped_image,
             )
         elif preprocessing == Preprocessing.DWI_DTI:
             file_type = dwi_dti(
-                parameters["measure"],
-                parameters["space"],
+                config.dti_measure,
+                config.dti_space,
             )
         elif preprocessing == Preprocessing.CUSTOM:
             file_type = {
-                "pattern": f"*{parameters['custom_suffix']}",
+                "pattern": f"*{config.custom_suffix}",
                 "description": "Custom suffix",
             }
-            parameters["use_uncropped_image"] = None
+            # custom_suffix["use_uncropped_image"] = None
 
     return mod_subfolder, file_type
 
@@ -165,8 +93,8 @@ def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, 
 
 def extract_slices(
     nii_path: Path,
-    slice_direction: int = 0,
-    slice_mode: str = "single",
+    slice_direction: SliceDirection = SliceDirection.SAGITTAL,
+    slice_mode: SliceMode = SliceMode.SINGLE,
     discarded_slices: Union[int, tuple] = 0,
 ) -> List[Tuple[str, torch.Tensor]]:
     """Extracts the slices from three directions
@@ -196,7 +124,7 @@ def extract_slices(
 
     begin_discard, end_discard = compute_discarded_slices(discarded_slices)
     index_list = range(
-        begin_discard, image_tensor.shape[slice_direction + 1] - end_discard
+        begin_discard, image_tensor.shape[int(slice_direction.value) + 1] - end_discard
     )
 
     slice_list = []
@@ -215,15 +143,15 @@ def extract_slices(
 
 def extract_slice_tensor(
     image_tensor: torch.Tensor,
-    slice_direction: int,
-    slice_mode: str,
+    slice_direction: SliceDirection,
+    slice_mode: SliceMode,
     slice_index: int,
 ) -> torch.Tensor:
     # Allow to select the slice `slice_index` in dimension `slice_direction`
     idx_tuple = tuple(
-        [slice(None)] * (slice_direction + 1)
+        [slice(None)] * (int(slice_direction.value) + 1)
         + [slice_index]
-        + [slice(None)] * (2 - slice_direction)
+        + [slice(None)] * (2 - int(slice_direction.value))
     )
     slice_tensor = image_tensor[idx_tuple]  # shape is 1 * W * L
 
@@ -236,22 +164,20 @@ def extract_slice_tensor(
 
 
 def extract_slice_path(
-    img_path: Path, slice_direction: int, slice_mode: str, slice_index: int
+    img_path: Path,
+    slice_direction: SliceDirection,
+    slice_mode: SliceMode,
+    slice_index: int,
 ) -> str:
-    direction_dict = {0: "sag", 1: "cor", 2: "axi"}
-    if slice_direction not in direction_dict:
-        raise KeyError(
-            f"Slice direction {slice_direction} should be in {direction_dict.keys()} corresponding to {direction_dict}."
-        )
-
+    slice_dict = {0: "sag", 1: "cor", 2: "axi"}
     input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
     it_filename_suffix = it_filename_suffix.replace(".nii.gz", ".pt")
     return (
-        f"{it_filename_prefix}_axis-{direction_dict[slice_direction]}"
-        f"_channel-{slice_mode}_slice-{slice_index}{it_filename_suffix}"
+        f"{it_filename_prefix}_axis-{slice_dict[int(slice_direction.value)]}"
+        f"_channel-{slice_mode.value}_slice-{slice_index}{it_filename_suffix}"
     )
 
 
@@ -388,7 +314,7 @@ def check_mask_list(
 
 def find_mask_path(
     masks_location: Path, roi: str, mask_pattern: str, cropping: bool
-) -> Tuple[str, str]:
+) -> Tuple[Union[None, str], str]:
     """
     Finds masks corresponding to the pattern asked and containing the adequate cropping description
 
@@ -422,10 +348,10 @@ def find_mask_path(
         candidates2 = candidates
     elif cropping:
         candidates2 = [mask for mask in candidates if "_desc-Crop_" in mask.name]
-        desc += f"and contain '_desc-Crop_' string."
+        desc += "and contain '_desc-Crop_' string."
     else:
         candidates2 = [mask for mask in candidates if "_desc-Crop_" not in mask.name]
-        desc += f"and not contain '_desc-Crop_' string."
+        desc += "and not contain '_desc-Crop_' string."
 
     if len(candidates2) == 0:
         return None, desc

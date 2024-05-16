@@ -11,7 +11,6 @@ import torch.distributed as dist
 from torch.cuda.amp import autocast
 
 from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
     return_dataset,
 )
 from clinicadl.utils.cmdline_utils import check_gpu
