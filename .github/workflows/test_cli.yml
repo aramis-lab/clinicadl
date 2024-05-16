@@ -33,10 +33,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
-      - name: Run instantiation tests
+      - name: Run CLI tests
         run: |
           make env.conda
-          source /builds/miniconda/etc/profile.d/conda.sh
+          source /builds/miniconda3/etc/profile.d/conda.sh
           conda activate "${{ github.workspace }}"/env
           make install
           cd tests
