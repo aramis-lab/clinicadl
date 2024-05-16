@@ -32,7 +32,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: poetry
       - name: Run CLI tests
         run: |
           make env.conda
