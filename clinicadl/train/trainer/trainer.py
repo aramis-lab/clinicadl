@@ -48,6 +48,7 @@ class Trainer:
         """
         self.config = config
         self.maps_manager = self._init_maps_manager(config)
+        self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
         # temporary: to match CLI data. TODO : change CLI data
@@ -91,6 +92,8 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
+        if len(self.config.data.label_code) == 0:
+            self.config.data.label_code = self.maps_manager.label_code
 
     def train(
         self,
@@ -1351,7 +1354,7 @@ class Trainer:
             The optimizer.
         """
 
-        optimizer_cls = getattr(torch.optim, self.config.optimizer)
+        optimizer_cls = getattr(torch.optim, self.config.optimizer.optimizer)
         parameters = filter(lambda x: x.requires_grad, model.parameters())
         optimizer_kwargs = dict(
             lr=self.config.optimizer.learning_rate,
