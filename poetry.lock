@@ -31,7 +31,6 @@ typing-extensions = ">=4"
 tz = ["backports.zoneinfo"]
 
 [[package]]
-<<<<<<< HEAD
 name = "annotated-types"
 version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
@@ -63,20 +62,6 @@ typing-extensions = {version = ">=4.1", markers = "python_version < \"3.11\""}
 doc = ["Sphinx (>=7.4,<8.0)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
 test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "truststore (>=0.9.1)", "uvloop (>=0.21.0b1)"]
 trio = ["trio (>=0.26.1)"]
-=======
-name = "aniso8601"
-version = "9.0.1"
-description = "A library for parsing ISO 8601 strings."
-optional = false
-python-versions = "*"
-files = [
-    {file = "aniso8601-9.0.1-py2.py3-none-any.whl", hash = "sha256:1d2b7ef82963909e93c4f24ce48d4de9e66009a21bf1c1e1c85bdd0812fe412f"},
-    {file = "aniso8601-9.0.1.tar.gz", hash = "sha256:72e3117667eedf66951bb2d93f4296a56b94b078a8a95905a052611fb3f1b973"},
-]
-
-[package.extras]
-dev = ["black", "coverage", "isort", "pre-commit", "pyenchant", "pylint"]
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 
 [[package]]
 name = "appdirs"
@@ -669,7 +654,6 @@ docs = ["ipython", "matplotlib", "numpydoc", "sphinx"]
 tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
-<<<<<<< HEAD
 name = "databricks-sdk"
 version = "0.36.0"
 description = "Databricks SDK for Python (Beta)"
@@ -690,8 +674,6 @@ notebook = ["ipython (>=8,<9)", "ipywidgets (>=8,<9)"]
 openai = ["httpx", "langchain-openai", "openai"]
 
 [[package]]
-=======
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 name = "deprecated"
 version = "1.2.14"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
@@ -2183,42 +2165,21 @@ files = [
 
 [[package]]
 name = "mlflow"
-<<<<<<< HEAD
 version = "2.17.1"
-=======
-version = "2.12.2"
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 description = "MLflow is an open source platform for the complete machine learning lifecycle"
 optional = false
 python-versions = ">=3.8"
 files = [
-<<<<<<< HEAD
     {file = "mlflow-2.17.1-py3-none-any.whl", hash = "sha256:e614d0732cf95712891bfdfd92461dcf6a85d9e1899591be8399eb107eec6919"},
     {file = "mlflow-2.17.1.tar.gz", hash = "sha256:04cbec7fe79a4509d8c073ef64302b24e73cb447f5a14ad51d915bfbaa05c73b"},
-=======
-    {file = "mlflow-2.12.2-py3-none-any.whl", hash = "sha256:38dd04710fe64ee8229b7233b4d91db32c3ff887934c40d926246a566c886c0b"},
-    {file = "mlflow-2.12.2.tar.gz", hash = "sha256:d712f1af9d44f1eb9e1baee8ca64f7311e185b7572fc3c1e0a83a4c8ceff6aad"},
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 ]
 
 [package.dependencies]
 alembic = "<1.10.0 || >1.10.0,<2"
-<<<<<<< HEAD
-=======
-click = ">=7.0,<9"
-cloudpickle = "<4"
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 docker = ">=4.0.0,<8"
 Flask = "<4"
-<<<<<<< HEAD
 graphene = "<4"
 gunicorn = {version = "<24", markers = "platform_system != \"Windows\""}
-=======
-gitpython = ">=3.1.9,<4"
-graphene = "<4"
-gunicorn = {version = "<23", markers = "platform_system != \"Windows\""}
-importlib-metadata = ">=3.7.0,<4.7.0 || >4.7.0,<8"
->>>>>>> b2fc3e6d (Bump mlflow from 2.10.1 to 2.12.1 (#575))
 Jinja2 = [
     {version = ">=2.11,<4", markers = "platform_system != \"Windows\""},
     {version = ">=3.0,<4", markers = "platform_system == \"Windows\""},
