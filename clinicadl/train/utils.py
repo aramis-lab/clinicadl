@@ -7,7 +7,7 @@ from click.core import ParameterSource
 
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks
-from clinicadl.utils.preprocessing import path_decoder
+from clinicadl.utils.preprocessing.preprocessing import path_decoder
 
 from .trainer import Task
 

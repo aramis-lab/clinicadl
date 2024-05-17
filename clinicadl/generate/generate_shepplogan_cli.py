@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
-from clinicadl.utils.preprocessing import write_preprocessing
+from clinicadl.utils.preprocessing.preprocessing import write_preprocessing
 
 from .generate_utils import (
     generate_shepplogan_phantom,

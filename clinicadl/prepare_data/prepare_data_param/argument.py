@@ -1,19 +1,17 @@
-from pathlib import Path
-
 import click
 
-from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
+from clinicadl.utils.caps_dataset.data_config import DataConfig
+from clinicadl.utils.config_utils import get_default_from_config_class as get_default
+from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 from clinicadl.utils.enum import (
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
 
-config = PrepareDataConfig.model_fields
-
 caps_directory = click.argument(
     "caps_directory",
-    type=config["caps_directory"].annotation,
+    type=get_type("caps_directory", DataConfig),
 )
 preprocessing = click.argument(
     "preprocessing",

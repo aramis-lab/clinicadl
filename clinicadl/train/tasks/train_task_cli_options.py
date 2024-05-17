@@ -109,8 +109,8 @@ batch_size = cli_param.option_group.computational_group.option(
 n_proc = cli_param.option_group.computational_group.option(
     "-np",
     "--n_proc",
-    type=get_type("n_proc", config.DataLoaderConfig),
-    default=get_default("n_proc", config.DataLoaderConfig),
+    type=get_type("n_proc", config.DataConfig),
+    default=get_default("n_proc", config.DataConfig),
     help="Number of cores used during the task.",
     show_default=True,
 )

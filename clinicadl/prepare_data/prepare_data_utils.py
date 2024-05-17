@@ -16,6 +16,8 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
+from clinicadl.utils.mode.mode_config import ModeConfig
+from clinicadl.utils.preprocessing.preprocessing_config import PreprocessingConfig
 
 
 def compute_folder_and_file_type(
@@ -28,12 +30,12 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    preprocessing = Preprocessing(config.preprocessing)  # replace("-", "_")
+    preprocessing = config.preprocessing.preprocessing_cls  # replace("-", "_")
     if from_bids is not None:
         if preprocessing == Preprocessing.CUSTOM:
             mod_subfolder = Preprocessing.CUSTOM.value
             file_type = {
-                "pattern": f"*{config.custom_suffix}",
+                "pattern": f"*{config.mode.custom_suffix}",
                 "description": "Custom suffix",
             }
         else:
@@ -42,30 +44,34 @@ def compute_folder_and_file_type(
 
     elif preprocessing not in Preprocessing:
         raise NotImplementedError(
-            f"Extraction of preprocessing {config.preprocessing} is not implemented from CAPS directory."
+            f"Extraction of preprocessing {config.preprocessing.preprocessing.value} is not implemented from CAPS directory."
         )
     else:
         mod_subfolder = preprocessing.value.replace("-", "_")
         if preprocessing == Preprocessing.T1_LINEAR:
-            file_type = linear_nii(LinearModality.T1W, config.use_uncropped_image)
+            file_type = linear_nii(
+                LinearModality.T1W, config.preprocessing.use_uncropped_image
+            )
 
         elif preprocessing == Preprocessing.FLAIR_LINEAR:
-            file_type = linear_nii(LinearModality.FLAIR, config.use_uncropped_image)
+            file_type = linear_nii(
+                LinearModality.FLAIR, config.preprocessing.use_uncropped_image
+            )
 
         elif preprocessing == Preprocessing.PET_LINEAR:
             file_type = pet_linear_nii(
-                config.tracer,
-                config.suvr_reference_region,
-                config.use_uncropped_image,
+                config.mode.tracer,
+                config.mode.suvr_reference_region,
+                config.preprocessing.use_uncropped_image,
             )
         elif preprocessing == Preprocessing.DWI_DTI:
             file_type = dwi_dti(
-                config.dti_measure,
-                config.dti_space,
+                config.mode.dti_measure,
+                config.mode.dti_space,
             )
         elif preprocessing == Preprocessing.CUSTOM:
             file_type = {
-                "pattern": f"*{config.custom_suffix}",
+                "pattern": f"*{config.mode.custom_suffix}",
                 "description": "Custom suffix",
             }
             # custom_suffix["use_uncropped_image"] = None

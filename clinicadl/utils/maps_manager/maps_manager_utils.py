@@ -5,7 +5,7 @@ from typing import Any, Dict
 import toml
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
-from clinicadl.utils.preprocessing import path_decoder, path_encoder
+from clinicadl.utils.preprocessing.preprocessing import path_decoder, path_encoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -58,7 +58,6 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     -------
     A dictionary of training parameters.
     """
-    from clinicadl.utils.preprocessing import path_decoder
 
     with json_path.open(mode="r") as f:
         parameters = json.load(f, object_hook=path_decoder)

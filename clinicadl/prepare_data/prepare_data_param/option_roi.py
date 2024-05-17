@@ -3,7 +3,6 @@ from typing import get_args
 
 import click
 
-from clinicadl.prepare_data.prepare_data_config import PrepareDataROIConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -11,8 +10,9 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
+from clinicadl.utils.preprocessing.preprocessing_config import PreprocessingROIConfig
 
-config = PrepareDataROIConfig.model_fields
+config = PreprocessingROIConfig.model_fields
 
 roi_list = click.option(
     "--roi_list",

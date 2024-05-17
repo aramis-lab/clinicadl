@@ -3,7 +3,6 @@ from typing import get_args
 
 import click
 
-from clinicadl.prepare_data.prepare_data_config import PrepareDataSliceConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -13,8 +12,9 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
+from clinicadl.utils.preprocessing.preprocessing_config import PreprocessingSliceConfig
 
-config = PrepareDataSliceConfig.model_fields
+config = PreprocessingSliceConfig.model_fields
 
 slice_direction = click.option(
     "-sd",
@@ -38,7 +38,7 @@ slice_method = click.option(
 discarded_slice = click.option(
     "-ds",
     "--discarded_slices",
-    type=get_args(config["discarded_slices"].annotation)[0],
+    type=int,  # get_args(config["discarded_slices"].annotation)[0],
     default=config["discarded_slices"].default,
     multiple=2,
     help="""Number of slices discarded from respectively the beginning and

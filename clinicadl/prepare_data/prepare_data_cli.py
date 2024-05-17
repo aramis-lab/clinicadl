@@ -4,12 +4,8 @@ from typing import Optional
 import click
 
 from clinicadl.prepare_data import prepare_data_param
-from clinicadl.prepare_data.prepare_data_config import (
-    PrepareDataImageConfig,
-    PrepareDataPatchConfig,
-    PrepareDataROIConfig,
-    PrepareDataSliceConfig,
-)
+from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
+from clinicadl.utils.caps_dataset.data_config import DataConfig
 from clinicadl.utils.enum import (
     BIDSModality,
     DTIMeasure,
@@ -19,6 +15,13 @@ from clinicadl.utils.enum import (
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
+)
+from clinicadl.utils.mode.mode_config import ModeConfig, return_mode_config
+from clinicadl.utils.preprocessing.preprocessing_config import (
+    PreprocessingImageConfig,
+    PreprocessingPatchConfig,
+    PreprocessingROIConfig,
+    PreprocessingSliceConfig,
 )
 
 from .prepare_data import DeepLearningPrepareData
@@ -47,15 +50,23 @@ def image_cli(
 
     PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-    image_config = PrepareDataImageConfig(
-        caps_directory=caps_directory,
-        preprocessing_cls=preprocessing,
-        tracer_cls=kwargs["tracer"],
-        suvr_reference_region_cls=kwargs["suvr_reference_region"],
-        dti_measure_cls=kwargs["dti_measure"],
-        dti_space_cls=kwargs["dti_space"],
-        save_features=True,
-        **kwargs,
+    image_config = PrepareDataConfig(
+        preprocessing=PreprocessingImageConfig(
+            preprocessing_cls=preprocessing,
+            save_features=True,
+            **kwargs,
+        ),
+        mode=return_mode_config(preprocessing)(
+            tracer_cls=kwargs["tracer"],
+            suvr_reference_region_cls=kwargs["suvr_reference_region"],
+            dti_measure_cls=kwargs["dti_measure"],
+            dti_space_cls=kwargs["dti_space"],
+            **kwargs,
+        ),
+        data=DataConfig(
+            caps_directory=caps_directory,
+            **kwargs,
+        ),
     )
 
     DeepLearningPrepareData(image_config)
@@ -84,14 +95,23 @@ def patch_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
     PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
 
-    patch_config = PrepareDataPatchConfig(
-        caps_directory=caps_directory,
-        preprocessing_cls=preprocessing,
-        tracer_cls=kwargs["tracer"],
-        suvr_reference_region_cls=kwargs["suvr_reference_region"],
-        dti_measure_cls=kwargs["dti_measure"],
-        dti_space_cls=kwargs["dti_space"],
-        **kwargs,
+    patch_config = PrepareDataConfig(
+        preprocessing=PreprocessingPatchConfig(
+            preprocessing_cls=preprocessing,
+            save_features=True,
+            **kwargs,
+        ),
+        mode=return_mode_config(preprocessing)(
+            tracer_cls=kwargs["tracer"],
+            suvr_reference_region_cls=kwargs["suvr_reference_region"],
+            dti_measure_cls=kwargs["dti_measure"],
+            dti_space_cls=kwargs["dti_space"],
+            **kwargs,
+        ),
+        data=DataConfig(
+            caps_directory=caps_directory,
+            **kwargs,
+        ),
     )
 
     DeepLearningPrepareData(patch_config)
@@ -120,17 +140,25 @@ def slice_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
 
     PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-
-    slice_config = PrepareDataSliceConfig(
-        caps_directory=caps_directory,
-        preprocessing_cls=preprocessing,
-        tracer_cls=kwargs["tracer"],
-        suvr_reference_region_cls=kwargs["suvr_reference_region"],
-        dti_measure_cls=kwargs["dti_measure"],
-        dti_space_cls=kwargs["dti_space"],
-        slice_direction_cls=kwargs["slice_direction"],
-        slice_mode_cls=kwargs["slice_mode"],
-        **kwargs,
+    slice_config = PrepareDataConfig(
+        preprocessing=PreprocessingSliceConfig(
+            preprocessing_cls=preprocessing,
+            save_features=True,
+            slice_direction_cls=kwargs["slice_direction"],
+            slice_mode_cls=kwargs["slice_mode"],
+            **kwargs,
+        ),
+        mode=return_mode_config(preprocessing)(
+            tracer_cls=kwargs["tracer"],
+            suvr_reference_region_cls=kwargs["suvr_reference_region"],
+            dti_measure_cls=kwargs["dti_measure"],
+            dti_space_cls=kwargs["dti_space"],
+            **kwargs,
+        ),
+        data=DataConfig(
+            caps_directory=caps_directory,
+            **kwargs,
+        ),
     )
 
     DeepLearningPrepareData(slice_config)
@@ -161,16 +189,23 @@ def roi_cli(caps_directory: Path, preprocessing: Preprocessing, **kwargs):
     PREPROCESSING [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
 
-    roi_config = PrepareDataROIConfig(
-        caps_directory=caps_directory,
-        preprocessing_cls=preprocessing,
-        tracer_cls=kwargs["tracer"],
-        suvr_reference_region_cls=kwargs["suvr_reference_region"],
-        dti_measure_cls=kwargs["dti_measure"],
-        dti_space_cls=kwargs["dti_space"],
-        **kwargs,
+    roi_config = PrepareDataConfig(
+        preprocessing=PreprocessingROIConfig(
+            preprocessing_cls=preprocessing,
+            **kwargs,
+        ),
+        mode=return_mode_config(preprocessing)(
+            tracer_cls=kwargs["tracer"],
+            suvr_reference_region_cls=kwargs["suvr_reference_region"],
+            dti_measure_cls=kwargs["dti_measure"],
+            dti_space_cls=kwargs["dti_space"],
+            **kwargs,
+        ),
+        data=DataConfig(
+            caps_directory=caps_directory,
+            **kwargs,
+        ),
     )
-
     DeepLearningPrepareData(roi_config)
 
 

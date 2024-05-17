@@ -1,18 +1,39 @@
 from pathlib import Path
-from typing import get_args
+from typing import Optional, get_args
 
 import click
+from pydantic import BaseModel
 
 from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
+    ExtractionMethod,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
 
-config = PrepareDataConfig.model_fields
+
+class PrepareDataOption(BaseModel):
+    caps_directory: Path
+    preprocessing_cls: Preprocessing
+    n_proc: int = 1
+    tsv_file: Optional[Path] = None
+    extract_json: Optional[str] = None
+    use_uncropped_image: bool = False
+    tracer_cls: Tracer = Tracer.FFDG
+    suvr_reference_region_cls: SUVRReferenceRegions = (
+        SUVRReferenceRegions.CEREBELLUMPONS2
+    )
+    custom_suffix: str = ""
+    dti_measure_cls: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
+    dti_space_cls: DTISpace = DTISpace.ALL
+    save_features: bool = False
+    extract_method: ExtractionMethod
+
+
+config = PrepareDataOption.model_fields
 
 n_proc = click.option(
     "-np",

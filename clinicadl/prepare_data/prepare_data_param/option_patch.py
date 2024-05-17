@@ -3,7 +3,6 @@ from typing import get_args
 
 import click
 
-from clinicadl.prepare_data.prepare_data_config import PrepareDataPatchConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -11,8 +10,6 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
-
-config = PrepareDataPatchConfig.model_fields
 
 patch_size = click.option(
     "-ps",

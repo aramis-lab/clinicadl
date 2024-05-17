@@ -10,28 +10,7 @@ import pandas as pd
 import torch
 import torchio as tio
 import torchvision.transforms as transforms
-from torch.utils.data import Dataset
 
-from clinicadl.prepare_data.prepare_data_config import (
-    PrepareDataConfig,
-    PrepareDataImageConfig,
-    PrepareDataPatchConfig,
-    PrepareDataROIConfig,
-    PrepareDataSliceConfig,
-)
-from clinicadl.prepare_data.prepare_data_utils import (
-    PATTERN_DICT,
-    TEMPLATE_DICT,
-    compute_discarded_slices,
-    compute_folder_and_file_type,
-    extract_patch_path,
-    extract_patch_tensor,
-    extract_roi_path,
-    extract_roi_tensor,
-    extract_slice_path,
-    extract_slice_tensor,
-    find_mask_path,
-)
 from clinicadl.utils.enum import Preprocessing, SliceDirection, SliceMode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
