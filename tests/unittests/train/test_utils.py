@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.train.tasks import Task
+from clinicadl.train.trainer import Task
 
 expected_classification = {
     "architecture": "default",
