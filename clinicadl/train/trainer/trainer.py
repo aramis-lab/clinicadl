@@ -22,9 +22,10 @@ from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.utils.transforms.transforms import get_transforms
-
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
+
+from .training_config import Task
 
 if TYPE_CHECKING:
     from clinicadl.utils.callbacks.callbacks import Callback
@@ -85,6 +86,7 @@ class Trainer:
         parameters["sampler"] = parameters["sampler"].value
         if parameters["network_task"] == "reconstruction":
             parameters["normalization"] = parameters["normalization"].value
+        parameters["split"] = []    # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
         ###############################
         return MapsManager(
             maps_path, parameters, verbose=None
@@ -92,7 +94,7 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        if len(self.config.data.label_code) == 0:
+        if (len(self.config.data.label_code) == 0) and self.config.network_task == Task.CLASSIFICATION:
             self.config.data.label_code = self.maps_manager.label_code
 
     def train(
