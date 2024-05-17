@@ -35,7 +35,7 @@ class RegressionMetric(str, Enum):  # TODO : put in metric module
 class DataConfig(BaseDataConfig):  # TODO : put in data module
     """Config class to specify the data in regression mode."""
 
-    label: str = "diagnosis"
+    label: str = "age"
 
     @field_validator("label")
     def validator_label(cls, v):
