@@ -87,6 +87,8 @@ class Trainer:
         if parameters["network_task"] == "reconstruction":
             parameters["normalization"] = parameters["normalization"].value
         parameters["split"] = []    # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
+        if len(self.config.data.label_code) == 0:
+            del parameters["label_code"]
         ###############################
         return MapsManager(
             maps_path, parameters, verbose=None
@@ -94,8 +96,9 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        if (len(self.config.data.label_code) == 0) and self.config.network_task == Task.CLASSIFICATION:
-            self.config.data.label_code = self.maps_manager.label_code
+        # if (len(self.config.data.label_code) == 0):
+        #     self.config.data.label_code = self.maps_manager.label_code
+        # TODO : deal with label_code and replace self.maps_manager.label_code
 
     def train(
         self,
@@ -231,7 +234,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
             logger.debug("Loading validation data...")
             data_valid = return_dataset(
@@ -242,7 +245,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
             train_sampler = self.maps_manager.task_manager.generate_sampler(
                 data_train,
@@ -361,7 +364,7 @@ class Trainer:
                     all_transformations=all_transforms,
                     multi_cohort=self.config.data.multi_cohort,
                     label=self.config.data.label,
-                    label_code=self.config.data.label_code,
+                    label_code=self.maps_manager.label_code,
                     cnn_index=network,
                 )
                 data_valid = return_dataset(
@@ -372,7 +375,7 @@ class Trainer:
                     all_transformations=all_transforms,
                     multi_cohort=self.config.data.multi_cohort,
                     label=self.config.data.label,
-                    label_code=self.config.data.label_code,
+                    label_code=self.maps_manager.label_code,
                     cnn_index=network,
                 )
 
@@ -477,7 +480,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
 
             logger.debug("Loading target labelled training data...")
@@ -489,7 +492,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=False,  # A checker
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
             from torch.utils.data import ConcatDataset
 
@@ -506,7 +509,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=False,  # A checker
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
 
             logger.debug("Loading validation source data...")
@@ -518,7 +521,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
             logger.debug("Loading validation target labelled data...")
             data_valid_target_labeled = return_dataset(
@@ -529,7 +532,7 @@ class Trainer:
                 all_transformations=all_transforms,
                 multi_cohort=False,
                 label=self.config.data.label,
-                label_code=self.config.data.label_code,
+                label_code=self.maps_manager.label_code,
             )
             train_source_sampler = self.maps_manager.task_manager.generate_sampler(
                 data_train_source, self.config.dataloader.sampler
