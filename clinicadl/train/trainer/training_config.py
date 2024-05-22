@@ -4,7 +4,13 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, computed_field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic.types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 
 from clinicadl.utils.preprocessing import read_preprocessing
@@ -84,7 +90,8 @@ class DataConfig(BaseModel):  # TODO : put in data module
     label: Optional[str] = None
     label_code: Dict[str, int] = {}
     multi_cohort: bool = False
-    preprocessing_json: Path
+    preprocessing_dict: Optional[Dict[str, Any]] = None
+    preprocessing_json: Optional[Path] = None
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
@@ -95,9 +102,23 @@ class DataConfig(BaseModel):  # TODO : put in data module
             return tuple(v)
         return v  # TODO : check if columns are in tsv
 
-    @computed_field
-    @property
-    def preprocessing_dict(self) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def validator_model(self):
+        if not self.preprocessing_json and not self.preprocessing_dict:
+            raise ValueError("preprocessing_dict or preprocessing_json must be passed.")
+        elif self.preprocessing_json:
+            read_preprocessing = self.read_json()
+            if self.preprocessing_dict:
+                assert (
+                    read_preprocessing == self.preprocessing_dict
+                ), "preprocessings found in preprocessing_dict and preprocessing_json do not match."
+            else:
+                self.preprocessing_dict = read_preprocessing
+        return self
+
+    def read_json(
+        self,
+    ) -> Dict[str, Any]:  # TODO : create a BaseModel to handle preprocessing?
         """
         Gets the preprocessing dictionary from a preprocessing json file.
 
@@ -258,7 +279,7 @@ class SSDAConfig(BaseModel):
 
     @computed_field
     @property
-    def preprocessing_dict_target(self) -> Dict[str, Any]:
+    def preprocessing_dict_target(self) -> Dict[str, Any]:  # TODO : check if useful
         """
         Gets the preprocessing dictionary from a target preprocessing json file.
 
