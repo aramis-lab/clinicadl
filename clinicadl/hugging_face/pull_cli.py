@@ -2,8 +2,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
-from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.config import arguments
 
 
 @click.command(name="pull", no_args_is_help=True)
@@ -17,7 +16,7 @@ from clinicadl.utils.maps_manager import MapsManager
     type=str,
     default="maps",
 )
-@cli_param.argument.output_maps
+@arguments.output_maps
 def cli(hf_hub_path, maps_name, output_maps_directory):
     from .hugging_face import load_from_hf_hub
 

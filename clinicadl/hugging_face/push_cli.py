@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.utils import cli_param
+from clinicadl.config import arguments
 
 
 @click.command(name="push", no_args_is_help=True)
@@ -9,7 +9,7 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
 )
-@cli_param.argument.input_maps
+@arguments.input_maps
 @click.argument(
     "hf_maps_directory",
     type=str,
