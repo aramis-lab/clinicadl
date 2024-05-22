@@ -9,7 +9,7 @@ import clinicadl.train.trainer.training_config as config
 # Tests for customed validators #
 @pytest.fixture
 def caps_example():
-    dir_ = Path(__file__).parents[1] / "ressources" / "caps_example"
+    dir_ = Path(__file__).parents[2] / "ressources" / "caps_example"
     return dir_
 
 

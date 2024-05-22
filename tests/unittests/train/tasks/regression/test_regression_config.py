@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -12,10 +14,16 @@ def test_validation_config():
 
 # Global tests on the TrainingConfig class #
 @pytest.fixture
-def dummy_arguments():
+def caps_example():
+    dir_ = Path(__file__).parents[3] / "ressources" / "caps_example"
+    return dir_
+
+
+@pytest.fixture
+def dummy_arguments(caps_example):
     args = {
-        "caps_directory": "",
-        "preprocessing_json": "",
+        "caps_directory": caps_example,
+        "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
         "output_maps_directory": "",
     }
