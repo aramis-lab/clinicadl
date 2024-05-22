@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-<<<<<<< HEAD
-from logging import getLogger
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from logging import getLogger
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+)
 
 from clinicadl.config.config import (
     CallbacksConfig,
@@ -26,13 +29,10 @@ from clinicadl.utils.enum import Task
 
 logger = getLogger("clinicadl.training_config")
 
-
-<<<<<<< HEAD
 class TrainingConfig(BaseModel, ABC):
     """
     
     Abstract config class for the training pipeline.
-
     Some configurations are specific to the task (e.g. loss function),
     thus they need to be specified in a subclass.
     """
@@ -44,7 +44,6 @@ class TrainingConfig(BaseModel, ABC):
     dataloader: DataLoaderConfig
     early_stopping: EarlyStoppingConfig
     lr_scheduler: LRschedulerConfig
-
     maps_manager: MapsManagerConfig
     model: ModelConfig
     optimization: OptimizationConfig

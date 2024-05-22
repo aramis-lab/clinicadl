@@ -138,3 +138,4 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     else:
         return type_
         # raise TypeError(f"the type {type_} is not supported for the argument {arg}.")
+
