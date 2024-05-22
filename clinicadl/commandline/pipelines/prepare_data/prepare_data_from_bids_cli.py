@@ -13,6 +13,8 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.utils.enum import ExtractionMethod
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import data, dataloader, modality, preprocessing
 
 
 @click.command(name="image", no_args_is_help=True)
@@ -27,10 +29,7 @@ from clinicadl.utils.enum import ExtractionMethod
 @modality.custom_suffix
 @data.participants_tsv
 def image_bids_cli(kwargs):
-    """Extract image from nifti images.
-    CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
-    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
-    """
+    
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.IMAGE,
         preprocessing_type=kwargs["preprocessing"],
