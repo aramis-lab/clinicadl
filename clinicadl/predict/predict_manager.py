@@ -11,10 +11,8 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.predict.predict_config import (
-    InterpretConfig,
-    PredictConfig,
-)
+from clinicadl.interpret.pipeline_config import InterpretPipelineConfig
+from clinicadl.predict.pipeline_config import PredictPipelineConfig
 from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
@@ -32,7 +30,9 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class PredictManager:
-    def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
+    def __init__(
+        self, _config: Union[PredictPipelineConfig, InterpretPipelineConfig]
+    ) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
 
@@ -41,7 +41,6 @@ class PredictManager:
         label_code: Union[str, dict[str, int]] = "default",
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
-
         Parameters
         ----------
         data_group : str
@@ -87,17 +86,17 @@ class PredictManager:
             If true, save the tensor from the latent space for reconstruction task.
         skip_leak_check : bool (optional, default=False)
             If true, skip the leak check (not recommended).
-
         Examples
         --------
         >>> _input_
         _output_
         """
 
-        assert isinstance(self._config, PredictConfig)
+        assert isinstance(self._config, PredictPipelineConfig)
 
-        self._config.check_output_saving(self.maps_manager.network_task)
+        self._config.check_output_saving_nifti(self.maps_manager.network_task)
         self._config.adapt_config_with_maps_manager_info(self.maps_manager)
+        self._config.check_output_saving_tensor(self.maps_manager.network_task)
 
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
@@ -105,18 +104,15 @@ class PredictManager:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
 
-        assert (
-            self._config.split_list
-        )  # don't know if needed ? try to raise an exception ?
+        assert self._config.split  # don't know if needed ? try to raise an exception ?
         # assert self._config.label
 
-        for split in self._config.split_list:
+        for split in self._config.split:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
                 self._config.data_group, split
@@ -126,7 +122,6 @@ class PredictManager:
                 self.maps_manager.task_manager.generate_label_code(
                     group_df, self._config.label
                 )
-
             # Erase previous TSV files on master process
             if not self._config.selection_metrics:
                 split_selection_metrics = self.maps_manager._find_selection_metrics(
@@ -141,14 +136,10 @@ class PredictManager:
                     / f"best-{selection}"
                     / self._config.data_group
                 )
-
                 tsv_pattern = f"{self._config.data_group}*.tsv"
-
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-
             self._config.check_label(self.maps_manager.label)
-
             if self.maps_manager.multi_network:
                 self._predict_multi(
                     group_parameters,
@@ -159,7 +150,6 @@ class PredictManager:
                     split,
                     split_selection_metrics,
                 )
-
             else:
                 self._predict_single(
                     group_parameters,
@@ -170,7 +160,6 @@ class PredictManager:
                     split,
                     split_selection_metrics,
                 )
-
             if cluster.master:
                 self.maps_manager._ensemble_prediction(
                     self._config.data_group,
@@ -191,7 +180,6 @@ class PredictManager:
         split_selection_metrics,
     ):
         """_summary_
-
         Parameters
         ----------
         group_parameters : _type_
@@ -230,21 +218,18 @@ class PredictManager:
             _description_
         selection_metrics : _type_
             _description_
-
         Examples
         --------
         >>> _input_
         _output_
-
         Notes
         -----
         _notes_
-
         See Also
         --------
         - _related_
         """
-        assert isinstance(self._config, PredictConfig)
+        assert isinstance(self._config, PredictPipelineConfig)
         # assert self._config.label
 
         for network in range(self.maps_manager.num_networks):
@@ -326,7 +311,6 @@ class PredictManager:
         split_selection_metrics,
     ):
         """_summary_
-
         Parameters
         ----------
         group_parameters : _type_
@@ -365,22 +349,19 @@ class PredictManager:
             _description_
         selection_metrics : _type_
             _description_
-
         Examples
         --------
         >>> _input_
         _output_
-
         Notes
         -----
         _notes_
-
         See Also
         --------
         - _related_
         """
 
-        assert isinstance(self._config, PredictConfig)
+        assert isinstance(self._config, PredictPipelineConfig)
         # assert self._config.label
 
         data_test = return_dataset(
@@ -395,7 +376,6 @@ class PredictManager:
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
         )
-
         test_loader = DataLoader(
             data_test,
             batch_size=(
@@ -453,7 +433,6 @@ class PredictManager:
     ):
         """
         Compute the output tensors and saves them in the MAPS.
-
         Parameters
         ----------
         dataset : _type_
@@ -487,7 +466,6 @@ class PredictManager:
                 amp=self.maps_manager.amp,
             )
             model.eval()
-
             tensor_path = (
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
@@ -498,12 +476,10 @@ class PredictManager:
             if cluster.master:
                 tensor_path.mkdir(parents=True, exist_ok=True)
             dist.barrier()
-
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
                 nb_modes = nb_images * dataset.elem_per_image
-
             for i in [
                 *range(cluster.rank, nb_modes, cluster.world_size),
                 *range(int(nb_modes % cluster.world_size <= cluster.rank)),
@@ -530,7 +506,6 @@ class PredictManager:
         network: Optional[int] = None,
     ):
         """Computes the output nifti images and saves them in the MAPS.
-
         Parameters
         ----------
         dataset : _type_
@@ -545,11 +520,9 @@ class PredictManager:
             If given, a new value for the device of the model will be computed.
         network : int (optional, default=None)
             Index of the network tested (only used in multi-network setting).
-
         Raises
         --------
         ClinicaDLException if not an image
-
         """
         import nibabel as nib
         from numpy import eye
@@ -570,7 +543,6 @@ class PredictManager:
                 amp=self.maps_manager.amp,
             )
             model.eval()
-
             nifti_path = (
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
@@ -581,7 +553,6 @@ class PredictManager:
             if cluster.master:
                 nifti_path.mkdir(parents=True, exist_ok=True)
             dist.barrier()
-
             nb_imgs = len(dataset)
             for i in [
                 *range(cluster.rank, nb_imgs, cluster.world_size),
@@ -607,7 +578,6 @@ class PredictManager:
     def interpret(self):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-
         Parameters
         ----------
         data_group : str
@@ -653,7 +623,6 @@ class PredictManager:
             Layer number in the convolutional part after which the feature map is chosen.
         save_nifti : bool (optional, default=False)
             If True, save the interpretation map in nifti format.
-
         Raises
         ------
         NotImplementedError
@@ -662,9 +631,8 @@ class PredictManager:
             If the interpretaion of multi network is asked
         MAPSError
             If the interpretation has already been determined.
-
         """
-        assert isinstance(self._config, InterpretConfig)
+        assert isinstance(self._config, InterpretPipelineConfig)
 
         self._config.adapt_config_with_maps_manager_info(self.maps_manager)
 
@@ -672,24 +640,21 @@ class PredictManager:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
-
         _, all_transforms = get_transforms(
             normalize=self.maps_manager.normalize,
             data_augmentation=self.maps_manager.data_augmentation,
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
 
-        assert self._config.split_list
-        for split in self._config.split_list:
+        assert self._config.split
+        for split in self._config.split:
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
                 self._config.data_group, split
             )
-
             data_test = return_dataset(
                 parameters_group["caps_directory"],
                 df_group,
@@ -700,19 +665,16 @@ class PredictManager:
                 label_code=self.maps_manager.label_code,
                 label=self.maps_manager.label,
             )
-
             test_loader = DataLoader(
                 data_test,
                 batch_size=self._config.batch_size,
                 shuffle=False,
                 num_workers=self._config.n_proc,
             )
-
             if not self._config.selection_metrics:
                 self._config.selection_metrics = (
                     self.maps_manager._find_selection_metrics(split)
                 )
-
             for selection_metric in self._config.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
@@ -722,7 +684,6 @@ class PredictManager:
                     / self._config.data_group
                     / f"interpret-{self._config.name}"
                 )
-
                 if (results_path).is_dir():
                     if self._config.overwrite_name:
                         shutil.rmtree(results_path)
@@ -732,20 +693,16 @@ class PredictManager:
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
-
                 model, _ = self.maps_manager._init_model(
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
                     gpu=self._config.gpu,
                 )
-
                 interpreter = self._config.get_method()(model)
-
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
-
                     map_pt = interpreter.generate_gradients(
                         images,
                         self._config.target_node,
@@ -769,13 +726,10 @@ class PredictManager:
                                     results_path
                                     / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.nii.gz"
                                 )
-
                                 output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
                                 nib.save(output_nii, single_nifti_path)
-
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
-
                     torch.save(
                         mode_map,
                         results_path / f"mean_{self.maps_manager.mode}-{i}_map.pt",
