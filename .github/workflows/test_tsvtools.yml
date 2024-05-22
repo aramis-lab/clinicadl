@@ -45,6 +45,9 @@ jobs:
           --junitxml=./test-reports/test_tsvtools_report.xml \
           --disable-warnings \
           --verbose \
-          --basetemp=$HOME/tmp \
+          --basetemp=$HOME/tmp/tsv_tools \
           --input_data_directory=/mnt/data/data_ci \
           test_tsvtools.py
+      - name: Cleaning
+        run: |
+          rm -rf $HOME/tmp/tsv_tools/*
