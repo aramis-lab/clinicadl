@@ -3,28 +3,29 @@ from typing import Optional
 
 import click
 
-from clinicadl.utils import cli_param
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, modality, preprocessing
 
 from .prepare_data import DeepLearningPrepareData
 
 
 @click.command(name="image", no_args_is_help=True)
-@cli_param.argument.bids_directory
-@cli_param.argument.caps_directory
-@cli_param.argument.modality_bids
-@cli_param.option.n_proc
-@cli_param.option.subjects_sessions_tsv
-@cli_param.option.extract_json
-@cli_param.option.use_uncropped_image
-@cli_param.option.tracer
-@cli_param.option.suvr_reference_region
-@cli_param.option.custom_suffix
+@arguments.bids_directory
+@arguments.caps_directory
+@arguments.modality_bids
+@dataloader.n_proc
+@preprocessing.extract_json
+@preprocessing.use_uncropped_image
+@modality.tracer
+@modality.suvr_reference_region
+@modality.custom_suffix
+@data.participants_tsv
 def image_bids_cli(
     bids_directory: Path,
     caps_directory: Path,
     modality_bids: str,
     n_proc: int,
-    subjects_sessions_tsv: Optional[Path] = None,
+    participants_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
     tracer: Optional[str] = None,
@@ -32,9 +33,7 @@ def image_bids_cli(
     custom_suffix: str = "",
 ):
     """Extract image from nifti images.
-
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
-
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
@@ -49,7 +48,7 @@ def image_bids_cli(
     )
     DeepLearningPrepareData(
         caps_directory=caps_directory,
-        tsv_file=subjects_sessions_tsv,
+        tsv_file=participants_tsv,
         n_proc=n_proc,
         parameters=parameters,
         from_bids=bids_directory,
@@ -57,31 +56,19 @@ def image_bids_cli(
 
 
 @click.command(name="patch", no_args_is_help=True)
-@cli_param.argument.bids_directory
-@cli_param.argument.caps_directory
-@cli_param.argument.modality_bids
-@cli_param.option.n_proc
-@cli_param.option.save_features
-@cli_param.option.subjects_sessions_tsv
-@cli_param.option.extract_json
-@cli_param.option.use_uncropped_image
-@click.option(
-    "-ps",
-    "--patch_size",
-    default=50,
-    show_default=True,
-    help="Patch size.",
-)
-@click.option(
-    "-ss",
-    "--stride_size",
-    default=50,
-    show_default=True,
-    help="Stride size.",
-)
-@cli_param.option.tracer
-@cli_param.option.suvr_reference_region
-@cli_param.option.custom_suffix
+@arguments.bids_directory
+@arguments.caps_directory
+@arguments.modality_bids
+@dataloader.n_proc
+@preprocessing.save_features
+@data.participants_tsv
+@preprocessing.extract_json
+@preprocessing.use_uncropped_image
+@preprocessing.patch_size
+@preprocessing.stride_size
+@modality.tracer
+@modality.suvr_reference_region
+@modality.custom_suffix
 def patch_bids_cli(
     bids_directory: Path,
     caps_directory: Path,
@@ -98,9 +85,7 @@ def patch_bids_cli(
     custom_suffix: str = "",
 ):
     """Extract patch from nifti images.
-
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
-
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
@@ -115,7 +100,6 @@ def patch_bids_cli(
     )
     parameters["patch_size"] = patch_size
     parameters["stride_size"] = stride_size
-
     DeepLearningPrepareData(
         caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
@@ -126,46 +110,20 @@ def patch_bids_cli(
 
 
 @click.command(name="slice", no_args_is_help=True)
-@cli_param.argument.bids_directory
-@cli_param.argument.caps_directory
-@cli_param.argument.modality_bids
-@cli_param.option.n_proc
-@cli_param.option.save_features
-@cli_param.option.subjects_sessions_tsv
-@cli_param.option.extract_json
-@cli_param.option.use_uncropped_image
-@click.option(
-    "-sd",
-    "--slice_direction",
-    type=click.IntRange(0, 2),
-    default=0,
-    show_default=True,
-    help="Slice direction. 0: Sagittal plane, 1: Coronal plane, 2: Axial plane.",
-)
-@click.option(
-    "-sm",
-    "--slice_mode",
-    type=click.Choice(["rgb", "single"]),
-    default="rgb",
-    show_default=True,
-    help=(
-        "rgb: Save the slice in three identical channels, "
-        "single: Save the slice in a single channel."
-    ),
-)
-@click.option(
-    "-ds",
-    "--discarded_slices",
-    type=int,
-    default=(0, 0),
-    multiple=2,
-    help="""Number of slices discarded from respectively the beginning and
-        the end of the MRI volume.  If only one argument is given, it will be
-        used for both sides.""",
-)
-@cli_param.option.tracer
-@cli_param.option.suvr_reference_region
-@cli_param.option.custom_suffix
+@arguments.bids_directory
+@arguments.caps_directory
+@arguments.modality_bids
+@dataloader.n_proc
+@preprocessing.save_features
+@data.participants_tsv
+@preprocessing.extract_json
+@preprocessing.use_uncropped_image
+@preprocessing.slice_direction
+@preprocessing.slice_mode
+@preprocessing.discarded_slices
+@modality.tracer
+@modality.suvr_reference_region
+@modality.custom_suffix
 def slice_bids_cli(
     bids_directory: Path,
     caps_directory: Path,
@@ -183,9 +141,7 @@ def slice_bids_cli(
     custom_suffix: str = "",
 ):
     """Extract slice from nifti images.
-
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
-
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     parameters = get_parameters_dict(
@@ -201,7 +157,6 @@ def slice_bids_cli(
     parameters["slice_direction"] = slice_direction
     parameters["slice_mode"] = slice_mode
     parameters["discarded_slices"] = discarded_slices
-
     DeepLearningPrepareData(
         caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
@@ -212,49 +167,21 @@ def slice_bids_cli(
 
 
 @click.command(name="roi", no_args_is_help=True)
-@cli_param.argument.bids_directory
-@cli_param.argument.caps_directory
-@cli_param.argument.modality_bids
-@cli_param.option.n_proc
-@cli_param.option.save_features
-@cli_param.option.subjects_sessions_tsv
-@cli_param.option.extract_json
-@cli_param.option.use_uncropped_image
-@click.option(
-    "--roi_list",
-    type=str,
-    required=True,
-    multiple=True,
-    help="List of regions to be extracted",
-)
-@click.option(
-    "--roi_uncrop_output",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="Disable cropping option so the output tensors "
-    "have the same size than the whole image.",
-)
-@click.option(
-    "--roi_custom_template",
-    "-ct",
-    type=str,
-    default="",
-    help="""Template name if MODALITY is `custom`.
-        Name of the template used for registration during the preprocessing procedure.""",
-)
-@click.option(
-    "--roi_custom_mask_pattern",
-    "-cmp",
-    type=str,
-    default="",
-    help="""Mask pattern if MODALITY is `custom`.
-            If given will select only the masks containing the string given.
-            The mask with the shortest name is taken.""",
-)
-@cli_param.option.tracer
-@cli_param.option.suvr_reference_region
-@cli_param.option.custom_suffix
+@arguments.bids_directory
+@arguments.caps_directory
+@arguments.modality_bids
+@dataloader.n_proc
+@preprocessing.save_features
+@data.participants_tsv
+@preprocessing.extract_json
+@preprocessing.use_uncropped_image
+@preprocessing.roi_custom_mask_pattern
+@preprocessing.roi_custom_template
+@preprocessing.roi_list
+@preprocessing.roi_uncrop_output
+@modality.tracer
+@modality.suvr_reference_region
+@modality.custom_suffix
 def roi_bids_cli(
     bids_directory: Path,
     caps_directory: Path,
