@@ -44,6 +44,13 @@ def test_data_config(caps_example):
         c.preprocessing_dict == expected_preprocessing_dict
     )  # TODO : add test for multi-cohort
     assert c.mode == "image"
+    with pytest.raises(ValidationError):
+        c.preprocessing_dict = {"abc": "abc"}
+    with pytest.raises(FileNotFoundError):
+        c.preprocessing_json = ""
+    c.preprocessing_json = None
+    c.preprocessing_dict = {"abc": "abc"}
+    assert c.preprocessing_dict == {"abc": "abc"}
 
 
 def test_model_config():
@@ -96,10 +103,10 @@ def test_transforms_config():
 
 # Global tests on the TrainingConfig class #
 @pytest.fixture
-def dummy_arguments():
+def dummy_arguments(caps_example):
     args = {
-        "caps_directory": "",
-        "preprocessing_json": "",
+        "caps_directory": caps_example,
+        "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
         "output_maps_directory": "",
         "architecture": "",
