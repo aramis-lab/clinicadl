@@ -6,7 +6,8 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
-from clinicadl.generate import generate_param
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, generate
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -20,24 +21,21 @@ logger = getLogger("clinicadl.generate.shepplogan")
 
 
 @click.command(name="shepplogan", no_args_is_help=True)
-@generate_param.argument.generated_caps_directory
-@generate_param.option.n_subjects
-@generate_param.option.n_proc
-@generate_param.option_shepplogan.extract_json
-@generate_param.option_shepplogan.image_size
-@generate_param.option_shepplogan.cn_subtypes_distribution
-@generate_param.option_shepplogan.ad_subtypes_distribution
-@generate_param.option_shepplogan.smoothing
-def cli(generated_caps_directory, **kwargs):
+@arguments.generated_caps_directory
+@data.n_subjects
+@dataloader.n_proc
+@generate.shepplogan.extract_json
+@generate.shepplogan.image_size
+@generate.shepplogan.cn_subtypes_distribution
+@generate.shepplogan.ad_subtypes_distribution
+@generate.shepplogan.smoothing
+def cli(**kwargs):
     """Random generation of 2D Shepp-Logan phantoms.
-
     Generate a dataset of 2D images at GENERATED_CAPS_DIRECTORY including
     3 subtypes based on Shepp-Logan phantom.
     """
 
-    shepplogan_config = GenerateSheppLoganConfig(
-        generated_caps_directory=generated_caps_directory, **kwargs
-    )
+    shepplogan_config = GenerateSheppLoganConfig(**kwargs)
 
     labels_distribution = {
         "AD": shepplogan_config.ad_subtypes_distribution,

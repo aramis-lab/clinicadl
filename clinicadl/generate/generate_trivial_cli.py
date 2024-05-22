@@ -7,7 +7,8 @@ import nibabel as nib
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clinicadl.generate import generate_param
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, generate, modality, preprocessing
 from clinicadl.generate.generate_config import GenerateTrivialConfig
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import (
@@ -29,46 +30,39 @@ logger = getLogger("clinicadl.generate.trivial")
 
 
 @click.command(name="trivial", no_args_is_help=True)
-@generate_param.argument.caps_directory
-@generate_param.argument.generated_caps_directory
-@generate_param.option.preprocessing
-@generate_param.option.participants_tsv
-@generate_param.option.n_subjects
-@generate_param.option.n_proc
-@generate_param.option.use_uncropped_image
-@generate_param.option.tracer
-@generate_param.option.suvr_reference_region
-@generate_param.option_trivial.atrophy_percent
-@generate_param.option_trivial.mask_path
-def cli(caps_directory, generated_caps_directory, **kwargs):
+@arguments.caps_directory
+@arguments.generated_caps_directory
+@preprocessing.preprocessing
+@data.participants_tsv
+@data.n_subjects
+@dataloader.n_proc
+@preprocessing.use_uncropped_image
+@modality.tracer
+@modality.suvr_reference_region
+@generate.trivial.atrophy_percent
+@generate.trivial.mask_path
+def cli(**kwargs):
     """Generation of a trivial dataset"""
-    trivial_config = GenerateTrivialConfig(
-        caps_directory=caps_directory,
-        generated_caps_directory=generated_caps_directory,
-        suvr_reference_region_cls=kwargs["suvr_reference_region"],
-        tracer_cls=kwargs["tracer"],
-        participants_list=kwargs["participants_tsv"],
-        preprocessing_cls=kwargs["preprocessing"],
-        **kwargs,
-    )
+    trivial_config = GenerateTrivialConfig(**kwargs)
 
     from clinicadl.utils.exceptions import DownloadError
 
     commandline_to_json(
         {
             "output_dir": trivial_config.generated_caps_directory,
-            "caps_dir": caps_directory,
+            "caps_dir": trivial_config.caps_directory,
             "preprocessing": trivial_config.preprocessing.value,
             "n_subjects": trivial_config.n_subjects,
             "n_proc": trivial_config.n_proc,
             "atrophy_percent": trivial_config.atrophy_percent,
         }
     )
-
     multi_cohort = False  # ??? hard coded
 
     # Transform caps_directory in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    caps_dict = CapsDataset.create_caps_dict(
+        trivial_config.caps_directory, multi_cohort=multi_cohort
+    )
     # Read DataFrame
     data_df = load_and_check_tsv(
         trivial_config.participants_list,
@@ -76,13 +70,11 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         trivial_config.generated_caps_directory,
     )
     data_df = extract_baseline(data_df)
-
     if trivial_config.n_subjects > len(data_df):
         raise IndexError(
             f"The number of subjects {trivial_config.n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
-
     if not trivial_config.mask_path:
         cache_clinicadl = Path.home() / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"

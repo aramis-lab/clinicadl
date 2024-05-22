@@ -6,7 +6,8 @@ import pandas as pd
 import torchio as tio
 from joblib import Parallel, delayed
 
-from clinicadl.generate import generate_param
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, generate, modality, preprocessing
 from clinicadl.generate.generate_config import GenerateArtifactsConfig
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import clinicadl_file_reader
@@ -22,23 +23,23 @@ logger = getLogger("clinicadl.generate.artifacts")
 
 
 @click.command(name="artifacts", no_args_is_help=True)
-@generate_param.argument.caps_directory
-@generate_param.argument.generated_caps_directory
-@generate_param.option.n_proc
-@generate_param.option.preprocessing
-@generate_param.option.participants_tsv
-@generate_param.option.use_uncropped_image
-@generate_param.option.tracer
-@generate_param.option.suvr_reference_region
-@generate_param.option_artifacts.contrast
-@generate_param.option_artifacts.motion
-@generate_param.option_artifacts.noise_std
-@generate_param.option_artifacts.noise
-@generate_param.option_artifacts.num_transforms
-@generate_param.option_artifacts.translation
-@generate_param.option_artifacts.rotation
-@generate_param.option_artifacts.gamma
-def cli(caps_directory, generated_caps_directory, **kwargs):
+@arguments.caps_directory
+@arguments.generated_caps_directory
+@dataloader.n_proc
+@preprocessing.preprocessing
+@preprocessing.use_uncropped_image
+@data.participants_tsv
+@modality.tracer
+@modality.suvr_reference_region
+@generate.artifacts.contrast
+@generate.artifacts.motion
+@generate.artifacts.noise_std
+@generate.artifacts.noise
+@generate.artifacts.num_transforms
+@generate.artifacts.translation
+@generate.artifacts.rotation
+@generate.artifacts.gamma
+def cli(**kwargs):
     """Addition of artifacts (noise, motion or contrast) to brain images.
 
     Parameters
@@ -68,8 +69,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
     """
 
     artif_config = GenerateArtifactsConfig(
-        caps_directory=caps_directory,
-        generated_caps_directory=generated_caps_directory,
         participants_list=kwargs["participants_tsv"],
         **kwargs,
     )
@@ -78,13 +77,15 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
     commandline_to_json(
         {
             "output_dir": artif_config.generated_caps_directory,
-            "caps_dir": caps_directory,
+            "caps_dir": artif_config.caps_directory,
             "preprocessing": artif_config.preprocessing,
         }
     )
 
     # Transform caps_directory in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    caps_dict = CapsDataset.create_caps_dict(
+        artif_config.caps_directory, multi_cohort=multi_cohort
+    )
     # Read DataFrame
     data_df = load_and_check_tsv(
         artif_config.participants_list, caps_dict, artif_config.generated_caps_directory

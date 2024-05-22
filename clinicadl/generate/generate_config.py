@@ -2,9 +2,9 @@ from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional, Tuple, Union
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from clinicadl.utils.enum import (
     Pathology,
@@ -22,14 +22,14 @@ class GenerateConfig(BaseModel):
     n_subjects: int = 300
     n_proc: int = 1
 
-    class ConfigDict:
-        validate_assignment = True
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class SharedGenerateConfigOne(GenerateConfig):
     caps_directory: Path
     participants_list: Optional[Path] = None
-    preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
+    preprocessing: Preprocessing = Preprocessing.T1_LINEAR
     use_uncropped_image: bool = False
 
     @field_validator("participants_list", mode="before")
@@ -48,45 +48,21 @@ class SharedGenerateConfigOne(GenerateConfig):
 
         return v
 
-    @property
-    def preprocessing(self) -> Preprocessing:
-        return self.preprocessing_cls
-
-    @preprocessing.setter
-    def preprocessing(self, value: Union[str, Preprocessing]):
-        self.preprocessing_cls = Preprocessing(value)
-
 
 class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    suvr_reference_region_cls: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    tracer_cls: Tracer = Tracer.FFDG
-
-    @property
-    def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self.suvr_reference_region_cls
-
-    @suvr_reference_region.setter
-    def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
-        self.suvr_reference_region_cls = SUVRReferenceRegions(value)
-
-    @property
-    def tracer(self) -> Tracer:
-        return self.tracer_cls
-
-    @tracer.setter
-    def tracer(self, value: Union[str, Tracer]):
-        self.tracer_cls = Tracer(value)
+    suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
+    tracer: Tracer = Tracer.FFDG
 
 
 class GenerateArtifactsConfig(SharedGenerateConfigTwo):
     contrast: bool = False
-    gamma: Annotated[list[float], 2] = [-0.2, -0.05]
+    gamma: Tuple[float, float] = (-0.2, -0.05)
     motion: bool = False
     num_transforms: int = 2
     noise: bool = False
-    noise_std: Annotated[list[float], 2] = [5, 15]
-    rotation: Annotated[list[float], 2] = [2, 4]  # float o int ???
-    translation: Annotated[list[float], 2] = [2, 4]
+    noise_std: Tuple[float, float] = (5, 15)
+    rotation: Tuple[float, float] = (2, 4)  # float o int ???
+    translation: Tuple[float, float] = (2, 4)
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
     def list_to_tuples(cls, v):
@@ -106,16 +82,8 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
     anomaly_degree: float = 30.0
-    pathology_cls: Pathology = Pathology.AD
+    pathology: Pathology = Pathology.AD
     sigma: int = 5
-
-    @property
-    def pathology(self) -> Pathology:
-        return self.pathology_cls
-
-    @pathology.setter
-    def pathology(self, value: Union[str, Pathology]):
-        self.pathology_cls = Pathology(value)
 
 
 class GenerateRandomConfig(SharedGenerateConfigTwo):
@@ -141,13 +109,12 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
                 raise ClinicaDLTSVError(
                     "The participants_list you gave is empty. Please give a non-empty file."
                 )
-
         return v
 
 
 class GenerateSheppLoganConfig(GenerateConfig):
-    ad_subtypes_distribution: Annotated[list[float], 3] = [0.05, 0.85, 0.10]
-    cn_subtypes_distribution: Annotated[list[float], 3] = [1.0, 0.0, 0.0]
+    ad_subtypes_distribution: Tuple[float, float, float] = (0.05, 0.85, 0.10)
+    cn_subtypes_distribution: Tuple[float, float, float] = (1.0, 0.0, 0.0)
     extract_json: str = ""
     image_size: int = 128
     smoothing: bool = False

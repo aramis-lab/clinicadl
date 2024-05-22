@@ -7,7 +7,8 @@ import pandas as pd
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-from clinicadl.generate import generate_param
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, generate, preprocessing
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import (
@@ -35,31 +36,22 @@ logger = getLogger("clinicadl.generate.hypometabolic")
 
 
 @click.command(name="hypometabolic", no_args_is_help=True)
-@generate_param.argument.caps_directory
-@generate_param.argument.generated_caps_directory
-@generate_param.option.n_proc
-@generate_param.option.participants_tsv
-@generate_param.option.n_subjects
-@generate_param.option.use_uncropped_image
-@generate_param.option_hypometabolic.sigma
-@generate_param.option_hypometabolic.anomaly_degree
-@generate_param.option_hypometabolic.pathology
-def cli(caps_directory, generated_caps_directory, **kwargs):
+@arguments.caps_directory
+@arguments.generated_caps_directory
+@dataloader.n_proc
+@data.participants_tsv
+@data.n_subjects
+@preprocessing.use_uncropped_image
+@generate.hypometabolic.sigma
+@generate.hypometabolic.anomaly_degree
+@generate.hypometabolic.pathology
+def cli(**kwargs):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
-
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
-
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
     """
 
-    hypo_config = GenerateHypometabolicConfig(
-        caps_directory=caps_directory,
-        generated_caps_directory=generated_caps_directory,  # output_dir
-        participants_list=kwargs["participants_tsv"],  # tsv_path
-        preprocessing_cls=Preprocessing("pet-linear"),
-        pathology_cls=kwargs["pathology"],
-        **kwargs,
-    )
+    hypo_config = GenerateHypometabolicConfig(**kwargs)
 
     commandline_to_json(
         {
@@ -72,7 +64,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
             "anomaly_degree": hypo_config.anomaly_degree,
         }
     )
-
     # Transform caps_directory in dict
     caps_dict = CapsDataset.create_caps_dict(
         hypo_config.caps_directory, multi_cohort=False
@@ -82,7 +73,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         hypo_config.participants_list, caps_dict, hypo_config.generated_caps_directory
     )
     data_df = extract_baseline(data_df)
-
     if hypo_config.n_subjects > len(data_df):
         raise IndexError(
             f"The number of subjects {hypo_config.n_subjects} cannot be higher "
@@ -116,12 +106,9 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
                 manually at https://aramislab.paris.inria.fr/files/data/masks/
                 and provide a valid path."""
             )
-
     else:
         mask_path = cache_clinicadl / f"mask_hypo_{hypo_config.pathology.value}.nii"
-
     mask_nii = nib.load(mask_path)
-
     # Find appropriate preprocessing file type
     file_type = find_file_type(
         hypo_config.preprocessing,
@@ -129,7 +116,6 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         Tracer.FFDG,
         SUVRReferenceRegions.CEREBELLUMPONS2,
     )
-
     # Output tsv file
     columns = ["participant_id", "session_id", "pathology", "percentage"]
     output_df = pd.DataFrame(columns=columns)
@@ -137,16 +123,13 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         data_df.loc[i, "participant_id"] for i in range(hypo_config.n_subjects)
     ]
     sessions = [data_df.loc[i, "session_id"] for i in range(hypo_config.n_subjects)]
-    cohort = caps_directory
+    cohort = hypo_config.caps_directory
 
     images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
     image_nii = nib.load(images_paths[0])
-
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()
-
     mask = mask_processing(mask, hypo_config.anomaly_degree, hypo_config.sigma)
-
     # Create subjects dir
     (hypo_config.generated_caps_directory / "subjects").mkdir(
         parents=True, exist_ok=True
@@ -172,12 +155,10 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         )
         hypo_image_nii_filename = f"{input_filename}pat-{hypo_config.pathology.value}_deg-{int(hypo_config.anomaly_degree)}_pet.nii.gz"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
-
         # Create atrophied image
         hypo_image = image * mask
         hypo_image_nii = nib.Nifti1Image(hypo_image, affine=image_nii.affine)
         hypo_image_nii.to_filename(hypo_image_nii_dir / hypo_image_nii_filename)
-
         # Append row to output tsv
         row = [
             participants[subject_id],
@@ -193,17 +174,13 @@ def cli(caps_directory, generated_caps_directory, **kwargs):
         delayed(generate_hypometabolic_image)(subject_id, output_df)
         for subject_id in range(hypo_config.n_subjects)
     )
-
     output_df = pd.DataFrame()
     for result_df in results_list:
         output_df = pd.concat([result_df, output_df])
-
     output_df.to_csv(
         hypo_config.generated_caps_directory / "data.tsv", sep="\t", index=False
     )
-
     write_missing_mods(hypo_config.generated_caps_directory, output_df)
-
     logger.info(
         f"Hypometabolic dataset was generated, with {hypo_config.anomaly_degree} % of "
         f"dementia {hypo_config.pathology.value} at {hypo_config.generated_caps_directory}."
