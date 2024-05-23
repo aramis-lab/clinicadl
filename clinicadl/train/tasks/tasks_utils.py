@@ -14,13 +14,13 @@ def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
     """
     task = Task(task)
     if task == Task.CLASSIFICATION:
-        from clinicadl.config.config.task.classification import (
+        from clinicadl.train.tasks.classification.config import (
             ClassificationConfig as Config,
         )
     elif task == Task.REGRESSION:
-        from clinicadl.config.config.task.regression import RegressionConfig as Config
+        from clinicadl.train.tasks.regression.config import RegressionConfig as Config
     elif task == Task.RECONSTRUCTION:
-        from clinicadl.config.config.task.reconstruction import (
+        from clinicadl.train.tasks.reconstruction.config import (
             ReconstructionConfig as Config,
         )
     return Config

@@ -1,7 +1,6 @@
 import click
 
 from clinicadl.config import arguments
-from clinicadl.config.config.task.reconstruction import ReconstructionConfig
 from clinicadl.config.options import (
     callbacks,
     computational,
@@ -20,12 +19,13 @@ from clinicadl.config.options import (
     transforms,
     validation,
 )
+from clinicadl.train.tasks.regression.config import RegressionConfig
 from clinicadl.train.trainer import Trainer
 from clinicadl.train.utils import merge_cli_and_config_file_options
 from clinicadl.utils.enum import Task
 
 
-@click.command(name="reconstruction", no_args_is_help=True)
+@click.command(name="regression", no_args_is_help=True)
 # Mandatory arguments
 @arguments.caps_directory
 @arguments.preprocessing_json
@@ -89,12 +89,13 @@ from clinicadl.utils.enum import Task
 @callbacks.emissions_calculator
 @callbacks.track_exp
 # Task-related
-@task.reconstruction.architecture
-@task.reconstruction.selection_metrics
-@task.reconstruction.loss
+@task.regression.architecture
+@task.regression.label
+@task.regression.selection_metrics
+@task.regression.loss
 def cli(**kwargs):
     """
-    Train a deep learning model to learn a reconstruction task on neuroimaging data.
+    Train a deep learning model to learn a regression task on neuroimaging data.
     CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
     PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY/tensor_extraction folder where
     all information about extraction are stored in order to read the wanted tensors.
@@ -104,7 +105,7 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    options = merge_cli_and_config_file_options(Task.RECONSTRUCTION, **kwargs)
-    config = ReconstructionConfig(**options)
+    options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
+    config = RegressionConfig(**options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)

@@ -27,7 +27,6 @@ from .preprocessing import (
 )
 from .reproducibility import ReproducibilityConfig
 from .ssda import SSDAConfig
-from .task import ClassificationConfig, ReconstructionConfig, RegressionConfig
 from .transfer_learning import TransferLearningConfig
 from .transforms import TransformsConfig
 from .validation import ValidationConfig
