@@ -6,7 +6,7 @@ from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
 from clinicadl.config.config import ModelConfig as BaseModelConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
-from clinicadl.train.trainer import TrainingConfig
+from clinicadl.train.trainer.training_config import TrainingConfig
 from clinicadl.utils.enum import (
     Normalization,
     ReconstructionLoss,
