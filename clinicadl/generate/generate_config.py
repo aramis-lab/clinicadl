@@ -4,7 +4,14 @@ from pathlib import Path
 from time import time
 from typing import Annotated, Optional, Tuple, Union
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    NonNegativeFloat,
+    PositiveFloat,
+    PositiveInt,
+    field_validator,
+)
 
 from clinicadl.utils.enum import (
     Pathology,
@@ -12,18 +19,20 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 logger = getLogger("clinicadl.predict_config")
 
 
 class GenerateConfig(BaseModel):
     generated_caps_directory: Path
-    n_subjects: int = 300
-    n_proc: int = 1
+    n_subjects: PositiveInt = 300
+    n_proc: PositiveInt = 1
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
+
+    # TODO: The number of subjects cannot be higher than the number of subjects in the baseline caps dataset
 
 
 class SharedGenerateConfigOne(GenerateConfig):
@@ -58,11 +67,11 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
     contrast: bool = False
     gamma: Tuple[float, float] = (-0.2, -0.05)
     motion: bool = False
-    num_transforms: int = 2
+    num_transforms: PositiveInt = 2
     noise: bool = False
-    noise_std: Tuple[float, float] = (5, 15)
-    rotation: Tuple[float, float] = (2, 4)  # float o int ???
-    translation: Tuple[float, float] = (2, 4)
+    noise_std: Tuple[NonNegativeFloat, NonNegativeFloat] = (5, 15)
+    rotation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2, 4)  # float o int ???
+    translation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2, 4)
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
     def list_to_tuples(cls, v):
@@ -81,19 +90,18 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
 
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
-    anomaly_degree: float = 30.0
+    anomaly_degree: NonNegativeFloat = 30.0
     pathology: Pathology = Pathology.AD
-    sigma: int = 5
+    sigma: NonNegativeFloat = 5
 
 
 class GenerateRandomConfig(SharedGenerateConfigTwo):
-    mean: float = 0.0
-    n_subjects: int = 300
-    sigma: float = 0.5
+    mean: NonNegativeFloat = 0.0
+    sigma: NonNegativeFloat = 0.5
 
 
 class GenerateTrivialConfig(SharedGenerateConfigTwo):
-    atrophy_percent: float = 60.0
+    atrophy_percent: PositiveFloat = 60.0
     mask_path: Optional[Path] = None
 
     @field_validator("mask_path", mode="before")
@@ -113,10 +121,14 @@ class GenerateTrivialConfig(SharedGenerateConfigTwo):
 
 
 class GenerateSheppLoganConfig(GenerateConfig):
-    ad_subtypes_distribution: Tuple[float, float, float] = (0.05, 0.85, 0.10)
-    cn_subtypes_distribution: Tuple[float, float, float] = (1.0, 0.0, 0.0)
-    extract_json: str = ""
-    image_size: int = 128
+    ad_subtypes_distribution: Tuple[
+        NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
+    ] = (0.05, 0.85, 0.10)
+    cn_subtypes_distribution: Tuple[
+        NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
+    ] = (1.0, 0.0, 0.0)
+    extract_json: Optional[str] = None
+    image_size: PositiveInt = 128
     smoothing: bool = False
 
     @field_validator("extract_json", mode="before")
@@ -127,3 +139,19 @@ class GenerateSheppLoganConfig(GenerateConfig):
             return f"{v}.json"
         else:
             return v
+
+    @field_validator(
+        "ad_subtypes_distribution", "cn_subtypes_distribution", mode="before"
+    )
+    def probabilities_validator(
+        cls, v: Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat]
+    ):
+        for i in v:
+            if i > 1 or i < 0:
+                raise ClinicaDLArgumentError(
+                    f"Probabilities must be between 0 and 1 for {v}"
+                )
+
+        if isinstance(v, list):
+            return tuple(v)
+        return v

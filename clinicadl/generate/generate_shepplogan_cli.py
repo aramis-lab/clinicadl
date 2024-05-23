@@ -34,7 +34,7 @@ def cli(**kwargs):
     Generate a dataset of 2D images at GENERATED_CAPS_DIRECTORY including
     3 subtypes based on Shepp-Logan phantom.
     """
-
+    print(kwargs["cn_subtypes_distribution"])
     shepplogan_config = GenerateSheppLoganConfig(**kwargs)
 
     labels_distribution = {

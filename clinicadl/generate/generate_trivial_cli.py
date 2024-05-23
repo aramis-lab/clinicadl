@@ -129,15 +129,15 @@ def cli(**kwargs):
         data_idx = subject_id // 2
         label = subject_id % 2
 
-        participant_id = data_df.loc[data_idx, "participant_id"]
-        session_id = data_df.loc[data_idx, "session_id"]
-        cohort = data_df.loc[data_idx, "cohort"]
+        participant_id = data_df.at[data_idx, "participant_id"]
+        session_id = data_df.at[data_idx, "session_id"]
+        cohort = data_df.at[data_idx, "cohort"]
         image_path = Path(
             clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
             )[0][0]
         )
-        image_nii = nib.load(image_path)
+        image_nii = nib.loadsave.load(image_path)
         image = image_nii.get_fdata()
 
         input_filename = image_path.name
@@ -159,7 +159,7 @@ def cli(**kwargs):
 
         path_to_mask = mask_path / f"mask-{label + 1}.nii"
         if path_to_mask.is_file():
-            atlas_to_mask = nib.load(path_to_mask).get_fdata()
+            atlas_to_mask = nib.loadsave.load(path_to_mask).get_fdata()
         else:
             raise ValueError("masks need to be named mask-1.nii and mask-2.nii")
 
@@ -167,7 +167,9 @@ def cli(**kwargs):
         trivial_image = im_loss_roi_gaussian_distribution(
             image, atlas_to_mask, trivial_config.atrophy_percent
         )
-        trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
+        trivial_image_nii = nib.nifti1.Nifti1Image(
+            trivial_image, affine=image_nii.affine
+        )
         trivial_image_nii.to_filename(
             trivial_image_nii_dir / trivial_image_nii_filename
         )

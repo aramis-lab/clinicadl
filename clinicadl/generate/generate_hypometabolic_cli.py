@@ -110,7 +110,7 @@ def cli(**kwargs):
             )
     else:
         mask_path = cache_clinicadl / f"mask_hypo_{hypo_config.pathology.value}.nii"
-    mask_nii = nib.load(mask_path)
+    mask_nii = nib.loadsave.load(mask_path)
     # Find appropriate preprocessing file type
     file_type = find_file_type(
         hypo_config.preprocessing,
@@ -122,13 +122,13 @@ def cli(**kwargs):
     columns = ["participant_id", "session_id", "pathology", "percentage"]
     output_df = pd.DataFrame(columns=columns)
     participants = [
-        data_df.loc[i, "participant_id"] for i in range(hypo_config.n_subjects)
+        data_df.at[i, "participant_id"] for i in range(hypo_config.n_subjects)
     ]
-    sessions = [data_df.loc[i, "session_id"] for i in range(hypo_config.n_subjects)]
+    sessions = [data_df.at[i, "session_id"] for i in range(hypo_config.n_subjects)]
     cohort = hypo_config.caps_directory
 
     images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
-    image_nii = nib.load(images_paths[0])
+    image_nii = nib.loadsave.load(images_paths[0])
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()
     mask = mask_processing(mask, hypo_config.anomaly_degree, hypo_config.sigma)
@@ -141,7 +141,8 @@ def cli(**kwargs):
         subject_id: int, output_df: pd.DataFrame
     ) -> pd.DataFrame:
         image_path = Path(images_paths[subject_id])
-        image_nii = nib.load(image_path)
+        image_nii = nib.loadsave.load(image_path)
+        assert isinstance(image_nii, nib.nifti1.Nifti1Image)
         image = image_nii.get_fdata()
         if image_path.suffix == ".gz":
             input_filename = Path(image_path.stem).stem
@@ -159,7 +160,7 @@ def cli(**kwargs):
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
         # Create atrophied image
         hypo_image = image * mask
-        hypo_image_nii = nib.Nifti1Image(hypo_image, affine=image_nii.affine)
+        hypo_image_nii = nib.nifti1.Nifti1Image(hypo_image, affine=image_nii.affine)
         hypo_image_nii.to_filename(hypo_image_nii_dir / hypo_image_nii_filename)
         # Append row to output tsv
         row = [

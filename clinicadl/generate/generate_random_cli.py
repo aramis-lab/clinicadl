@@ -74,9 +74,9 @@ def cli(**kwargs):
         parents=True, exist_ok=True
     )
     # Retrieve image of first subject
-    participant_id = data_df.loc[0, "participant_id"]
-    session_id = data_df.loc[0, "session_id"]
-    cohort = data_df.loc[0, "cohort"]
+    participant_id = data_df.at[0, "participant_id"]
+    session_id = data_df.at[0, "session_id"]
+    cohort = data_df.at[0, "cohort"]
     # Find appropriate preprocessing file type
     file_type = find_file_type(
         random_config.preprocessing,
@@ -87,7 +87,8 @@ def cli(**kwargs):
     image_paths = clinicadl_file_reader(
         [participant_id], [session_id], caps_dict[cohort], file_type
     )
-    image_nii = nib.load(image_paths[0][0])
+    image_nii = nib.loadsave.load(image_paths[0][0])
+    assert isinstance(image_nii, nib.nifti1.Nifti1Image)
     image = image_nii.get_fdata()
     output_df = pd.DataFrame(
         {
@@ -109,9 +110,10 @@ def cli(**kwargs):
 
     def create_random_image(subject_id: int) -> None:
         gauss = np.random.normal(random_config.mean, random_config.sigma, image.shape)
+        # use np.random.Generator(PCG64) puis .standard_random()
         participant_id = f"sub-RAND{subject_id}"
         noisy_image = image + gauss
-        noisy_image_nii = nib.Nifti1Image(
+        noisy_image_nii = nib.nifti1.Nifti1Image(
             noisy_image, header=image_nii.header, affine=image_nii.affine
         )
         noisy_image_nii_path = (
@@ -123,7 +125,9 @@ def cli(**kwargs):
         )
         noisy_image_nii_filename = f"{participant_id}_{SESSION_ID}_{filename_pattern}"
         noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
-        nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
+        nib.loadsave.save(
+            noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename
+        )
 
     Parallel(n_jobs=random_config.n_proc)(
         delayed(create_random_image)(subject_id)

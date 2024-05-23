@@ -40,32 +40,9 @@ logger = getLogger("clinicadl.generate.artifacts")
 @generate.artifacts.rotation
 @generate.artifacts.gamma
 def cli(**kwargs):
-    """Addition of artifacts (noise, motion or contrast) to brain images.
+    """
+    Addition of artifacts (noise, motion or contrast) to brain images
 
-    Parameters
-    ----------
-    caps_directory : _type_
-        _description_
-    generated_caps_directory : _type_
-        _description_
-
-    Returns
-    -------
-    _type_
-        _description_
-
-    Examples
-    --------
-    >>> _input_
-    _output_
-
-    Notes
-    -----
-    _notes_
-
-    See Also
-    --------
-    - _related_
     """
 
     artif_config = GenerateArtifactsConfig(
@@ -115,9 +92,9 @@ def cli(**kwargs):
         artifacts_list.append("noise")
 
     def create_artifacts_image(data_idx: int, output_df: pd.DataFrame) -> pd.DataFrame:
-        participant_id = data_df.loc[data_idx, "participant_id"]
-        session_id = data_df.loc[data_idx, "session_id"]
-        cohort = data_df.loc[data_idx, "cohort"]
+        participant_id = data_df.at[data_idx, "participant_id"]
+        session_id = data_df.at[data_idx, "session_id"]
+        cohort = data_df.at[data_idx, "cohort"]
         image_path = Path(
             clinicadl_file_reader(
                 [participant_id], [session_id], caps_dict[cohort], file_type
@@ -143,11 +120,8 @@ def cli(**kwargs):
             if artif == "motion":
                 artifacts_tio.append(
                     tio.RandomMotion(
-                        degrees=(artif_config.rotation[0], artif_config.rotation[1]),
-                        translation=(
-                            artif_config.translation[0],
-                            artif_config.translation[1],
-                        ),
+                        degrees=artif_config.rotation,
+                        translation=artif_config.translation,
                         num_transforms=artif_config.num_transforms,
                     )
                 )
@@ -155,16 +129,12 @@ def cli(**kwargs):
             elif artif == "noise":
                 artifacts_tio.append(
                     tio.RandomNoise(
-                        std=(artif_config.noise_std[0], artif_config.noise_std[1]),
+                        std=artif_config.noise_std,
                     )
                 )
                 arti_ext += "noi-"
             elif artif == "contrast":
-                artifacts_tio.append(
-                    tio.RandomGamma(
-                        log_gamma=(artif_config.gamma[0], artif_config.gamma[1])
-                    )
-                )
+                artifacts_tio.append(tio.RandomGamma(log_gamma=artif_config.gamma))
                 arti_ext += "con-"
 
         if filename_pattern.endswith(".nii.gz"):
