@@ -2,16 +2,10 @@ name: TSV Tools Tests
 
 on:
   push:
-<<<<<<< HEAD
     branches: ["dev", "refactoring"]
   pull_request:
     branches: ["dev", "refactoring"]
     types: [opened, synchronize, reopened, ready_for_review]
-=======
-    branches: ["dev"]
-  pull_request:
-    branches: ["dev"]
->>>>>>> beccd4cd ([CI] Run tests through GitHub Actions (#573))
 
 permissions:
   contents: read
@@ -26,18 +20,12 @@ env:
 
 jobs:
   test-tsvtools:
-<<<<<<< HEAD
     if: github.event.pull_request.draft == false
-=======
->>>>>>> beccd4cd ([CI] Run tests through GitHub Actions (#573))
     runs-on:
       - self-hosted
       - Linux
       - ubuntu
-<<<<<<< HEAD
       - cpu
-=======
->>>>>>> beccd4cd ([CI] Run tests through GitHub Actions (#573))
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
@@ -49,7 +37,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Run tests for TSV tools
         run: |
-<<<<<<< HEAD
           source /builds/miniconda3/etc/profile.d/conda.sh
           make env.conda
           conda activate "${{ github.workspace }}"/env
@@ -65,17 +52,3 @@ jobs:
       - name: Cleaning
         run: |
           rm -rf $HOME/tmp/tsv_tools/*
-=======
-          make env.conda
-          source /builds/miniconda3/etc/profile.d/conda.sh
-          conda activate "${{ github.workspace }}"/env
-          make install
-          cd tests
-          poetry run pytest --verbose \
-          --junitxml=./test-reports/test_tsvtools_report.xml \
-          --disable-warnings \
-          --verbose \
-          --basetemp=$HOME/tmp \
-          --input_data_directory=/mnt/data/data_ci \
-          test_tsvtools.py
->>>>>>> beccd4cd ([CI] Run tests through GitHub Actions (#573))
