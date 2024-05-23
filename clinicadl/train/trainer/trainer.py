@@ -41,6 +41,7 @@ class Trainer:
     def __init__(
         self,
         config: TrainingConfig,
+        maps_manager: Optional[MapsManager] = None,
     ) -> None:
         """
         Parameters
@@ -48,7 +49,10 @@ class Trainer:
         config : BaseTaskConfig
         """
         self.config = config
-        self.maps_manager = self._init_maps_manager(config)
+        if maps_manager:
+            self.maps_manager = maps_manager
+        else:
+            self.maps_manager = self._init_maps_manager(config)
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
@@ -86,7 +90,9 @@ class Trainer:
         parameters["sampler"] = parameters["sampler"].value
         if parameters["network_task"] == "reconstruction":
             parameters["normalization"] = parameters["normalization"].value
-        parameters["split"] = []    # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
+        parameters[
+            "split"
+        ] = []  # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
         if len(self.config.data.label_code) == 0:
             del parameters["label_code"]
         ###############################
