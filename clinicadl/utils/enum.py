@@ -1,6 +1,14 @@
 from enum import Enum
 
 
+class Task(str, Enum):
+    """Tasks that can be performed in ClinicaDL."""
+
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+    RECONSTRUCTION = "reconstruction"
+
+
 class InterpretationMethod(str, Enum):
     """Possible interpretation method in clinicaDL."""
 
@@ -114,3 +122,148 @@ class Pattern(str, Enum):
     T1_LINEAR = ("res-1x1x1",)
     PET_LINEAR = ("res-1x1x1",)
     FLAIR_LINEAR = ("res-1x1x1",)
+
+
+class Compensation(str, Enum):
+    """Available compensations in ClinicaDL."""
+
+    MEMORY = "memory"
+    TIME = "time"
+
+
+class ExperimentTracking(str, Enum):
+    """Available tools for experiment tracking in ClinicaDL."""
+
+    MLFLOW = "mlflow"
+    WANDB = "wandb"
+
+
+class Mode(str, Enum):
+    """Available modes in ClinicaDL."""
+
+    IMAGE = "image"
+    PATCH = "patch"
+    ROI = "roi"
+    SLICE = "slice"
+
+
+class Optimizer(str, Enum):
+    """Available optimizers in ClinicaDL."""
+
+    ADADELTA = "Adadelta"
+    ADAGRAD = "Adagrad"
+    ADAM = "Adam"
+    ADAMW = "AdamW"
+    ADAMAX = "Adamax"
+    ASGD = "ASGD"
+    NADAM = "NAdam"
+    RADAM = "RAdam"
+    RMSPROP = "RMSprop"
+    SGD = "SGD"
+
+
+class Sampler(str, Enum):
+    """Available samplers in ClinicaDL."""
+
+    RANDOM = "random"
+    WEIGHTED = "weighted"
+
+
+class SizeReductionFactor(int, Enum):
+    """Available size reduction factors in ClinicaDL."""
+
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+
+
+class Transform(str, Enum):  # TODO : put in transform module
+    """Available transforms in ClinicaDL."""
+
+    NOISE = "Noise"
+    ERASING = "Erasing"
+    CROPPAD = "CropPad"
+    SMOOTHIN = "Smoothing"
+    MOTION = "Motion"
+    GHOSTING = "Ghosting"
+    SPIKE = "Spike"
+    BIASFIELD = "BiasField"
+    RANDOMBLUR = "RandomBlur"
+    RANDOMSWAP = "RandomSwap"
+
+
+class ClassificationLoss(str, Enum):  # TODO : put in loss module
+    """Available classification losses in ClinicaDL."""
+
+    CrossEntropyLoss = "CrossEntropyLoss"
+    MultiMarginLoss = "MultiMarginLoss"
+
+
+class ClassificationMetric(str, Enum):  # TODO : put in metric module
+    """Available classification metrics in ClinicaDL."""
+
+    BA = "BA"
+    ACCURACY = "accuracy"
+    F1_SCORE = "F1_score"
+    SENSITIVITY = "sensitivity"
+    SPECIFICITY = "specificity"
+    PPV = "PPV"
+    NPV = "NPV"
+    MCC = "MCC"
+    MK = "MK"
+    LR_PLUS = "LR_plus"
+    LR_MINUS = "LR_minus"
+    LOSS = "loss"
+
+
+class ReconstructionLoss(str, Enum):  # TODO : put in loss module
+    """Available reconstruction losses in ClinicaDL."""
+
+    L1Loss = "L1Loss"
+    MSELoss = "MSELoss"
+    KLDivLoss = "KLDivLoss"
+    BCEWithLogitsLoss = "BCEWithLogitsLoss"
+    HuberLoss = "HuberLoss"
+    SmoothL1Loss = "SmoothL1Loss"
+    VAEGaussianLoss = "VAEGaussianLoss"
+    VAEBernoulliLoss = "VAEBernoulliLoss"
+    VAEContinuousBernoulliLoss = "VAEContinuousBernoulliLoss"
+
+
+class Normalization(str, Enum):  # TODO : put in model module
+    """Available normalization layers in ClinicaDL."""
+
+    BATCH = "batch"
+    GROUP = "group"
+    INSTANCE = "instance"
+
+
+class ReconstructionMetric(str, Enum):  # TODO : put in metric module
+    """Available reconstruction metrics in ClinicaDL."""
+
+    MAE = "MAE"
+    RMSE = "RMSE"
+    PSNR = "PSNR"
+    SSIM = "SSIM"
+    LOSS = "loss"
+
+
+class RegressionLoss(str, Enum):  # TODO : put in loss module
+    """Available regression losses in ClinicaDL."""
+
+    L1Loss = "L1Loss"
+    MSELoss = "MSELoss"
+    KLDivLoss = "KLDivLoss"
+    BCEWithLogitsLoss = "BCEWithLogitsLoss"
+    HuberLoss = "HuberLoss"
+    SmoothL1Loss = "SmoothL1Loss"
+
+
+class RegressionMetric(str, Enum):  # TODO : put in metric module
+    """Available regression metrics in ClinicaDL."""
+
+    R2_score = "R2_score"
+    MAE = "MAE"
+    RMSE = "RMSE"
+    LOSS = "loss"
