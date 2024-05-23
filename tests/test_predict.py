@@ -73,9 +73,9 @@ def test_predict(cmdopt, tmp_path, test_name):
         with open(json_path, "w") as f:
             f.write(json_data)
 
-    from clinicadl.predict.predict_config import PredictConfig
+    from clinicadl.predict.pipeline_config import PredictPipelineConfig
 
-    predict_config = PredictConfig(
+    predict_config = PredictPipelineConfig(
         maps_dir=model_folder,
         data_group="test-RANDOM",
         caps_directory=input_dir / "caps_random",

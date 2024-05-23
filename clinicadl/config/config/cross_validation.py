@@ -19,7 +19,7 @@ class CrossValidationConfig(
 
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
-    tsv_directory: Path
+    tsv_directory: Optional[Path] = None  # not needed in predict ?
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 

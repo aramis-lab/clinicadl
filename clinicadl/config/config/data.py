@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.utils.enum import Mode
+from clinicadl.utils.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.preprocessing import read_preprocessing
 
 logger = getLogger("clinicadl.data_config")
@@ -23,11 +24,25 @@ class DataConfig(BaseModel):  # TODO : put in data module
     label: Optional[str] = None
     label_code: Dict[str, int] = {}
     multi_cohort: bool = False
-    preprocessing_json: Path
+    preprocessing_json: Optional[Path] = None
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
+
+    def adapt_config_with_maps_manager_info(self, maps_manager: MapsManager):
+        if not self.split_list:
+            self.split_list = maps_manager._find_splits()
+        logger.debug(f"List of splits {self.split_list}")
+
+        if self.diagnoses is None or len(self.diagnoses) == 0:
+            self.diagnoses = maps_manager.diagnoses
+
+        if not self.batch_size:
+            self.batch_size = maps_manager.batch_size
+
+        if not self.n_proc:
+            self.n_proc = maps_manager.n_proc
 
     def create_groupe_df(self):
         group_df = None

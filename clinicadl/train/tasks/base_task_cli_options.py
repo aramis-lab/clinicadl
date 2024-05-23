@@ -87,7 +87,7 @@ deterministic = cli_param.option_group.reproducibility_group.option(
 )
 compensation = cli_param.option_group.reproducibility_group.option(
     "--compensation",
-    type=click.Choice(get_type("compensation", base_config)),
+    type=get_type("compensation", base_config),
     default=get_default("compensation", base_config),
     help="Allow the user to choose how CUDA will compensate the deterministic behaviour.",
     show_default=True,
@@ -149,7 +149,7 @@ normalize = cli_param.option_group.data_group.option(
 data_augmentation = cli_param.option_group.data_group.option(
     "--data_augmentation",
     "-da",
-    type=click.Choice(get_type("data_augmentation", base_config)),
+    type=get_type("data_augmentation", base_config),
     default=get_default("data_augmentation", base_config),
     multiple=True,
     help="Randomly applies transforms on the training set.",
@@ -158,7 +158,7 @@ data_augmentation = cli_param.option_group.data_group.option(
 sampler = cli_param.option_group.data_group.option(
     "--sampler",
     "-s",
-    type=click.Choice(get_type("sampler", base_config)),
+    type=get_type("sampler", base_config),
     default=get_default("sampler", base_config),
     help="Sampler used to load the training data set.",
     show_default=True,
@@ -216,7 +216,7 @@ split = cli_param.option_group.cross_validation.option(
 # Optimization
 optimizer = cli_param.option_group.optimization_group.option(
     "--optimizer",
-    type=click.Choice(get_type("optimizer", base_config)),
+    type=get_type("optimizer", base_config),
     default=get_default("optimizer", base_config),
     help="Optimizer used to train the network.",
     show_default=True,
@@ -290,7 +290,7 @@ profiler = cli_param.option_group.optimization_group.option(
 track_exp = cli_param.option_group.optimization_group.option(
     "--track_exp",
     "-te",
-    type=click.Choice(get_type("track_exp", base_config)),
+    type=get_type("track_exp", base_config),
     default=get_default("track_exp", base_config),
     help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
     show_default=True,
