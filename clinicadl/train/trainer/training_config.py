@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-
 from logging import getLogger
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -29,9 +29,10 @@ from clinicadl.utils.enum import Task
 
 logger = getLogger("clinicadl.training_config")
 
+
 class TrainingConfig(BaseModel, ABC):
     """
-    
+
     Abstract config class for the training pipeline.
     Some configurations are specific to the task (e.g. loss function),
     thus they need to be specified in a subclass.
@@ -81,4 +82,3 @@ class TrainingConfig(BaseModel, ABC):
             transforms=kwargs,
             validation=kwargs,
         )
-

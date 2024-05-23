@@ -14,7 +14,6 @@ def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
     """
     task = Task(task)
     if task == Task.CLASSIFICATION:
-
         from clinicadl.config.config.task.classification import (
             ClassificationConfig as Config,
         )
