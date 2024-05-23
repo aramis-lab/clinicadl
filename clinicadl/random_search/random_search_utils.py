@@ -4,7 +4,7 @@ from typing import Any, Dict, Tuple
 
 import toml
 
-from clinicadl.train.tasks import Task
+from clinicadl.train.trainer import Task
 from clinicadl.train.utils import extract_config_from_toml_file
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.preprocessing import path_decoder, read_preprocessing

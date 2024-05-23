@@ -7,6 +7,7 @@ from logging import getLogger
 from pathlib import Path
 
 from clinicadl import MapsManager
+from clinicadl.train.tasks import create_training_config
 from clinicadl.train.trainer import Trainer
 
 
@@ -20,7 +21,18 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
 
     verbose_list = ["warning", "info", "debug"]
     maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
-    trainer = Trainer(maps_manager)
+    config_dict = maps_manager.get_parameters()
+    # temporary, TODO
+    config_dict["tsv_directory"] = config_dict["tsv_path"]
+    if config_dict["track_exp"] == "":
+        config_dict["track_exp"] = None
+    if not config_dict["label_code"]:
+        config_dict["label_code"] = {}
+    ###
+    config = create_training_config(config_dict["network_task"])(
+        output_maps_directory=model_path, **config_dict
+    )
+    trainer = Trainer(config, maps_manager=maps_manager)
 
     existing_split_list = maps_manager._find_splits()
     stopped_splits = [
