@@ -2,6 +2,7 @@ import typing
 from enum import Enum
 from typing import Any, get_args, get_origin
 
+import click
 from pydantic import BaseModel
 
 
@@ -133,6 +134,6 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     if get_origin(type_) is typing.Annotated:
         type_ = get_args(type_)[0]
     if issubclass(type_, Enum):
-        type_ = list([option.value for option in type_])
+        type_ = click.Choice(list([option.value for option in type_]))
 
     return type_
