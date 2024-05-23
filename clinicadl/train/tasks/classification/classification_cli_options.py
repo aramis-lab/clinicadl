@@ -26,7 +26,7 @@ selection_metrics = cli_param.option_group.task_group.option(
     "--selection_metrics",
     "-sm",
     multiple=True,
-    type=click.Choice(get_type("selection_metrics", classification_config)),
+    type=get_type("selection_metrics", classification_config),
     default=get_default("selection_metrics", classification_config),
     help="""Allow to save a list of models based on their selection metric. Default will
     only save the best model selected on loss.""",
@@ -42,7 +42,7 @@ threshold = cli_param.option_group.task_group.option(
 loss = cli_param.option_group.task_group.option(
     "--loss",
     "-l",
-    type=click.Choice(get_type("loss", classification_config)),
+    type=get_type("loss", classification_config),
     default=get_default("loss", classification_config),
     help="Loss used by the network to optimize its training task.",
     show_default=True,

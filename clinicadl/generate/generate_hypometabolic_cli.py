@@ -51,7 +51,9 @@ def cli(**kwargs):
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
     """
 
-    hypo_config = GenerateHypometabolicConfig(**kwargs)
+    hypo_config = GenerateHypometabolicConfig(
+        preprocessing=Preprocessing("pet-linear"), **kwargs
+    )
 
     commandline_to_json(
         {
