@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict
 
@@ -6,12 +5,11 @@ import click
 import toml
 from click.core import ParameterSource
 
-from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks
-from clinicadl.utils.preprocessing import path_decoder, read_preprocessing
+from clinicadl.utils.preprocessing import path_decoder
 
-from .tasks import BaseTaskConfig, Task
+from .trainer import Task
 
 
 def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, Any]:
@@ -157,103 +155,6 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
             print(f"Input size: {input_size}")
             print("Model layers:")
             print(model.layers)
-
-
-def preprocessing_json_reader(
-    config: BaseTaskConfig,
-) -> BaseTaskConfig:  # TODO : simplify or split this function
-    """
-    Reads preprocessing files and extracts parameters.
-
-    The function will check the existence of the preprocessing files in the config object,
-    and will read them to add the parameters in the config object.
-
-    Parameters
-    ----------
-    config : BaseTaskConfig
-        Configuration object with all the parameters.
-
-    Returns
-    -------
-    BaseTaskConfig
-        The input configuration object with additional parameters found in the
-        preprocessing files.
-
-    Raises
-    ------
-    ValueError
-        If the <preprocessing_json> parameter doesn't match any existing file.
-    ValueError
-        If the <preprocessing_dict_target> parameter doesn't match any existing file.
-    """
-    logger = getLogger("clinicadl.train_launcher")
-
-    if not config.multi_cohort:
-        preprocessing_json = (
-            config.caps_directory / "tensor_extraction" / config.preprocessing_json
-        )
-
-        if config.ssda_network:
-            preprocessing_json_target = (
-                config.caps_target
-                / "tensor_extraction"
-                / config.preprocessing_dict_target
-            )
-    else:
-        caps_dict = CapsDataset.create_caps_dict(
-            config.caps_directory, config.multi_cohort
-        )
-        json_found = False
-        for caps_name, caps_path in caps_dict.items():
-            preprocessing_json = (
-                caps_path / "tensor_extraction" / config.preprocessing_json
-            )
-            if preprocessing_json.is_file():
-                logger.info(
-                    f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
-                )
-                json_found = True
-        if not json_found:
-            raise ValueError(
-                f"Preprocessing JSON {config.preprocessing_json} was not found for any CAPS "
-                f"in {caps_dict}."
-            )
-        # To CHECK AND CHANGE
-        if config.ssda_network:
-            caps_target = config.caps_target
-            preprocessing_json_target = (
-                caps_target / "tensor_extraction" / config.preprocessing_dict_target
-            )
-
-            if preprocessing_json_target.is_file():
-                logger.info(
-                    f"Preprocessing JSON {preprocessing_json_target} found in CAPS {caps_target}."
-                )
-                json_found = True
-            if not json_found:
-                raise ValueError(
-                    f"Preprocessing JSON {preprocessing_json_target} was not found for any CAPS "
-                    f"in {caps_target}."
-                )
-
-    # Mode and preprocessing
-    preprocessing_dict = read_preprocessing(preprocessing_json)
-    config._preprocessing_dict = preprocessing_dict
-    config._mode = preprocessing_dict["mode"]
-
-    if config.ssda_network:
-        config._preprocessing_dict_target = read_preprocessing(
-            preprocessing_json_target
-        )
-
-    # Add default values if missing
-    if (
-        preprocessing_dict["mode"] == "roi"
-        and "roi_background_value" not in preprocessing_dict
-    ):
-        config._preprocessing_dict["roi_background_value"] = 0
-
-    return config
 
 
 def merge_cli_and_config_file_options(task: Task, **kwargs) -> Dict[str, Any]:

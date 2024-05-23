@@ -3,6 +3,7 @@ from pathlib import Path
 
 import click
 
+from clinicadl.train.tasks import create_training_config
 from clinicadl.utils import cli_param
 
 
@@ -33,13 +34,18 @@ def cli(
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
     from clinicadl.train.trainer import Trainer
-    from clinicadl.utils.maps_manager import MapsManager
     from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 
     logger = getLogger("clinicadl")
     logger.info(f"Reading JSON file at path {config_json}...")
-    train_dict = read_json(config_json)
-
-    maps_manager = MapsManager(output_maps_directory, train_dict, verbose=None)
-    trainer = Trainer(maps_manager)
+    config_dict = read_json(config_json)
+    # temporary
+    config_dict["tsv_directory"] = config_dict["tsv_path"]
+    if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
+        config_dict["track_exp"] = None
+    ###
+    config = create_training_config(config_dict["network_task"])(
+        output_maps_directory=output_maps_directory, **config_dict
+    )
+    trainer = Trainer(config)
     trainer.train(split_list=split, overwrite=True)
