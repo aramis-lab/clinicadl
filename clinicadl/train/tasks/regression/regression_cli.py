@@ -106,6 +106,7 @@ def cli(**kwargs):
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
     options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
+    options["maps_dir"] = options["output_maps_directory"]
     config = RegressionConfig(**options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)

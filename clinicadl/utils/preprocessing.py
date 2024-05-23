@@ -56,19 +56,18 @@ def path_decoder(obj):
                             obj[key][key2] = False
                         else:
                             obj[key][key2] = Path(value2)
-            else:
-                if (
-                    key.endswith("tsv")
-                    or key.endswith("dir")
-                    or key.endswith("directory")
-                    or key.endswith("path")
-                    or key.endswith("json")
-                    or key.endswith("location")
-                ):
-                    if value == "" or value is False:
-                        obj[key] = False
-                    else:
-                        obj[key] = Path(value)
+            elif (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
+                if value == "" or value is False or value is None:
+                    obj[key] = False
+                else:
+                    obj[key] = Path(value)
     return obj
 
 

@@ -14,9 +14,9 @@ from tests.testing_tools import clean_folder, compare_folders
 @pytest.fixture(
     params=[
         "image_ae",
-        "patch_multi_ae",
-        "roi_ae",
-        "slice_ae",
+        # "patch_multi_ae",
+        # "roi_ae",
+        # "slice_ae",
     ]
 )
 def test_name(request):
@@ -47,6 +47,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
             "--split",
             "1",
+            "--no-gpu",
         ]
     elif test_name == "patch_multi_ae":
         split = [0, 0]

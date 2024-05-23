@@ -65,8 +65,8 @@ class Trainer:
             else:
                 parameters[key] = config_dict[key]
 
-        maps_path = parameters["output_maps_directory"]
-        del parameters["output_maps_directory"]
+        maps_path = parameters["maps_dir"]
+        del parameters["maps_dir"]
         for parameter in parameters:
             if parameters[parameter] == Path("."):
                 parameters[parameter] = ""

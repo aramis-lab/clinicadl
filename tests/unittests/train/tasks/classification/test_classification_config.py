@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.config.config as config
+import clinicadl.train.tasks.classification.config as config
 
 
 # Tests for customed validators #
