@@ -38,7 +38,7 @@ seed = click.option(
 config_file = click.option(
     "--config_file",
     "-c",
-    type=get_type("seed", config.ReproducibilityConfig),
-    default=get_default("seed", config.ReproducibilityConfig),
+    type=get_type("config_file", config.ReproducibilityConfig),
+    default=get_default("config_file", config.ReproducibilityConfig),
     help="Path to the TOML or JSON file containing the values of the options needed for training.",
 )

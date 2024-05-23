@@ -105,7 +105,12 @@ def cli(**kwargs):
     Options for this command can be input by declaring argument on the command line or by providing a
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
+
     """
+
+    kwargs["tsv_dir"] = kwargs["tsv_directory"]
+    kwargs["maps_dir"] = kwargs["output_maps_directory"]
+
     options = merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
     config = ClassificationConfig(**options)
     trainer = Trainer(config)

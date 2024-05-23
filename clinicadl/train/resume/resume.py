@@ -28,6 +28,9 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
         config_dict["track_exp"] = None
     if not config_dict["label_code"]:
         config_dict["label_code"] = {}
+    config_dict["preprocessing_json"] = config_dict["extract_json"]
+    config_dict["maps_dir"] = config_dict["output_maps_dir"]
+
     ###
     config = create_training_config(config_dict["network_task"])(
         output_maps_directory=model_path, **config_dict
