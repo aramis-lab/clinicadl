@@ -44,9 +44,9 @@ jobs:
           --junitxml=./test-reports/test_train_report.xml \
           --disable-warnings \
           --verbose \
-          --basetemp=$HOME/tmp/train \
+          --basetemp=$HOME/actions_runner_workdir/train \
           --input_data_directory=/mnt/data/clinicadl_data_ci/data_ci \
           -k test_train
       - name: Cleaning
         run: |
-          rm -rf $HOME/tmp/train/*
+          rm -rf $HOME/actions_runner_workdir/train/*
