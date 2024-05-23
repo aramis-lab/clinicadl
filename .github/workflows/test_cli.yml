@@ -2,9 +2,9 @@ name: CLI Tests
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["dev", "refactoring"]
   pull_request:
-    branches: ["dev"]
+    branches: ["dev", "refactoring"]
 
 permissions:
   contents: read
@@ -19,10 +19,12 @@ env:
 
 jobs:
   test-cli:
+    if: github.event.pull_request.draft == false
     runs-on:
       - self-hosted
       - Linux
       - ubuntu
+      - cpu
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
