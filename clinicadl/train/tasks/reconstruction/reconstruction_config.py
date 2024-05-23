@@ -2,14 +2,16 @@ from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
-from pydantic import PrivateAttr, field_validator
+from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.train.tasks import BaseTaskConfig, Task
+from clinicadl.train.trainer import ModelConfig as BaseModelConfig
+from clinicadl.train.trainer import Task, TrainingConfig
+from clinicadl.train.trainer import ValidationConfig as BaseValidationConfig
 
 logger = getLogger("clinicadl.reconstruction_config")
 
 
-class ReconstructionLoss(str, Enum):
+class ReconstructionLoss(str, Enum):  # TODO : put in loss module
     """Available reconstruction losses in ClinicaDL."""
 
     L1Loss = "L1Loss"
@@ -23,7 +25,7 @@ class ReconstructionLoss(str, Enum):
     VAEContinuousBernoulliLoss = "VAEContinuousBernoulliLoss"
 
 
-class Normalization(str, Enum):
+class Normalization(str, Enum):  # TODO : put in model module
     """Available normalization layers in ClinicaDL."""
 
     BATCH = "batch"
@@ -31,7 +33,7 @@ class Normalization(str, Enum):
     INSTANCE = "instance"
 
 
-class ReconstructionMetric(str, Enum):
+class ReconstructionMetric(str, Enum):  # TODO : put in metric module
     """Available reconstruction metrics in ClinicaDL."""
 
     MAE = "MAE"
@@ -41,22 +43,28 @@ class ReconstructionMetric(str, Enum):
     LOSS = "loss"
 
 
-class ReconstructionConfig(BaseTaskConfig):
-    """Config class to handle parameters of the reconstruction task."""
+class ModelConfig(BaseModelConfig):  # TODO : put in model module
+    """Config class for reconstruction models."""
 
-    loss: ReconstructionLoss = ReconstructionLoss.MSELoss
-    selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
-    # model
     architecture: str = "AE_Conv5_FC3"
-    latent_space_size: int = 128
-    feature_size: int = 1024
-    n_conv: int = 4
-    io_layer_channels: int = 8
-    recons_weight: int = 1
-    kl_weight: int = 1
+    loss: ReconstructionLoss = ReconstructionLoss.MSELoss
+    latent_space_size: PositiveInt = 128
+    feature_size: PositiveInt = 1024
+    n_conv: PositiveInt = 4
+    io_layer_channels: PositiveInt = 8
+    recons_weight: PositiveFloat = 1.0
+    kl_weight: PositiveFloat = 1.0
     normalization: Normalization = Normalization.BATCH
-    # private
-    _network_task: Task = PrivateAttr(default=Task.RECONSTRUCTION)
+
+    @field_validator("architecture")
+    def validator_architecture(cls, v):
+        return v  # TODO : connect to network module to have list of available architectures
+
+
+class ValidationConfig(BaseValidationConfig):
+    """Config class for the validation procedure in reconstruction mode."""
+
+    selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
@@ -64,6 +72,22 @@ class ReconstructionConfig(BaseTaskConfig):
             return tuple(v)
         return v
 
-    @field_validator("architecture")
-    def validator_architecture(cls, v):
-        return v  # TODO : connect to network module to have list of available architectures
+
+class ReconstructionConfig(TrainingConfig):
+    """
+    Config class for the training of a reconstruction model.
+
+    The user must specified at least the following arguments:
+    - caps_directory
+    - preprocessing_json
+    - tsv_directory
+    - output_maps_directory
+    """
+
+    model: ModelConfig
+    validation: ValidationConfig
+
+    @computed_field
+    @property
+    def network_task(self) -> Task:
+        return Task.RECONSTRUCTION
