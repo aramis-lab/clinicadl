@@ -24,6 +24,7 @@ jobs:
       - self-hosted
       - Linux
       - ubuntu
+      - cpu
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
