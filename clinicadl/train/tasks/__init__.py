@@ -1,2 +1,4 @@
-from .available_parameters import Task
-from .base_task_config import BaseTaskConfig
+from .classification import ClassificationConfig
+from .reconstruction import ReconstructionConfig
+from .regression import RegressionConfig
+from .tasks_utils import create_training_config

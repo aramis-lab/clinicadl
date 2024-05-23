@@ -1,1 +1,21 @@
 from .trainer import Trainer
+from .training_config import (
+    CallbacksConfig,
+    ComputationalConfig,
+    CrossValidationConfig,
+    DataConfig,
+    DataLoaderConfig,
+    EarlyStoppingConfig,
+    LRschedulerConfig,
+    MAPSManagerConfig,
+    ModelConfig,
+    OptimizationConfig,
+    OptimizerConfig,
+    ReproducibilityConfig,
+    SSDAConfig,
+    Task,
+    TrainingConfig,
+    TransferLearningConfig,
+    TransformsConfig,
+    ValidationConfig,
+)
