@@ -2,9 +2,9 @@ name: Train Tests (GPU)
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["dev", "refactoring"]
   pull_request:
-    branches: ["dev"]
+    branches: ["dev", "refactoring"]
 
 permissions:
   contents: read
