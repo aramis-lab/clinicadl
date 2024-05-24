@@ -191,12 +191,4 @@ def merge_cli_and_config_file_options(task: Task, **kwargs) -> Dict[str, Any]:
         ):
             options[arg] = kwargs[arg]
 
-    del options["config_file"]
-    del options["data_group"]
-    del options["data_tsv"]
-    del options["n_subjects"]
-    del options["overwrite"]
-    del options["save_nifti"]
-    del options["skip_leak_check"]
-
     return options
