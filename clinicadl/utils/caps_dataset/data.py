@@ -112,7 +112,7 @@ class CapsDataset(Dataset):
     def elem_index(self):
         pass
 
-    def label_fn(self, target: Union[str, float, int]) -> Union[float, int]:
+    def label_fn(self, target: Union[str, float, int]) -> Union[float, int, None]:
         """
         Returns the label value usable in criterion.
 
@@ -216,7 +216,9 @@ class CapsDataset(Dataset):
 
         return image_path
 
-    def _get_meta_data(self, idx: int) -> Tuple[str, str, str, int, int]:
+    def _get_meta_data(
+        self, idx: int
+    ) -> Tuple[str, str, str, Union[float, int, None], int]:
         """
         Gets all meta data necessary to compute the path with _get_image_path
 
@@ -230,22 +232,22 @@ class CapsDataset(Dataset):
             label (str or float or int): value of the label to be used in criterion.
         """
         image_idx = idx // self.elem_per_image
-        participant = self.df.loc[image_idx, "participant_id"]
-        session = self.df.loc[image_idx, "session_id"]
-        cohort = self.df.loc[image_idx, "cohort"]
+        participant = self.df.at[image_idx, "participant_id"]
+        session = self.df.at[image_idx, "session_id"]
+        cohort = self.df.at[image_idx, "cohort"]
 
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
         else:
             elem_idx = self.elem_index
         if self.label_presence and self.label is not None:
-            target = self.df.loc[image_idx, self.label]
+            target = self.df.at[image_idx, self.label]
             label = self.label_fn(target)
         else:
             label = -1
 
         if "domain" in self.df.columns:
-            domain = self.df.loc[image_idx, "domain"]
+            domain = self.df.at[image_idx, "domain"]
             domain = self.domain_fn(domain)
         else:
             domain = ""  # TO MODIFY
