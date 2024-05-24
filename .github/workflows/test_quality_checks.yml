@@ -1,4 +1,4 @@
-name: TSV Tools Tests
+name: Quality Check Tests
 
 on:
   push:
@@ -18,7 +18,7 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  test-tsvtools:
+  test-quality-check:
     if: github.event.pull_request.draft == false
     runs-on:
       - self-hosted
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Run tests for TSV tools
+      - name: Run tests for Quality Check
         run: |
           make env.conda
           source /builds/miniconda3/etc/profile.d/conda.sh
@@ -42,12 +42,12 @@ jobs:
           make install
           cd tests
           poetry run pytest --verbose \
-          --junitxml=./test-reports/test_tsvtools_report.xml \
+          --junitxml=./test-reports/test_quality_check_report.xml \
           --disable-warnings \
           --verbose \
-          --basetemp=$HOME/tmp/tsv_tools \
+          --basetemp=$HOME/tmp/quality_checks \
           --input_data_directory=/mnt/data/data_ci \
-          test_tsvtools.py
+          test_qc.py
       - name: Cleaning
         run: |
-          rm -rf $HOME/tmp/tsv_tools/*
+          rm -rf $HOME/tmp/quality_checks/*
