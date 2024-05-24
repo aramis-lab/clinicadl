@@ -1,5 +1,6 @@
 import errno
 import json
+from copy import copy
 from pathlib import Path
 from typing import Any, Dict
 
@@ -41,7 +42,8 @@ def path_encoder(obj):
 
 def path_decoder(obj):
     if isinstance(obj, dict):
-        for key, value in obj.items():
+        obj2 = copy(obj)
+        for key, value in obj2.items():
             if isinstance(value, dict):
                 for key2, value2 in value.items():
                     if (
@@ -68,6 +70,8 @@ def path_decoder(obj):
                     obj[key] = False
                 else:
                     obj[key] = Path(value)
+            if value is None:
+                del obj[key]
     return obj
 
 
