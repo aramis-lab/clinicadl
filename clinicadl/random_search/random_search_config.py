@@ -5,8 +5,12 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, field_validator
 
-from clinicadl.train.tasks import ClassificationConfig as BaseClassificationConfig
-from clinicadl.train.tasks import RegressionConfig as BaseRegressionConfig
+from clinicadl.train.tasks.classification.config import (
+    ClassificationConfig as BaseClassificationConfig,
+)
+from clinicadl.train.tasks.regression.config import (
+    RegressionConfig as BaseRegressionConfig,
+)
 from clinicadl.train.trainer import Task
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
