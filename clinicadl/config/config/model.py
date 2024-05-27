@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeFloat
@@ -18,7 +19,7 @@ class ModelConfig(BaseModel):  # TODO : put in model module
     dropout: NonNegativeFloat = 0.0
     loss: str
     multi_network: bool = False
-    selection_threshold: NonNegativeFloat = 0.0
+    selection_threshold: Optional[NonNegativeFloat] = None
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 

@@ -129,13 +129,19 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     int
     """
     type_ = config.model_fields[arg].annotation
+    print(arg)
+    print(config.model_fields[arg])
+    print(type_)
     if isinstance(type_, typing._GenericAlias):
+        print("1")
+        print(get_args(type_)[0])
         return get_args(type_)[0]
     elif get_origin(type_) is typing.Annotated:
+        print("2")
         return get_args(type_)[0]
     elif issubclass(type_, Enum):
+        print("3")
         return click.Choice(list([option.value for option in type_]))
     else:
         return type_
         # raise TypeError(f"the type {type_} is not supported for the argument {arg}.")
-
