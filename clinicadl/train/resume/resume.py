@@ -30,7 +30,7 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
         config_dict["label_code"] = {}
     # if not config_dict["preprocessing_json"]
     # = config_dict["extract_json"]
-    config_dict["maps_dir"] = config_dict["output_maps_dir"]
+    # config_dict["maps_dir"] = config_dict["output_maps_dir"]
 
     ###
     config = create_training_config(config_dict["network_task"])(
