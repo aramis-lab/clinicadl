@@ -9,6 +9,13 @@ class Task(str, Enum):
     RECONSTRUCTION = "reconstruction"
 
 
+class Pooling(str, Enum):  # TODO : put in model module
+    """Available pooling techniques in ClinicaDL."""
+
+    MAXPOOLING = "MaxPooling"
+    STRIDE = "stride"
+
+
 class InterpretationMethod(str, Enum):
     """Possible interpretation method in clinicaDL."""
 

@@ -1,6 +1,7 @@
 from typing import Type, Union
 
-from clinicadl.train.trainer import Task, TrainingConfig
+from clinicadl.train.trainer import TrainingConfig
+from clinicadl.utils.enum import Task
 
 
 def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:

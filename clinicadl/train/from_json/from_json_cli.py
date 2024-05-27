@@ -43,7 +43,8 @@ def cli(
     config_dict["tsv_directory"] = config_dict["tsv_path"]
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
-    config_dict["maps_dir"] = config_dict["output_maps_directory"]
+
+    # config_dict["maps_dir"] = config_dict["output_maps_directory"]
     config_dict["preprocessing_json"] = None
     ###
     config = create_training_config(config_dict["network_task"])(
