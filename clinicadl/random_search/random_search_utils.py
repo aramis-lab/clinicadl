@@ -45,7 +45,7 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
 
     # Default of specific options of random search
     space_dict.setdefault("d_reduction", "MaxPooling")
-    space_dict.setdefault("network_normalization", "BatchNorm")
+    space_dict.setdefault("network_normalization", "batch")
     space_dict.setdefault("channels_limit", 512)
     space_dict.setdefault("n_conv", 1)
     space_dict.setdefault("wd_bool", True)

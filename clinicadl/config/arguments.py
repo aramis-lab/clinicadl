@@ -47,3 +47,6 @@ suvr_reference_region = click.argument(
 generated_caps_directory = click.argument("generated_caps_directory", type=Path)
 
 data_group = click.argument("data_group", type=str)
+config_file = click.argument(
+    "config_file", type=click.Path(exists=True, path_type=Path)
+)

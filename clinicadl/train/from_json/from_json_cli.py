@@ -13,7 +13,7 @@ from clinicadl.train.tasks import create_training_config
 
 @click.command(name="from_json", no_args_is_help=True)
 @arguments.output_maps
-@reproducibility.config_file
+@arguments.config_file
 @cross_validation.split
 def cli(**kwargs):
     """
