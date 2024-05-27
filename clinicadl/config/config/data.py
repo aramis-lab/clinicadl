@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
+from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.enum import Mode
 from clinicadl.utils.preprocessing import read_preprocessing
 

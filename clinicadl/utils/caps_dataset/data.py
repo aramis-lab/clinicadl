@@ -61,8 +61,8 @@ class CapsDataset(Dataset):
         preprocessing_dict: Dict[str, Any],
         transformations: Optional[Callable],
         label_presence: bool,
-        label: str = None,
-        label_code: Dict[Any, int] = None,
+        label: Optional[str] = None,
+        label_code: Optional[Dict[Any, int]] = None,
         augmentation_transformations: Optional[Callable] = None,
         multi_cohort: bool = False,
     ):
@@ -241,6 +241,7 @@ class CapsDataset(Dataset):
         else:
             elem_idx = self.elem_index
         if self.label_presence and self.label is not None:
+            print(self.label)
             target = self.df.at[image_idx, self.label]
             label = self.label_fn(target)
         else:

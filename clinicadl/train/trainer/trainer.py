@@ -67,8 +67,9 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        # if (len(self.config.data.label_code) == 0):
-        #     self.config.data.label_code = self.maps_manager.label_code
+        if len(self.config.data.label_code) == 0:
+            self.config.data.label_code = self.maps_manager.label_code
+        print(self.config.data.label_code)
         # TODO : deal with label_code and replace self.maps_manager.label_code
 
     def train(

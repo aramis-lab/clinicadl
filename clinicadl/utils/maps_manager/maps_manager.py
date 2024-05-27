@@ -421,9 +421,11 @@ class MapsManager:
             "label_code" not in self.parameters
             or len(self.parameters["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
+            print("in maps ok")
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
             )
+            print(self.parameters["label_code"])
 
         full_dataset = return_dataset(
             self.caps_directory,

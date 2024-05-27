@@ -49,7 +49,8 @@ def create_parameters_dict(config):
         "split"
     ] = []  # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
     if len(config.data.label_code) == 0:
-        del parameters["label_code"]
+        if "label_code" in parameters:
+            del parameters["label_code"]
 
     # if parameters["selection_threshold"]== 0.0:
     #     parameters["selection_threshold"] = False
