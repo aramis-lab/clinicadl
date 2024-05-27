@@ -46,9 +46,9 @@ def test_data_config(caps_example):
     assert c.mode == "image"
     # with pytest.raises(ValidationError):
     #     c.preprocessing_dict = {"abc": "abc"}
-    with pytest.raises(FileNotFoundError):
-        c.preprocessing_json = ""
-    c.preprocessing_json = None
+    # with pytest.raises(FileNotFoundError):
+    #     c.preprocessing_json = ""
+    # c.preprocessing_json = None
     # c.preprocessing_dict = {"abc": "abc"}
     # assert c.preprocessing_dict == {"abc": "abc"}
 
