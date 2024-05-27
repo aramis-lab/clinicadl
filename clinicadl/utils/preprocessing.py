@@ -70,8 +70,6 @@ def path_decoder(obj):
                     obj[key] = False
                 else:
                     obj[key] = Path(value)
-            if value is None:
-                del obj[key]
     return obj
 
 

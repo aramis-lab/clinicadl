@@ -26,7 +26,7 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
     config_dict["tsv_directory"] = config_dict["tsv_path"]
     if config_dict["track_exp"] == "":
         config_dict["track_exp"] = None
-    if not config_dict["label_code"]:
+    if "label_code" not in config_dict:
         config_dict["label_code"] = {}
     # if not config_dict["preprocessing_json"]
     # = config_dict["extract_json"]

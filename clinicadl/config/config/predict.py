@@ -17,22 +17,9 @@ logger = getLogger("clinicadl.predict_config")
 
 
 class PredictConfig(BaseModel):
-    label: str = ""
     save_tensor: bool = False
     save_latent_tensor: bool = False
     use_labels: bool = True
-
-    def is_given_label_code(self, _label: str, _label_code: Union[str, Dict[str, int]]):
-        return (
-            self.label is not None
-            and self.label != ""
-            and self.label != _label
-            and _label_code == "default"
-        )
-
-    def check_label(self, _label: str):
-        if not self.label:
-            self.label = _label
 
     def check_output_saving_tensor(self, network_task: str) -> None:
         # Check if task is reconstruction for "save_tensor" and "save_nifti"
