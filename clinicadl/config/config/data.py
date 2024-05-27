@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.enum import Mode
+from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 from clinicadl.utils.preprocessing import read_preprocessing
 
 logger = getLogger("clinicadl.data_config")

@@ -8,7 +8,7 @@ from clinicadl.config.options import (
     cross_validation,
     reproducibility,
 )
-from clinicadl.train.tasks import create_training_config
+from clinicadl.train.tasks.tasks_utils import create_training_config
 
 
 @click.command(name="from_json", no_args_is_help=True)
@@ -35,7 +35,7 @@ def cli(**kwargs):
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
 
-    config_dict["maps_dir"] = config_dict["output_maps_directory"]
+    config_dict["maps_dir"] = kwargs["ouptut_maps"]
     config_dict["preprocessing_json"] = None
     ###
     config = create_training_config(config_dict["network_task"])(
