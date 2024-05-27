@@ -43,7 +43,6 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     user_dict = path_decoder(user_dict)
 
-    print(user_dict)
     return user_dict
 
 
