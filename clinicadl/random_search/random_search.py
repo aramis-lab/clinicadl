@@ -18,11 +18,11 @@ def launch_search(launch_directory: Path, job_name):
     maps_directory = launch_directory / job_name
 
     options = get_space_dict(launch_directory)
-
+    print(options)
     # temporary, TODO
     options["tsv_directory"] = options["tsv_path"]
     options["maps_dir"] = maps_directory
-    # options["preprocessing_json"] = None
+    options["preprocessing_json"] = options["preprocessing_dict"]["extract_json"]
     ###
 
     randomsearch_config = RandomSearchConfig(**options)
@@ -33,7 +33,7 @@ def launch_search(launch_directory: Path, job_name):
     sampled_options = random_sampling(randomsearch_config.model_dump())
     options.update(sampled_options)
     ###
-
+    print(options)
     training_config = create_training_config(options["network_task"])(
         output_maps_directory=maps_directory, **options
     )
