@@ -54,6 +54,13 @@ def create_parameters_dict(config):
 
     # if parameters["selection_threshold"]== 0.0:
     #     parameters["selection_threshold"] = False
+
+    if parameters["config_file"] is None:
+        del parameters["config_file"]
+    if parameters["data_group"] is None:
+        del parameters["data_group"]
+    if parameters["data_tsv"] is False:
+        del parameters["data_tsv"]
     if parameters["n_subjects"] == 300:
         del parameters["n_subjects"]
     if parameters["overwrite"] is False:
