@@ -59,7 +59,7 @@ def create_parameters_dict(config):
         del parameters["config_file"]
     if parameters["data_group"] is None:
         del parameters["data_group"]
-    if parameters["data_tsv"] is False:
+    if not parameters["data_tsv"]:
         del parameters["data_tsv"]
     if parameters["n_subjects"] == 300:
         del parameters["n_subjects"]
