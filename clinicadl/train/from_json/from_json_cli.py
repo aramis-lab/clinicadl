@@ -34,12 +34,15 @@ def cli(**kwargs):
     config_dict["tsv_directory"] = config_dict["tsv_path"]
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
-
-    config_dict["maps_dir"] = kwargs["ouptut_maps_directory"]
-    config_dict["preprocessing_json"] = None
+    print(kwargs)
+    print(config_dict)
+    config_dict["maps_dir"] = kwargs["output_maps_directory"]
+    config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
+        "extract_json"
+    ]
     ###
     config = create_training_config(config_dict["network_task"])(
-        output_maps_directory=kwargs["ouptut_maps_directory"], **config_dict
+        output_maps_directory=kwargs["output_maps_directory"], **config_dict
     )
     trainer = Trainer(config)
     trainer.train(split_list=kwargs["split"], overwrite=True)
