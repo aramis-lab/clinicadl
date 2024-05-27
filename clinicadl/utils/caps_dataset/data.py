@@ -241,7 +241,6 @@ class CapsDataset(Dataset):
         else:
             elem_idx = self.elem_index
         if self.label_presence and self.label is not None:
-            print(self.label)
             target = self.df.at[image_idx, self.label]
             label = self.label_fn(target)
         else:
