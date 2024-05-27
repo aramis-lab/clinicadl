@@ -1,6 +1,9 @@
 import click
 
-from clinicadl.config.config import ModelConfig, ValidationConfig
+from clinicadl.train.tasks.reconstruction.reconstruction_config import (
+    ModelConfig,
+    ValidationConfig,
+)
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
