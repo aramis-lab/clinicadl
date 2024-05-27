@@ -41,9 +41,11 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
     if "label_code" not in config_dict or config_dict["label_code"] is None:
         config_dict["label_code"] = {}
     if "preprocessing_json" not in config_dict:
-        config_dict["preprocessing_json"] = config_dict["preprocessing_dict"]
+        config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
+            "extract_json"
+        ]
     config_dict["maps_dir"] = model_path
-    # print(config_dict)
+    print(config_dict)
     ###
     config = create_training_config(config_dict["network_task"])(
         output_maps_directory=model_path, **config_dict

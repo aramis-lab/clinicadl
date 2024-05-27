@@ -12,8 +12,8 @@ from clinicadl.train.tasks import create_training_config
 
 
 @click.command(name="from_json", no_args_is_help=True)
-@arguments.output_maps
 @arguments.config_file
+@arguments.output_maps
 @cross_validation.split
 def cli(**kwargs):
     """

@@ -24,7 +24,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     label: Optional[str] = None
     label_code: Dict[str, int] = {}
     multi_cohort: bool = False
-    preprocessing_json: Path
+    preprocessing_json: Optional[Path]
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
