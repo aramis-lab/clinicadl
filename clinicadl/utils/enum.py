@@ -9,13 +9,6 @@ class Task(str, Enum):
     RECONSTRUCTION = "reconstruction"
 
 
-class Pooling(str, Enum):  # TODO : put in model module
-    """Available pooling techniques in ClinicaDL."""
-
-    MAXPOOLING = "MaxPooling"
-    STRIDE = "stride"
-
-
 class InterpretationMethod(str, Enum):
     """Possible interpretation method in clinicaDL."""
 
@@ -241,9 +234,16 @@ class ReconstructionLoss(str, Enum):  # TODO : put in loss module
 class Normalization(str, Enum):  # TODO : put in model module
     """Available normalization layers in ClinicaDL."""
 
-    BATCH = "batch"
+    BATCH = "BatchNorm"
     GROUP = "group"
-    INSTANCE = "instance"
+    INSTANCE = "InstanceNorm"
+
+
+class Pooling(str, Enum):  # TODO : put in model module
+    """Available pooling techniques in ClinicaDL."""
+
+    MAXPOOLING = "MaxPooling"
+    STRIDE = "stride"
 
 
 class ReconstructionMetric(str, Enum):  # TODO : put in metric module

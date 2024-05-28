@@ -123,12 +123,11 @@ class RandomArchitecture(CNN):
         Returns:
             (list) the updated convolutional block
         """
-
-        if isinstance(self.network_normalization, Normalization):
+        if self.network_normalization in ["BatchNorm", "InstanceNorm"]:
             conv_block.append(
                 self.layers_dict[self.network_normalization](num_features)
             )
-        else:
+        elif self.network_normalization is not None:
             raise ClinicaDLNetworksError(
                 f"The network normalization {self.network_normalization} value must be in ['BatchNorm', 'InstanceNorm', None]"
             )
