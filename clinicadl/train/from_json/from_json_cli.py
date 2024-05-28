@@ -34,8 +34,6 @@ def cli(**kwargs):
     config_dict["tsv_directory"] = config_dict["tsv_path"]
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
-    print(kwargs)
-    print(config_dict)
     config_dict["maps_dir"] = kwargs["output_maps_directory"]
     config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
         "extract_json"

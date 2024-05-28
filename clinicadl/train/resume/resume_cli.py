@@ -3,7 +3,6 @@ import click
 from clinicadl.config import arguments
 from clinicadl.config.options import (
     cross_validation,
-    reproducibility,
 )
 
 

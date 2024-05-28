@@ -1,17 +1,8 @@
-from enum import Enum
 from logging import getLogger
-from pathlib import Path
-from typing import Dict, Optional, Union
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
-from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.utils.caps_dataset.data import (
-    load_data_test,
-)
-from clinicadl.utils.enum import InterpretationMethod
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
-from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
 logger = getLogger("clinicadl.predict_config")
 

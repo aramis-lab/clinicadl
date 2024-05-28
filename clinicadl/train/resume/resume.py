@@ -16,18 +16,6 @@ def replace_arg(options, key_name, value):
         setattr(options, key_name, value)
 
 
-# pydantic_core._pydantic_core.ValidationError: 3 validation errors for RegressionConfig
-# data.label_code
-#   Input should be a valid dictionary [type=dict_type, input_value=None, input_type=NoneType]
-#     For further information visit https://errors.pydantic.dev/2.7/v/dict_type
-# data.preprocessing_json
-#   Field required [type=missing, input_value={'output_maps_directory':...in/labels_list/2_fold')}, input_type=dict]
-#     For further information visit https://errors.pydantic.dev/2.7/v/missing
-# maps_manager.maps_dir
-#   Field required [type=missing, input_value={'output_maps_directory':...in/labels_list/2_fold')}, input_type=dict]
-#     For further information visit https://errors.pydantic.dev/2.7/v/missing
-
-
 def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
     logger = getLogger("clinicadl")
 
@@ -45,7 +33,6 @@ def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
             "extract_json"
         ]
     config_dict["maps_dir"] = model_path
-    print(config_dict)
     ###
     config = create_training_config(config_dict["network_task"])(
         output_maps_directory=model_path, **config_dict

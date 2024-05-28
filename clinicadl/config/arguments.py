@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+# TODO trier les arguments par configclasses et voir les arguments utils et ceux qui ne le sont pas
 bids_directory = click.argument(
     "bids_directory", type=click.Path(exists=True, path_type=Path)
 )

@@ -1,5 +1,4 @@
 from logging import getLogger
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeFloat

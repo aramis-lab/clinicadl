@@ -1,6 +1,5 @@
 import click
 
-import clinicadl.train.trainer.training_config as config
 from clinicadl.config import config
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
