@@ -13,7 +13,7 @@ logger = getLogger("clinicadl.predict_config")
 
 class MapsManagerConfig(BaseModel):
     maps_dir: Path
-    data_group: Optional[str]
+    data_group: Optional[str] = None
     overwrite: bool = False
     save_nifti: bool = False
 
