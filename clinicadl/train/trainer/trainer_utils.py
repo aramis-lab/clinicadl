@@ -69,7 +69,7 @@ def create_parameters_dict(config):
         del parameters["save_nifti"]
     if parameters["skip_leak_check"] is False:
         del parameters["skip_leak_check"]
-    if parameters["normalization"] == "batch":
-        parameters["normalization"] = "BatchNorm"
+    if "normalization" in parameters and parameters["normalization"] == "BatchNorm":
+        parameters["normalization"] = "batch"
 
     return parameters, maps_path
