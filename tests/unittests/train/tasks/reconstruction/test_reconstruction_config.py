@@ -3,12 +3,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.train.tasks.reconstruction.config as config
+import clinicadl.config.config.train.reconstruction as reconstruction
 
 
 # Tests for customed validators #
 def test_validation_config():
-    c = config.ValidationConfig(selection_metrics=["MAE"])
+    c = reconstruction.ValidationConfig(selection_metrics=["MAE"])
     assert c.selection_metrics == ("MAE",)
 
 
@@ -53,11 +53,11 @@ def good_inputs(dummy_arguments):
 
 def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
-        config.ReconstructionConfig(**bad_inputs)
+        reconstruction.ReconstructionConfig(**bad_inputs)
 
 
 def test_passes_validations(good_inputs):
-    c = config.ReconstructionConfig(**good_inputs)
+    c = reconstruction.ReconstructionConfig(**good_inputs)
     assert c.model.loss == "HuberLoss"
     assert c.validation.selection_metrics == ("PSNR",)
     assert c.model.normalization == "batch"

@@ -11,8 +11,8 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.interpret.pipeline_config import InterpretPipelineConfig
-from clinicadl.predict.pipeline_config import PredictPipelineConfig
+from clinicadl.config.config.pipelines.interpret import InterpretConfig
+from clinicadl.config.config.pipelines.predict import PredictConfig
 from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
@@ -30,9 +30,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class PredictManager:
-    def __init__(
-        self, _config: Union[PredictPipelineConfig, InterpretPipelineConfig]
-    ) -> None:
+    def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
 
@@ -92,10 +90,12 @@ class PredictManager:
         _output_
         """
 
-        assert isinstance(self._config, PredictPipelineConfig)
+        assert isinstance(self._config, PredictConfig)
 
         self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.adapt_config_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
         self._config.check_output_saving_tensor(self.maps_manager.network_task)
 
         _, all_transforms = get_transforms(
@@ -229,7 +229,7 @@ class PredictManager:
         --------
         - _related_
         """
-        assert isinstance(self._config, PredictPipelineConfig)
+        assert isinstance(self._config, PredictConfig)
         # assert self._config.label
 
         for network in range(self.maps_manager.num_networks):
@@ -361,7 +361,7 @@ class PredictManager:
         - _related_
         """
 
-        assert isinstance(self._config, PredictPipelineConfig)
+        assert isinstance(self._config, PredictConfig)
         # assert self._config.label
 
         data_test = return_dataset(
@@ -632,7 +632,7 @@ class PredictManager:
         MAPSError
             If the interpretation has already been determined.
         """
-        assert isinstance(self._config, InterpretPipelineConfig)
+        assert isinstance(self._config, InterpretConfig)
 
         self._config.adapt_config_with_maps_manager_info(self.maps_manager)
 
@@ -790,8 +790,8 @@ class PredictManager:
                 else:
                     # if not split_list:
                     #     split_list = self.maps_manager._find_splits()
-                    assert self._config.split_list
-                    for split in self._config.split_list:
+                    assert self._config.split
+                    for split in self._config.split:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split
                         )

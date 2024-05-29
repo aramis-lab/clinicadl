@@ -25,13 +25,12 @@ from clinicadl.utils.transforms.transforms import get_transforms
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
 
-from .training_config import Task
+from clinicadl.utils.enum import Task
 from .trainer_utils import create_parameters_dict
 
 if TYPE_CHECKING:
+    from clinicadl.config.config.pipelines.train import TrainConfig
     from clinicadl.utils.callbacks.callbacks import Callback
-
-    from .training_config import TrainingConfig
 
 logger = getLogger("clinicadl.trainer")
 
@@ -41,7 +40,7 @@ class Trainer:
 
     def __init__(
         self,
-        config: TrainingConfig,
+        config: TrainConfig,
         maps_manager: Optional[MapsManager] = None,
     ) -> None:
         """

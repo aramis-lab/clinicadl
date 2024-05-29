@@ -1,30 +1,29 @@
 import click
 
-import clinicadl.train.trainer.training_config as config
-from clinicadl.config import config
+from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
 # interpret specific
 name = click.argument(
     "name",
-    type=get_type("name", config.InterpretConfig),
+    type=get_type("name", InterpretConfig),
 )
 method = click.argument(
     "method",
-    type=get_type("method", config.InterpretConfig),  # ["gradients", "grad-cam"]
+    type=get_type("method", InterpretConfig),  # ["gradients", "grad-cam"]
 )
 level = click.option(
     "--level_grad_cam",
-    type=get_type("level", config.InterpretConfig),
-    default=get_default("level", config.InterpretConfig),
+    type=get_type("level", InterpretConfig),
+    default=get_default("level", InterpretConfig),
     help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
     show_default=True,
 )
 target_node = click.option(
     "--target_node",
-    type=get_type("target_node", config.InterpretConfig),
-    default=get_default("target_node", config.InterpretConfig),
+    type=get_type("target_node", InterpretConfig),
+    default=get_default("target_node", InterpretConfig),
     help="Which target node the gradients explain. Default takes the first output node.",
     show_default=True,
 )

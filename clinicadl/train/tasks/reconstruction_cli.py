@@ -1,6 +1,7 @@
 import click
 
 from clinicadl.config import arguments
+from clinicadl.config.config.pipelines.task.reconstruction import ReconstructionConfig
 from clinicadl.config.options import (
     callbacks,
     computational,
@@ -19,7 +20,6 @@ from clinicadl.config.options import (
     transforms,
     validation,
 )
-from clinicadl.train.tasks.reconstruction.config import ReconstructionConfig
 from clinicadl.train.trainer import Trainer
 from clinicadl.train.utils import merge_cli_and_config_file_options
 from clinicadl.utils.enum import Task

@@ -1,14 +1,10 @@
 import click
 
-from clinicadl.config import config
+from clinicadl.config.config.maps_manager import MapsManagerConfig
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
-maps_dir = click.argument(
-    "maps_dir", type=get_type("maps_dir", config.MapsManagerConfig)
-)
-data_group = click.option(
-    "data_group", type=get_type("data_group", config.MapsManagerConfig)
-)
+maps_dir = click.argument("maps_dir", type=get_type("maps_dir", MapsManagerConfig))
+data_group = click.option("data_group", type=get_type("data_group", MapsManagerConfig))
 
 
 overwrite = click.option(

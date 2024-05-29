@@ -5,7 +5,6 @@ from .cross_validation import CrossValidationConfig
 from .data import DataConfig
 from .dataloader import DataLoaderConfig
 from .early_stopping import EarlyStoppingConfig
-from .interpret import InterpretConfig
 from .lr_scheduler import LRschedulerConfig
 from .maps_manager import MapsManagerConfig
 from .modality import (
@@ -17,7 +16,6 @@ from .modality import (
 from .model import ModelConfig
 from .optimization import OptimizationConfig
 from .optimizer import OptimizerConfig
-from .predict import PredictConfig
 from .preprocessing import (
     PreprocessingConfig,
     PreprocessingImageConfig,

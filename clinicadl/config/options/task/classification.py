@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.train.tasks.classification.config import (
+from clinicadl.config.config.pipelines.task.classification import (
     DataConfig,
     ModelConfig,
     ValidationConfig,

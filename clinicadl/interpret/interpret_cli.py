@@ -1,6 +1,7 @@
 import click
 
 from clinicadl.config import arguments
+from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.config.options import (
     computational,
     data,
@@ -9,9 +10,7 @@ from clinicadl.config.options import (
     maps_manager,
     validation,
 )
-from clinicadl.interpret.pipeline_config import InterpretPipelineConfig
 from clinicadl.predict.predict_manager import PredictManager
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -41,17 +40,8 @@ def cli(**kwargs):
     NAME is the name of the saliency map task.
     METHOD is the method used to extract an attribution map.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
 
-    if kwargs["gpu"]:
-        check_gpu()
-    elif kwargs["amp"]:
-        raise ClinicaDLArgumentError(
-            "AMP is designed to work with modern GPUs. Please add the --gpu flag."
-        )
-
-    interpret_config = InterpretPipelineConfig(**kwargs)
-
+    interpret_config = InterpretConfig(**kwargs)
     predict_manager = PredictManager(interpret_config)
     predict_manager.interpret()
 

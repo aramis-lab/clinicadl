@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.train.tasks.regression.config import (
+from clinicadl.config.config.pipelines.task.regression import (
     DataConfig,
     ModelConfig,
     ValidationConfig,

@@ -30,7 +30,7 @@ from clinicadl.utils.enum import Task
 logger = getLogger("clinicadl.training_config")
 
 
-class TrainingConfig(BaseModel, ABC):
+class TrainConfig(BaseModel, ABC):
     """
 
     Abstract config class for the training pipeline.

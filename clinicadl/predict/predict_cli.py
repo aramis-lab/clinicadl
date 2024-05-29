@@ -1,6 +1,7 @@
 import click
 
 from clinicadl.config import arguments
+from clinicadl.config.config.pipelines.predict import PredictConfig
 from clinicadl.config.options import (
     computational,
     cross_validation,
@@ -10,10 +11,7 @@ from clinicadl.config.options import (
     predict,
     validation,
 )
-from clinicadl.predict.pipeline_config import PredictPipelineConfig
 from clinicadl.predict.predict_manager import PredictManager
-from clinicadl.utils.cmdline_utils import check_gpu
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 @click.command(name="predict", no_args_is_help=True)
@@ -61,14 +59,8 @@ def cli(input_maps_directory, data_group, **kwargs):
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
-    if kwargs["gpu"]:
-        check_gpu()
-    elif kwargs["amp"]:
-        raise ClinicaDLArgumentError(
-            "AMP is designed to work with modern GPUs. Please add the --gpu flag."
-        )
 
-    predict_config = PredictPipelineConfig(**kwargs)
+    predict_config = PredictConfig(**kwargs)
     predict_manager = PredictManager(predict_config)
     predict_manager.predict()
 
