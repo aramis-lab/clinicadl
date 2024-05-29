@@ -1,15 +1,10 @@
 from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 
-from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.utils.caps_dataset.data import (
-    load_data_test,
-)
-from clinicadl.utils.enum import InterpretationMethod
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
@@ -18,7 +13,7 @@ logger = getLogger("clinicadl.predict_config")
 
 class MapsManagerConfig(BaseModel):
     maps_dir: Path
-    data_group: str
+    data_group: Optional[str] = None
     overwrite: bool = False
     save_nifti: bool = False
 

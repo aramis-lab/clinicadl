@@ -33,7 +33,7 @@ def dummy_arguments(caps_example):
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
-        "output_maps_directory": "",
+        "maps_dir": "",
     }
     return args
 
