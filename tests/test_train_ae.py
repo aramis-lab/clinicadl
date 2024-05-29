@@ -24,7 +24,7 @@ def test_name(request):
 
 
 def test_train_ae(cmdopt, tmp_path, test_name):
-    base_dir = Path(cmdopt["input"]).resolve()
+    base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train" / "in"
     ref_dir = base_dir / "train" / "ref"
     tmp_out_dir = base_dir / "train" / "out"
@@ -107,6 +107,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     if cmdopt["simulate gpu"]:
         json_data_out["gpu"] = True
     if cmdopt["adapt base dir"]:
+        base_dir = base_dir.resolve()
         ref_base_dir = Path(json_data_ref["caps_directory"]).parents[2]
         json_data_out["caps_directory"] = str(
             ref_base_dir / Path(json_data_out["caps_directory"]).relative_to(base_dir)
