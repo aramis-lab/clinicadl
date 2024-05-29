@@ -2,34 +2,16 @@ from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
-from pydantic import computed_field, field_validator
+from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.train.trainer import DataConfig as BaseDataConfig
-from clinicadl.train.trainer import ModelConfig as BaseModelConfig
-from clinicadl.train.trainer import Task, TrainingConfig
-from clinicadl.train.trainer import ValidationConfig as BaseValidationConfig
+from clinicadl.config.config import DataConfig as BaseDataConfig
+from clinicadl.config.config import ModelConfig as BaseModelConfig
+from clinicadl.config.config import ValidationConfig as BaseValidationConfig
+from clinicadl.train.trainer.training_config import TrainingConfig
+from clinicadl.utils.enum import RegressionLoss, RegressionMetric, Task
 
+logger = getLogger("clinicadl.reconstruction_config")
 logger = getLogger("clinicadl.regression_config")
-
-
-class RegressionLoss(str, Enum):  # TODO : put in loss module
-    """Available regression losses in ClinicaDL."""
-
-    L1Loss = "L1Loss"
-    MSELoss = "MSELoss"
-    KLDivLoss = "KLDivLoss"
-    BCEWithLogitsLoss = "BCEWithLogitsLoss"
-    HuberLoss = "HuberLoss"
-    SmoothL1Loss = "SmoothL1Loss"
-
-
-class RegressionMetric(str, Enum):  # TODO : put in metric module
-    """Available regression metrics in ClinicaDL."""
-
-    R2_score = "R2_score"
-    MAE = "MAE"
-    RMSE = "RMSE"
-    LOSS = "loss"
 
 
 class DataConfig(BaseDataConfig):  # TODO : put in data module

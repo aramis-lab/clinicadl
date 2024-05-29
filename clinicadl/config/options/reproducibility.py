@@ -1,6 +1,5 @@
 import click
 
-import clinicadl.train.trainer.training_config as config
 from clinicadl.config import config
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
@@ -38,7 +37,7 @@ seed = click.option(
 config_file = click.option(
     "--config_file",
     "-c",
-    type=get_type("seed", config.ReproducibilityConfig),
-    default=get_default("seed", config.ReproducibilityConfig),
+    type=get_type("config_file", config.ReproducibilityConfig),
+    default=get_default("config_file", config.ReproducibilityConfig),
     help="Path to the TOML or JSON file containing the values of the options needed for training.",
 )

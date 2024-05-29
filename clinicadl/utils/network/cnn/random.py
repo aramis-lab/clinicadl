@@ -1,5 +1,6 @@
 import numpy as np
 
+from clinicadl.utils.enum import Normalization
 from clinicadl.utils.exceptions import ClinicaDLNetworksError
 from clinicadl.utils.network.network_utils import *
 from clinicadl.utils.network.sub_network import CNN
@@ -122,7 +123,6 @@ class RandomArchitecture(CNN):
         Returns:
             (list) the updated convolutional block
         """
-
         if self.network_normalization in ["BatchNorm", "InstanceNorm"]:
             conv_block.append(
                 self.layers_dict[self.network_normalization](num_features)

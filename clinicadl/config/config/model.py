@@ -18,7 +18,6 @@ class ModelConfig(BaseModel):  # TODO : put in model module
     dropout: NonNegativeFloat = 0.0
     loss: str
     multi_network: bool = False
-    selection_threshold: float = 0.0
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 

@@ -1,39 +1,15 @@
-from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
 from pydantic import computed_field, field_validator
 
-from clinicadl.train.trainer import DataConfig as BaseDataConfig
-from clinicadl.train.trainer import ModelConfig as BaseModelConfig
-from clinicadl.train.trainer import Task, TrainingConfig
-from clinicadl.train.trainer import ValidationConfig as BaseValidationConfig
+from clinicadl.config.config import DataConfig as BaseDataConfig
+from clinicadl.config.config import ModelConfig as BaseModelConfig
+from clinicadl.config.config import ValidationConfig as BaseValidationConfig
+from clinicadl.train.trainer.training_config import TrainingConfig
+from clinicadl.utils.enum import ClassificationLoss, ClassificationMetric, Task
 
 logger = getLogger("clinicadl.classification_config")
-
-
-class ClassificationLoss(str, Enum):  # TODO : put in loss module
-    """Available classification losses in ClinicaDL."""
-
-    CrossEntropyLoss = "CrossEntropyLoss"
-    MultiMarginLoss = "MultiMarginLoss"
-
-
-class ClassificationMetric(str, Enum):  # TODO : put in metric module
-    """Available classification metrics in ClinicaDL."""
-
-    BA = "BA"
-    ACCURACY = "accuracy"
-    F1_SCORE = "F1_score"
-    SENSITIVITY = "sensitivity"
-    SPECIFICITY = "specificity"
-    PPV = "PPV"
-    NPV = "NPV"
-    MCC = "MCC"
-    MK = "MK"
-    LR_PLUS = "LR_plus"
-    LR_MINUS = "LR_minus"
-    LOSS = "loss"
 
 
 class DataConfig(BaseDataConfig):  # TODO : put in data module
