@@ -47,3 +47,11 @@ caps_directory = click.option(
     help="Data using CAPS structure, if different from the one used during network training.",
     show_default=True,
 )
+label = click.option(
+    "--label",
+    type=get_type("label", config.DataConfig),
+    default=get_default("label", config.DataConfig),
+    show_default=True,
+    help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
+    "Default will reuse the same label as during the training task.",
+)

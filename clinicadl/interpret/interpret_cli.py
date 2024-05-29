@@ -15,8 +15,8 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 @click.command("interpret", no_args_is_help=True)
-@maps_manager.maps_dir
-@maps_manager.data_group
+@arguments.input_maps
+@arguments.data_group
 @maps_manager.overwrite
 @maps_manager.save_nifti
 @interpret.name
@@ -34,7 +34,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 @computational.gpu
 @computational.amp
 @validation.selection_metrics
-def cli(input_maps_directory, data_group, name, method, **kwargs):
+def cli(**kwargs):
     """Interpretation of trained models using saliency map method.
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.

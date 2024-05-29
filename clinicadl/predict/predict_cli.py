@@ -1,5 +1,6 @@
 import click
 
+from clinicadl.config import arguments
 from clinicadl.config.options import (
     computational,
     cross_validation,
@@ -16,12 +17,12 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 @click.command(name="predict", no_args_is_help=True)
-@maps_manager.maps_dir
-@maps_manager.data_group
+@arguments.input_maps
+@arguments.data_group
 @maps_manager.save_nifti
 @maps_manager.overwrite
 @predict.use_labels
-@predict.label
+@data.label
 @predict.save_tensor
 @predict.save_latent_tensor
 @data.caps_directory
