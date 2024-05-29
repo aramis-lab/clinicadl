@@ -634,7 +634,9 @@ class PredictManager:
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.adapt_config_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
