@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+# TODO trier les arguments par configclasses et voir les arguments utils et ceux qui ne le sont pas
 bids_directory = click.argument(
     "bids_directory", type=click.Path(exists=True, path_type=Path)
 )
@@ -18,7 +19,9 @@ data_tsv = click.argument("data_tsv", type=click.Path(exists=True, path_type=Pat
 merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True, path_type=Path))
 
 # TSV TOOLS
-tsv_directory = click.argument("data_tsv", type=click.Path(exists=True, path_type=Path))
+tsv_directory = click.argument(
+    "tsv_directory", type=click.Path(exists=True, path_type=Path)
+)
 old_tsv_dir = click.argument(
     "old_tsv_dir", type=click.Path(exists=True, path_type=Path)
 )
@@ -45,3 +48,6 @@ suvr_reference_region = click.argument(
 generated_caps_directory = click.argument("generated_caps_directory", type=Path)
 
 data_group = click.argument("data_group", type=str)
+config_file = click.argument(
+    "config_file", type=click.Path(exists=True, path_type=Path)
+)

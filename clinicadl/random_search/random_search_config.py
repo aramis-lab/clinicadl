@@ -1,33 +1,20 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, field_validator
 
-from clinicadl.train.tasks import ClassificationConfig as BaseClassificationConfig
-from clinicadl.train.tasks import RegressionConfig as BaseRegressionConfig
-from clinicadl.train.trainer import Task
+from clinicadl.train.tasks.classification.config import (
+    ClassificationConfig as BaseClassificationConfig,
+)
+from clinicadl.train.tasks.regression.config import (
+    RegressionConfig as BaseRegressionConfig,
+)
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
+from clinicadl.utils.enum import Normalization, Pooling, Task
 
 if TYPE_CHECKING:
     from clinicadl.train.trainer import TrainingConfig
-
-
-class Normalization(
-    str, Enum
-):  # TODO : put in model module. Make it consistent with normalizations available in other pipelines.
-    """Available normalization layers in ClinicaDL."""
-
-    BATCH = "BatchNorm"
-    INSTANCE = "InstanceNorm"
-
-
-class Pooling(str, Enum):  # TODO : put in model module
-    """Available pooling techniques in ClinicaDL."""
-
-    MAXPOOLING = "MaxPooling"
-    STRIDE = "stride"
 
 
 class RandomSearchConfig(

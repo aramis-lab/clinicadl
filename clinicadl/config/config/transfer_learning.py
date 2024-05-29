@@ -2,10 +2,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
-from pydantic.types import NonNegativeInt
+from pydantic import BaseModel, ConfigDict, NonNegativeInt, field_validator
 
-logger = getLogger("clinicadl.training_config")
+logger = getLogger("clinicadl.transfer_learning_config")
 
 
 class TransferLearningConfig(BaseModel):
