@@ -15,20 +15,21 @@ def pytest_addoption(parser):
         help="Directory for (only-read) inputs for tests",
     )
     parser.addoption(
-        "--simulate-gpu",
+        "--no-gpu",
         action="store_true",
-        help="""To simulate the presence of a gpu on a cpu-only device. Default is False.
+        help="""To run tests on cpu. Default is False.
             To use carefully, only to run tests locally. Should not be used in final CI tests.
-            Concretely, the tests won't fail if gpu option if false in the output MAPS whereas
-            it should be true.""",
+            Concretely, the tests won't fail if gpu option is false in the output MAPS whereas
+            it is true in the reference MAPS.""",
     )
     parser.addoption(
         "--adapt-base-dir",
         action="store_true",
-        help="""To virtually change the base directory in the paths stored in MAPS. Default is False.
+        help="""To virtually change the base directory in the paths stored in the MAPS of the CI data.
+            Default is False.
             To use carefully, only to run tests locally. Should not be used in final CI tests.
-            Concretely, the tests won't fail if only the base directory differs in the paths stored
-            in the MAPS.""",
+            Concretely, the tests won't fail if only the base directories differ in the paths stored
+            in the output and reference MAPS.""",
     )
 
 
@@ -36,6 +37,6 @@ def pytest_addoption(parser):
 def cmdopt(request):
     config_param = {}
     config_param["input"] = request.config.getoption("--input_data_directory")
-    config_param["simulate gpu"] = request.config.getoption("--simulate-gpu")
-    config_param["adapt base dir"] = request.config.getoption("--adapt-base-dir")
+    config_param["no-gpu"] = request.config.getoption("--no-gpu")
+    config_param["adapt-base-dir"] = request.config.getoption("--adapt-base-dir")
     return config_param
