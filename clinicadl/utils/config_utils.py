@@ -137,4 +137,3 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
         return click.Choice(list([option.value for option in type_]))
     else:
         return type_
-        # raise TypeError(f"the type {type_} is not supported for the argument {arg}.")
