@@ -1,9 +1,10 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
+from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.enum import Mode
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.preprocessing import read_preprocessing
@@ -60,6 +61,18 @@ class DataConfig(BaseModel):  # TODO : put in data module
         if isinstance(v, list):
             return tuple(v)
         return v  # TODO : check if columns are in tsv
+
+    def is_given_label_code(self, _label: str, _label_code: Union[str, Dict[str, int]]):
+        return (
+            self.label is not None
+            and self.label != ""
+            and self.label != _label
+            and _label_code == "default"
+        )
+
+    def check_label(self, _label: str):
+        if not self.label:
+            self.label = _label
 
     @computed_field
     @property

@@ -7,7 +7,7 @@ from .training_config import (
     DataLoaderConfig,
     EarlyStoppingConfig,
     LRschedulerConfig,
-    MAPSManagerConfig,
+    MapsManagerConfig,
     ModelConfig,
     OptimizationConfig,
     OptimizerConfig,

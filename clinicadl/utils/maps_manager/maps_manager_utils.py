@@ -25,10 +25,10 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     # from clinicadl.utils.preprocessing import path_decoder
     config_dict = toml.load(config_path)
     # config_dict = path_decoder(config_dict)
-    # print(config_dict)
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
+
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:
         for key in config_dict[section_name]:
@@ -42,6 +42,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
         user_dict["validation"] = "SingleSplit"
 
     user_dict = path_decoder(user_dict)
+
     return user_dict
 
 

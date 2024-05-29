@@ -4,7 +4,7 @@ from clinicadl.utils import cli_param
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
-from .classification_config import DataConfig, ModelConfig, ValidationConfig
+from .config import DataConfig, ModelConfig, ValidationConfig
 
 # Data
 label = cli_param.option_group.task_group.option(
