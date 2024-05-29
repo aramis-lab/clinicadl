@@ -76,20 +76,11 @@ split = cli_param.option_group.cross_validation.option(
     help="Train the list of given splits. By default, all the splits are trained.",
     show_default=True,
 )
-<<<<<<< HEAD:clinicadl/train/tasks/base_task_cli_options.py
-# Optimization
-optimizer = cli_param.option_group.optimization_group.option(
-    "--optimizer",
-    type=get_type("optimizer", base_config),
-    default=get_default("optimizer", base_config),
-    help="Optimizer used to train the network.",
-=======
 # Data
 baseline = cli_param.option_group.data_group.option(
     "--baseline/--longitudinal",
     default=get_default("baseline", config.DataConfig),
     help="If provided, only the baseline sessions are used for training.",
->>>>>>> bb944685 (Config class in trainer (#574)):clinicadl/train/tasks/train_task_cli_options.py
     show_default=True,
 )
 diagnoses = cli_param.option_group.data_group.option(
@@ -191,14 +182,6 @@ profiler = cli_param.option_group.optimization_group.option(
     "It will make an execution trace and some statistics about the CPU and GPU usage.",
     show_default=True,
 )
-<<<<<<< HEAD:clinicadl/train/tasks/base_task_cli_options.py
-track_exp = cli_param.option_group.optimization_group.option(
-    "--track_exp",
-    "-te",
-    type=get_type("track_exp", base_config),
-    default=get_default("track_exp", base_config),
-    help="Use `--track_exp` to enable wandb/mlflow to track the metric (loss, accuracy, etc...) during the training.",
-=======
 # Optimizer
 learning_rate = cli_param.option_group.optimization_group.option(
     "--learning_rate",
@@ -290,7 +273,6 @@ tsv_target_unlab = cli_param.option_group.data_group.option(
     type=get_type("tsv_target_unlab", config.SSDAConfig),
     default=get_default("tsv_target_unlab", config.SSDAConfig),
     help="TSV of unllabeled target data.",
->>>>>>> bb944685 (Config class in trainer (#574)):clinicadl/train/tasks/train_task_cli_options.py
     show_default=True,
 )
 # Transfer Learning

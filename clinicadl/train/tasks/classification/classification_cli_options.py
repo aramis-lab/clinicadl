@@ -40,6 +40,6 @@ threshold = cli_param.option_group.task_group.option(
 # Validation
 selection_metrics = cli_param.option_group.task_group.option(
     default=get_default("selection_metrics", ValidationConfig),
-    help="""Allow to save a list of models based on their selection metric. Default will"""
+    help="""Allow to save a list of models based on their selection metric. Default will""",
     show_default=True,
 )
