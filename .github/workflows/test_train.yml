@@ -25,7 +25,6 @@ jobs:
       - Linux
       - ubuntu
       - gpu
-      - aramis
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
