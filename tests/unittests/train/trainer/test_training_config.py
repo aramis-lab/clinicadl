@@ -55,7 +55,7 @@ def test_data_config(caps_example):
 
 def test_model_config():
     with pytest.raises(ValidationError):
-        config.ModelConfig(
+        config.NetworkConfig(
             **{
                 "architecture": "",
                 "loss": "",

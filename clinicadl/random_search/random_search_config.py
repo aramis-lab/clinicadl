@@ -10,7 +10,7 @@ from clinicadl.config.config.pipelines.task.classification import (
 from clinicadl.config.config.pipelines.task.regression import (
     RegressionConfig as BaseRegressionConfig,
 )
-from clinicadl.utils.config_utils import get_type_from_config_class as get_type
+from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.utils.enum import Normalization, Pooling, Task
 
 if TYPE_CHECKING:
@@ -62,7 +62,7 @@ class RandomSearchConfig(
 def training_config_for_random_models(base_training_config):
     base_model_config = get_type("model", base_training_config)
 
-    class ModelConfig(base_model_config):
+    class NetworkConfig(base_model_config):
         """Config class for random models."""
 
         architecture: str = "RandomArchitecture"
@@ -89,7 +89,7 @@ def training_config_for_random_models(base_training_config):
             - n_fcblocks
         """
 
-        model: ModelConfig
+        model: NetworkConfig
 
     return TrainConfig
 

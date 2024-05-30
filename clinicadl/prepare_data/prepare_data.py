@@ -11,6 +11,7 @@ from clinicadl.prepare_data.prepare_data_config import (
     PrepareDataROIConfig,
     PrepareDataSliceConfig,
 )
+from clinicadl.preprocessing.preprocessing import write_preprocessing
 from clinicadl.utils.clinica_utils import (
     check_caps_folder,
     clinicadl_file_reader,
@@ -19,7 +20,6 @@ from clinicadl.utils.clinica_utils import (
 )
 from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.preprocessing import write_preprocessing
 
 from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
 
