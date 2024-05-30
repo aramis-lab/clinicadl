@@ -26,6 +26,9 @@ jobs:
       - gpu
     if: ("${{ !contains(github.event.head_commit.message, '[skip gpu]') }}" == "true")
     steps:
+      - name: echo
+        run: |
+          echo "${{ contains(github.event.head_commit.message, '[skip gpu]') }}"
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
         with:
