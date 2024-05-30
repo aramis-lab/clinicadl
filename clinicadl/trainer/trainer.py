@@ -29,8 +29,8 @@ from clinicadl.utils.enum import Task
 from .trainer_utils import create_parameters_dict
 
 if TYPE_CHECKING:
+    from clinicadl.callbacks.callbacks import Callback
     from clinicadl.config.config.pipelines.train import TrainConfig
-    from clinicadl.utils.callbacks.callbacks import Callback
 
 logger = getLogger("clinicadl.trainer")
 
@@ -248,7 +248,7 @@ class Trainer:
                 sampler=valid_sampler,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
-            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
+            from clinicadl.callbacks.callbacks import CodeCarbonTracker
 
             self._train(
                 train_loader,
@@ -376,7 +376,7 @@ class Trainer:
                     num_workers=self.config.dataloader.n_proc,
                     sampler=valid_sampler,
                 )
-                from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
+                from clinicadl.callbacks.callbacks import CodeCarbonTracker
 
                 self._train(
                     train_loader,
@@ -1284,7 +1284,7 @@ class Trainer:
         """
         Initializes training callbacks.
         """
-        from clinicadl.utils.callbacks.callbacks import CallbacksHandler, LoggerCallback
+        from clinicadl.callbacks.callbacks import CallbacksHandler, LoggerCallback
 
         # if self.callbacks is None:
         #     self.callbacks = [Callback()]
@@ -1292,12 +1292,12 @@ class Trainer:
         self.callback_handler = CallbacksHandler()  # callbacks=self.callbacks)
 
         if self.config.callbacks.emissions_calculator:
-            from clinicadl.utils.callbacks.callbacks import CodeCarbonTracker
+            from clinicadl.callbacks.callbacks import CodeCarbonTracker
 
             self.callback_handler.add_callback(CodeCarbonTracker())
 
         if self.config.callbacks.track_exp:
-            from clinicadl.utils.callbacks.callbacks import Tracker
+            from clinicadl.callbacks.callbacks import Tracker
 
             self.callback_handler.add_callback(Tracker)
 
