@@ -36,12 +36,12 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Run tests for Transfer Learning on GPU
         run: |
-          make env.conda
           source "${HOME}/miniconda3/etc/profile.d/conda.sh"
+          make env.conda
           conda activate "${{ github.workspace }}"/env
           make install
           cd tests
-          poetry run pytest --verbose \
+          poetry run pytest \
           --junitxml=./test-reports/test_transfer_learning_report.xml \
           --disable-warnings \
           --verbose \
