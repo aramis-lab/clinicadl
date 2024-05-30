@@ -1,10 +1,10 @@
 from typing import Type, Union
 
-from clinicadl.train.trainer import TrainingConfig
+from clinicadl.config.config.pipelines.train import TrainConfig
 from clinicadl.utils.enum import Task
 
 
-def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
+def create_training_config(task: Union[str, Task]) -> Type[TrainConfig]:
     """
     A factory function to create a Training Config class suited for the task.
     Parameters
@@ -15,13 +15,15 @@ def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
     """
     task = Task(task)
     if task == Task.CLASSIFICATION:
-        from clinicadl.train.tasks.classification.config import (
+        from clinicadl.config.config.pipelines.task.classification import (
             ClassificationConfig as Config,
         )
     elif task == Task.REGRESSION:
-        from clinicadl.train.tasks.regression.config import RegressionConfig as Config
+        from clinicadl.config.config.pipelines.task.regression import (
+            RegressionConfig as Config,
+        )
     elif task == Task.RECONSTRUCTION:
-        from clinicadl.train.tasks.reconstruction.config import (
+        from clinicadl.config.config.pipelines.task.reconstruction import (
             ReconstructionConfig as Config,
         )
     return Config

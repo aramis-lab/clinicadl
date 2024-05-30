@@ -5,6 +5,8 @@ from typing import Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
+from clinicadl.utils.maps_manager.maps_manager import MapsManager
+
 logger = getLogger("clinicadl.cross_validation_config")
 
 
@@ -19,7 +21,7 @@ class CrossValidationConfig(
 
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
-    tsv_directory: Path
+    tsv_directory: Optional[Path] = None  # not needed in predict ?
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
@@ -28,3 +30,9 @@ class CrossValidationConfig(
         if isinstance(v, list):
             return tuple(v)
         return v  # TODO : check that split exists (and check coherence with n_splits)
+
+    def adapt_cross_val_with_maps_manager_info(self, maps_manager: MapsManager):
+        # TEMPORARY
+        if not self.split:
+            self.split = maps_manager._find_splits()
+        logger.debug(f"List of splits {self.split}")

@@ -3,13 +3,13 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.train.tasks.classification.config as config
+import clinicadl.config.config.pipelines.task.classification as classification
 
 
 # Tests for customed validators #
 def test_model_config():
     with pytest.raises(ValidationError):
-        config.ModelConfig(
+        classification.ModelConfig(
             **{
                 "architecture": "",
                 "loss": "",
@@ -19,7 +19,7 @@ def test_model_config():
 
 
 def test_validation_config():
-    c = config.ValidationConfig(selection_metrics=["accuracy"])
+    c = classification.ValidationConfig(selection_metrics=["accuracy"])
     assert c.selection_metrics == ("accuracy",)
 
 
@@ -64,11 +64,11 @@ def good_inputs(dummy_arguments):
 
 def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
-        config.ClassificationConfig(**bad_inputs)
+        classification.ClassificationConfig(**bad_inputs)
 
 
 def test_passes_validations(good_inputs):
-    c = config.ClassificationConfig(**good_inputs)
+    c = classification.ClassificationConfig(**good_inputs)
     assert c.model.loss == "MultiMarginLoss"
     assert c.validation.selection_metrics == ("F1_score",)
     assert c.model.selection_threshold == 0.5

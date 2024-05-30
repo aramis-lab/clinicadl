@@ -5,18 +5,28 @@ from typing import Dict, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
+from clinicadl.config.config import (
+    ComputationalConfig,
+    CrossValidationConfig,
+    DataLoaderConfig,
+    MapsManagerConfig,
+    ValidationConfig,
+)
+from clinicadl.config.config import DataConfig as DataBaseConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.utils.caps_dataset.data import (
     load_data_test,
 )
 from clinicadl.utils.enum import InterpretationMethod
-from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
-from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
-logger = getLogger("clinicadl.predict_config")
+logger = getLogger("clinicadl.interpret_config")
 
 
-class InterpretConfig(BaseModel):
+class DataConfig(DataBaseConfig):
+    caps_directory: Optional[Path] = None
+
+
+class InterpretBaseConfig(BaseModel):
     name: str
     method: InterpretationMethod = InterpretationMethod.GRADIENTS
     target_node: int = 0
@@ -38,3 +48,15 @@ class InterpretConfig(BaseModel):
             return GradCam
         else:
             raise ValueError(f"The method {self.method.value} is not implemented")
+
+
+class InterpretConfig(
+    MapsManagerConfig,
+    InterpretBaseConfig,
+    DataConfig,
+    ValidationConfig,
+    CrossValidationConfig,
+    ComputationalConfig,
+    DataLoaderConfig,
+):
+    """Config class to perform Transfer Learning."""
