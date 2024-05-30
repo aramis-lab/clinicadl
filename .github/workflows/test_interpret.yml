@@ -19,7 +19,7 @@ env:
 
 jobs:
   test-interpret-gpu:
-    if: github.event.pull_request.draft == false
+    if: github.event.commit.message != "*[skip gpu]*"
     runs-on:
       - self-hosted
       - Linux
