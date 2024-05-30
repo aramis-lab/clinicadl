@@ -1,3 +1,5 @@
+# TODO: Remove this file, everything is now in the cmdline folder
+
 from click_option_group import OptionGroup
 
 computational_group = OptionGroup(

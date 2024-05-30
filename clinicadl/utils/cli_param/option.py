@@ -1,5 +1,5 @@
 """Common CLI options used by Clinica pipelines."""
-
+# TODO: Remove this file, everything is now in the cmdline folder
 from pathlib import Path
 
 import click

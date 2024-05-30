@@ -4,7 +4,7 @@ from typing import Tuple
 from pydantic import computed_field, field_validator
 
 from clinicadl.config.config import DataConfig as BaseDataConfig
-from clinicadl.config.config import ModelConfig as BaseModelConfig
+from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
 from clinicadl.config.config.pipelines.train import TrainConfig
 from clinicadl.utils.enum import ClassificationLoss, ClassificationMetric, Task
@@ -26,7 +26,7 @@ class DataConfig(BaseDataConfig):  # TODO : put in data module
         return v  # TODO : check label_code
 
 
-class ModelConfig(BaseModelConfig):  # TODO : put in model module
+class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
     """Config class for classification models."""
 
     architecture: str = "Conv5_FC3"
@@ -69,7 +69,7 @@ class ClassificationConfig(TrainConfig):
     """
 
     data: DataConfig
-    model: ModelConfig
+    model: NetworkConfig
     validation: ValidationConfig
 
     @computed_field

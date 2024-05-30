@@ -7,8 +7,8 @@ from pydantic import (
     computed_field,
 )
 
+from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.config.config import (
-    CallbacksConfig,
     ComputationalConfig,
     CrossValidationConfig,
     DataConfig,
@@ -16,15 +16,15 @@ from clinicadl.config.config import (
     EarlyStoppingConfig,
     LRschedulerConfig,
     MapsManagerConfig,
-    ModelConfig,
-    OptimizationConfig,
-    OptimizerConfig,
     ReproducibilityConfig,
     SSDAConfig,
     TransferLearningConfig,
     TransformsConfig,
     ValidationConfig,
 )
+from clinicadl.network.config import NetworkConfig
+from clinicadl.optimizer.optimization import OptimizationConfig
+from clinicadl.optimizer.optimizer import OptimizerConfig
 from clinicadl.utils.enum import Task
 
 logger = getLogger("clinicadl.training_config")
@@ -46,7 +46,7 @@ class TrainConfig(BaseModel, ABC):
     early_stopping: EarlyStoppingConfig
     lr_scheduler: LRschedulerConfig
     maps_manager: MapsManagerConfig
-    model: ModelConfig
+    model: NetworkConfig
     optimization: OptimizationConfig
     optimizer: OptimizerConfig
     reproducibility: ReproducibilityConfig

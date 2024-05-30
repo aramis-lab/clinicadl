@@ -1,4 +1,5 @@
-from .callbacks import CallbacksConfig
+from ...network.config import NetworkConfig
+from ...transforms.config import TransformsConfig
 from .caps_dataset import CapsDatasetConfig
 from .computational import ComputationalConfig
 from .cross_validation import CrossValidationConfig
@@ -13,18 +14,7 @@ from .modality import (
     ModalityConfig,
     PETModalityConfig,
 )
-from .model import ModelConfig
-from .optimization import OptimizationConfig
-from .optimizer import OptimizerConfig
-from .preprocessing import (
-    PreprocessingConfig,
-    PreprocessingImageConfig,
-    PreprocessingPatchConfig,
-    PreprocessingROIConfig,
-    PreprocessingSliceConfig,
-)
 from .reproducibility import ReproducibilityConfig
 from .ssda import SSDAConfig
 from .transfer_learning import TransferLearningConfig
-from .transforms import TransformsConfig
 from .validation import ValidationConfig

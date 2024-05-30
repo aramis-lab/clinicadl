@@ -4,7 +4,7 @@ from typing import Tuple
 
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.config.config import ModelConfig as BaseModelConfig
+from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
 from clinicadl.config.config.pipelines.train import TrainConfig
 from clinicadl.utils.enum import (
@@ -17,7 +17,7 @@ from clinicadl.utils.enum import (
 logger = getLogger("clinicadl.reconstruction_config")
 
 
-class ModelConfig(BaseModelConfig):  # TODO : put in model module
+class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
     """Config class for reconstruction models."""
 
     architecture: str = "AE_Conv5_FC3"
@@ -58,7 +58,7 @@ class ReconstructionConfig(TrainConfig):
     - output_maps_directory
     """
 
-    model: ModelConfig
+    model: NetworkConfig
     validation: ValidationConfig
 
     @computed_field

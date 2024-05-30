@@ -10,6 +10,8 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
+from clinicadl.preprocessing.preprocessing import path_encoder
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
@@ -24,8 +26,6 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
-from clinicadl.utils.preprocessing import path_encoder
-from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -596,7 +596,7 @@ class MapsManager:
         """
         from datetime import datetime
 
-        import clinicadl.utils.network as network_package
+        import clinicadl.network as network_package
 
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -829,7 +829,7 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network trained (used in multi-network setting only).
         """
-        import clinicadl.utils.network as network_package
+        import clinicadl.network as network_package
 
         logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary

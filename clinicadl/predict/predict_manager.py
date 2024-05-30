@@ -13,6 +13,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.config.config.pipelines.predict import PredictConfig
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
@@ -23,7 +24,6 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
-from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -887,7 +887,7 @@ class PredictManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        from clinicadl.utils.preprocessing import path_decoder
+        from clinicadl.preprocessing.preprocessing import path_decoder
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)
