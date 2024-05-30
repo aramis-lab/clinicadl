@@ -18,14 +18,38 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
+  check_commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: check if message contain keywords
+        id: check_commit
+        run: |
+          message=$(git log -1 --pretty=format:'%s')
+          re="\[(skip gpu)\]"
+          if [[ $message =~ $re ]]; then
+            echo "::set-output name=match::true"
+            echo "$message -> Match is true"
+          else
+            echo "$message -> Match is false"
+          fi
+    outputs:
+      match: ${{ steps.check_commit.outputs.match }}
   test-train-gpu:
-    if: github.event.pull_request.draft == false
+    needs: check_commit
     runs-on:
       - self-hosted
       - Linux
       - ubuntu
       - gpu
+    if: ${{ needs.check_commit.outputs.match != 'true' }}
     steps:
+      - name: echo
+        run: |
+          echo "${{ github.event.head_commit.message }}"
+          echo "${{ contains(github.event.head_commit.message, '[skip gpu]') }}"
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
         with:
