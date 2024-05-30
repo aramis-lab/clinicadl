@@ -1,12 +1,11 @@
 import json
 import os
 import shutil
-from os.path import join
 from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import compare_folders
+from .testing_tools import compare_folders, modify_maps
 
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
@@ -41,7 +40,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(caps_roi_path),
             extract_roi_str,
             str(labels_path),
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_ae"),
             "-c",
             str(config_path),
         ]
@@ -55,7 +54,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "-c",
             str(config_path),
             "--transfer_path",
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_ae"),
         ]
         name = "aeTOae"
     elif test_name == "transfer_ae_cnn":
@@ -65,7 +64,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(caps_roi_path),
             extract_roi_str,
             str(labels_path),
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_ae"),
             "-c",
             str(config_path),
         ]
@@ -79,7 +78,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "-c",
             str(config_path),
             "--transfer_path",
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_ae"),
         ]
         name = "aeTOcnn"
     elif test_name == "transfer_cnn_cnn":
@@ -89,7 +88,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(caps_roi_path),
             extract_roi_str,
             str(labels_path),
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_cnn"),
             "-c",
             str(config_path),
         ]
@@ -103,7 +102,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "-c",
             str(config_path),
             "--transfer_path",
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_cnn"),
         ]
         name = "cnnTOcnn"
     elif test_name == "transfer_cnn_multicnn":
@@ -113,7 +112,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(caps_roi_path),
             extract_roi_str,
             str(labels_path),
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_cnn"),
             "-c",
             str(config_path),
         ]
@@ -127,11 +126,16 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "-c",
             str(config_path),
             "--transfer_path",
-            str(tmp_out_dir),
+            str(tmp_out_dir / "maps_roi_cnn"),
+            "--multi_network",
         ]
-        name = "cnnTOcnn"
+        name = "cnnTOmulticnn"
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
+
+    if cmdopt["no-gpu"]:
+        source_task.append("--no-gpu")
+        target_task.append("--no-gpu")
 
     if tmp_out_dir.exists():
         shutil.rmtree(tmp_out_dir)
@@ -148,9 +152,17 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_roi_" + name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
-    json_data_ref["transfer_path"] = json_data_out["transfer_path"]
-    json_data_ref["gpu"] = json_data_out["gpu"]
-    json_data_ref["caps_directory"] = json_data_out["caps_directory"]
+    ref_source_dir = Path(json_data_ref["transfer_path"]).parent
+    json_data_ref["transfer_path"] = str(
+        tmp_out_dir / Path(json_data_ref["transfer_path"]).relative_to(ref_source_dir)
+    )
+    if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:
+        json_data_ref = modify_maps(
+            maps=json_data_ref,
+            base_dir=base_dir,
+            no_gpu=cmdopt["no-gpu"],
+            adapt_base_dir=cmdopt["adapt-base-dir"],
+        )
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(

@@ -1,7 +1,7 @@
 import pathlib
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 def ignore_pattern(file_path: pathlib.Path, ignore_pattern_list: List[str]) -> bool:
@@ -166,3 +166,63 @@ def clean_folder(path, recreate=True):
         rmtree(abs_path)
     if recreate:
         makedirs(abs_path)
+
+
+def modify_maps(
+    maps: Dict[str, Any],
+    base_dir: Path,
+    no_gpu: bool = False,
+    adapt_base_dir: bool = False,
+) -> Dict[str, Any]:
+    """
+    Modifies a MAPS dictionary if the user passed --no-gpu or --adapt-base-dir flags.
+
+    Parameters
+    ----------
+    maps : Dict[str, Any]
+        The MAPS dictionary.
+    base_dir : Path
+        The base directory, where CI data are stored.
+    no_gpu : bool (optional, default=False)
+        Whether the user activated the --no-gpu flag.
+    adapt_base_dir : bool (optional, default=False)
+        Whether the user activated the --adapt-base-dir flag.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The modified MAPS dictionary.
+    """
+    if no_gpu:
+        maps["gpu"] = False
+    if adapt_base_dir:
+        base_dir = base_dir.resolve()
+        ref_base_dir = Path(maps["caps_directory"]).parents[2]
+        maps["caps_directory"] = str(
+            base_dir / Path(maps["caps_directory"]).relative_to(ref_base_dir)
+        )
+        maps["tsv_path"] = str(
+            base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
+        )
+    return maps
+
+
+def change_gpu_in_toml(toml_path: Path) -> None:
+    """
+    Changes GPU to false in a TOML config file.
+
+    Parameters
+    ----------
+    toml_path : Path
+        The TOML file.
+    """
+    import toml
+
+    config = toml.load(toml_path)
+    try:
+        config["Computational"]["gpu"] = False
+    except KeyError:
+        config["Computational"] = {"gpu": False}
+    f = open(toml_path, "w")
+    toml.dump(config, f)
+    f.close()
