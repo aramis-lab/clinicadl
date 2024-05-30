@@ -9,6 +9,12 @@ from nilearn.image import resample_to_img
 
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
+from clinicadl.generate.generate_utils import (
+    find_file_type,
+    load_and_check_tsv,
+    mask_processing,
+    write_missing_mods,
+)
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import (
@@ -23,13 +29,6 @@ from clinicadl.utils.enum import (
 )
 from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-
-from .....generate.generate_utils import (
-    find_file_type,
-    load_and_check_tsv,
-    mask_processing,
-    write_missing_mods,
-)
 
 logger = getLogger("clinicadl.generate.hypometabolic")
 

@@ -8,13 +8,12 @@ from joblib import Parallel, delayed
 
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
-from clinicadl.preprocessing.preprocessing import write_preprocessing
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
-
-from .....generate.generate_utils import (
+from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
     write_missing_mods,
 )
+from clinicadl.preprocessing.preprocessing import write_preprocessing
+from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 
 logger = getLogger("clinicadl.generate.shepplogan")
 

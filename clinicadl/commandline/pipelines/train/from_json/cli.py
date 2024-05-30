@@ -24,7 +24,7 @@ def cli(**kwargs):
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
-    from clinicadl.train.trainer import Trainer
+    from clinicadl.trainer.trainer import Trainer
     from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 
     logger = getLogger("clinicadl")

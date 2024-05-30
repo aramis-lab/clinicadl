@@ -20,8 +20,8 @@ from clinicadl.config.options import (
     transforms,
     validation,
 )
-from clinicadl.train.trainer import Trainer
 from clinicadl.train.utils import merge_cli_and_config_file_options
+from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import Task
 
 

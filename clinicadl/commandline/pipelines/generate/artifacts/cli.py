@@ -8,15 +8,14 @@ from joblib import Parallel, delayed
 
 from clinicadl.generate import generate_param
 from clinicadl.generate.generate_config import GenerateArtifactsConfig
-from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
-
-from .....generate.generate_utils import (
+from clinicadl.generate.generate_utils import (
     find_file_type,
     load_and_check_tsv,
     write_missing_mods,
 )
+from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.generate.artifacts")
 

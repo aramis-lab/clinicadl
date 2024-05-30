@@ -14,7 +14,7 @@ from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.utils.enum import Normalization, Pooling, Task
 
 if TYPE_CHECKING:
-    from clinicadl.train.trainer import TrainConfig
+    from clinicadl.trainer.trainer import TrainConfig
 
 
 class RandomSearchConfig(
