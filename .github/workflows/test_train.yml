@@ -19,6 +19,7 @@ env:
 
 jobs:
   test-train-gpu:
+    if: github.event.pull_request.draft == false
     runs-on:
       - self-hosted
       - Linux
@@ -38,7 +39,7 @@ jobs:
             echo "all good, continue"
           else
             echo "the last commit log \"$last_commit_log\" contains \"$COMMIT_FILTER\", stopping"
-            exit 78
+            exit 0
           fi
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
