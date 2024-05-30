@@ -1,13 +1,12 @@
 # coding: utf8
 import json
-import os
 import shutil
 from os.path import exists
 from pathlib import Path
 
 import pytest
 
-from clinicadl import MapsManager
+from clinicadl.predict.predict_manager import PredictManager
 from tests.testing_tools import clean_folder, compare_folders
 
 
@@ -74,8 +73,10 @@ def test_predict(cmdopt, tmp_path, test_name):
         with open(json_path, "w") as f:
             f.write(json_data)
 
-    maps_manager = MapsManager(model_folder, verbose="debug")
-    maps_manager.predict(
+    from clinicadl.config.config.pipelines.predict import PredictConfig
+
+    predict_config = PredictConfig(
+        maps_dir=model_folder,
         data_group="test-RANDOM",
         caps_directory=input_dir / "caps_random",
         tsv_path=input_dir / "caps_random/data.tsv",
@@ -84,11 +85,15 @@ def test_predict(cmdopt, tmp_path, test_name):
         overwrite=True,
         diagnoses=["CN"],
     )
+    predict_manager = PredictManager(predict_config)
+    predict_manager.predict()
 
     for mode in modes:
-        maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
+        predict_manager.maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
         if use_labels:
-            maps_manager.get_metrics(data_group="test-RANDOM", mode=mode)
+            predict_manager.maps_manager.get_metrics(
+                data_group="test-RANDOM", mode=mode
+            )
 
     assert compare_folders(
         tmp_out_dir / test_name,

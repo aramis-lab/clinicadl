@@ -26,37 +26,9 @@ new_tsv_dir = click.argument("new_tsv_dir", type=click.Path(path_type=Path))
 output_directory = click.argument("output_directory", type=click.Path(path_type=Path))
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
 
-# GENERATE
-generated_caps = click.argument(
-    "generated_caps_directory", type=click.Path(path_type=Path)
-)
-
-# PREDICT
-data_group = click.argument("data_group", type=str)
 
 # TRAIN
 preprocessing_json = click.argument("preprocessing_json", type=str)
-
-# EXTRACT
-modality = click.argument(
-    "modality",
-    type=click.Choice(
-        [
-            "t1-linear",
-            "t2-linear",
-            "t1-extensive",
-            "dwi-dti",
-            "pet-linear",
-            "flair-linear",
-            "custom",
-        ]
-    ),
-)
-
-modality_bids = click.argument(
-    "modality_bids",
-    type=click.Choice(["t1", "pet", "flair", "dwi", "custom"]),
-)
 
 modality_bids = click.argument(
     "modality_bids",

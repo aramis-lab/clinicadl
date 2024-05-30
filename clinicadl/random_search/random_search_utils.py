@@ -4,7 +4,8 @@ from typing import Any, Dict, Tuple
 
 import toml
 
-from clinicadl.train.train_utils import build_train_dict
+from clinicadl.train.utils import extract_config_from_toml_file
+from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.preprocessing import path_decoder, read_preprocessing
 
@@ -49,7 +50,9 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
     space_dict.setdefault("n_conv", 1)
     space_dict.setdefault("wd_bool", True)
 
-    train_default = build_train_dict(toml_path, space_dict["network_task"])
+    train_default = extract_config_from_toml_file(
+        toml_path, Task(space_dict["network_task"])
+    )
 
     # Mode and preprocessing
     preprocessing_json = (

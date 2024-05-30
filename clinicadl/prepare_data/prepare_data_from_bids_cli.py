@@ -6,7 +6,6 @@ import click
 from clinicadl.utils import cli_param
 
 from .prepare_data import DeepLearningPrepareData
-from .prepare_data_utils import get_parameters_dict
 
 
 @click.command(name="image", no_args_is_help=True)

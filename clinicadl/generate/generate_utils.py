@@ -3,7 +3,7 @@
 import random
 from copy import copy
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -16,18 +16,25 @@ from clinicadl.utils.clinica_utils import (
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.enum import (
+    LinearModality,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 
 def find_file_type(
-    preprocessing: str,
+    preprocessing: Union[str, Preprocessing],
     uncropped_image: bool,
-    tracer: str,
-    suvr_reference_region: str,
+    tracer: Tracer,
+    suvr_reference_region: SUVRReferenceRegions,
 ) -> Dict[str, str]:
-    if preprocessing == "t1-linear":
-        file_type = linear_nii("T1w", uncropped_image)
-    elif preprocessing == "pet-linear":
+    preprocessing = Preprocessing(preprocessing)
+    if preprocessing == Preprocessing.T1_LINEAR:
+        file_type = linear_nii(LinearModality.T1W, uncropped_image)
+    elif preprocessing == Preprocessing.PET_LINEAR:
         if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
                 "`tracer` and `suvr_reference_region` must be defined "
@@ -36,7 +43,7 @@ def find_file_type(
         file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
     else:
         raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
+            f"Generation of synthetic data is not implemented for preprocessing {preprocessing.value}"
         )
 
     return file_type
@@ -57,15 +64,15 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:
 
 
 def load_and_check_tsv(
-    tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
+    tsv_path: Optional[Path], caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-    if tsv_path is not None:
+    if tsv_path is not None and tsv_path.is_file():
         if len(caps_dict) == 1:
             df = pd.read_csv(tsv_path, sep="\t")
             if ("session_id" not in list(df.columns.values)) or (
                 "participant_id" not in list(df.columns.values)
             ):
-                raise Exception(
+                raise ClinicaDLTSVError(
                     "the data file is not in the correct format."
                     "Columns should include ['participant_id', 'session_id']"
                 )
@@ -78,7 +85,11 @@ def load_and_check_tsv(
             df = pd.DataFrame()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = tsv_df.loc[idx, "path"]
+                cohort_path = Path(tsv_df.loc[idx, "path"])
+                if not cohort_path.is_file():
+                    raise ClinicaDLTSVError(
+                        f"The cohort path: {cohort_path} doesn't lead to a file"
+                    )
                 cohort_df = pd.read_csv(cohort_path, sep="\t")
                 cohort_df["cohort"] = cohort_name
                 df = pd.concat([df, cohort_df])

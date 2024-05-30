@@ -1,5 +1,6 @@
 import errno
 import json
+from copy import copy
 from pathlib import Path
 from typing import Any, Dict
 
@@ -41,7 +42,8 @@ def path_encoder(obj):
 
 def path_decoder(obj):
     if isinstance(obj, dict):
-        for key, value in obj.items():
+        obj2 = copy(obj)
+        for key, value in obj2.items():
             if isinstance(value, dict):
                 for key2, value2 in value.items():
                     if (
@@ -56,19 +58,18 @@ def path_decoder(obj):
                             obj[key][key2] = False
                         else:
                             obj[key][key2] = Path(value2)
-            else:
-                if (
-                    key.endswith("tsv")
-                    or key.endswith("dir")
-                    or key.endswith("directory")
-                    or key.endswith("path")
-                    or key.endswith("json")
-                    or key.endswith("location")
-                ):
-                    if value == "" or value is False:
-                        obj[key] = False
-                    else:
-                        obj[key] = Path(value)
+            elif (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
+                if value == "" or value is False or value is None:
+                    obj[key] = False
+                else:
+                    obj[key] = Path(value)
     return obj
 
 

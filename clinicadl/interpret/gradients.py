@@ -1,18 +1,26 @@
+import abc
+
 import torch
 from torch.cuda.amp import autocast
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
-class VanillaBackProp:
-    """
-    Produces gradients generated with vanilla back propagation from the image
-    """
-
+class Gradients:
     def __init__(self, model):
         self.model = model
         self.model.eval()
         self.device = next(model.parameters()).device
+
+    @abc.abstractmethod
+    def generate_gradients(self):
+        pass
+
+
+class VanillaBackProp(Gradients):
+    """
+    Produces gradients generated with vanilla back propagation from the image
+    """
 
     def generate_gradients(
         self, input_batch, target_class, amp: bool = False, **kwargs
@@ -36,7 +44,7 @@ class VanillaBackProp:
         return gradients
 
 
-class GradCam:
+class GradCam(Gradients):
     """
     Produces Grad-CAM to a monai.networks.nets.Classifier
     """
@@ -44,10 +52,7 @@ class GradCam:
     def __init__(self, model):
         from clinicadl.utils.network.sub_network import CNN
 
-        self.model = model
-        self.model.eval()
-        self.device = next(model.parameters()).device
-
+        super().__init__(model=model)
         if not isinstance(model, CNN):
             raise ValueError("Grad-CAM was only implemented for CNN models.")
 
@@ -116,6 +121,3 @@ class GradCam:
         )
 
         return resize_transform(grad_cam)
-
-
-method_dict = {"gradients": VanillaBackProp, "grad-cam": GradCam}

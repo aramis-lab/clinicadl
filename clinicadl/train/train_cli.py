@@ -1,8 +1,8 @@
 import click
 
-from .from_json_cli import cli as from_json_cli
-from .list_models_cli import cli as list_models_cli
-from .resume_cli import cli as resume_cli
+from .from_json import cli as from_json_cli
+from .list_models import cli as list_models_cli
+from .resume import cli as resume_cli
 from .tasks.classification_cli import cli as classification_cli
 from .tasks.reconstruction_cli import cli as reconstruction_cli
 from .tasks.regression_cli import cli as regression_cli

@@ -8,8 +8,10 @@ import nibabel as nib
 import torch
 from torch.utils.data import Dataset
 
+from clinicadl.prepare_data.prepare_data_config import PrepareDataImageConfig
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
+from clinicadl.utils.enum import LinearModality, Preprocessing
 
 
 class QCDataset(Dataset):
@@ -28,7 +30,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
-        from clinicadl.utils.caps_dataset.data import MinMaxNormalization
+        from clinicadl.utils.transforms.transforms import MinMaxNormalization
 
         self.img_dir = img_dir
         self.df = data_df
@@ -46,12 +48,17 @@ class QCDataset(Dataset):
         self.normalization = MinMaxNormalization()
 
         self.preprocessing_dict = {
-            "preprocessing": "t1-linear",
+            "preprocessing": Preprocessing.T1_LINEAR.value,
             "mode": "image",
             "use_uncropped_image": use_uncropped_image,
-            "file_type": linear_nii("T1w", use_uncropped_image),
+            "file_type": linear_nii(LinearModality.T1W, use_uncropped_image),
             "use_tensor": use_extracted_tensors,
         }
+        self.config = PrepareDataImageConfig(
+            caps_directory=Path(""),
+            preprocessing_cls=Preprocessing.T1_LINEAR,
+            use_uncropped_image=use_uncropped_image,
+        )
 
     def __len__(self):
         return len(self.df)
@@ -68,7 +75,7 @@ class QCDataset(Dataset):
             )[0]
             image_path = Path(image_output[0])
             image_filename = image_path.name
-            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            folder, file_type = compute_folder_and_file_type(config=self.config)
             image_dir = (
                 self.img_dir
                 / "subjects"
@@ -87,7 +94,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii("T1w", self.use_uncropped_image),
+                linear_nii(LinearModality.T1W, self.use_uncropped_image),
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)

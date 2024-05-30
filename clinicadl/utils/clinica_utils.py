@@ -15,6 +15,15 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
+from clinicadl.utils.enum import (
+    BIDSModality,
+    DTIMeasure,
+    DTISpace,
+    LinearModality,
+    Preprocessing,
+    SUVRReferenceRegions,
+    Tracer,
+)
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLBIDSError,
@@ -26,9 +35,9 @@ RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "che
 
 
 def bids_nii(
-    modality: str = "t1",
-    tracer: str = None,
-    reconstruction: str = None,
+    modality: Union[str, BIDSModality] = BIDSModality.T1,
+    tracer: Optional[Union[str, Tracer]] = None,
+    reconstruction: Optional[str] = None,
 ) -> dict:
     """Return the query dict required to capture PET scans.
 
@@ -51,19 +60,22 @@ def bids_nii(
     dict :
         The query dictionary to get PET scans.
     """
-    import os
 
-    modalities = ("t1", "dwi", "pet", "flair")
-    if modality not in modalities:
-        raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {modalities}"
+    try:
+        modality = BIDSModality(modality)
+    except ClinicaDLArgumentError:
+        print(
+            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
         )
-    elif modality == "pet":
-        trc = "" if tracer is None else f"_trc-{tracer}"
+
+    if modality == BIDSModality.PET:
+        if tracer is not None:
+            tracer = Tracer(tracer)
+        trc = "" if tracer is None else f"_trc-{tracer.value}"
         rec = "" if reconstruction is None else f"_rec-{reconstruction}"
-        description = f"PET data"
+        description = "PET data"
         if tracer:
-            description += f" with {tracer} tracer"
+            description += f" with {tracer.value} tracer"
         if reconstruction:
             description += f" and reconstruction method {reconstruction}"
 
@@ -71,25 +83,32 @@ def bids_nii(
             "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
             "description": description,
         }
-    elif modality == "t1":
+    elif modality == BIDSModality.T1:
         return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
-    elif modality == "flair":
-        return {"pattern": "sub-*_ses-*_flair.nii*", "description": "FLAIR T2w MRI"}
-    elif modality == "dwi":
-        return {"pattern": "dwi/sub-*_ses-*_dwi.nii*", "description": "DWI NIfTI"}
+    elif modality == BIDSModality.FLAIR:
+        return {
+            "pattern": "sub-*_ses-*_flair.nii*",
+            "description": "FLAIR T2w MRI",
+        }
+    elif modality == BIDSModality.DWI:
+        return {
+            "pattern": "dwi/sub-*_ses-*_dwi.nii*",
+            "description": "DWI NIfTI",
+        }
 
 
-def linear_nii(modality: str, uncropped_image: bool) -> dict:
-    if modality not in ("T1w", "T2w", "flair"):
-        raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({modality}) of images"
-        )
-    elif modality == "T1w":
-        needed_pipeline = "t1-linear"
-    elif modality == "T2w":
-        needed_pipeline = "t2-linear"
-    elif modality == "flair":
-        needed_pipeline = "flair-linear"
+def linear_nii(modality: Union[LinearModality, str], uncropped_image: bool) -> dict:
+    try:
+        modality = LinearModality(modality)
+    except ClinicaDLArgumentError:
+        print(f"ClinicaDL is Unable to read this modality ({modality}) of images")
+
+    if modality == LinearModality.T1W:
+        needed_pipeline = Preprocessing.T1_LINEAR
+    elif modality == LinearModality.T2W:
+        needed_pipeline = Preprocessing.T2_LINEAR
+    elif modality == LinearModality.FLAIR:
+        needed_pipeline = Preprocessing.FLAIR_LINEAR
 
     if uncropped_image:
         desc_crop = ""
@@ -97,8 +116,8 @@ def linear_nii(modality: str, uncropped_image: bool) -> dict:
         desc_crop = "_desc-Crop"
 
     information = {
-        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality}.nii.gz",
-        "description": f"{modality} Image registered in MNI152NLin2009cSym space using {needed_pipeline} pipeline "
+        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
+        "description": f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
         + (
             ""
             if uncropped_image
@@ -109,16 +128,9 @@ def linear_nii(modality: str, uncropped_image: bool) -> dict:
     return information
 
 
-class DTIBasedMeasure(str, Enum):
-    """Possible DTI measures."""
-
-    FRACTIONAL_ANISOTROPY = "FA"
-    MEAN_DIFFUSIVITY = "MD"
-    AXIAL_DIFFUSIVITY = "AD"
-    RADIAL_DIFFUSIVITY = "RD"
-
-
-def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -> dict:
+def dwi_dti(
+    measure: Union[str, DTIMeasure], space: Union[str, DTISpace] = None
+) -> dict:
     """Return the query dict required to capture DWI DTI images.
 
     Parameters
@@ -135,8 +147,8 @@ def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -
     dict :
         The query dictionary to get DWI DTI images.
     """
-    measure = DTIBasedMeasure(measure)
-    space = space or "*"
+    measure = DTIMeasure(measure)
+    space = DTISpace(space)
 
     return {
         "pattern": f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
@@ -146,8 +158,13 @@ def dwi_dti(measure: Union[str, DTIBasedMeasure], space: Optional[str] = None) -
 
 
 def pet_linear_nii(
-    tracer: str, suvr_reference_region: str, uncropped_image: bool
+    tracer: Union[str, Tracer],
+    suvr_reference_region: Union[str, SUVRReferenceRegions],
+    uncropped_image: bool,
 ) -> dict:
+    tracer = Tracer(tracer)
+    suvr_reference_region = SUVRReferenceRegions(suvr_reference_region)
+
     if uncropped_image:
         description = ""
     else:
@@ -156,7 +173,7 @@ def pet_linear_nii(
     information = {
         "pattern": str(
             Path("pet_linear")
-            / f"*_trc-{tracer}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii.gz"
+            / f"*_trc-{tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region.value}_pet.nii.gz"
         ),
         "description": "",
         "needed_pipeline": "pet-linear",
@@ -310,7 +327,7 @@ def get_subject_session_list(
     with e.g. clinicadl_file_reader_function.
     """
 
-    if not subject_session_file:
+    if subject_session_file is None or not Path(subject_session_file).is_file():
         output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
         tsv_file = f"subjects_sessions_list_{timestamp}.tsv"
@@ -329,7 +346,7 @@ def get_subject_session_list(
 def create_subs_sess_list(
     input_dir: Path,
     output_dir: Path,
-    file_name: str = None,
+    file_name: Optional[str] = None,
     is_bids_dir: bool = True,
     use_session_tsv: bool = False,
 ):
@@ -343,7 +360,6 @@ def create_subs_sess_list(
             not (i.e. a CAPS directory)
         use_session_tsv (boolean): Specify if the list uses the sessions listed in the sessions.tsv files
     """
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if not file_name:
@@ -356,7 +372,6 @@ def create_subs_sess_list(
     else:
         path_to_search = input_dir / "subjects"
     subjects_paths = list(path_to_search.glob("*sub-*"))
-
     # Sort the subjects list
     subjects_paths.sort()
 
@@ -367,8 +382,8 @@ def create_subs_sess_list(
         subj_id = sub_path.name
 
         if use_session_tsv:
-            session_df = pd.read_csv(sub_path / subj_id + "_sessions.tsv", sep="\t")
-            session_df.dropna(how="all", inplace=True)
+            session_df = pd.read_csv(sub_path / (subj_id + "_sessions.tsv"), sep="\t")
+            session_df = session_df.dropna(how="all")
             session_list = sorted(list(session_df["session_id"].to_numpy()))
             for session in session_list:
                 subjs_sess_tsv.write(subj_id + "\t" + session + "\n")
@@ -383,7 +398,7 @@ def create_subs_sess_list(
     subjs_sess_tsv.close()
 
 
-def insensitive_glob(pattern_glob: str, recursive: Optional[bool] = False) -> List[str]:
+def insensitive_glob(pattern_glob: str, recursive: bool = False) -> List[str]:
     """This function is the glob.glob() function that is insensitive to the case.
 
     Parameters
@@ -737,7 +752,6 @@ def _get_entities(files: List[Path], common_suffix: str) -> dict:
     from collections import defaultdict
 
     found_entities = defaultdict(set)
-    # found_entities = dict()
     for f in files:
         entities = get_filename_no_ext(f.name).rstrip(common_suffix).split("_")
         for entity in entities:
@@ -903,8 +917,8 @@ def clinicadl_file_reader(
     sessions: List[str],
     input_directory: Path,
     information: Dict,
-    raise_exception: Optional[bool] = True,
-    n_procs: Optional[int] = 1,
+    raise_exception: bool = True,
+    n_procs: int = 1,
 ):
     """Read files in BIDS or CAPS directory based on participant ID(s).
 
