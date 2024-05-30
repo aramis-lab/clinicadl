@@ -9,7 +9,7 @@ import clinicadl.config.config.pipelines.task.classification as classification
 # Tests for customed validators #
 def test_model_config():
     with pytest.raises(ValidationError):
-        classification.ModelConfig(
+        classification.NetworkConfig(
             **{
                 "architecture": "",
                 "loss": "",
