@@ -5,11 +5,10 @@ import click
 import toml
 from click.core import ParameterSource
 
+from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks
 from clinicadl.utils.preprocessing import path_decoder
-
-from .trainer import Task
 
 
 def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, Any]:

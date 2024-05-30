@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.train.trainer.training_config as config
+import clinicadl.config.config as config
 
 
 # Tests for customed validators #
@@ -120,7 +120,9 @@ def dummy_arguments(caps_example):
 def training_config():
     from pydantic import computed_field
 
-    class TrainingConfig(config.TrainingConfig):
+    from clinicadl.config.config.pipelines.train import TrainConfig
+
+    class TrainingConfig(TrainConfig):
         @computed_field
         @property
         def network_task(self) -> str:

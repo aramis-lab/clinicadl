@@ -1,13 +1,13 @@
 import click
 
-from clinicadl.config import config
+from clinicadl.config.config.computational import ComputationalConfig
 from clinicadl.utils.config_utils import get_default_from_config_class as get_default
 from clinicadl.utils.config_utils import get_type_from_config_class as get_type
 
 # Computational
 amp = click.option(
     "--amp/--no-amp",
-    default=get_default("amp", config.ComputationalConfig),
+    default=get_default("amp", ComputationalConfig),
     help="Enables automatic mixed precision during training and inference.",
     show_default=True,
 )
@@ -21,7 +21,7 @@ fully_sharded_data_parallel = click.option(
 )
 gpu = click.option(
     "--gpu/--no-gpu",
-    default=get_default("gpu", config.ComputationalConfig),
+    default=get_default("gpu", ComputationalConfig),
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
     show_default=True,
 )

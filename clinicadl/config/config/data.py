@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.enum import Mode
+from clinicadl.utils.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.preprocessing import read_preprocessing
 
 logger = getLogger("clinicadl.data_config")
@@ -24,11 +25,16 @@ class DataConfig(BaseModel):  # TODO : put in data module
     label: Optional[str] = None
     label_code: Dict[str, int] = {}
     multi_cohort: bool = False
-    preprocessing_json: Path
+    preprocessing_json: Optional[Path] = None
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
+
+    def adapt_data_with_maps_manager_info(self, maps_manager: MapsManager):
+        # TEMPORARY
+        if self.diagnoses is None or len(self.diagnoses) == 0:
+            self.diagnoses = maps_manager.diagnoses
 
     def create_groupe_df(self):
         group_df = None
