@@ -28,6 +28,7 @@ jobs:
     steps:
       - name: echo
         run: |
+          echo "${{ github.event.head_commit.message }}"
           echo "${{ contains(github.event.head_commit.message, '[skip gpu]') }}"
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
