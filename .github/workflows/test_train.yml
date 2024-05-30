@@ -25,6 +25,7 @@ jobs:
       - Linux
       - ubuntu
       - gpu
+      - aramis
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
@@ -36,8 +37,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Run tests for Train on GPU
         run: |
-          make env.conda
           source "${HOME}/miniconda3/etc/profile.d/conda.sh"
+          make env.conda
           conda activate "${{ github.workspace }}"/env
           make install
           cd tests
