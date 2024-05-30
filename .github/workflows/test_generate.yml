@@ -41,7 +41,7 @@ jobs:
           conda activate "${{ github.workspace }}"/env
           make install
           cd tests
-          poetry run pytest --verbose \
+          poetry run pytest \
           --junitxml=./test-reports/test_generate_report.xml \
           --disable-warnings \
           --verbose \
