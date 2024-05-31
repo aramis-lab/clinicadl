@@ -3,12 +3,11 @@
 import json
 import os
 import shutil
-from os.path import join
 from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import compare_folders
+from .testing_tools import compare_folders, modify_maps
 
 
 @pytest.fixture(
@@ -101,6 +100,9 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
+    if cmdopt["no-gpu"]:
+        test_input.append("--no-gpu")
+
     if tmp_out_dir.is_dir():
         shutil.rmtree(tmp_out_dir)
 
@@ -117,6 +119,13 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
+    if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:
+        json_data_ref = modify_maps(
+            maps=json_data_ref,
+            base_dir=base_dir,
+            no_gpu=cmdopt["no-gpu"],
+            adapt_base_dir=cmdopt["adapt-base-dir"],
+        )
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(

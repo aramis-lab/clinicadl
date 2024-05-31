@@ -1,15 +1,14 @@
 # coding: utf8
 import json
-import os
 import shutil
 from os import system
-from os.path import join
 from pathlib import Path
 
 import pytest
 
 from clinicadl import MapsManager
-from tests.testing_tools import compare_folders
+
+from .testing_tools import modify_maps
 
 
 @pytest.fixture(
@@ -33,6 +32,18 @@ def test_resume(cmdopt, tmp_path, test_name):
     shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
     maps_stopped = tmp_out_dir / test_name
 
+    if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:  # modify the input MAPS
+        with open(maps_stopped / "maps.json", "r") as f:
+            config = json.load(f)
+        config = modify_maps(
+            maps=config,
+            base_dir=base_dir,
+            no_gpu=cmdopt["no-gpu"],
+            adapt_base_dir=cmdopt["adapt-base-dir"],
+        )
+        with open(maps_stopped / "maps.json", "w") as f:
+            json.dump(config, f)
+
     flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
 
@@ -48,4 +59,13 @@ def test_resume(cmdopt, tmp_path, test_name):
             json_data_out = json.load(out)
         with open(ref_dir / "maps_image_cnn" / "maps.json", "r") as ref:
             json_data_ref = json.load(ref)
+
+        if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:
+            json_data_ref = modify_maps(
+                maps=json_data_ref,
+                base_dir=base_dir,
+                no_gpu=cmdopt["no-gpu"],
+                adapt_base_dir=cmdopt["adapt-base-dir"],
+            )
+
         assert json_data_ref == json_data_out

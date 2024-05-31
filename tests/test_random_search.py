@@ -1,6 +1,5 @@
 # coding: utf8
 
-import json
 import os
 import shutil
 from os.path import join
@@ -8,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import compare_folders
+from .testing_tools import change_gpu_in_toml, compare_folders
 
 
 # random searxh for ROI with CNN
@@ -34,16 +33,21 @@ def test_random_search(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir)
+    run_test_random_search(
+        toml_path, generate_input, tmp_out_dir, ref_dir, cmdopt["no-gpu"]
+    )
 
 
-def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir):
+def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir, no_gpu):
     if os.path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
 
     # Write random_search.toml file
     os.makedirs(tmp_out_dir, exist_ok=True)
     shutil.copy(toml_path, tmp_out_dir)
+
+    if no_gpu:
+        change_gpu_in_toml(tmp_out_dir / "random_search.toml")
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
