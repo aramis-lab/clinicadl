@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from clinicadl.utils.tsvtools_utils import extract_baseline
+from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from tests.testing_tools import compare_folders
 
 """

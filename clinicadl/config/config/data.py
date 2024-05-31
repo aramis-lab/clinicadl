@@ -4,10 +4,10 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
+from clinicadl.preprocessing.preprocessing import read_preprocessing
 from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.enum import Mode
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
-from clinicadl.utils.preprocessing import read_preprocessing
 
 logger = getLogger("clinicadl.data_config")
 

@@ -8,9 +8,7 @@ import pandas as pd
 from scipy.stats import ks_2samp, ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.tsvtools_utils import (
+from clinicadl.tsvtools.tsvtools_utils import (
     category_conversion,
     chi2,
     complementary_list,
@@ -20,6 +18,8 @@ from clinicadl.utils.tsvtools_utils import (
     remove_unicity,
     retrieve_longitudinal,
 )
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 
 sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl.tsvtools.split")

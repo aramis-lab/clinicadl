@@ -50,7 +50,7 @@ class GradCam(Gradients):
     """
 
     def __init__(self, model):
-        from clinicadl.utils.network.sub_network import CNN
+        from clinicadl.network.sub_network import CNN
 
         super().__init__(model=model)
         if not isinstance(model, CNN):

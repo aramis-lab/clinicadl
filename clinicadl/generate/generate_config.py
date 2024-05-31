@@ -106,16 +106,8 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
 
 class GenerateHypometabolicConfig(SharedGenerateConfigOne):
     anomaly_degree: float = 30.0
-    pathology_cls: Pathology = Pathology.AD
+    pathology: Pathology = Pathology.AD
     sigma: int = 5
-
-    @property
-    def pathology(self) -> Pathology:
-        return self.pathology_cls
-
-    @pathology.setter
-    def pathology(self, value: Union[str, Pathology]):
-        self.pathology_cls = Pathology(value)
 
 
 class GenerateRandomConfig(SharedGenerateConfigTwo):

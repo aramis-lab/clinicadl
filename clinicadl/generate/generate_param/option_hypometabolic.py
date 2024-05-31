@@ -8,7 +8,7 @@ pathology = click.option(
     "--pathology",
     "-p",
     type=click.Choice(Pathology),
-    default=config_hypometabolic["pathology_cls"].default.value,
+    default=config_hypometabolic["pathology"].default.value,
     help="Pathology applied. To chose in the following list: [ad, bvftd, lvppa, nfvppa, pca, svppa]",
     show_default=True,
 )

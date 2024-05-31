@@ -29,7 +29,7 @@ class ConfigTest(BaseModel):
 
 
 def test_get_default_from_config_class():
-    from clinicadl.utils.config_utils import get_default_from_config_class
+    from clinicadl.config.config_utils import get_default_from_config_class
 
     test_config = ConfigTest()
     assert get_default_from_config_class("parameter_str", test_config) == "a string"
@@ -62,7 +62,7 @@ def test_get_default_from_config_class():
 
 
 def test_get_type_from_config_class():
-    from clinicadl.utils.config_utils import get_type_from_config_class
+    from clinicadl.config.config_utils import get_type_from_config_class
 
     test_config = ConfigTest()
     assert get_type_from_config_class("parameter_str", test_config) == str

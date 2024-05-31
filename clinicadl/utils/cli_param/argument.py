@@ -1,4 +1,5 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
+# TODO: Remove this file, everything is now in the cmdline folder
 
 from pathlib import Path
 
