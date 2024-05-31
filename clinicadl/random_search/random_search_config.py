@@ -5,29 +5,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, field_validator
 
-from clinicadl.train.tasks import ClassificationConfig as BaseClassificationConfig
-from clinicadl.train.tasks import RegressionConfig as BaseRegressionConfig
-from clinicadl.train.trainer import Task
-from clinicadl.utils.config_utils import get_type_from_config_class as get_type
+from clinicadl.config.config.pipelines.task.classification import (
+    ClassificationConfig as BaseClassificationConfig,
+)
+from clinicadl.config.config.pipelines.task.regression import (
+    RegressionConfig as BaseRegressionConfig,
+)
+from clinicadl.config.config_utils import get_type_from_config_class as get_type
+from clinicadl.utils.enum import Normalization, Pooling, Task
 
 if TYPE_CHECKING:
-    from clinicadl.train.trainer import TrainingConfig
-
-
-class Normalization(
-    str, Enum
-):  # TODO : put in model module. Make it consistent with normalizations available in other pipelines.
-    """Available normalization layers in ClinicaDL."""
-
-    BATCH = "BatchNorm"
-    INSTANCE = "InstanceNorm"
-
-
-class Pooling(str, Enum):  # TODO : put in model module
-    """Available pooling techniques in ClinicaDL."""
-
-    MAXPOOLING = "MaxPooling"
-    STRIDE = "stride"
+    from clinicadl.trainer.trainer import TrainConfig
 
 
 class RandomSearchConfig(
@@ -75,7 +63,7 @@ class RandomSearchConfig(
 def training_config_for_random_models(base_training_config):
     base_model_config = get_type("model", base_training_config)
 
-    class ModelConfig(base_model_config):
+    class NetworkConfig(base_model_config):
         """Config class for random models."""
 
         architecture: str = "RandomArchitecture"
@@ -89,7 +77,7 @@ def training_config_for_random_models(base_training_config):
                 v == "RandomArchitecture"
             ), "Only RandomArchitecture can be used in Random Search."
 
-    class TrainingConfig(base_training_config):
+    class TrainConfig(base_training_config):
         """
         Config class for the training of a random model.
 
@@ -102,9 +90,9 @@ def training_config_for_random_models(base_training_config):
             - n_fcblocks
         """
 
-        model: ModelConfig
+        model: NetworkConfig
 
-    return TrainingConfig
+    return TrainConfig
 
 
 @training_config_for_random_models
@@ -117,7 +105,7 @@ class RegressionConfig(BaseRegressionConfig):
     pass
 
 
-def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
+def create_training_config(task: Union[str, Task]) -> Type[TrainConfig]:
     """
     A factory function to create a Training Config class suited for the task, in Random Search mode.
 
@@ -128,7 +116,7 @@ def create_training_config(task: Union[str, Task]) -> Type[TrainingConfig]:
 
     Returns
     -------
-    Type[TrainingConfig]
+    Type[TrainConfig]
         The Config class.
     """
     task = Task(task)

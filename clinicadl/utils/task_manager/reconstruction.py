@@ -166,15 +166,15 @@ class ReconstructionManager(TaskManager):
                 f"Reconstruction loss must be chosen in {compatible_losses}."
             )
         if criterion == "VAEGaussianLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEGaussianLoss
+            from clinicadl.network.vae.vae_utils import VAEGaussianLoss
 
             return VAEGaussianLoss
         elif criterion == "VAEBernoulliLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEBernoulliLoss
+            from clinicadl.network.vae.vae_utils import VAEBernoulliLoss
 
             return VAEBernoulliLoss
         elif criterion == "VAEContinuousBernoulliLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEContinuousBernoulliLoss
+            from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
 
             return VAEContinuousBernoulliLoss
         return getattr(nn, criterion)()

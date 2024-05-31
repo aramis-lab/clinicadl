@@ -3,12 +3,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.train.tasks.regression.regression_config as config
+import clinicadl.config.config.pipelines.task.regression as regression
 
 
 # Tests for customed validators #
 def test_validation_config():
-    c = config.ValidationConfig(selection_metrics=["R2_score"])
+    c = regression.ValidationConfig(selection_metrics=["R2_score"])
     assert c.selection_metrics == ("R2_score",)
 
 
@@ -52,11 +52,11 @@ def good_inputs(dummy_arguments):
 
 def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
-        config.RegressionConfig(**bad_inputs)
+        regression.RegressionConfig(**bad_inputs)
 
 
 def test_passes_validations(good_inputs):
-    c = config.RegressionConfig(**good_inputs)
+    c = regression.RegressionConfig(**good_inputs)
     assert c.model.loss == "KLDivLoss"
     assert c.validation.selection_metrics == ("R2_score",)
     assert c.network_task == "regression"

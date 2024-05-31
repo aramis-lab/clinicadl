@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.predict.predict_config import InterpretConfig
+from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 
@@ -64,7 +64,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
 
 
 def run_interpret(cnn_input, tmp_out_dir, ref_dir):
-    from clinicadl.predict.predict_config import InterpretationMethod
+    from clinicadl.utils.enum import InterpretationMethod
 
     maps_path = tmp_out_dir / "maps"
     if maps_path.is_dir():
