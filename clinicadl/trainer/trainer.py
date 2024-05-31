@@ -14,23 +14,25 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.caps_dataset.data import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
-
 from clinicadl.utils.enum import Task
-from .trainer_utils import create_parameters_dict
+from .trainer_utils import create_parameters_dict, patch_to_read_json
+from clinicadl.train.tasks_utils import create_training_config
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.config.config.pipelines.train import TrainConfig
+
 
 logger = getLogger("clinicadl.trainer")
 
@@ -41,7 +43,6 @@ class Trainer:
     def __init__(
         self,
         config: TrainConfig,
-        maps_manager: Optional[MapsManager] = None,
     ) -> None:
         """
         Parameters
@@ -49,10 +50,7 @@ class Trainer:
         config : BaseTaskConfig
         """
         self.config = config
-        if maps_manager:
-            self.maps_manager = maps_manager
-        else:
-            self.maps_manager = self._init_maps_manager(config)
+        self.maps_manager = self._init_maps_manager(config)
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
@@ -63,6 +61,87 @@ class Trainer:
         return MapsManager(
             maps_path, parameters, verbose=None
         )  # TODO : precise which parameters in config are useful
+
+    @classmethod
+    def from_json(cls, config_file: Path, maps_path: Path) -> Trainer:
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        config_file : Path
+            The parameters, stored in a json files.
+        maps_path : Path
+            The folder where the results of a futur training will be stored.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in config_file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If config_file doesn't exist.
+        """
+        if not (config_file).is_file():
+            raise FileNotFoundError(f"No file found at {config_file}.")
+        config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
+        config_object = create_training_config(config_dict["network_task"])(
+            output_maps_directory=maps_path, **config_dict
+        )
+        return cls(config_object)
+
+    @classmethod
+    def from_maps(cls, maps_path: Path) -> Trainer:
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        maps_path : Path
+            The path of the MAPS folder.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in maps_path.
+
+        Raises
+        ------
+        MAPSError
+            If maps_path folder doesn't exist or there is no maps.json file in it.
+        """
+        if not (maps_path / "maps.json").is_file():
+            raise MAPSError(
+                f"MAPS was not found at {maps_path}."
+                f"To initiate a new MAPS please give a train_dict."
+            )
+        return cls.from_json(maps_path / "maps.json", maps_path)
+
+    def resume(self, splits: List[int]) -> None:
+        """
+        Resume a prematurely stopped training.
+
+        Parameters
+        ----------
+        splits : List[int]
+            The splits that must be resumed.
+        """
+        stopped_splits = set(self.maps_manager.find_stopped_splits())
+        finished_splits = set(self.maps_manager.find_finished_splits())
+        absent_splits = set(splits) - stopped_splits - finished_splits
+
+        logger.info(
+            f"Finished splits {finished_splits}\n"
+            f"Stopped splits {stopped_splits}\n"
+            f"Absent splits {absent_splits}"
+        )
+
+        if len(stopped_splits) > 0:
+            self._resume(list(stopped_splits))
+        if len(absent_splits) > 0:
+            self.train(list(absent_splits), overwrite=True)
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
@@ -120,7 +199,7 @@ class Trainer:
         else:
             self._train_single(split_list, resume=False)
 
-    def resume(
+    def _resume(
         self,
         split_list: Optional[List[int]] = None,
     ) -> None:
