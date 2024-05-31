@@ -141,7 +141,7 @@ def quality_check(
         qc_df = pd.DataFrame(columns=columns)
         qc_df["pass"] = qc_df["pass"].astype(bool)
         softmax = torch.nn.Softmax(dim=1)
-        logger.info(f"Quality check will be performed over {len(dataloader)} images.")
+        logger.info(f"Quality check will be performed over {len(dataloader.dataset)} images.")
 
         for data in dataloader:
             logger.debug(f"Processing subject {data['participant_id']}.")
