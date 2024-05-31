@@ -26,8 +26,8 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train" / "in"
     ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = base_dir / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     clean_folder(tmp_out_dir, recreate=True)
 
