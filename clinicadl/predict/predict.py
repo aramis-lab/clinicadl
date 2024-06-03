@@ -60,11 +60,6 @@ def predict(
         )
     # Check if it is a pythae model
     pythae = "pythae" in maps_manager.parameters["architecture"]
-    
-    print("overwrite:", overwrite)
-    print("batch_size:", batch_size)
-    print("split_list:", split_list)
-    print("pythae:", pythae)
 
     maps_manager.predict(
         data_group,
