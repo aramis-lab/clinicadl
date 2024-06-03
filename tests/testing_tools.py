@@ -95,6 +95,9 @@ def tree(dir_: PathLike, file_out: PathLike):
     """
     from pathlib import Path
 
+    if not dir_.is_dir():
+        raise FileNotFoundError(f"No directory found at {dir_}.")
+
     file_content = ""
 
     for path in sorted(Path(dir_).rglob("*")):
@@ -103,8 +106,6 @@ def tree(dir_: PathLike, file_out: PathLike):
         depth = len(path.relative_to(dir_).parts)
         spacer = "    " * depth
         file_content = file_content + f"{spacer}+ {path.name}\n"
-
-    print(file_content)
 
     Path(file_out).write_text(file_content)
 
@@ -201,9 +202,12 @@ def modify_maps(
         maps["caps_directory"] = str(
             base_dir / Path(maps["caps_directory"]).relative_to(ref_base_dir)
         )
-        maps["tsv_path"] = str(
-            base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
-        )
+        try:
+            maps["tsv_path"] = str(
+                base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
+            )
+        except KeyError:  # maps with only caps directory
+            pass
     return maps
 
 
