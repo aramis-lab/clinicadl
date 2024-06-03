@@ -120,6 +120,7 @@ embedding_weight=1e-2
 # Regularized AE with gradient penalty
 #embedding_weight=1e-2
 #reg_weight=1e-4
+sample_latent = 0
 
 [Computational]
 gpu = true
