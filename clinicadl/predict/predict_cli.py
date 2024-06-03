@@ -78,6 +78,13 @@ from pathlib import Path
     is_flag=True,
     help="""Save the latent representation of the image.""",
 )
+@click.option(
+    "--sample_latent",
+    type=int,
+    default=0,
+    help="""For reconstruction task only, will sample the latent space multiple times to generate
+    multiple reconstructions for a single input.""",
+)
 @cli_param.option.split
 @cli_param.option.selection_metrics
 @cli_param.option.use_gpu
@@ -102,6 +109,7 @@ def cli(
     save_tensor,
     save_nifti,
     save_latent_tensor,
+    sample_latent,
 ):
     """Infer the outputs of a trained model on a test set.
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
@@ -132,4 +140,5 @@ def cli(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
+        sample_latent=sample_latent,
     )

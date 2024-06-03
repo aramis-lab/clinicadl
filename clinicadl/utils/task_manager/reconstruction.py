@@ -13,8 +13,10 @@ class ReconstructionManager(TaskManager):
         super().__init__(mode)
 
     @property
-    def columns(self):
+    def columns(self, sample_latent=0):
         columns = ["participant_id", "session_id", f"{self.mode}_id"]
+        if sample_latent: 
+            columns.append("sample_latent_idx")
         for metric in self.evaluation_metrics:
             columns.append(metric)
         return columns
@@ -39,6 +41,21 @@ class ReconstructionManager(TaskManager):
             data["session_id"][idx],
             data[f"{self.mode}_id"][idx].item(),
         ]
+        for metric in self.evaluation_metrics:
+            row.append(metrics[metric])
+        return [row]
+    
+    def generate_test_row_sample_latent(self, idx, sample_latent_idx, data, outputs):
+        y = data["data"][idx]
+        y_pred = outputs[idx].cpu()
+        metrics = self.metrics_module.apply(y, y_pred)
+        row = [
+            data["participant_id"][idx],
+            data["session_id"][idx],
+            data[f"{self.mode}_id"][idx].item(),
+            sample_latent_idx,
+        ]
+        row.append(sample_latent_idx)
         for metric in self.evaluation_metrics:
             row.append(metrics[metric])
         return [row]

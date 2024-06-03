@@ -63,8 +63,11 @@ class BasePythae(Network):
         return model_outputs.recon_x, loss_dict
 
     # Network specific
-    def predict(self, x):
-        return self.model.predict(x.data)
+    def predict(self, x, sample_latent=0, seed=None):
+        if sample_latent == 0:
+            return self.model.predict(x.data)
+        else: 
+            return self.model.predict(x.data, sample_latent=sample_latent, seed=seed)
 
     def forward(self, x):
         return self.model.forward(x)

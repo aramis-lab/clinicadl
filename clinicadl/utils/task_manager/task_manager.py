@@ -21,7 +21,7 @@ class TaskManager:
 
     @property
     @abstractmethod
-    def columns(self):
+    def columns(self, **kwargs):
         """
         List of the columns' names in the TSV file containing the predictions.
         """
@@ -175,9 +175,11 @@ class TaskManager:
         save_reconstruction_tensor=False,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
-        tensor_path=None, 
+        tensor_path=None,
         nifti_path=None,
         latent_tensor_path=None,
+        sample_latent=0,
+        seed=None,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -199,6 +201,7 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
+        sample_latent_results_df = pd.DataFrame(columns=self.columns(sample_latent=sample_latent))
         with torch.no_grad():
             for data in dataloader:
                 outputs = model.predict(data)
@@ -245,6 +248,14 @@ class TaskManager:
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                         )
                         torch.save(latent, path.join(latent_tensor_path, output_filename))
+                        
+                    if sample_latent > 0: 
+                        outputs = model.predict(data, sample_latent=sample_latent, seed=seed)
+
+                        for i in range(sample_latent):
+                            row = self.generate_test_row_sample_latent(idx, i, data, outputs[i]["recon_x"])
+                            row_df = pd.DataFrame(row, columns=self.columns(sample_latent=sample_latent))
+                            sample_latent_results_df = pd.concat([sample_latent_results_df, row_df])
 
                 del outputs
             results_df.reset_index(inplace=True, drop=True)
@@ -258,7 +269,7 @@ class TaskManager:
             metrics_df = self.compute_metrics(results_df)
         torch.cuda.empty_cache()
 
-        return results_df, metrics_df
+        return results_df, metrics_df, sample_latent_results_df
 
     def test(
         self,
