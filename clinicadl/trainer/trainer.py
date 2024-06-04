@@ -30,7 +30,7 @@ from .trainer_utils import create_parameters_dict
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
-    from clinicadl.config.config.pipelines.train import TrainConfig
+    from clinicadl.trainer.config.train import TrainConfig
 
 
 logger = getLogger("clinicadl.trainer")

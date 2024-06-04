@@ -4,31 +4,31 @@ from typing import Tuple
 
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
-from clinicadl.config.config.pipelines.train import TrainConfig
-from clinicadl.utils.enum import RegressionLoss, RegressionMetric, Task
+from clinicadl.trainer.config.train import TrainConfig
+from clinicadl.utils.enum import (
+    Normalization,
+    ReconstructionLoss,
+    ReconstructionMetric,
+    Task,
+)
 
 logger = getLogger("clinicadl.reconstruction_config")
-logger = getLogger("clinicadl.regression_config")
-
-
-class DataConfig(BaseDataConfig):  # TODO : put in data module
-    """Config class to specify the data in regression mode."""
-
-    label: str = "age"
-
-    @field_validator("label")
-    def validator_label(cls, v):
-        return v  # TODO : check if label in columns
 
 
 class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
-    """Config class for regression models."""
+    """Config class for reconstruction models."""
 
-    architecture: str = "Conv5_FC3"
-    loss: RegressionLoss = RegressionLoss.MSELoss
+    architecture: str = "AE_Conv5_FC3"
+    loss: ReconstructionLoss = ReconstructionLoss.MSELoss
+    latent_space_size: PositiveInt = 128
+    feature_size: PositiveInt = 1024
+    n_conv: PositiveInt = 4
+    io_layer_channels: PositiveInt = 8
+    recons_weight: PositiveFloat = 1.0
+    kl_weight: PositiveFloat = 1.0
+    normalization: Normalization = Normalization.BATCH
 
     @field_validator("architecture")
     def validator_architecture(cls, v):
@@ -36,9 +36,9 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
 
 
 class ValidationConfig(BaseValidationConfig):
-    """Config class for the validation procedure in regression mode."""
+    """Config class for the validation procedure in reconstruction mode."""
 
-    selection_metrics: Tuple[RegressionMetric, ...] = (RegressionMetric.LOSS,)
+    selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
@@ -47,9 +47,9 @@ class ValidationConfig(BaseValidationConfig):
         return v
 
 
-class RegressionConfig(TrainConfig):
+class ReconstructionConfig(TrainConfig):
     """
-    Config class for the training of a regression model.
+    Config class for the training of a reconstruction model.
 
     The user must specified at least the following arguments:
     - caps_directory
@@ -58,11 +58,10 @@ class RegressionConfig(TrainConfig):
     - output_maps_directory
     """
 
-    data: DataConfig
     model: NetworkConfig
     validation: ValidationConfig
 
     @computed_field
     @property
     def network_task(self) -> Task:
-        return Task.REGRESSION
+        return Task.RECONSTRUCTION

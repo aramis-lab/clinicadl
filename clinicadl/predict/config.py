@@ -9,9 +9,9 @@ from clinicadl.config.config.maps_manager import (
 )
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 
-from ..computational import ComputationalConfig
-from ..cross_validation import CrossValidationConfig
-from ..validation import ValidationConfig
+from ..config.config.computational import ComputationalConfig
+from ..config.config.cross_validation import CrossValidationConfig
+from ..config.config.validation import ValidationConfig
 
 logger = getLogger("clinicadl.predict_config")
 

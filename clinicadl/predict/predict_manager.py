@@ -14,8 +14,8 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.caps_dataset.data_utils import (
     return_dataset,
 )
-from clinicadl.config.config.pipelines.interpret import InterpretConfig
-from clinicadl.config.config.pipelines.predict import PredictConfig
+from clinicadl.interpret.config import InterpretConfig
+from clinicadl.predict.config import PredictConfig
 from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
