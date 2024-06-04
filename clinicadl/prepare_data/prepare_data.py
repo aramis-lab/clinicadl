@@ -8,6 +8,7 @@ def DeepLearningPrepareData(
     n_proc: int,
     parameters: dict,
     from_bids: str = None,
+    mood24: bool = False,
 ):
     from joblib import Parallel, delayed
     from torch import save as save_tensor
@@ -17,6 +18,7 @@ def DeepLearningPrepareData(
         clinicadl_file_reader,
         container_from_filename,
         get_subject_session_list,
+        mood24_file_reader,
     )
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
@@ -26,7 +28,11 @@ def DeepLearningPrepareData(
     logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
-    if from_bids is not None:
+    if mood24:
+        input_directory = Path(from_bids)
+        logger.debug(f"MOOD directory: {input_directory}.")
+        is_bids_dir = True
+    elif from_bids is not None:
         try:
             input_directory = Path(from_bids)
         except ClinicaDLArgumentError:
@@ -38,7 +44,6 @@ def DeepLearningPrepareData(
         check_caps_folder(input_directory)
         logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
-    print("is bids dir", is_bids_dir)
     subjects, sessions = get_subject_session_list(
         input_directory, tsv_file, is_bids_dir, False, None
     )
@@ -64,12 +69,17 @@ def DeepLearningPrepareData(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
 
-    mod_subfolder, file_type = compute_folder_and_file_type(parameters, is_bids_dir)
+    mod_subfolder, file_type = compute_folder_and_file_type(
+        parameters, is_bids_dir, mood24=mood24
+    )
     parameters["file_type"] = file_type
     # Input file:
-    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
-        0
-    ]
+    if mood24:
+        input_files = mood24_file_reader(input_directory)
+    else:
+        input_files = clinicadl_file_reader(
+            subjects, sessions, input_directory, file_type
+        )[0]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
@@ -93,7 +103,12 @@ def DeepLearningPrepareData(
             from .prepare_data_utils import extract_images
 
             logger.debug(f"Processing of {file}.")
-            container = container_from_filename(file)
+            if mood24:
+                container = (
+                    caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
+                )
+            else:
+                container = container_from_filename(file)
             subfolder = "image_based"
             output_mode = extract_images(Path(file))
             logger.debug(f"Image extracted.")
@@ -108,7 +123,12 @@ def DeepLearningPrepareData(
                 from .prepare_data_utils import extract_slices
 
                 logger.debug(f"  Processing of {file}.")
-                container = container_from_filename(file)
+                if mood24:
+                    container = (
+                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
+                    )
+                else:
+                    container = container_from_filename(file)
                 subfolder = "slice_based"
                 output_mode = extract_slices(
                     Path(file),
@@ -129,7 +149,12 @@ def DeepLearningPrepareData(
                 from .prepare_data_utils import extract_patches
 
                 logger.debug(f"  Processing of {file}.")
-                container = container_from_filename(file)
+                if mood24:
+                    container = (
+                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
+                    )
+                else:
+                    container = container_from_filename(file)
                 subfolder = "patch_based"
                 output_mode = extract_patches(
                     Path(file),
@@ -149,7 +174,12 @@ def DeepLearningPrepareData(
                 from .prepare_data_utils import extract_roi
 
                 logger.debug(f"  Processing of {file}.")
-                container = container_from_filename(file)
+                if mood24:
+                    container = (
+                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
+                    )
+                else:
+                    container = container_from_filename(file)
                 subfolder = "roi_based"
                 if parameters["preprocessing"] == "custom":
                     if not parameters["roi_custom_template"]:

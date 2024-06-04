@@ -74,7 +74,9 @@ def compute_extract_json(extract_json: str) -> str:
 
 
 def compute_folder_and_file_type(
-    parameters: Dict[str, Any], from_bids: Path = None
+    parameters: Dict[str, Any],
+    from_bids: Path = None,
+    mood24: bool = False,
 ) -> Tuple[str, Dict[str, str]]:
     from clinicadl.utils.clinica_utils import (
         bids_nii,
@@ -86,10 +88,16 @@ def compute_folder_and_file_type(
     if from_bids is not None:
         if parameters["preprocessing"] == "custom":
             mod_subfolder = "custom"
-            file_type = {
-                "pattern": f"*{parameters['custom_suffix']}",
-                "description": "Custom suffix",
-            }
+            if mood24:
+                file_type = {
+                    "pattern": f"{parameters['custom_suffix']}",
+                    "description": "mood24 suffix",
+                }
+            else:
+                file_type = {
+                    "pattern": f"*{parameters['custom_suffix']}",
+                    "description": "Custom suffix",
+                }
         else:
             mod_subfolder = parameters["preprocessing"]
             file_type = bids_nii(parameters["preprocessing"])
@@ -118,10 +126,16 @@ def compute_folder_and_file_type(
             )
         elif parameters["preprocessing"] == "custom":
             mod_subfolder = "custom"
-            file_type = {
-                "pattern": f"*{parameters['custom_suffix']}",
-                "description": "Custom suffix",
-            }
+            if mood24:
+                file_type = {
+                    "pattern": f"{parameters['custom_suffix']}",
+                    "description": "mood24 suffix",
+                }
+            else:
+                file_type = {
+                    "pattern": f"*{parameters['custom_suffix']}",
+                    "description": "Custom suffix",
+                }
             parameters["use_uncropped_image"] = None
         else:
             raise NotImplementedError(

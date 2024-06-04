@@ -608,15 +608,16 @@ def find_sub_ses_pattern_path(
     """
 
     input_directory = Path(input_directory)
-    print(is_bids)
+
     if is_bids:
         origin_pattern = input_directory / subject / session
+        current_pattern = origin_pattern / "**" / pattern
     else:
         origin_pattern = input_directory / "subjects" / subject / session
+        current_pattern = origin_pattern / "**" / pattern
 
-    current_pattern = origin_pattern / "**" / pattern
-    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
         #   - there is a problem somewhere which made us catch too many files
@@ -1043,23 +1044,18 @@ def clinicadl_file_reader(
     """
     from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
-    print(subjects)
-    print(sessions)
-    print(input_directory)
-    print(information)
     _check_information(information)
     pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)
-    if is_bids:
-        check_bids_folder(input_directory)
-    else:
+    if not is_bids:
         check_caps_folder(input_directory)
+    else:
+        check_bids_folder(input_directory)
 
     if len(subjects) != len(sessions):
         raise ValueError("Subjects and sessions must have the same length.")
     if len(subjects) == 0:
         return [], ""
-
     file_reader = _read_files_parallel if n_procs > 1 else _read_files_sequential
     results, errors_encountered = file_reader(
         input_directory,
@@ -1189,3 +1185,8 @@ def fetch_file(remote: RemoteFileStructure, dirname: Path) -> Path:
             f"({remote.checksum}), file may be corrupted."
         )
     return file_path
+
+
+def mood24_file_reader(input_directory):
+    current_glob_found = list(input_directory.glob("*.nii.gz"))
+    return current_glob_found
