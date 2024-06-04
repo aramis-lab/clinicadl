@@ -57,10 +57,14 @@ class Trainer:
         # temporary: to match CLI data. TODO : change CLI data
 
         parameters, maps_path = create_parameters_dict(config)
-
-        return MapsManager(
-            maps_path, parameters, verbose=None
-        )  # TODO : precise which parameters in config are useful
+        if maps_path.is_dir():
+            return MapsManager(
+                maps_path, verbose=None
+            )  # TODO : precise which parameters in config are useful
+        else:
+            return MapsManager(
+                maps_path, parameters, verbose=None
+            )  # TODO : precise which parameters in config are useful
 
     @classmethod
     def from_json(cls, config_file: str | Path, maps_path: str | Path) -> Trainer:
@@ -135,7 +139,11 @@ class Trainer:
         """
         stopped_splits = set(self.maps_manager.find_stopped_splits())
         finished_splits = set(self.maps_manager.find_finished_splits())
-        absent_splits = set(splits) - stopped_splits - finished_splits
+        # TODO : check these two lines. Why do we need a split_manager?
+        split_manager = self.maps_manager._init_split_manager(split_list=splits)
+        split_iterator = split_manager.split_iterator()
+        ###
+        absent_splits = set(split_iterator) - stopped_splits - finished_splits
 
         logger.info(
             f"Finished splits {finished_splits}\n"
@@ -143,6 +151,10 @@ class Trainer:
             f"Absent splits {absent_splits}"
         )
 
+        if len(stopped_splits) == 0 and len(absent_splits) == 0:
+            raise ValueError(
+                "Training has been completed on all the splits you passed."
+            )
         if len(stopped_splits) > 0:
             self._resume(list(stopped_splits))
         if len(absent_splits) > 0:

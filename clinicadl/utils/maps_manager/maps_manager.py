@@ -332,15 +332,16 @@ class MapsManager:
                 torch.save(output, tensor_path / output_filename)
                 logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-    def find_splits(self):
+    def find_splits(self) -> List[int]:
         """Find which splits that were trained in the MAPS."""
-        return [
+        splits = [
             int(split.name.split("-")[1])
             for split in list(self.maps_path.iterdir())
             if split.name.startswith(f"{self.split_name}-")
         ]
+        return splits
 
-    def find_stopped_splits(self):
+    def find_stopped_splits(self) -> List[int]:
         """Find which splits for which training was not completed."""
         existing_split_list = self.find_splits()
         stopped_splits = [
@@ -351,7 +352,7 @@ class MapsManager:
         ]
         return stopped_splits
 
-    def find_finished_splits(self):
+    def find_finished_splits(self) -> List[int]:
         """Find which splits for which training was completed."""
         finished_splits = list()
         existing_split_list = self.find_splits()
@@ -368,13 +369,6 @@ class MapsManager:
                 if len(performance_dir_list) > 0:
                     finished_splits.append(split)
         return finished_splits
-
-    def find_missing_splits(self):
-        missing_splits = [
-            split
-            for split in split_iterator
-            if split not in finished_splits and split not in stopped_splits
-        ]
 
     def _ensemble_prediction(
         self,
