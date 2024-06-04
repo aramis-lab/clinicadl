@@ -10,8 +10,8 @@ import torch
 from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
+from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 

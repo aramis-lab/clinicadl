@@ -2,7 +2,8 @@ from logging import getLogger
 
 from pydantic import BaseModel
 
-from clinicadl.config.config.data import DataConfig as DataBaseConfig
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.maps_manager import (
     MapsManagerConfig as MapsManagerBaseConfig,
 )
@@ -10,7 +11,6 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 
 from ..computational import ComputationalConfig
 from ..cross_validation import CrossValidationConfig
-from ..dataloader import DataLoaderConfig
 from ..validation import ValidationConfig
 
 logger = getLogger("clinicadl.predict_config")

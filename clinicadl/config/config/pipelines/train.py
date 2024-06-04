@@ -8,11 +8,11 @@ from pydantic import (
 )
 
 from clinicadl.callbacks.config import CallbacksConfig
+from clinicadl.caps_dataset.data_config import DataConfig
+from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config import (
     ComputationalConfig,
     CrossValidationConfig,
-    DataConfig,
-    DataLoaderConfig,
     EarlyStoppingConfig,
     LRschedulerConfig,
     MapsManagerConfig,

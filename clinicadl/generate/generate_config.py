@@ -1,8 +1,8 @@
-from enum import Enum
+import tarfile
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from pydantic import (
     BaseModel,
@@ -10,24 +10,35 @@ from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
+    computed_field,
     field_validator,
 )
 
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.config.config import ModalityConfig
+from clinicadl.preprocessing.config import PreprocessingConfig
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+)
 from clinicadl.utils.enum import (
     Pathology,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTSVError,
+    DownloadError,
+)
 
 logger = getLogger("clinicadl.predict_config")
 
 
 class GenerateConfig(BaseModel):
     generated_caps_directory: Path
-    n_subjects: PositiveInt = 300
-    n_proc: PositiveInt = 1
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
@@ -35,43 +46,15 @@ class GenerateConfig(BaseModel):
     # TODO: The number of subjects cannot be higher than the number of subjects in the baseline caps dataset
 
 
-class SharedGenerateConfigOne(GenerateConfig):
-    caps_directory: Path
-    participants_list: Optional[Path] = None
-    preprocessing: Preprocessing = Preprocessing.T1_LINEAR
-    use_uncropped_image: bool = False
-
-    @field_validator("participants_list", mode="before")
-    def check_tsv_file(cls, v):
-        if v is not None:
-            if not isinstance(v, Path):
-                Path(v)
-            if not v.is_file():
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is not a file. Please give an existing file."
-                )
-            if v.stat().st_size == 0:
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is empty. Please give a non-empty file."
-                )
-
-        return v
-
-
-class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    tracer: Tracer = Tracer.FFDG
-
-
-class GenerateArtifactsConfig(SharedGenerateConfigTwo):
+class GenerateArtifactsConfig(BaseModel):
     contrast: bool = False
     gamma: Tuple[float, float] = (-0.2, -0.05)
     motion: bool = False
     num_transforms: PositiveInt = 2
     noise: bool = False
-    noise_std: Tuple[NonNegativeFloat, NonNegativeFloat] = (5, 15)
-    rotation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2, 4)  # float o int ???
-    translation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2, 4)
+    noise_std: Tuple[NonNegativeFloat, NonNegativeFloat] = (5.0, 15.0)
+    rotation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)  # float o int ???
+    translation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
     def list_to_tuples(cls, v):
@@ -88,39 +71,36 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
             )
         return v
 
+    @computed_field
+    @property
+    def artifacts_list(self) -> list[str]:
+        artifacts_list = []
+        if self.motion:
+            artifacts_list.append("motion")
+        if self.contrast:
+            artifacts_list.append("contrast")
+        if self.noise:
+            artifacts_list.append("noise")
+        return artifacts_list
 
-class GenerateHypometabolicConfig(SharedGenerateConfigOne):
+
+class GenerateHypometabolicConfig(BaseModel):
     anomaly_degree: NonNegativeFloat = 30.0
     pathology: Pathology = Pathology.AD
     sigma: NonNegativeFloat = 5
 
 
-class GenerateRandomConfig(SharedGenerateConfigTwo):
+class GenerateRandomConfig(BaseModel):
     mean: NonNegativeFloat = 0.0
     sigma: NonNegativeFloat = 0.5
 
 
-class GenerateTrivialConfig(SharedGenerateConfigTwo):
+class GenerateTrivialConfig(BaseModel):
     atrophy_percent: PositiveFloat = 60.0
     mask_path: Optional[Path] = None
 
-    @field_validator("mask_path", mode="before")
-    def check_mask_file(cls, v):
-        if v is not None:
-            if not isinstance(v, Path):
-                Path(v)
-            if not v.is_file():
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is not a file. Please give an existing file."
-                )
-            if v.stat().st_size == 0:
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is empty. Please give a non-empty file."
-                )
-        return v
 
-
-class GenerateSheppLoganConfig(GenerateConfig):
+class GenerateSheppLoganConfig(BaseModel):
     ad_subtypes_distribution: Tuple[
         NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
     ] = (0.05, 0.85, 0.10)

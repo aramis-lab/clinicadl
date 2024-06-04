@@ -9,8 +9,8 @@ from torch.cuda.amp import autocast
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
 
+from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.network.network import Network
-from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.maps_manager.ddp import cluster
 from clinicadl.utils.metric_module import MetricModule
 

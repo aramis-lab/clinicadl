@@ -11,12 +11,12 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.caps_dataset.data_utils import (
+    return_dataset,
+)
 from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.config.config.pipelines.predict import PredictConfig
 from clinicadl.transforms.transforms import get_transforms
-from clinicadl.utils.caps_dataset.data import (
-    return_dataset,
-)
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,

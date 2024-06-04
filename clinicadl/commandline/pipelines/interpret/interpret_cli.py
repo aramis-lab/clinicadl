@@ -1,15 +1,15 @@
 import click
 
 from clinicadl.commandline import arguments
-from clinicadl.commandline.pipelines.interpret import options
-from clinicadl.config.config.pipelines.interpret import InterpretConfig
-from clinicadl.config.options import (
+from clinicadl.commandline.modules_options import (
     computational,
     data,
     dataloader,
     maps_manager,
     validation,
 )
+from clinicadl.commandline.pipelines.interpret import options
+from clinicadl.config.config.pipelines.interpret import InterpretConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 

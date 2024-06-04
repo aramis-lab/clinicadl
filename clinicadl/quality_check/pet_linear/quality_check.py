@@ -87,7 +87,7 @@ def quality_check(
         except IOError as err:
             raise IOError("Unable to download required MNI file for QC: ", err)
 
-    mask_contour_nii = nib.load(mask_contour_file)
+    mask_contour_nii = nib / loadsave.load(mask_contour_file)
     mask_contour = mask_contour_nii.get_fdata()
     mask_contour.astype(int)
 
@@ -115,7 +115,7 @@ def quality_check(
         file = Path(file)
 
         if file.is_file():
-            image_nii = nib.load(file)
+            image_nii = nib / loadsave.load(file)
             image_np = image_nii.get_fdata()
         else:
             raise FileNotFoundError(f"Clinical data not found ({file})")

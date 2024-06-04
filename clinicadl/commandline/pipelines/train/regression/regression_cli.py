@@ -1,9 +1,7 @@
 import click
 
 from clinicadl.commandline import arguments
-from clinicadl.commandline.pipelines import transfer_learning
-from clinicadl.config.config.pipelines.task.regression import RegressionConfig
-from clinicadl.config.options import (
+from clinicadl.commandline.modules_options import (
     callbacks,
     computational,
     cross_validation,
@@ -20,6 +18,8 @@ from clinicadl.config.options import (
     transforms,
     validation,
 )
+from clinicadl.commandline.pipelines import transfer_learning
+from clinicadl.config.config.pipelines.task.regression import RegressionConfig
 from clinicadl.train.utils import merge_cli_and_config_file_options
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import Task

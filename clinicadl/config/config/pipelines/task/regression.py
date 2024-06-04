@@ -4,7 +4,7 @@ from typing import Tuple
 
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.config.config import DataConfig as BaseDataConfig
+from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
 from clinicadl.config.config.pipelines.train import TrainConfig
