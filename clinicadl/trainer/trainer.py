@@ -47,7 +47,7 @@ class Trainer:
         """
         Parameters
         ----------
-        config : BaseTaskConfig
+        config : TrainConfig
         """
         self.config = config
         self.maps_manager = self._init_maps_manager(config)
@@ -63,15 +63,15 @@ class Trainer:
         )  # TODO : precise which parameters in config are useful
 
     @classmethod
-    def from_json(cls, config_file: Path, maps_path: Path) -> Trainer:
+    def from_json(cls, config_file: str | Path, maps_path: str | Path) -> Trainer:
         """
         Creates a Trainer from a json configuration file.
 
         Parameters
         ----------
-        config_file : Path
+        config_file : str | Path
             The parameters, stored in a json files.
-        maps_path : Path
+        maps_path : str | Path
             The folder where the results of a futur training will be stored.
 
         Returns
@@ -84,22 +84,25 @@ class Trainer:
         FileNotFoundError
             If config_file doesn't exist.
         """
+        config_file = Path(config_file)
+
         if not (config_file).is_file():
-            raise FileNotFoundError(f"No file found at {config_file}.")
+            raise FileNotFoundError(f"No file found at {str(config_file)}.")
         config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
+        config_dict["maps_dir"] = maps_path
         config_object = create_training_config(config_dict["network_task"])(
-            output_maps_directory=maps_path, **config_dict
+            **config_dict
         )
         return cls(config_object)
 
     @classmethod
-    def from_maps(cls, maps_path: Path) -> Trainer:
+    def from_maps(cls, maps_path: str | Path) -> Trainer:
         """
         Creates a Trainer from a json configuration file.
 
         Parameters
         ----------
-        maps_path : Path
+        maps_path : str | Path
             The path of the MAPS folder.
 
         Returns
@@ -112,9 +115,11 @@ class Trainer:
         MAPSError
             If maps_path folder doesn't exist or there is no maps.json file in it.
         """
+        maps_path = Path(maps_path)
+
         if not (maps_path / "maps.json").is_file():
             raise MAPSError(
-                f"MAPS was not found at {maps_path}."
+                f"MAPS was not found at {str(maps_path)}."
                 f"To initiate a new MAPS please give a train_dict."
             )
         return cls.from_json(maps_path / "maps.json", maps_path)
