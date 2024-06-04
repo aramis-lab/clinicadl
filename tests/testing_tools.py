@@ -1,7 +1,7 @@
 import pathlib
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 def ignore_pattern(file_path: pathlib.Path, ignore_pattern_list: List[str]) -> bool:
@@ -95,6 +95,9 @@ def tree(dir_: PathLike, file_out: PathLike):
     """
     from pathlib import Path
 
+    if not dir_.is_dir():
+        raise FileNotFoundError(f"No directory found at {dir_}.")
+
     file_content = ""
 
     for path in sorted(Path(dir_).rglob("*")):
@@ -103,8 +106,6 @@ def tree(dir_: PathLike, file_out: PathLike):
         depth = len(path.relative_to(dir_).parts)
         spacer = "    " * depth
         file_content = file_content + f"{spacer}+ {path.name}\n"
-
-    print(file_content)
 
     Path(file_out).write_text(file_content)
 
@@ -166,3 +167,89 @@ def clean_folder(path, recreate=True):
         rmtree(abs_path)
     if recreate:
         makedirs(abs_path)
+
+
+def modify_maps(
+    maps: Dict[str, Any],
+    base_dir: Path,
+    no_gpu: bool = False,
+    adapt_base_dir: bool = False,
+) -> Dict[str, Any]:
+    """
+    Modifies a MAPS dictionary if the user passed --no-gpu or --adapt-base-dir flags.
+
+    Parameters
+    ----------
+    maps : Dict[str, Any]
+        The MAPS dictionary.
+    base_dir : Path
+        The base directory, where CI data are stored.
+    no_gpu : bool (optional, default=False)
+        Whether the user activated the --no-gpu flag.
+    adapt_base_dir : bool (optional, default=False)
+        Whether the user activated the --adapt-base-dir flag.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The modified MAPS dictionary.
+    """
+    if no_gpu:
+        maps["gpu"] = False
+    if adapt_base_dir:
+        base_dir = base_dir.resolve()
+        ref_base_dir = Path(maps["caps_directory"]).parents[2]
+        maps["caps_directory"] = str(
+            base_dir / Path(maps["caps_directory"]).relative_to(ref_base_dir)
+        )
+        try:
+            maps["tsv_path"] = str(
+                base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
+            )
+        except KeyError:  # maps with only caps directory
+            pass
+    return maps
+
+
+def modify_toml(
+    toml_path: Path,
+    base_dir: Path,
+    no_gpu: bool = False,
+    adapt_base_dir: bool = False,
+) -> None:
+    """
+    Modifies a TOML file if the user passed --no-gpu or --adapt-base-dir flags.
+
+    Parameters
+    ----------
+    toml_path : Path
+        The path of the TOML file.
+    base_dir : Path
+        The base directory, where CI data are stored.
+    no_gpu : bool (optional, default=False)
+        Whether the user activated the --no-gpu flag.
+    adapt_base_dir : bool (optional, default=False)
+        Whether the user activated the --adapt-base-dir flag.
+    """
+    import toml
+
+    config = toml.load(toml_path)
+    if no_gpu:
+        try:
+            config["Computational"]["gpu"] = False
+        except KeyError:
+            config["Computational"] = {"gpu": False}
+    if adapt_base_dir:
+        random_search_config = config["Random_Search"]
+        base_dir = base_dir.resolve()
+        ref_base_dir = Path(random_search_config["caps_directory"]).parents[2]
+        random_search_config["caps_directory"] = str(
+            base_dir
+            / Path(random_search_config["caps_directory"]).relative_to(ref_base_dir)
+        )
+        random_search_config["tsv_path"] = str(
+            base_dir / Path(random_search_config["tsv_path"]).relative_to(ref_base_dir)
+        )
+    f = open(toml_path, "w")
+    toml.dump(config, f)
+    f.close()
