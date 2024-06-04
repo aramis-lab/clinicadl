@@ -96,7 +96,7 @@ class QCDataset(Dataset):
                 self.img_dir,
                 linear_nii(LinearModality.T1W, self.use_uncropped_image),
             )[0]
-            image = nib / loadsave.load(image_path[0])
+            image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)
 
         sample = {"image": image, "participant_id": subject, "session_id": session}

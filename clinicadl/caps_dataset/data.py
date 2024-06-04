@@ -273,7 +273,7 @@ class CapsDataset(Dataset):
             results = clinicadl_file_reader(
                 [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
-            image_nii = nib / loadsave.load(results[0])
+            image_nii = nib.loadsave.load(results[0])
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
 
@@ -673,7 +673,7 @@ class CapsDatasetRoi(CapsDataset):
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
             if mask_path is None:
                 raise FileNotFoundError(desc)
-            mask_nii = nib / loadsave.load(mask_path)
+            mask_nii = nib.loadsave.load(mask_path)
             mask_paths.append(Path(mask_path))
             mask_arrays.append(mask_nii.get_fdata())
 

@@ -119,7 +119,7 @@ def extract_slices(
     """
     import nibabel as nib
 
-    image_array = nib / loadsave.load(nii_path).get_fdata(dtype="float32")
+    image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
     begin_discard, end_discard = compute_discarded_slices(discarded_slices)
@@ -205,7 +205,7 @@ def extract_patches(
     """
     import nibabel as nib
 
-    image_array = nib / loadsave.load(nii_path).get_fdata(dtype="float32")
+    image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
     patches_tensor = (
@@ -278,7 +278,7 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     import nibabel as nib
     import torch
 
-    image_array = nib / loadsave.load(input_img).get_fdata(dtype="float32")
+    image_array = nib.loadsave.load(input_img).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
@@ -304,7 +304,7 @@ def check_mask_list(
             raise FileNotFoundError(
                 f"The ROI '{roi}' does not correspond to a mask in the CAPS directory. {desc}"
             )
-        roi_mask = nib / loadsave.load(roi_path).get_fdata()
+        roi_mask = nib.loadsave.load(roi_path).get_fdata()
         mask_values = set(np.unique(roi_mask))
         if mask_values != {0, 1}:
             raise ValueError(
@@ -434,7 +434,7 @@ def extract_roi(
     """
     import nibabel as nib
 
-    image_array = nib / loadsave.load(nii_path).get_fdata(dtype="float32")
+    image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
     roi_list = []
@@ -443,7 +443,7 @@ def extract_roi(
         mask_path, _ = find_mask_path(
             masks_location, roi_name, mask_pattern, cropped_input
         )
-        mask_np = nib / loadsave.load(mask_path).get_fdata()
+        mask_np = nib.loadsave.load(mask_path).get_fdata()
 
         roi_tensor = extract_roi_tensor(image_tensor, mask_np, uncrop_output)
         roi_path = extract_roi_path(nii_path, mask_path, uncrop_output)
