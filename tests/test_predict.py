@@ -117,6 +117,6 @@ def test_predict(cmdopt, tmp_path, test_name):
 
     assert compare_folders(
         tmp_out_dir / maps_name,
-        ref_dir / maps_name,
+        input_dir / maps_name,
         tmp_out_dir,
     )
