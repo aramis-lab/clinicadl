@@ -61,7 +61,7 @@ def create_parameters_dict(config):
         parameters["normalization"] = "batch"
     if "caps_dict" in parameters:
         del parameters["caps_dict"]
-    if "mask_path" in parameters and parameters["mask_path"] is False:
+    if "mask_path" in parameters:  # and parameters["mask_path"] is False:
         del parameters["mask_path"]
 
     return parameters, maps_path
