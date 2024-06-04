@@ -267,8 +267,8 @@ def split_diagnoses(
             "output_dir": results_path,
             "n_test": n_test,
             "subset_name": subset_name,
-            "p_age_threshold": p_age_threshold,
-            "p_sex_threshold": p_sex_threshold,
+            "p_age_threshold": p_age_threshold if not ignore_demographics else 0,
+            "p_sex_threshold": p_sex_threshold if not ignore_demographics else 0,
             "categorical_split_variable": categorical_split_variable,
             "ignore_demographics": ignore_demographics,
             "mullti_diagnoses": multi_diagnoses,
@@ -302,31 +302,32 @@ def split_diagnoses(
             df_to_tsv(name, results_path, long_test_df)
 
     elif n_test > 0:
-        if (
-            "diagnosis" not in list_columns
-            or ("age" not in list_columns and "age_bl" not in list_columns)
-            or "sex" not in list_columns
-        ):
-            parents_path = parents_path.resolve()
-            n = 0
-            while not (parents_path / "labels.tsv").is_file() and n <= 4:
-                parents_path = parents_path.parents[0]
-                n += 1
-            try:
-                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
-                diagnosis_df = pd.merge(
-                    diagnosis_df,
-                    labels_df,
-                    how="inner",
-                    on=["participant_id", "session_id"],
-                )
-            except Exception:
-                raise ClinicaDLTSVError(
-                    f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
-                    "the output of clinicadl get-labels to get it."
-                    "Please run clinicadl get-metadata to get these columns or add the the flag --ignore_demographics "
-                    "to split without trying to balance age or sex distributions."
-                )
+        if not ignore_demographics:
+            if (
+                "diagnosis" not in list_columns
+                or ("age" not in list_columns and "age_bl" not in list_columns)
+                or "sex" not in list_columns
+            ):
+                parents_path = parents_path.resolve()
+                n = 0
+                while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                    parents_path = parents_path.parents[0]
+                    n += 1
+                try:
+                    labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+                    diagnosis_df = pd.merge(
+                        diagnosis_df,
+                        labels_df,
+                        how="inner",
+                        on=["participant_id", "session_id"],
+                    )
+                except Exception:
+                    raise ClinicaDLTSVError(
+                        f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
+                        "the output of clinicadl get-labels to get it."
+                        "Please run clinicadl get-metadata to get these columns or add the the flag --ignore_demographics "
+                        "to split without trying to balance age or sex distributions."
+                    )
 
         train_df, test_df = create_split(
             diagnosis_df,

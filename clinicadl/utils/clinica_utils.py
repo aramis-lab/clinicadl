@@ -608,12 +608,14 @@ def find_sub_ses_pattern_path(
     """
 
     input_directory = Path(input_directory)
+    print(is_bids)
     if is_bids:
         origin_pattern = input_directory / subject / session
     else:
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
+    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
@@ -1041,6 +1043,10 @@ def clinicadl_file_reader(
     """
     from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
+    print(subjects)
+    print(sessions)
+    print(input_directory)
+    print(information)
     _check_information(information)
     pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)

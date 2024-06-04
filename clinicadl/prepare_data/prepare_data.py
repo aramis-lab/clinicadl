@@ -38,7 +38,7 @@ def DeepLearningPrepareData(
         check_caps_folder(input_directory)
         logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
-
+    print("is bids dir", is_bids_dir)
     subjects, sessions = get_subject_session_list(
         input_directory, tsv_file, is_bids_dir, False, None
     )
@@ -64,7 +64,7 @@ def DeepLearningPrepareData(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
 
-    mod_subfolder, file_type = compute_folder_and_file_type(parameters, from_bids)
+    mod_subfolder, file_type = compute_folder_and_file_type(parameters, is_bids_dir)
     parameters["file_type"] = file_type
     # Input file:
     input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
