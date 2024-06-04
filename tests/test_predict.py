@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl import MapsManager
+from clinicadl.predict.predict_manager import PredictManager
 
 from .testing_tools import compare_folders, modify_maps
 
