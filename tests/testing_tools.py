@@ -95,6 +95,9 @@ def tree(dir_: PathLike, file_out: PathLike):
     """
     from pathlib import Path
 
+    if not dir_.is_dir():
+        raise FileNotFoundError(f"No directory found at {dir_}.")
+
     file_content = ""
 
     for path in sorted(Path(dir_).rglob("*")):
@@ -103,8 +106,6 @@ def tree(dir_: PathLike, file_out: PathLike):
         depth = len(path.relative_to(dir_).parts)
         spacer = "    " * depth
         file_content = file_content + f"{spacer}+ {path.name}\n"
-
-    print(file_content)
 
     Path(file_out).write_text(file_content)
 
@@ -201,28 +202,54 @@ def modify_maps(
         maps["caps_directory"] = str(
             base_dir / Path(maps["caps_directory"]).relative_to(ref_base_dir)
         )
-        maps["tsv_path"] = str(
-            base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
-        )
+        try:
+            maps["tsv_path"] = str(
+                base_dir / Path(maps["tsv_path"]).relative_to(ref_base_dir)
+            )
+        except KeyError:  # maps with only caps directory
+            pass
     return maps
 
 
-def change_gpu_in_toml(toml_path: Path) -> None:
+def modify_toml(
+    toml_path: Path,
+    base_dir: Path,
+    no_gpu: bool = False,
+    adapt_base_dir: bool = False,
+) -> None:
     """
-    Changes GPU to false in a TOML config file.
+    Modifies a TOML file if the user passed --no-gpu or --adapt-base-dir flags.
 
     Parameters
     ----------
     toml_path : Path
-        The TOML file.
+        The path of the TOML file.
+    base_dir : Path
+        The base directory, where CI data are stored.
+    no_gpu : bool (optional, default=False)
+        Whether the user activated the --no-gpu flag.
+    adapt_base_dir : bool (optional, default=False)
+        Whether the user activated the --adapt-base-dir flag.
     """
     import toml
 
     config = toml.load(toml_path)
-    try:
-        config["Computational"]["gpu"] = False
-    except KeyError:
-        config["Computational"] = {"gpu": False}
+    if no_gpu:
+        try:
+            config["Computational"]["gpu"] = False
+        except KeyError:
+            config["Computational"] = {"gpu": False}
+    if adapt_base_dir:
+        random_search_config = config["Random_Search"]
+        base_dir = base_dir.resolve()
+        ref_base_dir = Path(random_search_config["caps_directory"]).parents[2]
+        random_search_config["caps_directory"] = str(
+            base_dir
+            / Path(random_search_config["caps_directory"]).relative_to(ref_base_dir)
+        )
+        random_search_config["tsv_path"] = str(
+            base_dir / Path(random_search_config["tsv_path"]).relative_to(ref_base_dir)
+        )
     f = open(toml_path, "w")
     toml.dump(config, f)
     f.close()
