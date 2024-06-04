@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from .testing_tools import change_gpu_in_toml, compare_folders
+from .testing_tools import compare_folders, modify_toml
 
 
 # random searxh for ROI with CNN
@@ -25,6 +25,9 @@ def test_random_search(cmdopt, tmp_path, test_name):
     input_dir = base_dir / "randomSearch" / "in"
     ref_dir = base_dir / "randomSearch" / "ref"
     tmp_out_dir = tmp_path / "randomSearch" / "out"
+
+    if os.path.exists(tmp_out_dir):
+        shutil.rmtree(tmp_out_dir)
     tmp_out_dir.mkdir(parents=True)
 
     if test_name == "rs_roi_cnn":
@@ -33,21 +36,16 @@ def test_random_search(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_test_random_search(
-        toml_path, generate_input, tmp_out_dir, ref_dir, cmdopt["no-gpu"]
-    )
-
-
-def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir, no_gpu):
-    if os.path.exists(tmp_out_dir):
-        shutil.rmtree(tmp_out_dir)
-
     # Write random_search.toml file
-    os.makedirs(tmp_out_dir, exist_ok=True)
     shutil.copy(toml_path, tmp_out_dir)
 
-    if no_gpu:
-        change_gpu_in_toml(tmp_out_dir / "random_search.toml")
+    if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:
+        modify_toml(
+            toml_path=tmp_out_dir / "random_search.toml",
+            base_dir=base_dir,
+            no_gpu=cmdopt["no-gpu"],
+            adapt_base_dir=cmdopt["adapt-base-dir"],
+        )
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(

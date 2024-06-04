@@ -30,7 +30,7 @@ def test_json_compatibility(cmdopt, tmp_path):
             adapt_base_dir=cmdopt["adapt-base-dir"],
         )
         with open(config_json, "w+") as f:
-            json.dump(config, f)
+            json.dump(config, f, skipkeys=True, indent=4)
 
     flag_error = not system(
         f"clinicadl train from_json {str(config_json)} {str(reproduced_maps_dir)} -s {split}"

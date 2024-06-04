@@ -42,7 +42,7 @@ def test_resume(cmdopt, tmp_path, test_name):
             adapt_base_dir=cmdopt["adapt-base-dir"],
         )
         with open(maps_stopped / "maps.json", "w") as f:
-            json.dump(config, f)
+            json.dump(config, f, skipkeys=True, indent=4)
 
     flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
