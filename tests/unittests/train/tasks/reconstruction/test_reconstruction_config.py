@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.config.config.pipelines.task.reconstruction as reconstruction
+import clinicadl.trainer.config.reconstruction as reconstruction
 
 
 # Tests for customed validators #

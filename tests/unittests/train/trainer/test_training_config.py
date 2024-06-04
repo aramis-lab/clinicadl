@@ -120,7 +120,7 @@ def dummy_arguments(caps_example):
 def training_config():
     from pydantic import computed_field
 
-    from clinicadl.config.config.pipelines.train import TrainConfig
+    from clinicadl.trainer.config.train import TrainConfig
 
     class TrainingConfig(TrainConfig):
         @computed_field
