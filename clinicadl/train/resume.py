@@ -6,9 +6,9 @@ Unfinished splits are detected as they do not contain a "performances" sub-folde
 from logging import getLogger
 from pathlib import Path
 
-from clinicadl import MapsManager
 from clinicadl.train.tasks_utils import create_training_config
 from clinicadl.trainer.trainer import Trainer
+from clinicadl.utils.maps_manager import MapsManager
 
 
 def replace_arg(options, key_name, value):

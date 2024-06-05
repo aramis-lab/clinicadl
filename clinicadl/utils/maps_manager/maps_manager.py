@@ -10,7 +10,7 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
-from clinicadl.caps_dataset.data_utils import (
+from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.preprocessing.preprocessing import path_encoder

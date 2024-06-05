@@ -93,8 +93,21 @@ class PredictManager:
         assert isinstance(self._config, PredictConfig)
 
         self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
-        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.diagnoses = (
+            self.maps_manager.diagnoses
+            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
+            else self._config.diagnoses
+        )
+
+        self._config.batch_size = (
+            self.maps_manager.batch_size
+            if not self._config.batch_size
+            else self._config.batch_size
+        )
+        self._config.n_proc = (
+            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        )
+
         self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
         self._config.check_output_saving_tensor(self.maps_manager.network_task)
 
@@ -636,8 +649,20 @@ class PredictManager:
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
-        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.diagnoses = (
+            self.maps_manager.diagnoses
+            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
+            else self._config.diagnoses
+        )
+        self._config.batch_size = (
+            self.maps_manager.batch_size
+            if not self._config.batch_size
+            else self._config.batch_size
+        )
+        self._config.n_proc = (
+            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        )
+
         self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:

@@ -44,7 +44,7 @@ logger = getLogger("clinicadl.generate.trivial")
 @modality.suvr_reference_region
 @trivial.atrophy_percent
 @data.mask_path
-def cli(generated_caps_directory, n_proc, **kwargs):
+def cli(generated_caps_directory, **kwargs):
     """Generation of a trivial dataset"""
 
     caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
@@ -151,7 +151,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
         return row_df
 
-    results_df = Parallel(n_jobs=n_proc)(
+    results_df = Parallel(n_jobs=caps_config.dataloader.n_proc)(
         delayed(create_trivial_image)(subject_id)
         for subject_id in range(2 * caps_config.data.n_subjects)
     )

@@ -3,8 +3,13 @@ from typing import Optional
 
 import click
 
-from clinicadl.config import arguments
-from clinicadl.config.options import data, dataloader, modality, preprocessing
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import (
+    data,
+    dataloader,
+    modality,
+    preprocessing,
+)
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
 
