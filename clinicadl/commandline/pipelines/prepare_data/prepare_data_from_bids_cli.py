@@ -1,8 +1,5 @@
-from pathlib import Path
-from typing import Optional
 
 import click
-
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (

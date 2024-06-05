@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
+
 from clinicadl.prepare_data.prepare_data_utils import (
     compute_discarded_slices,
     extract_patch_path,
@@ -807,6 +808,97 @@ def return_dataset(
             slice_index=cnn_index,
             label_presence=label_presence,
             preprocessing_dict=preprocessing_dict,
+        )
+    else:
+        raise NotImplementedError(
+            f"Mode {preprocessing_dict['mode']} is not implemented."
+        )
+
+
+def return_dataset(
+    input_dir: Path,
+    data_df: pd.DataFrame,
+    preprocessing_dict: Dict[str, Any],
+    all_transformations: Optional[Callable],
+    label: str = None,
+    label_code: Dict[str, int] = None,
+    train_transformations: Optional[Callable] = None,
+    cnn_index: int = None,
+    label_presence: bool = True,
+    multi_cohort: bool = False,
+) -> CapsDataset:
+    """
+    Return appropriate Dataset according to given options.
+    Args:
+        input_dir: path to a directory containing a CAPS structure.
+        data_df: List subjects, sessions and diagnoses.
+        preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
+        train_transformations: Optional transform to be applied during training only.
+        all_transformations: Optional transform to be applied during training and evaluation.
+        label: Name of the column in data_df containing the label.
+        label_code: label code that links the output node number to label value.
+        cnn_index: Index of the CNN in a multi-CNN paradigm (optional).
+        label_presence: If True the diagnosis will be extracted from the given DataFrame.
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+
+    Returns:
+         the corresponding dataset.
+    """
+    if cnn_index is not None and preprocessing_dict["mode"] == "image":
+        raise NotImplementedError(
+            f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
+        )
+
+    if preprocessing_dict["mode"] == "image":
+        return CapsDatasetImage(
+            input_dir,
+            data_df,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
+            multi_cohort=multi_cohort,
+        )
+    elif preprocessing_dict["mode"] == "patch":
+        return CapsDatasetPatch(
+            input_dir,
+            data_df,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
+            patch_index=cnn_index,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
+            multi_cohort=multi_cohort,
+        )
+    elif preprocessing_dict["mode"] == "roi":
+        return CapsDatasetRoi(
+            input_dir,
+            data_df,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
+            roi_index=cnn_index,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
+            multi_cohort=multi_cohort,
+        )
+    elif preprocessing_dict["mode"] == "slice":
+        return CapsDatasetSlice(
+            input_dir,
+            data_df,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
+            slice_index=cnn_index,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
+            multi_cohort=multi_cohort,
         )
     else:
         raise NotImplementedError(
