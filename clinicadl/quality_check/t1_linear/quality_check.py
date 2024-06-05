@@ -10,8 +10,8 @@ import torch
 from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
+from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
@@ -141,7 +141,10 @@ def quality_check(
         qc_df = pd.DataFrame(columns=columns)
         qc_df["pass"] = qc_df["pass"].astype(bool)
         softmax = torch.nn.Softmax(dim=1)
-        logger.info(f"Quality check will be performed over {len(dataloader)} images.")
+
+        logger.info(
+            f"Quality check will be performed over {len(dataloader.dataset)} images."
+        )
 
         for data in dataloader:
             logger.debug(f"Processing subject {data['participant_id']}.")

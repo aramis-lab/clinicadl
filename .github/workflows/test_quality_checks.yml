@@ -1,0 +1,53 @@
+name: Quality Check Tests
+
+on:
+  push:
+    branches: ["dev", "refactoring"]
+  pull_request:
+    branches: ["dev", "refactoring"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+env:
+  POETRY_VERSION: '1.8.3'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test-quality-check:
+    if: github.event.pull_request.draft == false
+    runs-on:
+      - self-hosted
+      - Linux
+      - ubuntu
+      - cpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Run tests for Quality Check
+        run: |
+          source /builds/miniconda3/etc/profile.d/conda.sh
+          make env.conda
+          conda activate "${{ github.workspace }}"/env
+          make install
+          cd tests
+          poetry run pytest \
+          --junitxml=./test-reports/test_quality_check_report.xml \
+          --disable-warnings \
+          --verbose \
+          --basetemp=$HOME/tmp/quality_checks \
+          --input_data_directory=/mnt/data/data_ci \
+          test_qc.py
+      - name: Cleaning
+        run: |
+          rm -rf $HOME/tmp/quality_checks/*

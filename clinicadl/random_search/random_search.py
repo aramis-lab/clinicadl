@@ -4,9 +4,10 @@ Launch a random network training.
 
 from pathlib import Path
 
-from clinicadl.random_search.random_search_utils import get_space_dict, random_sampling
-from clinicadl.train.trainer import Trainer
-from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.trainer.trainer import Trainer
+
+from .random_search_config import RandomSearchConfig, create_training_config
+from .random_search_utils import get_space_dict, random_sampling
 
 
 def launch_search(launch_directory: Path, job_name):
@@ -14,13 +15,27 @@ def launch_search(launch_directory: Path, job_name):
         raise FileNotFoundError(
             f"TOML file 'random_search.toml' must be written in directory: {launch_directory}."
         )
-    space_options = get_space_dict(launch_directory)
-    options = random_sampling(space_options)
-
     maps_directory = launch_directory / job_name
-    split = options.pop("split")
-    options["architecture"] = "RandomArchitecture"
 
-    maps_manager = MapsManager(maps_directory, options, verbose=None)
-    trainer = Trainer(maps_manager)
-    trainer.train(split_list=split, overwrite=True)
+    options = get_space_dict(launch_directory)
+    # temporary, TODO
+    options["tsv_directory"] = options["tsv_path"]
+    options["maps_dir"] = maps_directory
+    options["preprocessing_json"] = options["preprocessing_dict"]["extract_json"]
+
+    ###
+
+    randomsearch_config = RandomSearchConfig(**options)
+
+    # TODO : modify random_sampling so that it uses randomsearch_config
+    # TODO : make something cleaner to merge sampled and fixed parameters
+    # TODO : create a RandomSearch object?
+    sampled_options = random_sampling(randomsearch_config.model_dump())
+    options.update(sampled_options)
+    ###
+
+    training_config = create_training_config(options["network_task"])(
+        output_maps_directory=maps_directory, **options
+    )
+    trainer = Trainer(training_config)
+    trainer.train(split_list=training_config.cross_validation.split, overwrite=True)

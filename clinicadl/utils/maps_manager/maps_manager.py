@@ -1,5 +1,4 @@
 import json
-import shutil
 import subprocess
 from datetime import datetime
 from logging import getLogger
@@ -10,12 +9,12 @@ import pandas as pd
 import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.utils.caps_dataset.data import (
+from clinicadl.caps_dataset.data_utils import (
     return_dataset,
 )
+from clinicadl.preprocessing.preprocessing import path_encoder
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -27,10 +26,6 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
-from clinicadl.utils.metric_module import RetainBest
-from clinicadl.utils.preprocessing import path_encoder
-from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
-from clinicadl.utils.transforms.transforms import get_transforms
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -69,8 +64,6 @@ class MapsManager:
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
             self.parameters = add_default_values(test_parameters)
-            self.ssda_network = False  # A MODIFIER
-            self.save_all_models = self.parameters["save_all_models"]
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -279,7 +272,7 @@ class MapsManager:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.
@@ -452,8 +445,6 @@ class MapsManager:
             }
         )
 
-        self.parameters["seed"] = get_seed(self.parameters["seed"])
-
         if self.parameters["num_networks"] < 2 and self.multi_network:
             raise ClinicaDLConfigurationError(
                 f"Invalid training configuration: cannot train a multi-network "
@@ -530,12 +521,6 @@ class MapsManager:
         if verbose:
             logger.info(f"Path of json file: {json_path}")
 
-        # temporary: to match CLI data. TODO : change CLI data
-        for parameter in parameters:
-            if parameters[parameter] == Path("."):
-                parameters[parameter] = ""
-        ###############################
-
         with json_path.open(mode="w") as json_file:
             json.dump(
                 parameters, json_file, skipkeys=True, indent=4, default=path_encoder
@@ -558,7 +543,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.utils.caps_dataset.data import load_data_test
+        from clinicadl.caps_dataset.data_utils import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,
@@ -611,7 +596,7 @@ class MapsManager:
         """
         from datetime import datetime
 
-        import clinicadl.utils.network as network_package
+        import clinicadl.network as network_package
 
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -844,7 +829,7 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network trained (used in multi-network setting only).
         """
-        import clinicadl.utils.network as network_package
+        import clinicadl.network as network_package
 
         logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.train.tasks import Task
+from clinicadl.utils.enum import Task
 
 expected_classification = {
     "architecture": "default",
@@ -200,43 +200,6 @@ def test_extract_config_from_toml_file_exceptions():
             Path(str(config_toml).replace(".toml", ".json")),
             Task.CLASSIFICATION,
         )
-
-
-def test_preprocessing_json_reader():  # TODO : add more test on this function
-    from copy import deepcopy
-
-    from clinicadl.train.tasks import BaseTaskConfig
-    from clinicadl.train.utils import preprocessing_json_reader
-
-    preprocessing_path = "preprocessing.json"
-    config = BaseTaskConfig(
-        caps_directory=Path(__file__).parents[3]
-        / "tests"
-        / "unittests"
-        / "train"
-        / "ressources"
-        / "caps_example",
-        preprocessing_json=preprocessing_path,
-        tsv_directory="",
-        output_maps_directory="",
-    )
-    expected_config = deepcopy(config)
-    expected_config._preprocessing_dict = {
-        "preprocessing": "t1-linear",
-        "mode": "image",
-        "use_uncropped_image": False,
-        "prepare_dl": False,
-        "extract_json": "t1-linear_mode-image.json",
-        "file_type": {
-            "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
-            "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
-            "needed_pipeline": "t1-linear",
-        },
-    }
-    expected_config._mode = "image"
-
-    output_config = preprocessing_json_reader(config)
-    assert output_config == expected_config
 
 
 def test_merge_cli_and_config_file_options():

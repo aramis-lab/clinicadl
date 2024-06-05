@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.predict.predict_config import InterpretConfig
+from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 
@@ -60,11 +60,14 @@ def test_interpret(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
+    if cmdopt["no-gpu"]:
+        cnn_input.append("--no-gpu")
+
     run_interpret(cnn_input, tmp_out_dir, ref_dir)
 
 
 def run_interpret(cnn_input, tmp_out_dir, ref_dir):
-    from clinicadl.predict.predict_config import InterpretationMethod
+    from clinicadl.utils.enum import InterpretationMethod
 
     maps_path = tmp_out_dir / "maps"
     if maps_path.is_dir():
