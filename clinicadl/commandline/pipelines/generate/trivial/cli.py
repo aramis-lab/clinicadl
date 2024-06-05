@@ -7,8 +7,7 @@ import nibabel as nib
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clinicadl.caps_dataset.caps_dataset_config import create_caps_dataset_config
-from clinicadl.caps_dataset.data import CapsDataset
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -25,12 +24,8 @@ from clinicadl.generate.generate_utils import (
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import (
-    RemoteFileStructure,
-    clinicadl_file_reader,
-    fetch_file,
-)
-from clinicadl.utils.enum import ExtractionMethod, GenerateType, Preprocessing
+from clinicadl.utils.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.read_utils import get_mask_path
 
@@ -52,10 +47,12 @@ logger = getLogger("clinicadl.generate.trivial")
 def cli(generated_caps_directory, n_proc, **kwargs):
     """Generation of a trivial dataset"""
 
-    caps_config = create_caps_dataset_config(
-        extract=ExtractionMethod.IMAGE,
-        preprocessing=Preprocessing(kwargs["preprocessing"]),
-    )(**kwargs)
+    caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
+    )
+
     generate_config = GenerateTrivialConfig(**kwargs)
 
     # TODO: put more information in json file

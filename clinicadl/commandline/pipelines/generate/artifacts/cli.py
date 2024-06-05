@@ -7,10 +7,8 @@ import torchio as tio
 from joblib import Parallel, delayed
 
 from clinicadl.caps_dataset.caps_dataset_config import (
-    create_caps_dataset_config,
-    get_generate,
+    CapsDatasetConfig,
 )
-from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -25,9 +23,8 @@ from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
     write_missing_mods,
 )
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.clinica_utils import clinicadl_file_reader
-from clinicadl.utils.enum import ExtractionMethod, GenerateType, Preprocessing
+from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.generate.artifacts")
@@ -56,10 +53,12 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     """
 
-    caps_config = create_caps_dataset_config(
-        extract=ExtractionMethod.IMAGE,
-        preprocessing=Preprocessing(kwargs["preprocessing"]),
-    )(**kwargs)
+    caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
+    )
+
     generate_config = GenerateArtifactsConfig(**kwargs)
 
     # TODO: creat function for API mode

@@ -7,8 +7,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-from clinicadl.caps_dataset.caps_dataset_config import create_caps_dataset_config
-from clinicadl.caps_dataset.data import CapsDataset
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader, preprocessing
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
@@ -22,17 +21,10 @@ from clinicadl.generate.generate_utils import (
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import (
-    RemoteFileStructure,
-    clinicadl_file_reader,
-    fetch_file,
-)
+from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import (
     ExtractionMethod,
-    GenerateType,
     Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
 )
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.read_utils import get_mask_path
@@ -56,9 +48,12 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
     """
     kwargs["preprocessing"] = "pet-linear"
-    caps_config = create_caps_dataset_config(
-        extract=ExtractionMethod.IMAGE, preprocessing=Preprocessing.PET_LINEAR
-    )(**kwargs)
+    caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=Preprocessing.PET_LINEAR,
+        **kwargs,
+    )
+
     generate_config = GenerateHypometabolicConfig(**kwargs)
 
     commandline_to_json(

@@ -76,24 +76,39 @@ class CapsDatasetBase(BaseModel):
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
-def create_caps_dataset_config(
-    preprocessing: Union[str, Preprocessing], extract: Union[str, ExtractionMethod]
-):
-    try:
-        preprocessing_type = Preprocessing(preprocessing)
-    except ClinicaDLArgumentError:
-        print("Invalid preprocessing configuration")
+class CapsDatasetConfig(CapsDatasetBase):
+    @classmethod
+    def from_preprocessing_and_extraction_method(
+        cls,
+        preprocessing_type: Union[str, Preprocessing],
+        extraction: Union[str, ExtractionMethod],
+        **kwargs,
+    ):
+        return cls(
+            data=DataConfig(**kwargs),
+            modality=get_modality(Preprocessing(preprocessing_type))(**kwargs),
+            preprocessing=get_preprocessing(ExtractionMethod(extraction))(**kwargs),
+        )
 
-    try:
-        extract_method = ExtractionMethod(extract)
-    except ClinicaDLArgumentError:
-        print("Invalid preprocessing configuration")
 
-    class CapsDatasetConfig(CapsDatasetBase):
-        modality: get_modality(preprocessing_type)
-        preprocessing: get_preprocessing(extract_method)
+# def create_caps_dataset_config(
+#     preprocessing: Union[str, Preprocessing], extract: Union[str, ExtractionMethod]
+# ):
+#     try:
+#         preprocessing_type = Preprocessing(preprocessing)
+#     except ClinicaDLArgumentError:
+#         print("Invalid preprocessing configuration")
 
-        def __init__(self, **kwargs):
-            super().__init__(data=kwargs, modality=kwargs, preprocessing=kwargs)
+#     try:
+#         extract_method = ExtractionMethod(extract)
+#     except ClinicaDLArgumentError:
+#         print("Invalid preprocessing configuration")
 
-    return CapsDatasetConfig
+#     class CapsDatasetConfig(CapsDatasetBase):
+#         modality: get_modality(preprocessing_type)
+#         preprocessing: get_preprocessing(extract_method)
+
+#         def __init__(self, **kwargs):
+#             super().__init__(data=kwargs, modality=kwargs, preprocessing=kwargs)
+
+#     return CapsDatasetConfig
