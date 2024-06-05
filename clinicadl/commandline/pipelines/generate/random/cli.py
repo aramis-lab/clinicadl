@@ -59,9 +59,9 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     commandline_to_json(
         {
             "output_dir": generated_caps_directory,
-            "caps_dir": caps_config.caps_directory,
-            "preprocessing": caps_config.preprocessing.value,
-            "n_subjects": caps_config.n_subjects,
+            "caps_dir": caps_config.data.caps_directory,
+            "preprocessing": caps_config.preprocessing.preprocessing.value,
+            "n_subjects": caps_config.data.n_subjects,
             "n_proc": n_proc,
             "mean": generate_config.mean,
             "sigma": generate_config.sigma,
@@ -73,15 +73,15 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     # Read DataFrame
     data_df = load_and_check_tsv(
-        caps_config.data_tsv,
-        caps_config.caps_dict,
+        caps_config.data.data_tsv,
+        caps_config.data.caps_dict,
         generated_caps_directory,
     )
 
     data_df = extract_baseline(data_df)
-    if caps_config.n_subjects > len(data_df):
+    if caps_config.data.n_subjects > len(data_df):
         raise IndexError(
-            f"The number of subjects {caps_config.n_subjects} cannot be higher "
+            f"The number of subjects {caps_config.data.n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
@@ -96,7 +96,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     session_id = data_df.at[0, "session_id"]
     cohort = data_df.at[0, "cohort"]
     image_paths = clinicadl_file_reader(
-        [participant_id], [session_id], caps_config.caps_dict[cohort], file_type
+        [participant_id], [session_id], caps_config.data.caps_dict[cohort], file_type
     )
     image_nii = nib.loadsave.load(image_paths[0][0])
     # assert isinstance(image_nii, nib.nifti1.Nifti1Image)
@@ -104,11 +104,11 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     output_df = pd.DataFrame(
         {
             "participant_id": [
-                f"sub-RAND{i}" for i in range(2 * caps_config.n_subjects)
+                f"sub-RAND{i}" for i in range(2 * caps_config.data.n_subjects)
             ],
-            "session_id": [SESSION_ID] * 2 * caps_config.n_subjects,
-            "diagnosis": ["AD"] * caps_config.n_subjects
-            + ["CN"] * caps_config.n_subjects,
+            "session_id": [SESSION_ID] * 2 * caps_config.data.n_subjects,
+            "diagnosis": ["AD"] * caps_config.data.n_subjects
+            + ["CN"] * caps_config.data.n_subjects,
             "age_bl": AGE_BL_DEFAULT,
             "sex": SEX_DEFAULT,
         }
@@ -142,7 +142,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     Parallel(n_jobs=n_proc)(
         delayed(create_random_image)(subject_id)
-        for subject_id in range(2 * caps_config.n_subjects)
+        for subject_id in range(2 * caps_config.data.n_subjects)
     )
     write_missing_mods(generated_caps_directory, output_df)
     logger.info(f"Random dataset was generated at {generated_caps_directory}")

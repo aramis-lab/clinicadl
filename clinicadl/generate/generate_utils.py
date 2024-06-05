@@ -11,7 +11,9 @@ from pydantic import BaseModel
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetBase
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
+from clinicadl.config.config.modality import PETModalityConfig
 from clinicadl.utils.clinica_utils import (
     create_subs_sess_list,
     linear_nii,
@@ -32,22 +34,29 @@ from clinicadl.utils.exceptions import (
 )
 
 
-def find_file_type(config: BaseModel) -> Dict[str, str]:
+def find_file_type(config: CapsDatasetBase) -> Dict[str, str]:
     # preprocessing = Preprocessing(preprocessing)
-    if config.preprocessing == Preprocessing.T1_LINEAR:
-        file_type = linear_nii(LinearModality.T1W, config.use_uncropped_image)
-    elif config.preprocessing == Preprocessing.PET_LINEAR:
-        if config.tracer is None or config.suvr_reference_region is None:
+    if config.preprocessing.preprocessing == Preprocessing.T1_LINEAR:
+        file_type = linear_nii(
+            LinearModality.T1W, config.preprocessing.use_uncropped_image
+        )
+    elif isinstance(config.modality, PETModalityConfig):
+        if (
+            config.modality.tracer is None
+            or config.modality.suvr_reference_region is None
+        ):
             raise ClinicaDLArgumentError(
                 "`tracer` and `suvr_reference_region` must be defined "
                 "when using `pet-linear` preprocessing."
             )
         file_type = pet_linear_nii(
-            config.tracer, config.suvr_reference_region, config.use_uncropped_image
+            config.modality.tracer,
+            config.modality.suvr_reference_region,
+            config.preprocessing.use_uncropped_image,
         )
     else:
         raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.value}"
+            f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"
         )
 
     return file_type

@@ -67,6 +67,15 @@ def get_generate(generate: Union[str, GenerateType]):
         raise ValueError(f"GenerateType {generate.value} is not available.")
 
 
+class CapsDatasetBase(BaseModel):
+    data: DataConfig
+    modality: modality.ModalityConfig
+    preprocessing: preprocessing.PreprocessingConfig
+
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
+
 def create_caps_dataset_config(
     preprocessing: Union[str, Preprocessing], extract: Union[str, ExtractionMethod]
 ):
@@ -80,14 +89,11 @@ def create_caps_dataset_config(
     except ClinicaDLArgumentError:
         print("Invalid preprocessing configuration")
 
-    class CapsDatasetBase(
-        DataConfig,
-        get_modality(preprocessing_type),
-        get_preprocessing(extract_method),
-    ):
-        # pydantic config
-        model_config = ConfigDict(
-            validate_assignment=True, arbitrary_types_allowed=True
-        )
+    class CapsDatasetConfig(CapsDatasetBase):
+        modality: get_modality(preprocessing_type)
+        preprocessing: get_preprocessing(extract_method)
 
-    return CapsDatasetBase
+        def __init__(self, **kwargs):
+            super().__init__(data=kwargs, modality=kwargs, preprocessing=kwargs)
+
+    return CapsDatasetConfig

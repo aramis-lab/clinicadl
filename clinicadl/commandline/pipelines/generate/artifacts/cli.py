@@ -70,14 +70,14 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     commandline_to_json(
         {
             "output_dir": generated_caps_directory,
-            "caps_dir": caps_config.caps_directory,
-            "preprocessing": caps_config.preprocessing,
+            "caps_dir": caps_config.data.caps_directory,
+            "preprocessing": caps_config.preprocessing.preprocessing.value,
         }
     )
 
     # Read DataFrame
     data_df = load_and_check_tsv(
-        caps_config.data_tsv, caps_config.caps_dict, generated_caps_directory
+        caps_config.data.data_tsv, caps_config.data.caps_dict, generated_caps_directory
     )
     # data_df = extract_baseline(data_df)
     # if caps_config.n_subjects > len(data_df):
@@ -98,7 +98,10 @@ def cli(generated_caps_directory, n_proc, **kwargs):
         cohort = data_df.at[data_idx, "cohort"]
         image_path = Path(
             clinicadl_file_reader(
-                [participant_id], [session_id], caps_config.caps_dict[cohort], file_type
+                [participant_id],
+                [session_id],
+                caps_config.data.caps_dict[cohort],
+                file_type,
             )[0][0]
         )
         from clinicadl.utils.read_utils import get_info_from_filename
@@ -115,7 +118,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
             / "subjects"
             / subject_name
             / session_name
-            / caps_config.preprocessing.value
+            / caps_config.preprocessing.preprocessing.value
         )
         artif_image_nii_dir.mkdir(parents=True, exist_ok=True)
 

@@ -64,9 +64,9 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     commandline_to_json(
         {
             "output_dir": generated_caps_directory,
-            "caps_dir": caps_config.caps_directory,
-            "preprocessing": caps_config.preprocessing.value,
-            "n_subjects": caps_config.n_subjects,
+            "caps_dir": caps_config.data.caps_directory,
+            "preprocessing": caps_config.preprocessing.preprocessing.value,
+            "n_subjects": caps_config.data.n_subjects,
             "n_proc": n_proc,
             "pathology": generate_config.pathology.value,
             "anomaly_degree": generate_config.anomaly_degree,
@@ -75,12 +75,12 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     # Read DataFrame
     data_df = load_and_check_tsv(
-        caps_config.data_tsv, caps_config.caps_dict, generated_caps_directory
+        caps_config.data.data_tsv, caps_config.data.caps_dict, generated_caps_directory
     )
     data_df = extract_baseline(data_df)
-    if caps_config.n_subjects > len(data_df):
+    if caps_config.data.n_subjects > len(data_df):
         raise IndexError(
-            f"The number of subjects {caps_config.n_subjects} cannot be higher "
+            f"The number of subjects {caps_config.data.n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
             f"Please add the '--n_subjects' option and re-run the command."
         )
@@ -97,10 +97,10 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     # Output tsv file
     participants = [
-        data_df.at[i, "participant_id"] for i in range(caps_config.n_subjects)
+        data_df.at[i, "participant_id"] for i in range(caps_config.data.n_subjects)
     ]
-    sessions = [data_df.at[i, "session_id"] for i in range(caps_config.n_subjects)]
-    cohort = caps_config.caps_directory
+    sessions = [data_df.at[i, "session_id"] for i in range(caps_config.data.n_subjects)]
+    cohort = caps_config.data.caps_directory
 
     images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
     image_nii = nib.loadsave.load(images_paths[0])
@@ -124,7 +124,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
             / "subjects"
             / participants[subject_id]
             / sessions[subject_id]
-            / caps_config.preprocessing.value
+            / caps_config.preprocessing.preprocessing.value
         )
         hypo_image_nii_filename = f"{input_filename}pat-{generate_config.pathology.value}_deg-{int(generate_config.anomaly_degree)}_pet.nii.gz"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
@@ -146,7 +146,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     results_list = Parallel(n_jobs=n_proc)(
         delayed(generate_hypometabolic_image)(subject_id)
-        for subject_id in range(caps_config.n_subjects)
+        for subject_id in range(caps_config.data.n_subjects)
     )
     output_df = pd.DataFrame()
     for result_df in results_list:

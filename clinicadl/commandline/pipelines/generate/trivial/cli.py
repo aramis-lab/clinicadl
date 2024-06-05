@@ -62,20 +62,20 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     commandline_to_json(
         {
             "output_dir": generated_caps_directory,
-            "caps_dir": caps_config.caps_directory,
-            "preprocessing": caps_config.preprocessing,
+            "caps_dir": caps_config.data.caps_directory,
+            "preprocessing": caps_config.preprocessing.preprocessing.value,
         }
     )
     # Read DataFrame
     data_df = load_and_check_tsv(
-        caps_config.data_tsv,
-        caps_config.caps_dict,
+        caps_config.data.data_tsv,
+        caps_config.data.caps_dict,
         generated_caps_directory,
     )
     data_df = extract_baseline(data_df)
-    if caps_config.n_subjects > len(data_df):
+    if caps_config.data.n_subjects > len(data_df):
         raise IndexError(
-            f"The number of subjects {caps_config.n_subjects} cannot be higher "
+            f"The number of subjects {caps_config.data.n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
@@ -97,7 +97,10 @@ def cli(generated_caps_directory, n_proc, **kwargs):
         cohort = data_df.at[data_idx, "cohort"]
         image_path = Path(
             clinicadl_file_reader(
-                [participant_id], [session_id], caps_config.caps_dict[cohort], file_type
+                [participant_id],
+                [session_id],
+                caps_config.data.caps_dict[cohort],
+                file_type,
             )[0][0]
         )
 
@@ -113,13 +116,13 @@ def cli(generated_caps_directory, n_proc, **kwargs):
             / "subjects"
             / f"sub-TRIV{subject_id}"
             / session_id
-            / caps_config.preprocessing.value
+            / caps_config.preprocessing.preprocessing.value
         )
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        if caps_config.mask_path is None:
-            caps_config.mask_path = get_mask_path()
-        path_to_mask = caps_config.mask_path / f"mask-{label + 1}.nii"
+        if caps_config.data.mask_path is None:
+            caps_config.data.mask_path = get_mask_path()
+        path_to_mask = caps_config.data.mask_path / f"mask-{label + 1}.nii"
         print(path_to_mask)
         if path_to_mask.is_file():
             atlas_to_mask = nib.loadsave.load(path_to_mask).get_fdata()
@@ -153,7 +156,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     results_df = Parallel(n_jobs=n_proc)(
         delayed(create_trivial_image)(subject_id)
-        for subject_id in range(2 * caps_config.n_subjects)
+        for subject_id in range(2 * caps_config.data.n_subjects)
     )
     output_df = pd.DataFrame()
     for result in results_df:
