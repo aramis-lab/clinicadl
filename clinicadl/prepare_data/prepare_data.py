@@ -29,7 +29,7 @@ def DeepLearningPrepareData(
 
     # Get subject and session list
     if mood24:
-        input_directory = Path(from_bids)
+        input_directory = caps_directory
         logger.debug(f"MOOD directory: {input_directory}.")
         is_bids_dir = True
     elif from_bids is not None:
@@ -104,9 +104,7 @@ def DeepLearningPrepareData(
 
             logger.debug(f"Processing of {file}.")
             if mood24:
-                container = (
-                    caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
-                )
+                container = input_directory
             else:
                 container = container_from_filename(file)
             subfolder = "image_based"
@@ -124,9 +122,7 @@ def DeepLearningPrepareData(
 
                 logger.debug(f"  Processing of {file}.")
                 if mood24:
-                    container = (
-                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
-                    )
+                    container = input_directory
                 else:
                     container = container_from_filename(file)
                 subfolder = "slice_based"
@@ -150,9 +146,7 @@ def DeepLearningPrepareData(
 
                 logger.debug(f"  Processing of {file}.")
                 if mood24:
-                    container = (
-                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
-                    )
+                    container = input_directory
                 else:
                     container = container_from_filename(file)
                 subfolder = "patch_based"
@@ -175,9 +169,7 @@ def DeepLearningPrepareData(
 
                 logger.debug(f"  Processing of {file}.")
                 if mood24:
-                    container = (
-                        caps_directory / "subjects" / Path(file.stem).stem / "ses-M00"
-                    )
+                    container = input_directory
                 else:
                     container = container_from_filename(file)
                 subfolder = "roi_based"
@@ -243,5 +235,6 @@ def DeepLearningPrepareData(
         )
 
     # Save parameters dictionary
+
     preprocessing_json_path = write_preprocessing(parameters, caps_directory)
     logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")
