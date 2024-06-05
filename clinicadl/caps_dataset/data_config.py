@@ -91,7 +91,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     def check_data_tsv(cls, v) -> Path:
         if v is not None:
             if not isinstance(v, Path):
-                Path(v)
+                v = Path(v)
             if not v.is_file():
                 raise ClinicaDLTSVError(
                     "The participants_list you gave is not a file. Please give an existing file."
