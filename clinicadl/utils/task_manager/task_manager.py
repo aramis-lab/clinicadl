@@ -201,7 +201,7 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
-        sample_latent_results_df = pd.DataFrame(columns=self.columns[:3]+["sample_latent_idx"]+self.columns[3:])
+        sample_latent_results_df = None
         with torch.no_grad():
             for data in dataloader:
                 
@@ -252,6 +252,7 @@ class TaskManager:
                         
                     if sample_latent > 0: 
                         
+                        sample_latent_results_df = pd.DataFrame(columns=self.columns[:3]+["sample_latent_idx"]+self.columns[3:])
                         sample_latent_outputs = model.predict(data, sample_latent=sample_latent, seed=seed)
 
                         for i in range(sample_latent):
