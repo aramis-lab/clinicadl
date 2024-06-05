@@ -34,5 +34,5 @@ class CrossValidationConfig(
     def adapt_cross_val_with_maps_manager_info(self, maps_manager: MapsManager):
         # TEMPORARY
         if not self.split:
-            self.split = maps_manager._find_splits()
+            self.split = maps_manager.find_splits()
         logger.debug(f"List of splits {self.split}")
