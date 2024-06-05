@@ -2,8 +2,8 @@ from pathlib import Path
 
 import click
 
-from clinicadl.config import arguments
-from clinicadl.config.options import (
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import (
     computational,
     data,
     dataloader,
