@@ -398,8 +398,6 @@ class MapsManager:
                                 save_reconstruction_tensor=save_tensor,
                                 save_reconstruction_nifti=save_nifti,
                                 save_latent_tensor=save_latent_tensor,
-                                sample_latent=sample_latent,
-                                seed=self.parameters["seed"],
                                 gpu=gpu,
                             )
             else:
@@ -450,8 +448,6 @@ class MapsManager:
                             save_reconstruction_tensor=save_tensor,
                             save_reconstruction_nifti=save_nifti,
                             save_latent_tensor=save_latent_tensor,
-                            sample_latent=sample_latent,
-                            seed=self.parameters["seed"],
                             gpu=gpu,
                         )
 
@@ -680,7 +676,7 @@ class MapsManager:
                 sampler=train_sampler,
                 num_workers=self.n_proc,
                 worker_init_fn=pl_worker_init_function,
-                drop_last=True,
+                drop_last=False,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
             valid_loader = DataLoader(
@@ -688,7 +684,7 @@ class MapsManager:
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.n_proc,
-                drop_last=True,
+                drop_last=False,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
@@ -789,7 +785,7 @@ class MapsManager:
                     sampler=train_sampler,
                     num_workers=self.n_proc,
                     worker_init_fn=pl_worker_init_function,
-                    drop_last=True,
+                    drop_last=False,
                 )
 
                 valid_loader = DataLoader(
@@ -797,7 +793,7 @@ class MapsManager:
                     batch_size=self.batch_size,
                     shuffle=False,
                     num_workers=self.n_proc,
-                    drop_last=True,
+                    drop_last=False,
                 )
 
                 self._train(
@@ -1112,7 +1108,7 @@ class MapsManager:
                 makedirs(latent_tensor_path, exist_ok=True)
 
             if for_pythae:
-                prediction_df, metrics, sample_latent_prediction_df = self.task_manager.test_pythae(
+                prediction_df, metrics, sample_latent_prediction_df, sample_latent_metrics_df = self.task_manager.test_pythae(
                     model, 
                     dataloader, 
                     criterion, 
@@ -1144,8 +1140,8 @@ class MapsManager:
                 split, 
                 selection_metric, 
                 data_group=data_group, 
-                sample_latent=sample_latent, 
                 sample_latent_results_df=sample_latent_prediction_df,
+                sample_latent_metrics_df=sample_latent_metrics_df,
             )
 
     def _compute_output_nifti(
@@ -1224,8 +1220,6 @@ class MapsManager:
         save_reconstruction_tensor=True,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
-        sample_latent=0,
-        seed=None,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1871,8 +1865,8 @@ class MapsManager:
         split: int,
         selection: str,
         data_group: str = "train",
-        sample_latent: int = 0,
         sample_latent_results_df: pd.DataFrame = None,
+        sample_latent_metrics_df: pd.DataFrame = None,
     ):
         """
         Writes the outputs of the test function in tsv files.
@@ -1903,9 +1897,9 @@ class MapsManager:
                 performance_path, index=False, sep="\t", mode="a", header=False
             )
             
-        if sample_latent > 0:
+        if sample_latent_results_df is not None:
             latent_performance_path = path.join(
-                performance_dir, f"{data_group}_{self.mode}_level_prediction_sample-latent.tsv"
+                performance_dir, f"{data_group}_{self.mode}_level_sample-latent_prediction.tsv"
             )
             if not path.exists(latent_performance_path):
                 sample_latent_results_df.to_csv(latent_performance_path, index=False, sep="\t")
@@ -1913,25 +1907,38 @@ class MapsManager:
                 sample_latent_results_df.to_csv(
                     latent_performance_path, index=False, sep="\t", mode="a", header=False
                 )
+        if sample_latent_metrics_df is not None:
+            latent_metrics_path = path.join(
+                performance_dir, f"{data_group}_{self.mode}_level_sample-latent_metrics.tsv"
+            )
+            if not path.exists(latent_metrics_path):
+                sample_latent_metrics_df.to_csv(latent_metrics_path, index=False, sep="\t")
+            else:   
+                sample_latent_metrics_df.to_csv(
+                    latent_metrics_path, index=False, sep="\t", mode="a", header=False
+                )
 
         metrics_path = path.join(
             performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
         )
-        #if metrics is not None:
-        #    if isinstance(metrics, pd.DataFrame):
-        #        metrics.to_csv(
-        #            metrics_path, sep="\t"
-        #        )
-        #    else:
-        #        if not path.exists(metrics_path):
-        #            pd.DataFrame(metrics, index=[0]).to_csv(
-        #                metrics_path, index=False, sep="\t"
-        #            )
-        #        else:
-        #            pd.DataFrame(metrics, index=[0]).to_csv(
-        #                metrics_path, index=False, sep="\t", mode="a", header=False
-        #            )
-        results_df.describe().to_csv(metrics_path, sep="\t")
+        if metrics is not None:
+           if isinstance(metrics, pd.DataFrame):
+               metrics.to_csv(
+                   metrics_path, sep="\t"
+               )
+           else:
+               if not path.exists(metrics_path):
+                   pd.DataFrame(metrics, index=[0]).to_csv(
+                       metrics_path, index=False, sep="\t"
+                   )
+               else:
+                   pd.DataFrame(metrics, index=[0]).to_csv(
+                       metrics_path, index=False, sep="\t", mode="a", header=False
+                   )
+        else:
+            results_df.describe().to_csv(metrics_path, sep="\t")
+            
+        
             
 
     def _ensemble_to_tsv(

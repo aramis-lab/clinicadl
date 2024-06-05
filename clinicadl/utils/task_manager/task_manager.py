@@ -201,11 +201,12 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
-        sample_latent_results_df = pd.DataFrame(columns=self.columns(sample_latent=sample_latent))
+        sample_latent_results_df = pd.DataFrame(columns=self.columns[:3]+["sample_latent_idx"]+self.columns[3:])
         with torch.no_grad():
             for data in dataloader:
+                
                 outputs = model.predict(data)
-
+                
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
                     row = self.generate_test_row(idx, data, outputs["recon_x"])
@@ -250,14 +251,41 @@ class TaskManager:
                         torch.save(latent, path.join(latent_tensor_path, output_filename))
                         
                     if sample_latent > 0: 
-                        outputs = model.predict(data, sample_latent=sample_latent, seed=seed)
+                        
+                        sample_latent_outputs = model.predict(data, sample_latent=sample_latent, seed=seed)
 
                         for i in range(sample_latent):
-                            row = self.generate_test_row_sample_latent(idx, i, data, outputs[i]["recon_x"])
-                            row_df = pd.DataFrame(row, columns=self.columns(sample_latent=sample_latent))
-                            sample_latent_results_df = pd.concat([sample_latent_results_df, row_df])
+                            
+                            output = sample_latent_outputs[i]
+                            reconstruction = output["recon_x"].squeeze(0).cpu()
 
+                            if save_reconstruction_tensor:
+                                output_filename = (
+                                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
+                                )
+                                torch.save(reconstruction, path.join(tensor_path, output_filename))
+                            
+                            if save_reconstruction_nifti:
+                                output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                                # Create file name according to participant and session id
+                                output_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                                nib.save(output_nii, path.join(nifti_path, output_filename))
+                                
+                            if save_latent_tensor:
+                                latent = output["embedding"].squeeze(0).cpu()
+                                output_filename = (
+                                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
+                                )
+                                torch.save(latent, path.join(latent_tensor_path, output_filename))
+                            
+                            row = self.generate_test_row_sample_latent(idx, i, data, output["recon_x"])
+                            row_df = pd.DataFrame(row, columns=sample_latent_results_df.columns)
+                            sample_latent_results_df = pd.concat([sample_latent_results_df, row_df])
+                            
+                        del sample_latent_outputs
+                        
                 del outputs
+                        
             results_df.reset_index(inplace=True, drop=True)
             results_df[self.evaluation_metrics] = results_df[
                 self.evaluation_metrics
@@ -265,11 +293,15 @@ class TaskManager:
 
         if not use_labels:
             metrics_df = None
+            sample_latent_metrics_df = None
         else:
             metrics_df = self.compute_metrics(results_df)
+            sample_latent_metrics_df = None
+            if sample_latent > 0:
+                sample_latent_metrics_df = self.compute_metrics_sample_latent(sample_latent_results_df)
         torch.cuda.empty_cache()
 
-        return results_df, metrics_df, sample_latent_results_df
+        return results_df, metrics_df, sample_latent_results_df, sample_latent_metrics_df
 
     def test(
         self,

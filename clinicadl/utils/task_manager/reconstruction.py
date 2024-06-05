@@ -4,6 +4,7 @@ from torch.utils.data import sampler
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
+import pandas as pd
 
 class ReconstructionManager(TaskManager):
     def __init__(
@@ -13,10 +14,8 @@ class ReconstructionManager(TaskManager):
         super().__init__(mode)
 
     @property
-    def columns(self, sample_latent=0):
+    def columns(self):
         columns = ["participant_id", "session_id", f"{self.mode}_id"]
-        if sample_latent: 
-            columns.append("sample_latent_idx")
         for metric in self.evaluation_metrics:
             columns.append(metric)
         return columns
@@ -30,10 +29,7 @@ class ReconstructionManager(TaskManager):
         return True
 
     def generate_test_row(self, idx, data, outputs):
-        try:
-            y = data["data"][idx]
-        except:
-            y = data["data"][idx]
+        y = data["data"][idx]
         y_pred = outputs[idx].cpu()
         metrics = self.metrics_module.apply(y, y_pred)
         row = [
@@ -55,17 +51,42 @@ class ReconstructionManager(TaskManager):
             data[f"{self.mode}_id"][idx].item(),
             sample_latent_idx,
         ]
-        row.append(sample_latent_idx)
         for metric in self.evaluation_metrics:
             row.append(metrics[metric])
         return [row]
 
     def compute_metrics(self, results_df):
-        metrics = dict()
+        # metrics = dict()
+        # for metric in self.evaluation_metrics:
+        #     metrics[metric] = results_df[metric].mean()
+        # return metrics
+        return results_df.describe()
+        
+    def compute_metrics_sample_latent(self, sample_latent_results_df):
+        grouped = sample_latent_results_df.groupby(['participant_id', 'session_id', f'{self.mode}_id'])
+
+        metrics_data = {
+            'participant_id': [],
+            'session_id': [],
+            f'{self.mode}_id': []
+        }
+        
         for metric in self.evaluation_metrics:
-            metrics[metric] = results_df[metric].mean()
-        return metrics
-        #return results_df.describe()
+            metrics_data[f'{metric}_mean'] = []
+            metrics_data[f'{metric}_std'] = []
+
+        for name, group in grouped:
+            participant_id, session_id, image_id = name
+            
+            metrics_data['participant_id'].append(participant_id)
+            metrics_data['session_id'].append(session_id)
+            metrics_data['image_id'].append(image_id)
+
+            for metric in self.evaluation_metrics:
+                metrics_data[f'{metric}_mean'].append(group[metric].mean())
+                metrics_data[f'{metric}_std'].append(group[metric].std())
+
+        return pd.DataFrame(metrics_data)
 
     @staticmethod
     def output_size(input_size, df, label):
