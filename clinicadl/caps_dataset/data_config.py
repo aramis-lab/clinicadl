@@ -79,13 +79,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
         if not self.label:
             self.label = _label
 
-    @field_validator("mask_path", mode="before")
-    @classmethod
-    def check_mask_path(cls, v) -> Path:
-        if v is not None and not isinstance(v, Path):
-            Path(v)
-        return v
-
     @field_validator("data_tsv", mode="before")
     @classmethod
     def check_data_tsv(cls, v) -> Path:
