@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.config.config.data import DataConfig
+from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
 
@@ -53,4 +53,12 @@ label = click.option(
     show_default=True,
     help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
     "Default will reuse the same label as during the training task.",
+)
+mask_path = click.option(
+    "--mask_path",
+    type=get_type("mask_path", DataConfig),
+    default=get_default("mask_path", DataConfig),
+    help="Path to the extracted masks to generate the two labels. "
+    "Default will try to download masks and store them at '~/.cache/clinicadl'.",
+    show_default=True,
 )

@@ -9,7 +9,7 @@ from clinicadl.commandline.modules_options import (
     validation,
 )
 from clinicadl.commandline.pipelines.interpret import options
-from clinicadl.config.config.pipelines.interpret import InterpretConfig
+from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 

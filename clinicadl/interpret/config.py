@@ -5,18 +5,18 @@ from typing import Dict, Optional, Union
 
 from pydantic import BaseModel, field_validator
 
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.caps_dataset.data_utils import (
+    load_data_test,
+)
+from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config import (
     ComputationalConfig,
     CrossValidationConfig,
-    DataLoaderConfig,
     MapsManagerConfig,
     ValidationConfig,
 )
-from clinicadl.config.config import DataConfig as DataBaseConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.utils.caps_dataset.data import (
-    load_data_test,
-)
 from clinicadl.utils.enum import InterpretationMethod
 
 logger = getLogger("clinicadl.interpret_config")

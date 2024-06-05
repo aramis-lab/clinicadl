@@ -1,54 +1,44 @@
+from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
-from pydantic import computed_field, field_validator
+from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
-from clinicadl.config.config import DataConfig as BaseDataConfig
+from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.config.config import ValidationConfig as BaseValidationConfig
-from clinicadl.config.config.pipelines.train import TrainConfig
-from clinicadl.utils.enum import ClassificationLoss, ClassificationMetric, Task
+from clinicadl.trainer.config.train import TrainConfig
+from clinicadl.utils.enum import RegressionLoss, RegressionMetric, Task
 
-logger = getLogger("clinicadl.classification_config")
+logger = getLogger("clinicadl.reconstruction_config")
+logger = getLogger("clinicadl.regression_config")
 
 
 class DataConfig(BaseDataConfig):  # TODO : put in data module
-    """Config class to specify the data in classification mode."""
+    """Config class to specify the data in regression mode."""
 
-    label: str = "diagnosis"
+    label: str = "age"
 
     @field_validator("label")
     def validator_label(cls, v):
         return v  # TODO : check if label in columns
 
-    @field_validator("label_code")
-    def validator_label_code(cls, v):
-        return v  # TODO : check label_code
-
 
 class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
-    """Config class for classification models."""
+    """Config class for regression models."""
 
     architecture: str = "Conv5_FC3"
-    loss: ClassificationLoss = ClassificationLoss.CrossEntropyLoss
-    selection_threshold: float = 0.0
+    loss: RegressionLoss = RegressionLoss.MSELoss
 
     @field_validator("architecture")
     def validator_architecture(cls, v):
         return v  # TODO : connect to network module to have list of available architectures
 
-    @field_validator("selection_threshold")
-    def validator_threshold(cls, v):
-        assert (
-            0 <= v <= 1
-        ), f"selection_threshold must be between 0 and 1 but it has been set to {v}."
-        return v
-
 
 class ValidationConfig(BaseValidationConfig):
-    """Config class for the validation procedure in classification mode."""
+    """Config class for the validation procedure in regression mode."""
 
-    selection_metrics: Tuple[ClassificationMetric, ...] = (ClassificationMetric.LOSS,)
+    selection_metrics: Tuple[RegressionMetric, ...] = (RegressionMetric.LOSS,)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
@@ -57,9 +47,9 @@ class ValidationConfig(BaseValidationConfig):
         return v
 
 
-class ClassificationConfig(TrainConfig):
+class RegressionConfig(TrainConfig):
     """
-    Config class for the training of a classification model.
+    Config class for the training of a regression model.
 
     The user must specified at least the following arguments:
     - caps_directory
@@ -75,4 +65,4 @@ class ClassificationConfig(TrainConfig):
     @computed_field
     @property
     def network_task(self) -> Task:
-        return Task.CLASSIFICATION
+        return Task.REGRESSION

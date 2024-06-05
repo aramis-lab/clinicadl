@@ -23,8 +23,8 @@ from clinicadl.commandline.pipelines.train.reconstruction import (
 from clinicadl.commandline.pipelines.transfer_learning import (
     options as transfer_learning,
 )
-from clinicadl.config.config.pipelines.task.reconstruction import ReconstructionConfig
 from clinicadl.train.utils import merge_cli_and_config_file_options
+from clinicadl.trainer.config.reconstruction import ReconstructionConfig
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import Task
 

@@ -11,12 +11,12 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.config.config.pipelines.interpret import InterpretConfig
-from clinicadl.config.config.pipelines.predict import PredictConfig
-from clinicadl.transforms.transforms import get_transforms
-from clinicadl.utils.caps_dataset.data import (
+from clinicadl.caps_dataset.data_utils import (
     return_dataset,
 )
+from clinicadl.interpret.config import InterpretConfig
+from clinicadl.predict.config import PredictConfig
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
@@ -565,15 +565,17 @@ class PredictManager:
                     output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
-                input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
-                output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
+                input_nii = nib.nifti1.Nifti1Image(
+                    image[0].detach().cpu().numpy(), eye(4)
+                )
+                output_nii = nib.nifti1.Nifti1Image(output[0].numpy(), eye(4))
                 # Create file name according to participant and session id
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                 output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                nib.save(input_nii, nifti_path / input_filename)
-                nib.save(output_nii, nifti_path / output_filename)
+                nib.loadsave.save(input_nii, nifti_path / input_filename)
+                nib.loadsave.save(output_nii, nifti_path / output_filename)
 
     def interpret(self):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
@@ -728,8 +730,10 @@ class PredictManager:
                                     results_path
                                     / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.nii.gz"
                                 )
-                                output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
-                                nib.save(output_nii, single_nifti_path)
+                                output_nii = nib.nifti1.Nifti1Image(
+                                    map_pt[i].numpy(), eye(4)
+                                )
+                                nib.loadsave.save(output_nii, single_nifti_path)
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
                     torch.save(
@@ -740,8 +744,8 @@ class PredictManager:
                         import nibabel as nib
                         from numpy import eye
 
-                        output_nii = nib.Nifti1Image(mode_map.numpy(), eye(4))
-                        nib.save(
+                        output_nii = nib.nifti1.Nifti1Image(mode_map.numpy(), eye(4))
+                        nib.loadsave.save(
                             output_nii,
                             results_path
                             / f"mean_{self.maps_manager.mode}-{i}_map.nii.gz",

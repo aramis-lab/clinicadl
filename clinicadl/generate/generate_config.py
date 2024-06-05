@@ -1,92 +1,60 @@
-from enum import Enum
+import tarfile
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Optional, Union
+from typing import Optional, Tuple
 
-from pydantic import BaseModel, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    NonNegativeFloat,
+    PositiveFloat,
+    PositiveInt,
+    computed_field,
+    field_validator,
+)
 
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.config.config import ModalityConfig
+from clinicadl.preprocessing.config import PreprocessingConfig
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+)
 from clinicadl.utils.enum import (
     Pathology,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTSVError,
+    DownloadError,
+)
 
 logger = getLogger("clinicadl.predict_config")
 
 
 class GenerateConfig(BaseModel):
     generated_caps_directory: Path
-    n_subjects: int = 300
-    n_proc: int = 1
 
-    class ConfigDict:
-        validate_assignment = True
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
-
-class SharedGenerateConfigOne(GenerateConfig):
-    caps_directory: Path
-    participants_list: Optional[Path] = None
-    preprocessing_cls: Preprocessing = Preprocessing.T1_LINEAR
-    use_uncropped_image: bool = False
-
-    @field_validator("participants_list", mode="before")
-    def check_tsv_file(cls, v):
-        if v is not None:
-            if not isinstance(v, Path):
-                Path(v)
-            if not v.is_file():
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is not a file. Please give an existing file."
-                )
-            if v.stat().st_size == 0:
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is empty. Please give a non-empty file."
-                )
-
-        return v
-
-    @property
-    def preprocessing(self) -> Preprocessing:
-        return self.preprocessing_cls
-
-    @preprocessing.setter
-    def preprocessing(self, value: Union[str, Preprocessing]):
-        self.preprocessing_cls = Preprocessing(value)
+    # TODO: The number of subjects cannot be higher than the number of subjects in the baseline caps dataset
 
 
-class SharedGenerateConfigTwo(SharedGenerateConfigOne):
-    suvr_reference_region_cls: SUVRReferenceRegions = SUVRReferenceRegions.PONS
-    tracer_cls: Tracer = Tracer.FFDG
-
-    @property
-    def suvr_reference_region(self) -> SUVRReferenceRegions:
-        return self.suvr_reference_region_cls
-
-    @suvr_reference_region.setter
-    def suvr_reference_region(self, value: Union[str, SUVRReferenceRegions]):
-        self.suvr_reference_region_cls = SUVRReferenceRegions(value)
-
-    @property
-    def tracer(self) -> Tracer:
-        return self.tracer_cls
-
-    @tracer.setter
-    def tracer(self, value: Union[str, Tracer]):
-        self.tracer_cls = Tracer(value)
-
-
-class GenerateArtifactsConfig(SharedGenerateConfigTwo):
+class GenerateArtifactsConfig(BaseModel):
     contrast: bool = False
-    gamma: Annotated[list[float], 2] = [-0.2, -0.05]
+    gamma: Tuple[float, float] = (-0.2, -0.05)
     motion: bool = False
-    num_transforms: int = 2
+    num_transforms: PositiveInt = 2
     noise: bool = False
-    noise_std: Annotated[list[float], 2] = [5, 15]
-    rotation: Annotated[list[float], 2] = [2, 4]  # float o int ???
-    translation: Annotated[list[float], 2] = [2, 4]
+    noise_std: Tuple[NonNegativeFloat, NonNegativeFloat] = (5.0, 15.0)
+    rotation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)  # float o int ???
+    translation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
     def list_to_tuples(cls, v):
@@ -103,45 +71,44 @@ class GenerateArtifactsConfig(SharedGenerateConfigTwo):
             )
         return v
 
+    @computed_field
+    @property
+    def artifacts_list(self) -> list[str]:
+        artifacts_list = []
+        if self.motion:
+            artifacts_list.append("motion")
+        if self.contrast:
+            artifacts_list.append("contrast")
+        if self.noise:
+            artifacts_list.append("noise")
+        return artifacts_list
 
-class GenerateHypometabolicConfig(SharedGenerateConfigOne):
-    anomaly_degree: float = 30.0
+
+class GenerateHypometabolicConfig(BaseModel):
+    anomaly_degree: NonNegativeFloat = 30.0
     pathology: Pathology = Pathology.AD
-    sigma: int = 5
+    sigma: NonNegativeFloat = 5
 
 
-class GenerateRandomConfig(SharedGenerateConfigTwo):
-    mean: float = 0.0
-    n_subjects: int = 300
-    sigma: float = 0.5
+class GenerateRandomConfig(BaseModel):
+    mean: NonNegativeFloat = 0.0
+    sigma: NonNegativeFloat = 0.5
 
 
-class GenerateTrivialConfig(SharedGenerateConfigTwo):
-    atrophy_percent: float = 60.0
+class GenerateTrivialConfig(BaseModel):
+    atrophy_percent: PositiveFloat = 60.0
     mask_path: Optional[Path] = None
 
-    @field_validator("mask_path", mode="before")
-    def check_mask_file(cls, v):
-        if v is not None:
-            if not isinstance(v, Path):
-                Path(v)
-            if not v.is_file():
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is not a file. Please give an existing file."
-                )
-            if v.stat().st_size == 0:
-                raise ClinicaDLTSVError(
-                    "The participants_list you gave is empty. Please give a non-empty file."
-                )
 
-        return v
-
-
-class GenerateSheppLoganConfig(GenerateConfig):
-    ad_subtypes_distribution: Annotated[list[float], 3] = [0.05, 0.85, 0.10]
-    cn_subtypes_distribution: Annotated[list[float], 3] = [1.0, 0.0, 0.0]
-    extract_json: str = ""
-    image_size: int = 128
+class GenerateSheppLoganConfig(BaseModel):
+    ad_subtypes_distribution: Tuple[
+        NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
+    ] = (0.05, 0.85, 0.10)
+    cn_subtypes_distribution: Tuple[
+        NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
+    ] = (1.0, 0.0, 0.0)
+    extract_json: Optional[str] = None
+    image_size: PositiveInt = 128
     smoothing: bool = False
 
     @field_validator("extract_json", mode="before")
@@ -152,3 +119,19 @@ class GenerateSheppLoganConfig(GenerateConfig):
             return f"{v}.json"
         else:
             return v
+
+    @field_validator(
+        "ad_subtypes_distribution", "cn_subtypes_distribution", mode="before"
+    )
+    def probabilities_validator(
+        cls, v: Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat]
+    ):
+        for i in v:
+            if i > 1 or i < 0:
+                raise ClinicaDLArgumentError(
+                    f"Probabilities must be between 0 and 1 for {v}"
+                )
+
+        if isinstance(v, list):
+            return tuple(v)
+        return v
