@@ -388,3 +388,9 @@ emissions_calculator = cli_param.option_group.informations_group.option(
     default=None,
     help="Flag to allow calculate the carbon emissions during training.",
 )
+# mood challenge 24
+mood24 = cli_param.option_group.informations_group.option(
+    "--mood24",
+    is_flag=True,
+    help="Flag for MOOD challenge 2024.",
+)

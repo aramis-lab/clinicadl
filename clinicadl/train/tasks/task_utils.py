@@ -135,6 +135,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     preprocessing_dict = read_preprocessing(preprocessing_json)
     train_dict["preprocessing_dict"] = preprocessing_dict
     train_dict["mode"] = preprocessing_dict["mode"]
+    train_dict["mood24"] = kwargs["mood24"]
 
     if train_dict["ssda_network"]:
         preprocessing_dict_target = read_preprocessing(preprocessing_json_target)

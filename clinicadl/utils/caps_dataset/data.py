@@ -52,6 +52,7 @@ class CapsDataset(Dataset):
         label_code: Dict[Any, int] = None,
         augmentation_transformations: Optional[Callable] = None,
         multi_cohort: bool = False,
+        mood24: bool = False,
     ):
         self.caps_directory = caps_directory
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
@@ -62,6 +63,7 @@ class CapsDataset(Dataset):
         self.label = label
         self.label_code = label_code
         self.preprocessing_dict = preprocessing_dict
+        self.mood24 = mood24
 
         if not hasattr(self, "elem_index"):
             raise AttributeError(
@@ -166,6 +168,7 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
+
             results = clinicadl_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
@@ -310,6 +313,7 @@ class CapsDatasetImage(CapsDataset):
         label_code: Dict[str, int] = None,
         all_transformations: Optional[Callable] = None,
         multi_cohort: bool = False,
+        mood24: bool = False,
     ):
         """
         Args:
@@ -337,6 +341,7 @@ class CapsDatasetImage(CapsDataset):
             label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
+            mood24=mood24,
         )
 
     @property
@@ -345,10 +350,19 @@ class CapsDatasetImage(CapsDataset):
 
     def __getitem__(self, idx):
         participant, session, cohort, _, label, domain = self._get_meta_data(idx)
+        if not self.mood24:
+            image_path = self._get_image_path(participant, session, cohort)
+        else:
+            from clinicadl.utils.clinica_utils import mood24_file_reader
 
-        image_path = self._get_image_path(participant, session, cohort)
+            image_paths = mood24_file_reader(
+                self.caps_dict[cohort], pt=True, extraction="image"
+            )
+            image_path = [x for x in image_paths if x.stem.startswith(participant)][0]
+            if not image_path.is_file():
+                raise ClinicaDLArgumentError("Can't find image_path in the directory")
+
         image = torch.load(image_path)
-
         if self.transformations:
             image = self.transformations(image)
 
@@ -760,6 +774,7 @@ def return_dataset(
     cnn_index: int = None,
     label_presence: bool = True,
     multi_cohort: bool = False,
+    mood24: bool = False,
 ) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.
@@ -794,6 +809,7 @@ def return_dataset(
             label=label,
             label_code=label_code,
             multi_cohort=multi_cohort,
+            mood24=mood24,
         )
     elif preprocessing_dict["mode"] == "patch":
         return CapsDatasetPatch(

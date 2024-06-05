@@ -65,6 +65,7 @@ from .task_utils import task_launcher
 @train_option.reconstruction_loss
 # information
 @train_option.emissions_calculator
+@train_option.mood24
 def cli(**kwargs):
     """
     Train a deep learning model to learn a reconstruction task on neuroimaging data.

@@ -674,6 +674,7 @@ class MapsManager:
                 multi_cohort=self.multi_cohort,
                 label=self.label,
                 label_code=self.label_code,
+                mood24=self.parameters["mood24"],
             )
             logger.debug("Loading validation data...")
             data_valid = return_dataset(
@@ -685,6 +686,7 @@ class MapsManager:
                 multi_cohort=self.multi_cohort,
                 label=self.label,
                 label_code=self.label_code,
+                mood24=self.parameters["mood24"],
             )
             train_sampler = self.task_manager.generate_sampler(
                 data_train,
@@ -1102,10 +1104,12 @@ class MapsManager:
             split=split,
             maps_path=self.maps_path,
         )
-
+        print("ok")
         model.train()
+        print("ok2")
         train_loader.dataset.train()
 
+        print("ok3")
         early_stopping = EarlyStopping(
             "min", min_delta=self.tolerance, patience=self.patience
         )
@@ -1144,7 +1148,7 @@ class MapsManager:
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             # self.callback_handler.on_epoch_begin(self.parameters, epoch = epoch)
-
+            print("in epoch")
             if isinstance(train_loader.sampler, DistributedSampler):
                 # It should always be true for a random sampler. But just in case
                 # we get a WeightedRandomSampler or a forgotten RandomSampler,
@@ -1156,6 +1160,7 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
+                    print("in ennumerate(dataloader)")
                     update: bool = (i + 1) % self.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
@@ -2119,6 +2124,7 @@ class MapsManager:
             label_code=self.parameters["label_code"],
             train_transformations=None,
             all_transformations=transformations,
+            mood24=parameters["mood24"],
         )
         self.parameters.update(
             {

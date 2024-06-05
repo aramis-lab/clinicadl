@@ -1187,6 +1187,17 @@ def fetch_file(remote: RemoteFileStructure, dirname: Path) -> Path:
     return file_path
 
 
-def mood24_file_reader(input_directory):
-    current_glob_found = list(input_directory.glob("*.nii.gz"))
+def mood24_file_reader(
+    input_directory: Path, pt: bool = False, extraction: str = "image"
+):
+    if pt:
+        pt_dir = (
+            Path(input_directory)
+            / "deeplearning_prepare_data"
+            / (extraction + "_based")
+            / "custom"
+        )
+        current_glob_found = list(pt_dir.glob("*.pt"))
+    else:
+        current_glob_found = list(input_directory.glob("*.nii.gz"))
     return current_glob_found
