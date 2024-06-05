@@ -10,14 +10,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
-from clinicadl.prepare_data.prepare_data_config import (
-    PrepareDataConfig,
-    PrepareDataImageConfig,
-    PrepareDataPatchConfig,
-    PrepareDataROIConfig,
-    PrepareDataSliceConfig,
-)
 from clinicadl.prepare_data.prepare_data_utils import (
     compute_discarded_slices,
     extract_patch_path,
@@ -72,11 +66,24 @@ class CapsDataset(Dataset):
         self.label_code = label_code
         self.preprocessing_dict = preprocessing_dict
 
-        self.config = PrepareDataConfig(
+        # self.config = PrepareDataConfig(
+        #     caps_directory=caps_directory,
+        #     preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+        #     use_uncropped_image=preprocessing_dict["use_uncropped_image"],
+        #     extract_method=ExtractionMethod(preprocessing_dict["mode"]),
+        # )
+
+        self.config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+            extraction=ExtractionMethod(preprocessing_dict["mode"]),
+            preprocessing_type=Preprocessing(preprocessing_dict["preprocessing"]),
             caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
+            transformations=transformations,
+            augmentation_transformations=augmentation_transformations,
+            eval_mode=False,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-            extract_method=ExtractionMethod(preprocessing_dict["mode"]),
         )
 
         if not hasattr(self, "elem_index"):
@@ -332,11 +339,6 @@ class CapsDatasetImage(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
-        self.config = PrepareDataImageConfig(
-            caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
-            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-        )
 
     @property
     def elem_index(self):
@@ -415,14 +417,8 @@ class CapsDatasetPatch(CapsDataset):
             transformations=all_transformations,
             multi_cohort=multi_cohort,
         )
-        self.config = PrepareDataPatchConfig(
-            caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
-            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-            save_features=preprocessing_dict["prepare_dl"],
-            patch_size=preprocessing_dict["patch_size"],
-            stride_size=preprocessing_dict["stride_size"],
-        )
+        self.config.preprocessing.patch_size = preprocessing_dict["patch_size"]
+        self.config.preprocessing.stride_size = preprocessing_dict["stride_size"]
 
     @property
     def elem_index(self):
@@ -533,13 +529,13 @@ class CapsDatasetRoi(CapsDataset):
             multi_cohort=multi_cohort,
         )
 
-        self.config = PrepareDataROIConfig(
-            caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
-            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-            save_features=preprocessing_dict["prepare_dl"],
-            roi_list=preprocessing_dict["roi_list"],
-            roi_uncrop_output=preprocessing_dict["uncropped_roi"],
+        self.config.preprocessing.roi_list = preprocessing_dict["roi_list"]
+        self.config.preprocessing.uncropped_roi = preprocessing_dict["uncropped_roi"]
+        (
+            self.config.preprocessing.mask_paths,
+            self.config.preprocessing.mask_arrays,
+        ) = self._get_mask_paths_and_tensors(
+            caps_directory, multi_cohort, preprocessing_dict
         )
 
     @property
@@ -710,18 +706,15 @@ class CapsDatasetSlice(CapsDataset):
             multi_cohort=multi_cohort,
         )
 
-        self.config = PrepareDataSliceConfig(
-            caps_directory=caps_directory,
-            preprocessing_cls=Preprocessing(preprocessing_dict["preprocessing"]),
-            use_uncropped_image=preprocessing_dict["use_uncropped_image"],
-            save_features=preprocessing_dict["prepare_dl"],
-            slice_direction_cls=SliceDirection(
-                str(preprocessing_dict["slice_direction"])
-            ),
-            slice_mode_cls=SliceMode(preprocessing_dict["slice_mode"]),
-            discarded_slices=compute_discarded_slices(
-                preprocessing_dict["discarded_slices"]
-            ),
+        self.config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
+        self.config.preprocessing.slice_direction = SliceDirection(
+            str(preprocessing_dict["slice_direction"])
+        )
+        self.config.preprocessing.slice_mode = SliceMode(
+            preprocessing_dict["slice_mode"]
+        )
+        self.config.preprocessing.discarded_slices = compute_discarded_slices(
+            preprocessing_dict["discarded_slices"]
         )
 
     @property
