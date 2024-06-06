@@ -26,7 +26,7 @@ from clinicadl.commandline.modules_options import (
 )
 def cli(
     caps_directory,
-    output_tsv,
+    results_tsv,
     tracer,
     suvr_reference_region,
     use_uncropped_image,
@@ -48,7 +48,7 @@ def cli(
 
     pet_linear_qc(
         caps_directory,
-        output_tsv,
+        results_tsv,
         tracer,
         suvr_reference_region,
         use_uncropped_image=use_uncropped_image,

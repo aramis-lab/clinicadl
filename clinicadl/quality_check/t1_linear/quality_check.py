@@ -10,9 +10,16 @@ import torch
 from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
+from clinicadl.utils.clinica_utils import (
+    RemoteFileStructure,
+    clinicadl_file_reader,
+    fetch_file,
+    linear_nii,
+)
+from clinicadl.utils.enum import ExtractionMethod, LinearModality, Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 from .models import resnet_darq_qc_18 as darq_r18
@@ -65,6 +72,21 @@ def quality_check(
     """
 
     logger = getLogger("clinicadl.quality_check")
+
+    config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=Preprocessing.T1_LINEAR,
+        preprocessing=Preprocessing.T1_LINEAR,
+        use_uncropped_image=use_uncropped_image,
+        file_type=linear_nii(LinearModality.T1W, use_uncropped_image),
+        use_extracted_tensors=use_tensor,
+        caps_directory=caps_dir,
+        data_tsv=tsv_path,
+        batch_size=batch_size,
+        n_pric=n_proc,
+        gpu=gpu,
+        amp=amp,
+    )
 
     if not output_path.suffix == ".tsv":
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
@@ -126,13 +148,13 @@ def quality_check(
 
     with torch.no_grad():
         # Transform caps_dir in dict
-        caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=False)
+        caps_dict = config.data.caps_dict
 
         # Load DataFrame
         logger.debug("Loading data to check.")
         df = load_and_check_tsv(tsv_path, caps_dict, output_path.resolve().parent)
 
-        dataset = QCDataset(caps_dir, df, use_tensor, use_uncropped_image)
+        dataset = QCDataset(caps_dir, df, config, use_tensor, use_uncropped_image)
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )

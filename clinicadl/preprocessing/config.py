@@ -27,7 +27,7 @@ class PreprocessingConfig(BaseModel):
     preprocessing: Preprocessing
     use_uncropped_image: bool = False
     extract_method: ExtractionMethod
-    file_type: Optional[str] = None  # Optional ??
+    file_type: Optional[Dict[str, str]] = None  # Optional ??
     save_features: bool = False
     extract_json: Optional[str] = None
 
@@ -49,19 +49,20 @@ class PreprocessingImageConfig(PreprocessingConfig):
 
 
 class PreprocessingPatchConfig(PreprocessingConfig):
+    extract_method: ExtractionMethod = ExtractionMethod.PATCH
     patch_size: int = 50
     stride_size: int = 50
-    extract_method: ExtractionMethod = ExtractionMethod.PATCH
 
 
 class PreprocessingSliceConfig(PreprocessingConfig):
+    extract_method: ExtractionMethod = ExtractionMethod.SLICE
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
     discarded_slices: Annotated[list[PositiveInt], 2] = [0, 0]
-    extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
 
 class PreprocessingROIConfig(PreprocessingConfig):
+    extract_method: ExtractionMethod = ExtractionMethod.ROI
     roi_list: list[str] = []
     roi_uncrop_output: bool = False
     roi_custom_template: str = ""
@@ -69,7 +70,6 @@ class PreprocessingROIConfig(PreprocessingConfig):
     roi_custom_suffix: str = ""
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
-    extract_method: ExtractionMethod = ExtractionMethod.ROI
 
 
 def return_preprocessing_config(dict_: Dict[str, Any]):

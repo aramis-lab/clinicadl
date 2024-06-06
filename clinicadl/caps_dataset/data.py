@@ -556,7 +556,7 @@ class CapsDatasetRoi(CapsDataset):
             )
 
         if self.prepare_dl:
-            mask_path = self.mask_paths[roi_idx]
+            mask_path = self.mask_paths
             roi_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )

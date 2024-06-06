@@ -8,10 +8,10 @@ import nibabel as nib
 import torch
 from torch.utils.data import Dataset
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
-from clinicadl.prepare_data.prepare_data_config import PrepareDataImageConfig
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.enum import ExtractionMethod, LinearModality, Preprocessing
 
 
 class QCDataset(Dataset):
@@ -21,6 +21,7 @@ class QCDataset(Dataset):
         self,
         img_dir: Path,
         data_df,
+        config: CapsDatasetConfig,
         use_extracted_tensors=False,
         use_uncropped_image=True,
     ):
@@ -32,6 +33,7 @@ class QCDataset(Dataset):
         """
         from clinicadl.transforms.transforms import MinMaxNormalization
 
+        self.config = config
         self.img_dir = img_dir
         self.df = data_df
         self.use_extracted_tensors = use_extracted_tensors
@@ -49,16 +51,11 @@ class QCDataset(Dataset):
 
         self.preprocessing_dict = {
             "preprocessing": Preprocessing.T1_LINEAR.value,
-            "mode": "image",
+            "mode": ExtractionMethod.IMAGE.value,
             "use_uncropped_image": use_uncropped_image,
             "file_type": linear_nii(LinearModality.T1W, use_uncropped_image),
             "use_tensor": use_extracted_tensors,
         }
-        self.config = PrepareDataImageConfig(
-            caps_directory=Path(""),
-            preprocessing_cls=Preprocessing.T1_LINEAR,
-            use_uncropped_image=use_uncropped_image,
-        )
 
     def __len__(self):
         return len(self.df)
