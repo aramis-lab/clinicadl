@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.config.config.pipelines.interpret import InterpretConfig
+from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 

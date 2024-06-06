@@ -6,7 +6,9 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
-from clinicadl.generate import generate_param
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import data, dataloader
+from clinicadl.commandline.pipelines.generate.shepplogan import options as shepplogan
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
@@ -19,37 +21,34 @@ logger = getLogger("clinicadl.generate.shepplogan")
 
 
 @click.command(name="shepplogan", no_args_is_help=True)
-@generate_param.argument.generated_caps_directory
-@generate_param.option.n_subjects
-@generate_param.option.n_proc
-@generate_param.option_shepplogan.extract_json
-@generate_param.option_shepplogan.image_size
-@generate_param.option_shepplogan.cn_subtypes_distribution
-@generate_param.option_shepplogan.ad_subtypes_distribution
-@generate_param.option_shepplogan.smoothing
-def cli(generated_caps_directory, **kwargs):
+@arguments.generated_caps_directory
+@data.n_subjects
+@dataloader.n_proc
+@shepplogan.extract_json
+@shepplogan.image_size
+@shepplogan.cn_subtypes_distribution
+@shepplogan.ad_subtypes_distribution
+@shepplogan.smoothing
+def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
     """Random generation of 2D Shepp-Logan phantoms.
-
     Generate a dataset of 2D images at GENERATED_CAPS_DIRECTORY including
     3 subtypes based on Shepp-Logan phantom.
     """
-
-    shepplogan_config = GenerateSheppLoganConfig(
-        generated_caps_directory=generated_caps_directory, **kwargs
-    )
+    # caps_config = create_caps_dataset_config(extract=ExtractionMethod.IMAGE, preprocessing=Preprocessing.PET_LINEAR)(**kwargs)
+    generate_config = GenerateSheppLoganConfig(**kwargs)
 
     labels_distribution = {
-        "AD": shepplogan_config.ad_subtypes_distribution,
-        "CN": shepplogan_config.cn_subtypes_distribution,
+        "AD": generate_config.ad_subtypes_distribution,
+        "CN": generate_config.cn_subtypes_distribution,
     }
-    check_and_clean(shepplogan_config.generated_caps_directory / "subjects")
+    check_and_clean(generated_caps_directory / "subjects")
     commandline_to_json(
         {
-            "output_dir": shepplogan_config.generated_caps_directory,
-            "img_size": shepplogan_config.image_size,
+            "output_dir": generated_caps_directory,
+            "img_size": generate_config.image_size,
             "labels_distribution": labels_distribution,
-            "samples": shepplogan_config.n_subjects,
-            "smoothing": shepplogan_config.smoothing,
+            "samples": n_subjects,
+            "smoothing": generate_config.smoothing,
         }
     )
     columns = ["participant_id", "session_id", "diagnosis", "subtype"]
@@ -73,7 +72,7 @@ def cli(generated_caps_directory, **kwargs):
 
             # Image generation
             slice_path = (
-                shepplogan_config.generated_caps_directory
+                generated_caps_directory
                 / "subjects"
                 / participant_id
                 / session_id
@@ -86,15 +85,15 @@ def cli(generated_caps_directory, **kwargs):
             slice_dir = slice_path.parent
             slice_dir.mkdir(parents=True, exist_ok=True)
             slice_np = generate_shepplogan_phantom(
-                shepplogan_config.image_size,
+                generate_config.image_size,
                 label=subtype,
-                smoothing=shepplogan_config.smoothing,
+                smoothing=generate_config.smoothing,
             )
             slice_tensor = torch.from_numpy(slice_np).float().unsqueeze(0)
             torch.save(slice_tensor, slice_path)
 
             image_path = (
-                shepplogan_config.generated_caps_directory
+                generated_caps_directory
                 / "subjects"
                 / participant_id
                 / session_id
@@ -107,9 +106,9 @@ def cli(generated_caps_directory, **kwargs):
                 f.write("0")
             return data_df
 
-        results_df = Parallel(n_jobs=shepplogan_config.n_proc)(
+        results_df = Parallel(n_jobs=n_proc)(
             delayed(create_shepplogan_image)(subject_id, data_df)
-            for subject_id in range(shepplogan_config.n_subjects)
+            for subject_id in range(n_subjects)
         )
 
         data_df = pd.DataFrame()
@@ -117,9 +116,7 @@ def cli(generated_caps_directory, **kwargs):
             data_df = pd.concat([result, data_df])
 
     # Save data
-    data_df.to_csv(
-        shepplogan_config.generated_caps_directory / "data.tsv", sep="\t", index=False
-    )
+    data_df.to_csv(generated_caps_directory / "data.tsv", sep="\t", index=False)
 
     # Save preprocessing JSON file
     preprocessing_dict = {
@@ -127,7 +124,7 @@ def cli(generated_caps_directory, **kwargs):
         "mode": "slice",
         "use_uncropped_image": False,
         "prepare_dl": True,
-        "extract_json": shepplogan_config.extract_json,
+        "extract_json": generate_config.extract_json,
         "slice_direction": 2,
         "slice_mode": "single",
         "discarded_slices": 0,
@@ -138,12 +135,10 @@ def cli(generated_caps_directory, **kwargs):
             "needed_pipeline": "shepplogan",
         },
     }
-    write_preprocessing(preprocessing_dict, shepplogan_config.generated_caps_directory)
-    write_missing_mods(shepplogan_config.generated_caps_directory, data_df)
+    write_preprocessing(preprocessing_dict, generated_caps_directory)
+    write_missing_mods(generated_caps_directory, data_df)
 
-    logger.info(
-        f"Shepplogan dataset was generated at {shepplogan_config.generated_caps_directory}"
-    )
+    logger.info(f"Shepplogan dataset was generated at {generated_caps_directory}")
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ from clinicadl.commandline.modules_options import (
     validation,
 )
 from clinicadl.commandline.pipelines.predict import options
-from clinicadl.config.config.pipelines.predict import PredictConfig
+from clinicadl.predict.config import PredictConfig
 from clinicadl.predict.predict_manager import PredictManager
 
 

@@ -36,7 +36,7 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
         except IOError as err:
             raise IOError("Unable to download required eyes segmentation for QC:", err)
 
-    segmentation_nii = nib.load(segmentation_file)
+    segmentation_nii = nib.loadsave.load(segmentation_file)
     segmentation_np = segmentation_nii.get_fdata()
 
     # Get the GM template
@@ -47,7 +47,7 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
         / "t1"
         / f"group-{group_label}_template.nii.gz"
     )
-    template_nii = nib.load(template_path)
+    template_nii = nib.loadsave.load(template_path)
     template_np = template_nii.get_fdata()
     template_np = np.sum(template_np, axis=3)
     template_segmentation_np = template_np * segmentation_np
@@ -90,7 +90,7 @@ def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
             )
             if image_path.is_file():
                 # GM analysis
-                image_nii = nib.load(image_path)
+                image_nii = nib.loadsave.load(image_path)
                 image_np = image_nii.get_fdata()
                 image_segmentation_np = image_np * segmentation_np
                 eyes_nmi_value = nmi(

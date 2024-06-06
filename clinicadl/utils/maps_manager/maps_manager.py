@@ -10,11 +10,11 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
-from clinicadl.preprocessing.preprocessing import path_encoder
-from clinicadl.transforms.transforms import get_transforms
-from clinicadl.utils.caps_dataset.data import (
+from clinicadl.caps_dataset.data_utils import (
     return_dataset,
 )
+from clinicadl.preprocessing.preprocessing import path_encoder
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -272,7 +272,7 @@ class MapsManager:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.
@@ -573,7 +573,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.utils.caps_dataset.data import load_data_test
+        from clinicadl.caps_dataset.data_utils import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,

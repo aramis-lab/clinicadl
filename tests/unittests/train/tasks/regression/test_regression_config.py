@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-import clinicadl.config.config.pipelines.task.regression as regression
+import clinicadl.trainer.config.regression as regression
 
 
 # Tests for customed validators #

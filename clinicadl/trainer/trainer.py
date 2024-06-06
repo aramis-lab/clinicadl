@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.transforms.transforms import get_transforms
-from clinicadl.utils.caps_dataset.data import return_dataset
+from clinicadl.caps_dataset.data_utils import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
@@ -31,7 +31,7 @@ from clinicadl.train.tasks_utils import create_training_config
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
-    from clinicadl.config.config.pipelines.train import TrainConfig
+    from clinicadl.trainer.config.train import TrainConfig
 
 
 logger = getLogger("clinicadl.trainer")
@@ -162,7 +162,7 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        # if len(self.config.data.label_code) == 0:
+        # if (len(self.config.data.label_code) == 0):
         #     self.config.data.label_code = self.maps_manager.label_code
         # TODO: deal with label_code and replace self.maps_manager.label_code
 
