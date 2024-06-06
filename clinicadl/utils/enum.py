@@ -274,3 +274,25 @@ class RegressionMetric(str, Enum):  # TODO : put in metric module
     MAE = "MAE"
     RMSE = "RMSE"
     LOSS = "loss"
+
+
+class GenerateType(str, Enum):
+    """Available generation pipelines in ClinicaDL."""
+
+    ART = "artifacts"
+    TRI = "trivial"
+    RAN = "random"
+    SHE = "shepplogan"
+    HYP = "hypometabolic"
+
+
+class MaskChecksum(str, Enum):
+    """Available hecksum pipelines in ClinicaDL."""
+
+    AD = "2100d514a3fabab49fe30702700085a09cdad449bdf1aa04b8f804e238e4dfc2"
+    BVFTD = "5a0ad28dff649c84761aa64f6e99da882141a56caa46675b8bf538a09fce4f81"
+    LVPPA = "1099f5051c79d5b4fdae25226d97b0e92f958006f6545f498d4b600f3f8a422e"
+    NFVPPA = "9512a4d4dc0003003c4c7526bf2d0ddbee65f1c79357f5819898453ef7271033"
+    PCA = "ace36356b57f4db73e17c421a7cfd7ae056a1b258b8126534cf65d8d0be9527a"
+    SVPPA = "44f2e00bf2d2d09b532cb53e3ba61d6087b4114768cc8ae3330ea84c4b7e0e6a"
+    AAL2 = "89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471"

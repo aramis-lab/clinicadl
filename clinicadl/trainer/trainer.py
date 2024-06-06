@@ -14,7 +14,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.utils.caps_dataset.data import return_dataset
+from clinicadl.caps_dataset.data_utils import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
@@ -30,7 +30,8 @@ from .trainer_utils import create_parameters_dict
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
-    from clinicadl.config.config.pipelines.train import TrainConfig
+    from clinicadl.trainer.config.train import TrainConfig
+
 
 logger = getLogger("clinicadl.trainer")
 
@@ -59,14 +60,13 @@ class Trainer:
         # temporary: to match CLI data. TODO : change CLI data
 
         parameters, maps_path = create_parameters_dict(config)
-
         return MapsManager(
             maps_path, parameters, verbose=None
         )  # TODO : precise which parameters in config are useful
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        # if len(self.config.data.label_code) == 0:
+        # if (len(self.config.data.label_code) == 0):
         #     self.config.data.label_code = self.maps_manager.label_code
         # TODO : deal with label_code and replace self.maps_manager.label_code
 

@@ -4,6 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 import clinicadl.config.config as config
+from clinicadl.caps_dataset.data_config import DataConfig
+from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 
 
 # Tests for customed validators #
@@ -22,7 +24,7 @@ def test_cross_validation_config():
 
 
 def test_data_config(caps_example):
-    c = config.DataConfig(
+    c = DataConfig(
         caps_directory=caps_example,
         preprocessing_json="preprocessing.json",
         diagnoses=["AD"],
@@ -120,7 +122,7 @@ def dummy_arguments(caps_example):
 def training_config():
     from pydantic import computed_field
 
-    from clinicadl.config.config.pipelines.train import TrainConfig
+    from clinicadl.trainer.config.train import TrainConfig
 
     class TrainingConfig(TrainConfig):
         @computed_field
@@ -189,10 +191,10 @@ def test_passes_validations(good_inputs, training_config):
 def test_assignment(dummy_arguments, training_config):
     c = training_config(**dummy_arguments)
     c.computational = {"gpu": False}
-    c.dataloader = config.DataLoaderConfig(**{"batch_size": 1})
+    c.dataloader = DataLoaderConfig(**{"batch_size": 1})
     c.dataloader.n_proc = 10
     with pytest.raises(ValidationError):
-        c.computational = config.DataLoaderConfig()
+        c.computational = DataLoaderConfig()
     with pytest.raises(ValidationError):
         c.dataloader = {"sampler": "abc"}
     assert not c.computational.gpu

@@ -130,7 +130,11 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     """
     type_ = config.model_fields[arg].annotation
     if isinstance(type_, typing._GenericAlias):
-        return get_args(type_)[0]
+        type_ = get_args(type_)[0]
+        if get_origin(type_) is typing.Annotated:
+            return get_args(type_)[0]
+        else:
+            return type_
     elif get_origin(type_) is typing.Annotated:
         return get_args(type_)[0]
     elif issubclass(type_, Enum):

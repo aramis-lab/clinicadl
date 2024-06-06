@@ -7,10 +7,13 @@ from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetBase
+from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
+from clinicadl.config.config.modality import PETModalityConfig
 from clinicadl.utils.clinica_utils import (
     create_subs_sess_list,
     linear_nii,
@@ -22,28 +25,38 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+
+# from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTSVError,
+    DownloadError,
+)
 
 
-def find_file_type(
-    preprocessing: Union[str, Preprocessing],
-    uncropped_image: bool,
-    tracer: Tracer,
-    suvr_reference_region: SUVRReferenceRegions,
-) -> Dict[str, str]:
-    preprocessing = Preprocessing(preprocessing)
-    if preprocessing == Preprocessing.T1_LINEAR:
-        file_type = linear_nii(LinearModality.T1W, uncropped_image)
-    elif preprocessing == Preprocessing.PET_LINEAR:
-        if tracer is None or suvr_reference_region is None:
+def find_file_type(config: CapsDatasetBase) -> Dict[str, str]:
+    # preprocessing = Preprocessing(preprocessing)
+    if config.preprocessing.preprocessing == Preprocessing.T1_LINEAR:
+        file_type = linear_nii(
+            LinearModality.T1W, config.preprocessing.use_uncropped_image
+        )
+    elif isinstance(config.modality, PETModalityConfig):
+        if (
+            config.modality.tracer is None
+            or config.modality.suvr_reference_region is None
+        ):
             raise ClinicaDLArgumentError(
                 "`tracer` and `suvr_reference_region` must be defined "
                 "when using `pet-linear` preprocessing."
             )
-        file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
+        file_type = pet_linear_nii(
+            config.modality.tracer,
+            config.modality.suvr_reference_region,
+            config.preprocessing.use_uncropped_image,
+        )
     else:
         raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {preprocessing.value}"
+            f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"
         )
 
     return file_type
@@ -84,8 +97,8 @@ def load_and_check_tsv(
             check_multi_cohort_tsv(tsv_df, "labels")
             df = pd.DataFrame()
             for idx in range(len(tsv_df)):
-                cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = Path(tsv_df.loc[idx, "path"])
+                cohort_name = tsv_df.at[idx, "cohort"]
+                cohort_path = Path(tsv_df.at[idx, "path"])
                 if not cohort_path.is_file():
                     raise ClinicaDLTSVError(
                         f"The cohort path: {cohort_path} doesn't lead to a file"
