@@ -47,6 +47,8 @@ class CapsDataset(Dataset):
     def __init__(
         self,
         config: CapsDatasetConfig,
+        label_presence,
+        eval_mode=False,
     ):
         if not hasattr(self, "elem_index"):
             raise AttributeError(
@@ -54,6 +56,7 @@ class CapsDataset(Dataset):
             )
         if not hasattr(self, "mode"):
             raise AttributeError("Child class of CapsDataset, must set mode attribute.")
+        # TEMPORARY CODE
         self.config = config
         self.df = config.data.data_df
         mandatory_col = {
@@ -61,7 +64,11 @@ class CapsDataset(Dataset):
             "session_id",
             "cohort",
         }
-        if config.data.label_presence and config.data.label is not None:
+        self.label_presence = label_presence
+        self.eval_mode = eval_mode
+        # TEMPORARU
+
+        if label_presence and config.data.label is not None:
             mandatory_col.add(config.data.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
@@ -181,7 +188,7 @@ class CapsDataset(Dataset):
             elem_idx = idx % self.elem_per_image
         else:
             elem_idx = self.elem_index
-        if self.config.data.label_presence and self.config.data.label is not None:
+        if self.label_presence and self.config.data.label is not None:
             target = self.df.at[image_idx, self.config.data.label]
             label = self.label_fn(target)
         else:
@@ -268,6 +275,10 @@ class CapsDatasetImage(CapsDataset):
     def __init__(
         self,
         config: CapsDatasetConfig,
+        label_presence,
+        transformations,
+        augmentation_transformations,
+        eval_mode: bool = False,
     ):
         """
         Args:
@@ -284,7 +295,11 @@ class CapsDatasetImage(CapsDataset):
         """
 
         self.config = config
-        super().__init__(config=config)
+        self.transformations = transformations
+        self.augmentation_transformations = augmentation_transformations
+        super().__init__(
+            config=config, eval_mode=eval_mode, label_presence=label_presence
+        )
 
     @property
     def elem_index(self):
@@ -322,6 +337,10 @@ class CapsDatasetPatch(CapsDataset):
     def __init__(
         self,
         config: CapsDatasetConfig,
+        label_presence,
+        transformations,
+        augmentation_transformations,
+        eval_mode: bool = False,
     ):
         """
         Args:
@@ -339,7 +358,11 @@ class CapsDatasetPatch(CapsDataset):
 
         """
         self.config = config
-        super().__init__(config)
+        self.transformations = transformations
+        self.augmentation_transformations = augmentation_transformations
+        super().__init__(
+            config=config, eval_mode=eval_mode, label_presence=label_presence
+        )
 
     @property
     def elem_index(self):
@@ -426,6 +449,10 @@ class CapsDatasetRoi(CapsDataset):
     def __init__(
         self,
         config: CapsDatasetConfig,
+        label_presence,
+        transformations,
+        augmentation_transformations,
+        eval_mode: bool = False,
     ):
         """
         Args:
@@ -445,7 +472,11 @@ class CapsDatasetRoi(CapsDataset):
         self.config = config
         self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors()
 
-        super().__init__(config)
+        self.transformations = transformations
+        self.augmentation_transformations = augmentation_transformations
+        super().__init__(
+            config=config, eval_mode=eval_mode, label_presence=label_presence
+        )
 
     @property
     def elem_index(self):
@@ -467,7 +498,7 @@ class CapsDatasetRoi(CapsDataset):
                 "image_based", f"{self.config.preprocessing.extract_method.value}_based"
             )
             roi_filename = extract_roi_path(
-                image_path, mask_path, self.config.preprocessing.uncropped_roi
+                image_path, mask_path, self.config.preprocessing.roi_uncrop_output
             )
             roi_tensor = torch.load(Path(roi_dir) / roi_filename)
 
@@ -475,7 +506,7 @@ class CapsDatasetRoi(CapsDataset):
             image = torch.load(image_path)
             mask_array = self.mask_arrays[roi_idx]
             roi_tensor = extract_roi_tensor(
-                image, mask_array, self.config.preprocessing.uncropped_roi
+                image, mask_array, self.config.preprocessing.roi_uncrop_output
             )
 
         if self.transformations:
@@ -566,6 +597,10 @@ class CapsDatasetSlice(CapsDataset):
     def __init__(
         self,
         config: CapsDatasetConfig,
+        label_presence,
+        transformations,
+        augmentation_transformations,
+        eval_mode: bool = False,
     ):
         """
         Args:
@@ -582,7 +617,12 @@ class CapsDatasetSlice(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
         self.config = config
-        super().__init__(config)
+
+        self.transformations = transformations
+        self.augmentation_transformations = augmentation_transformations
+        super().__init__(
+            config=config, eval_mode=eval_mode, label_presence=label_presence
+        )
 
     @property
     def elem_index(self):
@@ -687,10 +727,6 @@ def return_dataset(
         preprocessing_type=Preprocessing(preprocessing_dict["preprocessing"]),
         preprocessing=Preprocessing(preprocessing_dict["preprocessing"]),
         caps_directory=input_dir,
-        transformations=all_transformations,
-        augmentation_transformations=train_transformations,
-        eval_mode=False,
-        label_presence=label_presence,
         label=label,
         label_code=label_code,
         use_uncropped_image=preprocessing_dict["use_uncropped_image"],
@@ -702,17 +738,35 @@ def return_dataset(
     )
 
     if preprocessing_dict["mode"] == "image":
-        return CapsDatasetImage(config)
+        return CapsDatasetImage(
+            config,
+            transformations=all_transformations,
+            augmentation_transformations=train_transformations,
+            eval_mode=False,
+            label_presence=label_presence,
+        )
 
     elif preprocessing_dict["mode"] == "patch":
         config.preprocessing.patch_size = preprocessing_dict["patch_size"]
         config.preprocessing.stride_size = preprocessing_dict["stride_size"]
-        return CapsDatasetPatch(config)
+        return CapsDatasetPatch(
+            config,
+            transformations=all_transformations,
+            augmentation_transformations=train_transformations,
+            eval_mode=False,
+            label_presence=label_presence,
+        )
 
     elif preprocessing_dict["mode"] == "roi":
         config.preprocessing.roi_list = preprocessing_dict["roi_list"]
-        config.preprocessing.uncropped_roi = preprocessing_dict["uncropped_roi"]
-        return CapsDatasetRoi(config)
+        config.preprocessing.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
+        return CapsDatasetRoi(
+            config,
+            transformations=all_transformations,
+            augmentation_transformations=train_transformations,
+            eval_mode=False,
+            label_presence=label_presence,
+        )
 
     elif preprocessing_dict["mode"] == "slice":
         config.preprocessing.slice_direction = SliceDirection(
@@ -727,7 +781,13 @@ def return_dataset(
             if "num_slices" not in preprocessing_dict
             else preprocessing_dict["num_slices"]
         )
-        return CapsDatasetSlice(config)
+        return CapsDatasetSlice(
+            config,
+            transformations=all_transformations,
+            augmentation_transformations=train_transformations,
+            eval_mode=False,
+            label_presence=label_presence,
+        )
 
     else:
         raise NotImplementedError(
