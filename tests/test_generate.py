@@ -46,12 +46,12 @@ def test_generate(cmdopt, tmp_path, test_name):
             "t1-linear",
         ]
     elif test_name == "hypometabolic_example":
-        output_folder = str(tmp_out_dir / test_name)
+        output_folder = tmp_out_dir / test_name
         test_input = [
             "generate",
             "hypometabolic",
             data_caps_pet,
-            output_folder,
+            str(output_folder),
             "--n_subjects",
             "2",
             "--pathology",

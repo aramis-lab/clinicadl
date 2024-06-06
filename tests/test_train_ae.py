@@ -3,12 +3,11 @@
 import json
 import os
 import shutil
-from os.path import join
 from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import clean_folder, compare_folders
+from .testing_tools import clean_folder, compare_folders, modify_maps
 
 
 @pytest.fixture(
@@ -27,15 +26,17 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train" / "in"
     ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = base_dir / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     clean_folder(tmp_out_dir, recreate=True)
 
     labels_path = str(input_dir / "labels_list" / "2_fold")
     config_path = str(input_dir / "train_config.toml")
+    split = 0
+
     if test_name == "image_ae":
-        split = [0, 0]
+        split = 1
         test_input = [
             "train",
             "reconstruction",
@@ -46,10 +47,9 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
             "--split",
-            "1",
+            str(split),
         ]
     elif test_name == "patch_multi_ae":
-        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
@@ -62,7 +62,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "--multi_network",
         ]
     elif test_name == "roi_ae":
-        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
@@ -74,7 +73,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "slice_ae":
-        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
@@ -102,18 +100,12 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
-    if test_name == "patch_multi_ae":
-        json_data_out["multi_network"] = True
-    if cmdopt["no-gpu"]:
-        json_data_ref["gpu"] = False
-    if cmdopt["adapt-base-dir"]:
-        base_dir = base_dir.resolve()
-        ref_base_dir = Path(json_data_ref["caps_directory"]).parents[2]
-        json_data_ref["caps_directory"] = str(
-            base_dir / Path(json_data_ref["caps_directory"]).relative_to(ref_base_dir)
-        )
-        json_data_ref["tsv_path"] = str(
-            base_dir / Path(json_data_ref["tsv_path"]).relative_to(ref_base_dir)
+    if cmdopt["no-gpu"] or cmdopt["adapt-base-dir"]:
+        json_data_ref = modify_maps(
+            maps=json_data_ref,
+            base_dir=base_dir,
+            no_gpu=cmdopt["no-gpu"],
+            adapt_base_dir=cmdopt["adapt-base-dir"],
         )
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
@@ -123,7 +115,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
         tmp_path,
     )
     assert compare_folders(
-        tmp_out_dir / f"split-{split[0]}" / "best-loss",
-        ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss",
+        tmp_out_dir / f"split-{split}" / "best-loss",
+        ref_dir / ("maps_" + test_name) / f"split-{split}" / "best-loss",
         tmp_path,
     )
