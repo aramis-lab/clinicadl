@@ -4,7 +4,7 @@ from time import time
 from typing import Annotated, Any, Dict, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator
-from pydantic.types import PositiveInt
+from pydantic.types import NonNegativeInt
 
 from clinicadl.utils.enum import (
     ExtractionMethod,
@@ -56,7 +56,7 @@ class PreprocessingSliceConfig(PreprocessingConfig):
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
-    discarded_slices: Annotated[list[PositiveInt], 2] = [0, 0]
+    discarded_slices: Annotated[list[NonNegativeInt], 2] = [0, 0]
 
 
 class PreprocessingROIConfig(PreprocessingConfig):

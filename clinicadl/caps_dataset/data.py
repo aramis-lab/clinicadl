@@ -516,7 +516,9 @@ class CapsDatasetRoi(CapsDataset):
         self.roi_list = preprocessing_dict["roi_list"]
         self.uncropped_roi = preprocessing_dict["uncropped_roi"]
         self.prepare_dl = preprocessing_dict["prepare_dl"]
-
+        self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
+            caps_directory, multi_cohort, preprocessing_dict
+        )
         super().__init__(
             caps_directory,
             data_file,
@@ -531,15 +533,12 @@ class CapsDatasetRoi(CapsDataset):
 
         self.config.preprocessing.roi_list = preprocessing_dict["roi_list"]
         self.config.preprocessing.uncropped_roi = preprocessing_dict["uncropped_roi"]
-        (
-            self.config.preprocessing.mask_paths,
-            self.config.preprocessing.mask_arrays,
-        ) = self._get_mask_paths_and_tensors(
-            caps_directory, multi_cohort, preprocessing_dict
-        )
-        self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
-            self.config.data.caps_dict, multi_cohort, preprocessing_dict
-        )
+        # (
+        #     self.config.data.mask_path,
+        #     self.config.preprocessing.mask_arrays,
+        # ) = self._get_mask_paths_and_tensors(
+        #     caps_directory, multi_cohort, preprocessing_dict
+        # )
 
     @property
     def elem_index(self):
