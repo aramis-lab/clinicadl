@@ -600,7 +600,7 @@ class CapsDatasetRoi(CapsDataset):
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
 
-        caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
+        caps_dict = self.config.data.caps_dict
 
         if len(caps_dict) > 1:
             caps_directory = caps_dict[next(iter(caps_dict))]
