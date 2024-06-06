@@ -18,9 +18,7 @@ logger = getLogger("clinicadl.preprocessing_config")
 
 class PreprocessingConfig(BaseModel):
     """
-    Abstract config class for the validation procedure.
-
-
+    Config class for preprocessing
     """
 
     preprocessing_json: Optional[Path] = None
@@ -70,15 +68,3 @@ class PreprocessingROIConfig(PreprocessingConfig):
     roi_custom_suffix: str = ""
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
-
-
-def return_preprocessing_config(dict_: Dict[str, Any]):
-    extract_method = ExtractionMethod(dict_["preprocessing"])
-    if extract_method == ExtractionMethod.ROI:
-        return PreprocessingROIConfig(**dict_)
-    elif extract_method == ExtractionMethod.SLICE:
-        return PreprocessingSliceConfig(**dict_)
-    elif extract_method == ExtractionMethod.IMAGE:
-        return PreprocessingImageConfig(**dict_)
-    elif extract_method == ExtractionMethod.PATCH:
-        return PreprocessingPatchConfig(**dict_)
