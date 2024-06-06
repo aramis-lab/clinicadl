@@ -82,6 +82,9 @@ class CapsDatasetConfig(CapsDatasetBase):
         extraction: Union[str, ExtractionMethod],
         **kwargs,
     ):
+        # TODO To remove after
+        if "label_code" in kwargs and kwargs["label_code"] is None:
+            kwargs["label_code"] = {}
         return cls(
             data=DataConfig(**kwargs),
             dataloader=DataLoaderConfig(**kwargs),

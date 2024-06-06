@@ -129,9 +129,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
                 self.caps_directory / "tensor_extraction" / self.preprocessing_json
             )
         else:
-            caps_dict = CapsDataset.create_caps_dict(
-                self.caps_directory, self.multi_cohort
-            )
+            caps_dict = self.caps_dict
             json_found = False
             for caps_name, caps_path in caps_dict.items():
                 preprocessing_json = (
