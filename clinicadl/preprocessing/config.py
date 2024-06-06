@@ -57,6 +57,8 @@ class PreprocessingSliceConfig(PreprocessingConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
     discarded_slices: Annotated[list[NonNegativeInt], 2] = [0, 0]
+    slice_index: Optional[int] = None
+    num_slices: Optional[int] = None
 
 
 class PreprocessingROIConfig(PreprocessingConfig):
