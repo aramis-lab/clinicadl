@@ -795,7 +795,7 @@ class PredictManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     # if not split_list:
-                    #     split_list = self.maps_manager._find_splits()
+                    #     split_list = self.maps_manager.find_splits()
                     assert self._config.split
                     for split in self._config.split:
                         selection_metrics = self.maps_manager._find_selection_metrics(
