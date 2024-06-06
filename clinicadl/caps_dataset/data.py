@@ -297,6 +297,7 @@ class CapsDatasetImage(CapsDataset):
         self.config = config
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
+        self.mode = "image"
         super().__init__(
             config=config, eval_mode=eval_mode, label_presence=label_presence
         )
@@ -341,6 +342,7 @@ class CapsDatasetPatch(CapsDataset):
         transformations,
         augmentation_transformations,
         eval_mode: bool = False,
+        patch_index: Optional[int] = None,
     ):
         """
         Args:
@@ -360,6 +362,8 @@ class CapsDatasetPatch(CapsDataset):
         self.config = config
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
+        self.patch_index = patch_index
+        self.mode = "patch"
         super().__init__(
             config=config, eval_mode=eval_mode, label_presence=label_presence
         )
@@ -453,6 +457,7 @@ class CapsDatasetRoi(CapsDataset):
         transformations,
         augmentation_transformations,
         eval_mode: bool = False,
+        roi_index: Optional[int] = None,
     ):
         """
         Args:
@@ -471,16 +476,17 @@ class CapsDatasetRoi(CapsDataset):
         """
         self.config = config
         self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors()
-
+        self.roi_index = roi_index
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
+        self.mode = "roi"
         super().__init__(
             config=config, eval_mode=eval_mode, label_presence=label_presence
         )
 
     @property
     def elem_index(self):
-        return self.config.preprocessing.roi_index
+        return self.roi_index
 
     def __getitem__(self, idx):
         participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
@@ -547,7 +553,8 @@ class CapsDatasetRoi(CapsDataset):
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-
+        else:
+            caps_directory = self.config.data.caps_directory
         try:
             preprocessing_ = Preprocessing(self.config.preprocessing.preprocessing)
         except NotImplementedError:
@@ -601,6 +608,7 @@ class CapsDatasetSlice(CapsDataset):
         transformations,
         augmentation_transformations,
         eval_mode: bool = False,
+        slice_index: Optional[int] = None,
     ):
         """
         Args:
@@ -617,16 +625,17 @@ class CapsDatasetSlice(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
         self.config = config
-
+        self.slice_index = slice_index
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
+        self.mode = "slice"
         super().__init__(
             config=config, eval_mode=eval_mode, label_presence=label_presence
         )
 
     @property
     def elem_index(self):
-        return self.config.preprocessing.slice_index
+        return self.slice_index
 
     def __getitem__(self, idx):
         participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
@@ -755,6 +764,7 @@ def return_dataset(
             augmentation_transformations=train_transformations,
             eval_mode=False,
             label_presence=label_presence,
+            patch_index=cnn_index,
         )
 
     elif preprocessing_dict["mode"] == "roi":
@@ -766,6 +776,7 @@ def return_dataset(
             augmentation_transformations=train_transformations,
             eval_mode=False,
             label_presence=label_presence,
+            roi_index=cnn_index,
         )
 
     elif preprocessing_dict["mode"] == "slice":
@@ -787,6 +798,7 @@ def return_dataset(
             augmentation_transformations=train_transformations,
             eval_mode=False,
             label_presence=label_presence,
+            slice_index=cnn_index,
         )
 
     else:
