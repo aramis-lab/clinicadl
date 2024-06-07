@@ -25,7 +25,8 @@ def dummy_arguments(caps_example):
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
-        "output_maps_directory": "",
+        "maps_dir": "",
+        "gpu": False,
     }
     return args
 
@@ -60,3 +61,13 @@ def test_passes_validations(good_inputs):
     assert c.model.loss == "KLDivLoss"
     assert c.validation.selection_metrics == ("R2_score",)
     assert c.network_task == "regression"
+
+
+def test_update_from_toml(dummy_arguments):
+    toml_path = (
+        Path(__file__).parents[3] / "ressources" / "functional_config_example.toml"
+    )
+    c = regression.RegressionConfig(**dummy_arguments)
+    c.update_with_toml(toml_path)
+    assert not c.computational.gpu
+    assert c.model.loss == "SmoothL1Loss"

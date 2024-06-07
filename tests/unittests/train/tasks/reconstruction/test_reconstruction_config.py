@@ -25,7 +25,8 @@ def dummy_arguments(caps_example):
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
-        "output_maps_directory": "",
+        "maps_dir": "",
+        "gpu": False,
     }
     return args
 
@@ -46,7 +47,7 @@ def good_inputs(dummy_arguments):
     options = {
         "loss": "HuberLoss",
         "selection_metrics": ("PSNR",),
-        "normalization": "batch",
+        "normalization": "BatchNorm",
     }
     return {**dummy_arguments, **options}
 
@@ -60,5 +61,15 @@ def test_passes_validations(good_inputs):
     c = reconstruction.ReconstructionConfig(**good_inputs)
     assert c.model.loss == "HuberLoss"
     assert c.validation.selection_metrics == ("PSNR",)
-    assert c.model.normalization == "batch"
+    assert c.model.normalization == "BatchNorm"
     assert c.network_task == "reconstruction"
+
+
+def test_update_from_toml(dummy_arguments):
+    toml_path = (
+        Path(__file__).parents[3] / "ressources" / "functional_config_example.toml"
+    )
+    c = reconstruction.ReconstructionConfig(**dummy_arguments)
+    c.update_with_toml(toml_path)
+    assert not c.computational.gpu
+    assert c.model.loss == "VAEBernoulliLoss"

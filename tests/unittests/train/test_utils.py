@@ -212,18 +212,10 @@ def test_merge_cli_and_config_file_options():
     @click.option("--config_file")
     @click.option("--compensation", default="default")
     @click.option("--sampler", default="default")
-    @click.option("--optimizer", default="default")
     def cli_test(**kwargs):
         return merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
 
-    config_file = (
-        Path(__file__).parents[3]
-        / "tests"
-        / "unittests"
-        / "train"
-        / "ressources"
-        / "config_example.toml"
-    )
+    config_file = Path(__file__).parents[1] / "ressources" / "config_example.toml"
     excpected_output = {
         "compensation": "given by user",
         "sampler": "found in config file",

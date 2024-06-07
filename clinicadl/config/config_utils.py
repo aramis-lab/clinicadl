@@ -52,17 +52,14 @@ def get_default_from_config_class(arg: str, config: BaseModel) -> Any:
     default = config.model_fields[arg].default
     if isinstance(default, Enum):
         return default.value
-    if isinstance(default, list) or isinstance(default, tuple):
+    if isinstance(default, tuple):
         default_ = []
         for d in default:
             if isinstance(d, Enum):
                 default_.append(d.value)
             else:
                 default_.append(d)
-        if isinstance(default, tuple):
-            default_ = tuple(default_)
-        return default_
-
+        return tuple(default_)
     return default
 
 
@@ -96,9 +93,9 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     str
 
     >>> from pydantic import BaseModel
-    >>> from typing import List
+    >>> from typing import Tuple
     >>> class ConfigClass(BaseModel):
-    ...     parameter: List[str] = ["a string"]
+    ...     parameter: Tuple[str] = ["a string"]
     >>> config = ConfigClass()
     >>> get_type_from_config_class("parameter", config)
     str
@@ -119,25 +116,25 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
     ...     parameter: EnumClass = EnumClass.OPTION1
     >>> config = ConfigClass()
     >>> get_type_from_config_class("parameter", config)
-    ['option1', 'option2']
+    cllick.Choice(['option1', 'option2'])
 
-    >>> from pydantic import BaseModel, PositiveInt
+    >>> from pydantic import BaseModel
+    >>> class EnumClass(str, Enum):
+    ...     OPTION1 = "option1"
+    ...     OPTION2 = "option2"
     >>> class ConfigClass(BaseModel):
-    ...     parameter: PositiveInt = 0
+    ...     parameter: Optional[Tuple[EnumClass]] = None
     >>> config = ConfigClass()
     >>> get_type_from_config_class("parameter", config)
-    int
+    click.Choice(['option1', 'option2'])
     """
     type_ = config.model_fields[arg].annotation
-    if isinstance(type_, typing._GenericAlias):
+    if isinstance(type_, typing._GenericAlias):  # Tuple or Optional
         type_ = get_args(type_)[0]
-        if get_origin(type_) is typing.Annotated:
-            return get_args(type_)[0]
-        else:
-            return type_
-    elif get_origin(type_) is typing.Annotated:
-        return get_args(type_)[0]
-    elif issubclass(type_, Enum):
-        return click.Choice(list([option.value for option in type_]))
-    else:
-        return type_
+        if isinstance(
+            type_, typing._GenericAlias
+        ):  # original type is something like Tuple[Optional[...]]
+            type_ = get_args(type_)[0]
+    if issubclass(type_, Enum):
+        return click.Choice([option.value for option in type_])
+    return type_
