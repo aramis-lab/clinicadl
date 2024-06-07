@@ -12,16 +12,7 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
-from clinicadl.utils.enum import (
-    BIDSModality,
-    DTIMeasure,
-    DTISpace,
-    ExtractionMethod,
-    Pathology,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
+from clinicadl.utils.enum import ExtractionMethod
 
 
 @click.command(name="image", no_args_is_help=True)

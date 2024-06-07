@@ -3,6 +3,7 @@ from typing import Optional
 
 import click
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -11,6 +12,7 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
+from clinicadl.utils.enum import ExtractionMethod
 
 
 @click.command(name="image", no_args_is_help=True)
@@ -24,39 +26,18 @@ from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 @modality.suvr_reference_region
 @modality.custom_suffix
 @data.participants_tsv
-def image_bids_cli(
-    bids_directory: Path,
-    caps_directory: Path,
-    modality_bids: str,
-    n_proc: int,
-    participants_tsv: Optional[Path] = None,
-    extract_json: str = None,
-    use_uncropped_image: bool = False,
-    tracer: Optional[str] = None,
-    suvr_reference_region: Optional[str] = None,
-    custom_suffix: str = "",
-):
+def image_bids_cli(kwargs):
     """Extract image from nifti images.
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-    parameters = get_parameters_dict(
-        modality_bids,
-        "image",
-        False,
-        extract_json,
-        use_uncropped_image,
-        custom_suffix,
-        tracer,
-        suvr_reference_region,
+    image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
     )
-    DeepLearningPrepareData(
-        caps_directory=caps_directory,
-        tsv_file=participants_tsv,
-        n_proc=n_proc,
-        parameters=parameters,
-        from_bids=bids_directory,
-    )
+
+    DeepLearningPrepareData(image_config, from_bids=kwargs["bids_directory"])
 
 
 @click.command(name="patch", no_args_is_help=True)
@@ -73,44 +54,18 @@ def image_bids_cli(
 @modality.tracer
 @modality.suvr_reference_region
 @modality.custom_suffix
-def patch_bids_cli(
-    bids_directory: Path,
-    caps_directory: Path,
-    modality_bids: str,
-    n_proc: int,
-    save_features: bool = False,
-    subjects_sessions_tsv: Optional[Path] = None,
-    extract_json: str = None,
-    use_uncropped_image: bool = False,
-    patch_size: int = 50,
-    stride_size: int = 50,
-    tracer: Optional[str] = None,
-    suvr_reference_region: Optional[str] = None,
-    custom_suffix: str = "",
-):
+def patch_bids_cli(kwargs):
     """Extract patch from nifti images.
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-    parameters = get_parameters_dict(
-        modality_bids,
-        "patch",
-        save_features,
-        extract_json,
-        use_uncropped_image,
-        custom_suffix,
-        tracer,
-        suvr_reference_region,
+    patch_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.PATCH,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
     )
-    parameters["patch_size"] = patch_size
-    parameters["stride_size"] = stride_size
-    DeepLearningPrepareData(
-        caps_directory=caps_directory,
-        tsv_file=subjects_sessions_tsv,
-        n_proc=n_proc,
-        parameters=parameters,
-        from_bids=bids_directory,
-    )
+
+    DeepLearningPrepareData(patch_config, from_bids=kwargs["bids_directory"])
 
 
 @click.command(name="slice", no_args_is_help=True)
@@ -128,46 +83,19 @@ def patch_bids_cli(
 @modality.tracer
 @modality.suvr_reference_region
 @modality.custom_suffix
-def slice_bids_cli(
-    bids_directory: Path,
-    caps_directory: Path,
-    modality_bids: str,
-    n_proc: int,
-    save_features: bool = False,
-    subjects_sessions_tsv: Optional[Path] = None,
-    extract_json: str = None,
-    use_uncropped_image: bool = False,
-    slice_direction: int = 0,
-    slice_mode: str = "rgb",
-    discarded_slices: int = 0,
-    tracer: Optional[str] = None,
-    suvr_reference_region: Optional[str] = None,
-    custom_suffix: str = "",
-):
+def slice_bids_cli(kwargs):
     """Extract slice from nifti images.
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-    parameters = get_parameters_dict(
-        modality_bids,
-        "slice",
-        save_features,
-        extract_json,
-        use_uncropped_image,
-        custom_suffix,
-        tracer,
-        suvr_reference_region,
+
+    slice_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.SLICE,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
     )
-    parameters["slice_direction"] = slice_direction
-    parameters["slice_mode"] = slice_mode
-    parameters["discarded_slices"] = discarded_slices
-    DeepLearningPrepareData(
-        caps_directory=caps_directory,
-        tsv_file=subjects_sessions_tsv,
-        n_proc=n_proc,
-        parameters=parameters,
-        from_bids=bids_directory,
-    )
+
+    DeepLearningPrepareData(slice_config, from_bids=kwargs["bids_directory"])
 
 
 @click.command(name="roi", no_args_is_help=True)
@@ -186,51 +114,20 @@ def slice_bids_cli(
 @modality.tracer
 @modality.suvr_reference_region
 @modality.custom_suffix
-def roi_bids_cli(
-    bids_directory: Path,
-    caps_directory: Path,
-    modality_bids: str,
-    n_proc: int,
-    save_features: bool = False,
-    subjects_sessions_tsv: Optional[Path] = None,
-    extract_json: str = None,
-    use_uncropped_image: bool = False,
-    roi_list: list = [],
-    roi_uncrop_output: bool = False,
-    roi_custom_template: str = "",
-    roi_custom_mask_pattern: str = "",
-    tracer: Optional[str] = None,
-    suvr_reference_region: Optional[str] = None,
-    custom_suffix: str = "",
-):
+def roi_bids_cli(kwargs):
     """Extract roi from nifti images.
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
-    parameters = get_parameters_dict(
-        modality_bids,
-        "roi",
-        save_features,
-        extract_json,
-        use_uncropped_image,
-        custom_suffix,
-        tracer,
-        suvr_reference_region,
+    roi_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=ExtractionMethod.ROI,
+        preprocessing_type=kwargs["preprocessing"],
+        **kwargs,
     )
-    parameters["roi_list"] = roi_list
-    parameters["uncropped_roi"] = roi_uncrop_output
-    parameters["roi_custom_template"] = roi_custom_template
-    parameters["roi_custom_mask_pattern"] = roi_custom_mask_pattern
 
-    DeepLearningPrepareData(
-        caps_directory=caps_directory,
-        tsv_file=subjects_sessions_tsv,
-        n_proc=n_proc,
-        parameters=parameters,
-        from_bids=bids_directory,
-    )
+    DeepLearningPrepareData(roi_config, from_bids=kwargs["bids_directory"])
 
 
 class RegistrationOrderGroup(click.Group):
