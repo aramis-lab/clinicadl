@@ -123,13 +123,13 @@ class RandomArchitecture(CNN):
         Returns:
             (list) the updated convolutional block
         """
-        if self.network_normalization in ["BatchNorm", "InstanceNorm"]:
+        if self.network_normalization in ["BatchNorm", "InstanceNorm", "GroupNorm"]:
             conv_block.append(
                 self.layers_dict[self.network_normalization](num_features)
             )
         elif self.network_normalization is not None:
             raise ClinicaDLNetworksError(
-                f"The network normalization {self.network_normalization} value must be in ['BatchNorm', 'InstanceNorm', None]"
+                f"The network normalization {self.network_normalization} value must be in ['BatchNorm', 'InstanceNorm', 'GroupNorm', None]"
             )
         return conv_block
 
@@ -140,6 +140,7 @@ class RandomArchitecture(CNN):
                 "Pool": PadMaxPool3d,
                 "InstanceNorm": nn.InstanceNorm3d,
                 "BatchNorm": nn.BatchNorm3d,
+                "GroupNorm": nn.GroupNorm,
             }
         elif self.dimension == 2:
             layers = {
@@ -147,6 +148,7 @@ class RandomArchitecture(CNN):
                 "Pool": PadMaxPool2d,
                 "InstanceNorm": nn.InstanceNorm2d,
                 "BatchNorm": nn.BatchNorm2d,
+                "GroupNorm": nn.GroupNorm,
             }
         else:
             raise ValueError(
