@@ -13,7 +13,7 @@ import pytest
     ],
 )
 def test_check_multi_cohort_tsv(dataframe_columns, purpose):
-    from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
+    from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
 
     assert (
         check_multi_cohort_tsv(pd.DataFrame(columns=dataframe_columns), purpose) is None
@@ -38,7 +38,7 @@ def test_check_multi_cohort_tsv(dataframe_columns, purpose):
 def test_check_multi_cohort_tsv_errors(
     dataframe_columns, purpose, expected_mandatory_columns
 ):
-    from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
+    from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
     from clinicadl.utils.exceptions import ClinicaDLTSVError
 
     with pytest.raises(
