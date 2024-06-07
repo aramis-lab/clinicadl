@@ -115,6 +115,7 @@ def dummy_arguments(caps_example):
         "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
         "maps_dir": "",
+        "gpu": False,
         "architecture": "",
         "loss": "",
         "selection_metrics": (),

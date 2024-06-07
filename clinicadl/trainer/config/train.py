@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
+from pathlib import Path
+from typing import Any, Dict, Union
 
 from pydantic import (
     BaseModel,
@@ -80,3 +82,37 @@ class TrainConfig(BaseModel, ABC):
             transforms=kwargs,
             validation=kwargs,
         )
+
+    def _update(self, config_dict: Dict[str, Any]) -> None:
+        """Updates the configs with a dict given by the user."""
+        self.callbacks.__dict__.update(config_dict)
+        self.computational.__dict__.update(config_dict)
+        self.cross_validation.__dict__.update(config_dict)
+        self.data.__dict__.update(config_dict)
+        self.dataloader.__dict__.update(config_dict)
+        self.early_stopping.__dict__.update(config_dict)
+        self.lr_scheduler.__dict__.update(config_dict)
+        self.maps_manager.__dict__.update(config_dict)
+        self.model.__dict__.update(config_dict)
+        self.optimization.__dict__.update(config_dict)
+        self.optimizer.__dict__.update(config_dict)
+        self.reproducibility.__dict__.update(config_dict)
+        self.ssda.__dict__.update(config_dict)
+        self.transfer_learning.__dict__.update(config_dict)
+        self.transforms.__dict__.update(config_dict)
+        self.validation.__dict__.update(config_dict)
+
+    def update_with_toml(self, path: Union[str, Path]) -> None:
+        """
+        Updates the configs with a TOML configuration file.
+
+        Parameters
+        ----------
+        path : Union[str, Path]
+            Path to the TOML configuration file.
+        """
+        from clinicadl.train.utils import extract_config_from_toml_file
+
+        path = Path(path)
+        config_dict = extract_config_from_toml_file(path, self.network_task)
+        self._update(config_dict)

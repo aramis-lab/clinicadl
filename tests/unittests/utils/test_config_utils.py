@@ -2,6 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from click import Choice
 from pydantic import BaseModel
 from pydantic.types import PositiveFloat
 
@@ -23,9 +24,11 @@ class ConfigTest(BaseModel):
     parameter_empty_tuple: Tuple[str, ...] = ()
     parameter_annotated_tuple: Tuple[PositiveFloat, ...] = (42.0,)
     parameter_enum: EnumTest = EnumTest.OPTION1
-    parameter_enum_optional: Optional[EnumTest] = None
+    parameter_optional_enum: Optional[EnumTest] = None
     parameter_enum_tuple: Tuple[EnumTest, ...] = (EnumTest.OPTION1,)
-    parameter_enum_list: List[EnumTest] = [EnumTest.OPTION1]
+    parameter_enum_tuple_1: Tuple[EnumTest] = EnumTest.OPTION1
+    parameter_tuple_optional: Tuple[Optional[int], ...] = (1, None)
+    parameter_optional_tuple: Optional[Tuple[int]] = None
 
 
 def test_get_default_from_config_class():
@@ -52,13 +55,20 @@ def test_get_default_from_config_class():
         42.0,
     )
     assert get_default_from_config_class("parameter_enum", test_config) == "option1"
-    assert get_default_from_config_class("parameter_enum_optional", test_config) is None
+    assert get_default_from_config_class("parameter_optional_enum", test_config) is None
     assert get_default_from_config_class("parameter_enum_tuple", test_config) == (
         "option1",
     )
-    assert get_default_from_config_class("parameter_enum_list", test_config) == [
+    assert get_default_from_config_class("parameter_enum_tuple_1", test_config) == (
         "option1"
-    ]
+    )
+    assert get_default_from_config_class("parameter_tuple_optional", test_config) == (
+        1,
+        None,
+    )
+    assert (
+        get_default_from_config_class("parameter_optional_tuple", test_config) is None
+    )
 
 
 def test_get_type_from_config_class():
@@ -75,19 +85,25 @@ def test_get_type_from_config_class():
     assert get_type_from_config_class("parameter_tuple", test_config) == str
     assert get_type_from_config_class("parameter_empty_tuple", test_config) == str
     assert get_type_from_config_class("parameter_annotated_tuple", test_config) == float
-    assert get_type_from_config_class("parameter_enum", test_config) == [
+    assert get_type_from_config_class("parameter_enum", test_config).choices == [
         "option1",
         "option2",
     ]
-    assert get_type_from_config_class("parameter_enum_optional", test_config) == [
+    assert get_type_from_config_class(
+        "parameter_optional_enum", test_config
+    ).choices == [
         "option1",
         "option2",
     ]
-    assert get_type_from_config_class("parameter_enum_tuple", test_config) == [
+    assert get_type_from_config_class("parameter_enum_tuple", test_config).choices == [
         "option1",
         "option2",
     ]
-    assert get_type_from_config_class("parameter_enum_list", test_config) == [
+    assert get_type_from_config_class(
+        "parameter_enum_tuple_1", test_config
+    ).choices == [
         "option1",
         "option2",
     ]
+    assert get_type_from_config_class("parameter_tuple_optional", test_config) == int
+    assert get_type_from_config_class("parameter_optional_tuple", test_config) == int

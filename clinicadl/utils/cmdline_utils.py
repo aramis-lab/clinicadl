@@ -6,5 +6,5 @@ def check_gpu():
 
     if not torch.cuda.is_available():
         raise ClinicaDLArgumentError(
-            "No GPU is available. Please add the --no-gpu flag to run on CPU."
+            "No GPU is available. To run on CPU, please set gpu to false or add the --no-gpu flag if you use the commandline."
         )

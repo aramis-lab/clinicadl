@@ -235,7 +235,7 @@ class Normalization(str, Enum):  # TODO : put in model module
     """Available normalization layers in ClinicaDL."""
 
     BATCH = "BatchNorm"
-    GROUP = "group"
+    GROUP = "GroupNorm"
     INSTANCE = "InstanceNorm"
 
 
