@@ -716,7 +716,6 @@ def return_dataset(
     cnn_index: int = None,
     label_presence: bool = True,
     multi_cohort: bool = False,
-    config: Optional[CapsDatasetConfig] = None,
 ) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.

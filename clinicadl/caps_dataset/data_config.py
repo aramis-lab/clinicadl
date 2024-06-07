@@ -28,7 +28,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     data_df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
-    label_code: Union[str, dict[str, int]] = {}
+    label_code: Union[str, dict[str, int], None] = {}
     multi_cohort: bool = False
     mask_path: Optional[Path] = None
     preprocessing_json: Optional[Path] = None

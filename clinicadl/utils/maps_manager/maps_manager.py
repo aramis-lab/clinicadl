@@ -420,6 +420,7 @@ class MapsManager:
         if (
             "label_code" not in self.parameters
             or len(self.parameters["label_code"]) == 0
+            or self.parameters["label_code"] is None
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
