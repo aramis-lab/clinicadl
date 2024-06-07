@@ -112,11 +112,7 @@ def cli(**kwargs):
 
     """
 
-    kwargs["tsv_dir"] = kwargs["tsv_directory"]
-    kwargs["maps_dir"] = kwargs["output_maps_directory"]
     options = merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
-
-    options["maps_dir"] = options["output_maps_directory"]
     config = ClassificationConfig(**options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)

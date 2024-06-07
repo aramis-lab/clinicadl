@@ -67,8 +67,9 @@ def get_norm2d(normalization, output_channels):
         norm_layer = nn.InstanceNorm2d(output_channels)
     else:
         raise ClinicaDLArgumentError(
-            f"{normalization} is an unknown normalization method. Please choose between 'batch', 'group' or 'instance'."
+            f"{normalization} is an unknown normalization method. Please choose between 'BatchNorm', 'GroupNorm' or 'InstanceNorm'."
         )
+    # TODO: add possibility to use no normalization? (don't forget to modify config class)
     return norm_layer
 
 
@@ -81,6 +82,6 @@ def get_norm3d(normalization, output_channels):
         norm_layer = nn.InstanceNorm3d(output_channels)
     else:
         raise ClinicaDLArgumentError(
-            f"{normalization} is an unknown normalization method. Please choose between 'batch', 'group' or 'instance'."
+            f"{normalization} is an unknown normalization method. Please choose between 'BatchNorm', 'GroupNorm' or 'InstanceNorm'."
         )
     return norm_layer

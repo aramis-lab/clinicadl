@@ -6,7 +6,7 @@ from pydantic import ValidationError
 import clinicadl.trainer.config.classification as classification
 
 
-# Tests for customed validators #
+# Tests for customed class methods #
 def test_model_config():
     with pytest.raises(ValidationError):
         classification.NetworkConfig(
@@ -23,7 +23,7 @@ def test_validation_config():
     assert c.selection_metrics == ("accuracy",)
 
 
-# Global tests on the TrainingConfig class #
+# Global tests #
 @pytest.fixture
 def caps_example():
     dir_ = Path(__file__).parents[3] / "ressources" / "caps_example"
@@ -36,7 +36,8 @@ def dummy_arguments(caps_example):
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
         "tsv_directory": "",
-        "output_maps_directory": "",
+        "maps_dir": "",
+        "gpu": False,
     }
     return args
 
@@ -73,3 +74,13 @@ def test_passes_validations(good_inputs):
     assert c.validation.selection_metrics == ("F1_score",)
     assert c.model.selection_threshold == 0.5
     assert c.network_task == "classification"
+
+
+def test_update_from_toml(dummy_arguments):
+    toml_path = (
+        Path(__file__).parents[3] / "ressources" / "functional_config_example.toml"
+    )
+    c = classification.ClassificationConfig(**dummy_arguments)
+    c.update_with_toml(toml_path)
+    assert not c.computational.gpu
+    assert c.model.loss == "MultiMarginLoss"

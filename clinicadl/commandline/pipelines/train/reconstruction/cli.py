@@ -108,8 +108,8 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
+
     options = merge_cli_and_config_file_options(Task.RECONSTRUCTION, **kwargs)
-    options["maps_dir"] = options["output_maps_directory"]
     config = ReconstructionConfig(**options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)
