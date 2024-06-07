@@ -10,7 +10,7 @@ help: Makefile
 
 .PHONY: check.lock
 check.lock:
-	@$(POETRY) lock --check
+	@$(POETRY) check --lock
 
 ## build			: Build the package.
 .PHONY: build
