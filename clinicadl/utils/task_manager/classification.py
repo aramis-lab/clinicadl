@@ -8,6 +8,7 @@ from torch.nn.functional import softmax
 from torch.utils.data import sampler
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -91,24 +92,28 @@ class ClassificationManager(TaskManager):
 
     @staticmethod
     def generate_sampler(
-        dataset, sampler_option="random", n_bins=5, dp_degree=None, rank=None
+        dataset: CapsDataset,
+        sampler_option="random",
+        n_bins=5,
+        dp_degree=None,
+        rank=None,
     ):
         df = dataset.df
-        labels = df[dataset.label].unique()
+        labels = df[dataset.config.data.label].unique()
         codes = set()
         for label in labels:
-            codes.add(dataset.label_code[label])
+            codes.add(dataset.config.data.label_code[label])
         count = np.zeros(len(codes))
 
         for idx in df.index:
-            label = df.loc[idx, dataset.label]
+            label = df.loc[idx, dataset.config.data.label]
             key = dataset.label_fn(label)
             count[key] += 1
 
         weight_per_class = 1 / np.array(count)
         weights = []
 
-        for idx, label in enumerate(df[dataset.label].values):
+        for idx, label in enumerate(df[dataset.config.data.label].values):
             key = dataset.label_fn(label)
             weights += [weight_per_class[key]] * dataset.elem_per_image
 
@@ -133,7 +138,9 @@ class ClassificationManager(TaskManager):
             )
 
     @staticmethod
-    def generate_sampler_ssda(dataset, df, sampler_option="random", n_bins=5):
+    def generate_sampler_ssda(
+        dataset: CapsDataset, df, sampler_option="random", n_bins=5
+    ):
         n_labels = df["diagnosis_train"].nunique()
         count = np.zeros(n_labels)
 

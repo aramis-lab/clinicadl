@@ -509,7 +509,7 @@ class CapsDatasetRoi(CapsDataset):
                 "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(
-                image_path, mask_path, self.config.preprocessing.uncropped_roi
+                image_path, mask_path, self.config.preprocessing.roi_uncrop_output
             )
             roi_tensor = torch.load(Path(roi_dir) / roi_filename)
 
@@ -517,7 +517,7 @@ class CapsDatasetRoi(CapsDataset):
             image = torch.load(image_path)
             mask_array = self.mask_arrays[roi_idx]
             roi_tensor = extract_roi_tensor(
-                image, mask_array, self.config.preprocessing.uncropped_roi
+                image, mask_array, self.config.preprocessing.roi_uncrop_output
             )
 
         train_trf, trf = self.config.transforms.get_transforms()

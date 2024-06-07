@@ -143,8 +143,8 @@ class MapsManager:
                 self.write_description_log(
                     log_dir,
                     data_group,
-                    dataloader.dataset.caps_dict,
-                    dataloader.dataset.df,
+                    dataloader.dataset.config.data.caps_dict,
+                    dataloader.dataset.config.data.data_df,
                 )
 
             # load the best trained model during the training
