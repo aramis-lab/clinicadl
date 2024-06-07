@@ -4,6 +4,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     cross_validation,
 )
+from clinicadl.trainer import Trainer
 
 
 @click.command(name="resume", no_args_is_help=True)
@@ -14,6 +15,5 @@ def cli(input_maps_directory, split):
 
     INPUT_MAPS_DIRECTORY is the path to the MAPS folder where training job has started.
     """
-    from clinicadl.train.resume import automatic_resume
-
-    automatic_resume(input_maps_directory, user_split_list=split)
+    trainer = Trainer.from_maps(input_maps_directory)
+    trainer.resume(split)

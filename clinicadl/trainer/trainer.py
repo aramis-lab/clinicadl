@@ -14,19 +14,20 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.transforms.transforms import get_transforms
 from clinicadl.caps_dataset.data_utils import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.transforms.transforms import get_transforms
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
-
 from clinicadl.utils.enum import Task
-from .trainer_utils import create_parameters_dict
+from .trainer_utils import create_parameters_dict, patch_to_read_json
+from clinicadl.train.tasks_utils import create_training_config
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
@@ -42,33 +43,128 @@ class Trainer:
     def __init__(
         self,
         config: TrainConfig,
-        maps_manager: Optional[MapsManager] = None,
     ) -> None:
         """
         Parameters
         ----------
-        config : BaseTaskConfig
+        config : TrainConfig
         """
         self.config = config
-        if maps_manager:
-            self.maps_manager = maps_manager
-        else:
-            self.maps_manager = self._init_maps_manager(config)
+        self.maps_manager = self._init_maps_manager(config)
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
         # temporary: to match CLI data. TODO : change CLI data
 
         parameters, maps_path = create_parameters_dict(config)
-        return MapsManager(
-            maps_path, parameters, verbose=None
-        )  # TODO : precise which parameters in config are useful
+        if maps_path.is_dir():
+            return MapsManager(
+                maps_path, verbose=None
+            )  # TODO : precise which parameters in config are useful
+        else:
+            return MapsManager(
+                maps_path, parameters, verbose=None
+            )  # TODO : precise which parameters in config are useful
+
+    @classmethod
+    def from_json(cls, config_file: str | Path, maps_path: str | Path) -> Trainer:
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        config_file : str | Path
+            The parameters, stored in a json files.
+        maps_path : str | Path
+            The folder where the results of a futur training will be stored.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in config_file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If config_file doesn't exist.
+        """
+        config_file = Path(config_file)
+
+        if not (config_file).is_file():
+            raise FileNotFoundError(f"No file found at {str(config_file)}.")
+        config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
+        config_dict["maps_dir"] = maps_path
+        config_object = create_training_config(config_dict["network_task"])(
+            **config_dict
+        )
+        return cls(config_object)
+
+    @classmethod
+    def from_maps(cls, maps_path: str | Path) -> Trainer:
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        maps_path : str | Path
+            The path of the MAPS folder.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in maps_path.
+
+        Raises
+        ------
+        MAPSError
+            If maps_path folder doesn't exist or there is no maps.json file in it.
+        """
+        maps_path = Path(maps_path)
+
+        if not (maps_path / "maps.json").is_file():
+            raise MAPSError(
+                f"MAPS was not found at {str(maps_path)}."
+                f"To initiate a new MAPS please give a train_dict."
+            )
+        return cls.from_json(maps_path / "maps.json", maps_path)
+
+    def resume(self, splits: List[int]) -> None:
+        """
+        Resume a prematurely stopped training.
+
+        Parameters
+        ----------
+        splits : List[int]
+            The splits that must be resumed.
+        """
+        stopped_splits = set(self.maps_manager.find_stopped_splits())
+        finished_splits = set(self.maps_manager.find_finished_splits())
+        # TODO : check these two lines. Why do we need a split_manager?
+        split_manager = self.maps_manager._init_split_manager(split_list=splits)
+        split_iterator = split_manager.split_iterator()
+        ###
+        absent_splits = set(split_iterator) - stopped_splits - finished_splits
+
+        logger.info(
+            f"Finished splits {finished_splits}\n"
+            f"Stopped splits {stopped_splits}\n"
+            f"Absent splits {absent_splits}"
+        )
+
+        if len(stopped_splits) == 0 and len(absent_splits) == 0:
+            raise ValueError(
+                "Training has been completed on all the splits you passed."
+            )
+        if len(stopped_splits) > 0:
+            self._resume(list(stopped_splits))
+        if len(absent_splits) > 0:
+            self.train(list(absent_splits), overwrite=True)
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
         # if (len(self.config.data.label_code) == 0):
         #     self.config.data.label_code = self.maps_manager.label_code
-        # TODO : deal with label_code and replace self.maps_manager.label_code
+        # TODO: deal with label_code and replace self.maps_manager.label_code
 
     def train(
         self,
@@ -120,7 +216,7 @@ class Trainer:
         else:
             self._train_single(split_list, resume=False)
 
-    def resume(
+    def _resume(
         self,
         split_list: Optional[List[int]] = None,
     ) -> None:
