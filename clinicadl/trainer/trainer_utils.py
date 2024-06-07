@@ -63,6 +63,7 @@ def create_parameters_dict(config):
         del parameters["caps_dict"]
     if "mask_path" in parameters:  # and parameters["mask_path"] is False:
         del parameters["mask_path"]
+
     if "data_df" in parameters:
         del parameters["data_df"]
     if "train_transformartions" in parameters:
