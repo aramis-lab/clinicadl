@@ -190,5 +190,10 @@ def merge_cli_and_config_file_options(task: Task, **kwargs) -> Dict[str, Any]:
             == ParameterSource.COMMANDLINE
         ):
             options[arg] = kwargs[arg]
-
+    # TODO : remove?
+    try:
+        options["maps_dir"] = options["output_maps_directory"]
+    except KeyError:
+        pass
+    ###
     return options
