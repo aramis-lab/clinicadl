@@ -16,7 +16,7 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.config import PredictConfig
-from clinicadl.transforms.transforms import get_transforms
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
@@ -111,7 +111,7 @@ class PredictManager:
         self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
         self._config.check_output_saving_tensor(self.maps_manager.network_task)
 
-        _, all_transforms = get_transforms(
+        transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
             data_augmentation=self.maps_manager.data_augmentation,
             size_reduction=self.maps_manager.size_reduction,
@@ -157,7 +157,7 @@ class PredictManager:
                 self._predict_multi(
                     group_parameters,
                     group_df,
-                    all_transforms,
+                    transforms,
                     label_code,
                     criterion,
                     split,
@@ -167,7 +167,7 @@ class PredictManager:
                 self._predict_single(
                     group_parameters,
                     group_df,
-                    all_transforms,
+                    transforms,
                     label_code,
                     criterion,
                     split,
@@ -186,7 +186,7 @@ class PredictManager:
         self,
         group_parameters,
         group_df,
-        all_transforms,
+        transforms,
         label_code,
         criterion,
         split,
@@ -250,7 +250,7 @@ class PredictManager:
                 group_parameters["caps_directory"],
                 group_df,
                 self.maps_manager.preprocessing_dict,
-                all_transformations=all_transforms,
+                transforms_config=transforms,
                 multi_cohort=group_parameters["multi_cohort"],
                 label_presence=self._config.use_labels,
                 label=self._config.label,
@@ -317,7 +317,7 @@ class PredictManager:
         self,
         group_parameters,
         group_df,
-        all_transforms,
+        transforms,
         label_code,
         criterion,
         split,
@@ -381,7 +381,7 @@ class PredictManager:
             group_parameters["caps_directory"],
             group_df,
             self.maps_manager.preprocessing_dict,
-            all_transformations=all_transforms,
+            transforms_config=transforms,
             multi_cohort=group_parameters["multi_cohort"],
             label_presence=self._config.use_labels,
             label=self._config.label,
@@ -669,7 +669,7 @@ class PredictManager:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
-        _, all_transforms = get_transforms(
+        transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
             data_augmentation=self.maps_manager.data_augmentation,
             size_reduction=self.maps_manager.size_reduction,
@@ -688,7 +688,7 @@ class PredictManager:
                 parameters_group["caps_directory"],
                 df_group,
                 self.maps_manager.preprocessing_dict,
-                all_transformations=all_transforms,
+                transforms_config=transforms,
                 multi_cohort=parameters_group["multi_cohort"],
                 label_presence=False,
                 label_code=self.maps_manager.label_code,

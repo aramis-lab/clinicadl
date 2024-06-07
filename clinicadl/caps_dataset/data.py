@@ -22,6 +22,7 @@ from clinicadl.prepare_data.prepare_data_utils import (
     extract_slice_tensor,
     find_mask_path,
 )
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
     ExtractionMethod,
     Pattern,
@@ -102,6 +103,7 @@ class CapsDataset(Dataset):
             return np.float32([target])
         # Classification case (label + label_code dict)
         else:
+            print(self.config.data.label_code)
             return self.config.data.label_code[str(target)]
 
     def domain_fn(self, target: Union[str, float, int]) -> Union[float, int]:
@@ -294,7 +296,13 @@ class CapsDatasetImage(CapsDataset):
         """
 
         self.mode = "image"
+        self.config = config
         self.label_presence = label_presence
+        super().__init__(
+            config=config,
+            label_presence=label_presence,
+            preprocessing_dict=preprocessing_dict,
+        )
 
     @property
     def elem_index(self):
@@ -306,11 +314,12 @@ class CapsDatasetImage(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
         image = torch.load(image_path)
 
+        train_trf, trf = self.config.transforms.get_transforms()
         if self.config.transforms.data_augmentation:
-            image = self.config.transforms.data_augmentation(image)
+            image = trf(image)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
-            image = self.config.transforms.train_transformations(image)
+            image = train_trf(image)
 
         sample = {
             "image": image,
@@ -393,11 +402,12 @@ class CapsDatasetPatch(CapsDataset):
                 patch_idx,
             )
 
+        train_trf, trf = self.config.transforms.get_transforms()
         if self.config.transforms.data_augmentation:
-            patch_tensor = self.config.transforms.data_augmentation(patch_tensor)
+            patch_tensor = trf(patch_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
-            patch_tensor = self.config.transforms.train_transformations(patch_tensor)
+            patch_tensor = train_trf(patch_tensor)
 
         sample = {
             "image": patch_tensor,
@@ -510,11 +520,13 @@ class CapsDatasetRoi(CapsDataset):
                 image, mask_array, self.config.preprocessing.uncropped_roi
             )
 
+        train_trf, trf = self.config.transforms.get_transforms()
+
         if self.config.transforms.data_augmentation:
-            roi_tensor = self.config.transforms.data_augmentation(roi_tensor)
+            roi_tensor = trf(roi_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
-            roi_tensor = self.config.transforms.train_transformations(roi_tensor)
+            roi_tensor = train_trf(roi_tensor)
 
         sample = {
             "image": roi_tensor,
@@ -661,11 +673,13 @@ class CapsDatasetSlice(CapsDataset):
                 slice_idx,
             )
 
+        train_trf, trf = self.config.transforms.get_transforms()
+
         if self.config.transforms.data_augmentation:
-            slice_tensor = self.config.transforms.data_augmentation(slice_tensor)
+            slice_tensor = trf(slice_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
-            slice_tensor = self.config.transforms.train_transformations(slice_tensor)
+            slice_tensor = train_trf(slice_tensor)
 
         sample = {
             "image": slice_tensor,
@@ -696,13 +710,13 @@ def return_dataset(
     input_dir: Path,
     data_df: pd.DataFrame,
     preprocessing_dict: Dict[str, Any],
-    all_transformations: Optional[Callable],
+    transforms_config: TransformsConfig,
     label: str = None,
     label_code: Dict[str, int] = None,
-    train_transformations: Optional[Callable] = None,
     cnn_index: int = None,
     label_presence: bool = True,
     multi_cohort: bool = False,
+    config: Optional[CapsDatasetConfig] = None,
 ) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.
@@ -735,9 +749,9 @@ def return_dataset(
         label=label,
         label_code=label_code,
         multi_cohort=multi_cohort,
-        data_augmentation=all_transformations,
-        train_transformations=train_transformations,
     )
+    config.transforms = transforms_config
+
     if preprocessing_dict["mode"] == "image":
         config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
         config.preprocessing.use_uncropped_image = preprocessing_dict[

@@ -57,8 +57,8 @@ class PreprocessingPatchConfig(PreprocessingConfig):
 class PreprocessingSliceConfig(PreprocessingConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
-    num_slice: Optional[NonNegativeInt] = None
-    discarded_slices: Annotated[list[PositiveInt], 2] = [0, 0]
+    num_slices: Optional[NonNegativeInt] = None
+    discarded_slices: Annotated[list[NonNegativeInt], 2] = [0, 0]
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
 

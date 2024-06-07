@@ -14,7 +14,7 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.preprocessing.preprocessing import path_encoder
-from clinicadl.transforms.transforms import get_transforms
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -400,7 +400,7 @@ class MapsManager:
                 "AMP is designed to work with modern GPUs. Please add the --gpu flag."
             )
 
-        _, transformations = get_transforms(
+        transfo_config = TransformsConfig(
             normalize=self.normalize,
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
@@ -432,8 +432,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
             label=self.label,
             label_code=self.parameters["label_code"],
-            train_transformations=None,
-            all_transformations=transformations,
+            transforms_config=transfo_config,
         )
         self.parameters.update(
             {

@@ -28,7 +28,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     data_df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
-    label_code: Dict[str, int] = {}
+    label_code: Optional[Union[str, dict[str, int]]] = None
     multi_cohort: bool = False
     mask_path: Optional[Path] = None
     preprocessing_json: Optional[Path] = None
@@ -130,9 +130,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
                 self.caps_directory / "tensor_extraction" / self.preprocessing_json
             )
         else:
-            caps_dict = CapsDataset.create_caps_dict(
-                self.caps_directory, self.multi_cohort
-            )
+            caps_dict = self.caps_dict
             json_found = False
             for caps_name, caps_path in caps_dict.items():
                 preprocessing_json = (

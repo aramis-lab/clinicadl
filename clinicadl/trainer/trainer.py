@@ -21,7 +21,7 @@ from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.transforms.transforms import get_transforms
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
 
@@ -178,12 +178,8 @@ class Trainer:
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
-        train_transforms, all_transforms = get_transforms(
-            normalize=self.config.transforms.normalize,
-            data_augmentation=self.config.transforms.data_augmentation,
-            size_reduction=self.config.transforms.size_reduction,
-            size_reduction_factor=self.config.transforms.size_reduction_factor,
-        )
+        # train_transforms, all_transforms = self.config.transforms.get_transforms()
+
         split_manager = self.maps_manager._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -200,8 +196,7 @@ class Trainer:
                 self.config.data.caps_directory,
                 split_df_dict["train"],
                 self.config.data.preprocessing_dict,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -211,8 +206,7 @@ class Trainer:
                 self.config.data.caps_directory,
                 split_df_dict["validation"],
                 self.config.data.preprocessing_dict,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -288,12 +282,7 @@ class Trainer:
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
-        train_transforms, all_transforms = get_transforms(
-            normalize=self.config.transforms.normalize,
-            data_augmentation=self.config.transforms.data_augmentation,
-            size_reduction=self.config.transforms.size_reduction,
-            size_reduction_factor=self.config.transforms.size_reduction_factor,
-        )
+        # train_transforms, all_transforms = self.config.transforms.get_transforms()
 
         split_manager = self.maps_manager._init_split_manager(split_list)
         for split in split_manager.split_iterator():
@@ -330,8 +319,7 @@ class Trainer:
                     self.config.data.caps_directory,
                     split_df_dict["train"],
                     self.config.data.preprocessing_dict,
-                    train_transformations=train_transforms,
-                    all_transformations=all_transforms,
+                    transforms_config=self.config.transforms,
                     multi_cohort=self.config.data.multi_cohort,
                     label=self.config.data.label,
                     label_code=self.maps_manager.label_code,
@@ -341,8 +329,7 @@ class Trainer:
                     self.config.data.caps_directory,
                     split_df_dict["validation"],
                     self.config.data.preprocessing_dict,
-                    train_transformations=train_transforms,
-                    all_transformations=all_transforms,
+                    transforms_config=self.config.transforms,
                     multi_cohort=self.config.data.multi_cohort,
                     label=self.config.data.label,
                     label_code=self.maps_manager.label_code,
@@ -418,12 +405,7 @@ class Trainer:
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
-        train_transforms, all_transforms = get_transforms(
-            normalize=self.config.transforms.normalize,
-            data_augmentation=self.config.transforms.data_augmentation,
-            size_reduction=self.config.transforms.size_reduction,
-            size_reduction_factor=self.config.transforms.size_reduction_factor,
-        )
+        # train_transforms, all_transforms = self.config.transforms.get_transforms()
 
         split_manager = self.maps_manager._init_split_manager(split_list)
         split_manager_target_lab = self.maps_manager._init_split_manager(
@@ -446,8 +428,7 @@ class Trainer:
                 self.config.data.caps_directory,
                 split_df_dict["train"],
                 self.config.data.preprocessing_dict,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -458,8 +439,7 @@ class Trainer:
                 Path(self.config.ssda.caps_target),  # TO CHECK
                 split_df_dict_target_lab["train"],
                 self.config.ssda.preprocessing_dict_target,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=False,  # A checker
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -475,8 +455,7 @@ class Trainer:
                 Path(self.config.ssda.caps_target),
                 pd.read_csv(self.config.ssda.tsv_target_unlab, sep="\t"),
                 self.config.ssda.preprocessing_dict_target,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=False,  # A checker
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -487,8 +466,7 @@ class Trainer:
                 self.config.data.caps_directory,
                 split_df_dict["validation"],
                 self.config.data.preprocessing_dict,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
@@ -498,8 +476,7 @@ class Trainer:
                 Path(self.config.ssda.caps_target),
                 split_df_dict_target_lab["validation"],
                 self.config.ssda.preprocessing_dict_target,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
+                transforms_config=self.config.transforms,
                 multi_cohort=False,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
