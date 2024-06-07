@@ -34,7 +34,7 @@ def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):
     for job in jobs_list:
         performances_dict[job] = dict()
         maps_manager = MapsManager(launch_dir / job)
-        split_list = maps_manager.find_splits()
+        split_list = maps_manager._find_splits()
         split_set = split_set | set(split_list)
         for split in split_set:
             performances_dict[job][split] = dict()

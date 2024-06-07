@@ -12,6 +12,12 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
+from clinicadl.prepare_data.prepare_data_config import (
+    PrepareDataImageConfig,
+    PrepareDataPatchConfig,
+    PrepareDataROIConfig,
+    PrepareDataSliceConfig,
+)
 from clinicadl.utils.enum import (
     BIDSModality,
     DTIMeasure,

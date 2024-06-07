@@ -1,12 +1,14 @@
 from logging import getLogger
+from pathlib import Path
 
 import click
 
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     cross_validation,
+    reproducibility,
 )
-from clinicadl.trainer.trainer import Trainer
+from clinicadl.train.tasks_utils import create_training_config
 
 
 @click.command(name="from_json", no_args_is_help=True)
@@ -22,11 +24,23 @@ def cli(**kwargs):
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
+    from clinicadl.trainer.trainer import Trainer
+    from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 
     logger = getLogger("clinicadl")
     logger.info(f"Reading JSON file at path {kwargs['config_file']}...")
-
-    trainer = Trainer.from_json(
-        config_file=kwargs["config_file"], maps_path=kwargs["output_maps_directory"]
+    config_dict = read_json(kwargs["config_file"])
+    # temporary
+    config_dict["tsv_directory"] = config_dict["tsv_path"]
+    if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
+        config_dict["track_exp"] = None
+    config_dict["maps_dir"] = kwargs["output_maps_directory"]
+    config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
+        "extract_json"
+    ]
+    ###
+    config = create_training_config(config_dict["network_task"])(
+        output_maps_directory=kwargs["output_maps_directory"], **config_dict
     )
+    trainer = Trainer(config)
     trainer.train(split_list=kwargs["split"], overwrite=True)

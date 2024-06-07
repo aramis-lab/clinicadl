@@ -1,7 +1,7 @@
 import click
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
+from clinicadl.config import arguments
+from clinicadl.config.options import (
     computational,
     data,
     dataloader,

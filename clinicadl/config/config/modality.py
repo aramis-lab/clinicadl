@@ -8,6 +8,7 @@ from clinicadl.utils.enum import (
     BIDSModality,
     DTIMeasure,
     DTISpace,
+    Preprocessing,
     SUVRReferenceRegions,
     Tracer,
 )
@@ -17,7 +18,7 @@ logger = getLogger("clinicadl.modality_config")
 
 class ModalityConfig(BaseModel):
     """
-    Config class for modality.
+    Abstract config class for the validation procedure.
 
     """
 
@@ -51,3 +52,21 @@ class T1ModalityConfig(ModalityConfig):
 
 class FlairModalityConfig(ModalityConfig):
     modality: BIDSModality = BIDSModality.FLAIR
+
+
+def return_mode_config(preprocessing: Preprocessing):
+    if (
+        preprocessing == Preprocessing.T1_EXTENSIVE
+        or preprocessing == Preprocessing.T1_LINEAR
+    ):
+        return T1ModalityConfig
+    elif preprocessing == Preprocessing.PET_LINEAR:
+        return PETModalityConfig
+    elif preprocessing == Preprocessing.FLAIR_LINEAR:
+        return FlairModalityConfig
+    elif preprocessing == Preprocessing.CUSTOM:
+        return CustomModalityConfig
+    elif preprocessing == Preprocessing.DWI_DTI:
+        return DTIModalityConfig
+    else:
+        raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")

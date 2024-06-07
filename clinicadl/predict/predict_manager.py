@@ -11,7 +11,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data import (
+from clinicadl.caps_dataset.data_utils import (
     return_dataset,
 )
 from clinicadl.interpret.config import InterpretConfig
@@ -820,7 +820,7 @@ class PredictManager:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     # if not split_list:
-                    #     split_list = self.maps_manager.find_splits()
+                    #     split_list = self.maps_manager._find_splits()
                     assert self._config.split
                     for split in self._config.split:
                         selection_metrics = self.maps_manager._find_selection_metrics(

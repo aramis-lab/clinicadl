@@ -2,8 +2,8 @@ from pathlib import Path
 
 import click
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
+from clinicadl.config import arguments
+from clinicadl.config.options import (
     computational,
     data,
     dataloader,
@@ -43,7 +43,7 @@ from clinicadl.commandline.modules_options import (
 )
 def cli(
     caps_directory,
-    results_tsv,
+    output_tsv,
     participants_tsv,
     threshold,
     batch_size,
@@ -69,7 +69,7 @@ def cli(
 
     linear_qc(
         caps_directory,
-        results_tsv,
+        output_tsv,
         tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,
