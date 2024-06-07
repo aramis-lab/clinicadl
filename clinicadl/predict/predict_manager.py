@@ -11,7 +11,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data_utils import (
+from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.interpret.config import InterpretConfig
