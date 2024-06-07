@@ -2,7 +2,6 @@ from logging import getLogger
 from typing import Dict, List
 
 import numpy as np
-from sklearn.utils import resample
 
 metric_optimum = {
     "MAE": "min",

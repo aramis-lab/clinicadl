@@ -3,11 +3,10 @@
 import random
 from copy import copy
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
@@ -22,15 +21,12 @@ from clinicadl.utils.clinica_utils import (
 from clinicadl.utils.enum import (
     LinearModality,
     Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
 )
 
 # from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
-    DownloadError,
 )
 
 

@@ -1,6 +1,5 @@
 # coding: utf8
 # TODO: create a folder for generate/ prepare_data/ data to deal with capsDataset objects ?
-import abc
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional

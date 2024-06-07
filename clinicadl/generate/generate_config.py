@@ -1,4 +1,3 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
 from time import time
@@ -14,25 +13,8 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
-from clinicadl.config.config import ModalityConfig
-from clinicadl.preprocessing.config import PreprocessingConfig
-from clinicadl.utils.clinica_utils import (
-    RemoteFileStructure,
-    clinicadl_file_reader,
-    fetch_file,
-)
-from clinicadl.utils.enum import (
-    Pathology,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLTSVError,
-    DownloadError,
-)
+from clinicadl.utils.enum import Pathology
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.predict_config")
 
@@ -55,6 +37,8 @@ class GenerateArtifactsConfig(BaseModel):
     noise_std: Tuple[NonNegativeFloat, NonNegativeFloat] = (5.0, 15.0)
     rotation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)  # float o int ???
     translation: Tuple[NonNegativeFloat, NonNegativeFloat] = (2.0, 4.0)
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("gamma", "noise_std", "rotation", "translation", mode="before")
     def list_to_tuples(cls, v):
@@ -88,16 +72,22 @@ class GenerateHypometabolicConfig(BaseModel):
     anomaly_degree: NonNegativeFloat = 30.0
     pathology: Pathology = Pathology.AD
     sigma: NonNegativeFloat = 5
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class GenerateRandomConfig(BaseModel):
     mean: NonNegativeFloat = 0.0
     sigma: NonNegativeFloat = 0.5
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class GenerateTrivialConfig(BaseModel):
     atrophy_percent: PositiveFloat = 60.0
     mask_path: Optional[Path] = None
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class GenerateSheppLoganConfig(BaseModel):
@@ -110,6 +100,8 @@ class GenerateSheppLoganConfig(BaseModel):
     extract_json: Optional[str] = None
     image_size: PositiveInt = 128
     smoothing: bool = False
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("extract_json", mode="before")
     def compute_extract_json(cls, v: str):

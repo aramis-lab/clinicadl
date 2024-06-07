@@ -5,7 +5,7 @@ from typing import Any, Dict
 import toml
 
 from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
-from clinicadl.preprocessing.preprocessing import path_decoder, path_encoder
+from clinicadl.preprocessing.preprocessing import path_decoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:

@@ -1,6 +1,6 @@
 import typing
 from enum import Enum
-from typing import Any, get_args, get_origin
+from typing import Any, get_args
 
 import click
 from pydantic import BaseModel

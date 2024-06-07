@@ -1,4 +1,3 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
@@ -8,19 +7,12 @@ from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv, load_data_test
 from clinicadl.preprocessing.preprocessing import read_preprocessing
-from clinicadl.utils.clinica_utils import (
-    RemoteFileStructure,
-    clinicadl_file_reader,
-    fetch_file,
-)
-from clinicadl.utils.enum import MaskChecksum, Mode, Pathology
+from clinicadl.utils.enum import Mode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
-    DownloadError,
 )
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
-from clinicadl.utils.read_utils import get_mask_checksum_and_filename
 
 logger = getLogger("clinicadl.data_config")
 

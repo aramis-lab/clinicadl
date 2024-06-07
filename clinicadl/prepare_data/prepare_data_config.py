@@ -1,4 +1,3 @@
-from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from time import time
@@ -16,7 +15,6 @@ from clinicadl.utils.enum import (
     SUVRReferenceRegions,
     Tracer,
 )
-from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl.predict_config")
 

@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Any, Dict, Optional, Union
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import PositiveInt

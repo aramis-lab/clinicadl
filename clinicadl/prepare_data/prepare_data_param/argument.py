@@ -1,13 +1,7 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
-from clinicadl.utils.enum import (
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
+from clinicadl.utils.enum import Preprocessing
 
 config = PrepareDataConfig.model_fields
 

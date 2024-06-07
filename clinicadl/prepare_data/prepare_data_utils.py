@@ -1,20 +1,16 @@
 # coding: utf8
 from pathlib import Path
-from time import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 
 from clinicadl.prepare_data.prepare_data_config import PrepareDataConfig
 from clinicadl.utils.enum import (
-    BIDSModality,
     LinearModality,
     Preprocessing,
     SliceDirection,
     SliceMode,
-    SUVRReferenceRegions,
-    Tracer,
 )
 
 

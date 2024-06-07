@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import click
 
@@ -11,16 +10,7 @@ from clinicadl.prepare_data.prepare_data_config import (
     PrepareDataROIConfig,
     PrepareDataSliceConfig,
 )
-from clinicadl.utils.enum import (
-    BIDSModality,
-    DTIMeasure,
-    DTISpace,
-    ExtractionMethod,
-    Pathology,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
+from clinicadl.utils.enum import Preprocessing
 
 
 @click.command(name="image", no_args_is_help=True)

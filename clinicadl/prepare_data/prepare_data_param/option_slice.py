@@ -1,17 +1,11 @@
-from pathlib import Path
 from typing import get_args
 
 import click
 
 from clinicadl.prepare_data.prepare_data_config import PrepareDataSliceConfig
 from clinicadl.utils.enum import (
-    DTIMeasure,
-    DTISpace,
-    Preprocessing,
     SliceDirection,
     SliceMode,
-    SUVRReferenceRegions,
-    Tracer,
 )
 
 config = PrepareDataSliceConfig.model_fields

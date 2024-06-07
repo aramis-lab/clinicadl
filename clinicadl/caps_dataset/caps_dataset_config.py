@@ -1,23 +1,12 @@
-import abc
-from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Union
 
-import pandas as pd
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 from clinicadl.caps_dataset.data_config import ConfigDict, DataConfig
-from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
-from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config import modality
 from clinicadl.generate import generate_config as generate_type
-from clinicadl.generate.generate_config import GenerateConfig
 from clinicadl.preprocessing import config as preprocessing
 from clinicadl.utils.enum import ExtractionMethod, GenerateType, Preprocessing
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLTSVError,
-    DownloadError,
-)
 
 
 def get_preprocessing(extract_method: ExtractionMethod):
