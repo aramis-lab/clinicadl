@@ -315,9 +315,8 @@ class CapsDatasetImage(CapsDataset):
         image = torch.load(image_path)
 
         train_trf, trf = self.config.transforms.get_transforms()
-        if self.config.transforms.data_augmentation:
-            image = trf(image)
 
+        image = trf(image)
         if self.config.transforms.train_transformations and not self.eval_mode:
             image = train_trf(image)
 
@@ -403,8 +402,7 @@ class CapsDatasetPatch(CapsDataset):
             )
 
         train_trf, trf = self.config.transforms.get_transforms()
-        if self.config.transforms.data_augmentation:
-            patch_tensor = trf(patch_tensor)
+        patch_tensor = trf(patch_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
             patch_tensor = train_trf(patch_tensor)
@@ -522,8 +520,7 @@ class CapsDatasetRoi(CapsDataset):
 
         train_trf, trf = self.config.transforms.get_transforms()
 
-        if self.config.transforms.data_augmentation:
-            roi_tensor = trf(roi_tensor)
+        roi_tensor = trf(roi_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
             roi_tensor = train_trf(roi_tensor)
@@ -675,8 +672,7 @@ class CapsDatasetSlice(CapsDataset):
 
         train_trf, trf = self.config.transforms.get_transforms()
 
-        if self.config.transforms.data_augmentation:
-            slice_tensor = trf(slice_tensor)
+        slice_tensor = trf(slice_tensor)
 
         if self.config.transforms.train_transformations and not self.eval_mode:
             slice_tensor = train_trf(slice_tensor)
