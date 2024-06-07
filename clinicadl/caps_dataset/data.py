@@ -10,9 +10,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
-
 from clinicadl.prepare_data.prepare_data_utils import (
     compute_discarded_slices,
     extract_patch_path,
@@ -58,14 +56,6 @@ class CapsDataset(Dataset):
         self.config = config
         self.preprocessing_dict = preprocessing_dict
 
-        if not hasattr(self, "elem_index"):
-            raise AttributeError(
-                "Child class of CapsDataset must set elem_index attribute."
-            )
-        if not hasattr(self, "mode"):
-            raise AttributeError("Child class of CapsDataset, must set mode attribute.")
-
-        self.df = self.config.data.data_df
         mandatory_col = {
             "participant_id",
             "session_id",
@@ -97,23 +87,19 @@ class CapsDataset(Dataset):
             label: value of the label usable in criterion.
         """
         # Reconstruction case (no label)
-        if self.config.data.label is None:
+        if self.label is None:
             return None
         # Regression case (no label code)
-        elif self.config.data.label_code is None:
+        elif self.label_code is None:
             return np.float32([target])
         # Classification case (label + label_code dict)
         else:
-            return self.config.data.label_code[str(target)]
+            return self.label_code[str(target)]
 
     def domain_fn(self, target: Union[str, float, int]) -> Union[float, int]:
         """
         Returns the label value usable in criterion.
 
-        Args:
-            target: value of the target.
-        Returns:
-            label: value of the label usable in criterion.
         """
         domain_code = {"t1": 0, "flair": 1}
         return domain_code[str(target)]
@@ -138,7 +124,7 @@ class CapsDataset(Dataset):
         try:
             file_type = self.preprocessing_dict["file_type"]
             results = clinicadl_file_reader(
-                [participant], [session], self.config.data.caps_dict[cohort], file_type
+                [participant], [session], self.caps_dict[cohort], file_type
             )
             logger.debug(f"clinicadl_file_reader output: {results}")
             filepath = Path(results[0][0])
@@ -146,7 +132,7 @@ class CapsDataset(Dataset):
 
             folder, _ = compute_folder_and_file_type(self.config)
             image_dir = (
-                self.config.data.caps_dict[cohort]
+                self.caps_dict[cohort]
                 / "subjects"
                 / participant
                 / session
@@ -160,7 +146,7 @@ class CapsDataset(Dataset):
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
             results = clinicadl_file_reader(
-                [participant], [session], self.config.data.caps_dict[cohort], file_type
+                [participant], [session], self.caps_dict[cohort], file_type
             )
             filepath = results[0]
             image_path = Path(filepath[0])
@@ -191,8 +177,8 @@ class CapsDataset(Dataset):
             elem_idx = idx % self.elem_per_image
         else:
             elem_idx = self.elem_index
-        if self.label_presence and self.config.data.label is not None:
-            target = self.df.at[image_idx, self.config.data.label]
+        if self.label_presence and self.label is not None:
+            target = self.df.at[image_idx, self.label]
             label = self.label_fn(target)
         else:
             label = -1
@@ -226,10 +212,7 @@ class CapsDataset(Dataset):
         except IndexError:
             file_type = self.preprocessing_dict["file_type"]
             results = clinicadl_file_reader(
-                [participant_id],
-                [session_id],
-                self.config.data.caps_dict[cohort],
-                file_type,
+                [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
             image_nii = nib.loadsave.load(results[0])
             image_np = image_nii.get_fdata()
@@ -276,10 +259,8 @@ class CapsDatasetImage(CapsDataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(
-        self,
         config: CapsDatasetConfig,
         preprocessing_dict: Dict[str, Any],
-        label_presence: bool = True,
     ):
         """
         Args:
@@ -345,22 +326,11 @@ class CapsDatasetPatch(CapsDataset):
         label_presence: bool = True,
     ):
         """
-        Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             train_transformations: Optional transform to be applied only on training mode.
-            patch_index: If a value is given the same patch location will be extracted for each image.
-                else the dataset will load all the patches possible for one image.
-            label_presence: If True the diagnosis will be extracted from the given DataFrame.
-            label: Name of the column in data_df containing the label.
-            label_code: label code that links the output node number to label value.
-            all_transformations: Optional transform to be applied during training and evaluation.
-            multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-
         """
-        self.patch_index = patch_index
-        self.mode = "patch"
         self.config = config
         self.label_presence = label_presence
 
@@ -380,25 +350,19 @@ class CapsDatasetPatch(CapsDataset):
         )
         image_path = self._get_image_path(participant, session, cohort)
 
-        if self.config.preprocessing.save_features:
+        if self.prepare_dl:
             patch_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
-                image_path,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
-                patch_idx,
+                image_path, self.patch_size, self.stride_size, patch_idx
             )
             patch_tensor = torch.load(Path(patch_dir).resolve() / patch_filename)
 
         else:
             image = torch.load(image_path)
             patch_tensor = extract_patch_tensor(
-                image,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
-                patch_idx,
+                image, self.patch_size, self.stride_size, patch_idx
             )
 
         train_trf, trf = self.config.transforms.get_transforms()
@@ -424,28 +388,13 @@ class CapsDatasetPatch(CapsDataset):
         image = self._get_full_image()
 
         patches_tensor = (
-            image.unfold(
-                1,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
-            )
-            .unfold(
-                2,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
-            )
-            .unfold(
-                3,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
-            )
+            image.unfold(1, self.patch_size, self.stride_size)
+            .unfold(2, self.patch_size, self.stride_size)
+            .unfold(3, self.patch_size, self.stride_size)
             .contiguous()
         )
         patches_tensor = patches_tensor.view(
-            -1,
-            self.config.preprocessing.patch_size,
-            self.config.preprocessing.patch_size,
-            self.config.preprocessing.patch_size,
+            -1, self.patch_size, self.patch_size, self.patch_size
         )
         num_patches = patches_tensor.shape[0]
         return num_patches
@@ -487,18 +436,6 @@ class CapsDatasetRoi(CapsDataset):
             preprocessing_dict=preprocessing_dict,
         )
 
-    @property
-    def elem_index(self):
-        return self.roi_index
-
-    def __getitem__(self, idx):
-        participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
-        image_path = self._get_image_path(participant, session, cohort)
-
-        if self.config.preprocessing.roi_list is None:
-            raise NotImplementedError(
-                "Default regions are not available anymore in ClinicaDL. "
-                "Please define appropriate masks and give a roi_list."
             )
 
         if self.config.preprocessing.save_features:
@@ -514,9 +451,7 @@ class CapsDatasetRoi(CapsDataset):
         else:
             image = torch.load(image_path)
             mask_array = self.mask_arrays[roi_idx]
-            roi_tensor = extract_roi_tensor(
-                image, mask_array, self.config.preprocessing.roi_uncrop_output
-            )
+            roi_tensor = extract_roi_tensor(image, mask_array, self.uncropped_roi)
 
         train_trf, trf = self.config.transforms.get_transforms()
 
@@ -538,10 +473,10 @@ class CapsDatasetRoi(CapsDataset):
     def num_elem_per_image(self):
         if self.elem_index is not None:
             return 1
-        if self.config.preprocessing.roi_list is None:
+        if self.roi_list is None:
             return 2
         else:
-            return len(self.config.preprocessing.roi_list)
+            return len(self.roi_list)
 
     def _get_mask_paths_and_tensors(
         self,
@@ -550,7 +485,6 @@ class CapsDatasetRoi(CapsDataset):
     ) -> Tuple[List[str], List]:
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
-
         caps_dict = self.config.data.caps_dict
         if len(caps_dict) > 1:
             caps_directory = caps_dict[next(iter(caps_dict))]
@@ -592,7 +526,7 @@ class CapsDatasetRoi(CapsDataset):
         mask_location = caps_directory / "masks" / f"tpl-{template_name}"
 
         mask_paths, mask_arrays = list(), list()
-        for roi in self.config.preprocessing.roi_list:
+        for roi in self.roi_list:
             logger.info(f"Find mask for roi {roi}.")
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
             if mask_path is None:
@@ -645,18 +579,15 @@ class CapsDatasetSlice(CapsDataset):
         participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
             idx
         )
-        slice_idx = slice_idx + self.config.preprocessing.discarded_slices[0]
+        slice_idx = slice_idx + self.discarded_slices[0]
         image_path = self._get_image_path(participant, session, cohort)
 
-        if self.config.preprocessing.save_features:
+        if self.prepare_dl:
             slice_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
-                image_path,
-                self.config.preprocessing.slice_direction,
-                self.config.preprocessing.slice_mode,
-                slice_idx,
+                image_path, self.slice_direction, self.slice_mode, slice_idx
             )
             slice_tensor = torch.load(Path(slice_dir) / slice_filename)
 
@@ -664,10 +595,7 @@ class CapsDatasetSlice(CapsDataset):
             image_path = self._get_image_path(participant, session, cohort)
             image = torch.load(image_path)
             slice_tensor = extract_slice_tensor(
-                image,
-                self.config.preprocessing.slice_direction,
-                self.config.preprocessing.slice_mode,
-                slice_idx,
+                image, self.slice_direction, self.slice_mode, slice_idx
             )
 
         train_trf, trf = self.config.transforms.get_transforms()
@@ -691,14 +619,14 @@ class CapsDatasetSlice(CapsDataset):
         if self.elem_index is not None:
             return 1
 
-        if self.config.preprocessing.num_slices is not None:
-            return self.config.preprocessing.num_slices
+        if self.num_slices is not None:
+            return self.num_slices
 
         image = self._get_full_image()
         return (
-            image.size(int(self.config.preprocessing.slice_direction) + 1)
-            - self.config.preprocessing.discarded_slices[0]
-            - self.config.preprocessing.discarded_slices[1]
+            image.size(int(self.slice_direction) + 1)
+            - self.discarded_slices[0]
+            - self.discarded_slices[1]
         )
 
 

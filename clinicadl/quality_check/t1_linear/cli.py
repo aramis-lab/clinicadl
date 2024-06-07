@@ -37,7 +37,7 @@ from clinicadl.commandline.modules_options import computational, data, dataloade
 )
 def cli(
     caps_directory,
-    results_tsv,
+    output_tsv,
     participants_tsv,
     threshold,
     batch_size,
@@ -63,7 +63,7 @@ def cli(
 
     linear_qc(
         caps_directory,
-        results_tsv,
+        output_tsv,
         tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,

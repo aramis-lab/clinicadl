@@ -1,12 +1,7 @@
 import click
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
-    data,
-    dataloader,
-    modality,
-    preprocessing,
-)
+from clinicadl.config import arguments
+from clinicadl.config.options import data, dataloader, modality, preprocessing
 
 
 @click.command(name="pet-linear", no_args_is_help=True)
@@ -26,7 +21,7 @@ from clinicadl.commandline.modules_options import (
 )
 def cli(
     caps_directory,
-    results_tsv,
+    output_tsv,
     tracer,
     suvr_reference_region,
     use_uncropped_image,
@@ -48,7 +43,7 @@ def cli(
 
     pet_linear_qc(
         caps_directory,
-        results_tsv,
+        output_tsv,
         tracer,
         suvr_reference_region,
         use_uncropped_image=use_uncropped_image,

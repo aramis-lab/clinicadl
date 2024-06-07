@@ -71,3 +71,5 @@ class PreprocessingROIConfig(PreprocessingConfig):
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
     extract_method: ExtractionMethod = ExtractionMethod.ROI
+
+

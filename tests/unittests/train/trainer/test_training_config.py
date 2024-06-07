@@ -3,13 +3,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+import clinicadl.config.config as config
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.cross_validation import CrossValidationConfig
-from clinicadl.config.config.ssda import SSDAConfig
-from clinicadl.config.config.transfer_learning import TransferLearningConfig
-from clinicadl.network.config import NetworkConfig
-from clinicadl.transforms.config import TransformsConfig
 
 
 # Tests for customed validators #
@@ -20,7 +16,7 @@ def caps_example():
 
 
 def test_cross_validation_config():
-    c = CrossValidationConfig(
+    c = config.CrossValidationConfig(
         split=[0],
         tsv_directory="",
     )
@@ -61,7 +57,7 @@ def test_data_config(caps_example):
 
 def test_model_config():
     with pytest.raises(ValidationError):
-        NetworkConfig(
+        config.NetworkConfig(
             **{
                 "architecture": "",
                 "loss": "",
@@ -74,7 +70,7 @@ def test_ssda_config(caps_example):
     preprocessing_json_target = (
         caps_example / "tensor_extraction" / "preprocessing.json"
     )
-    c = SSDAConfig(
+    c = config.SSDAConfig(
         ssda_network=True,
         preprocessing_json_target=preprocessing_json_target,
     )
@@ -91,19 +87,19 @@ def test_ssda_config(caps_example):
         },
     }
     assert c.preprocessing_dict_target == expected_preprocessing_dict
-    c = SSDAConfig()
+    c = config.SSDAConfig()
     assert c.preprocessing_dict_target == {}
 
 
 def test_transferlearning_config():
-    c = TransferLearningConfig(transfer_path=False)
+    c = config.TransferLearningConfig(transfer_path=False)
     assert c.transfer_path is None
 
 
 def test_transforms_config():
-    c = TransformsConfig(data_augmentation=False)
+    c = config.TransformsConfig(data_augmentation=False)
     assert c.data_augmentation == ()
-    c = TransformsConfig(data_augmentation=["Noise"])
+    c = config.TransformsConfig(data_augmentation=["Noise"])
     assert c.data_augmentation == ("Noise",)
 
 
