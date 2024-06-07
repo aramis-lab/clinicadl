@@ -1,13 +1,6 @@
 import click
 
-from clinicadl.config import arguments
-from clinicadl.config.options import (
-    computational,
-    data,
-    dataloader,
-    modality,
-    preprocessing,
-)
+from clinicadl.commandline import arguments
 
 
 @click.command(name="t1-volume", no_args_is_help=True)

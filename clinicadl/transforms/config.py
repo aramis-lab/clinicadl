@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Tuple
+from typing import Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -15,6 +15,7 @@ class TransformsConfig(BaseModel):  # TODO : put in data module?
     """Config class to handle the transformations applied to th data."""
 
     data_augmentation: Tuple[Transform, ...] = ()
+    train_transformations: Optional[Tuple[Transform, ...]] = None
     normalize: bool = True
     size_reduction: bool = False
     size_reduction_factor: SizeReductionFactor = SizeReductionFactor.TWO

@@ -2,14 +2,8 @@ from pathlib import Path
 
 import click
 
-from clinicadl.config import arguments
-from clinicadl.config.options import (
-    computational,
-    data,
-    dataloader,
-    modality,
-    preprocessing,
-)
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import computational, data, dataloader
 
 
 @click.command(name="t1-linear", no_args_is_help=True)

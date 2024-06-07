@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,9 +12,9 @@ from clinicadl.config.config.modality import (
     PETModalityConfig,
     T1ModalityConfig,
 )
-from clinicadl.generate import generate_config as generate_type
 from clinicadl.preprocessing import config as preprocessing
-from clinicadl.utils.enum import ExtractionMethod, GenerateType, Preprocessing
+from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
 def get_preprocessing(extract_method: ExtractionMethod):
@@ -48,27 +48,12 @@ def get_modality(preprocessing: Preprocessing):
         raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
 
 
-def get_generate(generate: Union[str, GenerateType]):
-    generate = GenerateType(generate)
-    if generate == GenerateType.ART:
-        return generate_type.GenerateArtifactsConfig
-    elif generate == GenerateType.RAN:
-        return generate_type.GenerateRandomConfig
-    elif generate == GenerateType.SHE:
-        return generate_type.GenerateSheppLoganConfig
-    elif generate == GenerateType.HYP:
-        return generate_type.GenerateHypometabolicConfig
-    elif generate == GenerateType.TRI:
-        return generate_type.GenerateTrivialConfig
-    else:
-        raise ValueError(f"GenerateType {generate.value} is not available.")
-
-
 class CapsDatasetBase(BaseModel):
     data: DataConfig
     dataloader: DataLoaderConfig
     modality: ModalityConfig
     preprocessing: preprocessing.PreprocessingConfig
+    transforms: Optional[TransformsConfig]
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
@@ -87,4 +72,5 @@ class CapsDatasetConfig(CapsDatasetBase):
             dataloader=DataLoaderConfig(**kwargs),
             modality=get_modality(Preprocessing(preprocessing_type))(**kwargs),
             preprocessing=get_preprocessing(ExtractionMethod(extraction))(**kwargs),
+            transforms=TransformsConfig(**kwargs),
         )

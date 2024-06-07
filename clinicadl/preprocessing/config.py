@@ -4,7 +4,7 @@ from time import time
 from typing import Annotated, Any, Dict, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator
-from pydantic.types import PositiveInt
+from pydantic.types import NonNegativeInt, PositiveInt
 
 from clinicadl.utils.enum import (
     ExtractionMethod,
@@ -57,6 +57,7 @@ class PreprocessingPatchConfig(PreprocessingConfig):
 class PreprocessingSliceConfig(PreprocessingConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
+    num_slice: Optional[NonNegativeInt] = None
     discarded_slices: Annotated[list[PositiveInt], 2] = [0, 0]
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
@@ -70,15 +71,3 @@ class PreprocessingROIConfig(PreprocessingConfig):
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
     extract_method: ExtractionMethod = ExtractionMethod.ROI
-
-
-def return_preprocessing_config(dict_: Dict[str, Any]):
-    extract_method = ExtractionMethod(dict_["preprocessing"])
-    if extract_method == ExtractionMethod.ROI:
-        return PreprocessingROIConfig(**dict_)
-    elif extract_method == ExtractionMethod.SLICE:
-        return PreprocessingSliceConfig(**dict_)
-    elif extract_method == ExtractionMethod.IMAGE:
-        return PreprocessingImageConfig(**dict_)
-    elif extract_method == ExtractionMethod.PATCH:
-        return PreprocessingPatchConfig(**dict_)

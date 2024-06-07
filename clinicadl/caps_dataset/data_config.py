@@ -26,6 +26,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     caps_directory: Path
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
+    data_df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
     label_code: Dict[str, int] = {}
     multi_cohort: bool = False
@@ -34,7 +35,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @field_validator("diagnoses", mode="before")
     def validator_diagnoses(cls, v):
