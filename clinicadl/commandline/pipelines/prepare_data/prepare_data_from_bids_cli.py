@@ -12,6 +12,7 @@ from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader, modality, preprocessing
+from clinicadl.utils.enum import ExtractionMethod
 
 
 @click.command(name="image", no_args_is_help=True)
