@@ -103,7 +103,6 @@ class CapsDataset(Dataset):
             return np.float32([target])
         # Classification case (label + label_code dict)
         else:
-            print(self.config.data.label_code)
             return self.config.data.label_code[str(target)]
 
     def domain_fn(self, target: Union[str, float, int]) -> Union[float, int]:

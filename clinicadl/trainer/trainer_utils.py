@@ -66,6 +66,6 @@ def create_parameters_dict(config):
 
     if "data_df" in parameters:
         del parameters["data_df"]
-    if "train_transformartions" in parameters:
-        del parameters["train_transformartions"]
+    if "train_transformations" in parameters:
+        del parameters["train_transformations"]
     return parameters, maps_path
