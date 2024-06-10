@@ -10,7 +10,7 @@ import torch
 from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
-from clinicadl.caps_dataset.data import CapsDataset
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
@@ -68,6 +68,7 @@ def quality_check(
     logger = getLogger("clinicadl.quality_check")
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         caps_directory=caps_dir,
+        extraction=ExtractionMethod.IMAGE,
         preprocessing_type=Preprocessing.T1_LINEAR,
         preprocessing=Preprocessing.T1_LINEAR,
         use_uncropped_image=use_uncropped_image,

@@ -12,6 +12,7 @@ from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
 from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.exceptions import ClinicaDLException
 
 
 class QCDataset(Dataset):
@@ -39,7 +40,7 @@ class QCDataset(Dataset):
         if ("session_id" not in list(self.df.columns.values)) or (
             "participant_id" not in list(self.df.columns.values)
         ):
-            raise Exception(
+            raise ClinicaDLException(
                 "The data file is not in the correct format."
                 "Columns should include ['participant_id', 'session_id']"
             )
@@ -53,11 +54,6 @@ class QCDataset(Dataset):
             "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
             "use_tensor": self.use_extracted_tensors,
         }
-        self.config = PrepareDataImageConfig(
-            caps_directory=Path(""),
-            preprocessing_cls=Preprocessing.T1_LINEAR,
-            use_uncropped_image=use_uncropped_image,
-        )
 
     def __len__(self):
         return len(self.df)
