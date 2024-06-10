@@ -151,14 +151,19 @@ class DataConfig(BaseModel):  # TODO : put in data module
         preprocessing_dict = read_preprocessing(preprocessing_json)
 
         if (
-            preprocessing_dict["mode"] == "roi"
+            preprocessing_dict["extract_method"] == "roi"
             and "roi_background_value" not in preprocessing_dict
         ):
             preprocessing_dict["roi_background_value"] = 0
-
+        if "preprocessing_json" in preprocessing_dict:
+            preprocessing_dict["preprocessing_json"] = preprocessing_dict[
+                "extract_json"
+            ]
+        if "prepare_dl" in preprocessing_dict:
+            preprocessing_dict["prepare_dl"] = False
         return preprocessing_dict
 
     @computed_field
     @property
     def mode(self) -> Mode:
-        return Mode(self.preprocessing_dict["mode"])
+        return Mode(self.preprocessing_dict["extract_method"])

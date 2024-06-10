@@ -104,6 +104,7 @@ def split_diagnoses(
     stratification: str = None,
     merged_tsv: Path = None,
     valid_longitudinal: bool = False,
+    ignore_demographics: bool = False,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
@@ -150,42 +151,44 @@ def split_diagnoses(
 
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
-    if (
-        "diagnosis" not in list_columns
-        or ("age" not in list_columns and "age_bl" not in list_columns)
-        or "sex" not in list_columns
-    ):
-        logger.debug("Looking for the missing columns in others files.")
-        if merged_tsv is None:
-            parents_path = parents_path.resolve()
-            n = 0
-            while not (parents_path / "labels.tsv").is_file() and n <= 4:
-                parents_path = parents_path.parent
-                n += 1
-            try:
-                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+    if not ignore_demographics:
+        if (
+            "diagnosis" not in list_columns
+            or ("age" not in list_columns and "age_bl" not in list_columns)
+            or "sex" not in list_columns
+        ):
+            logger.debug("Looking for the missing columns in others files.")
+            if merged_tsv is None:
+                parents_path = parents_path.resolve()
+                n = 0
+                while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                    parents_path = parents_path.parent
+                    n += 1
+                try:
+                    labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+                    diagnosis_df = pd.merge(
+                        diagnosis_df,
+                        labels_df,
+                        how="inner",
+                        on=["participant_id", "session_id"],
+                        # validate=None,
+                    )
+                except Exception:
+                    raise ClinicaDLTSVError(
+                        "Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
+                        "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."
+                        "Before running this pipeline again, please run the command clinicadl get-metadata to get the missing columns"
+                        "or add the the flag --ignore_demographics to split without trying to balance age or sex distributions."
+                        "or add the option --merged-tsv to give the path the output of clinica merge-tsv"
+                    )
+            else:
+                labels_df = pd.read_csv(merged_tsv, sep="\t")
                 diagnosis_df = pd.merge(
                     diagnosis_df,
                     labels_df,
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except Exception:
-                raise ClinicaDLTSVError(
-                    f"Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
-                    "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."
-                    "Before running this pipeline again, please run the command clinicadl get-metadata to get the missing columns"
-                    "or add the the flag --ignore_demographics to split without trying to balance age or sex distributions."
-                    "or add the option --merged-tsv to give the path the output of clinica merge-tsv"
-                )
-        else:
-            labels_df = pd.read_csv(merged_tsv, sep="\t")
-            diagnosis_df = pd.merge(
-                diagnosis_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
-            )
     write_splits(
         diagnosis_df,
         stratification,

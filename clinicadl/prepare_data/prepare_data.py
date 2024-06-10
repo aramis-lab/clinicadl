@@ -74,6 +74,11 @@ def DeepLearningPrepareData(
     # parameters["file_type"] = file_type
 
     # Input file:
+    print(subjects)
+    print(sessions)
+    print(input_directory)
+    print(file_type)
+
     input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
         0
     ]

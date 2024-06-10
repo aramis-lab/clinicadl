@@ -63,7 +63,7 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
 
     preprocessing_dict = read_preprocessing(preprocessing_json)
     train_default["preprocessing_dict"] = preprocessing_dict
-    train_default["mode"] = preprocessing_dict["mode"]
+    train_default["mode"] = preprocessing_dict["extract_method"]
 
     space_dict.update(train_default)
 

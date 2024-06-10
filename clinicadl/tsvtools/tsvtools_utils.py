@@ -308,3 +308,22 @@ def df_to_tsv(name: str, results_path: Path, df, baseline: bool = False) -> None
         )
     # df = df[["participant_id", "session_id"]]
     df.to_csv(results_path / name, sep="\t", index=False)
+
+
+def directory_to_tsv_mood(dir_path: Path, subject_tsv: Path) -> pd.DataFrame:
+    dir_path = Path(dir_path)
+    if dir_path.is_dir():
+        path_list = list(dir_path.glob("*.nii.gz"))
+
+        output_df = pd.DataFrame(
+            {
+                "participant_id": [Path(x.stem).stem for x in path_list],
+                "session_id": ["ses-M000" for i in range(len(path_list))],
+                "diagnosis": ["CN" for i in range(len(path_list))],
+            }
+        )
+        output_df.to_csv(subject_tsv, sep="\t", index=False)
+        return output_df
+
+    else:
+        raise ValueError(f"{dir_path} is not a directory, please give another one")

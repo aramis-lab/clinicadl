@@ -1,5 +1,13 @@
 from pathlib import Path
 
+from clinicadl.utils.enum import (
+    Compensation,
+    ExperimentTracking,
+    Normalization,
+    Sampler,
+    SizeReductionFactor,
+)
+
 
 def create_parameters_dict(config):
     parameters = {}
@@ -24,14 +32,20 @@ def create_parameters_dict(config):
     del parameters["preprocessing_json"]
     parameters["tsv_path"] = parameters["tsv_directory"]
     del parameters["tsv_directory"]
-    parameters["compensation"] = parameters["compensation"].value
-    parameters["size_reduction_factor"] = parameters["size_reduction_factor"].value
-    if parameters["track_exp"]:
+    if isinstance(parameters["compensation"], Compensation):
+        parameters["compensation"] = parameters["compensation"].value
+    if isinstance(parameters["size_reduction_factor"], SizeReductionFactor):
+        parameters["size_reduction_factor"] = parameters["size_reduction_factor"].value
+    if isinstance(parameters["track_exp"], ExperimentTracking):
         parameters["track_exp"] = parameters["track_exp"].value
     else:
         parameters["track_exp"] = ""
-    parameters["sampler"] = parameters["sampler"].value
-    if parameters["network_task"] == "reconstruction":
+
+    if isinstance(parameters["sampler"], Sampler):
+        parameters["sampler"] = parameters["sampler"].value
+    if parameters["network_task"] == "reconstruction" and isinstance(
+        parameters["normalization"], Normalization
+    ):
         parameters["normalization"] = parameters["normalization"].value
     parameters[
         "split"

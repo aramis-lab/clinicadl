@@ -138,6 +138,8 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
+            if file_type is None:
+                file_type = ""
             results = clinicadl_file_reader(
                 [participant], [session], self.config.data.caps_dict[cohort], file_type
             )
@@ -159,6 +161,7 @@ class CapsDataset(Dataset):
         # Try to find .pt file
         except ClinicaDLCAPSError:
             file_type = self.preprocessing_dict["file_type"]
+
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
             results = clinicadl_file_reader(
                 [participant], [session], self.config.data.caps_dict[cohort], file_type
@@ -722,7 +725,8 @@ def return_dataset(
     Returns:
          the corresponding dataset.
     """
-    if cnn_index is not None and preprocessing_dict["mode"] == "image":
+    print(preprocessing_dict)
+    if cnn_index is not None and preprocessing_dict["extract_method"] == "image":
         raise NotImplementedError(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
@@ -730,7 +734,7 @@ def return_dataset(
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         preprocessing_type=preprocessing_dict["preprocessing"],
         preprocessing=preprocessing_dict["preprocessing"],
-        extraction=preprocessing_dict["mode"],
+        extraction=preprocessing_dict["extract_method"],
         caps_directory=input_dir,
         data_df=data_df,
         label=label,
@@ -739,8 +743,8 @@ def return_dataset(
     )
     config.transforms = transforms_config
 
-    if preprocessing_dict["mode"] == "image":
-        config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
+    if preprocessing_dict["extract_method"] == "image":
+        config.preprocessing.save_features = True
         config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
@@ -750,7 +754,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "patch":
+    elif preprocessing_dict["extract_method"] == "patch":
         assert isinstance(config.preprocessing, PreprocessingPatchConfig)
         config.preprocessing.patch_size = preprocessing_dict["patch_size"]
         config.preprocessing.stride_size = preprocessing_dict["stride_size"]
@@ -765,7 +769,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "roi":
+    elif preprocessing_dict["extract_method"] == "roi":
         assert isinstance(config.preprocessing, PreprocessingROIConfig)
         config.preprocessing.roi_list = preprocessing_dict["roi_list"]
         config.preprocessing.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
@@ -780,7 +784,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "slice":
+    elif preprocessing_dict["extract_method"] == "slice":
         assert isinstance(config.preprocessing, PreprocessingSliceConfig)
         config.preprocessing.slice_direction = SliceDirection(
             str(preprocessing_dict["slice_direction"])

@@ -680,7 +680,7 @@ def _are_multiple_runs(files: List[Path]) -> bool:
     """
 
     # Exit quickly if less than one file or if at least one file does not have the entity run
-    if len(files) < 2 or any(["_run-" not in f.name for f in files]):
+    if len(files) < 2 or any(["_run-" not in Path(f).name for f in files]):
         return False
     try:
         _check_common_parent_path(files)
@@ -850,6 +850,7 @@ def _get_run_number(filename: str) -> str:
 
 def _check_information(information: Dict) -> None:
     if not isinstance(information, (dict, list)):
+        print(information)
         raise TypeError(
             "A dict or list of dicts must be provided for the argument 'information'"
         )
