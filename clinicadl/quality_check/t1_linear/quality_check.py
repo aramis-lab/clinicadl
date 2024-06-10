@@ -74,7 +74,8 @@ def quality_check(
         data_tsv=tsv_path,
     )
 
-    if not output_path.suffix == ".tsv":
+    if output_path.suffix != ".tsv":
+        raise ValueError("please enter a tsv path")
     # Fetch QC model
     home = Path.home()
 
