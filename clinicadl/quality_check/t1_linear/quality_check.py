@@ -136,7 +136,6 @@ def quality_check(
         # Transform caps_dir in dict
 
         caps_dict = config.data.caps_dict
-        print(caps_dict)
         # Load DataFrame
         logger.debug("Loading data to check.")
         config.data.data_df = load_and_check_tsv(
