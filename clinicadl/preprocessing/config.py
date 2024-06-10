@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Any, Dict, Optional, Union
+from typing import Annotated, Any, Dict, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt, PositiveInt
@@ -58,7 +58,7 @@ class PreprocessingSliceConfig(PreprocessingConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
     num_slices: Optional[NonNegativeInt] = None
-    discarded_slices: Annotated[list[NonNegativeInt], 2] = [0, 0]
+    discarded_slices: Tuple[NonNegativeInt, NonNegativeInt] = (0, 0)
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
 
@@ -71,5 +71,3 @@ class PreprocessingROIConfig(PreprocessingConfig):
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
     extract_method: ExtractionMethod = ExtractionMethod.ROI
-
-
