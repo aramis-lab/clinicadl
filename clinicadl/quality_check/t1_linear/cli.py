@@ -63,7 +63,7 @@ def cli(
 
     linear_qc(
         caps_directory,
-        results_tsv,
+        output_path=results_tsv,
         tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,
