@@ -2,16 +2,18 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import computational, data, dataloader
 
 
 @click.command(name="t1-linear", no_args_is_help=True)
-@cli_param.argument.caps_directory
-@click.argument(
-    "output_tsv",
-    type=click.Path(path_type=Path),
-)
-@cli_param.option.participant_list
+@arguments.caps_directory
+@arguments.results_tsv
+@data.participants_tsv
+@dataloader.batch_size
+@dataloader.n_proc
+@computational.gpu
+@computational.amp
 @click.option(
     "--threshold",
     type=float,
@@ -20,10 +22,6 @@ from clinicadl.utils import cli_param
     help="The threshold on the output probability to decide if the image "
     "passed or failed.",
 )
-@cli_param.option.batch_size
-@cli_param.option.n_proc
-@cli_param.option.use_gpu
-@cli_param.option.amp
 @click.option(
     "--network",
     default="darq",
@@ -39,7 +37,7 @@ from clinicadl.utils import cli_param
 )
 def cli(
     caps_directory,
-    output_tsv,
+    results_tsv,
     participants_tsv,
     threshold,
     batch_size,
@@ -65,7 +63,7 @@ def cli(
 
     linear_qc(
         caps_directory,
-        output_tsv,
+        output_path=results_tsv,
         tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,

@@ -10,11 +10,11 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
-from clinicadl.caps_dataset.data_utils import (
+from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.preprocessing.preprocessing import path_encoder
-from clinicadl.transforms.transforms import get_transforms
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -143,8 +143,8 @@ class MapsManager:
                 self.write_description_log(
                     log_dir,
                     data_group,
-                    dataloader.dataset.caps_dict,
-                    dataloader.dataset.df,
+                    dataloader.dataset.config.data.caps_dict,
+                    dataloader.dataset.config.data.data_df,
                 )
 
             # load the best trained model during the training
@@ -430,7 +430,7 @@ class MapsManager:
                 "AMP is designed to work with modern GPUs. Please add the --gpu flag."
             )
 
-        _, transformations = get_transforms(
+        transfo_config = TransformsConfig(
             normalize=self.normalize,
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
@@ -450,6 +450,7 @@ class MapsManager:
         if (
             "label_code" not in self.parameters
             or len(self.parameters["label_code"]) == 0
+            or self.parameters["label_code"] is None
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
@@ -462,8 +463,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
             label=self.label,
             label_code=self.parameters["label_code"],
-            train_transformations=None,
-            all_transformations=transformations,
+            transforms_config=transfo_config,
         )
         self.parameters.update(
             {

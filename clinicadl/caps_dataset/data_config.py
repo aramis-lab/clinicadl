@@ -1,4 +1,3 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
@@ -8,19 +7,11 @@ from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv, load_data_test
 from clinicadl.preprocessing.preprocessing import read_preprocessing
-from clinicadl.utils.clinica_utils import (
-    RemoteFileStructure,
-    clinicadl_file_reader,
-    fetch_file,
-)
-from clinicadl.utils.enum import MaskChecksum, Mode, Pathology
+from clinicadl.utils.enum import Mode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
-    DownloadError,
 )
-from clinicadl.utils.maps_manager.maps_manager import MapsManager
-from clinicadl.utils.read_utils import get_mask_checksum_and_filename
 
 logger = getLogger("clinicadl.data_config")
 
@@ -35,15 +26,16 @@ class DataConfig(BaseModel):  # TODO : put in data module
     caps_directory: Path
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
+    data_df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
-    label_code: Dict[str, int] = {}
+    label_code: Union[str, dict[str, int], None] = {}
     multi_cohort: bool = False
     mask_path: Optional[Path] = None
     preprocessing_json: Optional[Path] = None
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @field_validator("diagnoses", mode="before")
     def validator_diagnoses(cls, v):
@@ -51,11 +43,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
         if isinstance(v, list):
             return tuple(v)
         return v  # TODO : check if columns are in tsv
-
-    def adapt_data_with_maps_manager_info(self, maps_manager: MapsManager):
-        # TEMPORARY
-        if self.diagnoses is None or len(self.diagnoses) == 0:
-            self.diagnoses = maps_manager.diagnoses
 
     def create_groupe_df(self):
         group_df = None

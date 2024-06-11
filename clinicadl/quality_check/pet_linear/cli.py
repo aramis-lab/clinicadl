@@ -1,24 +1,22 @@
 import click
 
-from clinicadl.utils import cli_param
+from clinicadl.commandline import arguments
+from clinicadl.commandline.modules_options import (
+    data,
+    dataloader,
+    modality,
+    preprocessing,
+)
 
 
 @click.command(name="pet-linear", no_args_is_help=True)
-@cli_param.argument.caps_directory
-@click.argument(
-    "output_tsv",
-    type=click.Path(),
-)
-@click.argument(
-    "tracer",
-    type=str,
-)
-@click.argument(
-    "suvr_reference_region",
-    type=str,
-)
-@cli_param.option.use_uncropped_image
-@cli_param.option.participant_list
+@arguments.caps_directory
+@arguments.results_tsv
+@modality.tracer
+@modality.suvr_reference_region
+@preprocessing.use_uncropped_image
+@data.participants_tsv
+@dataloader.n_proc
 @click.option(
     "--threshold",
     type=float,
@@ -26,10 +24,9 @@ from clinicadl.utils import cli_param
     show_default=True,
     help="The threshold on the output probability to decide if the image passed or failed.",
 )
-@cli_param.option.n_proc
 def cli(
     caps_directory,
-    output_tsv,
+    results_tsv,
     tracer,
     suvr_reference_region,
     use_uncropped_image,
@@ -51,9 +48,9 @@ def cli(
 
     pet_linear_qc(
         caps_directory,
-        output_tsv,
-        tracer,
-        suvr_reference_region,
+        output_tsv=results_tsv,
+        tracer=tracer,
+        ref_region=suvr_reference_region,
         use_uncropped_image=use_uncropped_image,
         participants_tsv=participants_tsv,
         threshold=threshold,

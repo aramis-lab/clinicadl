@@ -42,7 +42,7 @@ logger = getLogger("clinicadl.generate.hypometabolic")
 @hypometabolic.sigma
 @hypometabolic.anomaly_degree
 @hypometabolic.pathology
-def cli(generated_caps_directory, n_proc, **kwargs):
+def cli(generated_caps_directory, **kwargs):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
@@ -62,7 +62,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
             "caps_dir": caps_config.data.caps_directory,
             "preprocessing": caps_config.preprocessing.preprocessing.value,
             "n_subjects": caps_config.data.n_subjects,
-            "n_proc": n_proc,
+            "n_proc": caps_config.dataloader.n_proc,
             "pathology": generate_config.pathology.value,
             "anomaly_degree": generate_config.anomaly_degree,
         }
@@ -139,7 +139,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
         row_df = pd.DataFrame([row], columns=columns)
         return row_df
 
-    results_list = Parallel(n_jobs=n_proc)(
+    results_list = Parallel(n_jobs=caps_config.dataloader.n_proc)(
         delayed(generate_hypometabolic_image)(subject_id)
         for subject_id in range(caps_config.data.n_subjects)
     )

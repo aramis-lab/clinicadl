@@ -1,43 +1,15 @@
 # coding: utf8
 
-import abc
 from logging import getLogger
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import torch
 import torchio as tio
 import torchvision.transforms as transforms
-from torch.utils.data import Dataset
 
-from clinicadl.prepare_data.prepare_data_config import (
-    PrepareDataConfig,
-    PrepareDataImageConfig,
-    PrepareDataPatchConfig,
-    PrepareDataROIConfig,
-    PrepareDataSliceConfig,
-)
-from clinicadl.prepare_data.prepare_data_utils import (
-    PATTERN_DICT,
-    TEMPLATE_DICT,
-    compute_discarded_slices,
-    compute_folder_and_file_type,
-    extract_patch_path,
-    extract_patch_tensor,
-    extract_roi_path,
-    extract_roi_tensor,
-    extract_slice_path,
-    extract_slice_tensor,
-    find_mask_path,
-)
-from clinicadl.utils.enum import Preprocessing, SliceDirection, SliceMode
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
 )
 
 logger = getLogger("clinicadl")
@@ -258,53 +230,3 @@ class SizeReduction(object):
             raise ClinicaDLConfigurationError(
                 "size_reduction_factor must be 2, 3, 4 or 5."
             )
-
-
-def get_transforms(
-    normalize: bool = True,
-    data_augmentation: Optional[List[str]] = None,
-    size_reduction: bool = False,
-    size_reduction_factor: int = 2,
-) -> Tuple[transforms.Compose, transforms.Compose]:
-    """
-    Outputs the transformations that will be applied to the dataset
-
-    Args:
-        normalize: if True will perform MinMaxNormalization.
-        data_augmentation: list of data augmentation performed on the training set.
-
-    Returns:
-        transforms to apply in train and evaluation mode / transforms to apply in evaluation mode only.
-    """
-    augmentation_dict = {
-        "Noise": RandomNoising(sigma=0.1),
-        "Erasing": transforms.RandomErasing(),
-        "CropPad": RandomCropPad(10),
-        "Smoothing": RandomSmoothing(),
-        "Motion": RandomMotion((2, 4), (2, 4), 2),
-        "Ghosting": RandomGhosting((4, 10)),
-        "Spike": RandomSpike(1, (1, 3)),
-        "BiasField": RandomBiasField(0.5),
-        "RandomBlur": RandomBlur((0, 2)),
-        "RandomSwap": RandomSwap(15, 100),
-        "None": None,
-    }
-
-    augmentation_list = []
-    transformations_list = []
-
-    if data_augmentation:
-        augmentation_list.extend(
-            [augmentation_dict[augmentation] for augmentation in data_augmentation]
-        )
-
-    transformations_list.append(NanRemoval())
-    if normalize:
-        transformations_list.append(MinMaxNormalization())
-    if size_reduction:
-        transformations_list.append(SizeReduction(size_reduction_factor))
-
-    all_transformations = transforms.Compose(transformations_list)
-    train_transformations = transforms.Compose(augmentation_list)
-
-    return train_transformations, all_transformations

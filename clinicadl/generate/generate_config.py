@@ -14,9 +14,6 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
-from clinicadl.config.config import ModalityConfig
-from clinicadl.preprocessing.config import PreprocessingConfig
 from clinicadl.utils.clinica_utils import (
     RemoteFileStructure,
     clinicadl_file_reader,
