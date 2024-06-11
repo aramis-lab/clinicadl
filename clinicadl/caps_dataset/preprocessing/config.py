@@ -5,7 +5,6 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.utils.enum import (
-    BIDSModality,
     DTIMeasure,
     DTISpace,
     Preprocessing,
@@ -16,42 +15,42 @@ from clinicadl.utils.enum import (
 logger = getLogger("clinicadl.modality_config")
 
 
-class ModalityConfig(BaseModel):
+class PreprocessingConfig(BaseModel):
     """
     Abstract config class for the validation procedure.
 
     """
 
     tsv_file: Optional[Path] = None
-    modality: BIDSModality
+    preprocessing: Preprocessing
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
 
-class PETModalityConfig(ModalityConfig):
+class PETPreprocessingConfig(PreprocessingConfig):
     tracer: Tracer = Tracer.FFDG
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.CEREBELLUMPONS2
-    modality: BIDSModality = BIDSModality.PET
+    preprocessing: Preprocessing = Preprocessing.PET_LINEAR
 
 
-class CustomModalityConfig(ModalityConfig):
+class CustomPreprocessingConfig(PreprocessingConfig):
     custom_suffix: str = ""
-    modality: BIDSModality = BIDSModality.CUSTOM
+    preprocessing: Preprocessing = Preprocessing.CUSTOM
 
 
-class DTIModalityConfig(ModalityConfig):
+class DTIPreprocessingConfig(PreprocessingConfig):
     dti_measure: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
     dti_space: DTISpace = DTISpace.ALL
-    modality: BIDSModality = BIDSModality.DTI
+    preprocessing: Preprocessing = Preprocessing.DWI_DTI
 
 
-class T1ModalityConfig(ModalityConfig):
-    modality: BIDSModality = BIDSModality.T1
+class T1PreprocessingConfig(PreprocessingConfig):
+    preprocessing: Preprocessing = Preprocessing.T1_LINEAR
 
 
-class FlairModalityConfig(ModalityConfig):
-    modality: BIDSModality = BIDSModality.FLAIR
+class FlairPreprocessingConfig(PreprocessingConfig):
+    preprocessing: Preprocessing = Preprocessing.FLAIR_LINEAR
 
 
 def return_mode_config(preprocessing: Preprocessing):
@@ -59,14 +58,14 @@ def return_mode_config(preprocessing: Preprocessing):
         preprocessing == Preprocessing.T1_EXTENSIVE
         or preprocessing == Preprocessing.T1_LINEAR
     ):
-        return T1ModalityConfig
+        return T1PreprocessingConfig
     elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETModalityConfig
+        return PETPreprocessingConfig
     elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairModalityConfig
+        return FlairPreprocessingConfig
     elif preprocessing == Preprocessing.CUSTOM:
-        return CustomModalityConfig
+        return CustomPreprocessingConfig
     elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIModalityConfig
+        return DTIPreprocessingConfig
     else:
         raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")

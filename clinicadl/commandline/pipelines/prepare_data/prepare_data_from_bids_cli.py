@@ -1,5 +1,5 @@
-
 import click
+
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
@@ -10,9 +10,6 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader, modality, preprocessing
-from clinicadl.utils.enum import ExtractionMethod
 
 
 @click.command(name="image", no_args_is_help=True)
@@ -20,17 +17,16 @@ from clinicadl.utils.enum import ExtractionMethod
 @arguments.caps_directory
 @arguments.modality_bids
 @dataloader.n_proc
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @modality.tracer
 @modality.suvr_reference_region
 @modality.custom_suffix
 @data.participants_tsv
 def image_bids_cli(kwargs):
-    
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.IMAGE,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -44,7 +40,7 @@ def image_bids_cli(kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @preprocessing.patch_size
 @preprocessing.stride_size
@@ -58,7 +54,7 @@ def patch_bids_cli(kwargs):
     """
     patch_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.PATCH,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -72,7 +68,7 @@ def patch_bids_cli(kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @preprocessing.slice_direction
 @preprocessing.slice_mode
@@ -88,7 +84,7 @@ def slice_bids_cli(kwargs):
 
     slice_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.SLICE,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -102,7 +98,7 @@ def slice_bids_cli(kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @preprocessing.roi_custom_mask_pattern
 @preprocessing.roi_custom_template
@@ -120,7 +116,7 @@ def roi_bids_cli(kwargs):
     """
     roi_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.ROI,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 

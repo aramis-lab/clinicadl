@@ -255,7 +255,7 @@ def get_labels(
     diagnoses: List of str
         Labels that must be extracted from merged_tsv.
     modality: str
-        Modality to select sessions. Sessions which do not include the modality will be excluded.
+        Preprocessing to select sessions. Sessions which do not include the modality will be excluded.
     restriction_path: str (path)
         Path to a tsv containing the sessions that can be included.
     variables_of_interest: List of str

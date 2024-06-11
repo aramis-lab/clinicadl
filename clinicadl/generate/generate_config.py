@@ -104,12 +104,12 @@ class GenerateSheppLoganConfig(BaseModel):
     cn_subtypes_distribution: Tuple[
         NonNegativeFloat, NonNegativeFloat, NonNegativeFloat
     ] = (1.0, 0.0, 0.0)
-    extract_json: Optional[str] = None
+    preprocessing_json: Optional[str] = None
     image_size: PositiveInt = 128
     smoothing: bool = False
 
-    @field_validator("extract_json", mode="before")
-    def compute_extract_json(cls, v: str):
+    @field_validator("preprocessing_json", mode="before")
+    def compute_preprocessing_json(cls, v: str):
         if v is None:
             return f"extract_{int(time())}.json"
         elif not v.endswith(".json"):

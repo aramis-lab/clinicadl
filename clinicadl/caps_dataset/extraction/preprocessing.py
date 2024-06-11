@@ -79,7 +79,7 @@ def write_preprocessing(
     extract_dir = caps_directory / "tensor_extraction"
     extract_dir.mkdir(parents=True, exist_ok=True)
 
-    json_path = extract_dir / preprocessing_dict["extract_json"]
+    json_path = extract_dir / preprocessing_dict["preprocessing_json"]
 
     if json_path.is_file():
         raise FileExistsError(

@@ -6,11 +6,11 @@ from clinicadl.config.config_utils import get_default_from_config_class as get_d
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 
-extract_json = click.option(
+preprocessing_json = click.option(
     "-ej",
-    "--extract_json",
-    type=get_type("extract_json", GenerateSheppLoganConfig),
-    default=get_default("extract_json", GenerateSheppLoganConfig),
+    "--preprocessing_json",
+    type=get_type("preprocessing_json", GenerateSheppLoganConfig),
+    default=get_default("preprocessing_json", GenerateSheppLoganConfig),
     help="Name of the JSON file created to describe the tensor extraction. "
     "Default will use format extract_{time_stamp}.json",
     show_default=True,

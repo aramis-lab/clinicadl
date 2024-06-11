@@ -12,6 +12,12 @@ from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
+from clinicadl.caps_dataset.extraction.config import (
+    ExtractionImageConfig,
+    ExtractionPatchConfig,
+    ExtractionROIConfig,
+    ExtractionSliceConfig,
+)
 from clinicadl.prepare_data.prepare_data_utils import (
     compute_discarded_slices,
     extract_patch_path,
@@ -21,12 +27,6 @@ from clinicadl.prepare_data.prepare_data_utils import (
     extract_slice_path,
     extract_slice_tensor,
     find_mask_path,
-)
-from clinicadl.preprocessing.config import (
-    PreprocessingImageConfig,
-    PreprocessingPatchConfig,
-    PreprocessingROIConfig,
-    PreprocessingSliceConfig,
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
@@ -372,14 +372,14 @@ class CapsDatasetPatch(CapsDataset):
         )
         image_path = self._get_image_path(participant, session, cohort)
 
-        if self.config.preprocessing.save_features:
+        if self.config.extraction.save_features:
             patch_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
                 image_path,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
+                self.config.extraction.patch_size,
+                self.config.extraction.stride_size,
                 patch_idx,
             )
             patch_tensor = torch.load(Path(patch_dir).resolve() / patch_filename)
@@ -388,8 +388,8 @@ class CapsDatasetPatch(CapsDataset):
             image = torch.load(image_path)
             patch_tensor = extract_patch_tensor(
                 image,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
+                self.config.extraction.patch_size,
+                self.config.extraction.stride_size,
                 patch_idx,
             )
 
@@ -418,26 +418,26 @@ class CapsDatasetPatch(CapsDataset):
         patches_tensor = (
             image.unfold(
                 1,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
+                self.config.extraction.patch_size,
+                self.config.extraction.stride_size,
             )
             .unfold(
                 2,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
+                self.config.extraction.patch_size,
+                self.config.extraction.stride_size,
             )
             .unfold(
                 3,
-                self.config.preprocessing.patch_size,
-                self.config.preprocessing.stride_size,
+                self.config.extraction.patch_size,
+                self.config.extraction.stride_size,
             )
             .contiguous()
         )
         patches_tensor = patches_tensor.view(
             -1,
-            self.config.preprocessing.patch_size,
-            self.config.preprocessing.patch_size,
-            self.config.preprocessing.patch_size,
+            self.config.extraction.patch_size,
+            self.config.extraction.patch_size,
+            self.config.extraction.patch_size,
         )
         num_patches = patches_tensor.shape[0]
         return num_patches
@@ -487,19 +487,19 @@ class CapsDatasetRoi(CapsDataset):
         participant, session, cohort, roi_idx, label, domain = self._get_meta_data(idx)
         image_path = self._get_image_path(participant, session, cohort)
 
-        if self.config.preprocessing.roi_list is None:
+        if self.config.extraction.roi_list is None:
             raise NotImplementedError(
                 "Default regions are not available anymore in ClinicaDL. "
                 "Please define appropriate masks and give a roi_list."
             )
 
-        if self.config.preprocessing.save_features:
+        if self.config.extraction.save_features:
             mask_path = self.mask_paths[roi_idx]
             roi_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(
-                image_path, mask_path, self.config.preprocessing.roi_uncrop_output
+                image_path, mask_path, self.config.extraction.roi_uncrop_output
             )
             roi_tensor = torch.load(Path(roi_dir) / roi_filename)
 
@@ -507,7 +507,7 @@ class CapsDatasetRoi(CapsDataset):
             image = torch.load(image_path)
             mask_array = self.mask_arrays[roi_idx]
             roi_tensor = extract_roi_tensor(
-                image, mask_array, self.config.preprocessing.uncropped_roi
+                image, mask_array, self.config.extraction.uncropped_roi
             )
 
         train_trf, trf = self.config.transforms.get_transforms()
@@ -530,10 +530,10 @@ class CapsDatasetRoi(CapsDataset):
     def num_elem_per_image(self):
         if self.elem_index is not None:
             return 1
-        if self.config.preprocessing.roi_list is None:
+        if self.config.extraction.roi_list is None:
             return 2
         else:
-            return len(self.config.preprocessing.roi_list)
+            return len(self.config.extraction.roi_list)
 
     def _get_mask_paths_and_tensors(
         self,
@@ -584,7 +584,7 @@ class CapsDatasetRoi(CapsDataset):
         mask_location = caps_directory / "masks" / f"tpl-{template_name}"
 
         mask_paths, mask_arrays = list(), list()
-        for roi in self.config.preprocessing.roi_list:
+        for roi in self.config.extraction.roi_list:
             logger.info(f"Find mask for roi {roi}.")
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
             if mask_path is None:
@@ -637,17 +637,17 @@ class CapsDatasetSlice(CapsDataset):
         participant, session, cohort, slice_idx, label, domain = self._get_meta_data(
             idx
         )
-        slice_idx = slice_idx + self.config.preprocessing.discarded_slices[0]
+        slice_idx = slice_idx + self.config.extraction.discarded_slices[0]
         image_path = self._get_image_path(participant, session, cohort)
 
-        if self.config.preprocessing.save_features:
+        if self.config.extraction.save_features:
             slice_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
                 image_path,
-                self.config.preprocessing.slice_direction,
-                self.config.preprocessing.slice_mode,
+                self.config.extraction.slice_direction,
+                self.config.extraction.slice_mode,
                 slice_idx,
             )
             slice_tensor = torch.load(Path(slice_dir) / slice_filename)
@@ -657,8 +657,8 @@ class CapsDatasetSlice(CapsDataset):
             image = torch.load(image_path)
             slice_tensor = extract_slice_tensor(
                 image,
-                self.config.preprocessing.slice_direction,
-                self.config.preprocessing.slice_mode,
+                self.config.extraction.slice_direction,
+                self.config.extraction.slice_mode,
                 slice_idx,
             )
 
@@ -683,14 +683,14 @@ class CapsDatasetSlice(CapsDataset):
         if self.elem_index is not None:
             return 1
 
-        if self.config.preprocessing.num_slices is not None:
-            return self.config.preprocessing.num_slices
+        if self.config.extraction.num_slices is not None:
+            return self.config.extraction.num_slices
 
         image = self._get_full_image()
         return (
-            image.size(int(self.config.preprocessing.slice_direction) + 1)
-            - self.config.preprocessing.discarded_slices[0]
-            - self.config.preprocessing.discarded_slices[1]
+            image.size(int(self.config.extraction.slice_direction) + 1)
+            - self.config.extraction.discarded_slices[0]
+            - self.config.extraction.discarded_slices[1]
         )
 
 
@@ -728,7 +728,6 @@ def return_dataset(
         )
 
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        preprocessing_type=preprocessing_dict["preprocessing"],
         preprocessing=preprocessing_dict["preprocessing"],
         extraction=preprocessing_dict["mode"],
         caps_directory=input_dir,
@@ -740,8 +739,8 @@ def return_dataset(
     config.transforms = transforms_config
 
     if preprocessing_dict["mode"] == "image":
-        config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.save_features = preprocessing_dict["prepare_dl"]
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetImage(
@@ -751,11 +750,11 @@ def return_dataset(
         )
 
     elif preprocessing_dict["mode"] == "patch":
-        assert isinstance(config.preprocessing, PreprocessingPatchConfig)
-        config.preprocessing.patch_size = preprocessing_dict["patch_size"]
-        config.preprocessing.stride_size = preprocessing_dict["stride_size"]
-        config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        assert isinstance(config.extraction, ExtractionPatchConfig)
+        config.extraction.patch_size = preprocessing_dict["patch_size"]
+        config.extraction.stride_size = preprocessing_dict["stride_size"]
+        config.extraction.save_features = preprocessing_dict["prepare_dl"]
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetPatch(
@@ -766,11 +765,11 @@ def return_dataset(
         )
 
     elif preprocessing_dict["mode"] == "roi":
-        assert isinstance(config.preprocessing, PreprocessingROIConfig)
-        config.preprocessing.roi_list = preprocessing_dict["roi_list"]
-        config.preprocessing.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
-        config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        assert isinstance(config.extraction, ExtractionROIConfig)
+        config.extraction.roi_list = preprocessing_dict["roi_list"]
+        config.extraction.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
+        config.extraction.save_features = preprocessing_dict["prepare_dl"]
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetRoi(
@@ -781,21 +780,21 @@ def return_dataset(
         )
 
     elif preprocessing_dict["mode"] == "slice":
-        assert isinstance(config.preprocessing, PreprocessingSliceConfig)
-        config.preprocessing.slice_direction = SliceDirection(
+        assert isinstance(config.extraction, ExtractionSliceConfig)
+        config.extraction.slice_direction = SliceDirection(
             str(preprocessing_dict["slice_direction"])
         )
-        config.preprocessing.slice_mode = SliceMode(preprocessing_dict["slice_mode"])
-        config.preprocessing.discarded_slices = compute_discarded_slices(
+        config.extraction.slice_mode = SliceMode(preprocessing_dict["slice_mode"])
+        config.extraction.discarded_slices = compute_discarded_slices(
             preprocessing_dict["discarded_slices"]
         )
-        config.preprocessing.num_slices = (
+        config.extraction.num_slices = (
             None
             if "num_slices" not in preprocessing_dict
             else preprocessing_dict["num_slices"]
         )
-        config.preprocessing.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.save_features = preprocessing_dict["prepare_dl"]
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetSlice(

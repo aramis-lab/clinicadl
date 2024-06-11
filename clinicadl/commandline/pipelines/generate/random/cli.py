@@ -50,7 +50,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
     caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.IMAGE,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 

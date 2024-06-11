@@ -6,7 +6,7 @@ import click
 import toml
 from click.core import ParameterSource
 
-from clinicadl.preprocessing.preprocessing import path_decoder
+from clinicadl.caps_dataset.extraction.preprocessing import path_decoder
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks

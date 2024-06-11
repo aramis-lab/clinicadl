@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
-from clinicadl.preprocessing.preprocessing import read_preprocessing
+from clinicadl.caps_dataset.extraction.preprocessing import read_preprocessing
 
 logger = getLogger("clinicadl.ssda_config")
 

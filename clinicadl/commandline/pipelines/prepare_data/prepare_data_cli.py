@@ -20,7 +20,7 @@ from clinicadl.utils.enum import ExtractionMethod
 @arguments.preprocessing
 @dataloader.n_proc
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @modality.tracer
 @modality.suvr_reference_region
@@ -37,7 +37,7 @@ def image_cli(**kwargs):
     kwargs["save_features"] = True
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.IMAGE,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -50,7 +50,7 @@ def image_cli(**kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @modality.tracer
 @modality.suvr_reference_region
@@ -69,7 +69,7 @@ def patch_cli(**kwargs):
 
     patch_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.PATCH,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -82,7 +82,7 @@ def patch_cli(**kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @modality.tracer
 @modality.suvr_reference_region
@@ -101,7 +101,7 @@ def slice_cli(**kwargs):
     """
     slice_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.SLICE,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -114,7 +114,7 @@ def slice_cli(**kwargs):
 @dataloader.n_proc
 @preprocessing.save_features
 @data.participants_tsv
-@preprocessing.extract_json
+@preprocessing.preprocessing_json
 @preprocessing.use_uncropped_image
 @modality.tracer
 @modality.suvr_reference_region
@@ -135,7 +135,7 @@ def roi_cli(**kwargs):
 
     roi_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.ROI,
-        preprocessing_type=kwargs["preprocessing"],
+        preprocessing=kwargs["preprocessing"],
         **kwargs,
     )
 

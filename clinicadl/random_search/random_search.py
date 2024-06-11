@@ -21,7 +21,7 @@ def launch_search(launch_directory: Path, job_name):
     # temporary, TODO
     options["tsv_directory"] = options["tsv_path"]
     options["maps_dir"] = maps_directory
-    options["preprocessing_json"] = options["preprocessing_dict"]["extract_json"]
+    options["preprocessing_json"] = options["preprocessing_dict"]["preprocessing_json"]
 
     ###
 

@@ -16,10 +16,10 @@ from urllib.request import Request, urlopen
 import pandas as pd
 
 from clinicadl.utils.enum import (
-    BIDSModality,
+    BIDSPreprocessing,
     DTIMeasure,
     DTISpace,
-    LinearModality,
+    LinearPreprocessing,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,
@@ -35,7 +35,7 @@ RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "che
 
 
 def bids_nii(
-    modality: Union[str, BIDSModality] = BIDSModality.T1,
+    modality: Union[str, BIDSPreprocessing] = BIDSPreprocessing.T1,
     tracer: Optional[Union[str, Tracer]] = None,
     reconstruction: Optional[str] = None,
 ) -> dict:
@@ -62,13 +62,13 @@ def bids_nii(
     """
 
     try:
-        modality = BIDSModality(modality)
+        modality = BIDSPreprocessing(modality)
     except ClinicaDLArgumentError:
         print(
-            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
+            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Preprocessing]}"
         )
 
-    if modality == BIDSModality.PET:
+    if modality == BIDSPreprocessing.PET:
         if tracer is not None:
             tracer = Tracer(tracer)
         trc = "" if tracer is None else f"_trc-{tracer.value}"
@@ -83,31 +83,33 @@ def bids_nii(
             "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
             "description": description,
         }
-    elif modality == BIDSModality.T1:
+    elif modality == BIDSPreprocessing.T1:
         return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
-    elif modality == BIDSModality.FLAIR:
+    elif modality == BIDSPreprocessing.FLAIR:
         return {
             "pattern": "sub-*_ses-*_flair.nii*",
             "description": "FLAIR T2w MRI",
         }
-    elif modality == BIDSModality.DWI:
+    elif modality == BIDSPreprocessing.DWI:
         return {
             "pattern": "dwi/sub-*_ses-*_dwi.nii*",
             "description": "DWI NIfTI",
         }
 
 
-def linear_nii(modality: Union[LinearModality, str], uncropped_image: bool) -> dict:
+def linear_nii(
+    modality: Union[LinearPreprocessing, str], uncropped_image: bool
+) -> dict:
     try:
-        modality = LinearModality(modality)
+        modality = LinearPreprocessing(modality)
     except ClinicaDLArgumentError:
         print(f"ClinicaDL is Unable to read this modality ({modality}) of images")
 
-    if modality == LinearModality.T1W:
+    if modality == LinearPreprocessing.T1W:
         needed_pipeline = Preprocessing.T1_LINEAR
-    elif modality == LinearModality.T2W:
+    elif modality == LinearPreprocessing.T2W:
         needed_pipeline = Preprocessing.T2_LINEAR
-    elif modality == LinearModality.FLAIR:
+    elif modality == LinearPreprocessing.FLAIR:
         needed_pipeline = Preprocessing.FLAIR_LINEAR
 
     if uncropped_image:

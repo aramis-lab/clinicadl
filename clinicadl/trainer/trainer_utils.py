@@ -76,12 +76,12 @@ def patch_to_read_json(config_dict):
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
     config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
-        "extract_json"
+        "preprocessing_json"
     ]
     if "label_code" not in config_dict or config_dict["label_code"] is None:
         config_dict["label_code"] = {}
     if "preprocessing_json" not in config_dict:
         config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][
-            "extract_json"
+            "preprocessing_json"
         ]
     return config_dict

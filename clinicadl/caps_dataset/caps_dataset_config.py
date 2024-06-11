@@ -4,55 +4,68 @@ from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.modality import (
-    CustomModalityConfig,
-    DTIModalityConfig,
-    FlairModalityConfig,
-    ModalityConfig,
-    PETModalityConfig,
-    T1ModalityConfig,
+from clinicadl.caps_dataset.extraction.config import (
+    ExtractionConfig,
+    ExtractionImageConfig,
+    ExtractionPatchConfig,
+    ExtractionROIConfig,
+    ExtractionSliceConfig,
 )
-from clinicadl.preprocessing import config as preprocessing
+from clinicadl.caps_dataset.extraction.preprocessing import read_preprocessing
+from clinicadl.caps_dataset.preprocessing.config import (
+    CustomPreprocessingConfig,
+    DTIPreprocessingConfig,
+    FlairPreprocessingConfig,
+    PETPreprocessingConfig,
+    PreprocessingConfig,
+    T1PreprocessingConfig,
+)
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
-def get_preprocessing(extract_method: ExtractionMethod):
+def get_extraction(extract_method: ExtractionMethod):
     if extract_method == ExtractionMethod.ROI:
-        return preprocessing.PreprocessingROIConfig
+        return ExtractionROIConfig
     elif extract_method == ExtractionMethod.SLICE:
-        return preprocessing.PreprocessingSliceConfig
+        return ExtractionSliceConfig
     elif extract_method == ExtractionMethod.IMAGE:
-        return preprocessing.PreprocessingImageConfig
+        return ExtractionImageConfig
     elif extract_method == ExtractionMethod.PATCH:
-        return preprocessing.PreprocessingPatchConfig
+        return ExtractionPatchConfig
     else:
-        raise ValueError(f"Modality {extract_method.value} is not implemented.")
+        raise ValueError(f"Preprocessing {extract_method.value} is not implemented.")
 
 
-def get_modality(preprocessing: Preprocessing):
+def get_preprocessing(preprocessing: Preprocessing):
     if (
         preprocessing == Preprocessing.T1_EXTENSIVE
         or preprocessing == Preprocessing.T1_LINEAR
     ):
-        return T1ModalityConfig
+        return T1PreprocessingConfig
     elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETModalityConfig
+        return PETPreprocessingConfig
     elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairModalityConfig
+        return FlairPreprocessingConfig
     elif preprocessing == Preprocessing.CUSTOM:
-        return CustomModalityConfig
+        return CustomPreprocessingConfig
     elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIModalityConfig
+        return DTIPreprocessingConfig
     else:
         raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
 
 
 class CapsDatasetBase(BaseModel):
+    """Config class to specify the CapsDataset.
+
+    caps_directory and preprocessing_json are arguments
+    that must be passed by the user.
+    """
+
     data: DataConfig
     dataloader: DataLoaderConfig
-    modality: ModalityConfig
-    preprocessing: preprocessing.PreprocessingConfig
+    preprocessing: PreprocessingConfig
+    extraction: ExtractionConfig
     transforms: Optional[TransformsConfig]
 
     # pydantic config
@@ -63,14 +76,58 @@ class CapsDatasetConfig(CapsDatasetBase):
     @classmethod
     def from_preprocessing_and_extraction_method(
         cls,
-        preprocessing_type: Union[str, Preprocessing],
+        preprocessing: Union[str, Preprocessing],
         extraction: Union[str, ExtractionMethod],
         **kwargs,
     ):
         return cls(
             data=DataConfig(**kwargs),
             dataloader=DataLoaderConfig(**kwargs),
-            modality=get_modality(Preprocessing(preprocessing_type))(**kwargs),
-            preprocessing=get_preprocessing(ExtractionMethod(extraction))(**kwargs),
+            preprocessing=get_preprocessing(Preprocessing(preprocessing))(**kwargs),
+            extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
             transforms=TransformsConfig(**kwargs),
         )
+
+    @classmethod
+    def from_preprocessing_json(
+        cls,
+        preprocessing_json: str,
+        **kwargs,
+    ):
+        preprocessing_dict = read_preprocessing(preprocessing_json)
+        preprocessing = preprocessing_dict["preprocessing"]
+        extraction = preprocessing_dict["mode"]
+        kwargs.update(preprocessing_dict)
+
+        return cls(
+            data=DataConfig(**kwargs),
+            dataloader=DataLoaderConfig(**kwargs),
+            preprocessing=get_preprocessing(Preprocessing(preprocessing))(**kwargs),
+            extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
+            transforms=TransformsConfig(**kwargs),
+        )
+
+    # @computed_field
+    # @property
+    # def preprocessing_dict(self) -> Dict[str, Any]:
+    #     """
+    #     Gets the preprocessing dictionary from a preprocessing json file.
+
+    #     Returns
+    #     -------
+    #     Dict[str, Any]
+    #         The preprocessing dictionary.
+
+    #     Raises
+    #     ------
+    #     ValueError
+    #         In case of multi-cohort dataset, if no preprocessing file is found in any CAPS.
+    #     """
+
+    #     if (
+    #         preprocessing_dict["mode"] == "roi"
+    #         and "roi_background_value" not in preprocessing_dict
+    #     ):
+    #         preprocessing_dict["roi_background_value"] = 0
+
+    #     return preprocessing_dict

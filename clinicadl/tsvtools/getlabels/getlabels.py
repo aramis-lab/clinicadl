@@ -411,7 +411,7 @@ def get_labels(
         missing_mods: Path to the folder where the outputs of clinica iotools check-missing-modalities are.
         results_path: Path to the folder where tsv files are extracted.
         diagnoses: Labels that must be extracted from merged_tsv.
-        modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
+        modality: Preprocessing to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path: Path to a tsv containing the sessions that can be included.
         time_horizon: Time horizon to analyse stability of MCI subjects.
         variables_of_interest: columns that should be kept in the output tsv files.

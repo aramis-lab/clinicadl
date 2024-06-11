@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
+from clinicadl.caps_dataset.extraction.preprocessing import write_preprocessing
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader
 from clinicadl.commandline.pipelines.generate.shepplogan import options as shepplogan
@@ -14,7 +15,6 @@ from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
     write_missing_mods,
 )
-from clinicadl.preprocessing.preprocessing import write_preprocessing
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 
 logger = getLogger("clinicadl.generate.shepplogan")
@@ -24,7 +24,7 @@ logger = getLogger("clinicadl.generate.shepplogan")
 @arguments.generated_caps_directory
 @data.n_subjects
 @dataloader.n_proc
-@shepplogan.extract_json
+@shepplogan.preprocessing_json
 @shepplogan.image_size
 @shepplogan.cn_subtypes_distribution
 @shepplogan.ad_subtypes_distribution
@@ -124,7 +124,7 @@ def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
         "mode": "slice",
         "use_uncropped_image": False,
         "prepare_dl": True,
-        "extract_json": generate_config.extract_json,
+        "preprocessing_json": generate_config.preprocessing_json,
         "slice_direction": 2,
         "slice_mode": "single",
         "discarded_slices": 0,

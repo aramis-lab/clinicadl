@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.enum import LinearPreprocessing, Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLException
 
 
@@ -34,7 +34,7 @@ class QCDataset(Dataset):
         self.img_dir = config.data.caps_directory
         self.df = config.data.data_df
         self.use_extracted_tensors = use_extracted_tensors
-        self.use_uncropped_image = config.preprocessing.use_uncropped_image
+        self.use_uncropped_image = config.extraction.use_uncropped_image
         self.config = config
 
         if ("session_id" not in list(self.df.columns.values)) or (
@@ -51,7 +51,7 @@ class QCDataset(Dataset):
             "preprocessing": Preprocessing.T1_LINEAR.value,
             "mode": "image",
             "use_uncropped_image": self.use_uncropped_image,
-            "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
+            "file_type": linear_nii(LinearPreprocessing.T1W, self.use_uncropped_image),
             "use_tensor": self.use_extracted_tensors,
         }
 
@@ -89,7 +89,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii(LinearModality.T1W, self.use_uncropped_image),
+                linear_nii(LinearPreprocessing.T1W, self.use_uncropped_image),
             )[0]
             image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)

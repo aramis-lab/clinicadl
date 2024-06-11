@@ -19,7 +19,7 @@ modality = click.option(
     "-mod",
     default="t1w",
     type=str,
-    help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
+    help="Preprocessing to select sessions. Sessions which do not include the modality will be excluded.",
 )
 no_mci_sub_categories = click.option(
     "--no_mci_sub_categories",
@@ -132,9 +132,9 @@ subjects_sessions_tsv = click.option(
     type=click.Path(exists=True, resolve_path=True, path_type=Path),
     help="TSV file containing a list of subjects with their sessions.",
 )
-extract_json = click.option(
+preprocessing_json = click.option(
     "-ej",
-    "--extract_json",
+    "--preprocessing_json",
     type=str,
     default=None,
     help="Name of the JSON file created to describe the tensor extraction. "

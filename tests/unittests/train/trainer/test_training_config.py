@@ -38,7 +38,7 @@ def test_data_config(caps_example):
         "mode": "image",
         "use_uncropped_image": False,
         "prepare_dl": False,
-        "extract_json": "t1-linear_mode-image.json",
+        "preprocessing_json": "t1-linear_mode-image.json",
         "file_type": {
             "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
@@ -83,7 +83,7 @@ def test_ssda_config(caps_example):
         "mode": "image",
         "use_uncropped_image": False,
         "prepare_dl": False,
-        "extract_json": "t1-linear_mode-image.json",
+        "preprocessing_json": "t1-linear_mode-image.json",
         "file_type": {
             "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",

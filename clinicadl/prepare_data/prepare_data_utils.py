@@ -8,7 +8,7 @@ import torch
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.utils.enum import (
-    LinearModality,
+    LinearPreprocessing,
     Preprocessing,
     SliceDirection,
     SliceMode,

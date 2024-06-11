@@ -69,7 +69,6 @@ def quality_check(
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         caps_directory=caps_dir,
         extraction=ExtractionMethod.IMAGE,
-        preprocessing_type=Preprocessing.T1_LINEAR,
         preprocessing=Preprocessing.T1_LINEAR,
         use_uncropped_image=use_uncropped_image,
         data_tsv=tsv_path,
