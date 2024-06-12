@@ -5,13 +5,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.utils.enum import (
-    LinearModality,
-    Preprocessing,
-    SliceDirection,
-    SliceMode,
-)
+from clinicadl.utils.enum import SliceDirection, SliceMode
 
 
 ############

@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.preprocessing.preprocessing import path_decoder
 
 
