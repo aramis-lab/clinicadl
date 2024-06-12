@@ -13,7 +13,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
+    extraction,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.artifacts import options as artifacts
@@ -34,11 +34,11 @@ logger = getLogger("clinicadl.generate.artifacts")
 @arguments.caps_directory
 @arguments.generated_caps_directory
 @dataloader.n_proc
-@preprocessing.preprocessing
-@preprocessing.use_uncropped_image
+@extraction.use_uncropped_image
 @data.participants_tsv
-@modality.tracer
-@modality.suvr_reference_region
+@preprocessing.tracer
+@preprocessing.preprocessing
+@preprocessing.suvr_reference_region
 @artifacts.contrast
 @artifacts.motion
 @artifacts.noise_std

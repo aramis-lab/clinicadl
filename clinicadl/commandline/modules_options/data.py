@@ -62,3 +62,11 @@ mask_path = click.option(
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",
     show_default=True,
 )
+preprocessing_json = click.option(
+    "-ej",
+    "--preprocessing_json",
+    type=get_type("preprocessing_json", DataConfig),
+    default=get_default("preprocessing_json", DataConfig),
+    help="Name of the JSON file created to describe the tensor extraction. "
+    "Default will use format extract_{time_stamp}.json",
+)

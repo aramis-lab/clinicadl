@@ -9,7 +9,7 @@ from nilearn.image import resample_to_img
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader, preprocessing
+from clinicadl.commandline.modules_options import data, dataloader, extraction
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
     options as hypometabolic,
 )
@@ -38,7 +38,7 @@ logger = getLogger("clinicadl.generate.hypometabolic")
 @dataloader.n_proc
 @data.participants_tsv
 @data.n_subjects
-@preprocessing.use_uncropped_image
+@extraction.use_uncropped_image
 @hypometabolic.sigma
 @hypometabolic.anomaly_degree
 @hypometabolic.pathology

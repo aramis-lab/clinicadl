@@ -4,7 +4,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
+    extraction,
     preprocessing,
 )
 
@@ -12,9 +12,9 @@ from clinicadl.commandline.modules_options import (
 @click.command(name="pet-linear", no_args_is_help=True)
 @arguments.caps_directory
 @arguments.results_tsv
-@modality.tracer
-@modality.suvr_reference_region
-@preprocessing.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
+@extraction.use_uncropped_image
 @data.participants_tsv
 @dataloader.n_proc
 @click.option(
