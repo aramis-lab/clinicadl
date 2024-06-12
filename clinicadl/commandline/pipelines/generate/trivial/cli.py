@@ -120,7 +120,6 @@ def cli(generated_caps_directory, **kwargs):
         if caps_config.data.mask_path is None:
             caps_config.data.mask_path = get_mask_path()
         path_to_mask = caps_config.data.mask_path / f"mask-{label + 1}.nii"
-        print(path_to_mask)
         if path_to_mask.is_file():
             atlas_to_mask = nib.loadsave.load(path_to_mask).get_fdata()
         else:
