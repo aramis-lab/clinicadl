@@ -136,5 +136,6 @@ def get_type_from_config_class(arg: str, config: BaseModel) -> Any:
         ):  # original type is something like Tuple[Optional[...]]
             type_ = get_args(type_)[0]
     if issubclass(type_, Enum):
-        return click.Choice([option.value for option in type_])
+        type_ = click.Choice(list([option.value for option in type_]))
+
     return type_

@@ -47,7 +47,7 @@ logger = getLogger("clinicadl.generate.artifacts")
 @artifacts.translation
 @artifacts.rotation
 @artifacts.gamma
-def cli(generated_caps_directory, n_proc, **kwargs):
+def cli(generated_caps_directory, **kwargs):
     """
     Addition of artifacts (noise, motion or contrast) to brain images
 
@@ -158,7 +158,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
 
         return row_df
 
-    results_df = Parallel(n_jobs=n_proc)(
+    results_df = Parallel(n_jobs=caps_config.dataloader.n_proc)(
         delayed(create_artifacts_image)(data_idx) for data_idx in range(len(data_df))
     )
     output_df = pd.DataFrame()

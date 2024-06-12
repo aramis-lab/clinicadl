@@ -245,7 +245,6 @@ class Pooling(str, Enum):  # TODO : put in model module
     MAXPOOLING = "MaxPooling"
     STRIDE = "stride"
 
-
 class ReconstructionMetric(str, Enum):  # TODO : put in metric module
     """Available reconstruction metrics in ClinicaDL."""
 
@@ -274,7 +273,6 @@ class RegressionMetric(str, Enum):  # TODO : put in metric module
     MAE = "MAE"
     RMSE = "RMSE"
     LOSS = "loss"
-
 
 class GenerateType(str, Enum):
     """Available generation pipelines in ClinicaDL."""

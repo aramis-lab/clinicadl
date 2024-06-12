@@ -6,12 +6,10 @@ from pydantic import BaseModel, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config import (
-    ComputationalConfig,
-    CrossValidationConfig,
-    MapsManagerConfig,
-    ValidationConfig,
-)
+from clinicadl.config.config.computational import ComputationalConfig
+from clinicadl.config.config.cross_validation import CrossValidationConfig
+from clinicadl.config.config.maps_manager import MapsManagerConfig
+from clinicadl.config.config.validation import ValidationConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.utils.enum import InterpretationMethod
 

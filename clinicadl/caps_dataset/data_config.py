@@ -12,7 +12,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
 )
-from clinicadl.utils.maps_manager.maps_manager import MapsManager
 
 logger = getLogger("clinicadl.data_config")
 
@@ -27,15 +26,16 @@ class DataConfig(BaseModel):  # TODO : put in data module
     caps_directory: Path
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
+    data_df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
-    label_code: Dict[str, int] = {}
+    label_code: Union[str, dict[str, int], None] = {}
     multi_cohort: bool = False
     mask_path: Optional[Path] = None
     preprocessing_json: Optional[Path] = None
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
     # pydantic config
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @field_validator("diagnoses", mode="before")
     def validator_diagnoses(cls, v):
@@ -43,11 +43,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
         if isinstance(v, list):
             return tuple(v)
         return v  # TODO : check if columns are in tsv
-
-    def adapt_data_with_maps_manager_info(self, maps_manager: MapsManager):
-        # TEMPORARY
-        if self.diagnoses is None or len(self.diagnoses) == 0:
-            self.diagnoses = maps_manager.diagnoses
 
     def create_groupe_df(self):
         group_df = None

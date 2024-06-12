@@ -36,7 +36,7 @@ def create_parameters_dict(config):
     parameters[
         "split"
     ] = []  # TODO : this is weird, see old ClinicaDL behavior (.pop("split") in task_launcher)
-    if len(config.data.label_code) == 0:
+    if config.data.label_code is None or len(config.data.label_code) == 0:
         if "label_code" in parameters:
             del parameters["label_code"]
 
@@ -64,6 +64,10 @@ def create_parameters_dict(config):
     if "mask_path" in parameters:  # and parameters["mask_path"] is False:
         del parameters["mask_path"]
 
+    if "data_df" in parameters:
+        del parameters["data_df"]
+    if "train_transformations" in parameters:
+        del parameters["train_transformations"]
     return parameters, maps_path
 
 
