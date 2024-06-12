@@ -108,29 +108,3 @@ class CapsDatasetConfig(CapsDatasetBase):
             extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
             transforms=TransformsConfig(**kwargs),
         )
-
-    @computed_field
-    @property
-    def preprocessing_dict(self) -> Dict[str, Any]:
-        """
-        Gets the preprocessing dictionary from a preprocessing json file.
-
-        Returns
-        -------
-        Dict[str, Any]
-            The preprocessing dictionary.
-
-        Raises
-        ------
-        ValueError
-            In case of multi-cohort dataset, if no preprocessing file is found in any CAPS.
-        """
-        preprocessing_dict = read_preprocessing(self.data.preprocessing_json)
-
-        if (
-            preprocessing_dict["mode"] == "roi"
-            and "roi_background_value" not in preprocessing_dict
-        ):
-            preprocessing_dict["roi_background_value"] = 0
-
-        return preprocessing_dict

@@ -1,3 +1,4 @@
+import time
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
@@ -109,7 +110,20 @@ class DataConfig(BaseModel):  # TODO : put in data module
 
     @computed_field
     @property
-    def check_preprocessing_json(self) -> Path:
+    def preprocessing_dict(self) -> Dict[str, Any]:
+        """
+        Gets the preprocessing dictionary from a preprocessing json file.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The preprocessing dictionary.
+
+        Raises
+        ------
+        ValueError
+            In case of multi-cohort dataset, if no preprocessing file is found in any CAPS.
+        """
         if not self.multi_cohort:
             preprocessing_json = (
                 self.caps_directory / "tensor_extraction" / self.preprocessing_json
@@ -131,7 +145,42 @@ class DataConfig(BaseModel):  # TODO : put in data module
                     f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
                     f"in {caps_dict}."
                 )
-        return preprocessing_json
+
+        preprocessing_dict = read_preprocessing(preprocessing_json)
+
+        if (
+            preprocessing_dict["mode"] == "roi"
+            and "roi_background_value" not in preprocessing_dict
+        ):
+            preprocessing_dict["roi_background_value"] = 0
+
+        return preprocessing_dict
+
+    # @computed_field
+    # @property
+    # def check_preprocessing_json(self) -> Path:
+    #     if not self.multi_cohort:
+    #         preprocessing_json = (
+    #             self.caps_directory / "tensor_extraction" / self.preprocessing_json
+    #         )
+    #     else:
+    #         caps_dict = self.caps_dict
+    #         json_found = False
+    #         for caps_name, caps_path in caps_dict.items():
+    #             preprocessing_json = (
+    #                 caps_path / "tensor_extraction" / self.preprocessing_json
+    #             )
+    #             if preprocessing_json.is_file():
+    #                 logger.info(
+    #                     f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+    #                 )
+    #                 json_found = True
+    #         if not json_found:
+    #             raise ValueError(
+    #                 f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
+    #                 f"in {caps_dict}."
+    #             )
+    #     return preprocessing_json
 
     @field_validator("preprocessing_json", mode="before")
     def compute_preprocessing_json(cls, v: str):
