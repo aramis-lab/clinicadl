@@ -49,8 +49,8 @@ def cli(generated_caps_directory, **kwargs):
     """
     kwargs["preprocessing"] = "pet-linear"
     caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.IMAGE,
-        preprocessing=Preprocessing.PET_LINEAR,
+        extraction_type=ExtractionMethod.IMAGE,
+        preprocessing_type=Preprocessing.PET_LINEAR,
         **kwargs,
     )
 

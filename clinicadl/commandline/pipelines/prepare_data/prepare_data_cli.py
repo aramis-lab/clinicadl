@@ -36,8 +36,8 @@ def image_cli(**kwargs):
     """
     kwargs["save_features"] = True
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.IMAGE,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -68,8 +68,8 @@ def patch_cli(**kwargs):
     """
 
     patch_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.PATCH,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.PATCH,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -134,8 +134,8 @@ def roi_cli(**kwargs):
     """
 
     roi_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.ROI,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.ROI,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 

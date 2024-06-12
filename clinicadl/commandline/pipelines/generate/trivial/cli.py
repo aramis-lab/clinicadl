@@ -48,8 +48,8 @@ def cli(generated_caps_directory, **kwargs):
     """Generation of a trivial dataset"""
 
     caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.IMAGE,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 

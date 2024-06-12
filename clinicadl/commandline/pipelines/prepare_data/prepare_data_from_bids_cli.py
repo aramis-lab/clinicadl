@@ -25,8 +25,8 @@ from clinicadl.utils.enum import ExtractionMethod
 @data.participants_tsv
 def image_bids_cli(kwargs):
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.IMAGE,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.IMAGE,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -53,8 +53,8 @@ def patch_bids_cli(kwargs):
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     patch_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.PATCH,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.PATCH,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -83,8 +83,8 @@ def slice_bids_cli(kwargs):
     """
 
     slice_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.SLICE,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.SLICE,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 
@@ -115,8 +115,8 @@ def roi_bids_cli(kwargs):
     MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
     """
     roi_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        extraction=ExtractionMethod.ROI,
-        preprocessing=kwargs["preprocessing"],
+        extraction_type=ExtractionMethod.ROI,
+        preprocessing_type=kwargs["preprocessing"],
         **kwargs,
     )
 

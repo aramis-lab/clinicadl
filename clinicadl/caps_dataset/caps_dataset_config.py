@@ -76,15 +76,17 @@ class CapsDatasetConfig(CapsDatasetBase):
     @classmethod
     def from_preprocessing_and_extraction_method(
         cls,
-        preprocessing: Union[str, Preprocessing],
-        extraction: Union[str, ExtractionMethod],
+        preprocessing_type: Union[str, Preprocessing],
+        extraction_type: Union[str, ExtractionMethod],
         **kwargs,
     ):
         return cls(
             data=DataConfig(**kwargs),
             dataloader=DataLoaderConfig(**kwargs),
-            preprocessing=get_preprocessing(Preprocessing(preprocessing))(**kwargs),
-            extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
+            preprocessing=get_preprocessing(Preprocessing(preprocessing_type))(
+                **kwargs
+            ),
+            extraction=get_extraction(ExtractionMethod(extraction_type))(**kwargs),
             transforms=TransformsConfig(**kwargs),
         )
 

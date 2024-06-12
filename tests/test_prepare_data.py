@@ -63,8 +63,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_image_flair")
 
         config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-            extraction=ExtractionMethod.IMAGE,
-            preprocessing=Preprocessing.T1_LINEAR,
+            extraction_type=ExtractionMethod.IMAGE,
+            preprocessing_type=Preprocessing.T1_LINEAR,
             caps_directory=tmp_out_dir / "caps_image",
         )
 
@@ -78,8 +78,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_patch_flair")
 
         config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-            extraction=ExtractionMethod.PATCH,
-            preprocessing=Preprocessing.T1_LINEAR,
+            extraction_type=ExtractionMethod.PATCH,
+            preprocessing_type=Preprocessing.T1_LINEAR,
             caps_directory=tmp_out_dir / "caps_patch",
         )
 
@@ -93,8 +93,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_slice_flair")
 
         config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-            extraction=ExtractionMethod.SLICE,
-            preprocessing=Preprocessing.T1_LINEAR,
+            extraction_type=ExtractionMethod.SLICE,
+            preprocessing_type=Preprocessing.T1_LINEAR,
             caps_directory=tmp_out_dir / "caps_slice",
         )
 
@@ -108,8 +108,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         shutil.copytree(input_caps_flair_directory, tmp_out_dir / "caps_roi_flair")
 
         config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-            extraction=ExtractionMethod.ROI,
-            preprocessing=Preprocessing.T1_LINEAR,
+            extraction_type=ExtractionMethod.ROI,
+            preprocessing_type=Preprocessing.T1_LINEAR,
             caps_directory=tmp_out_dir / "caps_image",
             roi_list=["rightHippocampusBox", "leftHippocampusBox"],
         )

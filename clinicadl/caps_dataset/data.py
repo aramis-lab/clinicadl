@@ -728,8 +728,8 @@ def return_dataset(
         )
 
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        preprocessing=preprocessing_dict["preprocessing"],
-        extraction=preprocessing_dict["mode"],
+        preprocessing_type=preprocessing_dict["preprocessing"],
+        extraction_type=preprocessing_dict["mode"],
         caps_directory=input_dir,
         data_df=data_df,
         label=label,
