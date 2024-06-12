@@ -2,6 +2,7 @@ import click
 
 from clinicadl.commandline import arguments
 
+
 @click.command(name="t1-volume", no_args_is_help=True)
 @arguments.caps_directory
 @arguments.output_directory
