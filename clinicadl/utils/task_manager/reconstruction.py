@@ -2,6 +2,7 @@ from torch import nn
 from torch.utils.data import sampler
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -102,7 +103,11 @@ class ReconstructionManager(TaskManager):
 
     @staticmethod
     def generate_sampler(
-        dataset, sampler_option="random", n_bins=5, dp_degree=None, rank=None
+        dataset: CapsDataset,
+        sampler_option="random",
+        n_bins=5,
+        dp_degree=None,
+        rank=None,
     ):
         df = dataset.df
 

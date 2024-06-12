@@ -5,11 +5,14 @@ from typing import Optional, Union
 from joblib import Parallel, delayed
 from torch import save as save_tensor
 
-from clinicadl.prepare_data.prepare_data_config import (
-    PrepareDataConfig,
-    PrepareDataPatchConfig,
-    PrepareDataROIConfig,
-    PrepareDataSliceConfig,
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
+from clinicadl.preprocessing.config import (
+    PreprocessingConfig,
+    PreprocessingImageConfig,
+    PreprocessingPatchConfig,
+    PreprocessingROIConfig,
+    PreprocessingSliceConfig,
 )
 from clinicadl.preprocessing.preprocessing import write_preprocessing
 from clinicadl.utils.clinica_utils import (
@@ -21,11 +24,11 @@ from clinicadl.utils.clinica_utils import (
 from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
+from .prepare_data_utils import check_mask_list
 
 
 def DeepLearningPrepareData(
-    config: PrepareDataConfig, from_bids: Optional[Path] = None
+    config: CapsDatasetConfig, from_bids: Optional[Path] = None
 ):
     logger = getLogger("clinicadl.prepare_data")
     # Get subject and session list
@@ -37,25 +40,25 @@ def DeepLearningPrepareData(
         logger.debug(f"BIDS directory: {input_directory}.")
         is_bids_dir = True
     else:
-        input_directory = config.caps_directory
+        input_directory = config.data.caps_directory
         check_caps_folder(input_directory)
         logger.debug(f"CAPS directory: {input_directory}.")
         is_bids_dir = False
 
     subjects, sessions = get_subject_session_list(
-        input_directory, config.tsv_file, is_bids_dir, False, None
+        input_directory, config.data.data_tsv, is_bids_dir, False, None
     )
 
-    if config.save_features:
+    if config.preprocessing.save_features:
         logger.info(
-            f"{config.extract_method.value}s will be extracted in Pytorch tensor from {len(sessions)} images."
+            f"{config.preprocessing.extract_method.value}s will be extracted in Pytorch tensor from {len(sessions)} images."
         )
     else:
         logger.info(
             f"Images will be extracted in Pytorch tensor from {len(sessions)} images."
         )
         logger.info(
-            f"Information for {config.extract_method.value} will be saved in output JSON file and will be used "
+            f"Information for {config.preprocessing.extract_method.value} will be saved in output JSON file and will be used "
             f"during training for on-the-fly extraction."
         )
     logger.debug(f"List of subjects: \n{subjects}.")
@@ -80,7 +83,7 @@ def DeepLearningPrepareData(
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
             output_file_dir = (
-                config.caps_directory
+                config.data.caps_directory
                 / container
                 / "deeplearning_prepare_data"
                 / subfolder
@@ -91,7 +94,10 @@ def DeepLearningPrepareData(
             save_tensor(tensor, output_file)
             logger.debug(f"Output tensor saved at {output_file}")
 
-    if config.extract_method == ExtractionMethod.IMAGE or not config.save_features:
+    if (
+        config.preprocessing.extract_method == ExtractionMethod.IMAGE
+        or not config.preprocessing.save_features
+    ):
 
         def prepare_image(file):
             from .prepare_data_utils import extract_images
@@ -103,117 +109,122 @@ def DeepLearningPrepareData(
             logger.debug("Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        Parallel(n_jobs=config.n_proc)(
+        Parallel(n_jobs=config.dataloader.n_proc)(
             delayed(prepare_image)(file) for file in input_files
         )
 
-    elif config.save_features:
-        if config.extract_method == ExtractionMethod.SLICE:
-            assert isinstance(config, PrepareDataSliceConfig)
+    elif config.preprocessing.save_features:
+        if config.preprocessing.extract_method == ExtractionMethod.SLICE:
+            assert isinstance(config.preprocessing, PreprocessingSliceConfig)
 
             def prepare_slice(file):
                 from .prepare_data_utils import extract_slices
 
+                assert isinstance(config.preprocessing, PreprocessingSliceConfig)
                 logger.debug(f"  Processing of {file}.")
                 container = container_from_filename(file)
                 subfolder = "slice_based"
                 output_mode = extract_slices(
                     Path(file),
-                    slice_direction=config.slice_direction,
-                    slice_mode=config.slice_mode,
-                    discarded_slices=config.discarded_slices,
+                    slice_direction=config.preprocessing.slice_direction,
+                    slice_mode=config.preprocessing.slice_mode,
+                    discarded_slices=config.preprocessing.discarded_slices,
                 )
                 logger.debug(f"    {len(output_mode)} slices extracted.")
                 write_output_imgs(output_mode, container, subfolder)
 
-            Parallel(n_jobs=config.n_proc)(
+            Parallel(n_jobs=config.dataloader.n_proc)(
                 delayed(prepare_slice)(file) for file in input_files
             )
 
-        elif config.extract_method == ExtractionMethod.PATCH:
-            assert isinstance(config, PrepareDataPatchConfig)
+        elif config.preprocessing.extract_method == ExtractionMethod.PATCH:
+            assert isinstance(config.preprocessing, PreprocessingPatchConfig)
 
             def prepare_patch(file):
                 from .prepare_data_utils import extract_patches
 
+                assert isinstance(config.preprocessing, PreprocessingPatchConfig)
                 logger.debug(f"  Processing of {file}.")
                 container = container_from_filename(file)
                 subfolder = "patch_based"
                 output_mode = extract_patches(
                     Path(file),
-                    patch_size=config.patch_size,
-                    stride_size=config.stride_size,
+                    patch_size=config.preprocessing.patch_size,
+                    stride_size=config.preprocessing.stride_size,
                 )
                 logger.debug(f"    {len(output_mode)} patches extracted.")
                 write_output_imgs(output_mode, container, subfolder)
 
-            Parallel(n_jobs=config.n_proc)(
+            Parallel(n_jobs=config.dataloader.n_proc)(
                 delayed(prepare_patch)(file) for file in input_files
             )
 
-        elif config.extract_method == ExtractionMethod.ROI:
-            assert isinstance(config, PrepareDataROIConfig)
+        elif config.preprocessing.extract_method == ExtractionMethod.ROI:
+            assert isinstance(config.preprocessing, PreprocessingROIConfig)
 
             def prepare_roi(file):
                 from .prepare_data_utils import extract_roi
 
+                assert isinstance(config.preprocessing, PreprocessingROIConfig)
                 logger.debug(f"  Processing of {file}.")
                 container = container_from_filename(file)
                 subfolder = "roi_based"
                 if config.preprocessing == Preprocessing.CUSTOM:
-                    if not config.roi_custom_template:
+                    if not config.preprocessing.roi_custom_template:
                         raise ClinicaDLArgumentError(
                             "A custom template must be defined when the modality is set to custom."
                         )
-                    roi_template = config.roi_custom_template
-                    roi_mask_pattern = config.roi_custom_mask_pattern
+                    roi_template = config.preprocessing.roi_custom_template
+                    roi_mask_pattern = config.preprocessing.roi_custom_mask_pattern
                 else:
-                    if config.preprocessing == Preprocessing.T1_LINEAR:
+                    if config.preprocessing.preprocessing == Preprocessing.T1_LINEAR:
                         roi_template = Template.T1_LINEAR
                         roi_mask_pattern = Pattern.T1_LINEAR
-                    elif config.preprocessing == Preprocessing.PET_LINEAR:
+                    elif config.preprocessing.preprocessing == Preprocessing.PET_LINEAR:
                         roi_template = Template.PET_LINEAR
                         roi_mask_pattern = Pattern.PET_LINEAR
-                    elif config.preprocessing == Preprocessing.FLAIR_LINEAR:
+                    elif (
+                        config.preprocessing.preprocessing == Preprocessing.FLAIR_LINEAR
+                    ):
                         roi_template = Template.FLAIR_LINEAR
                         roi_mask_pattern = Pattern.FLAIR_LINEAR
 
                 masks_location = input_directory / "masks" / f"tpl-{roi_template}"
 
-                if len(config.roi_list) == 0:
+                if len(config.preprocessing.roi_list) == 0:
                     raise ClinicaDLArgumentError(
                         "A list of regions of interest must be given."
                     )
                 else:
                     check_mask_list(
                         masks_location,
-                        config.roi_list,
+                        config.preprocessing.roi_list,
                         roi_mask_pattern,
-                        config.use_uncropped_image,
+                        config.preprocessing.use_uncropped_image,
                     )
 
                 output_mode = extract_roi(
                     Path(file),
                     masks_location=masks_location,
                     mask_pattern=roi_mask_pattern,
-                    cropped_input=not config.use_uncropped_image,
-                    roi_names=config.roi_list,
-                    uncrop_output=config.roi_uncrop_output,
+                    cropped_input=not config.preprocessing.use_uncropped_image,
+                    roi_names=config.preprocessing.roi_list,
+                    uncrop_output=config.preprocessing.roi_uncrop_output,
                 )
                 logger.debug("ROI extracted.")
                 write_output_imgs(output_mode, container, subfolder)
 
-            Parallel(n_jobs=config.n_proc)(
+            Parallel(n_jobs=config.dataloader.n_proc)(
                 delayed(prepare_roi)(file) for file in input_files
             )
 
     else:
         raise NotImplementedError(
-            f"Extraction is not implemented for mode {config.extract_method.value}."
+            f"Extraction is not implemented for mode {config.preprocessing.extract_method.value}."
         )
 
     # Save parameters dictionary
     preprocessing_json_path = write_preprocessing(
-        config.model_dump(), config.caps_directory
+        config.preprocessing.model_dump(), config.data.caps_directory
     )
     logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")

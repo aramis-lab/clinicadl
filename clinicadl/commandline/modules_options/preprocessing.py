@@ -92,8 +92,6 @@ discarded_slices = click.option(
         the end of the MRI volume.  If only one argument is given, it will be
         used for both sides.""",
 )
-
-
 roi_list = click.option(
     "--roi_list",
     type=get_type("roi_list", PreprocessingROIConfig),

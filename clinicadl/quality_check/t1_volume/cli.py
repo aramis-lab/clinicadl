@@ -1,16 +1,10 @@
-from pathlib import Path
-
 import click
 
-from clinicadl.utils import cli_param
-
+from clinicadl.commandline import arguments
 
 @click.command(name="t1-volume", no_args_is_help=True)
-@cli_param.argument.caps_directory
-@click.argument(
-    "output_directory",
-    type=click.Path(path_type=Path),
-)
+@arguments.caps_directory
+@arguments.output_directory
 @click.argument(
     "group_label",
     type=str,
