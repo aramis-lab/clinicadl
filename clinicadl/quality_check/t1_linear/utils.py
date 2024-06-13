@@ -3,6 +3,7 @@ Copied from https://github.com/vfonov/darq
 """
 
 from pathlib import Path
+from typing import Optional
 
 import nibabel as nib
 import torch
@@ -22,6 +23,7 @@ class QCDataset(Dataset):
         self,
         config: CapsDatasetConfig,
         use_extracted_tensors: bool = True,
+        custom_suffix: Optional[str] = None,
     ):
         """
         Args:
@@ -46,14 +48,27 @@ class QCDataset(Dataset):
             )
 
         self.normalization = MinMaxNormalization()
-
-        self.preprocessing_dict = {
-            "preprocessing": Preprocessing.T1_LINEAR.value,
-            "mode": "image",
-            "use_uncropped_image": self.use_uncropped_image,
-            "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
-            "use_tensor": self.use_extracted_tensors,
-        }
+        if custom_suffix:
+            self.custom_dict = {
+                "pattern": custom_suffix,
+                "description": "custom for mood",
+            }
+            self.preprocessing_dict = {
+                "preprocessing": Preprocessing.T1_LINEAR.value,
+                "mode": "image",
+                "use_uncropped_image": self.use_uncropped_image,
+                "file_type": self.custom_dict,
+                "use_tensor": self.use_extracted_tensors,
+            }
+        else:
+            self.custom_dict = None
+            self.preprocessing_dict = {
+                "preprocessing": Preprocessing.T1_LINEAR.value,
+                "mode": "image",
+                "use_uncropped_image": self.use_uncropped_image,
+                "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
+                "use_tensor": self.use_extracted_tensors,
+            }
 
     def __len__(self):
         return len(self.df)
@@ -89,7 +104,9 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii(LinearModality.T1W, self.use_uncropped_image),
+                self.custom_dict
+                if self.custom_dict
+                else linear_nii(LinearModality.T1W, self.use_uncropped_image),
             )[0]
             image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)

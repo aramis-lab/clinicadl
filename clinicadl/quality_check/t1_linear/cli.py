@@ -35,6 +35,11 @@ from clinicadl.commandline.modules_options import computational, data, dataloade
     is_flag=True,
     help="Flag allowing the pipeline to run on the extracted tensors and not on the nifti images",
 )
+@click.option(
+    "--custom_suffix",
+    type=str,
+    default=None,
+)
 def cli(
     caps_directory,
     results_tsv,
@@ -47,6 +52,7 @@ def cli(
     network,
     use_tensor,
     use_uncropped_image=True,
+    custom_suffix=None,
 ):
     """Performs quality check on t1-linear pipeline.
 
@@ -73,4 +79,5 @@ def cli(
         network=network,
         use_tensor=use_tensor,
         use_uncropped_image=use_uncropped_image,
+        custom_suffix=custom_suffix,
     )

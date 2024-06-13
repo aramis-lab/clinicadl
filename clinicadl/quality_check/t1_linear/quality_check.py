@@ -4,6 +4,7 @@ This file contains all methods needed to perform the quality check procedure aft
 
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import torch
@@ -27,7 +28,7 @@ logger = getLogger("clinicadl.quality-check")
 def quality_check(
     caps_dir: Path,
     output_path: Path,
-    tsv_path: Path = None,
+    tsv_path: Optional[Path] = None,
     threshold: float = 0.5,
     batch_size: int = 1,
     n_proc: int = 0,
@@ -36,6 +37,7 @@ def quality_check(
     network: str = "darq",
     use_tensor: bool = False,
     use_uncropped_image: bool = True,
+    custom_suffix: Optional[str] = None,
 ):
     """
     Performs t1-linear quality-check
@@ -143,7 +145,9 @@ def quality_check(
             tsv_path, caps_dict, output_path.resolve().parent
         )
 
-        dataset = QCDataset(config, use_extracted_tensors=use_tensor)
+        dataset = QCDataset(
+            config, use_extracted_tensors=use_tensor, custom_suffix=custom_suffix
+        )
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )
