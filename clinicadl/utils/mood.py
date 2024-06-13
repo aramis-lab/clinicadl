@@ -42,12 +42,12 @@ def mood_to_clinicadl(mood_path: Path, caps_path: Path, caps: bool = False):
         subject = "sub-" + subject_num
 
         if caps:
-            subject_path = caps_path / "subjects" / subject / session / "t1_linear"
-            filename = f"sub-{subject_num}_ses-M000_T1w.nii.gz"
+            subject_path = caps_path / "subjects" / subject / session / "custom"
+            filename = f"sub-{subject_num}_ses-M000_mood.nii.gz"
 
         else:
-            subject_path = caps_path / subject / session / "anat"
-            filename = f"sub-{subject_num}_ses-M000_T1w.nii.gz"
+            subject_path = caps_path / subject / session / "custom"
+            filename = f"sub-{subject_num}_ses-M000_mood.nii.gz"
 
         row_df = pd.DataFrame([[subject, session, diagnosis]], columns=columns)
         output_df = pd.concat([output_df, row_df])
