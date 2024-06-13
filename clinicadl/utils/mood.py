@@ -29,9 +29,9 @@ def mood_to_clinicadl(mood_path: Path, caps_path: Path, caps: bool = False):
     output_df = pd.DataFrame(columns=columns)
     session = "ses-M000"
     diagnosis = "CN"
-
     for mood_path in path_list:
-        subject = int(Path(mood_path.stem).stem.split("_")[1])
+        print(Path(mood_path.stem).stem.split("_"))
+        subject = int(Path(mood_path.stem).stem)
         if subject < 10:
             subject_num = "00" + str(subject)
         elif 10 <= subject < 100:
