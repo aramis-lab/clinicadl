@@ -1,3 +1,3 @@
-from .conv import ConvLayer
-from .norm import NormLayer
-from .pool import PoolLayer
+from .conv import get_conv_layer
+from .norm import get_norm_layer
+from .pool import get_pool_layer

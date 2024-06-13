@@ -1,20 +1,42 @@
-from enum import Enum
-
 import numpy as np
 import torch
 import torch.utils.model_zoo as model_zoo
 from torch import nn
 from torchvision.models.resnet import BasicBlock
 
-from clinicadl.network.pythae.nn.layers.factory import ConvLayer, NormLayer, PoolLayer
+from clinicadl.network.pythae.nn.layers.factory import (
+    get_conv_layer,
+    get_norm_layer,
+    get_pool_layer,
+)
 from clinicadl.network.pythae.nn.utils.resnet import ResNetDesigner, model_urls
+from clinicadl.utils.enum import BaseEnum
 
 # from clinicadl.network.pythae.nn.utils.resnet3D import ResNetDesigner3D
 # from clinicadl.network.pythae.nn.utils.SECNN import SECNNDesigner3D
 # from clinicadl.network.sub_network import CNN, CNN_SSDA
 
 
-class ImplementedCNN(str, Enum):
+class CNN2d(str, BaseEnum):
+    """Neural Networks compatible with 2D inputs."""
+
+    Conv5_FC3 = "Conv5_FC3"
+    Conv4_FC3 = "Conv4_FC3"
+    Stride_Conv5_FC3 = "Stride_Conv5_FC3"
+    RESNET = "resnet18"
+
+
+class CNN3d(str, BaseEnum):
+    """Neural Networks compatible with 3D inputs."""
+
+    Conv5_FC3 = "Conv5_FC3"
+    Conv4_FC3 = "Conv4_FC3"
+    Stride_Conv5_FC3 = "Stride_Conv5_FC3"
+
+
+class ImplementedCNN(str, BaseEnum):
+    """Implemented Neural Networks in ClinicaDL."""
+
     Conv5_FC3 = "Conv5_FC3"
     Conv4_FC3 = "Conv4_FC3"
     Stride_Conv5_FC3 = "Stride_Conv5_FC3"
@@ -28,16 +50,19 @@ class ImplementedCNN(str, Enum):
         )
 
 
+# Networks #
 class Conv5_FC3(nn.Module):
     """A Convolutional Neural Network with 5 convolution and 3 fully-connected layers."""
 
     def __init__(self, input_size, output_size, dropout):
-        dim = len(input_size) - 1
-        in_channels = input_size[1]
+        super().__init__()
 
-        conv = ConvLayer(dim)
-        norm = PoolLayer("PadMaxPool", dim=dim)
-        pool = NormLayer("BatchNorm", dim=dim)
+        dim = len(input_size) - 1
+        in_channels = input_size[0]
+
+        conv = get_conv_layer(dim)
+        pool = get_pool_layer("PadMaxPool", dim=dim)
+        norm = get_norm_layer("BatchNorm", dim=dim)
 
         self.convolutions = nn.Sequential(
             conv(in_channels, 8, 3, padding=1),
@@ -84,12 +109,14 @@ class Conv4_FC3(nn.Module):
     """A Convolutional Neural Network with 4 convolution and 3 fully-connected layers."""
 
     def __init__(self, input_size, output_size, dropout):
-        dim = len(input_size) - 1
-        in_channels = input_size[1]
+        super().__init__()
 
-        conv = ConvLayer(dim)
-        norm = PoolLayer("PadMaxPool", dim=dim)
-        pool = NormLayer("BatchNorm", dim=dim)
+        dim = len(input_size) - 1
+        in_channels = input_size[0]
+
+        conv = get_conv_layer(dim)
+        pool = get_pool_layer("PadMaxPool", dim=dim)
+        norm = get_norm_layer("BatchNorm", dim=dim)
 
         self.convolutions = nn.Sequential(
             conv(in_channels, 8, 3, padding=1),
@@ -136,11 +163,13 @@ class Stride_Conv5_FC3(nn.Module):
     """A Convolutional Neural Network with 5 convolution and 3 fully-connected layers and a stride of 2 for each convolutional layer."""
 
     def __init__(self, input_size, output_size, dropout):
-        dim = len(input_size) - 1
-        in_channels = input_size[1]
+        super().__init__()
 
-        conv = ConvLayer(dim)
-        norm = PoolLayer("PadMaxPool", dim=dim)
+        dim = len(input_size) - 1
+        in_channels = input_size[0]
+
+        conv = get_conv_layer(dim)
+        norm = get_norm_layer("BatchNorm", dim=dim)
 
         self.convolutions = nn.Sequential(
             conv(in_channels, 8, 3, padding=1, stride=2),
@@ -190,6 +219,8 @@ class resnet18(nn.Module):
     """
 
     def __init__(self, input_size, output_size, dropout):
+        super().__init__()
+
         model = ResNetDesigner(input_size, BasicBlock, [2, 2, 2, 2])
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
 
