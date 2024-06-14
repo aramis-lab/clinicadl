@@ -1,8 +1,7 @@
-from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
-from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
+from pydantic import computed_field, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config.validation import ValidationConfig as BaseValidationConfig

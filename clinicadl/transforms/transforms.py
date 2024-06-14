@@ -1,16 +1,12 @@
 # coding: utf8
 
 from logging import getLogger
-from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torchio as tio
-import torchvision.transforms as transforms
 
-from clinicadl.utils.exceptions import (
-    ClinicaDLConfigurationError,
-)
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 logger = getLogger("clinicadl")
 

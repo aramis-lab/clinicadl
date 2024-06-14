@@ -1,10 +1,10 @@
 from logging import getLogger
 from pathlib import Path
 from time import time
-from typing import Annotated, Any, Dict, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, field_validator
-from pydantic.types import NonNegativeInt, PositiveInt
+from pydantic.types import NonNegativeInt
 
 from clinicadl.utils.enum import (
     ExtractionMethod,
@@ -63,7 +63,7 @@ class PreprocessingSliceConfig(PreprocessingConfig):
 
 
 class PreprocessingROIConfig(PreprocessingConfig):
-    roi_list: list[str] = []
+    roi_list: List[str] = []
     roi_uncrop_output: bool = False
     roi_custom_template: str = ""
     roi_custom_pattern: str = ""

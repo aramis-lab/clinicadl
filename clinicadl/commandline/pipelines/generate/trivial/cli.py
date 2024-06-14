@@ -1,4 +1,3 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
 

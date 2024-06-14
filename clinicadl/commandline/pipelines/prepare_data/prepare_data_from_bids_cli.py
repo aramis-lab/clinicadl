@@ -1,5 +1,5 @@
-
 import click
+
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
@@ -9,9 +9,6 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
-from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader, modality, preprocessing
 from clinicadl.utils.enum import ExtractionMethod
 
 
@@ -27,7 +24,6 @@ from clinicadl.utils.enum import ExtractionMethod
 @modality.custom_suffix
 @data.participants_tsv
 def image_bids_cli(kwargs):
-    
     image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=ExtractionMethod.IMAGE,
         preprocessing_type=kwargs["preprocessing"],

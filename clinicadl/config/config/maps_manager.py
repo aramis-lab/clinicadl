@@ -1,4 +1,3 @@
-from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from typing import Optional
@@ -6,7 +5,6 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
-from clinicadl.utils.maps_manager.maps_manager import MapsManager  # type: ignore
 
 logger = getLogger("clinicadl.predict_config")
 

@@ -1,7 +1,6 @@
 import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
-from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.predict.config import PredictConfig
 
 # predict specific

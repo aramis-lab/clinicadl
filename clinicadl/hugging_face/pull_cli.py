@@ -1,9 +1,6 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.utils import cli_param
-from clinicadl.utils.maps_manager import MapsManager
 
 
 @click.command(name="pull", no_args_is_help=True)
