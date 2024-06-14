@@ -1,7 +1,5 @@
 from logging import getLogger
 
-from pydantic import BaseModel
-
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.maps_manager import (

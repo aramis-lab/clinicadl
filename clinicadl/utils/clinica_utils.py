@@ -4,7 +4,6 @@ import shutil
 import ssl
 import tempfile
 from collections import namedtuple
-from enum import Enum
 from functools import partial
 from glob import glob
 from pathlib import Path, PurePath

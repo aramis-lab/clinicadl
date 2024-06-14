@@ -1,4 +1,3 @@
-from enum import Enum
 from logging import getLogger
 from typing import Tuple
 

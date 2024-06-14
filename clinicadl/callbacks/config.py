@@ -1,13 +1,8 @@
-from abc import ABC, abstractmethod
-from enum import Enum
 from logging import getLogger
-from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, computed_field, field_validator
-from pydantic.types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+from pydantic import BaseModel, ConfigDict
 
-from clinicadl.caps_dataset.extraction.preprocessing import read_preprocessing
 from clinicadl.utils.enum import ExperimentTracking
 
 logger = getLogger("clinicadl.callbacks_config")

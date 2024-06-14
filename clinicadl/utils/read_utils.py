@@ -4,7 +4,6 @@ from typing import Optional, Tuple
 
 from clinicadl.utils.clinica_utils import (
     RemoteFileStructure,
-    clinicadl_file_reader,
     fetch_file,
 )
 from clinicadl.utils.enum import MaskChecksum, Pathology

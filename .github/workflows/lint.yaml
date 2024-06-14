@@ -2,9 +2,9 @@ name: 'Lint codebase'
 
 on:
   pull_request:
-    branches: [ dev ]
+    branches: [ "dev", "refactoring" ]
   push:
-    branches: [ dev ]
+    branches: [ "dev", "refactoring" ]
 
 permissions:
   contents: read

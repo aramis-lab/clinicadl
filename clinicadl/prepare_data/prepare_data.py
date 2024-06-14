@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from joblib import Parallel, delayed
 from torch import save as save_tensor

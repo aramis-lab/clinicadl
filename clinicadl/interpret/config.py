@@ -1,14 +1,10 @@
-from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
-from clinicadl.caps_dataset.data_utils import (
-    load_data_test,
-)
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.computational import ComputationalConfig
 from clinicadl.config.config.cross_validation import CrossValidationConfig

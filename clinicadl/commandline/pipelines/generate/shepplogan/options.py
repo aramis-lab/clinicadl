@@ -1,5 +1,3 @@
-from typing import get_args
-
 import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default

@@ -1,15 +1,11 @@
 # coding: utf8
 from pathlib import Path
-from time import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.utils.enum import (
-    LinearPreprocessing,
-    Preprocessing,
     SliceDirection,
     SliceMode,
 )

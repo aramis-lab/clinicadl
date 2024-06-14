@@ -2,7 +2,6 @@ import numpy as np
 
 from clinicadl.network.network_utils import *
 from clinicadl.network.sub_network import CNN
-from clinicadl.utils.enum import Normalization
 from clinicadl.utils.exceptions import ClinicaDLNetworksError
 
 
