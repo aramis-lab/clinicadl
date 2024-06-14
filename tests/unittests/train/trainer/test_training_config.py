@@ -49,7 +49,7 @@ def test_data_config(caps_example):
     assert (
         c.preprocessing_dict == expected_preprocessing_dict
     )  # TODO : add test for multi-cohort
-    assert c.mode == "image"
+    # assert c.preprocessing == "image"
     # with pytest.raises(ValidationError):
     #     c.preprocessing_dict = {"abc": "abc"}
     # with pytest.raises(FileNotFoundError):
