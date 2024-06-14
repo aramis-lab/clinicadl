@@ -1,6 +1,4 @@
 from logging import getLogger
-from pathlib import Path
-from time import time
 from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -8,7 +6,6 @@ from pydantic.types import NonNegativeInt
 
 from clinicadl.utils.enum import (
     ExtractionMethod,
-    Preprocessing,
     SliceDirection,
     SliceMode,
 )
@@ -49,9 +46,16 @@ class ExtractionSliceConfig(ExtractionConfig):
     discarded_slices: Tuple[NonNegativeInt, NonNegativeInt] = (0, 0)
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
+    @field_validator("discarded_slices", mode="before")
+    @classmethod
+    def list_to_tuples(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
+
 
 class ExtractionROIConfig(ExtractionConfig):
-    roi_list: list[str] = []
+    roi_list: List[str] = []
     roi_uncrop_output: bool = False
     roi_custom_template: str = ""
     roi_custom_pattern: str = ""

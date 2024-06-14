@@ -3,7 +3,6 @@
 import os
 import shutil
 import warnings
-from os import PathLike
 from os.path import join
 from pathlib import Path
 from typing import Any, Dict, List
@@ -130,8 +129,8 @@ def run_test_prepare_data(
     config.extraction.save_features = True
 
     for modality in modalities:
-        config.extraction.preprocessing = Preprocessing(modality)
-        config.extraction = get_preprocessing(Preprocessing(modality))()
+        config.preprocessing.preprocessing = Preprocessing(modality)
+        config.preprocessing = get_preprocessing(Preprocessing(modality))()
         if modality == "pet-linear":
             for acq in acquisition_label:
                 assert isinstance(config.extraction, PETPreprocessingConfig)

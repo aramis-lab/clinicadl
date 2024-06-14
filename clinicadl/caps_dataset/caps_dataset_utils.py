@@ -17,7 +17,9 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-    preprocessing = Preprocessing(config.extraction.preprocessing)  # replace("-", "_")
+    preprocessing = Preprocessing(
+        config.preprocessing.preprocessing
+    )  # replace("-", "_")
     if from_bids is not None:
         if preprocessing == Preprocessing.CUSTOM:
             mod_subfolder = Preprocessing.CUSTOM.value
@@ -31,7 +33,7 @@ def compute_folder_and_file_type(
 
     elif preprocessing not in Preprocessing:
         raise NotImplementedError(
-            f"Extraction of preprocessing {config.extraction.preprocessing.value} is not implemented from CAPS directory."
+            f"Extraction of preprocessing {config.preprocessing.preprocessing.value} is not implemented from CAPS directory."
         )
     else:
         mod_subfolder = preprocessing.value.replace("-", "_")
