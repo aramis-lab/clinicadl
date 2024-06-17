@@ -75,7 +75,7 @@ def pet_linear_nii(
     return information
 
 
-def container_from_filename(bids_or_caps_filename: Path) -> Path:
+def container_from_filename(bids_or_caps_filename: str) -> str:
     """Extract container from BIDS or CAPS file.
 
     Parameters
@@ -99,6 +99,8 @@ def container_from_filename(bids_or_caps_filename: Path) -> Path:
     import os
     import re
 
+    bids_or_caps_filename = Path(bids_or_caps_filename)
+
     m = re.search(r"(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)", bids_or_caps_filename)
     if not m:
         raise ValueError(
@@ -107,10 +109,12 @@ def container_from_filename(bids_or_caps_filename: Path) -> Path:
         )
     subject = m.group(1)
     session = m.group(2)
-    return Path("subjects") / subject / session
 
 
-def read_participant_tsv(tsv_file: Path) -> Tuple[List[str], List[str]]:
+    return f"subjects/{subject}/{session}"
+
+
+def read_participant_tsv(tsv_file: str) -> Tuple[List[str], List[str]]:
     """Extract participant IDs and session IDs from TSV file.
 
     Parameters
@@ -146,6 +150,8 @@ def read_participant_tsv(tsv_file: Path) -> Tuple[List[str], List[str]]:
 
     from clinicadl.utils.exceptions import ClinicaDLException
 
+    tsv_file = Path(tsv_file)
+
     try:
         df = pd.read_csv(tsv_file, sep="\t")
     except FileNotFoundError:
@@ -168,11 +174,11 @@ def read_participant_tsv(tsv_file: Path) -> Tuple[List[str], List[str]]:
 
 
 def get_subject_session_list(
-    input_dir: Path,
-    subject_session_file: Optional[Path] = None,
+    input_dir: str,
+    subject_session_file: Optional[str] = None,
     is_bids_dir: bool = True,
     use_session_tsv: bool = False,
-    tsv_dir: Optional[Path] = None,
+    tsv_dir: Optional[str] = None,
 ) -> Tuple[List[str], List[str]]:
     """Parse a BIDS or CAPS directory to get the subjects and sessions.
 
@@ -221,6 +227,8 @@ def get_subject_session_list(
     with e.g. clinicadl_file_reader_function.
     """
 
+    input_dir = Path(input_dir)
+
     if not subject_session_file:
         output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
@@ -234,12 +242,18 @@ def get_subject_session_list(
             use_session_tsv=use_session_tsv,
         )
 
+    if subjsect_session_file is not None:
+        subject_session_file = Path(subject_session_file)
+
+    if tsv_dir is not None: 
+        tsv_dir = Path(tsv_dir)
+
     return read_participant_tsv(subject_session_file)
 
 
 def create_subs_sess_list(
-    input_dir: Path,
-    output_dir: Path,
+    input_dir: str,
+    output_dir: str,
     file_name: str = None,
     is_bids_dir: bool = True,
     use_session_tsv: bool = False,
@@ -254,6 +268,9 @@ def create_subs_sess_list(
             not (i.e. a CAPS directory)
         use_session_tsv (boolean): Specify if the list uses the sessions listed in the sessions.tsv files
     """
+
+    input_dir = Path(input_dir)
+    output_dir = Path(output_dir)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -319,7 +336,7 @@ def insensitive_glob(pattern_glob: str, recursive: Optional[bool] = False) -> Li
     return glob(insensitive_pattern, recursive=recursive)
 
 
-def determine_caps_or_bids(input_dir: Path) -> bool:
+def determine_caps_or_bids(input_dir: str) -> bool:
     """Determine if the `input_dir` is a CAPS or a BIDS folder.
 
     Parameters
@@ -333,6 +350,9 @@ def determine_caps_or_bids(input_dir: Path) -> bool:
         True if `input_dir` is a BIDS folder, False if `input_dir`
         is a CAPS folder or could not be determined.
     """
+
+    input_dir = Path(input_dir)
+
     subjects_dir = input_dir / "subjects"
     groups_dir = input_dir / "groups"
 
@@ -343,7 +363,10 @@ def determine_caps_or_bids(input_dir: Path) -> bool:
     return len(subjects_sub_folders) > 0
 
 
-def _list_subjects_sub_folders(root_dir: Path, groups_dir: Path) -> List[Path]:
+def _list_subjects_sub_folders(root_dir: str, groups_dir: str) -> List[str]:
+
+    root_dir = Path(root_dir)
+    groups_dir = Path(groups_dir)
 
     warning_msg = (
         f"Could not determine if {groups_dir.parent} is a CAPS or BIDS directory. "
@@ -355,10 +378,11 @@ def _list_subjects_sub_folders(root_dir: Path, groups_dir: Path) -> List[Path]:
     ]
     if len(subjects_sub_folders) == 0 and not groups_dir.is_dir():
         cprint(msg=warning_msg, lvl="warning")
-    return subjects_sub_folders
+
+    return str(subjects_sub_folders)
 
 
-def _common_checks(directory: Path, folder_type: str) -> None:
+def _common_checks(directory: str, folder_type: str) -> None:
     """Utility function which performs checks common to BIDS and CAPS folder structures.
 
     Parameters
@@ -369,6 +393,8 @@ def _common_checks(directory: Path, folder_type: str) -> None:
     folder_type : {"BIDS", "CAPS"}
         The type of directory.
     """
+
+    directory = Path(directory)
 
     if not isinstance(directory, (Path, str)):
         raise ValueError(
@@ -386,7 +412,7 @@ def _common_checks(directory: Path, folder_type: str) -> None:
         )
 
 
-def check_bids_folder(bids_directory: Path) -> None:
+def check_bids_folder(bids_directory: str) -> None:
     """Check if provided `bids_directory` is a BIDS folder.
 
     Parameters
@@ -409,6 +435,8 @@ def check_bids_folder(bids_directory: Path) -> None:
         name starts with 'sub-'.
     """
 
+    bids_directory = Path(bids_directory)
+
     _common_checks(bids_directory, "BIDS")
 
     if (bids_directory / "subjects").is_dir():
@@ -430,7 +458,7 @@ def check_bids_folder(bids_directory: Path) -> None:
         )
 
 
-def check_caps_folder(caps_directory: Path) -> None:
+def check_caps_folder(caps_directory: str) -> None:
     """Check if provided `caps_directory`is a CAPS folder.
 
     Parameters
@@ -456,6 +484,8 @@ def check_caps_folder(caps_directory: Path) -> None:
     """
     from clinicadl.utils.exceptions import ClinicaDLCAPSError
 
+    caps_directory = Path(caps_directory)
+
     _common_checks(caps_directory, "CAPS")
 
     sub_folders = [f for f in caps_directory.iterdir() if f.name.startswith("sub-")]
@@ -475,7 +505,7 @@ def check_caps_folder(caps_directory: Path) -> None:
 
 
 def find_sub_ses_pattern_path(
-    input_directory: Path,
+    input_directory: str,
     subject: str,
     session: str,
     error_encountered: list,
@@ -520,6 +550,7 @@ def find_sub_ses_pattern_path(
     """
 
     input_directory = Path(input_directory)
+
     if is_bids:
         origin_pattern = input_directory / subject / session
     else:
@@ -559,7 +590,7 @@ def find_sub_ses_pattern_path(
         results.append(current_glob_found[0])
 
 
-def _are_multiple_runs(files: List[Path]) -> bool:
+def _are_multiple_runs(files: List[str]) -> bool:
     """Returns whether the files in the provided list only differ through their run number.
 
     The provided files must have exactly the same parent paths, extensions, and BIDS entities
@@ -575,6 +606,11 @@ def _are_multiple_runs(files: List[Path]) -> bool:
     bool :
         True if the provided files only differ through their run number, False otherwise.
     """
+
+    _files = files
+    files = []
+    for file in _files: 
+        files.append(Path(file))
 
     # Exit quickly if less than one file or if at least one file does not have the entity run
     if len(files) < 2 or any(["_run-" not in f.name for f in files]):
@@ -626,7 +662,7 @@ def get_filename_no_ext(filename: str) -> str:
     return stem
 
 
-def _get_entities(files: List[Path], common_suffix: str) -> dict:
+def _get_entities(files: List[str], common_suffix: str) -> dict:
     """Compute a dictionary where the keys are entity names and the values
     are sets of all the corresponding entity values found while iterating over
     the provided files.
@@ -648,6 +684,11 @@ def _get_entities(files: List[Path], common_suffix: str) -> dict:
 
     from collections import defaultdict
 
+    _files = files
+    files = []
+    for file in _files: 
+        files.append(Path(file))
+
     found_entities = defaultdict(set)
     # found_entities = dict()
     for f in files:
@@ -660,7 +701,7 @@ def _get_entities(files: List[Path], common_suffix: str) -> dict:
 
 
 def _check_common_properties_of_files(
-    files: List[Path],
+    files: List[str],
     property_name: str,
     property_extractor: Callable,
 ) -> str:
@@ -688,6 +729,12 @@ def _check_common_properties_of_files(
     ValueError :
         If the provided files do not have the same given property.
     """
+
+    _files = files
+    files = []
+    for file in _files: 
+        files.append(Path(file))
+
     extracted_properties = {property_extractor(f) for f in files}
     if len(extracted_properties) != 1:
         raise ValueError(
@@ -697,16 +744,18 @@ def _check_common_properties_of_files(
     return extracted_properties.pop()
 
 
-def _get_parent_path(filename: Path) -> str:
+def _get_parent_path(filename: str) -> str:
+    filename = Path(filename)
     return str(filename.parent)
 
 
-def _get_extension(filename: Path) -> str:
+def _get_extension(filename: str) -> str:
+    filename = Path(filename)
     return "".join(filename.suffixes)
 
 
-def _get_suffix(filename: Path) -> str:
-
+def _get_suffix(filename: str) -> str:
+    filename = Path(filename)
     return f"_{get_filename_no_ext(filename.name).split('_')[-1]}"
 
 
@@ -814,7 +863,7 @@ def _format_errors(errors: List, information: Dict) -> str:
 def clinicadl_file_reader(
     subjects: List[str],
     sessions: List[str],
-    input_directory: Path,
+    input_directory: str,
     information: Dict,
     raise_exception: Optional[bool] = True,
     n_procs: Optional[int] = 1,
@@ -954,6 +1003,8 @@ def clinicadl_file_reader(
     """
     from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
 
+    input_directory = Path(input_directory)
+
     _check_information(information)
     pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)
@@ -987,7 +1038,7 @@ def clinicadl_file_reader(
 
 
 def _read_files_parallel(
-    input_directory: Path,
+    input_directory: str,
     subjects: List[str],
     sessions: List[str],
     is_bids: bool,
@@ -997,6 +1048,8 @@ def _read_files_parallel(
     from multiprocessing import Manager
 
     from joblib import Parallel, delayed
+
+    input_directory = Path(input_directory)
 
     manager = Manager()
     shared_results = manager.list()
@@ -1019,13 +1072,15 @@ def _read_files_parallel(
 
 
 def _read_files_sequential(
-    input_directory: Path,
+    input_directory: str,
     subjects: List[str],
     sessions: List[str],
     is_bids: bool,
     pattern: str,
     **kwargs,
 ) -> Tuple[List[str], List[str]]:
+    input_direcotry = Path(input_directory)
+
     errors_encountered, results = [], []
     for sub, ses in zip(subjects, sessions):
         find_sub_ses_pattern_path(
@@ -1034,8 +1089,9 @@ def _read_files_sequential(
     return results, errors_encountered
 
 
-def _sha256(path: Path):
+def _sha256(path: str):
     """Calculate the sha256 hash of the file at path."""
+    path = Path(path)
     sha256hash = hashlib.sha256()
     chunk_size = 8192
     with open(path, "rb") as f:

@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
