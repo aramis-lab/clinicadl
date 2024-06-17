@@ -83,7 +83,7 @@ def compute_folder_and_file_type(
     elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
         file_type = {
-            "pattern": f"*{parameters['custom_suffix']}",
+            # "pattern": f"*{parameters['custom_suffix']}",
             "description": "Custom suffix",
         }
         parameters["use_uncropped_image"] = None
