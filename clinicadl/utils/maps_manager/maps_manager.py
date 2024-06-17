@@ -265,6 +265,7 @@ class MapsManager:
         save_latent_tensor: bool = False,
         pythae: bool = False,
         sample_latent: int = 0,
+        save_caps: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -316,14 +317,14 @@ class MapsManager:
             )
 
         criterion = self.task_manager.get_criterion(self.loss)
-        self._check_data_group(
-            data_group,
-            caps_directory,
-            group_df,
-            multi_cohort,
-            overwrite,
-            label=label,
-        )
+        # self._check_data_group(
+        #     data_group,
+        #     caps_directory,
+        #     group_df,
+        #     multi_cohort,
+        #     overwrite,
+        #     label=label,
+        # )
 
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -387,6 +388,7 @@ class MapsManager:
                         save_latent_tensor=save_latent_tensor,
                         sample_latent=sample_latent,
                         seed=self.parameters["seed"],
+                        save_caps=save_caps,
                     )
                     if not pythae: 
                         if save_tensor or save_nifti or save_latent_tensor or sample_latent:
@@ -398,6 +400,7 @@ class MapsManager:
                                 save_reconstruction_tensor=save_tensor,
                                 save_reconstruction_nifti=save_nifti,
                                 save_latent_tensor=save_latent_tensor,
+                                save_caps=save_caps,
                                 gpu=gpu,
                             )
             else:
@@ -437,6 +440,7 @@ class MapsManager:
                     save_latent_tensor=save_latent_tensor,
                     sample_latent=sample_latent,
                     seed=self.parameters["seed"],
+                    save_caps=save_caps,
                 )
                 if not pythae: 
                     if save_tensor or save_nifti or save_latent_tensor or sample_latent:
@@ -448,6 +452,7 @@ class MapsManager:
                             save_reconstruction_tensor=save_tensor,
                             save_reconstruction_nifti=save_nifti,
                             save_latent_tensor=save_latent_tensor,
+                            save_caps=save_caps,
                             gpu=gpu,
                         )
 
@@ -1036,6 +1041,7 @@ class MapsManager:
         save_latent_tensor=False,
         sample_latent=0,
         seed=None,
+        save_caps=False,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1107,6 +1113,16 @@ class MapsManager:
                 )
                 makedirs(latent_tensor_path, exist_ok=True)
 
+            caps_path = None
+            if save_caps: 
+                caps_path = path.join(
+                    self.maps_path, 
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    "CapsOutput", 
+                )
+                makedirs(caps_path, exist_ok=True)
+
             if for_pythae:
                 prediction_df, metrics, sample_latent_prediction_df, sample_latent_metrics_df = self.task_manager.test_pythae(
                     model, 
@@ -1116,9 +1132,11 @@ class MapsManager:
                     save_reconstruction_tensor=save_reconstruction_tensor,
                     save_reconstruction_nifti=save_reconstruction_nifti,
                     save_latent_tensor=save_latent_tensor,
+                    save_caps=save_caps,
                     tensor_path=tensor_path,
                     nifti_path=nifti_path,
                     latent_tensor_path=latent_tensor_path,
+                    caps_path=caps_path,
                     sample_latent=sample_latent,
                     seed=seed,
                 )
@@ -1220,6 +1238,7 @@ class MapsManager:
         save_reconstruction_tensor=True,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
+        save_caps=False,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1280,6 +1299,15 @@ class MapsManager:
                 )
                 makedirs(latent_tensor_path, exist_ok=True)
 
+            if save_caps:
+                caps_path = path.join(
+                    self.maps_path, 
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    "CapsOutput",
+                )
+                makedirs(caps_path, exist_ok=True)
+
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
@@ -1324,6 +1352,38 @@ class MapsManager:
                     )
                     torch.save(latent, path.join(latent_tensor_path, output_filename))
                 
+                if save_caps: 
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    latent = output["embedding"].squeeze(0).cpu()
+                    
+                    input_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                    )
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                    )
+                    latent_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                    )
+                    
+                    caps_sub_ses_path = path.join(
+                        caps_path, 
+                        "subjects", 
+                        participant_id, 
+                        session_id,
+                        "deeplearning_prepare_data", 
+                        f"{self.mode}-based", 
+                        "custom", 
+                    )
+
+                    makedirs(caps_sub_ses_path, exist_ok=True)
+
+                    torch.save(image, path.join(caps_sub_ses_path, input_filename))
+                    torch.save(reconstruction, path.join(caps_sub_ses_path, output_filename))
+                    torch.save(latent, path.join(latent_tensor_path, latent_filename))
+
+                    logger.debug(f"File saved at {[input_filename, output_filename, latent_filename]}")
+
                 if sample_latent > 0: 
                     data = dataset[i]
                     image = data["data"]
@@ -1338,30 +1398,31 @@ class MapsManager:
                         output = outputs[i]
                         
                         reconstruction = output["recon_x"].squeeze(0).cpu()
-                        input_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
-                        )
-                        output_filename = (
+                        output_pt_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
                         )
-                        torch.save(reconstruction, path.join(tensor_path, output_filename))
-                        logger.debug(f"File saved at {[input_filename, output_filename]}")
+                        torch.save(reconstruction, path.join(tensor_path, output_pt_filename))
+                        logger.debug(f"File saved at {output_pt_filename}")
                         
                         # Convert tensor to nifti image with appropriate affine
                         reconstruction = output["recon_x"].squeeze(0).cpu()
                         input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
                         output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
                         # Create file name according to participant and session id
-                        input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                        output_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
-                        nib.save(input_nii, path.join(nifti_path, input_filename))
-                        nib.save(output_nii, path.join(nifti_path, output_filename))
+                        input_nii_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                        output_nii_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                        nib.save(input_nii, path.join(nifti_path, input_nii_filename))
+                        nib.save(output_nii, path.join(nifti_path, output_nii_filename))
                         
                         latent = output["embedding"].squeeze(0).cpu()
-                        output_filename = (
+                        latent_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
                         )
-                        torch.save(latent, path.join(latent_tensor_path, output_filename))
+                        torch.save(latent, path.join(latent_tensor_path, latent_filename))
+
+                        if save_caps: 
+                            torch.save(reconstruction, path.join(caps_sub_ses_path, output_pt_filename))
+                            torch.save(latent, path.join(caps_sub_ses_path, latent_filename))
 
 
     def _ensemble_prediction(

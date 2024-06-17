@@ -11,6 +11,8 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.metric_module import MetricModule
 from clinicadl.utils.network.network import Network
 
+from os import makedirs
+
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
 # perform the task
@@ -175,9 +177,11 @@ class TaskManager:
         save_reconstruction_tensor=False,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
+        save_caps=False,
         tensor_path=None,
         nifti_path=None,
         latent_tensor_path=None,
+        caps_path=None,
         sample_latent=0,
         seed=None,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
@@ -225,11 +229,11 @@ class TaskManager:
                         input_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
                         )
-                        output_filename = (
+                        output_nii_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                         )
                         torch.save(image, path.join(tensor_path, input_filename))
-                        torch.save(reconstruction, path.join(tensor_path, output_filename))
+                        torch.save(reconstruction, path.join(tensor_path, output_nii_filename))
                     
                     # Save reconstruction nifti
                     if save_reconstruction_nifti:
@@ -238,17 +242,48 @@ class TaskManager:
                         output_nii = nib.Nifti1Image(reconstruction[0].numpy(), eye(4))
                         # Create file name according to participant and session id
                         input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                        output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                        output_nii_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
                         nib.save(input_nii, path.join(nifti_path, input_filename))
-                        nib.save(output_nii, path.join(nifti_path, output_filename))
+                        nib.save(output_nii, path.join(nifti_path, output_nii_filename))
                     
                     # Save latent tensor
                     if save_latent_tensor:
                         latent = outputs["embedding"][idx].squeeze(0).cpu()
-                        output_filename = (
+                        output_nii_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                         )
-                        torch.save(latent, path.join(latent_tensor_path, output_filename))
+                        torch.save(latent, path.join(latent_tensor_path, output_nii_filename))
+
+                    # Save as CAPS
+                    if save_caps: 
+                        reconstruction = outputs["recon_x"][idx].squeeze(0).cpu()
+                        latent = outputs["embedding"][idx].squeeze(0).cpu()
+                        
+                        input_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        )
+                        output_nii_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        )
+                        latent_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                        )
+                        
+                        caps_sub_ses_path = path.join(
+                            caps_path, 
+                            "subjects", 
+                            participant_id, 
+                            session_id,
+                            "deeplearning_prepare_data", 
+                            f"{self.mode}-based", 
+                            "custom", 
+                        )
+
+                        makedirs(caps_sub_ses_path, exist_ok=True)
+
+                        torch.save(image, path.join(caps_sub_ses_path, input_filename))
+                        torch.save(reconstruction, path.join(caps_sub_ses_path, output_nii_filename))
+                        # torch.save(latent, path.join(latent_tensor_path, latent_filename))
                         
                     if sample_latent > 0: 
                         
@@ -261,23 +296,27 @@ class TaskManager:
                             reconstruction = output["recon_x"].squeeze(0).cpu()
 
                             if save_reconstruction_tensor:
-                                output_filename = (
+                                output_pt_filename = (
                                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
                                 )
-                                torch.save(reconstruction, path.join(tensor_path, output_filename))
+                                torch.save(reconstruction, path.join(tensor_path, output_pt_filename))
                             
                             if save_reconstruction_nifti:
                                 output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
                                 # Create file name according to participant and session id
-                                output_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
-                                nib.save(output_nii, path.join(nifti_path, output_filename))
+                                output_nii_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                                nib.save(output_nii, path.join(nifti_path, output_nii_filename))
                                 
                             if save_latent_tensor:
                                 latent = output["embedding"].squeeze(0).cpu()
-                                output_filename = (
+                                latent_filename = (
                                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
                                 )
-                                torch.save(latent, path.join(latent_tensor_path, output_filename))
+                                torch.save(latent, path.join(latent_tensor_path, latent_filename))
+
+                            if save_caps: 
+                                torch.save(reconstruction, path.join(caps_sub_ses_path, output_pt_filename))
+                                torch.save(latent, path.join(caps_sub_ses_path, latent_filename))
                             
                             row = self.generate_test_row_sample_latent(idx, i, data, output["recon_x"])
                             row_df = pd.DataFrame(row, columns=sample_latent_results_df.columns)

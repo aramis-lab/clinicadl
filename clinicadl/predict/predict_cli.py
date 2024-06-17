@@ -85,6 +85,13 @@ from pathlib import Path
     help="""For reconstruction task only, will sample the latent space multiple times to generate
     multiple reconstructions for a single input.""",
 )
+@click.option(
+    "--save_caps",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the reconstruction input and output in the MAPS in Pytorch tensor format in a CAPS.",
+)
 @cli_param.option.split
 @cli_param.option.selection_metrics
 @cli_param.option.use_gpu
@@ -110,6 +117,7 @@ def cli(
     save_nifti,
     save_latent_tensor,
     sample_latent,
+    save_caps,
 ):
     """Infer the outputs of a trained model on a test set.
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
@@ -141,4 +149,5 @@ def cli(
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
         sample_latent=sample_latent,
+        save_caps=save_caps,
     )
