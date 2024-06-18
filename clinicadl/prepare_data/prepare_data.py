@@ -224,9 +224,9 @@ def DeepLearningPrepareData(
         )
 
     # Save parameters dictionary
-    parameters_dict = config.preprocessing.model_dump().update(
-        config.extraction.model_dump()
-    )
+    parameters_dict = config.preprocessing.model_dump()
+    parameters_dict.update(config.extraction.model_dump())
+    parameters_dict["preprocessing_json"] = config.data.preprocessing_json
     preprocessing_json_path = write_preprocessing(
         parameters_dict, config.data.caps_directory
     )

@@ -133,9 +133,11 @@ def run_test_prepare_data(
         config.preprocessing = get_preprocessing(Preprocessing(modality))()
         if modality == "pet-linear":
             for acq in acquisition_label:
-                assert isinstance(config.extraction, PETPreprocessingConfig)
-                config.extraction.tracer = Tracer(acq)
-                config.extraction.suvr_reference_region = SUVRReferenceRegions("pons2")
+                assert isinstance(config.preprocessing, PETPreprocessingConfig)
+                config.preprocessing.tracer = Tracer(acq)
+                config.preprocessing.suvr_reference_region = SUVRReferenceRegions(
+                    "pons2"
+                )
                 config.extraction.use_uncropped_image = False
                 config.data.preprocessing_json = (
                     f"{modality}-{acq}_mode-{test_name}.json"
