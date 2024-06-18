@@ -5,6 +5,40 @@ from pathlib import Path
 from typing import Any, Dict
 
 
+def change_path_to_str(obj: dict, key: str, value) -> dict:
+    if (
+        key.endswith("tsv")
+        or key.endswith("dir")
+        or key.endswith("directory")
+        or key.endswith("path")
+        or key.endswith("json")
+        or key.endswith("location")
+    ):
+        if not value:
+            obj[key] = ""
+        elif isinstance(value, Path):
+            obj[key] = value.as_posix()
+
+    return obj
+
+
+def change_str_to_path(obj: dict, key: str, value):
+    if (
+        key.endswith("tsv")
+        or key.endswith("dir")
+        or key.endswith("directory")
+        or key.endswith("path")
+        or key.endswith("json")
+        or key.endswith("location")
+    ):
+        if value == "" or value is False or value is None:
+            obj[key] = False
+        else:
+            obj[key] = Path(value)
+
+    return obj
+
+
 def path_encoder(obj):
     if isinstance(obj, Path):
         return str(obj)
@@ -12,31 +46,9 @@ def path_encoder(obj):
         for key, value in obj.items():
             if isinstance(value, dict):
                 for key2, value2 in value.items():
-                    if (
-                        key2.endswith("tsv")
-                        or key2.endswith("dir")
-                        or key2.endswith("directory")
-                        or key2.endswith("path")
-                        or key2.endswith("json")
-                        or key2.endswith("location")
-                    ):
-                        if not value2:
-                            obj[value][key2] = ""
-                        elif isinstance(value2, Path):
-                            obj[value][key2] = value2.as_posix()
+                    change_path_to_str(obj, key2, value2)
             else:
-                if (
-                    key.endswith("tsv")
-                    or key.endswith("dir")
-                    or key.endswith("directory")
-                    or key.endswith("path")
-                    or key.endswith("json")
-                    or key.endswith("location")
-                ):
-                    if not value:
-                        obj[key] = ""
-                    elif isinstance(value, Path):
-                        obj[key] = value.as_posix()
+                change_path_to_str(obj, key, value)
     return obj
 
 
@@ -46,31 +58,9 @@ def path_decoder(obj):
         for key, value in obj2.items():
             if isinstance(value, dict):
                 for key2, value2 in value.items():
-                    if (
-                        key2.endswith("tsv")
-                        or key2.endswith("dir")
-                        or key2.endswith("directory")
-                        or key2.endswith("path")
-                        or key2.endswith("json")
-                        or key2.endswith("location")
-                    ):
-                        if value2 == "" or value2 is False:
-                            obj[key][key2] = False
-                        else:
-                            obj[key][key2] = Path(value2)
-            elif (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if value == "" or value is False or value is None:
-                    obj[key] = False
-                else:
-                    obj[key] = Path(value)
-    return obj
+                    change_str_to_path(obj, key2, value2)
+            else:
+                change_str_to_path(obj, key, value)
 
 
 def write_preprocessing(
@@ -93,7 +83,7 @@ def write_preprocessing(
 
 
 def read_preprocessing(json_path: Path) -> Dict[str, Any]:
-    if not json_path.suffix == ".json":
+    if json_path.suffix != ".json":
         json_path = json_path.with_suffix(".json")
 
     if not json_path.is_file():
