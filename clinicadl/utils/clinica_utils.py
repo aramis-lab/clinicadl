@@ -13,7 +13,9 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd
+from pydantic import BaseModel
 
+from clinicadl.caps_dataset.preprocessing import config as preprocessing_config
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -33,11 +35,16 @@ from clinicadl.utils.logger import cprint
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
 
 
+class FileType(BaseModel):
+    pattern: Path
+    description: str
+    needed_pipeline: Optional[str] = None
+
+
 def bids_nii(
-    modality: Union[str, ImageModality] = ImageModality.T1,
-    tracer: Optional[Union[str, Tracer]] = None,
+    config: preprocessing_config.PreprocessingConfig,
     reconstruction: Optional[str] = None,
-) -> dict:
+) -> FileType:
     """Return the query dict required to capture PET scans.
 
     Parameters
@@ -60,124 +67,127 @@ def bids_nii(
         The query dictionary to get PET scans.
     """
 
-    try:
-        modality = ImageModality(modality)
-    except ClinicaDLArgumentError:
-        print(
-            f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
+    if config.preprocessing not in Preprocessing:
+        raise ClinicaDLArgumentError(
+            f"ClinicaDL is Unable to read this modality ({config.preprocessing}) of images, please chose one from this list: {list[Preprocessing]}"
         )
 
-    if modality == ImageModality.PET:
-        if tracer is not None:
-            tracer = Tracer(tracer)
-        trc = "" if tracer is None else f"_trc-{tracer.value}"
+    if isinstance(config, preprocessing_config.PETPreprocessingConfig):
+        trc = "" if config.tracer is None else f"_trc-{Tracer(config.tracer).value}"
         rec = "" if reconstruction is None else f"_rec-{reconstruction}"
         description = "PET data"
-        if tracer:
-            description += f" with {tracer.value} tracer"
+
+        if config.tracer:
+            description += f" with {config.tracer.value} tracer"
         if reconstruction:
             description += f" and reconstruction method {reconstruction}"
 
-        return {
-            "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
-            "description": description,
-        }
-    elif modality == ImageModality.T1:
-        return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
-    elif modality == ImageModality.FLAIR:
-        return {
-            "pattern": "sub-*_ses-*_flair.nii*",
-            "description": "FLAIR T2w MRI",
-        }
-    elif modality == ImageModality.DWI:
-        return {
-            "pattern": "dwi/sub-*_ses-*_dwi.nii*",
-            "description": "DWI NIfTI",
-        }
+        file_type = FileType(
+            pattern=Path("pet") / f"*{trc}{rec}_pet.nii*", description=description
+        )
+        return file_type
+
+    elif isinstance(config, preprocessing_config.T1PreprocessingConfig):
+        return FileType(
+            pattern=Path("anat") / "sub-*_ses-*_T1w.nii*", description="T1w MRI"
+        )
+
+    elif isinstance(config, preprocessing_config.FlairPreprocessingConfig):
+        return FileType(
+            pattern=Path("sub-*_ses-*_flair.nii*"), description="FLAIR T2w MRI"
+        )
+
+    elif isinstance(config, preprocessing_config.DTIPreprocessingConfig):
+        return FileType(
+            pattern=Path("dwi") / "sub-*_ses-*_dwi.nii*", description="DWI NIfTI"
+        )
+
+    else:
+        raise ClinicaDLArgumentError("Invalid preprocessing")
 
 
-def linear_nii(modality: Union[LinearModality, str], uncropped_image: bool) -> dict:
-    try:
-        modality = LinearModality(modality)
-    except ClinicaDLArgumentError:
-        print(f"ClinicaDL is Unable to read this modality ({modality}) of images")
-
-    if modality == LinearModality.T1W:
+def linear_nii(
+    config: preprocessing_config.PreprocessingConfig,
+) -> FileType:
+    if isinstance(config, preprocessing_config.T1PreprocessingConfig):
         needed_pipeline = Preprocessing.T1_LINEAR
-    elif modality == LinearModality.T2W:
+        modality = LinearModality.T1W
+    elif isinstance(config, preprocessing_config.T2PreprocessingConfig):
         needed_pipeline = Preprocessing.T2_LINEAR
-    elif modality == LinearModality.FLAIR:
+        modality = LinearModality.T2W
+    elif isinstance(config, preprocessing_config.FlairPreprocessingConfig):
         needed_pipeline = Preprocessing.FLAIR_LINEAR
+        modality = LinearModality.FLAIR
+    else:
+        raise ClinicaDLArgumentError("Invalid configuration")
 
-    if uncropped_image:
+    if config.use_uncropped_image:
         desc_crop = ""
     else:
         desc_crop = "_desc-Crop"
 
-    information = {
-        "pattern": f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
-        "description": f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
+    file_type = FileType(
+        pattern=Path(
+            f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz"
+        ),
+        description=f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
         + (
             ""
-            if uncropped_image
+            if config.use_uncropped_image
             else "and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
         ),
-        "needed_pipeline": needed_pipeline,
-    }
-    return information
+        needed_pipeline=needed_pipeline,
+    )
+    return file_type
 
 
-def dwi_dti(
-    measure: Union[str, DTIMeasure], space: Union[str, DTISpace] = None
-) -> dict:
+def dwi_dti(config: preprocessing_config.DTIPreprocessingConfig) -> FileType:
     """Return the query dict required to capture DWI DTI images.
 
     Parameters
     ----------
-    measure : DTIBasedMeasure or str
-        The DTI based measure to consider.
-
-    space : str, optional
-        The space to consider.
-        By default, all spaces are considered (i.e. '*' is used in regexp).
+    config: DTIPreprocessingConfig
 
     Returns
     -------
-    dict :
-        The query dictionary to get DWI DTI images.
+    FileType :
     """
-    measure = DTIMeasure(measure)
-    space = DTISpace(space)
+    if isinstance(config, preprocessing_config.DTIPreprocessingConfig):
+        measure = config.dti_measure
+        space = config.dti_space
+    else:
+        raise ClinicaDLArgumentError(
+            f"PreprocessingConfig is of type {config} but should be of type{preprocessing_config.DTIPreprocessingConfig}"
+        )
 
-    return {
-        "pattern": f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
-        "description": f"DTI-based {measure.value} in space {space}.",
-        "needed_pipeline": "dwi_dti",
-    }
+    return FileType(
+        pattern=Path("dwi")
+        / "dti_based_processing"
+        / "*"
+        / f"*_space-{space}_{measure.value}.nii.gz",
+        description=f"DTI-based {measure.value} in space {space}.",
+        needed_pipeline="dwi_dti",
+    )
 
 
-def pet_linear_nii(
-    tracer: Union[str, Tracer],
-    suvr_reference_region: Union[str, SUVRReferenceRegions],
-    uncropped_image: bool,
-) -> dict:
-    tracer = Tracer(tracer)
-    suvr_reference_region = SUVRReferenceRegions(suvr_reference_region)
+def pet_linear_nii(config: preprocessing_config.PETPreprocessingConfig) -> FileType:
+    if not isinstance(config, preprocessing_config.PETPreprocessingConfig):
+        raise ClinicaDLArgumentError(
+            f"PreprocessingConfig is of type {config} but should be of type{preprocessing_config.PETPreprocessingConfig}"
+        )
 
-    if uncropped_image:
+    if config.use_uncropped_image:
         description = ""
     else:
         description = "_desc-Crop"
 
-    information = {
-        "pattern": str(
-            Path("pet_linear")
-            / f"*_trc-{tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{suvr_reference_region.value}_pet.nii.gz"
-        ),
-        "description": "",
-        "needed_pipeline": "pet-linear",
-    }
-    return information
+    file_type = FileType(
+        pattern=Path("pet_linear")
+        / f"*_trc-{config.tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{config.suvr_reference_region.value}_pet.nii.gz",
+        description="",
+        needed_pipeline="pet-linear",
+    )
+    return file_type
 
 
 def container_from_filename(bids_or_caps_filename: Path) -> Path:

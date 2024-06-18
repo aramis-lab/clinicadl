@@ -96,7 +96,7 @@ def cli(generated_caps_directory, **kwargs):
                 [participant_id],
                 [session_id],
                 caps_config.data.caps_dict[cohort],
-                file_type,
+                file_type.model_dump(),
             )[0][0]
         )
 

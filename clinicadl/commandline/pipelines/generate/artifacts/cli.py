@@ -35,7 +35,7 @@ logger = getLogger("clinicadl.generate.artifacts")
 @arguments.generated_caps_directory
 @dataloader.n_proc
 @preprocessing.preprocessing
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @data.participants_tsv
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
@@ -100,7 +100,7 @@ def cli(generated_caps_directory, **kwargs):
                 [participant_id],
                 [session_id],
                 caps_config.data.caps_dict[cohort],
-                file_type,
+                file_type.model_dump(),
             )[0][0]
         )
         from clinicadl.utils.read_utils import get_info_from_filename

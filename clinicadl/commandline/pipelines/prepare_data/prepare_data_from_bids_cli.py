@@ -18,7 +18,7 @@ from clinicadl.utils.enum import ExtractionMethod
 @arguments.modality_bids
 @dataloader.n_proc
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @preprocessing.custom_suffix
@@ -41,7 +41,7 @@ def image_bids_cli(kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @extraction.patch_size
 @extraction.stride_size
 @preprocessing.tracer
@@ -69,7 +69,7 @@ def patch_bids_cli(kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @extraction.slice_direction
 @extraction.slice_mode
 @extraction.discarded_slices
@@ -99,7 +99,7 @@ def slice_bids_cli(kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @extraction.roi_custom_mask_pattern
 @extraction.roi_custom_template
 @extraction.roi_list

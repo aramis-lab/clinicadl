@@ -72,6 +72,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         "multi": "multi_network",
         "minmaxnormalization": "normalize",
         "num_workers": "n_proc",
+        "mode": "extract_method",
     }
 
     retro_add = {
@@ -102,7 +103,8 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         preprocessing_options = [
             "preprocessing",
             "use_uncropped_image",
-            "prepare_dl" "custom_suffix",
+            "prepare_dl",
+            "custom_suffix",
             "tracer",
             "suvr_reference_region",
             "patch_size",
@@ -139,9 +141,16 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     ):
         parameters["preprocessing_dict"]["slice_mode"] = "rgb"
 
+    from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+
+    config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        extraction=parameters["mode"],
+        preprocessing_type=parameters["preprocessing"],
+        **parameters,
+    )
     if "file_type" not in parameters["preprocessing_dict"]:
-        _, file_type = compute_folder_and_file_type(parameters["preprocessing_dict"])
-        parameters["preprocessing_dict"]["file_type"] = file_type
+        _, file_type = compute_folder_and_file_type(config)
+        parameters["preprocessing_dict"]["file_type"] = file_type.model_dump()
 
     return parameters
 

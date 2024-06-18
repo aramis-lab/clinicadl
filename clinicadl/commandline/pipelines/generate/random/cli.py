@@ -37,7 +37,7 @@ logger = getLogger("clinicadl.generate.random")
 @data.participants_tsv
 @data.n_subjects
 @dataloader.n_proc
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @random.mean
@@ -97,7 +97,10 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     session_id = data_df.at[0, "session_id"]
     cohort = data_df.at[0, "cohort"]
     image_paths = clinicadl_file_reader(
-        [participant_id], [session_id], caps_config.data.caps_dict[cohort], file_type
+        [participant_id],
+        [session_id],
+        caps_config.data.caps_dict[cohort],
+        file_type.model_dump(),
     )
     image_nii = nib.loadsave.load(image_paths[0][0])
     # assert isinstance(image_nii, nib.nifti1.Nifti1Image)

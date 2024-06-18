@@ -137,9 +137,12 @@ class CapsDataset(Dataset):
 
         # Try to find .nii.gz file
         try:
-            file_type = self.preprocessing_dict["file_type"]
+            file_type = self.config.extraction.file_type
             results = clinicadl_file_reader(
-                [participant], [session], self.config.data.caps_dict[cohort], file_type
+                [participant],
+                [session],
+                self.config.data.caps_dict[cohort],
+                file_type.model_dump(),
             )
             logger.debug(f"clinicadl_file_reader output: {results}")
             filepath = Path(results[0][0])
@@ -158,10 +161,13 @@ class CapsDataset(Dataset):
             image_path = image_dir / image_filename
         # Try to find .pt file
         except ClinicaDLCAPSError:
-            file_type = self.preprocessing_dict["file_type"]
-            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            file_type = self.config.extraction.file_type
+            file_type.pattern = Path(str(file_type.pattern).replace(".nii.gz", ".pt"))
             results = clinicadl_file_reader(
-                [participant], [session], self.config.data.caps_dict[cohort], file_type
+                [participant],
+                [session],
+                self.config.data.caps_dict[cohort],
+                file_type.model_dump(),
             )
             filepath = results[0]
             image_path = Path(filepath[0])
@@ -225,12 +231,12 @@ class CapsDataset(Dataset):
             image_path = self._get_image_path(participant_id, session_id, cohort)
             image = torch.load(image_path)
         except IndexError:
-            file_type = self.preprocessing_dict["file_type"]
+            file_type = self.config.extraction.file_type
             results = clinicadl_file_reader(
                 [participant_id],
                 [session_id],
                 self.config.data.caps_dict[cohort],
-                file_type,
+                file_type.model_dump(),
             )
             image_nii = nib.loadsave.load(results[0])
             image_np = image_nii.get_fdata()
@@ -741,7 +747,7 @@ def return_dataset(
 
     if preprocessing_dict["mode"] == "image":
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.extraction.use_uncropped_image = preprocessing_dict[
+        config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetImage(
@@ -755,7 +761,7 @@ def return_dataset(
         config.extraction.patch_size = preprocessing_dict["patch_size"]
         config.extraction.stride_size = preprocessing_dict["stride_size"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.extraction.use_uncropped_image = preprocessing_dict[
+        config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetPatch(
@@ -770,7 +776,7 @@ def return_dataset(
         config.extraction.roi_list = preprocessing_dict["roi_list"]
         config.extraction.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.extraction.use_uncropped_image = preprocessing_dict[
+        config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetRoi(
@@ -795,7 +801,7 @@ def return_dataset(
             else preprocessing_dict["num_slices"]
         )
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.extraction.use_uncropped_image = preprocessing_dict[
+        config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetSlice(

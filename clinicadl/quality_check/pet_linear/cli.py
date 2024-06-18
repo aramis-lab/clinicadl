@@ -7,6 +7,7 @@ from clinicadl.commandline.modules_options import (
     extraction,
     preprocessing,
 )
+from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
 @click.command(name="pet-linear", no_args_is_help=True)
@@ -44,15 +45,19 @@ def cli(
 
     SUVR_REFERENCE_REGION is the reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
     """
+    from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+
     from .quality_check import quality_check as pet_linear_qc
 
-    pet_linear_qc(
-        caps_directory,
-        output_tsv=results_tsv,
+    config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        caps_directory=caps_directory,
         tracer=tracer,
-        ref_region=suvr_reference_region,
+        suvr_reference_region=suvr_reference_region,
         use_uncropped_image=use_uncropped_image,
-        participants_tsv=participants_tsv,
-        threshold=threshold,
+        data_tsv=participants_tsv,
         n_proc=n_proc,
+        preprocessing_type=Preprocessing.PET_LINEAR,
+        extraction=ExtractionMethod.IMAGE,
     )
+
+    pet_linear_qc(config, output_tsv=results_tsv, threshold=threshold)

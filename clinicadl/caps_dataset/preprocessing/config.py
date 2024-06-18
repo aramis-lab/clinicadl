@@ -21,6 +21,7 @@ class PreprocessingConfig(BaseModel):
     """
 
     tsv_file: Optional[Path] = None
+    use_uncropped_image: bool = False
     preprocessing: Preprocessing
 
     # pydantic config
@@ -50,3 +51,7 @@ class T1PreprocessingConfig(PreprocessingConfig):
 
 class FlairPreprocessingConfig(PreprocessingConfig):
     preprocessing: Preprocessing = Preprocessing.FLAIR_LINEAR
+
+
+class T2PreprocessingConfig(PreprocessingConfig):
+    preprocessing: Preprocessing = Preprocessing.T2_LINEAR

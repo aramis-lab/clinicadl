@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
+from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import (
     ExtractionMethod,
     Preprocessing,
@@ -18,14 +19,11 @@ logger = getLogger("clinicadl.preprocessing_config")
 
 class ExtractionConfig(BaseModel):
     """
-    Abstract config class for the validation procedure.
-
-
+    Abstract config class for the Extraction procedure.
     """
 
-    use_uncropped_image: bool = False
     extract_method: ExtractionMethod
-    file_type: Optional[str] = None  # Optional ??
+    file_type: FileType
     save_features: bool = False
     extract_json: Optional[str] = None
 

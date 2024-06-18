@@ -10,13 +10,14 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetBase
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
 from clinicadl.caps_dataset.preprocessing.config import (
     PETPreprocessingConfig,
     T1PreprocessingConfig,
 )
 from clinicadl.utils.clinica_utils import (
+    FileType,
     create_subs_sess_list,
     linear_nii,
     pet_linear_nii,
@@ -32,25 +33,21 @@ from clinicadl.utils.exceptions import (
 )
 
 
-def find_file_type(config: CapsDatasetBase) -> Dict[str, str]:
+def find_file_type(config: CapsDatasetConfig) -> FileType:
     if isinstance(config.preprocessing, T1PreprocessingConfig):
-        file_type = linear_nii(
-            LinearModality.T1W, config.extraction.use_uncropped_image
-        )
+        file_type = linear_nii(config.preprocessing)
     elif isinstance(config.preprocessing, PETPreprocessingConfig):
-        if (
-            config.preprocessing.tracer is None
-            or config.preprocessing.suvr_reference_region is None
-        ):
-            raise ClinicaDLArgumentError(
-                "`tracer` and `suvr_reference_region` must be defined "
-                "when using `pet-linear` preprocessing."
-            )
-        file_type = pet_linear_nii(
-            config.preprocessing.tracer,
-            config.preprocessing.suvr_reference_region,
-            config.extraction.use_uncropped_image,
-        )
+        # TODO: Check but I think it is already checked before
+        # if (
+        #     config.preprocessing.tracer is None
+        #     or config.preprocessing.suvr_reference_region is None
+        # ):
+        #     raise ClinicaDLArgumentError(
+        #         "`tracer` and `suvr_reference_region` must be defined "
+        #         "when using `pet-linear` preprocessing."
+        #     )
+
+        file_type = pet_linear_nii(config.preprocessing)
     else:
         raise NotImplementedError(
             f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"

@@ -9,30 +9,30 @@ from clinicadl.caps_dataset.preprocessing.config import (
     PETPreprocessingConfig,
     T1PreprocessingConfig,
 )
+from clinicadl.utils.clinica_utils import (
+    FileType,
+    bids_nii,
+    dwi_dti,
+    linear_nii,
+    pet_linear_nii,
+)
 from clinicadl.utils.enum import LinearModality, Preprocessing
 
 
 def compute_folder_and_file_type(
     config: CapsDatasetConfig, from_bids: Optional[Path] = None
-) -> Tuple[str, Dict[str, str]]:
-    from clinicadl.utils.clinica_utils import (
-        bids_nii,
-        dwi_dti,
-        linear_nii,
-        pet_linear_nii,
-    )
-
+) -> Tuple[str, FileType]:
     preprocessing = config.preprocessing.preprocessing
     if from_bids is not None:
         if isinstance(config.preprocessing, CustomPreprocessingConfig):
             mod_subfolder = Preprocessing.CUSTOM.value
-            file_type = {
-                "pattern": f"*{config.preprocessing.custom_suffix}",
-                "description": "Custom suffix",
-            }
+            file_type = FileType(
+                pattern=Path(f"*{config.preprocessing.custom_suffix}"),
+                description="Custom suffix",
+            )
         else:
             mod_subfolder = preprocessing
-            file_type = bids_nii(preprocessing)
+            file_type = bids_nii(config.preprocessing)
 
     elif preprocessing not in Preprocessing:
         raise NotImplementedError(
@@ -40,32 +40,19 @@ def compute_folder_and_file_type(
         )
     else:
         mod_subfolder = preprocessing.value.replace("-", "_")
-        if isinstance(config.preprocessing, T1PreprocessingConfig):
-            file_type = linear_nii(
-                LinearModality.T1W, config.extraction.use_uncropped_image
-            )
 
-        elif isinstance(config.preprocessing, FlairPreprocessingConfig):
-            file_type = linear_nii(
-                LinearModality.FLAIR, config.extraction.use_uncropped_image
-            )
-
+        if isinstance(config.preprocessing, T1PreprocessingConfig) or isinstance(
+            config.preprocessing, FlairPreprocessingConfig
+        ):
+            file_type = linear_nii(config.preprocessing)
         elif isinstance(config.preprocessing, PETPreprocessingConfig):
-            file_type = pet_linear_nii(
-                config.preprocessing.tracer,
-                config.preprocessing.suvr_reference_region,
-                config.extraction.use_uncropped_image,
-            )
+            file_type = pet_linear_nii(config.preprocessing)
         elif isinstance(config.preprocessing, DTIPreprocessingConfig):
-            file_type = dwi_dti(
-                config.preprocessing.dti_measure,
-                config.preprocessing.dti_space,
-            )
+            file_type = dwi_dti(config.preprocessing)
         elif isinstance(config.preprocessing, CustomPreprocessingConfig):
-            file_type = {
-                "pattern": f"*{config.preprocessing.custom_suffix}",
-                "description": "Custom suffix",
-            }
-            # custom_suffix["use_uncropped_image"] = None
+            file_type = FileType(
+                pattern=Path(f"*{config.preprocessing.custom_suffix}"),
+                description="Custom suffix",
+            )
 
     return mod_subfolder, file_type

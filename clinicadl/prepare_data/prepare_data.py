@@ -74,9 +74,9 @@ def DeepLearningPrepareData(
     # parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
-        0
-    ]
+    input_files = clinicadl_file_reader(
+        subjects, sessions, input_directory, file_type.model_dump()
+    )[0]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
@@ -200,14 +200,14 @@ def DeepLearningPrepareData(
                         masks_location,
                         config.extraction.roi_list,
                         roi_mask_pattern,
-                        config.extraction.use_uncropped_image,
+                        config.preprocessing.use_uncropped_image,
                     )
 
                 output_mode = extract_roi(
                     Path(file),
                     masks_location=masks_location,
                     mask_pattern=roi_mask_pattern,
-                    cropped_input=not config.extraction.use_uncropped_image,
+                    cropped_input=not config.preprocessing.use_uncropped_image,
                     roi_names=config.extraction.roi_list,
                     uncrop_output=config.extraction.roi_uncrop_output,
                 )

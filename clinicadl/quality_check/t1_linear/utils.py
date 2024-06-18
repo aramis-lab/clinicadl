@@ -34,7 +34,7 @@ class QCDataset(Dataset):
         self.img_dir = config.data.caps_directory
         self.df = config.data.data_df
         self.use_extracted_tensors = use_extracted_tensors
-        self.use_uncropped_image = config.extraction.use_uncropped_image
+        self.use_uncropped_image = config.preprocessing.use_uncropped_image
         self.config = config
 
         if ("session_id" not in list(self.df.columns.values)) or (
@@ -51,7 +51,7 @@ class QCDataset(Dataset):
             "preprocessing": Preprocessing.T1_LINEAR.value,
             "mode": "image",
             "use_uncropped_image": self.use_uncropped_image,
-            "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
+            "file_type": linear_nii(config.preprocessing).model_dump(),
             "use_tensor": self.use_extracted_tensors,
         }
 
@@ -63,14 +63,14 @@ class QCDataset(Dataset):
         session = self.df.loc[idx, "session_id"]
 
         if self.use_extracted_tensors:
-            file_type = self.preprocessing_dict["file_type"]
-            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            file_type = self.config.extraction.file_type
+            file_type.pattern = Path(str(file_type.pattern).replace(".nii.gz", ".pt"))
             image_output = clinicadl_file_reader(
-                [subject], [session], self.img_dir, file_type
+                [subject], [session], self.img_dir, file_type.model_dump()
             )[0]
             image_path = Path(image_output[0])
             image_filename = image_path.name
-            folder, file_type = compute_folder_and_file_type(config=self.config)
+            folder, _ = compute_folder_and_file_type(config=self.config)
             image_dir = (
                 self.img_dir
                 / "subjects"
