@@ -37,7 +37,7 @@ logger = getLogger("clinicadl.generate.random")
 @data.participants_tsv
 @data.n_subjects
 @dataloader.n_proc
-@preprocessing.use_uncropped_image
+@extraction.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @random.mean

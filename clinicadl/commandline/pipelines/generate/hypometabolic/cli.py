@@ -38,7 +38,7 @@ logger = getLogger("clinicadl.generate.hypometabolic")
 @dataloader.n_proc
 @data.participants_tsv
 @data.n_subjects
-@preprocessing.use_uncropped_image
+@extraction.use_uncropped_image
 @hypometabolic.sigma
 @hypometabolic.anomaly_degree
 @hypometabolic.pathology
