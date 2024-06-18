@@ -24,6 +24,7 @@ from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.trainer.config.classification import ClassificationConfig
 from clinicadl.utils.seed import get_seed
 from clinicadl.utils.enum import Task
 from .trainer_utils import create_parameters_dict, patch_to_read_json
@@ -53,7 +54,7 @@ class Trainer:
         self.maps_manager = self._init_maps_manager(config)
         self._check_args()
 
-    def _init_maps_manager(self, config) -> MapsManager:
+    def _init_maps_manager(self, config: TrainConfig) -> MapsManager:
         # temporary: to match CLI data. TODO : change CLI data
 
         parameters, maps_path = create_parameters_dict(config)

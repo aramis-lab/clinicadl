@@ -1,7 +1,11 @@
 from pathlib import Path
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.extraction.config import ExtractionImageConfig
+from clinicadl.trainer.config.train import TrainConfig
 
-def create_parameters_dict(config):
+
+def create_parameters_dict(config: TrainConfig):
     parameters = {}
     config_dict = config.model_dump()
     for key in config_dict:
@@ -9,6 +13,12 @@ def create_parameters_dict(config):
             parameters.update(config_dict[key])
         else:
             parameters[key] = config_dict[key]
+
+    caps_config = CapsDatasetConfig.from_preprocessing_json(
+        parameters["preprocessing_json"]
+    )
+    parameters.update(caps_config.model_dump())
+    parameters["mode"] = parameters["extraction_method"]
 
     maps_path = parameters["maps_dir"]
     del parameters["maps_dir"]
@@ -21,7 +31,6 @@ def create_parameters_dict(config):
         parameters["data_augmentation"] = False
     parameters["preprocessing_dict_target"] = parameters["preprocessing_json_target"]
     del parameters["preprocessing_json_target"]
-    del parameters["preprocessing_json"]
     parameters["tsv_path"] = parameters["tsv_directory"]
     del parameters["tsv_directory"]
     parameters["compensation"] = parameters["compensation"].value

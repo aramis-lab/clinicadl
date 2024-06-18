@@ -413,7 +413,8 @@ class MapsManager:
             "caps_directory",
             "tsv_path",
             # "preprocessing_dict",
-            # "mode",
+            #
+            "mode",
             "network_task",
         ]
         for arg in mandatory_arguments:
