@@ -93,7 +93,8 @@ def write_preprocessing(
 
 
 def read_preprocessing(json_path: Path) -> Dict[str, Any]:
-    if not json_path.suffix == ".json":
+    json_path = Path(json_path)
+    if json_path.suffix != ".json":
         json_path = json_path.with_suffix(".json")
 
     if not json_path.is_file():
