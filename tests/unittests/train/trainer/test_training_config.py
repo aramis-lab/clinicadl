@@ -10,7 +10,6 @@ from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.config.config.transfer_learning import TransferLearningConfig
 from clinicadl.network.config import NetworkConfig
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.clinica_utils import FileType
 
 
 # Tests for customed validators #
@@ -40,17 +39,17 @@ def test_data_config(caps_example):
         "use_uncropped_image": False,
         "prepare_dl": False,
         "extract_json": "t1-linear_mode-image.json",
-        "file_type": FileType(
-            pattern=Path("*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz"),
-            description="T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
-            needed_pipeline="t1-linear",
-        ),
+        "file_type": {
+            "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
+            "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+            "needed_pipeline": "t1-linear",
+        },
     }
     assert c.diagnoses == ("AD",)
     assert (
         c.preprocessing_dict == expected_preprocessing_dict
     )  # TODO : add test for multi-cohort
-    # assert c.mode == "image"
+    assert c.mode == "image"
     # with pytest.raises(ValidationError):
     #     c.preprocessing_dict = {"abc": "abc"}
     # with pytest.raises(FileNotFoundError):
@@ -85,11 +84,11 @@ def test_ssda_config(caps_example):
         "use_uncropped_image": False,
         "prepare_dl": False,
         "extract_json": "t1-linear_mode-image.json",
-        "file_type": FileType(
-            pattern=Path("*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz"),
-            description="T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
-            needed_pipeline="t1-linear",
-        ),
+        "file_type": {
+            "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
+            "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+            "needed_pipeline": "t1-linear",
+        },
     }
     assert c.preprocessing_dict_target == expected_preprocessing_dict
     c = SSDAConfig()
