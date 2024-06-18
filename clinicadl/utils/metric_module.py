@@ -17,6 +17,7 @@ metric_optimum = {
     "SSIM": "max",
     "LNCC": "max",
     "loss": "min",
+    "AP": "min",
 }
 
 logger = getLogger("clinicadl.metric")
@@ -457,6 +458,19 @@ class MetricModule:
 
         lcc_matrix = np.maximum(covar12 / (var1 * var2), 0)
         return np.mean(lcc_matrix)
+
+    @staticmethod
+    def compute_ap(y, y_pred, *args):
+        """
+        args you can add:
+            - average='macro'
+            - pos_label=1
+            - sample_weight=None
+        """
+
+        from sklearn.metrics import average_precision_score
+
+        return average_precision_score(y, y_pred, *args)
 
 
 class RetainBest:
