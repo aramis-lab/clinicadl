@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetBase
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
 from clinicadl.caps_dataset.preprocessing.config import (
     PETPreprocessingConfig,
@@ -32,7 +32,7 @@ from clinicadl.utils.exceptions import (
 )
 
 
-def find_file_type(config: CapsDatasetBase) -> Dict[str, str]:
+def find_file_type(config: CapsDatasetConfig) -> Dict[str, str]:
     if isinstance(config.preprocessing, T1PreprocessingConfig):
         file_type = linear_nii(
             LinearModality.T1W, config.extraction.use_uncropped_image
