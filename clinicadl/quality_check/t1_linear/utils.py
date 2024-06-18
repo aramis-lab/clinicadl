@@ -34,7 +34,7 @@ class QCDataset(Dataset):
         self.img_dir = config.data.caps_directory
         self.df = config.data.data_df
         self.use_extracted_tensors = use_extracted_tensors
-        self.use_uncropped_image = config.preprocessing.use_uncropped_image
+        self.use_uncropped_image = config.extraction.use_uncropped_image
         self.config = config
 
         if ("session_id" not in list(self.df.columns.values)) or (
