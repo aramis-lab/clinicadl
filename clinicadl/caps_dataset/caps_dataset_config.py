@@ -5,14 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.caps_dataset.extraction import config as extraction
-from clinicadl.caps_dataset.preprocessing.config import (
-    CustomPreprocessingConfig,
-    DTIPreprocessingConfig,
-    FlairPreprocessingConfig,
-    PETPreprocessingConfig,
-    PreprocessingConfig,
-    T1PreprocessingConfig,
-)
+from clinicadl.caps_dataset.preprocessing import config as preprocessing
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
@@ -30,33 +23,41 @@ def get_extraction(extract_method: ExtractionMethod):
         raise ValueError(f"Preprocessing {extract_method.value} is not implemented.")
 
 
-def get_preprocessing(preprocessing: Preprocessing):
-    if preprocessing == Preprocessing.T1_LINEAR:
-        return T1PreprocessingConfig
-    elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETPreprocessingConfig
-    elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairPreprocessingConfig
-    elif preprocessing == Preprocessing.CUSTOM:
-        return CustomPreprocessingConfig
-    elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIPreprocessingConfig
+def get_preprocessing(preprocessing_type: Preprocessing):
+    if preprocessing_type == Preprocessing.T1_LINEAR:
+        return preprocessing.T1PreprocessingConfig
+    elif preprocessing_type == Preprocessing.PET_LINEAR:
+        return preprocessing.PETPreprocessingConfig
+    elif preprocessing_type == Preprocessing.FLAIR_LINEAR:
+        return preprocessing.FlairPreprocessingConfig
+    elif preprocessing_type == Preprocessing.CUSTOM:
+        return preprocessing.CustomPreprocessingConfig
+    elif preprocessing_type == Preprocessing.DWI_DTI:
+        return preprocessing.DTIPreprocessingConfig
     else:
-        raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
+        raise ValueError(
+            f"Preprocessing {preprocessing_type.value} is not implemented."
+        )
 
 
-class CapsDatasetBase(BaseModel):
+class CapsDatasetConfig(BaseModel):
+    """Config class for CapsDataset object.
+
+    caps_directory, preprocessing_json, extract_method, preprocessing
+    are arguments that must be passed by the user.
+
+    transforms isn't optional because there is always at least one transform (NanRemoval)
+    """
+
     data: DataConfig
     dataloader: DataLoaderConfig
     extraction: extraction.ExtractionConfig
-    preprocessing: PreprocessingConfig
-    transforms: Optional[TransformsConfig]
+    preprocessing: preprocessing.PreprocessingConfig
+    transforms: TransformsConfig
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-
-class CapsDatasetConfig(CapsDatasetBase):
     @classmethod
     def from_preprocessing_and_extraction_method(
         cls,
