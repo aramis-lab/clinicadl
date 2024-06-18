@@ -17,8 +17,7 @@ logger = getLogger("clinicadl.modality_config")
 
 class PreprocessingConfig(BaseModel):
     """
-    Abstract config class for the validation procedure.
-
+    Abstract config class for the preprocessing procedure.
     """
 
     tsv_file: Optional[Path] = None
@@ -51,18 +50,3 @@ class T1PreprocessingConfig(PreprocessingConfig):
 
 class FlairPreprocessingConfig(PreprocessingConfig):
     preprocessing: Preprocessing = Preprocessing.FLAIR_LINEAR
-
-
-def return_mode_config(preprocessing: Preprocessing):
-    if preprocessing == Preprocessing.T1_LINEAR:
-        return T1PreprocessingConfig
-    elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETPreprocessingConfig
-    elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairPreprocessingConfig
-    elif preprocessing == Preprocessing.CUSTOM:
-        return CustomPreprocessingConfig
-    elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIPreprocessingConfig
-    else:
-        raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
