@@ -4,46 +4,43 @@ from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.modality import (
-    CustomModalityConfig,
-    DTIModalityConfig,
-    FlairModalityConfig,
-    ModalityConfig,
-    PETModalityConfig,
-    T1ModalityConfig,
+from clinicadl.caps_dataset.extraction import config as extraction
+from clinicadl.caps_dataset.preprocessing.config import (
+    CustomPreprocessingConfig,
+    DTIPreprocessingConfig,
+    FlairPreprocessingConfig,
+    PETPreprocessingConfig,
+    PreprocessingConfig,
+    T1PreprocessingConfig,
 )
-from clinicadl.preprocessing import config as preprocessing
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
-def get_preprocessing(extract_method: ExtractionMethod):
+def get_extraction(extract_method: ExtractionMethod):
     if extract_method == ExtractionMethod.ROI:
-        return preprocessing.PreprocessingROIConfig
+        return extraction.ExtractionROIConfig
     elif extract_method == ExtractionMethod.SLICE:
-        return preprocessing.PreprocessingSliceConfig
+        return extraction.ExtractionSliceConfig
     elif extract_method == ExtractionMethod.IMAGE:
-        return preprocessing.PreprocessingImageConfig
+        return extraction.ExtractionImageConfig
     elif extract_method == ExtractionMethod.PATCH:
-        return preprocessing.PreprocessingPatchConfig
+        return extraction.ExtractionPatchConfig
     else:
-        raise ValueError(f"Modality {extract_method.value} is not implemented.")
+        raise ValueError(f"Preprocessing {extract_method.value} is not implemented.")
 
 
-def get_modality(preprocessing: Preprocessing):
-    if (
-        preprocessing == Preprocessing.T1_EXTENSIVE
-        or preprocessing == Preprocessing.T1_LINEAR
-    ):
-        return T1ModalityConfig
+def get_preprocessing(preprocessing: Preprocessing):
+    if preprocessing == Preprocessing.T1_LINEAR:
+        return T1PreprocessingConfig
     elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETModalityConfig
+        return PETPreprocessingConfig
     elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairModalityConfig
+        return FlairPreprocessingConfig
     elif preprocessing == Preprocessing.CUSTOM:
-        return CustomModalityConfig
+        return CustomPreprocessingConfig
     elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIModalityConfig
+        return DTIPreprocessingConfig
     else:
         raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
 
@@ -51,8 +48,8 @@ def get_modality(preprocessing: Preprocessing):
 class CapsDatasetBase(BaseModel):
     data: DataConfig
     dataloader: DataLoaderConfig
-    modality: ModalityConfig
-    preprocessing: preprocessing.PreprocessingConfig
+    extraction: extraction.ExtractionConfig
+    preprocessing: PreprocessingConfig
     transforms: Optional[TransformsConfig]
 
     # pydantic config
@@ -70,7 +67,9 @@ class CapsDatasetConfig(CapsDatasetBase):
         return cls(
             data=DataConfig(**kwargs),
             dataloader=DataLoaderConfig(**kwargs),
-            modality=get_modality(Preprocessing(preprocessing_type))(**kwargs),
-            preprocessing=get_preprocessing(ExtractionMethod(extraction))(**kwargs),
+            preprocessing=get_preprocessing(Preprocessing(preprocessing_type))(
+                **kwargs
+            ),
+            extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
             transforms=TransformsConfig(**kwargs),
         )

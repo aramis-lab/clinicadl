@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.config.config.modality import (
+from clinicadl.caps_dataset.preprocessing.config import (
     CustomModalityConfig,
     DTIModalityConfig,
     PETModalityConfig,

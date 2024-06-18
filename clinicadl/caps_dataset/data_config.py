@@ -6,7 +6,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv, load_data_test
-from clinicadl.preprocessing.preprocessing import read_preprocessing
+from clinicadl.caps_dataset.extraction.utils import read_preprocessing
 from clinicadl.utils.enum import Mode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -125,29 +125,29 @@ class DataConfig(BaseModel):  # TODO : put in data module
         """
         from clinicadl.caps_dataset.data import CapsDataset
 
-        if not self.multi_cohort:
-            preprocessing_json = (
-                self.caps_directory / "tensor_extraction" / self.preprocessing_json
-            )
-        else:
-            caps_dict = CapsDataset.create_caps_dict(
-                self.caps_directory, self.multi_cohort
-            )
-            json_found = False
-            for caps_name, caps_path in caps_dict.items():
+        if self.preprocessing_json is not None:
+            if not self.multi_cohort:
                 preprocessing_json = (
-                    caps_path / "tensor_extraction" / self.preprocessing_json
+                    self.caps_directory / "tensor_extraction" / self.preprocessing_json
                 )
-                if preprocessing_json.is_file():
-                    logger.info(
-                        f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+            else:
+                caps_dict = self.caps_dict
+                json_found = False
+                for caps_name, caps_path in caps_dict.items():
+                    preprocessing_json = (
+                        caps_path / "tensor_extraction" / self.preprocessing_json
                     )
-                    json_found = True
-            if not json_found:
-                raise ValueError(
-                    f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
-                    f"in {caps_dict}."
-                )
+                    if preprocessing_json.is_file():
+                        logger.info(
+                            f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+                        )
+                        json_found = True
+                if not json_found:
+                    raise ValueError(
+                        f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
+                        f"in {caps_dict}."
+                    )
+
         preprocessing_dict = read_preprocessing(preprocessing_json)
 
         if (

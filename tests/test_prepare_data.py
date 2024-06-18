@@ -11,7 +11,10 @@ from typing import Any, Dict, List
 import pytest
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig, get_modality
-from clinicadl.config.config.modality import CustomModalityConfig, PETModalityConfig
+from clinicadl.caps_dataset.preprocessing.config import (
+    CustomModalityConfig,
+    PETModalityConfig,
+)
 from clinicadl.preprocessing.config import PreprocessingROIConfig
 from clinicadl.utils.enum import (
     ExtractionMethod,
