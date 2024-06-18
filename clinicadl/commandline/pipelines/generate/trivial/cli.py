@@ -11,7 +11,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
+    extraction,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.trivial import options as trivial
@@ -38,9 +38,9 @@ logger = getLogger("clinicadl.generate.trivial")
 @data.participants_tsv
 @data.n_subjects
 @dataloader.n_proc
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
 @trivial.atrophy_percent
 @data.mask_path
 def cli(generated_caps_directory, **kwargs):

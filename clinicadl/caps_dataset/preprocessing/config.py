@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
-    ImageModality,
     Preprocessing,
     SUVRReferenceRegions,
     Tracer,

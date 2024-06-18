@@ -916,7 +916,7 @@ class PredictManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        from clinicadl.preprocessing.preprocessing import path_decoder
+        from clinicadl.caps_dataset.extraction.utils import path_decoder
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)

@@ -10,12 +10,15 @@ from typing import Any, Dict, List
 
 import pytest
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig, get_modality
-from clinicadl.caps_dataset.preprocessing.config import (
-    CustomModalityConfig,
-    PETModalityConfig,
+from clinicadl.caps_dataset.caps_dataset_config import (
+    CapsDatasetConfig,
+    get_preprocessing,
 )
-from clinicadl.preprocessing.config import PreprocessingROIConfig
+from clinicadl.caps_dataset.extraction.config import ExtractionROIConfig
+from clinicadl.caps_dataset.preprocessing.config import (
+    CustomPreprocessingConfig,
+    PETPreprocessingConfig,
+)
 from clinicadl.utils.enum import (
     ExtractionMethod,
     Preprocessing,
@@ -128,18 +131,20 @@ def run_test_prepare_data(
     modalities = ["t1-linear", "pet-linear", "flair-linear"]
     uncropped_image = [True, False]
     acquisition_label = ["18FAV45", "11CPIB"]
-    config.preprocessing.save_features = True
+    config.extraction.save_features = True
 
     for modality in modalities:
         config.preprocessing.preprocessing = Preprocessing(modality)
-        config.modality = get_modality(Preprocessing(modality))()
+        config.preprocessing = get_preprocessing(Preprocessing(modality))()
         if modality == "pet-linear":
             for acq in acquisition_label:
-                assert isinstance(config.modality, PETModalityConfig)
-                config.modality.tracer = Tracer(acq)
-                config.modality.suvr_reference_region = SUVRReferenceRegions("pons2")
-                config.preprocessing.use_uncropped_image = False
-                config.preprocessing.extract_json = (
+                assert isinstance(config.preprocessing, PETPreprocessingConfig)
+                config.preprocessing.tracer = Tracer(acq)
+                config.preprocessing.suvr_reference_region = SUVRReferenceRegions(
+                    "pons2"
+                )
+                config.extraction.use_uncropped_image = False
+                config.extraction.extract_json = (
                     f"{modality}-{acq}_mode-{test_name}.json"
                 )
                 tsv_file = join(input_dir, f"pet_{acq}.tsv")
@@ -147,22 +152,22 @@ def run_test_prepare_data(
                 extract_generic(out_dir, mode, tsv_file, config)
 
         elif modality == "custom":
-            assert isinstance(config.modality, CustomModalityConfig)
-            config.preprocessing.use_uncropped_image = True
-            config.modality.custom_suffix = (
+            assert isinstance(config.preprocessing, CustomPreprocessingConfig)
+            config.extraction.use_uncropped_image = True
+            config.preprocessing.custom_suffix = (
                 "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
             )
-            if isinstance(config.preprocessing, PreprocessingROIConfig):
-                config.preprocessing.roi_custom_template = "Ixi549Space"
-            config.preprocessing.extract_json = f"{modality}_mode-{test_name}.json"
+            if isinstance(config.extraction, ExtractionROIConfig):
+                config.extraction.roi_custom_template = "Ixi549Space"
+            config.extraction.extract_json = f"{modality}_mode-{test_name}.json"
             tsv_file = input_dir / "subjects.tsv"
             mode = test_name
             extract_generic(out_dir, mode, tsv_file, config)
 
         elif modality == "t1-linear":
             for flag in uncropped_image:
-                config.preprocessing.use_uncropped_image = flag
-                config.preprocessing.extract_json = (
+                config.extraction.use_uncropped_image = flag
+                config.extraction.extract_json = (
                     f"{modality}_crop-{not flag}_mode-{test_name}.json"
                 )
                 mode = test_name
@@ -172,10 +177,10 @@ def run_test_prepare_data(
             config.data.caps_directory = Path(
                 str(config.data.caps_directory) + "_flair"
             )
-            config.preprocessing.save_features = False
+            config.extraction.save_features = False
             for flag in uncropped_image:
-                config.preprocessing.use_uncropped_image = flag
-                config.preprocessing.extract_json = (
+                config.extraction.use_uncropped_image = flag
+                config.extraction.extract_json = (
                     f"{modality}_crop-{not flag}_mode-{test_name}.json"
                 )
                 mode = f"{test_name}_flair"

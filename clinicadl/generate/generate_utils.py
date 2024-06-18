@@ -23,7 +23,6 @@ from clinicadl.utils.clinica_utils import (
 )
 from clinicadl.utils.enum import (
     LinearModality,
-    Preprocessing,
 )
 
 # from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig

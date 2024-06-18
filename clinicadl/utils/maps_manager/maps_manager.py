@@ -13,7 +13,7 @@ from torch.cuda.amp import autocast
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
-from clinicadl.preprocessing.preprocessing import path_encoder
+from clinicadl.caps_dataset.extraction.utils import path_encoder
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (

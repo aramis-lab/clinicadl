@@ -7,7 +7,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
+    extraction,
     preprocessing,
 )
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
@@ -19,13 +19,13 @@ from clinicadl.utils.enum import ExtractionMethod
 @arguments.preprocessing
 @dataloader.n_proc
 @data.participants_tsv
-@preprocessing.extract_json
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
-@modality.custom_suffix
-@modality.dti_measure
-@modality.dti_space
+@extraction.extract_json
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
+@preprocessing.custom_suffix
+@preprocessing.dti_measure
+@preprocessing.dti_space
 def image_cli(**kwargs):
     """Extract image from nifti images.
 
@@ -47,17 +47,17 @@ def image_cli(**kwargs):
 @arguments.caps_directory
 @arguments.preprocessing
 @dataloader.n_proc
-@preprocessing.save_features
+@extraction.save_features
 @data.participants_tsv
-@preprocessing.extract_json
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
-@modality.custom_suffix
-@modality.dti_measure
-@modality.dti_space
-@preprocessing.patch_size
-@preprocessing.stride_size
+@extraction.extract_json
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
+@preprocessing.custom_suffix
+@preprocessing.dti_measure
+@preprocessing.dti_space
+@extraction.patch_size
+@extraction.stride_size
 def patch_cli(**kwargs):
     """Extract patch from nifti images.
 
@@ -79,18 +79,18 @@ def patch_cli(**kwargs):
 @arguments.caps_directory
 @arguments.preprocessing
 @dataloader.n_proc
-@preprocessing.save_features
+@extraction.save_features
 @data.participants_tsv
-@preprocessing.extract_json
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
-@modality.custom_suffix
-@modality.dti_measure
-@modality.dti_space
-@preprocessing.slice_mode
-@preprocessing.slice_direction
-@preprocessing.discarded_slices
+@extraction.extract_json
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
+@preprocessing.custom_suffix
+@preprocessing.dti_measure
+@preprocessing.dti_space
+@extraction.slice_mode
+@extraction.slice_direction
+@extraction.discarded_slices
 def slice_cli(**kwargs):
     """Extract slice from nifti images.
 
@@ -111,19 +111,19 @@ def slice_cli(**kwargs):
 @arguments.caps_directory
 @arguments.preprocessing
 @dataloader.n_proc
-@preprocessing.save_features
+@extraction.save_features
 @data.participants_tsv
-@preprocessing.extract_json
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
-@modality.custom_suffix
-@modality.dti_measure
-@modality.dti_space
-@preprocessing.roi_list
-@preprocessing.roi_uncrop_output
-@preprocessing.roi_custom_template
-@preprocessing.roi_custom_mask_pattern
+@extraction.extract_json
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
+@preprocessing.custom_suffix
+@preprocessing.dti_measure
+@preprocessing.dti_space
+@extraction.roi_list
+@extraction.roi_uncrop_output
+@extraction.roi_custom_template
+@extraction.roi_custom_mask_pattern
 def roi_cli(**kwargs):
     """Extract roi from nifti images.
 
