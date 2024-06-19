@@ -137,7 +137,9 @@ class CapsDataset(Dataset):
 
         # Try to find .nii.gz file
         try:
-            file_type = self.config.extraction.file_type
+            folder, file_type = self.config.compute_folder_and_file_type()
+
+            # file_type = self.config.extraction.file_type
             results = clinicadl_file_reader(
                 [participant],
                 [session],
@@ -148,7 +150,6 @@ class CapsDataset(Dataset):
             filepath = Path(results[0][0])
             image_filename = filepath.name.replace(".nii.gz", ".pt")
 
-            folder, _ = compute_folder_and_file_type(self.config)
             image_dir = (
                 self.config.data.caps_dict[cohort]
                 / "subjects"
@@ -161,8 +162,9 @@ class CapsDataset(Dataset):
             image_path = image_dir / image_filename
         # Try to find .pt file
         except ClinicaDLCAPSError:
-            file_type = self.config.extraction.file_type
-            file_type.pattern = Path(str(file_type.pattern).replace(".nii.gz", ".pt"))
+            folder, file_type = self.config.compute_folder_and_file_type()
+            # file_type = self.config.extraction.file_type
+            file_type.pattern = file_type.pattern.replace(".nii.gz", ".pt")
             results = clinicadl_file_reader(
                 [participant],
                 [session],

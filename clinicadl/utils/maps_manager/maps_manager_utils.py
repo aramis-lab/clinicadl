@@ -89,6 +89,8 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         if name not in parameters:
             parameters[name] = value
 
+    if "extract_method" in parameters:
+        parameters["mode"] = parameters["extract_method"]
     # Value changes
     if "use_cpu" in parameters:
         parameters["gpu"] = not parameters["use_cpu"]
