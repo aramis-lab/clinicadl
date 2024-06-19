@@ -23,7 +23,7 @@ class ExtractionConfig(BaseModel):
     """
 
     extract_method: ExtractionMethod
-    file_type: FileType
+    file_type: Optional[FileType]
     save_features: bool = False
     extract_json: Optional[str] = None
 
