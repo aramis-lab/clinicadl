@@ -36,7 +36,7 @@ from clinicadl.utils.exceptions import (
 def find_file_type(config: CapsDatasetConfig) -> Dict[str, str]:
     if isinstance(config.preprocessing, T1PreprocessingConfig):
         file_type = linear_nii(
-            LinearModality.T1W, config.extraction.use_uncropped_image
+            LinearModality.T1W, config.preprocessing.use_uncropped_image
         )
     elif isinstance(config.preprocessing, PETPreprocessingConfig):
         if (
@@ -50,7 +50,7 @@ def find_file_type(config: CapsDatasetConfig) -> Dict[str, str]:
         file_type = pet_linear_nii(
             config.preprocessing.tracer,
             config.preprocessing.suvr_reference_region,
-            config.extraction.use_uncropped_image,
+            config.preprocessing.use_uncropped_image,
         )
     else:
         raise NotImplementedError(

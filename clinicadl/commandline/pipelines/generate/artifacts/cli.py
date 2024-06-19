@@ -35,7 +35,7 @@ logger = getLogger("clinicadl.generate.artifacts")
 @arguments.generated_caps_directory
 @dataloader.n_proc
 @preprocessing.preprocessing
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @data.participants_tsv
 @preprocessing.tracer
 @preprocessing.suvr_reference_region

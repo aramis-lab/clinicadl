@@ -22,6 +22,7 @@ class PreprocessingConfig(BaseModel):
 
     tsv_file: Optional[Path] = None
     preprocessing: Preprocessing
+    use_uncropped_image: bool = False
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)

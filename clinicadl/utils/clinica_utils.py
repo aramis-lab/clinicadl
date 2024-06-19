@@ -36,7 +36,7 @@ RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "che
 
 
 class FileType(BaseModel):
-    pattern: Path
+    pattern: str
     description: str
     needed_pipeline: Optional[str] = None
 
@@ -83,24 +83,18 @@ def bids_nii(
             description += f" and reconstruction method {reconstruction}"
 
         file_type = FileType(
-            pattern=Path("pet") / f"*{trc}{rec}_pet.nii*", description=description
+            pattern=f"pet/*{trc}{rec}_pet.nii*", description=description
         )
         return file_type
 
     elif isinstance(config, preprocessing_config.T1PreprocessingConfig):
-        return FileType(
-            pattern=Path("anat") / "sub-*_ses-*_T1w.nii*", description="T1w MRI"
-        )
+        return FileType(pattern="anat/sub-*_ses-*_T1w.nii*", description="T1w MRI")
 
     elif isinstance(config, preprocessing_config.FlairPreprocessingConfig):
-        return FileType(
-            pattern=Path("sub-*_ses-*_flair.nii*"), description="FLAIR T2w MRI"
-        )
+        return FileType(pattern="sub-*_ses-*_flair.nii*", description="FLAIR T2w MRI")
 
     elif isinstance(config, preprocessing_config.DTIPreprocessingConfig):
-        return FileType(
-            pattern=Path("dwi") / "sub-*_ses-*_dwi.nii*", description="DWI NIfTI"
-        )
+        return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
 
     else:
         raise ClinicaDLArgumentError("Invalid preprocessing")
@@ -127,9 +121,7 @@ def linear_nii(
         desc_crop = "_desc-Crop"
 
     file_type = FileType(
-        pattern=Path(
-            f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz"
-        ),
+        pattern=f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
         description=f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
         + (
             ""
@@ -161,10 +153,7 @@ def dwi_dti(config: preprocessing_config.DTIPreprocessingConfig) -> FileType:
         )
 
     return FileType(
-        pattern=Path("dwi")
-        / "dti_based_processing"
-        / "*"
-        / f"*_space-{space}_{measure.value}.nii.gz",
+        pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
         description=f"DTI-based {measure.value} in space {space}.",
         needed_pipeline="dwi_dti",
     )
@@ -182,8 +171,7 @@ def pet_linear_nii(config: preprocessing_config.PETPreprocessingConfig) -> FileT
         description = "_desc-Crop"
 
     file_type = FileType(
-        pattern=Path("pet_linear")
-        / f"*_trc-{config.tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{config.suvr_reference_region.value}_pet.nii.gz",
+        pattern=f"pet_linear/*_trc-{config.tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{config.suvr_reference_region.value}_pet.nii.gz",
         description="",
         needed_pipeline="pet-linear",
     )

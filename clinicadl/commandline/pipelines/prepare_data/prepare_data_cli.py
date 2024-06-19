@@ -20,7 +20,7 @@ from clinicadl.utils.enum import ExtractionMethod
 @dataloader.n_proc
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @preprocessing.custom_suffix
@@ -50,7 +50,7 @@ def image_cli(**kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @preprocessing.custom_suffix
@@ -82,7 +82,7 @@ def patch_cli(**kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @preprocessing.custom_suffix
@@ -114,7 +114,7 @@ def slice_cli(**kwargs):
 @extraction.save_features
 @data.participants_tsv
 @extraction.extract_json
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @preprocessing.custom_suffix

@@ -15,7 +15,7 @@ from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 @arguments.results_tsv
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @data.participants_tsv
 @dataloader.n_proc
 @click.option(

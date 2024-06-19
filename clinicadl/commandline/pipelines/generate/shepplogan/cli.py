@@ -132,7 +132,7 @@ def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
         "discarded_slices": 0,
         "num_slices": 1,
         "file_type": FileType(
-            pattern=Path("*_space-SheppLogan_phantom.nii.gz"),
+            pattern="*_space-SheppLogan_phantom.nii.gz",
             description="Custom suffix",
             needed_pipeline="shepplogan",
         ).model_dump(),

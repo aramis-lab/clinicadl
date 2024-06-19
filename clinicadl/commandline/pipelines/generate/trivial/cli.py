@@ -38,7 +38,7 @@ logger = getLogger("clinicadl.generate.trivial")
 @data.participants_tsv
 @data.n_subjects
 @dataloader.n_proc
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @preprocessing.tracer
 @preprocessing.suvr_reference_region
 @trivial.atrophy_percent

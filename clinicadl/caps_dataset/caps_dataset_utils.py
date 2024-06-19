@@ -27,7 +27,7 @@ def compute_folder_and_file_type(
         if isinstance(config.preprocessing, CustomPreprocessingConfig):
             mod_subfolder = Preprocessing.CUSTOM.value
             file_type = FileType(
-                pattern=Path(f"*{config.preprocessing.custom_suffix}"),
+                pattern=f"*{config.preprocessing.custom_suffix}",
                 description="Custom suffix",
             )
         else:
@@ -50,7 +50,7 @@ def compute_folder_and_file_type(
             file_type = dwi_dti(config.preprocessing)
         elif isinstance(config.preprocessing, CustomPreprocessingConfig):
             file_type = FileType(
-                pattern=Path(f"*{config.preprocessing.custom_suffix}"),
+                pattern=f"*{config.preprocessing.custom_suffix}",
                 description="Custom suffix",
             )
     return mod_subfolder, file_type
