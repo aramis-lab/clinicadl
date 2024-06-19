@@ -89,7 +89,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii(LinearModality.T1W, self.use_uncropped_image),
+                linear_nii(self.config.preprocessing).model_dump(),
             )[0]
             image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)
