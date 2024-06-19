@@ -16,15 +16,13 @@ from clinicadl.utils.enum import (
 logger = getLogger("clinicadl.preprocessing_config")
 
 
-class PreprocessingConfig(BaseModel):
+class ExtractionConfig(BaseModel):
     """
     Abstract config class for the validation procedure.
 
 
     """
 
-    preprocessing_json: Optional[Path] = None
-    preprocessing: Preprocessing
     use_uncropped_image: bool = False
     extract_method: ExtractionMethod
     file_type: Optional[str] = None  # Optional ??
@@ -44,17 +42,17 @@ class PreprocessingConfig(BaseModel):
             return v
 
 
-class PreprocessingImageConfig(PreprocessingConfig):
+class ExtractionImageConfig(ExtractionConfig):
     extract_method: ExtractionMethod = ExtractionMethod.IMAGE
 
 
-class PreprocessingPatchConfig(PreprocessingConfig):
+class ExtractionPatchConfig(ExtractionConfig):
     patch_size: int = 50
     stride_size: int = 50
     extract_method: ExtractionMethod = ExtractionMethod.PATCH
 
 
-class PreprocessingSliceConfig(PreprocessingConfig):
+class ExtractionSliceConfig(ExtractionConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
     num_slices: Optional[NonNegativeInt] = None
@@ -62,7 +60,7 @@ class PreprocessingSliceConfig(PreprocessingConfig):
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
 
-class PreprocessingROIConfig(PreprocessingConfig):
+class ExtractionROIConfig(ExtractionConfig):
     roi_list: List[str] = []
     roi_uncrop_output: bool = False
     roi_custom_template: str = ""

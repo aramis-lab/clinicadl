@@ -15,9 +15,9 @@ from urllib.request import Request, urlopen
 import pandas as pd
 
 from clinicadl.utils.enum import (
-    BIDSModality,
     DTIMeasure,
     DTISpace,
+    ImageModality,
     LinearModality,
     Preprocessing,
     SUVRReferenceRegions,
@@ -34,7 +34,7 @@ RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "che
 
 
 def bids_nii(
-    modality: Union[str, BIDSModality] = BIDSModality.T1,
+    modality: Union[str, ImageModality] = ImageModality.T1,
     tracer: Optional[Union[str, Tracer]] = None,
     reconstruction: Optional[str] = None,
 ) -> dict:
@@ -61,13 +61,13 @@ def bids_nii(
     """
 
     try:
-        modality = BIDSModality(modality)
+        modality = ImageModality(modality)
     except ClinicaDLArgumentError:
         print(
             f"ClinicaDL is Unable to read this modality ({modality}) of images, please chose one from this list: {list[Modality]}"
         )
 
-    if modality == BIDSModality.PET:
+    if modality == ImageModality.PET:
         if tracer is not None:
             tracer = Tracer(tracer)
         trc = "" if tracer is None else f"_trc-{tracer.value}"
@@ -82,14 +82,14 @@ def bids_nii(
             "pattern": os.path.join("pet", f"*{trc}{rec}_pet.nii*"),
             "description": description,
         }
-    elif modality == BIDSModality.T1:
+    elif modality == ImageModality.T1:
         return {"pattern": "anat/sub-*_ses-*_T1w.nii*", "description": "T1w MRI"}
-    elif modality == BIDSModality.FLAIR:
+    elif modality == ImageModality.FLAIR:
         return {
             "pattern": "sub-*_ses-*_flair.nii*",
             "description": "FLAIR T2w MRI",
         }
-    elif modality == BIDSModality.DWI:
+    elif modality == ImageModality.DWI:
         return {
             "pattern": "dwi/sub-*_ses-*_dwi.nii*",
             "description": "DWI NIfTI",

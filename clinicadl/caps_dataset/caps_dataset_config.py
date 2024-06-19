@@ -4,62 +4,60 @@ from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.modality import (
-    CustomModalityConfig,
-    DTIModalityConfig,
-    FlairModalityConfig,
-    ModalityConfig,
-    PETModalityConfig,
-    T1ModalityConfig,
-)
-from clinicadl.preprocessing import config as preprocessing
+from clinicadl.caps_dataset.extraction import config as extraction
+from clinicadl.caps_dataset.preprocessing import config as preprocessing
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
-def get_preprocessing(extract_method: ExtractionMethod):
+def get_extraction(extract_method: ExtractionMethod):
     if extract_method == ExtractionMethod.ROI:
-        return preprocessing.PreprocessingROIConfig
+        return extraction.ExtractionROIConfig
     elif extract_method == ExtractionMethod.SLICE:
-        return preprocessing.PreprocessingSliceConfig
+        return extraction.ExtractionSliceConfig
     elif extract_method == ExtractionMethod.IMAGE:
-        return preprocessing.PreprocessingImageConfig
+        return extraction.ExtractionImageConfig
     elif extract_method == ExtractionMethod.PATCH:
-        return preprocessing.PreprocessingPatchConfig
+        return extraction.ExtractionPatchConfig
     else:
-        raise ValueError(f"Modality {extract_method.value} is not implemented.")
+        raise ValueError(f"Preprocessing {extract_method.value} is not implemented.")
 
 
-def get_modality(preprocessing: Preprocessing):
-    if (
-        preprocessing == Preprocessing.T1_EXTENSIVE
-        or preprocessing == Preprocessing.T1_LINEAR
-    ):
-        return T1ModalityConfig
-    elif preprocessing == Preprocessing.PET_LINEAR:
-        return PETModalityConfig
-    elif preprocessing == Preprocessing.FLAIR_LINEAR:
-        return FlairModalityConfig
-    elif preprocessing == Preprocessing.CUSTOM:
-        return CustomModalityConfig
-    elif preprocessing == Preprocessing.DWI_DTI:
-        return DTIModalityConfig
+def get_preprocessing(preprocessing_type: Preprocessing):
+    if preprocessing_type == Preprocessing.T1_LINEAR:
+        return preprocessing.T1PreprocessingConfig
+    elif preprocessing_type == Preprocessing.PET_LINEAR:
+        return preprocessing.PETPreprocessingConfig
+    elif preprocessing_type == Preprocessing.FLAIR_LINEAR:
+        return preprocessing.FlairPreprocessingConfig
+    elif preprocessing_type == Preprocessing.CUSTOM:
+        return preprocessing.CustomPreprocessingConfig
+    elif preprocessing_type == Preprocessing.DWI_DTI:
+        return preprocessing.DTIPreprocessingConfig
     else:
-        raise ValueError(f"Preprocessing {preprocessing.value} is not implemented.")
+        raise ValueError(
+            f"Preprocessing {preprocessing_type.value} is not implemented."
+        )
 
 
-class CapsDatasetBase(BaseModel):
+class CapsDatasetConfig(BaseModel):
+    """Config class for CapsDataset object.
+
+    caps_directory, preprocessing_json, extract_method, preprocessing
+    are arguments that must be passed by the user.
+
+    transforms isn't optional because there is always at least one transform (NanRemoval)
+    """
+
     data: DataConfig
     dataloader: DataLoaderConfig
-    modality: ModalityConfig
+    extraction: extraction.ExtractionConfig
     preprocessing: preprocessing.PreprocessingConfig
-    transforms: Optional[TransformsConfig]
+    transforms: TransformsConfig
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-
-class CapsDatasetConfig(CapsDatasetBase):
     @classmethod
     def from_preprocessing_and_extraction_method(
         cls,
@@ -70,7 +68,9 @@ class CapsDatasetConfig(CapsDatasetBase):
         return cls(
             data=DataConfig(**kwargs),
             dataloader=DataLoaderConfig(**kwargs),
-            modality=get_modality(Preprocessing(preprocessing_type))(**kwargs),
-            preprocessing=get_preprocessing(ExtractionMethod(extraction))(**kwargs),
+            preprocessing=get_preprocessing(Preprocessing(preprocessing_type))(
+                **kwargs
+            ),
+            extraction=get_extraction(ExtractionMethod(extraction))(**kwargs),
             transforms=TransformsConfig(**kwargs),
         )

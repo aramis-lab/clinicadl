@@ -12,7 +12,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
+    extraction,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.random import options as random
@@ -37,9 +37,9 @@ logger = getLogger("clinicadl.generate.random")
 @data.participants_tsv
 @data.n_subjects
 @dataloader.n_proc
-@preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
+@extraction.use_uncropped_image
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
 @random.mean
 @random.sigma
 def cli(generated_caps_directory, n_proc, **kwargs):
