@@ -143,7 +143,7 @@ def run_test_prepare_data(
                 config.preprocessing.suvr_reference_region = SUVRReferenceRegions(
                     "pons2"
                 )
-                config.preprocessing.use_uncropped_image = False
+                config.extraction.use_uncropped_image = False
                 config.extraction.extract_json = (
                     f"{modality}-{acq}_mode-{test_name}.json"
                 )
@@ -153,7 +153,7 @@ def run_test_prepare_data(
 
         elif modality == "custom":
             assert isinstance(config.preprocessing, CustomPreprocessingConfig)
-            config.preprocessing.use_uncropped_image = True
+            config.extraction.use_uncropped_image = True
             config.preprocessing.custom_suffix = (
                 "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
             )
@@ -166,7 +166,7 @@ def run_test_prepare_data(
 
         elif modality == "t1-linear":
             for flag in uncropped_image:
-                config.preprocessing.use_uncropped_image = flag
+                config.extraction.use_uncropped_image = flag
                 config.extraction.extract_json = (
                     f"{modality}_crop-{not flag}_mode-{test_name}.json"
                 )
@@ -179,7 +179,7 @@ def run_test_prepare_data(
             )
             config.extraction.save_features = False
             for flag in uncropped_image:
-                config.preprocessing.use_uncropped_image = flag
+                config.extraction.use_uncropped_image = flag
                 config.extraction.extract_json = (
                     f"{modality}_crop-{not flag}_mode-{test_name}.json"
                 )

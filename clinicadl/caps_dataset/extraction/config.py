@@ -22,6 +22,7 @@ class ExtractionConfig(BaseModel):
     Abstract config class for the Extraction procedure.
     """
 
+    use_uncropped_image: bool = False
     extract_method: ExtractionMethod
     file_type: Optional[FileType] = None
     save_features: bool = False

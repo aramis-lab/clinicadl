@@ -40,7 +40,6 @@ def compute_folder_and_file_type(
         )
     else:
         mod_subfolder = preprocessing.value.replace("-", "_")
-
         if isinstance(config.preprocessing, T1PreprocessingConfig) or isinstance(
             config.preprocessing, FlairPreprocessingConfig
         ):
@@ -54,5 +53,4 @@ def compute_folder_and_file_type(
                 pattern=Path(f"*{config.preprocessing.custom_suffix}"),
                 description="Custom suffix",
             )
-
     return mod_subfolder, file_type

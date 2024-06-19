@@ -33,21 +33,25 @@ from clinicadl.utils.exceptions import (
 )
 
 
-def find_file_type(config: CapsDatasetConfig) -> FileType:
+def find_file_type(config: CapsDatasetConfig) -> Dict[str, str]:
     if isinstance(config.preprocessing, T1PreprocessingConfig):
-        file_type = linear_nii(config.preprocessing)
+        file_type = linear_nii(
+            LinearModality.T1W, config.extraction.use_uncropped_image
+        )
     elif isinstance(config.preprocessing, PETPreprocessingConfig):
-        # TODO: Check but I think it is already checked before
-        # if (
-        #     config.preprocessing.tracer is None
-        #     or config.preprocessing.suvr_reference_region is None
-        # ):
-        #     raise ClinicaDLArgumentError(
-        #         "`tracer` and `suvr_reference_region` must be defined "
-        #         "when using `pet-linear` preprocessing."
-        #     )
-
-        file_type = pet_linear_nii(config.preprocessing)
+        if (
+            config.preprocessing.tracer is None
+            or config.preprocessing.suvr_reference_region is None
+        ):
+            raise ClinicaDLArgumentError(
+                "`tracer` and `suvr_reference_region` must be defined "
+                "when using `pet-linear` preprocessing."
+            )
+        file_type = pet_linear_nii(
+            config.preprocessing.tracer,
+            config.preprocessing.suvr_reference_region,
+            config.extraction.use_uncropped_image,
+        )
     else:
         raise NotImplementedError(
             f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"

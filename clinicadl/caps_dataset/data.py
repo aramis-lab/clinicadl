@@ -747,7 +747,7 @@ def return_dataset(
 
     if preprocessing_dict["mode"] == "image":
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetImage(
@@ -761,7 +761,7 @@ def return_dataset(
         config.extraction.patch_size = preprocessing_dict["patch_size"]
         config.extraction.stride_size = preprocessing_dict["stride_size"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetPatch(
@@ -776,7 +776,7 @@ def return_dataset(
         config.extraction.roi_list = preprocessing_dict["roi_list"]
         config.extraction.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetRoi(
@@ -801,7 +801,7 @@ def return_dataset(
             else preprocessing_dict["num_slices"]
         )
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
-        config.preprocessing.use_uncropped_image = preprocessing_dict[
+        config.extraction.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
         ]
         return CapsDatasetSlice(
