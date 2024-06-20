@@ -259,14 +259,18 @@ class TaskManager:
                         reconstruction = outputs["recon_x"][idx].squeeze(0).cpu()
                         latent = outputs["embedding"][idx].squeeze(0).cpu()
                         
+                        input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                        output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                        latent_nii = nib.Nifti1Image(output["embedding"].squeeze(0).cpu().detach().numpy(), eye(4))
+                        
                         input_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.nii.gz"
                         )
-                        output_nii_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        output_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.nii.gz"
                         )
                         latent_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.nii.gz"
                         )
                         
                         caps_sub_ses_path = path.join(
@@ -275,15 +279,15 @@ class TaskManager:
                             participant_id, 
                             session_id,
                             "deeplearning_prepare_data", 
-                            f"{self.mode}-based", 
+                            f"{self.mode}_based", 
                             "custom", 
                         )
 
                         makedirs(caps_sub_ses_path, exist_ok=True)
 
-                        torch.save(image, path.join(caps_sub_ses_path, input_filename))
-                        torch.save(reconstruction, path.join(caps_sub_ses_path, output_nii_filename))
-                        # torch.save(latent, path.join(latent_tensor_path, latent_filename))
+                        nib.save(input_nii, path.join(caps_sub_ses_path, input_filename))
+                        nib.save(output_nii, path.join(caps_sub_ses_path, output_filename))
+                        nib.save(latent_nii, path.join(latent_tensor_path, latent_filename))
                         
                     if sample_latent > 0: 
                         
@@ -314,9 +318,18 @@ class TaskManager:
                                 )
                                 torch.save(latent, path.join(latent_tensor_path, latent_filename))
 
-                            if save_caps: 
-                                torch.save(reconstruction, path.join(caps_sub_ses_path, output_pt_filename))
-                                torch.save(latent, path.join(caps_sub_ses_path, latent_filename))
+                            if save_caps:
+                                input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                                output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                                latent_nii = nib.Nifti1Image(latent.detach().numpy(), eye(4))
+                                
+                                input_nii_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                                output_nii_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                                latent_nii_filename = f"{participant_id}_{session_id}_image_latent-{i}.nii.gz"
+                        
+                                nib.save(input_nii, path.join(caps_sub_ses_path, input_nii_filename))
+                                nib.save(output_nii_filename, path.join(caps_sub_ses_path, output_nii_filename))
+                                nib.save(latent_nii_filename, path.join(caps_sub_ses_path, latent_nii_filename))
                             
                             row = self.generate_test_row_sample_latent(idx, i, data, output["recon_x"])
                             row_df = pd.DataFrame(row, columns=sample_latent_results_df.columns)

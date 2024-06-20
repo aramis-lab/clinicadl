@@ -1352,18 +1352,20 @@ class MapsManager:
                     )
                     torch.save(latent, path.join(latent_tensor_path, output_filename))
                 
-                if save_caps: 
+                if save_caps:
                     reconstruction = output["recon_x"].squeeze(0).cpu()
-                    latent = output["embedding"].squeeze(0).cpu()
+                    input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                    latent_nii = nib.Nifti1Image(output["embedding"].squeeze(0).cpu().detach().numpy(), eye(4))
                     
                     input_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.nii.gz"
                     )
                     output_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.nii.gz"
                     )
                     latent_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.nii.gz"
                     )
                     
                     caps_sub_ses_path = path.join(
@@ -1375,12 +1377,11 @@ class MapsManager:
                         f"{self.mode}-based", 
                         "custom", 
                     )
-
                     makedirs(caps_sub_ses_path, exist_ok=True)
 
-                    torch.save(image, path.join(caps_sub_ses_path, input_filename))
-                    torch.save(reconstruction, path.join(caps_sub_ses_path, output_filename))
-                    torch.save(latent, path.join(latent_tensor_path, latent_filename))
+                    nib.save(input_nii, path.join(caps_sub_ses_path, input_filename))
+                    nib.save(output_nii, path.join(caps_sub_ses_path, output_filename))
+                    nib.save(latent_nii, path.join(latent_tensor_path, latent_filename))
 
                     logger.debug(f"File saved at {[input_filename, output_filename, latent_filename]}")
 
@@ -1396,7 +1397,7 @@ class MapsManager:
                     
                     for i in range(sample_latent):
                         output = outputs[i]
-                        
+                                                
                         reconstruction = output["recon_x"].squeeze(0).cpu()
                         output_pt_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
@@ -1405,7 +1406,6 @@ class MapsManager:
                         logger.debug(f"File saved at {output_pt_filename}")
                         
                         # Convert tensor to nifti image with appropriate affine
-                        reconstruction = output["recon_x"].squeeze(0).cpu()
                         input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
                         output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
                         # Create file name according to participant and session id
@@ -1420,10 +1420,13 @@ class MapsManager:
                         )
                         torch.save(latent, path.join(latent_tensor_path, latent_filename))
 
-                        if save_caps: 
-                            torch.save(reconstruction, path.join(caps_sub_ses_path, output_pt_filename))
-                            torch.save(latent, path.join(caps_sub_ses_path, latent_filename))
 
+                        if save_caps:
+                            nib.save(input_nii, path.join(caps_sub_ses_path, input_nii_filename))
+                            nib.save(output_nii_filename, path.join(caps_sub_ses_path, output_nii_filename))
+                            latent_nii = nib.Nifti1Image(latent.detach().numpy(), eye(4))
+                            latent_nii_filename = f"{participant_id}_{session_id}_image_latent-{i}.nii.gz"
+                            nib.save(latent_nii, path.join(caps_sub_ses_path, latent_nii_filename))
 
     def _ensemble_prediction(
         self,
