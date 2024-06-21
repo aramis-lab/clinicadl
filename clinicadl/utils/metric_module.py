@@ -54,7 +54,7 @@ class MetricModule(BaseModel):
     metrics: dict
     n_classes: int = 2
 
-    def __init__(self, v: list[str], n_classes: int = 2):
+    def __init__(self, v: List[str], n_classes: int = 2):
         list_fn = [
             method_name
             for method_name in dir(MetricModule)
@@ -521,11 +521,6 @@ class RetainBest:
             self.best_metrics[selection] = np.inf
         elif selection in [e.value for e in MetricOptimumMax]:
             self.best_metrics[selection] = -np.inf
-        else:
-            raise ValueError(
-                f"Objective unknown for metric {selection}."
-                f"Please choose between 'min' and 'max'."
-            )
 
     def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
         """
