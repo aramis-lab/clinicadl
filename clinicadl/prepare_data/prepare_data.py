@@ -19,6 +19,7 @@ from clinicadl.utils.clinica_utils import (
     check_caps_folder,
     clinicadl_file_reader,
     container_from_filename,
+    determine_caps_or_bids,
     get_subject_session_list,
 )
 from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
@@ -71,7 +72,6 @@ def DeepLearningPrepareData(
     )
 
     mod_subfolder, file_type = compute_folder_and_file_type(config, from_bids)
-    # parameters["file_type"] = file_type
 
     # Input file:
     input_files = clinicadl_file_reader(
