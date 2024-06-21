@@ -11,6 +11,7 @@ from clinicadl.random_search.random_search_cli import cli as random_search_cli
 from clinicadl.train.train_cli import cli as train_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
 from clinicadl.utils.maps_manager.logwriter import setup_logging
+from clinicadl.abnormality_map.abnormality_map_cli import cli as abnormality_map_cli
 
 CONTEXT_SETTINGS = dict(
     # Extend content width to avoid shortening of pipeline help.
@@ -44,6 +45,7 @@ cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)
 cli.add_command(random_search_cli)
+cli.add_command(abnormality_map_cli)
 
 if __name__ == "__main__":
     cli()
