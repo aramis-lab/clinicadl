@@ -80,10 +80,10 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
 def check_test_path(test_path: Path, baseline: bool = True) -> Path:
     if baseline:
         train_filename = "train_baseline.tsv"
-        label_filename = "label_baseline.tsv"
+        label_filename = "labels_baseline.tsv"
     else:
         train_filename = "train.tsv"
-        label_filename = "label.tsv"
+        label_filename = "labels.tsv"
 
     if not (test_path.parent / train_filename).is_file():
         if not (test_path.parent / label_filename).is_file():
