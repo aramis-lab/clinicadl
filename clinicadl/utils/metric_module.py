@@ -60,18 +60,17 @@ class MetricModule(BaseModel):
             for method_name in dir(MetricModule)
             if callable(getattr(MetricModule, method_name))
         ]
-        self.metrics = dict()
-        self.n_classes = n_classes
+        metrics = dict()
         for metric in v:
             if f"compute_{metric.lower()}" in list_fn:
-                self.metrics[metric] = getattr(
-                    MetricModule, f"compute_{metric.lower()}"
-                )
+                metrics[metric] = getattr(MetricModule, f"compute_{metric.lower()}")
             else:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
                 )
-        super(MetricModule, self).__init__()
+        super(MetricModule, self).__init__(
+            metrics=metrics, n_classes=n_classes if n_classes is not None else 2
+        )
 
     def apply(self, y, y_pred, report_ci) -> MetricResult:
         """
@@ -527,3 +526,38 @@ class RetainBest:
                 f"Objective unknown for metric {selection}."
                 f"Please choose between 'min' and 'max'."
             )
+
+    def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
+        """
+        Computes for each metric if this is the best value ever seen.
+
+        Args:
+            metrics_valid: metrics computed on the validation set
+        Returns:
+            metric is associated to True if it is the best value ever seen.
+        """
+
+        metrics_dict = dict()
+        for selection in self.selection_metrics:
+            if selection in [e.value for e in MetricOptimumMin]:
+                metrics_dict[selection] = (
+                    metrics_valid[selection] < self.best_metrics[selection]
+                )
+                self.best_metrics[selection] = min(
+                    metrics_valid[selection], self.best_metrics[selection]
+                )
+
+            elif selection in [e.value for e in MetricOptimumMax]:
+                metrics_dict[selection] = (
+                    metrics_valid[selection] > self.best_metrics[selection]
+                )
+                self.best_metrics[selection] = max(
+                    metrics_valid[selection], self.best_metrics[selection]
+                )
+            else:
+                raise ValueError(
+                    f"Objective unknown for metric {selection}."
+                    f"Please choose between 'min' and 'max'."
+                )
+
+        return metrics_dict

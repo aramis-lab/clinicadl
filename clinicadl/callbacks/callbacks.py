@@ -179,11 +179,11 @@ class LoggerCallback(Callback):
 
     def on_epoch_end(self, parameters, **kwargs):
         logger.info(
-            f"{kwargs['mode']} level training loss is {kwargs['metrics_train']['loss']} "
+            f"{kwargs['mode']} level training loss is {kwargs['metrics_train'].get_value('loss')} "
             f"at the end of iteration {kwargs['i']}"
         )
         logger.info(
-            f"{kwargs['mode']} level validation loss is {kwargs['metrics_valid']['loss']} "
+            f"{kwargs['mode']} level validation loss is {kwargs['metrics_valid'].get_value('loss')} "
             f"at the end of iteration {kwargs['i']}"
         )
 
