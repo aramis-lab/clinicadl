@@ -52,22 +52,22 @@ def get_mask_checksum_and_filename(
 
 
 def get_mask_path(pathology: Optional[Pathology] = None) -> Path:
+    cache_clinicadl_home = Path.home() / ".cache" / "clinicadl" / "ressources"
     if pathology is None:
-        cache_clinicadl = Path.home() / ".cache" / "clinicadl" / "ressources" / "masks"  # noqa (typo in resources)
+        cache_clinicadl = cache_clinicadl_home / "masks"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
     else:
-        cache_clinicadl = (
-            Path.home() / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
-        )  # noqa (typo in resources)
+        cache_clinicadl = cache_clinicadl_home / "masks_hypo"  # noqa (typo in resources)
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
 
     checksum, filename = get_mask_checksum_and_filename(pathology)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
+
     FILE1 = RemoteFileStructure(
         filename=filename,
         url=url_aramis,
         checksum=checksum.value,
     )
-    cache_clinicadl.mkdir(parents=True, exist_ok=True)
     if not ((cache_clinicadl / "AAL2").is_dir()) and not (
         (cache_clinicadl / filename).is_file()
     ):
