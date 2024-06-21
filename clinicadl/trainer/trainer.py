@@ -14,6 +14,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.utils.metric_module import MetricResult
 from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
@@ -1477,9 +1478,9 @@ class Trainer:
     def _write_weights(
         self,
         state: Dict[str, Any],
-        metrics_dict: Optional[Dict[str, bool]],
+        metrics_dict: Optional[MetricResult],
         split: int,
-        network: int = None,
+        network: Optional[int] = None,
         filename: str = "checkpoint.pth.tar",
         save_all_models: bool = False,
     ) -> None:
@@ -1528,7 +1529,7 @@ class Trainer:
 
         # Save model according to several metrics
         if metrics_dict is not None:
-            for metric_name, metric_bool in metrics_dict.items():
+            for metric_name, metric_bool in zip(metrics_dict.name, metrics_dict.value):
                 metric_path = (
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
