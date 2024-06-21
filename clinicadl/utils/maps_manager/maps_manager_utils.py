@@ -143,6 +143,9 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     ):
         parameters["preprocessing_dict"]["slice_mode"] = "rgb"
 
+    if "preprocessing" not in parameters:
+        parameters["preprocessing"] = parameters["preprocessing_dict"]["preprocessing"]
+
     from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
