@@ -56,9 +56,6 @@ def quality_check(
     """
     logger = getLogger("clinicadl.quality_check")
 
-    tracer = Tracer(config.extraction.tracer)
-    ref_region = SUVRReferenceRegions(config.extraction.ref_region)
-
     if Path(output_tsv).is_file():
         raise NameError("this file already exists please chose another name")
 
