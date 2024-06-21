@@ -503,7 +503,7 @@ class RetainBest:
                 f"The selection metrics {self.selection_metrics} are not all implemented. "
                 f"Available metrics are {implemented_metrics}."
             )
-        self.best_metrics = dict()
+        self.best_metrics = MetricResult()
         for selection in self.selection_metrics:
             if n_classes > 2:
                 metric_fn = metric_module.metrics[selection]
@@ -518,11 +518,11 @@ class RetainBest:
 
     def set_optimum(self, selection: str):
         if selection in [e.value for e in MetricOptimumMin]:
-            self.best_metrics[selection] = np.inf
+            self.best_metrics.append(name=selection, value=np.inf)
         elif selection in [e.value for e in MetricOptimumMax]:
-            self.best_metrics[selection] = -np.inf
+            self.best_metrics.append(name=selection, value=-np.inf)
 
-    def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
+    def step(self, metrics_valid: MetricResult) -> MetricResult:
         """
         Computes for each metric if this is the best value ever seen.
 
@@ -532,22 +532,38 @@ class RetainBest:
             metric is associated to True if it is the best value ever seen.
         """
 
-        metrics_dict = dict()
+        metrics_result = MetricResult()
         for selection in self.selection_metrics:
             if selection in [e.value for e in MetricOptimumMin]:
-                metrics_dict[selection] = (
-                    metrics_valid[selection] < self.best_metrics[selection]
+                metrics_result.append(
+                    name=selection,
+                    value=(
+                        metrics_valid.get_value(selection)
+                        < self.best_metrics.get_value(selection)
+                    ),
                 )
-                self.best_metrics[selection] = min(
-                    metrics_valid[selection], self.best_metrics[selection]
+                self.best_metrics.append(
+                    name=selection,
+                    value=min(
+                        metrics_valid.get_value(selection),
+                        self.best_metrics.get_value(selection),
+                    ),
                 )
 
             elif selection in [e.value for e in MetricOptimumMax]:
-                metrics_dict[selection] = (
-                    metrics_valid[selection] > self.best_metrics[selection]
+                metrics_result.append(
+                    name=selection,
+                    value=(
+                        metrics_valid.get_value(selection)
+                        > self.best_metrics.get_value(selection)
+                    ),
                 )
-                self.best_metrics[selection] = max(
-                    metrics_valid[selection], self.best_metrics[selection]
+                self.best_metrics.append(
+                    name=selection,
+                    value=max(
+                        metrics_valid.get_value(selection),
+                        self.best_metrics.get_value(selection),
+                    ),
                 )
             else:
                 raise ValueError(
@@ -555,4 +571,4 @@ class RetainBest:
                     f"Please choose between 'min' and 'max'."
                 )
 
-        return metrics_dict
+        return metrics_result
