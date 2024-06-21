@@ -139,7 +139,6 @@ class CapsDataset(Dataset):
         try:
             folder, file_type = self.config.compute_folder_and_file_type()
 
-            # file_type = self.config.extraction.file_type
             results = clinicadl_file_reader(
                 [participant],
                 [session],
@@ -163,7 +162,6 @@ class CapsDataset(Dataset):
         # Try to find .pt file
         except ClinicaDLCAPSError:
             folder, file_type = self.config.compute_folder_and_file_type()
-            # file_type = self.config.extraction.file_type
             file_type.pattern = file_type.pattern.replace(".nii.gz", ".pt")
             results = clinicadl_file_reader(
                 [participant],

@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 from time import time
 from typing import List, Optional, Tuple
 
@@ -9,7 +8,6 @@ from pydantic.types import NonNegativeInt
 from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import (
     ExtractionMethod,
-    Preprocessing,
     SliceDirection,
     SliceMode,
 )

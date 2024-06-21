@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
@@ -22,7 +22,7 @@ from clinicadl.utils.clinica_utils import (
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.utils.enum import ExtractionMethod, LinearModality, Preprocessing
+from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
 def get_extraction(extract_method: ExtractionMethod):

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.preprocessing.config import (
@@ -16,7 +16,7 @@ from clinicadl.utils.clinica_utils import (
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.enum import Preprocessing
 
 
 def compute_folder_and_file_type(
