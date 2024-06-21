@@ -776,12 +776,13 @@ class MapsManager:
                 sep="\t",
             )
         if metrics is not None:
-            # pd.DataFrame(metrics, index=[0])
-            metrics.to_df().to_csv(
-                performance_dir / f"{data_group}_image_level_metrics.tsv",
-                index=False,
-                sep="\t",
-            )
+            if metrics.name != ():
+                # pd.DataFrame(metrics, index=[0])
+                metrics.to_df().to_csv(
+                    performance_dir / f"{data_group}_image_level_metrics.tsv",
+                    index=False,
+                    sep="\t",
+                )
 
     def _mode_to_image_tsv(
         self,
