@@ -1373,8 +1373,6 @@ class MapsManager:
                         "subjects", 
                         participant_id, 
                         session_id,
-                        "deeplearning_prepare_data", 
-                        f"{self.mode}-based", 
                         "custom", 
                     )
                     makedirs(caps_sub_ses_path, exist_ok=True)
@@ -1409,8 +1407,8 @@ class MapsManager:
                         input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
                         output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
                         # Create file name according to participant and session id
-                        input_nii_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                        output_nii_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                        input_nii_filename = f"{participant_id}_{session_id}_input.nii.gz"
+                        output_nii_filename = f"{participant_id}_{session_id}_output-{i}.nii.gz"
                         nib.save(input_nii, path.join(nifti_path, input_nii_filename))
                         nib.save(output_nii, path.join(nifti_path, output_nii_filename))
                         
@@ -1425,7 +1423,7 @@ class MapsManager:
                             nib.save(input_nii, path.join(caps_sub_ses_path, input_nii_filename))
                             nib.save(output_nii_filename, path.join(caps_sub_ses_path, output_nii_filename))
                             latent_nii = nib.Nifti1Image(latent.detach().numpy(), eye(4))
-                            latent_nii_filename = f"{participant_id}_{session_id}_image_latent-{i}.nii.gz"
+                            latent_nii_filename = f"{participant_id}_{session_id}_latent-{i}.nii.gz"
                             nib.save(latent_nii, path.join(caps_sub_ses_path, latent_nii_filename))
 
     def _ensemble_prediction(

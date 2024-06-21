@@ -11,7 +11,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.metric_module import MetricModule
 from clinicadl.utils.network.network import Network
 
-from os import makedirs
+from os import makedirs, path
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
@@ -249,45 +249,65 @@ class TaskManager:
                     # Save latent tensor
                     if save_latent_tensor:
                         latent = outputs["embedding"][idx].squeeze(0).cpu()
-                        output_nii_filename = (
+                        latent_pt_filename = (
                             f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                         )
-                        torch.save(latent, path.join(latent_tensor_path, output_nii_filename))
+                        torch.save(latent, path.join(latent_tensor_path, latent_pt_filename))
 
                     # Save as CAPS
                     if save_caps: 
                         reconstruction = outputs["recon_x"][idx].squeeze(0).cpu()
-                        latent = outputs["embedding"][idx].squeeze(0).cpu()
+
+                        input_pt = image[0].detach()
+                        output_pt = reconstruction.detach()
+                        latent_pt = outputs["embedding"][idx].squeeze(0).cpu()
+
+                        input_nii = nib.Nifti1Image(input_pt.numpy(), eye(4))
+                        output_nii = nib.Nifti1Image(output_pt.numpy(), eye(4))
                         
-                        input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                        output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
-                        latent_nii = nib.Nifti1Image(output["embedding"].squeeze(0).cpu().detach().numpy(), eye(4))
-                        
-                        input_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.nii.gz"
+                        input_nii_filename = (
+                            f"{participant_id}_{session_id}_input.nii.gz"
                         )
-                        output_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.nii.gz"
-                        )
-                        latent_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.nii.gz"
+                        output_nii_filename = (
+                            f"{participant_id}_{session_id}_output.nii.gz"
                         )
                         
-                        caps_sub_ses_path = path.join(
+                        input_pt_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                        )
+                        output_pt_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                        )
+                        latent_pt_filename = (
+                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                        )
+
+                        caps_sub_ses_pt_path = path.join(
                             caps_path, 
                             "subjects", 
-                            participant_id, 
+                            participant_id,
                             session_id,
-                            "deeplearning_prepare_data", 
-                            f"{self.mode}_based", 
+                            "deeplearning_prepare_data",
+                            f"{self.mode}_based",
+                            "custom",
+                        )
+                        caps_sub_ses_nii_path = path.join(
+                            caps_path, 
+                            "subjects", 
+                            participant_id,
+                            session_id,
                             "custom", 
                         )
+                        makedirs(caps_sub_ses_pt_path, exist_ok=True)
+                        makedirs(caps_sub_ses_nii_path, exist_ok=True)
 
-                        makedirs(caps_sub_ses_path, exist_ok=True)
+                        nib.save(input_nii, path.join(caps_sub_ses_nii_path, input_nii_filename))
+                        nib.save(output_nii, path.join(caps_sub_ses_nii_path, output_nii_filename))
 
-                        nib.save(input_nii, path.join(caps_sub_ses_path, input_filename))
-                        nib.save(output_nii, path.join(caps_sub_ses_path, output_filename))
-                        nib.save(latent_nii, path.join(latent_tensor_path, latent_filename))
+                        torch.save(input_pt, path.join(caps_sub_ses_pt_path, input_pt_filename))
+                        torch.save(output_pt, path.join(caps_sub_ses_pt_path, output_pt_filename))
+                        torch.save(latent_pt, path.join(caps_sub_ses_pt_path, latent_pt_filename))
+                        
                         
                     if sample_latent > 0: 
                         
@@ -319,17 +339,18 @@ class TaskManager:
                                 torch.save(latent, path.join(latent_tensor_path, latent_filename))
 
                             if save_caps:
-                                input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                                output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
-                                latent_nii = nib.Nifti1Image(latent.detach().numpy(), eye(4))
+                                output_pt = reconstruction.detach()
+                                output_nii = nib.Nifti1Image(output_pt.numpy(), eye(4))
+                                latent_pt = output["embedding"].squeeze(0).cpu()
                                 
-                                input_nii_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                                output_nii_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
-                                latent_nii_filename = f"{participant_id}_{session_id}_image_latent-{i}.nii.gz"
+                                output_pt_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
+                                output_nii_filename = f"{participant_id}_{session_id}_output-{i}.nii.gz"
+                                latent_pt_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
                         
-                                nib.save(input_nii, path.join(caps_sub_ses_path, input_nii_filename))
-                                nib.save(output_nii_filename, path.join(caps_sub_ses_path, output_nii_filename))
-                                nib.save(latent_nii_filename, path.join(caps_sub_ses_path, latent_nii_filename))
+                                nib.save(output_nii, path.join(caps_sub_ses_nii_path, output_nii_filename))
+                                torch.save(output_pt, path.join(caps_sub_ses_pt_path, output_pt_filename))
+                                torch.save(latent_pt, path.join(caps_sub_ses_pt_path, latent_pt_filename))
+
                             
                             row = self.generate_test_row_sample_latent(idx, i, data, output["recon_x"])
                             row_df = pd.DataFrame(row, columns=sample_latent_results_df.columns)
