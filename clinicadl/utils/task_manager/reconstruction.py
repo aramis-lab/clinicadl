@@ -1,9 +1,12 @@
+import numpy as np
+from scipy.stats import bootstrap
 from torch import nn
 from torch.utils.data import sampler
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.metric_module import MetricResult
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 
@@ -40,24 +43,16 @@ class ReconstructionManager(TaskManager):
         ]
 
         for metric in self.evaluation_metrics:
-            row.append(metrics[metric])
+            row.append(metrics.get_value(metric))
         return [row]
 
-    def compute_metrics(self, results_df, report_ci=False):
+    def compute_metrics(self, results_df, report_ci: bool = False) -> MetricResult:
+        results = MetricResult()
+
         if not report_ci:
-            return {
-                metric: results_df[metric].mean() for metric in self.evaluation_metrics
-            }
-
-        from numpy import mean as np_mean
-        from scipy.stats import bootstrap
-
-        metrics = dict()
-        metric_names = ["Metrics"]
-        metric_values = ["Values"]
-        lower_ci_values = ["Lower bound CI"]
-        upper_ci_values = ["Upper bound CI"]
-        se_values = ["SE"]
+            for metric in self.evaluation_metrics:
+                results.append(name=metric, value=results_df[metric].mean())
+            return results
 
         for metric in self.evaluation_metrics:
             metric_vals = results_df[metric]
@@ -69,7 +64,7 @@ class ReconstructionManager(TaskManager):
             if len(results_df) >= 2:
                 res = bootstrap(
                     metric_vals,
-                    np_mean,
+                    np.mean,
                     n_resamples=3000,
                     confidence_level=0.95,
                     method="percentile",
@@ -77,21 +72,17 @@ class ReconstructionManager(TaskManager):
                 lower_ci, upper_ci = res.confidence_interval
                 standard_error = res.standard_error
             else:
-                lower_ci, upper_ci, standard_error = "N/A"
+                lower_ci, upper_ci, standard_error = np.nan, np.nan, np.nan
 
-            metric_names.append(metric)
-            metric_values.append(metric_result)
-            lower_ci_values.append(lower_ci)
-            upper_ci_values.append(upper_ci)
-            se_values.append(standard_error)
+            results.append(
+                name=metric,
+                value=metric_result,
+                lower_ci=lower_ci,
+                upper_ci=upper_ci,
+                se=standard_error,
+            )
 
-        metrics["Metric_names"] = metric_names
-        metrics["Metric_values"] = metric_values
-        metrics["Lower_CI"] = lower_ci_values
-        metrics["Upper_CI"] = upper_ci_values
-        metrics["SE"] = se_values
-
-        return metrics
+        return results
 
     @staticmethod
     def output_size(input_size, df, label):

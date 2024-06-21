@@ -1,40 +1,68 @@
 from logging import getLogger
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
+from pydantic import BaseModel, field_validator
+from scipy.stats import bootstrap
 
-metric_optimum = {
-    "MAE": "min",
-    "RMSE": "min",
-    "accuracy": "max",
-    "sensitivity": "max",
-    "specificity": "max",
-    "PPV": "max",
-    "NPV": "max",
-    "F1_score": "max",
-    "BA": "max",
-    "PSNR": "max",
-    "SSIM": "max",
-    "LNCC": "max",
-    "loss": "min",
-    "AP": "min",
-}
+from clinicadl.utils.enum import MetricOptimumMax, MetricOptimumMin
 
 logger = getLogger("clinicadl.metric")
 
 
-class MetricModule:
-    def __init__(self, metrics, n_classes=2):
-        self.n_classes = n_classes
+class MetricResult(BaseModel):
+    name: Tuple[str, ...] = ()
+    value: Tuple[float, ...] = ()
+    lower_ci: Tuple[float, ...] = ()
+    upper_ci: Tuple[float, ...] = ()
+    se: Tuple[float, ...] = ()
 
-        # Check if wanted metrics are implemented
+    def append(
+        self,
+        name: str,
+        value: float,
+        lower_ci: float = np.nan,
+        upper_ci: float = np.nan,
+        se: float = np.nan,
+    ):
+        self.name += (name,)
+        self.value += (value,)
+        self.lower_ci += (lower_ci,)
+        self.upper_ci += (upper_ci,)
+        self.se += (se,)
+
+    def get_value(self, name_: str) -> float:
+        idx = self.name.index(name_)
+        return self.value[idx]
+
+    def to_df(self) -> pd.DataFrame:
+        out = pd.DataFrame(
+            columns=["Metrics", "Values", "Lower bound CI", "Upper bound CI", "SE"]
+        )
+
+        out["Metrics"] = list(self.name)
+        out["Values"] = list(self.value)
+        out["Lower bound CI"] = list(self.lower_ci)
+        out["Upper bound CI"] = list(self.upper_ci)
+        out["SE"] = list(self.se)
+
+        return out
+
+
+class MetricModule(BaseModel):
+    metrics: dict
+    n_classes: int = 2
+
+    def __init__(self, v: list[str], n_classes: int = 2):
         list_fn = [
             method_name
             for method_name in dir(MetricModule)
             if callable(getattr(MetricModule, method_name))
         ]
         self.metrics = dict()
-        for metric in metrics:
+        self.n_classes = n_classes
+        for metric in v:
             if f"compute_{metric.lower()}" in list_fn:
                 self.metrics[metric] = getattr(
                     MetricModule, f"compute_{metric.lower()}"
@@ -43,8 +71,9 @@ class MetricModule:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
                 )
+        super(MetricModule, self).__init__()
 
-    def apply(self, y, y_pred, report_ci):
+    def apply(self, y, y_pred, report_ci) -> MetricResult:
         """
         This is a function to calculate the different metrics based on the list of true label and predicted label
 
@@ -55,19 +84,11 @@ class MetricModule:
         Returns:
             (Dict[str:float]) metrics results
         """
+        results = MetricResult()
+
         if y is not None and y_pred is not None:
-            results = dict()
             y = np.array(y)
             y_pred = np.array(y_pred)
-
-            if report_ci:
-                from scipy.stats import bootstrap
-
-            metric_names = ["Metrics"]
-            metric_values = ["Values"]  # Collect metric values
-            lower_ci_values = ["Lower bound CI"]  # Collect lower CI values
-            upper_ci_values = ["Upper bound CI"]  # Collect upper CI values
-            se_values = ["SE"]  # Collect standard error values
 
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
@@ -81,6 +102,11 @@ class MetricModule:
                 for class_number in class_numbers:
                     metric_result = metric_fn(y, y_pred, class_number)
 
+                    metric_name = (
+                        f"{metric_key}-{class_number}"
+                        if len(class_numbers) > 1
+                        else f"{metric_key}"
+                    )
                     # Compute confidence intervals only if there are at least two samples in the data.
                     if report_ci and len(y) >= 2:
                         res = bootstrap(
@@ -95,33 +121,16 @@ class MetricModule:
                         lower_ci, upper_ci = res.confidence_interval
                         standard_error = res.standard_error
 
-                        metric_values.append(metric_result)
-                        lower_ci_values.append(lower_ci)
-                        upper_ci_values.append(upper_ci)
-                        se_values.append(standard_error)
-                        metric_names.append(
-                            f"{metric_key}-{class_number}"
-                            if len(class_numbers) > 1
-                            else f"{metric_key}"
+                        results.append(
+                            name=metric_name,
+                            value=metric_result,
+                            lower_ci=lower_ci,
+                            upper_ci=upper_ci,
+                            se=standard_error,
                         )
-                    else:
-                        results[
-                            (
-                                f"{metric_key}-{class_number}"
-                                if len(class_numbers) > 1
-                                else f"{metric_key}"
-                            )
-                        ] = metric_result
 
-            if report_ci:
-                # Construct the final results dictionary
-                results["Metric_names"] = metric_names
-                results["Metric_values"] = metric_values
-                results["Lower_CI"] = lower_ci_values
-                results["Upper_CI"] = upper_ci_values
-                results["SE"] = se_values
-        else:
-            results = dict()
+                    else:
+                        results.append(name=metric_name, value=metric_result)
 
         return results
 
@@ -483,12 +492,13 @@ class RetainBest:
 
         if "loss" in selection_metrics:
             selection_metrics.remove("loss")
-            metric_module = MetricModule(selection_metrics)
+            metric_module = MetricModule(v=selection_metrics, n_classes=n_classes)
             selection_metrics.append("loss")
         else:
-            metric_module = MetricModule(selection_metrics)
+            metric_module = MetricModule(v=selection_metrics, n_classes=n_classes)
 
-        implemented_metrics = set(metric_optimum.keys())
+        implemented_metrics = set(e.value for e in MetricOptimumMax)
+        implemented_metrics.update(e.value for e in MetricOptimumMin)
         if not set(self.selection_metrics).issubset(implemented_metrics):
             raise NotImplementedError(
                 f"The selection metrics {self.selection_metrics} are not all implemented. "
@@ -508,42 +518,12 @@ class RetainBest:
                 self.set_optimum(selection)
 
     def set_optimum(self, selection: str):
-        if metric_optimum[selection] == "min":
+        if selection in [e.value for e in MetricOptimumMin]:
             self.best_metrics[selection] = np.inf
-        elif metric_optimum[selection] == "max":
+        elif selection in [e.value for e in MetricOptimumMax]:
             self.best_metrics[selection] = -np.inf
         else:
             raise ValueError(
-                f"Objective {metric_optimum[selection]} unknown for metric {selection}."
+                f"Objective unknown for metric {selection}."
                 f"Please choose between 'min' and 'max'."
             )
-
-    def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
-        """
-        Computes for each metric if this is the best value ever seen.
-
-        Args:
-            metrics_valid: metrics computed on the validation set
-        Returns:
-            metric is associated to True if it is the best value ever seen.
-        """
-
-        metrics_dict = dict()
-        for selection in self.selection_metrics:
-            if metric_optimum[selection] == "min":
-                metrics_dict[selection] = (
-                    metrics_valid[selection] < self.best_metrics[selection]
-                )
-                self.best_metrics[selection] = min(
-                    metrics_valid[selection], self.best_metrics[selection]
-                )
-
-            else:
-                metrics_dict[selection] = (
-                    metrics_valid[selection] > self.best_metrics[selection]
-                )
-                self.best_metrics[selection] = max(
-                    metrics_valid[selection], self.best_metrics[selection]
-                )
-
-        return metrics_dict

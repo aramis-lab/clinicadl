@@ -26,6 +26,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
+from clinicadl.utils.metric_module import MetricResult
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -38,7 +39,7 @@ class MapsManager:
     def __init__(
         self,
         maps_path: Path,
-        parameters: Dict[str, Any] = None,
+        parameters: Optional[Dict[str, Any]] = None,
         verbose: str = "info",
     ):
         """
@@ -167,10 +168,10 @@ class MapsManager:
             )
             if use_labels:
                 if network is not None:
-                    metrics[f"{self.mode}_id"] = network
+                    metrics.append(name=f"{self.mode}_id", value=network)
 
                 loss_to_log = (
-                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                    metrics.value[-1] if report_ci else metrics.get_value("loss")
                 )
 
                 logger.info(
@@ -241,12 +242,11 @@ class MapsManager:
             )
             if use_labels:
                 if network is not None:
-                    metrics[f"{self.mode}_id"] = network
+                    metrics.append(name=f"{self.mode}_id", value=network)
 
-                if report_ci:
-                    loss_to_log = metrics["Metric_values"][-1]
-                else:
-                    loss_to_log = metrics["loss"]
+                loss_to_log = (
+                    metrics.value[-1] if report_ci else metrics.get_value("loss")
+                )
 
                 logger.info(
                     f"{self.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
@@ -679,7 +679,7 @@ class MapsManager:
     def _mode_level_to_tsv(
         self,
         results_df: pd.DataFrame,
-        metrics: Union[Dict, pd.DataFrame],
+        metrics: MetricResult,
         split: int,
         selection: str,
         data_group: str = "train",
@@ -712,17 +712,10 @@ class MapsManager:
             )
 
         metrics_path = performance_dir / f"{data_group}_{self.mode}_level_metrics.tsv"
+        # TODO: add a method to csv instead of to df to MetricResult
         if metrics is not None:
-            # if data_group == "train" or data_group == "validation":
-            #     pd_metrics = pd.DataFrame(metrics, index = [0])
-            #     header = True
-            # else:
-            #     pd_metrics = pd.DataFrame(metrics).T
-            #     header = False
-
-            pd_metrics = pd.DataFrame(metrics).T
+            pd_metrics = metrics.to_df()
             header = False
-            # import ipdb; ipdb.set_trace()
             if not metrics_path.is_file():
                 pd_metrics.to_csv(metrics_path, index=False, sep="\t", header=header)
             else:
@@ -783,7 +776,8 @@ class MapsManager:
                 sep="\t",
             )
         if metrics is not None:
-            pd.DataFrame(metrics, index=[0]).to_csv(
+            # pd.DataFrame(metrics, index=[0])
+            metrics.to_df().to_csv(
                 performance_dir / f"{data_group}_image_level_metrics.tsv",
                 index=False,
                 sep="\t",
@@ -840,7 +834,7 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path: Path = None,
+        transfer_path: Optional[Path] = None,
         transfer_selection=None,
         nb_unfrozen_layer=0,
         split=None,

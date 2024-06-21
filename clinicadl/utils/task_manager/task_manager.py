@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Sampler
 from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.network.network import Network
 from clinicadl.utils.maps_manager.ddp import cluster
-from clinicadl.utils.metric_module import MetricModule
+from clinicadl.utils.metric_module import MetricModule, MetricResult
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
@@ -63,7 +63,9 @@ class TaskManager:
         pass
 
     @abstractmethod
-    def compute_metrics(self, results_df: pd.DataFrame) -> Dict[str, float]:
+    def compute_metrics(
+        self, results_df: pd.DataFrame, report_ci: bool = False
+    ) -> MetricResult:
         """
         Compute the metrics based on the result of generate_test_row
 
@@ -79,7 +81,7 @@ class TaskManager:
         self,
         performance_df: pd.DataFrame,
         validation_df: pd.DataFrame,
-        selection_threshold: float = None,
+        selection_threshold: Optional[float] = None,
         use_labels: bool = True,
         method: str = "soft",
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
@@ -157,7 +159,7 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def get_criterion(criterion: str = None) -> _Loss:
+    def get_criterion(criterion: Optional[str] = None) -> _Loss:
         """
         Gives the optimization criterion.
         Must check that it is compatible with the task.
@@ -183,7 +185,7 @@ class TaskManager:
         use_labels: bool = True,
         amp: bool = False,
         report_ci=False,
-    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    ) -> Tuple[pd.DataFrame, MetricResult]:
         """
         Computes the predictions and evaluation metrics.
 
@@ -239,26 +241,18 @@ class TaskManager:
         results_df.reset_index(inplace=True, drop=True)
 
         if not use_labels:
-            metrics_dict = None
+            metrics_result = MetricResult()
         else:
-            metrics_dict = self.compute_metrics(results_df, report_ci=report_ci)
+            metrics_result = self.compute_metrics(results_df, report_ci=report_ci)
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
                 loss_value = total_loss[loss_component].item() / cluster.world_size
 
-                if report_ci:
-                    metrics_dict["Metric_names"].append(loss_component)
-                    metrics_dict["Metric_values"].append(loss_value)
-                    metrics_dict["Lower_CI"].append("N/A")
-                    metrics_dict["Upper_CI"].append("N/A")
-                    metrics_dict["SE"].append("N/A")
-
-                else:
-                    metrics_dict[loss_component] = loss_value
+                metrics_result.append(name=loss_component, value=loss_value)
 
         torch.cuda.empty_cache()
 
-        return results_df, metrics_dict
+        return results_df, metrics_result
 
     def test_da(
         self,
@@ -269,7 +263,7 @@ class TaskManager:
         use_labels: bool = True,
         target: bool = True,
         report_ci=False,
-    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    ) -> Tuple[pd.DataFrame, MetricResult]:
         """
         Computes the predictions and evaluation metrics.
 
@@ -303,19 +297,11 @@ class TaskManager:
             results_df.reset_index(inplace=True, drop=True)
 
         if not use_labels:
-            metrics_dict = None
+            metrics_result = MetricResult()
         else:
-            metrics_dict = self.compute_metrics(results_df, report_ci=report_ci)
-            if report_ci:
-                metrics_dict["Metric_names"].append("loss")
-                metrics_dict["Metric_values"].append(total_loss)
-                metrics_dict["Lower_CI"].append("N/A")
-                metrics_dict["Upper_CI"].append("N/A")
-                metrics_dict["SE"].append("N/A")
-
-            else:
-                metrics_dict["loss"] = total_loss
+            metrics_result = self.compute_metrics(results_df, report_ci=report_ci)
+            metrics_result.append(name="loss", value=total_loss)
 
         torch.cuda.empty_cache()
 
-        return results_df, metrics_dict
+        return results_df, metrics_result

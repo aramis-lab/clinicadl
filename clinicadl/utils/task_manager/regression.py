@@ -6,6 +6,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.metric_module import MetricResult
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 
@@ -45,7 +46,7 @@ class RegressionManager(TaskManager):
             ]
         ]
 
-    def compute_metrics(self, results_df, report_ci):
+    def compute_metrics(self, results_df, report_ci: bool = False) -> MetricResult:
         return self.metrics_module.apply(
             results_df.true_label.values,
             results_df.predicted_label.values,
