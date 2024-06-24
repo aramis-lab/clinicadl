@@ -3,7 +3,6 @@ from logging import getLogger
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
-from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.computational_config")
@@ -19,9 +18,14 @@ class ComputationalConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
     @model_validator(mode="after")
-    def validator_gpu(self) -> Self:
+    def check_gpu(self) -> Self:
         if self.gpu:
-            check_gpu()
+            import torch
+
+            if not torch.cuda.is_available():
+                raise ClinicaDLArgumentError(
+                    "No GPU is available. To run on CPU, please set gpu to false or add the --no-gpu flag if you use the commandline."
+                )
         elif self.amp:
             raise ClinicaDLArgumentError(
                 "AMP is designed to work with modern GPUs. Please add the --gpu flag."

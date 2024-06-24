@@ -11,9 +11,9 @@ from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.config.config.computational import ComputationalConfig
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
-from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 from .models import resnet_darq_qc_18 as darq_r18
@@ -25,17 +25,12 @@ logger = getLogger("clinicadl.quality-check")
 
 
 def quality_check(
-    caps_dir: Path,
+    config: CapsDatasetConfig,
     output_path: Path,
-    tsv_path: Path = None,
     threshold: float = 0.5,
-    batch_size: int = 1,
-    n_proc: int = 0,
-    gpu: bool = True,
-    amp: bool = False,
     network: str = "darq",
-    use_tensor: bool = False,
-    use_uncropped_image: bool = True,
+    use_tensor: bool = True,
+    computational_config: ComputationalConfig = ComputationalConfig(),
 ):
     """
     Performs t1-linear quality-check
@@ -66,14 +61,6 @@ def quality_check(
     """
 
     logger = getLogger("clinicadl.quality_check")
-    config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
-        caps_directory=caps_dir,
-        extraction=ExtractionMethod.IMAGE,
-        preprocessing_type=Preprocessing.T1_LINEAR,
-        preprocessing=Preprocessing.T1_LINEAR,
-        use_uncropped_image=use_uncropped_image,
-        data_tsv=tsv_path,
-    )
 
     if output_path.suffix != ".tsv":
         raise ValueError("please enter a tsv path")
@@ -124,10 +111,10 @@ def quality_check(
     logger.debug("Loading quality check model.")
     model.load_state_dict(torch.load(model_file))
     model.eval()
-    if gpu:
+    if computational_config.gpu:
         logger.debug("Working on GPU.")
         model = model.cuda()
-    elif amp:
+    elif computational_config.amp:
         raise ClinicaDLArgumentError(
             "AMP is designed to work with modern GPUs. Please add the --gpu flag."
         )
@@ -139,12 +126,15 @@ def quality_check(
         # Load DataFrame
         logger.debug("Loading data to check.")
         config.data.data_df = load_and_check_tsv(
-            tsv_path, caps_dict, output_path.resolve().parent
+            config.data.data_tsv, caps_dict, output_path.resolve().parent
         )
 
         dataset = QCDataset(config, use_extracted_tensors=use_tensor)
         dataloader = DataLoader(
-            dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
+            dataset,
+            num_workers=config.dataloader.n_proc,
+            batch_size=config.dataloader.batch_size,
+            pin_memory=True,
         )
 
         columns = ["participant_id", "session_id", "pass_probability", "pass"]
@@ -159,9 +149,9 @@ def quality_check(
         for data in dataloader:
             logger.debug(f"Processing subject {data['participant_id']}.")
             inputs = data["image"]
-            if gpu:
+            if computational_config.gpu:
                 inputs = inputs.cuda()
-            with autocast(enabled=amp):
+            with autocast(enabled=computational_config.amp):
                 outputs = softmax(model(inputs))
             # We cast back to 32bits. It should be a no-op as softmax is not eligible
             # to fp16 and autocast is forbidden on CPU (output would be bf16 otherwise).

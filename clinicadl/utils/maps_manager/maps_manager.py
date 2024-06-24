@@ -15,7 +15,6 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.caps_dataset.extraction.utils import path_encoder
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
@@ -423,12 +422,6 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
         self.parameters = add_default_values(parameters)
-        if self.parameters["gpu"]:
-            check_gpu()
-        elif self.parameters["amp"]:
-            raise ClinicaDLArgumentError(
-                "AMP is designed to work with modern GPUs. Please add the --gpu flag."
-            )
 
         transfo_config = TransformsConfig(
             normalize=self.normalize,
