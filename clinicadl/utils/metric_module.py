@@ -480,6 +480,12 @@ class MetricModule(BaseModel):
 
         return average_precision_score(y, y_pred, *args)
 
+    @staticmethod
+    def compute_roc_auc(y_pred, y, *args):
+        from monai.metrics.rocauc import compute_roc_auc
+
+        return compute_roc_auc(y_pred, y, *args)
+
 
 class RetainBest:
     """

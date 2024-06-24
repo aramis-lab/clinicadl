@@ -18,9 +18,11 @@ from clinicadl.utils.metric_module import MetricModule, MetricResult
 # TODO: add function to check that the output size of the network corresponds to what is expected to
 #  perform the task
 class TaskManager:
-    def __init__(self, mode: str, n_classes: int = None):
+    def __init__(self, mode: str, n_classes: int = 2):
         self.mode = mode
-        self.metrics_module = MetricModule(self.evaluation_metrics, n_classes=n_classes)
+        self.metrics_module = MetricModule(
+            v=self.evaluation_metrics, n_classes=n_classes
+        )
 
     @property
     @abstractmethod

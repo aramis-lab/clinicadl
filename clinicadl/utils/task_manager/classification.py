@@ -53,6 +53,7 @@ class ClassificationManager(TaskManager):
             "MK",
             "LR_plus",
             "LR_minus",
+            "roc_auc",
         ]
 
     @property
