@@ -9,7 +9,7 @@ from nilearn.image import resample_to_img
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader, extraction
+from clinicadl.commandline.modules_options import data, dataloader, preprocessing
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
     options as hypometabolic,
 )
@@ -38,7 +38,7 @@ logger = getLogger("clinicadl.generate.hypometabolic")
 @dataloader.n_proc
 @data.participants_tsv
 @data.n_subjects
-@extraction.use_uncropped_image
+@preprocessing.use_uncropped_image
 @hypometabolic.sigma
 @hypometabolic.anomaly_degree
 @hypometabolic.pathology
@@ -97,7 +97,9 @@ def cli(generated_caps_directory, **kwargs):
     sessions = [data_df.at[i, "session_id"] for i in range(caps_config.data.n_subjects)]
     cohort = caps_config.data.caps_directory
 
-    images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
+    images_paths = clinicadl_file_reader(
+        participants, sessions, cohort, file_type.model_dump()
+    )[0]
     image_nii = nib.loadsave.load(images_paths[0])
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()

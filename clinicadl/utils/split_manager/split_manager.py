@@ -258,7 +258,7 @@ class SplitManager:
     @staticmethod
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
-            if not tsv_path.suffix == ".tsv":
+            if tsv_path.suffix != ".tsv":
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )

@@ -31,7 +31,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
     # TODO: computes baseline sessions on-the-fly to manager TSV file case
 
     if multi_cohort:
-        if not test_path.suffix == ".tsv":
+        if test_path.suffix != ".tsv":
             raise ClinicaDLArgumentError(
                 "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
@@ -77,6 +77,27 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
     return test_df
 
 
+def check_test_path(test_path: Path, baseline: bool = True) -> Path:
+    if baseline:
+        train_filename = "train_baseline.tsv"
+        label_filename = "labels_baseline.tsv"
+    else:
+        train_filename = "train.tsv"
+        label_filename = "labels.tsv"
+
+    if not (test_path.parent / train_filename).is_file():
+        if not (test_path.parent / label_filename).is_file():
+            raise ClinicaDLTSVError(
+                f"There is no {train_filename} nor {label_filename} in your folder {test_path.parents[0]} "
+            )
+        else:
+            test_path = test_path.parent / label_filename
+    else:
+        test_path = test_path.parent / train_filename
+
+    return test_path
+
+
 def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
     if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
@@ -91,29 +112,7 @@ def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
             )
         return test_df
 
-    test_df = pd.DataFrame()
-
-    if baseline:
-        if not (test_path.parent / "train_baseline.tsv").is_file():
-            if not (test_path.parent / "labels_baseline.tsv").is_file():
-                raise ClinicaDLTSVError(
-                    f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {test_path.parents[0]} "
-                )
-            else:
-                test_path = test_path.parent / "labels_baseline.tsv"
-        else:
-            test_path = test_path.parent / "train_baseline.tsv"
-    else:
-        if not (test_path.parent / "train.tsv").is_file():
-            if not (test_path.parent / "labels.tsv").is_file():
-                raise ClinicaDLTSVError(
-                    f"There is no train.tsv or labels.tsv in your folder {test_path.parent} "
-                )
-            else:
-                test_path = test_path.parent / "labels.tsv"
-        else:
-            test_path = test_path.parent / "train.tsv"
-
+    test_path = check_test_path(test_path=test_path, baseline=baseline)
     test_df = pd.read_csv(test_path, sep="\t")
     test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
     test_df.reset_index(inplace=True, drop=True)
