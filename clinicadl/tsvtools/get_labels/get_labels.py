@@ -27,7 +27,7 @@ from clinicadl.tsvtools.tsvtools_utils import (
     neighbour_session,
 )
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.tsvtools")
 

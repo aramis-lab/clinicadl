@@ -15,7 +15,8 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.caps_dataset.extraction.utils import path_encoder
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
-from clinicadl.trainer.config.train import TrainConfig
+
+# from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
@@ -41,7 +42,7 @@ class MapsManager:
         self,
         maps_path: Path,
         parameters: Optional[Dict[str, Any]] = None,
-        config: Optional[TrainConfig] = None,
+        config: Optional = None,
         verbose: str = "info",
     ):
         """

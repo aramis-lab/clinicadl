@@ -22,7 +22,7 @@ from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.transforms.config import TransformsConfig
+
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
 from clinicadl.utils.enum import Task

@@ -26,7 +26,7 @@ from clinicadl.utils.enum import (
     ExtractionMethod,
     Preprocessing,
 )
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools import commandline_to_json
 from clinicadl.utils.read_utils import get_mask_path
 
 logger = getLogger("clinicadl.generate.hypometabolic")
