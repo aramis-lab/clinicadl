@@ -52,14 +52,14 @@ def DeepLearningPrepareData(
 
     if config.extraction.save_features:
         logger.info(
-            f"{config.extraction.extract_method.value}s will be extracted in Pytorch tensor from {len(sessions)} images."
+            f"{config.extraction.mode.value}s will be extracted in Pytorch tensor from {len(sessions)} images."
         )
     else:
         logger.info(
             f"Images will be extracted in Pytorch tensor from {len(sessions)} images."
         )
         logger.info(
-            f"Information for {config.extraction.extract_method.value} will be saved in output JSON file and will be used "
+            f"Information for {config.extraction.mode.value} will be saved in output JSON file and will be used "
             f"during training for on-the-fly extraction."
         )
     logger.debug(f"List of subjects: \n{subjects}.")
@@ -95,7 +95,7 @@ def DeepLearningPrepareData(
             logger.debug(f"Output tensor saved at {output_file}")
 
     if (
-        config.extraction.extract_method == ExtractionMethod.IMAGE
+        config.extraction.mode == ExtractionMethod.IMAGE
         or not config.extraction.save_features
     ):
 
@@ -114,7 +114,7 @@ def DeepLearningPrepareData(
         )
 
     elif config.extraction.save_features:
-        if config.extraction.extract_method == ExtractionMethod.SLICE:
+        if config.extraction.mode == ExtractionMethod.SLICE:
             assert isinstance(config.extraction, ExtractionSliceConfig)
 
             def prepare_slice(file):
@@ -137,7 +137,7 @@ def DeepLearningPrepareData(
                 delayed(prepare_slice)(file) for file in input_files
             )
 
-        elif config.extraction.extract_method == ExtractionMethod.PATCH:
+        elif config.extraction.mode == ExtractionMethod.PATCH:
             assert isinstance(config.extraction, ExtractionPatchConfig)
 
             def prepare_patch(file):
@@ -159,7 +159,7 @@ def DeepLearningPrepareData(
                 delayed(prepare_patch)(file) for file in input_files
             )
 
-        elif config.extraction.extract_method == ExtractionMethod.ROI:
+        elif config.extraction.mode == ExtractionMethod.ROI:
             assert isinstance(config.extraction, ExtractionROIConfig)
 
             def prepare_roi(file):
@@ -220,7 +220,7 @@ def DeepLearningPrepareData(
 
     else:
         raise NotImplementedError(
-            f"Extraction is not implemented for mode {config.extraction.extract_method.value}."
+            f"Extraction is not implemented for mode {config.extraction.mode.value}."
         )
 
     # Save parameters dictionary

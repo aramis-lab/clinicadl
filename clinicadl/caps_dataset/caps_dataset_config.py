@@ -58,7 +58,7 @@ def get_preprocessing(preprocessing_type: Preprocessing):
 class CapsDatasetConfig(BaseModel):
     """Config class for CapsDataset object.
 
-    caps_directory, preprocessing_json, extract_method, preprocessing
+    caps_directory, preprocessing_json, mode, preprocessing
     are arguments that must be passed by the user.
 
     transforms isn't optional because there is always at least one transform (NanRemoval)

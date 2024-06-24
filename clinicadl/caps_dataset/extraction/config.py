@@ -20,7 +20,7 @@ class ExtractionConfig(BaseModel):
     Abstract config class for the Extraction procedure.
     """
 
-    extract_method: ExtractionMethod
+    mode: ExtractionMethod
     file_type: Optional[FileType] = None
     save_features: bool = False
     extract_json: Optional[str] = None
@@ -39,13 +39,13 @@ class ExtractionConfig(BaseModel):
 
 
 class ExtractionImageConfig(ExtractionConfig):
-    extract_method: ExtractionMethod = ExtractionMethod.IMAGE
+    mode: ExtractionMethod = ExtractionMethod.IMAGE
 
 
 class ExtractionPatchConfig(ExtractionConfig):
     patch_size: int = 50
     stride_size: int = 50
-    extract_method: ExtractionMethod = ExtractionMethod.PATCH
+    mode: ExtractionMethod = ExtractionMethod.PATCH
 
 
 class ExtractionSliceConfig(ExtractionConfig):
@@ -53,7 +53,7 @@ class ExtractionSliceConfig(ExtractionConfig):
     slice_mode: SliceMode = SliceMode.RGB
     num_slices: Optional[NonNegativeInt] = None
     discarded_slices: Tuple[NonNegativeInt, NonNegativeInt] = (0, 0)
-    extract_method: ExtractionMethod = ExtractionMethod.SLICE
+    mode: ExtractionMethod = ExtractionMethod.SLICE
 
 
 class ExtractionROIConfig(ExtractionConfig):
@@ -64,4 +64,4 @@ class ExtractionROIConfig(ExtractionConfig):
     roi_custom_suffix: str = ""
     roi_custom_mask_pattern: str = ""
     roi_background_value: int = 0
-    extract_method: ExtractionMethod = ExtractionMethod.ROI
+    mode: ExtractionMethod = ExtractionMethod.ROI

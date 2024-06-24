@@ -745,7 +745,7 @@ def return_dataset(
     )
     config.transforms = transforms_config
 
-    if preprocessing_dict["mode"] == "image":
+    if isinstance(config.extraction, ExtractionImageConfig):
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
         config.preprocessing.use_uncropped_image = preprocessing_dict[
             "use_uncropped_image"
@@ -756,8 +756,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "patch":
-        assert isinstance(config.extraction, ExtractionPatchConfig)
+    elif isinstance(config.extraction, ExtractionPatchConfig):
         config.extraction.patch_size = preprocessing_dict["patch_size"]
         config.extraction.stride_size = preprocessing_dict["stride_size"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
@@ -771,8 +770,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "roi":
-        assert isinstance(config.extraction, ExtractionROIConfig)
+    elif isinstance(config.extraction, ExtractionROIConfig):
         config.extraction.roi_list = preprocessing_dict["roi_list"]
         config.extraction.roi_uncrop_output = preprocessing_dict["uncropped_roi"]
         config.extraction.save_features = preprocessing_dict["prepare_dl"]
@@ -786,8 +784,7 @@ def return_dataset(
             preprocessing_dict=preprocessing_dict,
         )
 
-    elif preprocessing_dict["mode"] == "slice":
-        assert isinstance(config.extraction, ExtractionSliceConfig)
+    elif isinstance(config.extraction, ExtractionSliceConfig):
         config.extraction.slice_direction = SliceDirection(
             str(preprocessing_dict["slice_direction"])
         )
