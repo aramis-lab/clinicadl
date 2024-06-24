@@ -2,8 +2,11 @@ from pathlib import Path
 
 import click
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import computational, data, dataloader
+from clinicadl.config.config.computational import ComputationalConfig
+from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
 
 @click.command(name="t1-linear", no_args_is_help=True)
@@ -31,7 +34,6 @@ from clinicadl.commandline.modules_options import computational, data, dataloade
 @click.option(
     "--use_tensor",
     type=bool,
-    default=False,
     is_flag=True,
     help="Flag allowing the pipeline to run on the extracted tensors and not on the nifti images",
 )
@@ -42,7 +44,7 @@ def cli(
     threshold,
     batch_size,
     n_proc,
-    gpu,
+    no_gpu,
     amp,
     network,
     use_tensor,
@@ -54,23 +56,28 @@ def cli(
 
     OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
+    from clinicadl.quality_check.t1_linear.quality_check import (
+        quality_check as linear_qc,
+    )
 
-    if gpu:
-        check_gpu()
-
-    from .quality_check import quality_check as linear_qc
+    computational_config = ComputationalConfig(amp=amp, gpu=not no_gpu)
+    config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
+        caps_directory=caps_directory,
+        extraction=ExtractionMethod.IMAGE,
+        preprocessing_type=Preprocessing.T1_LINEAR,
+        preprocessing=Preprocessing.T1_LINEAR,
+        use_uncropped_image=use_uncropped_image,
+        data_tsv=participants_tsv,
+        n_proc=n_proc,
+        batch_size=batch_size,
+        use_tensor=use_tensor,
+    )
 
     linear_qc(
-        caps_directory,
         output_path=results_tsv,
-        tsv_path=participants_tsv,
         threshold=threshold,
-        batch_size=batch_size,
-        n_proc=n_proc,
-        gpu=gpu,
-        amp=amp,
         network=network,
         use_tensor=use_tensor,
-        use_uncropped_image=use_uncropped_image,
+        config=config,
+        computational_config=computational_config,
     )
