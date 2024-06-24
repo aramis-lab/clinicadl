@@ -14,6 +14,7 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.caps_dataset.extraction.utils import path_encoder
+from clinicadl.metrics.metric_module import MetricResult
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
@@ -26,7 +27,6 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
-from clinicadl.utils.metric_module import MetricResult
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -775,14 +775,13 @@ class MapsManager:
                 index=False,
                 sep="\t",
             )
-        if metrics is not None:
-            if metrics.name != ():
-                # pd.DataFrame(metrics, index=[0])
-                metrics.to_df().to_csv(
-                    performance_dir / f"{data_group}_image_level_metrics.tsv",
-                    index=False,
-                    sep="\t",
-                )
+        if metrics is not None and metrics.name != ():
+            # pd.DataFrame(metrics, index=[0])
+            metrics.to_df().to_csv(
+                performance_dir / f"{data_group}_image_level_metrics.tsv",
+                index=False,
+                sep="\t",
+            )
 
     def _mode_to_image_tsv(
         self,

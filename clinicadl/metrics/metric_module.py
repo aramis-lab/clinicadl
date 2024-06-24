@@ -1,53 +1,15 @@
 from logging import getLogger
-from typing import Dict, List, Optional, Tuple
+from typing import List
 
 import numpy as np
-import pandas as pd
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from scipy.stats import bootstrap
 
+from clinicadl.metrics.metric_result import MetricResult
+from clinicadl.transforms.transforms import ToTensor
 from clinicadl.utils.enum import MetricOptimumMax, MetricOptimumMin
 
 logger = getLogger("clinicadl.metric")
-
-
-class MetricResult(BaseModel):
-    name: Tuple[str, ...] = ()
-    value: Tuple[float, ...] = ()
-    lower_ci: Tuple[float, ...] = ()
-    upper_ci: Tuple[float, ...] = ()
-    se: Tuple[float, ...] = ()
-
-    def append(
-        self,
-        name: str,
-        value: float,
-        lower_ci: float = np.nan,
-        upper_ci: float = np.nan,
-        se: float = np.nan,
-    ):
-        self.name += (name,)
-        self.value += (value,)
-        self.lower_ci += (lower_ci,)
-        self.upper_ci += (upper_ci,)
-        self.se += (se,)
-
-    def get_value(self, name_: str) -> float:
-        idx = self.name.index(name_)
-        return self.value[idx]
-
-    def to_df(self) -> pd.DataFrame:
-        out = pd.DataFrame(
-            columns=["Metrics", "Values", "Lower bound CI", "Upper bound CI", "SE"]
-        )
-
-        out["Metrics"] = list(self.name)
-        out["Values"] = list(self.value)
-        out["Lower bound CI"] = list(self.lower_ci)
-        out["Upper bound CI"] = list(self.upper_ci)
-        out["SE"] = list(self.se)
-
-        return out
 
 
 class MetricModule(BaseModel):
@@ -484,7 +446,12 @@ class MetricModule(BaseModel):
     def compute_roc_auc(y_pred, y, *args):
         from monai.metrics.rocauc import compute_roc_auc
 
-        return compute_roc_auc(y_pred, y, *args)
+        y_pred = ToTensor()(y_pred)
+        y = ToTensor()(y)
+        if "average" not in args:
+            return compute_roc_auc(y_pred, y)
+        else:
+            return compute_roc_auc(y_pred, y, args["average"])
 
 
 class RetainBest:

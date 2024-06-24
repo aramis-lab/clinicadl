@@ -10,9 +10,9 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
 
 from clinicadl.caps_dataset.data import CapsDataset
+from clinicadl.metrics.metric_module import MetricModule, MetricResult
 from clinicadl.network.network import Network
 from clinicadl.utils.maps_manager.ddp import cluster
-from clinicadl.utils.metric_module import MetricModule, MetricResult
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to

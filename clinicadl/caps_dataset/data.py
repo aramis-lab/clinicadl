@@ -29,6 +29,7 @@ from clinicadl.prepare_data.prepare_data_utils import (
     find_mask_path,
 )
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.transforms.transforms import ToTensor
 from clinicadl.utils.enum import (
     ExtractionMethod,
     Pattern,
