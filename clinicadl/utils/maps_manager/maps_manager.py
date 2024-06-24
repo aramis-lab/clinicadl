@@ -14,6 +14,8 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.caps_dataset.extraction.utils import path_encoder
+from clinicadl.config.config_utils import get_default_from_config_class as get_default
+from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.exceptions import (
@@ -38,7 +40,8 @@ class MapsManager:
     def __init__(
         self,
         maps_path: Path,
-        parameters: Dict[str, Any] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+        config: Optional[TrainConfig] = None,
         verbose: str = "info",
     ):
         """
@@ -71,6 +74,7 @@ class MapsManager:
 
         # Initiate MAPS
         else:
+            self.config = config
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
@@ -444,7 +448,9 @@ class MapsManager:
         self.task_manager = self._init_task_manager(df=train_df)
 
         if self.parameters["architecture"] == "default":
-            self.parameters["architecture"] = self.task_manager.get_default_network()
+            self.parameters["architecture"] = get_default(
+                "architecture", self.config.model
+            )
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (

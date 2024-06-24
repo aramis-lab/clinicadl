@@ -247,18 +247,3 @@ class ClassificationManager(TaskManager):
             results = None
 
         return df_final, results
-
-    @staticmethod
-    def get_criterion(criterion=None):
-        compatible_losses = ["CrossEntropyLoss", "MultiMarginLoss"]
-        if criterion is None:
-            return nn.CrossEntropyLoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Classification loss must be chosen in {compatible_losses}."
-            )
-        return getattr(nn, criterion)()
-
-    @staticmethod
-    def get_default_network():
-        return "Conv5_FC3"

@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Tuple
 
 from pydantic import computed_field, field_validator
+from torch import nn
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config.validation import ValidationConfig as BaseValidationConfig
@@ -32,6 +33,9 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
     @field_validator("architecture")
     def validator_architecture(cls, v):
         return v  # TODO : connect to network module to have list of available architectures
+
+    def get_criterion(self):
+        return getattr(nn, self.loss.value)()
 
 
 class ValidationConfig(BaseValidationConfig):

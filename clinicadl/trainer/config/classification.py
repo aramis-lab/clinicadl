@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Tuple
 
 from pydantic import computed_field, field_validator
+from torch import nn
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.config.config.validation import ValidationConfig as BaseValidationConfig
@@ -43,6 +44,9 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
             0 <= v <= 1
         ), f"selection_threshold must be between 0 and 1 but it has been set to {v}."
         return v
+
+    def get_criterion(self):
+        return getattr(nn, self.loss.value)()
 
 
 class ValidationConfig(BaseValidationConfig):

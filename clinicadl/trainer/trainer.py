@@ -739,7 +739,7 @@ class Trainer:
             fsdp=self.config.computational.fully_sharded_data_parallel,
             amp=self.config.computational.amp,
         )
-        criterion = self.maps_manager.task_manager.get_criterion(self.config.model.loss)
+        criterion = self.config.model.get_criterion()
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         self.callback_handler.on_train_begin(
@@ -1039,7 +1039,7 @@ class Trainer:
             transfer_selection=self.config.transfer_learning.transfer_selection_metric,
         )
 
-        criterion = self.maps_manager.task_manager.get_criterion(self.config.model.loss)
+        criterion = self.config.model.get_criterion()
         logger.debug(f"Criterion for {self.config.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
 

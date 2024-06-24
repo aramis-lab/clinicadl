@@ -155,26 +155,6 @@ class TaskManager:
         """
         pass
 
-    @staticmethod
-    @abstractmethod
-    def get_criterion(criterion: str = None) -> _Loss:
-        """
-        Gives the optimization criterion.
-        Must check that it is compatible with the task.
-
-        Args:
-            criterion: name of the loss as written in Pytorch.
-        Raises:
-            ClinicaDLArgumentError: if the criterion is not compatible with the task.
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def get_default_network() -> Network:
-        """Returns the default network to use when no architecture is specified."""
-        pass
-
     def test(
         self,
         model: Network,

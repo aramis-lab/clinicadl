@@ -16,7 +16,13 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.config import PredictConfig
+from clinicadl.trainer.config.classification import (
+    NetworkConfig as ClassifNetworkConfig,
+)
+from clinicadl.trainer.config.reconstruction import NetworkConfig as ReconNetworkConfig
+from clinicadl.trainer.config.regression import NetworkConfig as RegNetworkConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
@@ -33,6 +39,13 @@ class PredictManager:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
+
+        if self.maps_manager.network_task == Task.REGRESSION:
+            self.model_config = RegNetworkConfig(*_config.model_dump())
+        if self.maps_manager.network_task == Task.RECONSTRUCTION:
+            self.model_config = ReconNetworkConfig(*_config.model_dump())
+        if self.maps_manager.network_task == Task.CLASSIFICATION:
+            self.model_config = ClassifNetworkConfig(*_config.model_dump())
 
     def predict(
         self,
@@ -119,7 +132,9 @@ class PredictManager:
         )
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
-        criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
+        criterion = (
+            self.model_config.get_criterion()
+        )  # self._config.model.loss ?? maps_manager loss ??
         self._check_data_group(df=group_df)
 
         assert self._config.split  # don't know if needed ? try to raise an exception ?

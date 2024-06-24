@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from logging import getLogger
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -27,3 +28,7 @@ class NetworkConfig(BaseModel):  # TODO : put in model module
             0 <= v <= 1
         ), f"dropout must be between 0 and 1 but it has been set to {v}."
         return v
+
+    @abstractmethod
+    def get_criterion(self):
+        pass

@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Tuple
 
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
+from torch import nn
 
 from clinicadl.config.config.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
@@ -32,6 +33,21 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
     @field_validator("architecture")
     def validator_architecture(cls, v):
         return v  # TODO : connect to network module to have list of available architectures
+
+    def get_criterion(self):
+        if self.loss.value == "VAEGaussianLoss":
+            from clinicadl.network.vae.vae_utils import VAEGaussianLoss
+
+            return VAEGaussianLoss
+        elif self.loss.value == "VAEBernoulliLoss":
+            from clinicadl.network.vae.vae_utils import VAEBernoulliLoss
+
+            return VAEBernoulliLoss
+        elif self.loss.value == "VAEContinuousBernoulliLoss":
+            from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
+
+            return VAEContinuousBernoulliLoss
+        return getattr(nn, self.loss.value)()
 
 
 class ValidationConfig(BaseValidationConfig):

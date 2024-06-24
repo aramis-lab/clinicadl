@@ -166,25 +166,3 @@ class RegressionManager(TaskManager):
             results = None
 
         return df_final, results
-
-    @staticmethod
-    def get_criterion(criterion=None):
-        compatible_losses = [
-            "L1Loss",
-            "MSELoss",
-            "KLDivLoss",
-            "BCEWithLogitsLoss",
-            "HuberLoss",
-            "SmoothL1Loss",
-        ]
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Regression loss must be chosen in {compatible_losses}."
-            )
-        return getattr(nn, criterion)()
-
-    @staticmethod
-    def get_default_network():
-        return "Conv5_FC3"
