@@ -56,7 +56,9 @@ def cli(
 
     OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
-    from .quality_check import quality_check as linear_qc
+    from clinicadl.quality_check.t1_linear.quality_check import (
+        quality_check as linear_qc,
+    )
 
     computational_config = ComputationalConfig(amp=amp, gpu=not no_gpu)
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(

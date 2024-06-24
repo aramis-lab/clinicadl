@@ -23,7 +23,7 @@ def cli(
 
     GROUP_LABEL is the group associated to the gray matter DARTEL template in CAPS_DIRECTORY.
     """
-    from .quality_check import quality_check as volume_qc
+    from .....quality_check.t1_volume.quality_check import quality_check as volume_qc
 
     volume_qc(
         caps_directory,

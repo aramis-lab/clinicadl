@@ -4,6 +4,7 @@ This file contains all methods needed to perform the quality check procedure aft
 
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import torch
@@ -30,7 +31,7 @@ def quality_check(
     threshold: float = 0.5,
     network: str = "darq",
     use_tensor: bool = True,
-    computational_config: ComputationalConfig = ComputationalConfig(),
+    computational_config: Optional[ComputationalConfig] = None,
 ):
     """
     Performs t1-linear quality-check
@@ -59,7 +60,8 @@ def quality_check(
         To use uncropped images instead of the cropped ones.
 
     """
-
+    if computational_config is None:
+        computational_config = ComputationalConfig()
     logger = getLogger("clinicadl.quality_check")
 
     if output_path.suffix != ".tsv":
