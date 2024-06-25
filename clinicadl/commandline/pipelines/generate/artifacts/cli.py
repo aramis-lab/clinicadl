@@ -23,9 +23,9 @@ from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
     write_missing_mods,
 )
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.iotools.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.generate.artifacts")
 

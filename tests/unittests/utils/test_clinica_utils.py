@@ -23,7 +23,7 @@ def test_pet_linear_nii(
 ):
     from clinicadl.caps_dataset.preprocessing.config import PETPreprocessingConfig
     from clinicadl.caps_dataset.preprocessing.utils import pet_linear_nii
-    from clinicadl.utils.clinica_utils import FileType
+    from clinicadl.utils.iotools.clinica_utils import FileType
 
     config = PETPreprocessingConfig(
         tracer=tracer,

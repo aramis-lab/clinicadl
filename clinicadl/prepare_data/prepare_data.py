@@ -16,15 +16,15 @@ from clinicadl.caps_dataset.extraction.config import (
     ExtractionROIConfig,
     ExtractionSliceConfig,
 )
-from clinicadl.utils.clinica_utils import (
+from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.iotools.clinica_utils import (
     check_caps_folder,
     clinicadl_file_reader,
     container_from_filename,
     determine_caps_or_bids,
     get_subject_session_list,
 )
-from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.iotools.utils import write_preprocessing
 
 from .prepare_data_utils import check_mask_list

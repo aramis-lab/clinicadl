@@ -87,7 +87,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     @computed_field
     @property
     def caps_dict(self) -> Dict[str, Path]:
-        from clinicadl.utils.clinica_utils import check_caps_folder
+        from clinicadl.utils.iotools.clinica_utils import check_caps_folder
 
         if self.multi_cohort:
             if self.caps_directory.suffix != ".tsv":

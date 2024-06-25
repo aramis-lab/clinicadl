@@ -15,9 +15,9 @@ from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
     write_missing_mods,
 )
-from clinicadl.utils.clinica_utils import FileType
+from clinicadl.utils.iotools.clinica_utils import FileType
+from clinicadl.utils.iotools.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.iotools.utils import write_preprocessing
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 
 logger = getLogger("clinicadl.generate.shepplogan")
 

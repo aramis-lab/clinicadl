@@ -1,7 +1,6 @@
 from typing import Optional
 
 from clinicadl.caps_dataset.preprocessing import config as preprocessing_config
-from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import (
     LinearModality,
     Preprocessing,
@@ -10,6 +9,7 @@ from clinicadl.utils.enum import (
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
 )
+from clinicadl.utils.iotools.clinica_utils import FileType
 
 
 def bids_nii(

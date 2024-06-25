@@ -25,10 +25,8 @@ from clinicadl.caps_dataset.preprocessing.utils import (
     pet_linear_nii,
 )
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
-from clinicadl.utils.exceptions import MAPSError
-from clinicadl.utils.maps_manager_utils import read_json
+from clinicadl.utils.iotools.clinica_utils import FileType
 
 
 def get_extraction(extract_method: ExtractionMethod):

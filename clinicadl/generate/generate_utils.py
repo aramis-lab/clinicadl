@@ -10,10 +10,10 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.utils.clinica_utils import create_subs_sess_list
 from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
+from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv
 
 

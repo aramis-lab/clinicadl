@@ -15,6 +15,8 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils import cluster
+from clinicadl.utils.computational.ddp import DDP, init_ddp
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
@@ -29,7 +31,6 @@ from clinicadl.utils.iotools.maps_manager_utils import (
     add_default_values,
 )
 from clinicadl.utils.iotools.utils import path_encoder
-from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]

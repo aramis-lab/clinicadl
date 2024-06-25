@@ -132,7 +132,7 @@ class CapsDataset(Dataset):
         Returns:
             image_path: path to the tensor containing the whole image.
         """
-        from clinicadl.utils.clinica_utils import clinicadl_file_reader
+        from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
         # Try to find .nii.gz file
         try:
@@ -220,7 +220,7 @@ class CapsDataset(Dataset):
         """
         import nibabel as nib
 
-        from clinicadl.utils.clinica_utils import clinicadl_file_reader
+        from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
         participant_id = self.df.loc[0, "participant_id"]
         session_id = self.df.loc[0, "session_id"]
