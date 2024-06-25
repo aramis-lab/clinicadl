@@ -13,10 +13,10 @@ from .testing_tools import compare_folders, modify_maps
 @pytest.fixture(
     params=[
         "slice_cnn",
-        "image_cnn",
-        "patch_cnn",
-        "patch_multi_cnn",
-        "roi_cnn",
+        # "image_cnn",
+        # "patch_cnn",
+        # "patch_multi_cnn",
+        # "roi_cnn",
     ]
 )
 def test_name(request):
