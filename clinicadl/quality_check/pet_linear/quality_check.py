@@ -14,7 +14,6 @@ from joblib import Parallel, delayed
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.preprocessing.utils import pet_linear_nii
-from clinicadl.utils.enum import SUVRReferenceRegions, Tracer
 from clinicadl.utils.iotools.clinica_utils import (
     RemoteFileStructure,
     clinicadl_file_reader,

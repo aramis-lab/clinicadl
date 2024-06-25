@@ -6,9 +6,7 @@ from clinicadl.utils.enum import (
     Preprocessing,
     Tracer,
 )
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-)
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.iotools.clinica_utils import FileType
 
 

@@ -6,15 +6,12 @@ import pandas as pd
 import torchio as tio
 from joblib import Parallel, delayed
 
-from clinicadl.caps_dataset.caps_dataset_config import (
-    CapsDatasetConfig,
-)
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    extraction,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.artifacts import options as artifacts
@@ -26,6 +23,7 @@ from clinicadl.generate.generate_utils import (
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.iotools.iotools import commandline_to_json
+from clinicadl.utils.iotools.read_utils import get_info_from_filename
 
 logger = getLogger("clinicadl.generate.artifacts")
 
@@ -103,7 +101,6 @@ def cli(generated_caps_directory, **kwargs):
                 file_type.model_dump(),
             )[0][0]
         )
-        from clinicadl.utils.iotools.read_utils import get_info_from_filename
 
         (
             subject_name,

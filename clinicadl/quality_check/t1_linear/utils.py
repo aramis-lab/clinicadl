@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.caps_dataset.preprocessing.utils import linear_nii
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLException
 from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 

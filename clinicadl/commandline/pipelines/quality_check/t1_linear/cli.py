@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig

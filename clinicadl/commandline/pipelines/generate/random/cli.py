@@ -13,7 +13,6 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    extraction,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.random import options as random

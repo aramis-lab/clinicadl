@@ -3,7 +3,7 @@
 import abc
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,6 @@ from clinicadl.prepare_data.prepare_data_utils import (
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
-    ExtractionMethod,
     Pattern,
     Preprocessing,
     SliceDirection,
@@ -37,7 +36,6 @@ from clinicadl.utils.enum import (
     Template,
 )
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
     ClinicaDLCAPSError,
     ClinicaDLTSVError,
 )
