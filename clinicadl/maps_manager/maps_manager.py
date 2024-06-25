@@ -11,9 +11,7 @@ import torch.distributed as dist
 from torch.cuda.amp import autocast
 
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
-from clinicadl.caps_dataset.data import (
-    return_dataset,
-)
+from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP, init_ddp
@@ -22,14 +20,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     MAPSError,
 )
-<<<<<<< HEAD
-from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
-from clinicadl.utils.maps_manager_utils import (
-=======
-from clinicadl.utils.iotools.maps_manager_utils import (
->>>>>>> 5c13aa1b (clean)
-    add_default_values,
-)
+from clinicadl.utils.iotools.maps_manager_utils import add_default_values
 from clinicadl.utils.iotools.utils import path_encoder
 
 logger = getLogger("clinicadl.maps_manager")

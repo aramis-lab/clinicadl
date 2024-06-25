@@ -8,12 +8,8 @@ from click.core import ParameterSource
 
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-<<<<<<< HEAD:clinicadl/utils/iotools/train_utils.py
 from clinicadl.utils.iotools.maps_manager_utils import remove_unused_tasks
 from clinicadl.utils.iotools.utils import path_decoder
-=======
-from clinicadl.utils.maps_manager_utils import remove_unused_tasks
->>>>>>> 6390218e (first try):clinicadl/train/utils.py
 
 
 def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, Any]:

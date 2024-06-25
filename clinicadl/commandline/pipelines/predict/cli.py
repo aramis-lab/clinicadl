@@ -1,6 +1,7 @@
 import click
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     computational,
@@ -11,9 +12,7 @@ from clinicadl.commandline.modules_options import (
     validation,
 )
 from clinicadl.commandline.pipelines.predict import options
-from clinicadl.predict.config import PredictConfig
 from clinicadl.predict.predict_manager import Predictor
-from clinicadl.utils.maps_manager_utils import read_json
 
 
 @click.command(name="predict", no_args_is_help=True)

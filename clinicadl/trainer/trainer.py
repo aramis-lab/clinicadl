@@ -17,16 +17,10 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.utils.early_stopping.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
-<<<<<<< HEAD
 from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
-=======
-from clinicadl.utils.maps_manager.ddp import DDP, cluster
-from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager_utils import read_json
->>>>>>> 6390218e (first try)
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.maps_manager.maps_manager import MapsManager
