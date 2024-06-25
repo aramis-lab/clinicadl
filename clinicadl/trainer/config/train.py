@@ -111,7 +111,7 @@ class TrainConfig(BaseModel, ABC):
         path : Union[str, Path]
             Path to the TOML configuration file.
         """
-        from clinicadl.train.utils import extract_config_from_toml_file
+        from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file
 
         path = Path(path)
         config_dict = extract_config_from_toml_file(path, self.network_task)

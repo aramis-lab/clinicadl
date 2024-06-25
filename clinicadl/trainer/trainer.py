@@ -19,15 +19,17 @@ from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import read_json
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
 from clinicadl.utils.enum import Task
-from .trainer_utils import create_parameters_dict, patch_to_read_json
-from clinicadl.train.tasks_utils import create_training_config
+from clinicadl.utils.iotools.trainer_utils import (
+    create_parameters_dict,
+    patch_to_read_json,
+)
+from clinicadl.trainer.tasks_utils import create_training_config
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback

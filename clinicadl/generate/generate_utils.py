@@ -10,48 +10,11 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
-from clinicadl.caps_dataset.preprocessing.config import (
-    PETPreprocessingConfig,
-    T1PreprocessingConfig,
-)
-from clinicadl.utils.clinica_utils import (
-    FileType,
-    create_subs_sess_list,
-    linear_nii,
-    pet_linear_nii,
-)
-from clinicadl.utils.enum import (
-    LinearModality,
-)
-
-# from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.utils.clinica_utils import create_subs_sess_list
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
     ClinicaDLTSVError,
 )
-
-
-def find_file_type(config: CapsDatasetConfig) -> Dict[str, str]:
-    if isinstance(config.preprocessing, T1PreprocessingConfig):
-        file_type = linear_nii(config.preprocessing)
-    elif isinstance(config.preprocessing, PETPreprocessingConfig):
-        if (
-            config.preprocessing.tracer is None
-            or config.preprocessing.suvr_reference_region is None
-        ):
-            raise ClinicaDLArgumentError(
-                "`tracer` and `suvr_reference_region` must be defined "
-                "when using `pet-linear` preprocessing."
-            )
-        file_type = pet_linear_nii(config.preprocessing)
-    else:
-        raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"
-        )
-
-    return file_type
+from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv
 
 
 def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:

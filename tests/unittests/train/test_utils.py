@@ -186,14 +186,14 @@ config_toml = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     ],
 )
 def test_extract_config_from_toml_file(config_file, task, expected_output):
-    from clinicadl.train.utils import extract_config_from_toml_file
+    from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file
 
     assert extract_config_from_toml_file(config_file, task) == expected_output
 
 
 def test_extract_config_from_toml_file_exceptions():
-    from clinicadl.train.utils import extract_config_from_toml_file
     from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+    from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file
 
     with pytest.raises(ClinicaDLConfigurationError):
         extract_config_from_toml_file(
@@ -206,7 +206,7 @@ def test_merge_cli_and_config_file_options():
     import click
     from click.testing import CliRunner
 
-    from clinicadl.train.utils import merge_cli_and_config_file_options
+    from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_options
 
     @click.command()
     @click.option("--config_file")
