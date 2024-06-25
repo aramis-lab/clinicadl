@@ -3,7 +3,7 @@
 import abc
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,6 @@ import torch
 from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.caps_dataset.extraction.config import (
     ExtractionImageConfig,
     ExtractionPatchConfig,
@@ -30,7 +29,6 @@ from clinicadl.prepare_data.prepare_data_utils import (
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
-    ExtractionMethod,
     Pattern,
     Preprocessing,
     SliceDirection,
@@ -38,7 +36,6 @@ from clinicadl.utils.enum import (
     Template,
 )
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
     ClinicaDLCAPSError,
     ClinicaDLTSVError,
 )
