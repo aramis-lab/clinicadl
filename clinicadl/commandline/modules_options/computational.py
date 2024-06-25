@@ -18,9 +18,9 @@ fully_sharded_data_parallel = click.option(
     "Currently this only enables ZeRO Stage 1 but will be entirely replaced by FSDP in a later patch, "
     "this flag is already set to FSDP to that the zero flag is never actually removed.",
 )
-no_gpu = click.option(
-    "--no-gpu",
-    is_flag=True,
+gpu = click.option(
+    "--gpu/--no-gpu",
+    default=get_default("gpu", ComputationalConfig),
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
     show_default=True,
 )

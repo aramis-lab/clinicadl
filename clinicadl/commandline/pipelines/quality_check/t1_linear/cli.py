@@ -44,7 +44,7 @@ def cli(
     threshold,
     batch_size,
     n_proc,
-    no_gpu,
+    gpu,
     amp,
     network,
     use_tensor,
@@ -60,7 +60,7 @@ def cli(
         quality_check as linear_qc,
     )
 
-    computational_config = ComputationalConfig(amp=amp, gpu=not no_gpu)
+    computational_config = ComputationalConfig(amp=amp, gpu=gpu)
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         caps_directory=caps_directory,
         extraction=ExtractionMethod.IMAGE,
