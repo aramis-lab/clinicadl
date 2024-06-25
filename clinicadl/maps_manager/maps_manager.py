@@ -925,7 +925,7 @@ class MapsManager:
         return model, current_epoch
 
     def _init_split_manager(self, split_list=None, ssda_bool: bool = False):
-        from clinicadl.utils import split_manager
+        from clinicadl.validation import split_manager
 
         split_class = getattr(split_manager, self.validation)
         args = list(
@@ -947,7 +947,7 @@ class MapsManager:
 
     def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
         # A intégrer directement dans _init_split_manager
-        from clinicadl.utils import split_manager
+        from clinicadl.validation import split_manager
 
         split_class = getattr(split_manager, self.validation)
         args = list(
