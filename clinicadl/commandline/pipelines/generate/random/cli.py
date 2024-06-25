@@ -23,9 +23,9 @@ from clinicadl.generate.generate_utils import (
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.iotools.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.generate.random")
 

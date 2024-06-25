@@ -15,14 +15,15 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.caps_dataset.data import return_dataset
-from clinicadl.utils.early_stopping import EarlyStopping
+from clinicadl.utils.early_stopping.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
-from clinicadl.utils.maps_manager.ddp import DDP, cluster
-from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.computational.ddp import DDP
+from clinicadl.utils import cluster
+from clinicadl.utils.logwriter import LogWriter
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
-from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
 from clinicadl.utils.enum import Task
 from clinicadl.utils.iotools.trainer_utils import (

@@ -12,10 +12,10 @@ from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.config.config.computational import ComputationalConfig
 from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.clinica_utils import RemoteFileStructure, fetch_file
+from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.iotools.clinica_utils import RemoteFileStructure, fetch_file
 
 from .models import resnet_darq_qc_18 as darq_r18
 from .models import resnet_deep_qc_18 as deep_r18

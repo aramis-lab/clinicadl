@@ -16,9 +16,9 @@ from clinicadl.caps_dataset.preprocessing.utils import (
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.iotools.clinica_utils import FileType
 
 
 def compute_folder_and_file_type(

@@ -2,12 +2,12 @@ import tarfile
 from pathlib import Path
 from typing import Optional, Tuple
 
-from clinicadl.utils.clinica_utils import (
+from clinicadl.utils.enum import MaskChecksum, Pathology
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, DownloadError
+from clinicadl.utils.iotools.clinica_utils import (
     RemoteFileStructure,
     fetch_file,
 )
-from clinicadl.utils.enum import MaskChecksum, Pathology
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, DownloadError
 
 
 def get_info_from_filename(image_path: Path) -> Tuple[str, str, str, str]:

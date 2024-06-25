@@ -5,12 +5,12 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
-from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,
     SliceMode,
 )
+from clinicadl.utils.iotools.clinica_utils import FileType
 
 logger = getLogger("clinicadl.preprocessing_config")
 
