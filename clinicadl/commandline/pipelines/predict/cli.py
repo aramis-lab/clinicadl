@@ -29,7 +29,7 @@ from clinicadl.predict.predict_manager import Predictor
 @validation.skip_leak_check
 @validation.selection_metrics
 @cross_validation.split
-@computational.no_gpu
+@computational.gpu
 @computational.amp
 @dataloader.n_proc
 @dataloader.batch_size

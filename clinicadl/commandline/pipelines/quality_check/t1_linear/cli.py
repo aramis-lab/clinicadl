@@ -13,7 +13,7 @@ from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 @data.participants_tsv
 @dataloader.batch_size
 @dataloader.n_proc
-@computational.no_gpu
+@computational.gpu
 @computational.amp
 @click.option(
     "--threshold",

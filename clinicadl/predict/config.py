@@ -4,11 +4,8 @@ from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.maps_manager.config import (
-    MapsManagerConfig as MapsManagerBaseConfig,
-)
+from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
-from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 from clinicadl.validation.cross_validation import CrossValidationConfig
 from clinicadl.validation.validation import ValidationConfig
 

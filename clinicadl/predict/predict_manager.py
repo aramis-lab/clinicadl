@@ -17,9 +17,8 @@ from clinicadl.caps_dataset.data import (
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predict.config import PredictConfig
-from clinicadl.utils.iotools.tasks_utils import create_training_config
 from clinicadl.trainer.config.train import TrainConfig
-from clinicadl.utils.iotools.trainer_utils import create_parameters_dict, patch_to_read_json
+from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
@@ -27,6 +26,11 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
+from clinicadl.utils.iotools.trainer_utils import (
+    create_parameters_dict,
+    patch_to_read_json,
+)
+
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 

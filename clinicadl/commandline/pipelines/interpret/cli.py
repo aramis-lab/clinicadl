@@ -30,7 +30,7 @@ from clinicadl.predict.predict_manager import Predictor
 @data.diagnoses
 @dataloader.n_proc
 @dataloader.batch_size
-@computational.no_gpu
+@computational.gpu
 @computational.amp
 @validation.selection_metrics
 def cli(**kwargs):

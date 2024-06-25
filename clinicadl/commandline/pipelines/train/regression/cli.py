@@ -35,7 +35,7 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 @arguments.output_maps
 # Options
 # Computational
-@computational.no_gpu
+@computational.gpu
 @computational.fully_sharded_data_parallel
 @computational.amp
 # Reproducibility
@@ -109,6 +109,6 @@ def cli(no_gpu, **kwargs):
     """
 
     options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
-    config = RegressionConfig(gpu=not no_gpu, **options)
+    config = RegressionConfig(**options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)
