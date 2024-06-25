@@ -26,7 +26,7 @@ from clinicadl.caps_dataset.preprocessing.utils import (
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
-from clinicadl.utils.iotools.clinica_utils import FileType
+
 
 
 def get_extraction(extract_method: ExtractionMethod):
