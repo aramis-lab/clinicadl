@@ -10,21 +10,26 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
-from clinicadl.caps_dataset.extraction.utils import path_encoder
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     MAPSError,
 )
+<<<<<<< HEAD
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 from clinicadl.utils.maps_manager_utils import (
+=======
+from clinicadl.utils.iotools.maps_manager_utils import (
+>>>>>>> 5c13aa1b (clean)
     add_default_values,
-    read_json,
 )
+from clinicadl.utils.iotools.utils import path_encoder
+from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -566,7 +571,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.caps_dataset.data_utils import load_data_test
+        from clinicadl.utils.iotools.data_utils import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,

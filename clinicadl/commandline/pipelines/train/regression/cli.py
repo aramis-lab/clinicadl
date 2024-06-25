@@ -21,10 +21,10 @@ from clinicadl.commandline.pipelines.train.regression import options as regressi
 from clinicadl.commandline.pipelines.transfer_learning import (
     options as transfer_learning,
 )
-from clinicadl.train.utils import merge_cli_and_config_file_options
 from clinicadl.trainer.config.regression import RegressionConfig
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import Task
+from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_options
 
 
 @click.command(name="regression", no_args_is_help=True)

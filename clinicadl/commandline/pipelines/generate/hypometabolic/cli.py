@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader, preprocessing
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
@@ -15,7 +16,6 @@ from clinicadl.commandline.pipelines.generate.hypometabolic import (
 )
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.generate.generate_utils import (
-    find_file_type,
     load_and_check_tsv,
     mask_processing,
     write_missing_mods,
@@ -26,8 +26,8 @@ from clinicadl.utils.enum import (
     ExtractionMethod,
     Preprocessing,
 )
+from clinicadl.utils.iotools.read_utils import get_mask_path
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.read_utils import get_mask_path
 
 logger = getLogger("clinicadl.generate.hypometabolic")
 

@@ -16,7 +16,6 @@ from clinicadl.caps_dataset.extraction.config import (
     ExtractionROIConfig,
     ExtractionSliceConfig,
 )
-from clinicadl.caps_dataset.extraction.utils import write_preprocessing
 from clinicadl.utils.clinica_utils import (
     check_caps_folder,
     clinicadl_file_reader,
@@ -26,6 +25,7 @@ from clinicadl.utils.clinica_utils import (
 )
 from clinicadl.utils.enum import ExtractionMethod, Pattern, Preprocessing, Template
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.iotools.utils import write_preprocessing
 
 from .prepare_data_utils import check_mask_list
 

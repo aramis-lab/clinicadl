@@ -7,6 +7,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -17,7 +18,6 @@ from clinicadl.commandline.modules_options import (
 from clinicadl.commandline.pipelines.generate.trivial import options as trivial
 from clinicadl.generate.generate_config import GenerateTrivialConfig
 from clinicadl.generate.generate_utils import (
-    find_file_type,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
     write_missing_mods,
@@ -25,8 +25,8 @@ from clinicadl.generate.generate_utils import (
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import ExtractionMethod
+from clinicadl.utils.iotools.read_utils import get_mask_path
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.read_utils import get_mask_path
 
 logger = getLogger("clinicadl.generate.trivial")
 
@@ -100,7 +100,7 @@ def cli(generated_caps_directory, **kwargs):
             )[0][0]
         )
 
-        from clinicadl.utils.read_utils import get_info_from_filename
+        from clinicadl.utils.iotools.read_utils import get_info_from_filename
 
         _, _, filename_pattern, file_suffix = get_info_from_filename(image_path)
 

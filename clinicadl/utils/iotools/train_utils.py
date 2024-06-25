@@ -6,10 +6,10 @@ import click
 import toml
 from click.core import ParameterSource
 
-from clinicadl.caps_dataset.extraction.utils import path_decoder
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.maps_manager_utils import remove_unused_tasks
+from clinicadl.utils.iotools.maps_manager_utils import remove_unused_tasks
+from clinicadl.utils.iotools.utils import path_decoder
 
 
 def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, Any]:

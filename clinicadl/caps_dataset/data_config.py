@@ -5,13 +5,13 @@ from typing import Any, Dict, Optional, Tuple, Union
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
-from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv, load_data_test
-from clinicadl.caps_dataset.extraction.utils import read_preprocessing
 from clinicadl.utils.enum import Mode
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
 )
+from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv, load_data_test
+from clinicadl.utils.iotools.utils import read_preprocessing
 
 logger = getLogger("clinicadl.data_config")
 

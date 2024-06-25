@@ -14,15 +14,18 @@ from clinicadl.caps_dataset.preprocessing.config import (
     PreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.trainer.trainer_utils import create_parameters_dict, patch_to_read_json
+
+from clinicadl.utils.iotools.trainer_utils import create_parameters_dict, patch_to_read_json
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.clinica_utils import (
-    FileType,
+from clinicadl.utils.clinica_utils import FileType
+from clinicadl.caps_dataset.preprocessing.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,
     pet_linear_nii,
 )
+from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.clinica_utils import FileType
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager_utils import read_json
