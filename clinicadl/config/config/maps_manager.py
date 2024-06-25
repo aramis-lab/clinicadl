@@ -14,6 +14,8 @@ class MapsManagerConfig(BaseModel):
     data_group: Optional[str] = None
     overwrite: bool = False
     save_nifti: bool = False
+    save_tensor: bool = False
+    save_latent_tensor: bool = False
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
@@ -23,4 +25,11 @@ class MapsManagerConfig(BaseModel):
         if self.save_nifti and network_task != "reconstruction":
             raise ClinicaDLArgumentError(
                 "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
+            )
+
+    def check_output_saving_tensor(self, network_task: str) -> None:
+        # Check if task is reconstruction for "save_tensor" and "save_nifti"
+        if self.save_tensor and network_task != "reconstruction":
+            raise ClinicaDLArgumentError(
+                "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
             )

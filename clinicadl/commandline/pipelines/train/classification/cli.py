@@ -37,7 +37,7 @@ from clinicadl.utils.enum import Task
 @arguments.output_maps
 # Options
 # Computational
-@computational.gpu
+@computational.no_gpu
 @computational.fully_sharded_data_parallel
 @computational.amp
 # Reproducibility
@@ -113,6 +113,6 @@ def cli(**kwargs):
     """
 
     options = merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
-    config = ClassificationConfig(**options)
+    config = ClassificationConfig(gpu=not options.pop("gpu"), **options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)

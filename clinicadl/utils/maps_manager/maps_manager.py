@@ -21,7 +21,7 @@ from clinicadl.utils.exceptions import (
     MAPSError,
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster, init_ddp
-from clinicadl.utils.maps_manager.maps_manager_utils import (
+from clinicadl.utils.maps_manager_utils import (
     add_default_values,
     read_json,
 )

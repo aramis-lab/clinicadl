@@ -16,6 +16,9 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.predict.config import PredictConfig
+from clinicadl.train.tasks_utils import create_training_config
+from clinicadl.trainer.config.train import TrainConfig
+from clinicadl.trainer.trainer_utils import create_parameters_dict, patch_to_read_json
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -24,15 +27,79 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.maps_manager import MapsManager
+from clinicadl.utils.maps_manager_utils import read_json
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 
 
-class PredictManager:
-    def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
-        self.maps_manager = MapsManager(_config.maps_dir)
-        self._config = _config
+class Predictor:
+    def __init__(self, _config: TrainConfig) -> None:
+        self.config = _config
+        parameters, maps_path = create_parameters_dict(_config)
+        self.maps_manager = MapsManager(maps_path, parameters, verbose=None)
+
+    @classmethod
+    def from_json(cls, config_file: Union[str, Path], maps_path: Union[str, Path]):
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        config_file : str | Path
+            The parameters, stored in a json files.
+        maps_path : str | Path
+            The folder where the results of a futur training will be stored.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in config_file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If config_file doesn't exist.
+        """
+        config_file = Path(config_file)
+
+        if not (config_file).is_file():
+            raise FileNotFoundError(f"No file found at {str(config_file)}.")
+        config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
+        config_dict["maps_dir"] = maps_path
+        config_object = create_training_config(config_dict["network_task"])(
+            **config_dict
+        )
+        return cls(config_object)
+
+    @classmethod
+    def from_maps(cls, maps_path: Union[str, Path]):
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        maps_path : str | Path
+            The path of the MAPS folder.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in maps_path.
+
+        Raises
+        ------
+        MAPSError
+            If maps_path folder doesn't exist or there is no maps.json file in it.
+        """
+        maps_path = Path(maps_path)
+
+        if not (maps_path / "maps.json").is_file():
+            raise MAPSError(
+                f"MAPS was not found at {str(maps_path)}."
+                f"To initiate a new MAPS please give a train_dict."
+            )
+        return cls.from_json(maps_path / "maps.json", maps_path)
 
     def predict(
         self,
@@ -90,26 +157,31 @@ class PredictManager:
         _output_
         """
 
-        assert isinstance(self._config, PredictConfig)
+        # assert isinstance(self.config, PredictConfig)
 
-        self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.diagnoses = (
+        self.config.maps_manager.check_output_saving_nifti(
+            self.maps_manager.network_task
+        )
+        self.config.data.diagnoses = (
             self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
+            if self.config.data.diagnoses is None
+            or len(self.config.data.diagnoses) == 0
+            else self.config.data.diagnoses
         )
 
-        self._config.batch_size = (
+        self.config.dataloader.batch_size = (
             self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
+            if not self.config.dataloader.batch_size
+            else self.config.dataloader.batch_size
         )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        self.config.dataloader.n_proc = (
+            self.maps_manager.n_proc
+            if not self.config.dataloader.n_proc
+            else self.config.dataloader.n_proc
         )
 
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
-        self._config.check_output_saving_tensor(self.maps_manager.network_task)
+        self.config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
+        self.config.check_output_saving_tensor(self.maps_manager.network_task)
 
         transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
@@ -117,42 +189,42 @@ class PredictManager:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-        group_df = self._config.create_groupe_df()
+        group_df = self.config.create_groupe_df()
         self._check_data_group(group_df)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
 
-        assert self._config.split  # don't know if needed ? try to raise an exception ?
-        # assert self._config.label
+        assert self.config.split  # don't know if needed ? try to raise an exception ?
+        # assert self.config.data.label
 
-        for split in self._config.split:
+        for split in self.config.split:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
-                self._config.data_group, split
+                self.config.data.data_group, split
             )
             # Find label code if not given
-            if self._config.is_given_label_code(self.maps_manager.label, label_code):
+            if self.config.is_given_label_code(self.maps_manager.label, label_code):
                 self.maps_manager.task_manager.generate_label_code(
-                    group_df, self._config.label
+                    group_df, self.config.data.label
                 )
             # Erase previous TSV files on master process
-            if not self._config.selection_metrics:
+            if not self.config.validation.selection_metrics:
                 split_selection_metrics = self.maps_manager._find_selection_metrics(
                     split
                 )
             else:
-                split_selection_metrics = self._config.selection_metrics
+                split_selection_metrics = self.config.validation.selection_metrics
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection}"
-                    / self._config.data_group
+                    / self.config.data.data_group
                 )
-                tsv_pattern = f"{self._config.data_group}*.tsv"
+                tsv_pattern = f"{self.config.data.data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-            self._config.check_label(self.maps_manager.label)
+            self.config.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
                 self._predict_multi(
                     group_parameters,
@@ -175,11 +247,11 @@ class PredictManager:
                 )
             if cluster.master:
                 self.maps_manager._ensemble_prediction(
-                    self._config.data_group,
+                    self.config.data.data_group,
                     split,
-                    self._config.selection_metrics,
-                    self._config.use_labels,
-                    self._config.skip_leak_check,
+                    self.config.validation.selection_metrics,
+                    self.config.data.use_labels,
+                    self.config.skip_leak_check,
                 )
 
     def _predict_multi(
@@ -242,8 +314,8 @@ class PredictManager:
         --------
         - _related_
         """
-        assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
+        assert isinstance(self.config, PredictConfig)
+        # assert self.config.data.label
 
         for network in range(self.maps_manager.num_networks):
             data_test = return_dataset(
@@ -252,8 +324,8 @@ class PredictManager:
                 self.maps_manager.preprocessing_dict,
                 transforms_config=transforms,
                 multi_cohort=group_parameters["multi_cohort"],
-                label_presence=self._config.use_labels,
-                label=self._config.label,
+                label_presence=self.config.data.use_labels,
+                label=self.config.data.label,
                 label_code=(
                     self.maps_manager.label_code
                     if label_code == "default"
@@ -264,8 +336,8 @@ class PredictManager:
             test_loader = DataLoader(
                 data_test,
                 batch_size=(
-                    self._config.batch_size
-                    if self._config.batch_size is not None
+                    self.config.dataloader.batch_size
+                    if self.config.dataloader.batch_size is not None
                     else self.maps_manager.batch_size
                 ),
                 shuffle=False,
@@ -275,38 +347,38 @@ class PredictManager:
                     rank=cluster.rank,
                     shuffle=False,
                 ),
-                num_workers=self._config.n_proc
-                if self._config.n_proc is not None
+                num_workers=self.config.dataloader.n_proc
+                if self.config.dataloader.n_proc is not None
                 else self.maps_manager.n_proc,
             )
             self.maps_manager._test_loader(
                 test_loader,
                 criterion,
-                self._config.data_group,
+                self.config.data.data_group,
                 split,
                 split_selection_metrics,
-                use_labels=self._config.use_labels,
-                gpu=self._config.gpu,
-                amp=self._config.amp,
+                use_labels=self.config.data.use_labels,
+                gpu=self.config.computational.gpu,
+                amp=self.config.computational.amp,
                 network=network,
             )
-            if self._config.save_tensor:
+            if self.config.maps_manager.save_tensor:
                 logger.debug("Saving tensors")
                 self.maps_manager._compute_output_tensors(
                     data_test,
-                    self._config.data_group,
+                    self.config.data.data_group,
                     split,
-                    self._config.selection_metrics,
-                    gpu=self._config.gpu,
+                    self.config.validation.selection_metrics,
+                    gpu=self.config.computational.gpu,
                     network=network,
                 )
-            if self._config.save_nifti:
+            if self.config.maps_manager.save_nifti:
                 self._compute_output_nifti(
                     data_test,
                     split,
                     network=network,
                 )
-            if self._config.save_latent_tensor:
+            if self.config.maps_manager.save_latent_tensor:
                 self._compute_latent_tensors(
                     dataset=data_test,
                     split=split,
@@ -374,8 +446,8 @@ class PredictManager:
         - _related_
         """
 
-        assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
+        assert isinstance(self.config, PredictConfig)
+        # assert self.config.data.label
 
         data_test = return_dataset(
             group_parameters["caps_directory"],
@@ -383,8 +455,8 @@ class PredictManager:
             self.maps_manager.preprocessing_dict,
             transforms_config=transforms,
             multi_cohort=group_parameters["multi_cohort"],
-            label_presence=self._config.use_labels,
-            label=self._config.label,
+            label_presence=self.config.data.use_labels,
+            label=self.config.data.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
@@ -392,8 +464,8 @@ class PredictManager:
         test_loader = DataLoader(
             data_test,
             batch_size=(
-                self._config.batch_size
-                if self._config.batch_size is not None
+                self.config.dataloader.batch_size
+                if self.config.dataloader.batch_size is not None
                 else self.maps_manager.batch_size
             ),
             shuffle=False,
@@ -403,35 +475,35 @@ class PredictManager:
                 rank=cluster.rank,
                 shuffle=False,
             ),
-            num_workers=self._config.n_proc
-            if self._config.n_proc is not None
+            num_workers=self.config.dataloader.n_proc
+            if self.config.dataloader.n_proc is not None
             else self.maps_manager.n_proc,
         )
         self.maps_manager._test_loader(
             test_loader,
             criterion,
-            self._config.data_group,
+            self.config.data.data_group,
             split,
             split_selection_metrics,
-            use_labels=self._config.use_labels,
-            gpu=self._config.gpu,
-            amp=self._config.amp,
+            use_labels=self.config.data.use_labels,
+            gpu=self.config.computational.gpu,
+            amp=self.config.computational.amp,
         )
-        if self._config.save_tensor:
+        if self.config.maps_manager.save_tensor:
             logger.debug("Saving tensors")
             self.maps_manager._compute_output_tensors(
                 data_test,
-                self._config.data_group,
+                self.config.data.data_group,
                 split,
-                self._config.selection_metrics,
-                gpu=self._config.gpu,
+                self.config.validation.selection_metrics,
+                gpu=self.config.computational.gpu,
             )
-        if self._config.save_nifti:
+        if self.config.maps_manager.save_nifti:
             self._compute_output_nifti(
                 data_test,
                 split,
             )
-        if self._config.save_latent_tensor:
+        if self.config.maps_manager.save_latent_tensor:
             self._compute_latent_tensors(
                 dataset=data_test,
                 split=split,
@@ -463,13 +535,13 @@ class PredictManager:
         network : _type_ (optional, default=None)
             Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self.config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self.config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -483,7 +555,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self.config.data.data_group
                 / "latent_tensors"
             )
             if cluster.master:
@@ -540,13 +612,13 @@ class PredictManager:
         import nibabel as nib
         from numpy import eye
 
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self.config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self.config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -560,7 +632,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"{self.maps_manager.split_name}-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self.config.data.data_group
                 / "nifti_images"
             )
             if cluster.master:
@@ -647,23 +719,26 @@ class PredictManager:
         MAPSError
             If the interpretation has already been determined.
         """
-        assert isinstance(self._config, InterpretConfig)
+        assert isinstance(self.config, InterpretConfig)
 
-        self._config.diagnoses = (
+        self.config.data.diagnoses = (
             self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
+            if self.config.data.diagnoses is None
+            or len(self.config.data.diagnoses) == 0
+            else self.config.data.diagnoses
         )
-        self._config.batch_size = (
+        self.config.dataloader.batch_size = (
             self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
+            if not self.config.dataloader.batch_size
+            else self.config.dataloader.batch_size
         )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        self.config.dataloader.n_proc = (
+            self.maps_manager.n_proc
+            if not self.config.dataloader.n_proc
+            else self.config.dataloader.n_proc
         )
 
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
+        self.config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -675,14 +750,14 @@ class PredictManager:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-        group_df = self._config.create_groupe_df()
+        group_df = self.config.create_groupe_df()
         self._check_data_group(group_df)
 
-        assert self._config.split
-        for split in self._config.split:
+        assert self.config.split
+        for split in self.config.split:
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
-                self._config.data_group, split
+                self.config.data.data_group, split
             )
             data_test = return_dataset(
                 parameters_group["caps_directory"],
@@ -696,29 +771,29 @@ class PredictManager:
             )
             test_loader = DataLoader(
                 data_test,
-                batch_size=self._config.batch_size,
+                batch_size=self.config.dataloader.batch_size,
                 shuffle=False,
-                num_workers=self._config.n_proc,
+                num_workers=self.config.dataloader.n_proc,
             )
-            if not self._config.selection_metrics:
-                self._config.selection_metrics = (
+            if not self.config.validation.selection_metrics:
+                self.config.validation.selection_metrics = (
                     self.maps_manager._find_selection_metrics(split)
                 )
-            for selection_metric in self._config.selection_metrics:
+            for selection_metric in self.config.validation.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection_metric}"
-                    / self._config.data_group
-                    / f"interpret-{self._config.name}"
+                    / self.config.data.data_group
+                    / f"interpret-{self.config.name}"
                 )
                 if (results_path).is_dir():
-                    if self._config.overwrite_name:
+                    if self.config.overwrite_name:
                         shutil.rmtree(results_path)
                     else:
                         raise MAPSError(
-                            f"Interpretation name {self._config.name} is already written. "
+                            f"Interpretation name {self.config.name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
@@ -726,28 +801,28 @@ class PredictManager:
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
-                    gpu=self._config.gpu,
+                    gpu=self.config.computational.gpu,
                 )
-                interpreter = self._config.get_method()(model)
+                interpreter = self.config.get_method()(model)
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
                     map_pt = interpreter.generate_gradients(
                         images,
-                        self._config.target_node,
-                        level=self._config.level,
-                        amp=self._config.amp,
+                        self.config.target_node,
+                        level=self.config.level,
+                        amp=self.config.computational.amp,
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.maps_manager.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
-                        if self._config.save_individual:
+                        if self.config.save_individual:
                             single_path = (
                                 results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
-                            if self._config.save_nifti:
+                            if self.config.maps_manager.save_nifti:
                                 import nibabel as nib
                                 from numpy import eye
 
@@ -765,7 +840,7 @@ class PredictManager:
                         mode_map,
                         results_path / f"mean_{self.maps_manager.mode}-{i}_map.pt",
                     )
-                    if self._config.save_nifti:
+                    if self.config.maps_manager.save_nifti:
                         import nibabel as nib
                         from numpy import eye
 
@@ -812,17 +887,17 @@ class PredictManager:
             when caps_directory or df are not given and data group does not exist
 
         """
-        group_dir = self.maps_manager.maps_path / "groups" / self._config.data_group
+        group_dir = self.maps_manager.maps_path / "groups" / self.config.data.data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if self._config.overwrite:
-                if self._config.data_group in ["train", "validation"]:
+            if self.config.overwrite:
+                if self.config.data.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     # if not split_list:
                     #     split_list = self.maps_manager.find_splits()
-                    assert self._config.split
-                    for split in self._config.split:
+                    assert self.config.split
+                    for split in self.config.split:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split
                         )
@@ -831,40 +906,40 @@ class PredictManager:
                                 self.maps_manager.maps_path
                                 / f"{self.maps_manager.split_name}-{split}"
                                 / f"best-{selection}"
-                                / self._config.data_group
+                                / self.config.data.data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
             elif df is not None or (
-                self._config.caps_directory is not None
-                and self._config.caps_directory != Path("")
+                self.config.caps_directory is not None
+                and self.config.caps_directory != Path("")
             ):
                 raise ClinicaDLArgumentError(
-                    f"Data group {self._config.data_group} is already defined. "
+                    f"Data group {self.config.data.data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {self._config.data_group} please set overwrite to True."
+                    f"To erase {self.config.data.data_group} please set overwrite to True."
                 )
 
         elif not group_dir.is_dir() and (
-            self._config.caps_directory is None or df is None
+            self.config.caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
-                f"The data group {self._config.data_group} does not already exist. "
+                f"The data group {self.config.data.data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            if self._config.skip_leak_check:
+            if self.config.skip_leak_check:
                 logger.info("Skipping data leakage check")
             else:
-                self._check_leakage(self._config.data_group, df)
+                self._check_leakage(self.config.data.data_group, df)
             self._write_data_group(
-                self._config.data_group,
+                self.config.data.data_group,
                 df,
-                self._config.caps_directory,
-                self._config.multi_cohort,
-                label=self._config.label,
+                self.config.caps_directory,
+                self.config.multi_cohort,
+                label=self.config.data.label,
             )
 
     def get_group_info(
@@ -980,8 +1055,8 @@ class PredictManager:
         group_path.mkdir(parents=True)
 
         columns = ["participant_id", "session_id", "cohort"]
-        if self._config.label in df.columns.values:
-            columns += [self._config.label]
+        if self.config.data.label in df.columns.values:
+            columns += [self.config.data.label]
         if label is not None and label in df.columns.values:
             columns += [label]
 
@@ -992,12 +1067,12 @@ class PredictManager:
                 "caps_directory": (
                     caps_directory
                     if caps_directory is not None
-                    else self._config.caps_directory
+                    else self.config.caps_directory
                 ),
                 "multi_cohort": (
                     multi_cohort
                     if multi_cohort is not None
-                    else self._config.multi_cohort
+                    else self.config.multi_cohort
                 ),
             },
         )

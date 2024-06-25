@@ -2,7 +2,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
@@ -44,13 +44,26 @@ class InterpretBaseConfig(BaseModel):
             raise ValueError(f"The method {self.method.value} is not implemented")
 
 
-class InterpretConfig(
-    MapsManagerConfig,
-    InterpretBaseConfig,
-    DataConfig,
-    ValidationConfig,
-    CrossValidationConfig,
-    ComputationalConfig,
-    DataLoaderConfig,
-):
+class InterpretConfig(BaseModel):
     """Config class to perform Transfer Learning."""
+
+    maps_manager: MapsManagerConfig
+    interpret: InterpretBaseConfig
+    data: DataConfig
+    validation: ValidationConfig
+    cross_validation: CrossValidationConfig
+    computational: ComputationalConfig
+    dataloader: DataLoaderConfig
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            maps_manager=kwargs,
+            interpret=kwargs,
+            validation=kwargs,
+            cross_validation=kwargs,
+            data=kwargs,
+            dataloader=kwargs,
+            computational=kwargs,
+        )

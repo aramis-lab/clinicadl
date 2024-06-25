@@ -11,7 +11,6 @@ import torch
 from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.caps_dataset.extraction.config import (
     ExtractionImageConfig,
     ExtractionPatchConfig,

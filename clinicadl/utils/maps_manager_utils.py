@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
+# from clinicadl.caps_dataset.caps_dataset_config import compute_folder_and_file_type
 from clinicadl.caps_dataset.extraction.utils import path_decoder
 
 
@@ -154,7 +154,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         **parameters,
     )
     if "file_type" not in parameters["preprocessing_dict"]:
-        _, file_type = compute_folder_and_file_type(config)
+        _, file_type = config.compute_folder_and_file_type()
         parameters["preprocessing_dict"]["file_type"] = file_type.model_dump()
 
     return parameters

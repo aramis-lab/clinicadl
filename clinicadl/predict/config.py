@@ -1,10 +1,10 @@
 from logging import getLogger
 
-from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from pydantic import BaseModel, ConfigDict
+
+from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.maps_manager import (
-    MapsManagerConfig as MapsManagerBaseConfig,
-)
+from clinicadl.config.config.maps_manager import MapsManagerConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 
 from ..config.config.computational import ComputationalConfig
@@ -14,28 +14,24 @@ from ..config.config.validation import ValidationConfig
 logger = getLogger("clinicadl.predict_config")
 
 
-class MapsManagerConfig(MapsManagerBaseConfig):
-    save_tensor: bool = False
-    save_latent_tensor: bool = False
-
-    def check_output_saving_tensor(self, network_task: str) -> None:
-        # Check if task is reconstruction for "save_tensor" and "save_nifti"
-        if self.save_tensor and network_task != "reconstruction":
-            raise ClinicaDLArgumentError(
-                "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
-            )
-
-
-class DataConfig(DataBaseConfig):
-    use_labels: bool = True
-
-
-class PredictConfig(
-    MapsManagerConfig,
-    DataConfig,
-    ValidationConfig,
-    CrossValidationConfig,
-    ComputationalConfig,
-    DataLoaderConfig,
-):
+class PredictConfig(BaseModel):
     """Config class to perform Transfer Learning."""
+
+    maps_manager: MapsManagerConfig
+    data: DataConfig
+    validation: ValidationConfig
+    cross_validation: CrossValidationConfig
+    computational: ComputationalConfig
+    dataloader: DataLoaderConfig
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            maps_manager=kwargs,
+            computational=kwargs,
+            cross_validation=kwargs,
+            data=kwargs,
+            dataloader=kwargs,
+            validation=kwargs,
+        )

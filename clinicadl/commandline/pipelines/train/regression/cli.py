@@ -35,7 +35,7 @@ from clinicadl.utils.enum import Task
 @arguments.output_maps
 # Options
 # Computational
-@computational.gpu
+@computational.no_gpu
 @computational.fully_sharded_data_parallel
 @computational.amp
 # Reproducibility
@@ -95,7 +95,7 @@ from clinicadl.utils.enum import Task
 @regression.label
 @regression.selection_metrics
 @regression.loss
-def cli(**kwargs):
+def cli(no_gpu, **kwargs):
     """
     Train a deep learning model to learn a regression task on neuroimaging data.
     CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
@@ -109,6 +109,6 @@ def cli(**kwargs):
     """
 
     options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
-    config = RegressionConfig(**options)
+    config = RegressionConfig(gpu=not no_gpu, **options)
     trainer = Trainer(config)
     trainer.train(split_list=config.cross_validation.split, overwrite=True)

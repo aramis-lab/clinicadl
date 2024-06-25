@@ -19,7 +19,7 @@ from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.maps_manager.ddp import DDP, cluster
 from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import read_json
+from clinicadl.utils.maps_manager_utils import read_json
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.transforms.config import TransformsConfig

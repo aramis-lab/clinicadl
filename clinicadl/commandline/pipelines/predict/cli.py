@@ -1,5 +1,6 @@
 import click
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     computational,
@@ -11,18 +12,17 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.predict import options
 from clinicadl.predict.config import PredictConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predict.predict_manager import Predictor
+from clinicadl.utils.maps_manager_utils import read_json
 
 
 @click.command(name="predict", no_args_is_help=True)
+# needed argument
 @arguments.input_maps
 @arguments.data_group
 @maps_manager.save_nifti
 @maps_manager.overwrite
-@options.use_labels
 @data.label
-@options.save_tensor
-@options.save_latent_tensor
 @data.caps_directory
 @data.participants_tsv
 @data.multi_cohort
@@ -30,10 +30,14 @@ from clinicadl.predict.predict_manager import PredictManager
 @validation.skip_leak_check
 @validation.selection_metrics
 @cross_validation.split
-@computational.gpu
+@computational.no_gpu
 @computational.amp
 @dataloader.n_proc
 @dataloader.batch_size
+# pipeline related
+@options.use_labels
+@options.save_tensor
+@options.save_latent_tensor
 def cli(input_maps_directory, data_group, **kwargs):
     """This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
@@ -59,10 +63,11 @@ def cli(input_maps_directory, data_group, **kwargs):
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
+    predict_manager = Predictor.from_maps(input_maps_directory)
 
-    predict_config = PredictConfig(**kwargs)
-    predict_manager = PredictManager(predict_config)
-    predict_manager.predict()
+    caps_config = CapsDatasetConfig.from_maps(input_maps_directory)
+
+    predict_manager.predict(caps_config)
 
 
 if __name__ == "__main__":

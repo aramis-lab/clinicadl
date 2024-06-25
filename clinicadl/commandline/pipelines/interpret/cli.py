@@ -10,7 +10,7 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.interpret import options
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predict.predict_manager import Predictor
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -30,7 +30,7 @@ from clinicadl.predict.predict_manager import PredictManager
 @data.diagnoses
 @dataloader.n_proc
 @dataloader.batch_size
-@computational.gpu
+@computational.no_gpu
 @computational.amp
 @validation.selection_metrics
 def cli(**kwargs):
@@ -41,8 +41,8 @@ def cli(**kwargs):
     METHOD is the method used to extract an attribution map.
     """
 
-    interpret_config = InterpretConfig(**kwargs)
-    predict_manager = PredictManager(interpret_config)
+    interpret_config = InterpretConfig(gpu=not kwargs.pop("gpu"), **kwargs)
+    predict_manager = Predictor(interpret_config)
     predict_manager.interpret()
 
 

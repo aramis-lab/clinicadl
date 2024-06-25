@@ -14,6 +14,7 @@ from clinicadl.caps_dataset.preprocessing.config import (
     PreprocessingConfig,
     T1PreprocessingConfig,
 )
+from clinicadl.trainer.trainer_utils import create_parameters_dict, patch_to_read_json
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.clinica_utils import (
     FileType,
@@ -23,6 +24,8 @@ from clinicadl.utils.clinica_utils import (
     pet_linear_nii,
 )
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
+from clinicadl.utils.exceptions import MAPSError
+from clinicadl.utils.maps_manager_utils import read_json
 
 
 def get_extraction(extract_method: ExtractionMethod):
@@ -72,6 +75,75 @@ class CapsDatasetConfig(BaseModel):
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
+    @classmethod
+    def from_json(cls, config_file: Union[str, Path], maps_path: Union[str, Path]):
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        config_file : str | Path
+            The parameters, stored in a json files.
+        maps_path : str | Path
+            The folder where the results of a futur training will be stored.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in config_file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If config_file doesn't exist.
+        """
+        config_file = Path(config_file)
+
+        if not (config_file).is_file():
+            raise FileNotFoundError(f"No file found at {str(config_file)}.")
+        config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
+
+        # read preprocessing for now
+        # TODO: remove this
+        for key, value in config_dict["preprocessing_dict"]:
+            config_dict[key] = value
+
+        preprocessing_type = config_dict["preprocessing"]
+        extraction = config_dict["mode"]
+
+        return cls.from_preprocessing_and_extraction_method(
+            preprocessing_type=preprocessing_type, extraction=extraction, *config_dict
+        )
+
+    @classmethod
+    def from_maps(cls, maps_path: Union[str, Path]):
+        """
+        Creates a CapsDatsetConfig from a MAPS folder.
+
+        Parameters
+        ----------
+        maps_path : str | Path
+            The path of the MAPS folder.
+
+        Returns
+        -------
+        CapsDatsetConfig
+            The config object, instantiated with parameters found in maps_path.
+
+        Raises
+        ------
+        MAPSError
+            If maps_path folder doesn't exist or there is no maps.json file in it.
+        """
+        maps_path = Path(maps_path)
+
+        if not (maps_path / "maps.json").is_file():
+            raise MAPSError(
+                f"MAPS was not found at {str(maps_path)}."
+                f"To initiate a new MAPS please give a train_dict."
+            )
+        return cls.from_json(maps_path / "maps.json", maps_path)
 
     @classmethod
     def from_preprocessing_and_extraction_method(
@@ -125,3 +197,40 @@ class CapsDatasetConfig(BaseModel):
                     description="Custom suffix",
                 )
         return mod_subfolder, file_type
+
+
+def compute_folder_and_file_type(
+    config: CapsDatasetConfig, from_bids: Optional[Path] = None
+) -> Tuple[str, FileType]:
+    preprocessing = config.preprocessing.preprocessing
+    if from_bids is not None:
+        if isinstance(config.preprocessing, CustomPreprocessingConfig):
+            mod_subfolder = Preprocessing.CUSTOM.value
+            file_type = FileType(
+                pattern=f"*{config.preprocessing.custom_suffix}",
+                description="Custom suffix",
+            )
+        else:
+            mod_subfolder = preprocessing
+            file_type = bids_nii(config.preprocessing)
+
+    elif preprocessing not in Preprocessing:
+        raise NotImplementedError(
+            f"Extraction of preprocessing {preprocessing} is not implemented from CAPS directory."
+        )
+    else:
+        mod_subfolder = preprocessing.value.replace("-", "_")
+        if isinstance(config.preprocessing, T1PreprocessingConfig) or isinstance(
+            config.preprocessing, FlairPreprocessingConfig
+        ):
+            file_type = linear_nii(config.preprocessing)
+        elif isinstance(config.preprocessing, PETPreprocessingConfig):
+            file_type = pet_linear_nii(config.preprocessing)
+        elif isinstance(config.preprocessing, DTIPreprocessingConfig):
+            file_type = dwi_dti(config.preprocessing)
+        elif isinstance(config.preprocessing, CustomPreprocessingConfig):
+            file_type = FileType(
+                pattern=f"*{config.preprocessing.custom_suffix}",
+                description="Custom suffix",
+            )
+    return mod_subfolder, file_type
