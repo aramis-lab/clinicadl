@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict
 
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.caps_dataset.extraction import config as extraction
@@ -22,6 +23,7 @@ from clinicadl.caps_dataset.preprocessing.utils import (
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, MAPSError
 from clinicadl.utils.iotools.clinica_utils import FileType
 from clinicadl.utils.iotools.trainer_utils import patch_to_read_json
 
@@ -75,7 +77,68 @@ class CapsDatasetConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @classmethod
-    def from_json(cls, config_file: Union[str, Path], maps_path: Union[str, Path]):
+    def from_data_group(
+        cls,
+        maps_path: Union[str, Path],
+        data_group: str,
+        caps_directory: Optional[Path] = None,
+        data_tsv: Optional[Path] = None,
+        overwrite: bool = False,
+    ):
+        """
+        Creates a Trainer from a json configuration file.
+
+        Parameters
+        ----------
+        config_file : str | Path
+            The parameters, stored in a json files.
+        maps_path : str | Path
+            The folder where the results of a futur training will be stored.
+
+        Returns
+        -------
+        Trainer
+            The Trainer object, instantiated with parameters found in config_file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If config_file doesn't exist.
+        """
+        maps_path = Path(maps_path)
+        group_dir = maps_path / "groups" / data_group
+
+        if not group_dir.is_dir() and caps_directory is None:
+            raise ClinicaDLArgumentError(
+                f"The data group {data_group} does not already exist. "
+                f"Please specify a caps_directory and a tsv_path to create this data group."
+            )
+        elif group_dir.is_dir() and overwrite and data_group in ["train", "validation"]:
+            raise MAPSError("Cannot overwrite train or validation data group.")
+
+        elif group_dir.is_dir() and not overwrite:
+            raise ClinicaDLArgumentError(
+                f"Data group {data_group} is already defined. "
+                f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
+                f"To erase {data_group} please set overwrite to True."
+            )
+
+        config = cls.from_json(config_file=maps_path / "maps.json")
+
+        if group_dir.is_dir() and caps_directory is None:
+            config.data.caps_directory = read_json(group_dir / "maps.json")[
+                "caps_directory"
+            ]
+            config.data.data_tsv = group_dir / "data.tsv"
+
+        elif not group_dir.is_dir() and caps_directory is not None:
+            config.data.caps_directory = caps_directory
+            config.data.data_tsv = data_tsv
+
+        return config
+
+    @classmethod
+    def from_json(cls, config_file: Union[str, Path]):
         """
         Creates a Trainer from a json configuration file.
 

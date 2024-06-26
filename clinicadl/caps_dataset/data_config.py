@@ -26,7 +26,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
     baseline: bool = False
     caps_directory: Path
     data_df: Optional[pd.DataFrame] = None
-    data_group: str = "train"
     data_tsv: Optional[Path] = None
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     label: Optional[str] = None

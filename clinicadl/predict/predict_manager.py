@@ -11,6 +11,8 @@ from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
@@ -33,6 +35,18 @@ from clinicadl.utils.iotools.trainer_utils import (
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
+
+
+def check_with_maps(config_file: Path, name: str, var: str):
+    config = read_json(config_file)
+    if name not in config:
+        config = config["preprocessing_dict"]
+        if name not in config:
+            print(name)
+        else:
+            print(config[name], " = ", var)
+    else:
+        print(config[name], " = ", var)
 
 
 class Predictor:
@@ -105,6 +119,8 @@ class Predictor:
 
     def predict(
         self,
+        caps_config: CapsDatasetConfig,
+        data_group: str,
         label_code: Union[str, dict[str, int]] = "default",
     ):
         """Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -161,29 +177,74 @@ class Predictor:
 
         # assert isinstance(self.config, PredictConfig)
 
-        self.config.maps_manager.check_output_saving_nifti(
-            self.maps_manager.network_task
-        )
-        self.config.data.diagnoses = (
-            self.maps_manager.diagnoses
-            if self.config.data.diagnoses is None
-            or len(self.config.data.diagnoses) == 0
-            else self.config.data.diagnoses
+        self.config.maps_manager.check_output_saving_nifti(self.config.network_task)
+        self.config.maps_manager.check_output_saving_tensor(self.config.network_task)
+
+        maps_json = self.config.maps_manager.maps_dir / "maps.json"
+
+        check_with_maps(maps_json, "diagnoses", caps_config.data.diagnoses)
+        print(self.maps_manager.diagnoses, " = ", caps_config.data.diagnoses)
+        # self.config.data.diagnoses = (
+        #     self.maps_manager.diagnoses
+        #     if self.config.data.diagnoses is None
+        #     or len(self.config.data.diagnoses) == 0
+        #     else self.config.data.diagnoses
+        # )
+
+        check_with_maps(maps_json, "batch_size", caps_config.dataloader.batch_size)
+        print(self.maps_manager.batch_size, " = ", caps_config.dataloader.batch_size)
+        # self.config.dataloader.batch_size = (
+        #     self.maps_manager.batch_size
+        #     if not self.config.dataloader.batch_size
+        #     else self.config.dataloader.batch_size
+        # )
+
+        check_with_maps(maps_json, "n_proc", caps_config.dataloader.n_proc)
+        print(self.maps_manager.n_proc, " = ", caps_config.dataloader.n_proc)
+        # self.config.dataloader.n_proc = (
+        #     self.maps_manager.n_proc
+        #     if not self.config.dataloader.n_proc
+        #     else self.config.dataloader.n_proc
+        # )
+
+        print(self.config.cross_validation)
+        self.config.cross_validation.adapt_cross_val_with_maps_manager_info(
+            self.maps_manager
+        )  # TODO: call the find_split() function if splits are None
+
+        check_with_maps(maps_json, "normalize", caps_config.transforms.normalize)
+        print(
+            self.maps_manager.n_normalizeproc, " = ", caps_config.transforms.normalize
         )
 
-        self.config.dataloader.batch_size = (
-            self.maps_manager.batch_size
-            if not self.config.dataloader.batch_size
-            else self.config.dataloader.batch_size
+        check_with_maps(
+            maps_json, "data_augmentation", caps_config.transforms.data_augmentation
         )
-        self.config.dataloader.n_proc = (
-            self.maps_manager.n_proc
-            if not self.config.dataloader.n_proc
-            else self.config.dataloader.n_proc
+        print(
+            self.maps_manager.data_augmentation,
+            " = ",
+            caps_config.transforms.data_augmentation,
         )
 
-        self.config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
-        self.config.check_output_saving_tensor(self.maps_manager.network_task)
+        check_with_maps(
+            maps_json, "size_reduction", caps_config.transforms.size_reduction
+        )
+        print(
+            self.maps_manager.size_reduction,
+            " = ",
+            caps_config.transforms.size_reduction,
+        )
+
+        check_with_maps(
+            maps_json,
+            "size_reduction_factor",
+            caps_config.transforms.size_reduction_factor,
+        )
+        print(
+            self.maps_manager.size_reduction_factor,
+            " = ",
+            caps_config.transforms.size_reduction_factor,
+        )
 
         transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
@@ -191,8 +252,8 @@ class Predictor:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-        group_df = self.config.create_groupe_df()
-        self._check_data_group(group_df)
+
+        self._check_data_group(data_group, caps_config)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
         self._check_data_group(df=group_df)
 
@@ -855,6 +916,8 @@ class Predictor:
 
     def _check_data_group(
         self,
+        data_group: str,
+        caps_config: CapsDatasetConfig,
         df: Optional[pd.DataFrame] = None,
     ):
         """Check if a data group is already available if other arguments are None.
@@ -889,17 +952,22 @@ class Predictor:
             when caps_directory or df are not given and data group does not exist
 
         """
-        group_dir = self.maps_manager.maps_path / "groups" / self.config.data.data_group
+        group_dir = self.maps_manager.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if self.config.overwrite:
-                if self.config.data.data_group in ["train", "validation"]:
+            if self.config.maps_manager.overwrite:
+                if data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    # if not split_list:
-                    #     split_list = self.maps_manager.find_splits()
-                    assert self.config.split
-                    for split in self.config.split:
+                    print(self.config.cross_validation.split)
+                    if not self.config.cross_validation.split:
+                        self.config.cross_validation.split = (
+                            self.maps_manager.find_splits()
+                        )
+
+                    print(self.config.cross_validation.split)
+                    # assert self.config.split
+                    for split in self.config.cross_validation.split:
                         selection_metrics = self.maps_manager._find_selection_metrics(
                             split
                         )
@@ -908,18 +976,18 @@ class Predictor:
                                 self.maps_manager.maps_path
                                 / f"{self.maps_manager.split_name}-{split}"
                                 / f"best-{selection}"
-                                / self.config.data.data_group
+                                / data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
             elif df is not None or (
-                self.config.caps_directory is not None
+                caps_config.caps_directory is not None
                 and self.config.caps_directory != Path("")
             ):
                 raise ClinicaDLArgumentError(
-                    f"Data group {self.config.data.data_group} is already defined. "
+                    f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {self.config.data.data_group} please set overwrite to True."
+                    f"To erase {data_group} please set overwrite to True."
                 )
 
         elif not group_dir.is_dir() and (

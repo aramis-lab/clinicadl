@@ -1,7 +1,6 @@
 import click
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     computational,
@@ -62,11 +61,13 @@ def cli(input_maps_directory, data_group, **kwargs):
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
-    predict_manager = Predictor.from_maps(input_maps_directory)
+    predictor = Predictor.from_maps(input_maps_directory)
+    print(predictor)
+    caps_config = CapsDatasetConfig.from_data_group(
+        input_maps_directory, data_group, **kwargs
+    )
 
-    caps_config = CapsDatasetConfig.from_maps(input_maps_directory)
-
-    predict_manager.predict(caps_config)
+    predictor.predict(data_group, caps_config)
 
 
 if __name__ == "__main__":
