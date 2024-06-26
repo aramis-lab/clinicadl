@@ -11,8 +11,7 @@ from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import read_json
+from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig, read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )

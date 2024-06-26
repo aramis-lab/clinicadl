@@ -10,7 +10,7 @@ import torch
 import torch.distributed as dist
 from torch.cuda.amp import autocast
 
-from clinicadl.caps_dataset.caps_dataset_utils import read_json
+from clinicadl.caps_dataset.caps_dataset_config import read_json
 from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster

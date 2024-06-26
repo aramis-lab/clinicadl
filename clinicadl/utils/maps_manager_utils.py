@@ -5,7 +5,7 @@ from typing import Any, Dict
 import toml
 
 # from clinicadl.caps_dataset.caps_dataset_config import compute_folder_and_file_type
-from clinicadl.caps_dataset.extraction.utils import path_decoder
+from clinicadl.utils.iotools.utils import path_decoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
