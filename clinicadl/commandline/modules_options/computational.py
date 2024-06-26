@@ -1,7 +1,7 @@
 import click
 
-from clinicadl.config.config.computational import ComputationalConfig
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
+from clinicadl.utils.computational.computational import ComputationalConfig
 
 # Computational
 amp = click.option(
@@ -19,8 +19,8 @@ fully_sharded_data_parallel = click.option(
     "this flag is already set to FSDP to that the zero flag is never actually removed.",
 )
 gpu = click.option(
-    "--no-gpu",
-    is_flag=True,
+    "--gpu/--no-gpu",
+    default=get_default("gpu", ComputationalConfig),
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
     show_default=True,
 )

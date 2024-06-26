@@ -9,7 +9,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline, retrieve_longitudinal
 from clinicadl.utils.exceptions import ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools.iotools import commandline_to_json
 
 sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl.tsvtools.kfold")

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.exceptions import MAPSError
-from clinicadl.utils.maps_manager import MapsManager
 
 
 def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):

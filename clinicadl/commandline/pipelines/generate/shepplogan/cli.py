@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 
 import click
 import numpy as np
@@ -7,7 +6,6 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
-from clinicadl.caps_dataset.extraction.utils import write_preprocessing
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader
 from clinicadl.commandline.pipelines.generate.shepplogan import options as shepplogan
@@ -16,8 +14,9 @@ from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
     write_missing_mods,
 )
-from clinicadl.utils.clinica_utils import FileType
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
+from clinicadl.utils.iotools.clinica_utils import FileType
+from clinicadl.utils.iotools.iotools import check_and_clean, commandline_to_json
+from clinicadl.utils.iotools.utils import write_preprocessing
 
 logger = getLogger("clinicadl.generate.shepplogan")
 

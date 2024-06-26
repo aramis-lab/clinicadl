@@ -4,7 +4,6 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    extraction,
     preprocessing,
 )
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing

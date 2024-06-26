@@ -14,15 +14,15 @@ from clinicadl.caps_dataset.preprocessing.config import (
     PreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.clinica_utils import (
-    FileType,
+from clinicadl.caps_dataset.preprocessing.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,
     pet_linear_nii,
 )
+from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
+from clinicadl.utils.iotools.clinica_utils import FileType
 
 
 def get_extraction(extract_method: ExtractionMethod):

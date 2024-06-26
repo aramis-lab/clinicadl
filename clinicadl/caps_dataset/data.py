@@ -3,7 +3,7 @@
 import abc
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,6 @@ import torch
 from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.caps_dataset.extraction.config import (
     ExtractionImageConfig,
     ExtractionPatchConfig,
@@ -30,7 +29,6 @@ from clinicadl.prepare_data.prepare_data_utils import (
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
-    ExtractionMethod,
     Pattern,
     Preprocessing,
     SliceDirection,
@@ -38,7 +36,6 @@ from clinicadl.utils.enum import (
     Template,
 )
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
     ClinicaDLCAPSError,
     ClinicaDLTSVError,
 )
@@ -133,7 +130,7 @@ class CapsDataset(Dataset):
         Returns:
             image_path: path to the tensor containing the whole image.
         """
-        from clinicadl.utils.clinica_utils import clinicadl_file_reader
+        from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
         # Try to find .nii.gz file
         try:
@@ -221,7 +218,7 @@ class CapsDataset(Dataset):
         """
         import nibabel as nib
 
-        from clinicadl.utils.clinica_utils import clinicadl_file_reader
+        from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
         participant_id = self.df.loc[0, "participant_id"]
         session_id = self.df.loc[0, "session_id"]

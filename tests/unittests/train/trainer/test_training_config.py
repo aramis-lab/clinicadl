@@ -5,11 +5,11 @@ from pydantic import ValidationError
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.cross_validation import CrossValidationConfig
 from clinicadl.config.config.ssda import SSDAConfig
-from clinicadl.config.config.transfer_learning import TransferLearningConfig
 from clinicadl.network.config import NetworkConfig
+from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.validation.cross_validation import CrossValidationConfig
 
 
 # Tests for customed validators #
