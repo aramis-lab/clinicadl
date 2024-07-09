@@ -242,7 +242,7 @@ def get_subject_session_list(
             use_session_tsv=use_session_tsv,
         )
 
-    if subjsect_session_file is not None:
+    if subject_session_file is not None:
         subject_session_file = Path(subject_session_file)
 
     if tsv_dir is not None: 
