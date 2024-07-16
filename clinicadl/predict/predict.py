@@ -26,6 +26,7 @@ def predict(
     save_latent_tensor: bool = False,
     sample_latent: int = 0,
     save_caps: bool = False,
+    skip_leak_check: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -90,4 +91,5 @@ def predict(
         pythae=pythae, 
         sample_latent=sample_latent,
         save_caps=save_caps,
+        skip_leak_check= skip_leak_check,
     )

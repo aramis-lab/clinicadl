@@ -6,7 +6,7 @@ from datetime import datetime
 from glob import glob
 from logging import getLogger
 from os import listdir, makedirs, path
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -266,6 +266,7 @@ class MapsManager:
         pythae: bool = False,
         sample_latent: int = 0,
         save_caps: bool = False,
+        skip_leak_check: bool = False
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -317,14 +318,15 @@ class MapsManager:
             )
 
         criterion = self.task_manager.get_criterion(self.loss)
-        # self._check_data_group(
-        #     data_group,
-        #     caps_directory,
-        #     group_df,
-        #     multi_cohort,
-        #     overwrite,
-        #     label=label,
-        # )
+        self._check_data_group(
+            data_group,
+            caps_directory,
+            group_df,
+            multi_cohort,
+            overwrite,
+            label=label,
+            skip_leak_check= skip_leak_check,
+        )
 
         for split in split_list:
             logger.info(f"Prediction of split {split}")
@@ -1633,6 +1635,7 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
+        skip_leak_check: bool = False, 
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -1689,7 +1692,8 @@ class MapsManager:
         elif not path.exists(
             group_path
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            self._check_leakage(data_group, df)
+            if not skip_leak_check:
+                self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
             )
@@ -1704,6 +1708,16 @@ class MapsManager:
         makedirs(json_path, exist_ok=True)
 
         # save to json file
+        for key, value in parameters.items():
+            if type(value) is dict:
+                for key2,value2 in value.items(): 
+                    if type(value2) == PosixPath:
+                        parameters[key2] = str(value2)
+
+            
+            if type(value) == PosixPath:
+                parameters[key] = str(value)
+
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = path.join(json_path, "maps.json")
         if verbose:

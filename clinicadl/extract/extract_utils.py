@@ -1,7 +1,7 @@
 # coding: utf8
 from os import path
 from time import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 import numpy as np
 import torch
@@ -14,8 +14,8 @@ def get_parameters_dict(
     extract_json: str,
     use_uncropped_image: bool,
     custom_suffix: str,
-    acq_label: str,
-    suvr_reference_region: str,
+    acq_label: Optional[str]= None,
+    suvr_reference_region: Optional[str]= None,
 ) -> Dict[str, Any]:
     """
     Args:
@@ -65,6 +65,7 @@ def compute_folder_and_file_type(
 ) -> Tuple[str, Dict[str, str]]:
     from clinicadl.generate.generate_utils import linear_nii, pet_linear_nii
 
+    print(parameters)
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         file_type = linear_nii("T1w", parameters["use_uncropped_image"])
@@ -82,10 +83,13 @@ def compute_folder_and_file_type(
         )
     elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
-        file_type = {
-            # "pattern": f"*{parameters['custom_suffix']}",
-            "description": "Custom suffix",
-        }
+        if "file_type" in parameters:
+            file_type = parameters['file_type']
+        else: 
+            file_type = {
+                "pattern": f"*{parameters['custom_suffix']}",
+                "description": "Custom suffix",
+            }
         parameters["use_uncropped_image"] = None
     else:
         raise NotImplementedError(

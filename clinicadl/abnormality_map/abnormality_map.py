@@ -3,7 +3,7 @@ import numpy as np
 import nibabel as nib
 from pathlib import Path
 from copy import deepcopy
-from typing import Tuple, Callable, Union
+from typing import Tuple, Callable, Union, List
 
 import torch
 from torch.utils.data import DataLoader
@@ -40,7 +40,7 @@ def compute_abnormality_map(
     n_proc: int,
     batch_size: int,
     abn_map_fn: Union[str, Callable[[nib.Nifti1Image, nib.Nifti1Image], Tuple[nib.Nifti1Image, str]]] = residual_fn,
-    split_list: list[int] = None,
+    split_list: List[int] = None,
     tsv_path: Path = None,
     selection_metrics: str = None,
     multi_cohort: bool = False,

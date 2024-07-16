@@ -99,7 +99,7 @@ def container_from_filename(bids_or_caps_filename: str) -> str:
     import os
     import re
 
-    bids_or_caps_filename = Path(bids_or_caps_filename)
+    bids_or_caps_filename = str(bids_or_caps_filename) #Path(bids_or_caps_filename)
 
     m = re.search(r"(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)", bids_or_caps_filename)
     if not m:
@@ -557,7 +557,9 @@ def find_sub_ses_pattern_path(
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
+    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+    print(current_glob_found)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
         #   - there is a problem somewhere which made us catch too many files
@@ -1005,6 +1007,7 @@ def clinicadl_file_reader(
 
     input_directory = Path(input_directory)
 
+    print(information)
     _check_information(information)
     pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)

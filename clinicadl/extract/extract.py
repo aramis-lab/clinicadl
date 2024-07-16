@@ -1,5 +1,6 @@
 from logging import getLogger
 from pathlib import Path
+import os
 
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
@@ -58,16 +59,16 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
-            output_file_dir = path.join(
+            output_file_dir = Path(
                 caps_directory,
                 container,
                 "deeplearning_prepare_data",
                 subfolder,
                 mod_subfolder,
             )
-            if not path.exists(output_file_dir):
+            if not Path(output_file_dir).is_dir():
                 os.makedirs(output_file_dir)
-            output_file = path.join(output_file_dir, filename)
+            output_file = Path(output_file_dir, filename)
             save_tensor(tensor, output_file)
             logger.debug(f"    Output tensor saved at {output_file}")
 
@@ -145,7 +146,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                     parameters["preprocessing"]
                 ]
 
-            parameters["masks_location"] = path.join(
+            parameters["masks_location"] = Path(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
             if len(parameters["roi_list"]) == 0:
