@@ -27,6 +27,7 @@ def predict(
     sample_latent: int = 0,
     save_caps: bool = False,
     skip_leak_check: bool = False,
+    workdir: str  = None,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -92,4 +93,5 @@ def predict(
         sample_latent=sample_latent,
         save_caps=save_caps,
         skip_leak_check= skip_leak_check,
+        workdir = workdir,
     )

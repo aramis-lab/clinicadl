@@ -8,6 +8,7 @@ from logging import getLogger
 from os import listdir, makedirs, path
 from pathlib import Path, PosixPath
 from typing import Any, Dict, List, Optional, Tuple, Union
+from pathlib import Path
 
 import pandas as pd
 import torch
@@ -266,7 +267,8 @@ class MapsManager:
         pythae: bool = False,
         sample_latent: int = 0,
         save_caps: bool = False,
-        skip_leak_check: bool = False
+        skip_leak_check: bool = False,
+        workdir: str = None,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -326,6 +328,7 @@ class MapsManager:
             overwrite,
             label=label,
             skip_leak_check= skip_leak_check,
+            workdir = workdir,
         )
 
         for split in split_list:
@@ -1060,12 +1063,21 @@ class MapsManager:
         """
         for selection_metric in selection_metrics:
 
-            log_dir = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-            )
+            if workdir is not None:
+                log_dir = path.join(
+                    workdir,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                )
+            else: 
+                log_dir = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                )
+
             self.write_description_log(
                 log_dir,
                 data_group,
@@ -1162,6 +1174,7 @@ class MapsManager:
                 data_group=data_group, 
                 sample_latent_results_df=sample_latent_prediction_df,
                 sample_latent_metrics_df=sample_latent_metrics_df,
+                workdir = workdir,
             )
 
     def _compute_output_nifti(
@@ -1434,6 +1447,7 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
+        workdir : str = None,
     ):
         """Computes the results on the image-level."""
 
@@ -1448,6 +1462,7 @@ class MapsManager:
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
+                    workdir = workdir,
                 )
             elif self.mode != "image":
                 self._mode_to_image_tsv(
@@ -1455,6 +1470,7 @@ class MapsManager:
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
+                    workdir = workdir,
                 )
 
     ###############################
@@ -1636,6 +1652,7 @@ class MapsManager:
         overwrite=False,
         label=None,
         skip_leak_check: bool = False, 
+        workdir: str = None,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -1655,7 +1672,14 @@ class MapsManager:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
-        group_path = path.join(self.maps_path, "groups", data_group)
+
+        if workdir is not None: 
+            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
+
+        else: 
+            maps_out_path = self.maps_path
+
+        group_path = path.join(maps_out_path, "groups", data_group)
         logger.debug(f"Group path {group_path}")
         if path.exists(group_path):  # Data group already exists
             if overwrite:
@@ -1668,7 +1692,7 @@ class MapsManager:
                         selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
                             results_path = path.join(
-                                self.maps_path,
+                                maps_out_path,
                                 f"{self.split_name}-{split}",
                                 f"best-{selection}",
                                 data_group,
@@ -1695,7 +1719,7 @@ class MapsManager:
             if not skip_leak_check:
                 self._check_leakage(data_group, df)
             self._write_data_group(
-                data_group, df, caps_directory, multi_cohort, label=label
+                data_group, df, caps_directory, multi_cohort, label=label, workdir = workdir,
             )
 
     ###############################
@@ -1767,7 +1791,7 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
+        self, data_group, df, caps_directory=None, multi_cohort=None, label=None, workdir:str = None
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1779,7 +1803,13 @@ class MapsManager:
             caps_directory (str): caps_directory if different from the training caps_directory,
             multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
         """
-        group_path = path.join(self.maps_path, "groups", data_group)
+
+        if workdir is not None: 
+            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
+        else: 
+            maps_out_path = self.maps_path
+
+        group_path = path.join(maps_out_path, "groups", data_group)
         makedirs(group_path)
 
         columns = ["participant_id", "session_id", "cohort"]
@@ -1838,6 +1868,7 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
+        workdir: str = None
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
@@ -1850,7 +1881,12 @@ class MapsManager:
             network: network number (multi-network framework).
             filename: name of the checkpoint file.
         """
-        checkpoint_dir = path.join(self.maps_path, f"{self.split_name}-{split}", "tmp")
+        if workdir is not None:
+            maps_path_out = path.join(workdir, Path(self.maps_path).stem,f"{self.split_name}-{split}", "tmp" )
+        else: 
+            maps_path_out = self.maps_path
+
+        checkpoint_dir = path.join(maps_path_out, f"{self.split_name}-{split}", "tmp")
         makedirs(checkpoint_dir, exist_ok=True)
         checkpoint_path = path.join(checkpoint_dir, filename)
         torch.save(state, checkpoint_path)
@@ -1863,7 +1899,7 @@ class MapsManager:
         if metrics_dict is not None:
             for metric_name, metric_bool in metrics_dict.items():
                 metric_path = path.join(
-                    self.maps_path, f"{self.split_name}-{split}", f"best-{metric_name}"
+                    maps_path_out, f"{self.split_name}-{split}", f"best-{metric_name}"
                 )
                 if metric_bool:
                     makedirs(metric_path, exist_ok=True)
@@ -1871,7 +1907,9 @@ class MapsManager:
                         checkpoint_path, path.join(metric_path, best_filename)
                     )
 
-    def _write_information(self):
+    def _write_information(
+        self
+        ):
         """
         Writes model architecture of the MAPS in MAPS root.
         """
@@ -1945,6 +1983,7 @@ class MapsManager:
         data_group: str = "train",
         sample_latent_results_df: pd.DataFrame = None,
         sample_latent_metrics_df: pd.DataFrame = None,
+        workdir: str = None, 
     ):
         """
         Writes the outputs of the test function in tsv files.
@@ -1956,8 +1995,14 @@ class MapsManager:
             selection: the metrics on which the model was selected (BA, loss...)
             data_group: the name referring to the data group on which evaluation is performed.
         """
+        if workdir is not None: 
+            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
+        else: 
+            maps_out_path = self.maps_path
+
+
         performance_dir = path.join(
-            self.maps_path,
+            maps_out_path,
             f"{self.split_name}-{split}",
             f"best-{selection}",
             data_group,
@@ -2025,6 +2070,7 @@ class MapsManager:
         selection: str,
         data_group: str = "test",
         use_labels: bool = True,
+        workdir: str = None,
     ):
         """
         Writes image-level performance files from mode level performances.
@@ -2049,8 +2095,14 @@ class MapsManager:
             validation_dataset, split, selection, self.mode, verbose=False
         )
 
+        if workdir is not None: 
+            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
+        else: 
+            maps_out_path = self.maps_path
+
+
         performance_dir = path.join(
-            self.maps_path,
+            maps_out_path,
             f"{self.split_name}-{split}",
             f"best-{selection}",
             data_group,
@@ -2083,6 +2135,7 @@ class MapsManager:
         selection: str,
         data_group: str = "test",
         use_labels: bool = True,
+        workdir: str = None, 
     ):
         """
         Copy mode-level TSV files to name them as image-level TSV files
@@ -2099,8 +2152,14 @@ class MapsManager:
         )
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
+        if workdir is not None: 
+            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
+        else: 
+            maps_out_path = self.maps_path
+
+
         performance_dir = path.join(
-            self.maps_path,
+            maps_out_path,
             f"{self.split_name}-{split}",
             f"best-{selection}",
             data_group,
