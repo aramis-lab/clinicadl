@@ -21,10 +21,17 @@ import pytest
 def test_pet_linear_nii(
     tracer, suvr_reference_region, uncropped_image, expected_pattern
 ):
-    from clinicadl.utils.clinica_utils import pet_linear_nii
+    from clinicadl.caps_dataset.preprocessing.config import PETPreprocessingConfig
+    from clinicadl.caps_dataset.preprocessing.utils import pet_linear_nii
+    from clinicadl.utils.iotools.clinica_utils import FileType
 
-    assert pet_linear_nii(tracer, suvr_reference_region, uncropped_image) == {
-        "description": "",
-        "needed_pipeline": "pet-linear",
-        "pattern": expected_pattern,
-    }
+    config = PETPreprocessingConfig(
+        tracer=tracer,
+        suvr_reference_region=suvr_reference_region,
+        use_uncropped_image=uncropped_image,
+    )
+    assert pet_linear_nii(config) == FileType(
+        description="",
+        needed_pipeline="pet-linear",
+        pattern=expected_pattern,
+    )

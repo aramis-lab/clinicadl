@@ -12,7 +12,6 @@ from clinicadl.tsvtools.tsvtools_utils import (
     cleaning_nan_diagnoses,
     find_label,
     first_session,
-    merged_tsv_reader,
     next_session,
 )
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError

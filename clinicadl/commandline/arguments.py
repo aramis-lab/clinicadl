@@ -51,3 +51,6 @@ data_group = click.argument("data_group", type=str)
 config_file = click.argument(
     "config_file", type=click.Path(exists=True, path_type=Path)
 )
+preprocessing = click.argument(
+    "preprocessing", type=click.Choice(["t1", "pet", "flair", "dwi", "custom"])
+)

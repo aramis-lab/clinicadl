@@ -7,23 +7,23 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data_utils import (
+from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.interpret.config import InterpretConfig
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predict.config import PredictConfig
-from clinicadl.transforms.transforms import get_transforms
+from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.ddp import DDP, cluster
-from clinicadl.utils.maps_manager.maps_manager import MapsManager
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -93,12 +93,25 @@ class PredictManager:
         assert isinstance(self._config, PredictConfig)
 
         self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
-        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.diagnoses = (
+            self.maps_manager.diagnoses
+            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
+            else self._config.diagnoses
+        )
+
+        self._config.batch_size = (
+            self.maps_manager.batch_size
+            if not self._config.batch_size
+            else self._config.batch_size
+        )
+        self._config.n_proc = (
+            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        )
+
         self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
         self._config.check_output_saving_tensor(self.maps_manager.network_task)
 
-        _, all_transforms = get_transforms(
+        transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
             data_augmentation=self.maps_manager.data_augmentation,
             size_reduction=self.maps_manager.size_reduction,
@@ -144,7 +157,7 @@ class PredictManager:
                 self._predict_multi(
                     group_parameters,
                     group_df,
-                    all_transforms,
+                    transforms,
                     label_code,
                     criterion,
                     split,
@@ -154,7 +167,7 @@ class PredictManager:
                 self._predict_single(
                     group_parameters,
                     group_df,
-                    all_transforms,
+                    transforms,
                     label_code,
                     criterion,
                     split,
@@ -173,7 +186,7 @@ class PredictManager:
         self,
         group_parameters,
         group_df,
-        all_transforms,
+        transforms,
         label_code,
         criterion,
         split,
@@ -237,7 +250,7 @@ class PredictManager:
                 group_parameters["caps_directory"],
                 group_df,
                 self.maps_manager.preprocessing_dict,
-                all_transformations=all_transforms,
+                transforms_config=transforms,
                 multi_cohort=group_parameters["multi_cohort"],
                 label_presence=self._config.use_labels,
                 label=self._config.label,
@@ -304,7 +317,7 @@ class PredictManager:
         self,
         group_parameters,
         group_df,
-        all_transforms,
+        transforms,
         label_code,
         criterion,
         split,
@@ -368,7 +381,7 @@ class PredictManager:
             group_parameters["caps_directory"],
             group_df,
             self.maps_manager.preprocessing_dict,
-            all_transformations=all_transforms,
+            transforms_config=transforms,
             multi_cohort=group_parameters["multi_cohort"],
             label_presence=self._config.use_labels,
             label=self._config.label,
@@ -636,15 +649,27 @@ class PredictManager:
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.adapt_data_with_maps_manager_info(self.maps_manager)
-        self._config.adapt_dataloader_with_maps_manager_info(self.maps_manager)
+        self._config.diagnoses = (
+            self.maps_manager.diagnoses
+            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
+            else self._config.diagnoses
+        )
+        self._config.batch_size = (
+            self.maps_manager.batch_size
+            if not self._config.batch_size
+            else self._config.batch_size
+        )
+        self._config.n_proc = (
+            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        )
+
         self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
-        _, all_transforms = get_transforms(
+        transforms = TransformsConfig(
             normalize=self.maps_manager.normalize,
             data_augmentation=self.maps_manager.data_augmentation,
             size_reduction=self.maps_manager.size_reduction,
@@ -663,7 +688,7 @@ class PredictManager:
                 parameters_group["caps_directory"],
                 df_group,
                 self.maps_manager.preprocessing_dict,
-                all_transformations=all_transforms,
+                transforms_config=transforms,
                 multi_cohort=parameters_group["multi_cohort"],
                 label_presence=False,
                 label_code=self.maps_manager.label_code,
@@ -891,7 +916,7 @@ class PredictManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        from clinicadl.preprocessing.preprocessing import path_decoder
+        from clinicadl.utils.iotools.utils import path_decoder
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)

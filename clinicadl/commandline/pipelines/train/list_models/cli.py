@@ -28,6 +28,6 @@ def cli(
     model_layers,
 ):
     """Show the list of available models in ClinicaDL."""
-    from clinicadl.train.utils import get_model_list
+    from clinicadl.utils.iotools.train_utils import get_model_list
 
     get_model_list(architecture, input_size, model_layers)

@@ -8,24 +8,23 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.random import options as random
 from clinicadl.generate.generate_config import GenerateRandomConfig
 from clinicadl.generate.generate_utils import (
-    find_file_type,
     load_and_check_tsv,
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.iotools.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.generate.random")
 
@@ -38,8 +37,8 @@ logger = getLogger("clinicadl.generate.random")
 @data.n_subjects
 @dataloader.n_proc
 @preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
 @random.mean
 @random.sigma
 def cli(generated_caps_directory, n_proc, **kwargs):
@@ -97,7 +96,10 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     session_id = data_df.at[0, "session_id"]
     cohort = data_df.at[0, "cohort"]
     image_paths = clinicadl_file_reader(
-        [participant_id], [session_id], caps_config.data.caps_dict[cohort], file_type
+        [participant_id],
+        [session_id],
+        caps_config.data.caps_dict[cohort],
+        file_type.model_dump(),
     )
     image_nii = nib.loadsave.load(image_paths[0][0])
     # assert isinstance(image_nii, nib.nifti1.Nifti1Image)

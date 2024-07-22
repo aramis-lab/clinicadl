@@ -1,5 +1,6 @@
 import os
 import random
+from typing import Optional
 
 import numpy as np
 import torch
@@ -44,7 +45,7 @@ def pl_worker_init_function(worker_id: int) -> None:  # pragma: no cover
     random.seed(stdlib_seed)
 
 
-def get_seed(seed: int = None) -> int:
+def get_seed(seed: Optional[int] = None) -> int:
     max_seed_value = np.iinfo(np.uint32).max
     min_seed_value = np.iinfo(np.uint32).min
 
@@ -94,7 +95,7 @@ def seed_everything(seed, deterministic=False, compensation="memory") -> None:
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
         else:
             raise ClinicaDLConfigurationError(
-                f"The compensation for a deterministic CUDA setting "
-                f"must be chosen between 'time' and 'memory'."
+                "The compensation for a deterministic CUDA setting "
+                "must be chosen between 'time' and 'memory'."
             )
         torch.use_deterministic_algorithms(True)
