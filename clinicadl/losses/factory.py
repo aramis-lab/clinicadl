@@ -1,55 +1,30 @@
-from __future__ import annotations
+import inspect
 
-from enum import Enum
-from typing import TYPE_CHECKING, Type, Union
+import torch.nn as nn
 
-if TYPE_CHECKING:
-    import torch.nn as nn
+from .config import LossConfig
 
 
-class ClassificationLoss(str, Enum):
-    """Losses that can be used only for classification."""
-
-    CrossENTROPY = "CrossEntropyLoss"
-    MultiMargin = "MultiMarginLoss"
-
-
-class ImplementedLoss(str, Enum):
-    """Implemented losses in ClinicaDL."""
-
-    CrossENTROPY = "CrossEntropyLoss"
-    MultiMargin = "MultiMarginLoss"
-    L1 = "L1Loss"
-    MSE = "MSELoss"
-    HUBER = "HuberLoss"
-    SmoothL1 = "SmoothL1Loss"
-
-    @classmethod
-    def _missing_(cls, value):
-        raise ValueError(
-            f"{value} is not implemented. Implemented losses are: "
-            + ", ".join([repr(m.value) for m in cls])
-        )
-
-
-def get_loss_function(loss: Union[str, ImplementedLoss]) -> Type[nn.Module]:
+def get_loss_function(config: LossConfig) -> nn.Module:
     """
     Factory function to get a loss function from its name.
 
     Parameters
     ----------
-    loss : Union[str, ImplementedLoss]
-        The name of the loss.
+    loss : LossConfig
+        The config class with the parameters of the loss function.
 
     Returns
     -------
-    Type[nn.Module]
-        The loss function object.
+    nn.Module
+        The loss function.
     """
-    import torch.nn as nn
+    loss_class = getattr(nn, config.loss)
+    expected_args = inspect.getfullargspec(loss_class).args
+    config = {arg: v for arg, v in config.model_dump().items() if arg in expected_args}
+    loss = loss_class(**config)
 
-    loss = ImplementedLoss(loss)
-    return getattr(nn, loss.value)
+    return loss
 
 
 # TODO : what about them?
