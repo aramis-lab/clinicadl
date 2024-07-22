@@ -3,63 +3,18 @@
 import random
 from copy import copy
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetBase
-from clinicadl.caps_dataset.data_utils import check_multi_cohort_tsv
-from clinicadl.config.config.modality import PETModalityConfig
-from clinicadl.utils.clinica_utils import (
-    create_subs_sess_list,
-    linear_nii,
-    pet_linear_nii,
-)
-from clinicadl.utils.enum import (
-    LinearModality,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
-
-# from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
     ClinicaDLTSVError,
-    DownloadError,
 )
-
-
-def find_file_type(config: CapsDatasetBase) -> Dict[str, str]:
-    # preprocessing = Preprocessing(preprocessing)
-    if config.preprocessing.preprocessing == Preprocessing.T1_LINEAR:
-        file_type = linear_nii(
-            LinearModality.T1W, config.preprocessing.use_uncropped_image
-        )
-    elif isinstance(config.modality, PETModalityConfig):
-        if (
-            config.modality.tracer is None
-            or config.modality.suvr_reference_region is None
-        ):
-            raise ClinicaDLArgumentError(
-                "`tracer` and `suvr_reference_region` must be defined "
-                "when using `pet-linear` preprocessing."
-            )
-        file_type = pet_linear_nii(
-            config.modality.tracer,
-            config.modality.suvr_reference_region,
-            config.preprocessing.use_uncropped_image,
-        )
-    else:
-        raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {config.preprocessing.preprocessing.value}"
-        )
-
-    return file_type
+from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
+from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv
 
 
 def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:

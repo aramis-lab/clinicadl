@@ -1,8 +1,8 @@
 import click
 
-from clinicadl.config.config.transfer_learning import TransferLearningConfig
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
+from clinicadl.trainer.transfer_learning import TransferLearningConfig
 
 nb_unfrozen_layer = click.option(
     "-nul",

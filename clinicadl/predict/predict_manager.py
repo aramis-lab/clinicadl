@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -15,15 +15,15 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.interpret.config import InterpretConfig
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predict.config import PredictConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.ddp import DDP, cluster
-from clinicadl.utils.maps_manager.maps_manager import MapsManager
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -916,7 +916,7 @@ class PredictManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        from clinicadl.preprocessing.preprocessing import path_decoder
+        from clinicadl.utils.iotools.utils import path_decoder
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)

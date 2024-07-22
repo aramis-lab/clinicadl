@@ -1,14 +1,13 @@
-from enum import Enum
 from logging import getLogger
 from typing import Tuple
 
-from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
+from pydantic import computed_field, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
-from clinicadl.config.config.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils.enum import RegressionLoss, RegressionMetric, Task
+from clinicadl.validation.validation import ValidationConfig as BaseValidationConfig
 
 logger = getLogger("clinicadl.reconstruction_config")
 logger = getLogger("clinicadl.regression_config")

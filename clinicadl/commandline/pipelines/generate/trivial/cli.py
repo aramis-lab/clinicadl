@@ -1,4 +1,3 @@
-import tarfile
 from logging import getLogger
 from pathlib import Path
 
@@ -8,26 +7,25 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    modality,
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.trivial import options as trivial
 from clinicadl.generate.generate_config import GenerateTrivialConfig
 from clinicadl.generate.generate_utils import (
-    find_file_type,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.read_utils import get_mask_path
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.iotools.iotools import commandline_to_json
+from clinicadl.utils.iotools.read_utils import get_mask_path
 
 logger = getLogger("clinicadl.generate.trivial")
 
@@ -40,8 +38,8 @@ logger = getLogger("clinicadl.generate.trivial")
 @data.n_subjects
 @dataloader.n_proc
 @preprocessing.use_uncropped_image
-@modality.tracer
-@modality.suvr_reference_region
+@preprocessing.tracer
+@preprocessing.suvr_reference_region
 @trivial.atrophy_percent
 @data.mask_path
 def cli(generated_caps_directory, **kwargs):
@@ -97,11 +95,11 @@ def cli(generated_caps_directory, **kwargs):
                 [participant_id],
                 [session_id],
                 caps_config.data.caps_dict[cohort],
-                file_type,
+                file_type.model_dump(),
             )[0][0]
         )
 
-        from clinicadl.utils.read_utils import get_info_from_filename
+        from clinicadl.utils.iotools.read_utils import get_info_from_filename
 
         _, _, filename_pattern, file_suffix = get_info_from_filename(image_path)
 

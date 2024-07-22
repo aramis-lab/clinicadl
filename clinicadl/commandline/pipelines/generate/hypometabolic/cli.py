@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader, preprocessing
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
@@ -15,19 +16,18 @@ from clinicadl.commandline.pipelines.generate.hypometabolic import (
 )
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.generate.generate_utils import (
-    find_file_type,
     load_and_check_tsv,
     mask_processing,
     write_missing_mods,
 )
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.enum import (
     ExtractionMethod,
     Preprocessing,
 )
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.read_utils import get_mask_path
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
+from clinicadl.utils.iotools.iotools import commandline_to_json
+from clinicadl.utils.iotools.read_utils import get_mask_path
 
 logger = getLogger("clinicadl.generate.hypometabolic")
 
@@ -97,7 +97,9 @@ def cli(generated_caps_directory, **kwargs):
     sessions = [data_df.at[i, "session_id"] for i in range(caps_config.data.n_subjects)]
     cohort = caps_config.data.caps_directory
 
-    images_paths = clinicadl_file_reader(participants, sessions, cohort, file_type)[0]
+    images_paths = clinicadl_file_reader(
+        participants, sessions, cohort, file_type.model_dump()
+    )[0]
     image_nii = nib.loadsave.load(images_paths[0])
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()

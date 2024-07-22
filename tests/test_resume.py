@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.utils.maps_manager import MapsManager
+from clinicadl.maps_manager.maps_manager import MapsManager
 
 from .testing_tools import modify_maps
 

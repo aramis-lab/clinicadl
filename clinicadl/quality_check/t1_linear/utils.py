@@ -10,9 +10,10 @@ from torch.utils.data import Dataset
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
-from clinicadl.utils.clinica_utils import clinicadl_file_reader, linear_nii
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.caps_dataset.preprocessing.utils import linear_nii
+from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLException
+from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
 
 class QCDataset(Dataset):
@@ -51,7 +52,7 @@ class QCDataset(Dataset):
             "preprocessing": Preprocessing.T1_LINEAR.value,
             "mode": "image",
             "use_uncropped_image": self.use_uncropped_image,
-            "file_type": linear_nii(LinearModality.T1W, self.use_uncropped_image),
+            "file_type": linear_nii(config.preprocessing).model_dump(),
             "use_tensor": self.use_extracted_tensors,
         }
 
@@ -63,14 +64,14 @@ class QCDataset(Dataset):
         session = self.df.loc[idx, "session_id"]
 
         if self.use_extracted_tensors:
-            file_type = self.preprocessing_dict["file_type"]
-            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            file_type = self.config.extraction.file_type
+            file_type.pattern = Path(str(file_type.pattern).replace(".nii.gz", ".pt"))
             image_output = clinicadl_file_reader(
-                [subject], [session], self.img_dir, file_type
+                [subject], [session], self.img_dir, file_type.model_dump()
             )[0]
             image_path = Path(image_output[0])
             image_filename = image_path.name
-            folder, file_type = compute_folder_and_file_type(config=self.config)
+            folder, _ = compute_folder_and_file_type(config=self.config)
             image_dir = (
                 self.img_dir
                 / "subjects"
@@ -89,7 +90,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii(LinearModality.T1W, self.use_uncropped_image),
+                linear_nii(self.config.preprocessing).model_dump(),
             )[0]
             image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)
