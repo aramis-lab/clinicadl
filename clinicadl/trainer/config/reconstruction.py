@@ -33,6 +33,12 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
     def validator_architecture(cls, v):
         return v  # TODO : connect to network module to have list of available architectures
 
+    @field_validator("normalization", mode="before")
+    def validator_normalization(cls, v):
+        if v == "batch":
+            v = "BatchNorm"
+        return v
+
 
 class ValidationConfig(BaseValidationConfig):
     """Config class for the validation procedure in reconstruction mode."""

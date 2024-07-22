@@ -55,7 +55,9 @@ class Predictor:
         self.maps_manager = MapsManager(maps_path, parameters, verbose=None)
 
     @classmethod
-    def from_json(cls, config_file: Union[str, Path], maps_path: Union[str, Path]):
+    def from_json(
+        cls, config_file: Union[str, Path], maps_path: Union[str, Path], **kwargs
+    ):
         """
         Creates a Trainer from a json configuration file.
 
@@ -82,13 +84,14 @@ class Predictor:
             raise FileNotFoundError(f"No file found at {str(config_file)}.")
         config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
         config_dict["maps_dir"] = maps_path
+        config_dict.update(kwargs)
         config_object = create_training_config(config_dict["network_task"])(
             **config_dict
         )
         return cls(config_object)
 
     @classmethod
-    def from_maps(cls, maps_path: Union[str, Path]):
+    def from_maps(cls, maps_path: Union[str, Path], **kwargs):
         """
         Creates a Trainer from a json configuration file.
 
@@ -114,7 +117,7 @@ class Predictor:
                 f"MAPS was not found at {str(maps_path)}."
                 f"To initiate a new MAPS please give a train_dict."
             )
-        return cls.from_json(maps_path / "maps.json", maps_path)
+        return cls.from_json(maps_path / "maps.json", maps_path, **kwargs)
 
     def predict(
         self,
@@ -253,19 +256,22 @@ class Predictor:
         )
 
         self._check_data_group(data_group, caps_config)
+        print(caps_config)
         criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
-        self._check_data_group(df=group_df)
+        # self._check_data_group(df=group_df)
 
-        assert self.config.split  # don't know if needed ? try to raise an exception ?
+        assert (
+            self.config.cross_validation.split
+        )  # don't know if needed ? try to raise an exception ?
         # assert self.config.data.label
 
-        for split in self.config.split:
+        for split in self.config.cross_validation.split:
             logger.info(f"Prediction of split {split}")
-            group_df, group_parameters = self.get_group_info(
-                self.config.data.data_group, split
-            )
+            group_df, group_parameters = self.get_group_info(data_group, split)
             # Find label code if not given
-            if self.config.is_given_label_code(self.maps_manager.label, label_code):
+            if self.config.data.is_given_label_code(
+                self.maps_manager.label, label_code
+            ):
                 self.maps_manager.task_manager.generate_label_code(
                     group_df, self.config.data.label
                 )
@@ -281,12 +287,12 @@ class Predictor:
                     self.maps_manager.maps_path
                     / f"{self.maps_manager.split_name}-{split}"
                     / f"best-{selection}"
-                    / self.config.data.data_group
+                    / data_group
                 )
-                tsv_pattern = f"{self.config.data.data_group}*.tsv"
+                tsv_pattern = f"{data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-            self.config.check_label(self.maps_manager.label)
+            self.config.data.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
                 self._predict_multi(
                     group_parameters,
@@ -309,11 +315,11 @@ class Predictor:
                 )
             if cluster.master:
                 self.maps_manager._ensemble_prediction(
-                    self.config.data.data_group,
+                    data_group,
                     split,
                     self.config.validation.selection_metrics,
                     self.config.data.use_labels,
-                    self.config.skip_leak_check,
+                    self.config.validation.skip_leak_check,
                 )
 
     def _predict_multi(
@@ -954,60 +960,57 @@ class Predictor:
         group_dir = self.maps_manager.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if self.config.maps_manager.overwrite:
-                if data_group in ["train", "validation"]:
-                    raise MAPSError("Cannot overwrite train or validation data group.")
-                else:
-                    print(self.config.cross_validation.split)
-                    if not self.config.cross_validation.split:
-                        self.config.cross_validation.split = (
-                            self.maps_manager.find_splits()
-                        )
+            #     if self.config.maps_manager.overwrite:
+            #         if data_group in ["train", "validation"]:
+            #             raise MAPSError("Cannot overwrite train or validation data group.")
+            #         else:
+            print("cross validation_split", self.config.cross_validation.split)
+            if not self.config.cross_validation.split:
+                self.config.cross_validation.split = self.maps_manager.find_splits()
+            print("cross validation_split", self.config.cross_validation.split)
+            # assert self.config.split
 
-                    print(self.config.cross_validation.split)
-                    # assert self.config.split
-                    for split in self.config.cross_validation.split:
-                        selection_metrics = self.maps_manager._find_selection_metrics(
-                            split
-                        )
-                        for selection in selection_metrics:
-                            results_path = (
-                                self.maps_manager.maps_path
-                                / f"{self.maps_manager.split_name}-{split}"
-                                / f"best-{selection}"
-                                / data_group
-                            )
-                            if results_path.is_dir():
-                                shutil.rmtree(results_path)
-            elif df is not None or (
-                caps_config.caps_directory is not None
-                and self.config.caps_directory != Path("")
-            ):
-                raise ClinicaDLArgumentError(
-                    f"Data group {data_group} is already defined. "
-                    f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {data_group} please set overwrite to True."
-                )
+            # IF there is a dir
+            for split in self.config.cross_validation.split:
+                selection_metrics = self.maps_manager._find_selection_metrics(split)
+                for selection in selection_metrics:
+                    results_path = (
+                        self.maps_manager.maps_path
+                        / f"{self.maps_manager.split_name}-{split}"
+                        / f"best-{selection}"
+                        / data_group
+                    )
+                    if results_path.is_dir() and self.config.maps_manager.overwrite:
+                        shutil.rmtree(results_path)
+            # elif df is not None or (
+            #     caps_config.caps_directory is not None
+            #     and self.config.caps_directory != Path("")
+            # ):
+            #     raise ClinicaDLArgumentError(
+            #         f"Data group {data_group} is already defined. "
+            #         f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
+            #         f"To erase {data_group} please set overwrite to True."
+            #     )
 
-        elif not group_dir.is_dir() and (
-            self.config.caps_directory is None or df is None
-        ):  # Data group does not exist yet / was overwritten + missing data
-            raise ClinicaDLArgumentError(
-                f"The data group {self.config.data.data_group} does not already exist. "
-                f"Please specify a caps_directory and a tsv_path to create this data group."
-            )
+        # elif not group_dir.is_dir() and (
+        #     self.config.caps_directory is None or df is None
+        # ):  # Data group does not exist yet / was overwritten + missing data
+        #     raise ClinicaDLArgumentError(
+        #         f"The data group {self.config.data.data_group} does not already exist. "
+        #         f"Please specify a caps_directory and a tsv_path to create this data group."
+        #     )
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            if self.config.skip_leak_check:
+            if self.config.validation.skip_leak_check:
                 logger.info("Skipping data leakage check")
             else:
-                self._check_leakage(self.config.data.data_group, df)
+                self._check_leakage(data_group, caps_config.data.data_df)
             self._write_data_group(
-                self.config.data.data_group,
+                data_group,
                 df,
-                self.config.caps_directory,
-                self.config.multi_cohort,
+                caps_config.data.caps_directory,
+                caps_config.data.multi_cohort,
                 label=self.config.data.label,
             )
 

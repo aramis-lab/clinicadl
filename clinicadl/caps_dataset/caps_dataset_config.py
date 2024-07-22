@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
+import pandas as pd
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.caps_dataset.data_config import DataConfig
@@ -135,6 +136,8 @@ class CapsDatasetConfig(BaseModel):
         elif not group_dir.is_dir() and caps_directory is not None:
             config.data.caps_directory = caps_directory
             config.data.data_tsv = data_tsv
+
+        config.data.data_df = pd.read_csv(config.data.data_tsv, sep="\t")
 
         return config
 

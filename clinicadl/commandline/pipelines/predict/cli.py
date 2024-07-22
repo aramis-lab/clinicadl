@@ -61,8 +61,10 @@ def cli(input_maps_directory, data_group, **kwargs):
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
-    predictor = Predictor.from_maps(input_maps_directory)
+    print(kwargs["gpu"])
+    predictor = Predictor.from_maps(input_maps_directory, **kwargs)
     print(predictor)
+
     caps_config = CapsDatasetConfig.from_data_group(
         input_maps_directory, data_group, **kwargs
     )
