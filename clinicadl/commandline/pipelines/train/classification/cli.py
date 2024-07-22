@@ -23,10 +23,10 @@ from clinicadl.commandline.pipelines.train.classification import (
 from clinicadl.commandline.pipelines.transfer_learning import (
     options as transfer_learning,
 )
-from clinicadl.train.utils import merge_cli_and_config_file_options
 from clinicadl.trainer.config.classification import ClassificationConfig
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import Task
+from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_options
 
 
 @click.command(name="classification", no_args_is_help=True)

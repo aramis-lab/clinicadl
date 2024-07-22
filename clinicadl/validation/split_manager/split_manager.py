@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.utils.clinica_utils import check_caps_folder
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
+from clinicadl.utils.iotools.clinica_utils import check_caps_folder
 
 logger = getLogger("clinicadl.split_manager")
 

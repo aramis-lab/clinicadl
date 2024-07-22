@@ -15,15 +15,15 @@ from clinicadl.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.interpret.config import InterpretConfig
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predict.config import PredictConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.ddp import DDP, cluster
-from clinicadl.utils.maps_manager.maps_manager import MapsManager
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -916,7 +916,7 @@ class PredictManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        from clinicadl.caps_dataset.extraction.utils import path_decoder
+        from clinicadl.utils.iotools.utils import path_decoder
 
         with json_path.open(mode="r") as f:
             parameters = json.load(f, object_hook=path_decoder)

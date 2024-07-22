@@ -31,7 +31,7 @@ except ImportError:
 else:
     fsdp_available = True
 
-from . import cluster
+from clinicadl.utils import cluster
 
 logger = logging.getLogger("DDP")
 

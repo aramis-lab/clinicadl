@@ -6,10 +6,10 @@ import click
 import toml
 from click.core import ParameterSource
 
-from clinicadl.caps_dataset.extraction.utils import path_decoder
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.maps_manager.maps_manager_utils import remove_unused_tasks
+from clinicadl.utils.iotools.maps_manager_utils import remove_unused_tasks
+from clinicadl.utils.iotools.utils import path_decoder
 
 
 def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, Any]:
@@ -49,7 +49,7 @@ def extract_config_from_toml_file(config_file: Path, task: Task) -> Dict[str, An
         del user_dict["Random_Search"]
 
     # get the template
-    clinicadl_root_dir = Path(__file__).parents[1]
+    clinicadl_root_dir = Path(__file__).parents[2]
     config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     config_dict = toml.load(config_path)
     # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
@@ -193,6 +193,7 @@ def merge_cli_and_config_file_options(task: Task, **kwargs) -> Dict[str, Any]:
     # TODO : remove?
     try:
         options["maps_dir"] = options["output_maps_directory"]
+
     except KeyError:
         pass
     ###

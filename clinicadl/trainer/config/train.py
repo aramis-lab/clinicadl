@@ -12,20 +12,20 @@ from pydantic import (
 from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.computational import ComputationalConfig
-from clinicadl.config.config.cross_validation import CrossValidationConfig
-from clinicadl.config.config.early_stopping import EarlyStoppingConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
-from clinicadl.config.config.maps_manager import MapsManagerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
 from clinicadl.config.config.ssda import SSDAConfig
-from clinicadl.config.config.transfer_learning import TransferLearningConfig
-from clinicadl.config.config.validation import ValidationConfig
+from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.network.config import NetworkConfig
 from clinicadl.optimizer.optimization import OptimizationConfig
 from clinicadl.optimizer.optimizer import OptimizerConfig
+from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.early_stopping.config import EarlyStoppingConfig
 from clinicadl.utils.enum import Task
+from clinicadl.validation.cross_validation import CrossValidationConfig
+from clinicadl.validation.validation import ValidationConfig
 
 logger = getLogger("clinicadl.training_config")
 
@@ -111,7 +111,7 @@ class TrainConfig(BaseModel, ABC):
         path : Union[str, Path]
             Path to the TOML configuration file.
         """
-        from clinicadl.train.utils import extract_config_from_toml_file
+        from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file
 
         path = Path(path)
         config_dict = extract_config_from_toml_file(path, self.network_task)

@@ -4,7 +4,6 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
     dataloader,
-    extraction,
     preprocessing,
 )
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
@@ -47,7 +46,9 @@ def cli(
     """
     from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 
-    from .quality_check import quality_check as pet_linear_qc
+    from .....quality_check.pet_linear.quality_check import (
+        quality_check as pet_linear_qc,
+    )
 
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         caps_directory=caps_directory,

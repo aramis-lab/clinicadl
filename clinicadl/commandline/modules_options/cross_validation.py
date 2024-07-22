@@ -1,8 +1,8 @@
 import click
 
-from clinicadl.config.config.cross_validation import CrossValidationConfig
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
+from clinicadl.validation.cross_validation import CrossValidationConfig
 
 # Cross Validation
 n_splits = click.option(
