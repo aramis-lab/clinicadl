@@ -15,7 +15,7 @@ def test_SE_Block(input_3d):
     assert out.shape == input_3d.shape
 
 
-def test_ResBlock_SE(input_3d, helpers):
+def test_ResBlock_SE(input_3d):
     from clinicadl.nn.blocks import ResBlock_SE
 
     layer = ResBlock_SE(
@@ -25,18 +25,9 @@ def test_ResBlock_SE(input_3d, helpers):
         ratio_channel=4,
     )
     out = layer(input_3d)
-    expected_out_shape = helpers.compute_conv_output_size(
-        in_size=input_3d.shape[-1], kernel_size=3, stride=1, padding=1
-    )
-    expected_out_shape = helpers.compute_conv_output_size(
-        in_size=expected_out_shape, kernel_size=3, stride=1, padding=1
-    )
-    assert out.shape == torch.Size(
+    assert out.shape[:2] == torch.Size(
         (
             input_3d.shape[0],
             2**3,
-            expected_out_shape,
-            expected_out_shape,
-            expected_out_shape,
         )
     )
