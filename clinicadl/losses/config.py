@@ -39,7 +39,7 @@ class Reduction(str, BaseEnum):
 
 
 class Order(int, BaseEnum):
-    """Supported order of L-norm in MultiMarginLoss."""
+    """Supported order of L-norm for MultiMarginLoss."""
 
     ONE = 1
     TWO = 2

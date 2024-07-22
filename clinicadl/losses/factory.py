@@ -9,7 +9,7 @@ from .config import LossConfig
 
 def get_loss_function(config: LossConfig) -> Tuple[torch.nn.Module, Dict[str, Any]]:
     """
-    Factory function to get a loss function from its name.
+    Factory function to get a loss function.
 
     Parameters
     ----------
