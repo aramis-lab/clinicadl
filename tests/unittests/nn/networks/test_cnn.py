@@ -1,12 +1,12 @@
 import pytest
 import torch
 
-import clinicadl.network.pythae.nn.networks.cnn as cnn
+import clinicadl.nn.networks.cnn as cnn
 
 
 @pytest.fixture
 def input_2d():
-    return torch.randn(2, 1, 50, 100)
+    return torch.randn(2, 3, 100, 100)
 
 
 @pytest.fixture

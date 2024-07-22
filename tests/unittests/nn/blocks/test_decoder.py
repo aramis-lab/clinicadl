@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.network.pythae.nn.blocks.decoder as decoder
+import clinicadl.nn.blocks.decoder as decoder
 
 
 @pytest.fixture
