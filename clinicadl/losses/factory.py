@@ -4,6 +4,8 @@ from typing import Any, Dict, Tuple
 
 import torch
 
+from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
+
 from .config import LossConfig
 
 
@@ -25,13 +27,13 @@ def get_loss_function(config: LossConfig) -> Tuple[torch.nn.Module, Dict[str, An
         loss function.
     """
     loss_class = getattr(torch.nn, config.loss)
-    expected_args = inspect.getfullargspec(loss_class).args
-    config_dict = {
-        arg: v for arg, v in config.model_dump().items() if arg in expected_args
-    }
+    expected_args, config_dict = get_args_and_defaults(loss_class.__init__)
+    for arg, value in config.model_dump().items():
+        if arg in expected_args and value != DefaultFromLibrary.YES:
+            config_dict[arg] = value
 
     config_dict_ = deepcopy(config_dict)
-    if config.weight is not None:
+    if "weight" in config_dict and config_dict["weight"] is not None:
         config_dict_["weight"] = torch.Tensor(config_dict_["weight"])
     loss = loss_class(**config_dict_)
 

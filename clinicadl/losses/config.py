@@ -1,8 +1,10 @@
-from typing import List, Optional
+from enum import Enum
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, NonNegativeFloat, PositiveFloat
 
 from clinicadl.utils.enum import BaseEnum
+from clinicadl.utils.factories import DefaultFromLibrary
 
 
 class ClassificationLoss(str, BaseEnum):
@@ -30,7 +32,7 @@ class ImplementedLoss(str, BaseEnum):
         )
 
 
-class Reduction(str, BaseEnum):
+class Reduction(str, Enum):
     """Supported reduction method in ClinicaDL."""
 
     NONE = "none"
@@ -38,7 +40,7 @@ class Reduction(str, BaseEnum):
     SUM = "sum"
 
 
-class Order(int, BaseEnum):
+class Order(int, Enum):
     """Supported order of L-norm for MultiMarginLoss."""
 
     ONE = 1
@@ -49,12 +51,14 @@ class LossConfig(BaseModel):
     """Config class to configure the loss function."""
 
     loss: ImplementedLoss = ImplementedLoss.MSE
-    reduction: Reduction = Reduction.MEAN
-    delta: PositiveFloat = 1.0
-    beta: PositiveFloat = 1.0
-    p: Order = Order.ONE
-    margin: float = 1.0
-    weight: Optional[List[NonNegativeFloat]] = None
+    reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
+    delta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    beta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES
+    margin: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
+    weight: Union[
+        Optional[List[NonNegativeFloat]], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
