@@ -1,7 +1,14 @@
 from enum import Enum
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, NonNegativeFloat, PositiveFloat
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    NonNegativeFloat,
+    NonNegativeInt,
+    PositiveFloat,
+    field_validator,
+)
 
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.factories import DefaultFromLibrary
@@ -59,7 +66,20 @@ class LossConfig(BaseModel):
     weight: Union[
         Optional[List[NonNegativeFloat]], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
+    ignore_index: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    label_smoothing: Union[
+        NonNegativeFloat, DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
     )
+
+    @field_validator("label_smoothing")
+    @classmethod
+    def validator_label_smoothing(cls, v):
+        if isinstance(v, float):
+            assert (
+                0 <= v <= 1
+            ), f"label_smoothing must be between 0 and 1 but it has been set to {v}."
+        return v
