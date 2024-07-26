@@ -8,7 +8,6 @@ from logging import getLogger
 from os import listdir, makedirs, path
 from pathlib import Path, PosixPath
 from typing import Any, Dict, List, Optional, Tuple, Union
-from pathlib import Path
 
 import pandas as pd
 import torch
@@ -139,23 +138,23 @@ class MapsManager:
         else:
             self._train_single(split_list, resume=False)
 
-
     def train_pythae(self, split_list: List[int] = None):
         """
         Train using Pythae procedure
         only works for single splits
         """
-        from clinicadl.utils.caps_dataset.data import PythaeCAPS
         from pythae.pipelines import TrainingPipeline
         from pythae.trainers.training_callbacks import TrainHistoryCallback
-        
+
+        from clinicadl.utils.caps_dataset.data import PythaeCAPS
+
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
-        
+
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -165,7 +164,7 @@ class MapsManager:
                 os.makedirs(model_dir)
 
             seed_everything(self.seed, self.deterministic, self.compensation)
-        
+
             split_df_dict = split_manager[split]
             train_dataset = PythaeCAPS(
                 self.caps_directory,
@@ -196,15 +195,12 @@ class MapsManager:
                 optimizer=self.optimizer,
             )
             # Create Pythae Training Pipeline
-            pipeline = TrainingPipeline(
-                training_config=config,
-                model=model
-            )
-            
+            pipeline = TrainingPipeline(training_config=config, model=model)
+
             # Launch training
             pipeline(
-                train_data=train_dataset, # must be torch.Tensor or np.array
-                eval_data=eval_dataset, # must be torch.Tensor or np.array
+                train_data=train_dataset,  # must be torch.Tensor or np.array
+                eval_data=eval_dataset,  # must be torch.Tensor or np.array
                 callbacks=[
                     TrainHistoryCallback(),
                 ],
@@ -212,7 +208,6 @@ class MapsManager:
             # Move saved model to the correct path in the MAPS
             src = path.join(model_dir, "*_training_*/final_model/model.pt")
             os.system(f"mv {src} {model_dir}")
-        
 
     def resume(self, split_list: List[int] = None):
         """
@@ -268,7 +263,6 @@ class MapsManager:
         sample_latent: int = 0,
         save_caps: bool = False,
         skip_leak_check: bool = False,
-        workdir: str = None,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -308,7 +302,10 @@ class MapsManager:
         )
 
         if pythae:
-            from clinicadl.utils.network.pythae.encoder_decoder_config import make_encoder_decoder_config
+            from clinicadl.utils.network.pythae.encoder_decoder_config import (
+                make_encoder_decoder_config,
+            )
+
             self.parameters = make_encoder_decoder_config(self.parameters)
 
         group_df = None
@@ -327,8 +324,7 @@ class MapsManager:
             multi_cohort,
             overwrite,
             label=label,
-            skip_leak_check= skip_leak_check,
-            workdir = workdir,
+            skip_leak_check=skip_leak_check,
         )
 
         for split in split_list:
@@ -395,8 +391,13 @@ class MapsManager:
                         seed=self.parameters["seed"],
                         save_caps=save_caps,
                     )
-                    if not pythae: 
-                        if save_tensor or save_nifti or save_latent_tensor or sample_latent:
+                    if not pythae:
+                        if (
+                            save_tensor
+                            or save_nifti
+                            or save_latent_tensor
+                            or sample_latent
+                        ):
                             self._save_model_output(
                                 data_test,
                                 data_group,
@@ -447,7 +448,7 @@ class MapsManager:
                     seed=self.parameters["seed"],
                     save_caps=save_caps,
                 )
-                if not pythae: 
+                if not pythae:
                     if save_tensor or save_nifti or save_latent_tensor or sample_latent:
                         self._save_model_output(
                             data_test,
@@ -461,7 +462,9 @@ class MapsManager:
                             gpu=gpu,
                         )
 
-            self._ensemble_prediction(data_group, split, split_selection_metrics, use_labels)
+            self._ensemble_prediction(
+                data_group, split, split_selection_metrics, use_labels
+            )
 
     def interpret(
         self,
@@ -1063,20 +1066,12 @@ class MapsManager:
         """
         for selection_metric in selection_metrics:
 
-            if workdir is not None:
-                log_dir = path.join(
-                    workdir,
-                    f"{self.split_name}-{split}",
-                    f"best-{selection_metric}",
-                    data_group,
-                )
-            else: 
-                log_dir = path.join(
-                    self.maps_path,
-                    f"{self.split_name}-{split}",
-                    f"best-{selection_metric}",
-                    data_group,
-                )
+            log_dir = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
+            )
 
             self.write_description_log(
                 log_dir,
@@ -1093,7 +1088,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            
+
             tensor_path = None
             if save_reconstruction_tensor:
                 tensor_path = path.join(
@@ -1128,21 +1123,26 @@ class MapsManager:
                 makedirs(latent_tensor_path, exist_ok=True)
 
             caps_path = None
-            if save_caps: 
+            if save_caps:
                 caps_path = path.join(
-                    self.maps_path, 
+                    self.maps_path,
                     f"{self.split_name}-{split}",
                     f"best-{selection_metric}",
-                    "CapsOutput", 
+                    "CapsOutput",
                 )
                 makedirs(caps_path, exist_ok=True)
 
             if for_pythae:
-                prediction_df, metrics, sample_latent_prediction_df, sample_latent_metrics_df = self.task_manager.test_pythae(
-                    model, 
-                    dataloader, 
-                    criterion, 
-                    use_labels=use_labels, 
+                (
+                    prediction_df,
+                    metrics,
+                    sample_latent_prediction_df,
+                    sample_latent_metrics_df,
+                ) = self.task_manager.test_pythae(
+                    model,
+                    dataloader,
+                    criterion,
+                    use_labels=use_labels,
                     save_reconstruction_tensor=save_reconstruction_tensor,
                     save_reconstruction_nifti=save_reconstruction_nifti,
                     save_latent_tensor=save_latent_tensor,
@@ -1167,14 +1167,13 @@ class MapsManager:
 
             # Replace here
             self._mode_level_to_tsv(
-                prediction_df, 
-                metrics, 
-                split, 
-                selection_metric, 
-                data_group=data_group, 
+                prediction_df,
+                metrics,
+                split,
+                selection_metric,
+                data_group=data_group,
                 sample_latent_results_df=sample_latent_prediction_df,
                 sample_latent_metrics_df=sample_latent_metrics_df,
-                workdir = workdir,
             )
 
     def _compute_output_nifti(
@@ -1270,10 +1269,10 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        
+
         import nibabel as nib
         from numpy import eye
-        
+
         for selection_metric in selection_metrics:
             # load the best trained model during the training
             model, _ = self._init_model(
@@ -1316,7 +1315,7 @@ class MapsManager:
 
             if save_caps:
                 caps_path = path.join(
-                    self.maps_path, 
+                    self.maps_path,
                     f"{self.split_name}-{split}",
                     f"best-{selection_metric}",
                     "CapsOutput",
@@ -1353,10 +1352,14 @@ class MapsManager:
                     # Convert tensor to nifti image with appropriate affine
                     reconstruction = output["recon_x"].squeeze(0).cpu()
                     input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                    output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(
+                        reconstruction[0].detach().numpy(), eye(4)
+                    )
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                    output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                    output_filename = (
+                        f"{participant_id}_{session_id}_image_output.nii.gz"
+                    )
                     nib.save(input_nii, path.join(nifti_path, input_filename))
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
@@ -1366,29 +1369,27 @@ class MapsManager:
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                     )
                     torch.save(latent, path.join(latent_tensor_path, output_filename))
-                
+
                 if save_caps:
                     reconstruction = output["recon_x"].squeeze(0).cpu()
                     input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                    output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
-                    latent_nii = nib.Nifti1Image(output["embedding"].squeeze(0).cpu().detach().numpy(), eye(4))
-                    
-                    input_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.nii.gz"
+                    output_nii = nib.Nifti1Image(
+                        reconstruction[0].detach().numpy(), eye(4)
                     )
-                    output_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.nii.gz"
+                    latent_nii = nib.Nifti1Image(
+                        output["embedding"].squeeze(0).cpu().detach().numpy(), eye(4)
                     )
-                    latent_filename = (
-                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.nii.gz"
-                    )
-                    
+
+                    input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.nii.gz"
+                    output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.nii.gz"
+                    latent_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.nii.gz"
+
                     caps_sub_ses_path = path.join(
-                        caps_path, 
-                        "subjects", 
-                        participant_id, 
+                        caps_path,
+                        "subjects",
+                        participant_id,
                         session_id,
-                        "custom", 
+                        "custom",
                     )
                     makedirs(caps_sub_ses_path, exist_ok=True)
 
@@ -1396,50 +1397,72 @@ class MapsManager:
                     nib.save(output_nii, path.join(caps_sub_ses_path, output_filename))
                     nib.save(latent_nii, path.join(latent_tensor_path, latent_filename))
 
-                    logger.debug(f"File saved at {[input_filename, output_filename, latent_filename]}")
+                    logger.debug(
+                        f"File saved at {[input_filename, output_filename, latent_filename]}"
+                    )
 
-                if sample_latent > 0: 
+                if sample_latent > 0:
                     data = dataset[i]
                     image = data["data"]
                     data["data"] = data["data"].unsqueeze(0)
                     participant_id = data["participant_id"]
                     session_id = data["session_id"]
-                    mode_id = data[f"{self.mode}_id"] 
-                    
-                    outputs = model.predict(data, sample_latent=sample_latent, seed=seed)
-                    
+                    mode_id = data[f"{self.mode}_id"]
+
+                    outputs = model.predict(
+                        data, sample_latent=sample_latent, seed=seed
+                    )
+
                     for i in range(sample_latent):
                         output = outputs[i]
-                                                
+
                         reconstruction = output["recon_x"].squeeze(0).cpu()
-                        output_pt_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
+                        output_pt_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
+                        torch.save(
+                            reconstruction, path.join(tensor_path, output_pt_filename)
                         )
-                        torch.save(reconstruction, path.join(tensor_path, output_pt_filename))
                         logger.debug(f"File saved at {output_pt_filename}")
-                        
+
                         # Convert tensor to nifti image with appropriate affine
                         input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                        output_nii = nib.Nifti1Image(reconstruction[0].detach().numpy(), eye(4))
+                        output_nii = nib.Nifti1Image(
+                            reconstruction[0].detach().numpy(), eye(4)
+                        )
                         # Create file name according to participant and session id
-                        input_nii_filename = f"{participant_id}_{session_id}_input.nii.gz"
-                        output_nii_filename = f"{participant_id}_{session_id}_output-{i}.nii.gz"
+                        input_nii_filename = (
+                            f"{participant_id}_{session_id}_input.nii.gz"
+                        )
+                        output_nii_filename = (
+                            f"{participant_id}_{session_id}_output-{i}.nii.gz"
+                        )
                         nib.save(input_nii, path.join(nifti_path, input_nii_filename))
                         nib.save(output_nii, path.join(nifti_path, output_nii_filename))
-                        
-                        latent = output["embedding"].squeeze(0).cpu()
-                        latent_filename = (
-                            f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
-                        )
-                        torch.save(latent, path.join(latent_tensor_path, latent_filename))
 
+                        latent = output["embedding"].squeeze(0).cpu()
+                        latent_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-{i}.pt"
+                        torch.save(
+                            latent, path.join(latent_tensor_path, latent_filename)
+                        )
 
                         if save_caps:
-                            nib.save(input_nii, path.join(caps_sub_ses_path, input_nii_filename))
-                            nib.save(output_nii_filename, path.join(caps_sub_ses_path, output_nii_filename))
-                            latent_nii = nib.Nifti1Image(latent.detach().numpy(), eye(4))
-                            latent_nii_filename = f"{participant_id}_{session_id}_latent-{i}.nii.gz"
-                            nib.save(latent_nii, path.join(caps_sub_ses_path, latent_nii_filename))
+                            nib.save(
+                                input_nii,
+                                path.join(caps_sub_ses_path, input_nii_filename),
+                            )
+                            nib.save(
+                                output_nii_filename,
+                                path.join(caps_sub_ses_path, output_nii_filename),
+                            )
+                            latent_nii = nib.Nifti1Image(
+                                latent.detach().numpy(), eye(4)
+                            )
+                            latent_nii_filename = (
+                                f"{participant_id}_{session_id}_latent-{i}.nii.gz"
+                            )
+                            nib.save(
+                                latent_nii,
+                                path.join(caps_sub_ses_path, latent_nii_filename),
+                            )
 
     def _ensemble_prediction(
         self,
@@ -1447,7 +1470,6 @@ class MapsManager:
         split,
         selection_metrics,
         use_labels=True,
-        workdir : str = None,
     ):
         """Computes the results on the image-level."""
 
@@ -1462,7 +1484,6 @@ class MapsManager:
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
-                    workdir = workdir,
                 )
             elif self.mode != "image":
                 self._mode_to_image_tsv(
@@ -1470,7 +1491,6 @@ class MapsManager:
                     selection=selection_metric,
                     data_group=data_group,
                     use_labels=use_labels,
-                    workdir = workdir,
                 )
 
     ###############################
@@ -1566,7 +1586,6 @@ class MapsManager:
                 f"{possible_selection_metrics_set}."
             )
 
-
     def _check_split_wording(self):
         """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
         from glob import glob
@@ -1651,8 +1670,7 @@ class MapsManager:
         multi_cohort=False,
         overwrite=False,
         label=None,
-        skip_leak_check: bool = False, 
-        workdir: str = None,
+        skip_leak_check: bool = False,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -1673,11 +1691,7 @@ class MapsManager:
                 when caps_directory or df are not given and data group does not exist
         """
 
-        if workdir is not None: 
-            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
-
-        else: 
-            maps_out_path = self.maps_path
+        maps_out_path = self.maps_path
 
         group_path = path.join(maps_out_path, "groups", data_group)
         logger.debug(f"Group path {group_path}")
@@ -1719,7 +1733,7 @@ class MapsManager:
             if not skip_leak_check:
                 self._check_leakage(data_group, df)
             self._write_data_group(
-                data_group, df, caps_directory, multi_cohort, label=label, workdir = workdir,
+                data_group, df, caps_directory, multi_cohort, label=label
             )
 
     ###############################
@@ -1734,11 +1748,10 @@ class MapsManager:
         # save to json file
         for key, value in parameters.items():
             if type(value) is dict:
-                for key2,value2 in value.items(): 
+                for key2, value2 in value.items():
                     if type(value2) == PosixPath:
                         parameters[key2] = str(value2)
 
-            
             if type(value) == PosixPath:
                 parameters[key] = str(value)
 
@@ -1791,7 +1804,7 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self, data_group, df, caps_directory=None, multi_cohort=None, label=None, workdir:str = None
+        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1804,10 +1817,7 @@ class MapsManager:
             multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
         """
 
-        if workdir is not None: 
-            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
-        else: 
-            maps_out_path = self.maps_path
+        maps_out_path = self.maps_path
 
         group_path = path.join(maps_out_path, "groups", data_group)
         makedirs(group_path)
@@ -1868,7 +1878,6 @@ class MapsManager:
         split: int,
         network: int = None,
         filename: str = "checkpoint.pth.tar",
-        workdir: str = None
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
@@ -1881,10 +1890,7 @@ class MapsManager:
             network: network number (multi-network framework).
             filename: name of the checkpoint file.
         """
-        if workdir is not None:
-            maps_path_out = path.join(workdir, Path(self.maps_path).stem,f"{self.split_name}-{split}", "tmp" )
-        else: 
-            maps_path_out = self.maps_path
+        maps_path_out = self.maps_path
 
         checkpoint_dir = path.join(maps_path_out, f"{self.split_name}-{split}", "tmp")
         makedirs(checkpoint_dir, exist_ok=True)
@@ -1907,14 +1913,15 @@ class MapsManager:
                         checkpoint_path, path.join(metric_path, best_filename)
                     )
 
-    def _write_information(
-        self
-        ):
+    def _write_information(self):
         """
         Writes model architecture of the MAPS in MAPS root.
         """
         if "pythae" in self.parameters["architecture"]:
-            from clinicadl.utils.network.pythae.encoder_decoder_config import make_encoder_decoder_config
+            from clinicadl.utils.network.pythae.encoder_decoder_config import (
+                make_encoder_decoder_config,
+            )
+
             self.parameters = make_encoder_decoder_config(self.parameters)
 
         from datetime import datetime
@@ -1983,7 +1990,6 @@ class MapsManager:
         data_group: str = "train",
         sample_latent_results_df: pd.DataFrame = None,
         sample_latent_metrics_df: pd.DataFrame = None,
-        workdir: str = None, 
     ):
         """
         Writes the outputs of the test function in tsv files.
@@ -1995,11 +2001,7 @@ class MapsManager:
             selection: the metrics on which the model was selected (BA, loss...)
             data_group: the name referring to the data group on which evaluation is performed.
         """
-        if workdir is not None: 
-            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
-        else: 
-            maps_out_path = self.maps_path
-
+        maps_out_path = self.maps_path
 
         performance_dir = path.join(
             maps_out_path,
@@ -2019,24 +2021,34 @@ class MapsManager:
             results_df.to_csv(
                 performance_path, index=False, sep="\t", mode="a", header=False
             )
-            
+
         if sample_latent_results_df is not None:
             latent_performance_path = path.join(
-                performance_dir, f"{data_group}_{self.mode}_level_sample-latent_prediction.tsv"
+                performance_dir,
+                f"{data_group}_{self.mode}_level_sample-latent_prediction.tsv",
             )
             if not path.exists(latent_performance_path):
-                sample_latent_results_df.to_csv(latent_performance_path, index=False, sep="\t")
-            else: 
                 sample_latent_results_df.to_csv(
-                    latent_performance_path, index=False, sep="\t", mode="a", header=False
+                    latent_performance_path, index=False, sep="\t"
+                )
+            else:
+                sample_latent_results_df.to_csv(
+                    latent_performance_path,
+                    index=False,
+                    sep="\t",
+                    mode="a",
+                    header=False,
                 )
         if sample_latent_metrics_df is not None:
             latent_metrics_path = path.join(
-                performance_dir, f"{data_group}_{self.mode}_level_sample-latent_metrics.tsv"
+                performance_dir,
+                f"{data_group}_{self.mode}_level_sample-latent_metrics.tsv",
             )
             if not path.exists(latent_metrics_path):
-                sample_latent_metrics_df.to_csv(latent_metrics_path, index=False, sep="\t")
-            else:   
+                sample_latent_metrics_df.to_csv(
+                    latent_metrics_path, index=False, sep="\t"
+                )
+            else:
                 sample_latent_metrics_df.to_csv(
                     latent_metrics_path, index=False, sep="\t", mode="a", header=False
                 )
@@ -2045,24 +2057,19 @@ class MapsManager:
             performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
         )
         if metrics is not None:
-           if isinstance(metrics, pd.DataFrame):
-               metrics.to_csv(
-                   metrics_path, sep="\t"
-               )
-           else:
-               if not path.exists(metrics_path):
-                   pd.DataFrame(metrics, index=[0]).to_csv(
-                       metrics_path, index=False, sep="\t"
-                   )
-               else:
-                   pd.DataFrame(metrics, index=[0]).to_csv(
-                       metrics_path, index=False, sep="\t", mode="a", header=False
-                   )
+            if isinstance(metrics, pd.DataFrame):
+                metrics.to_csv(metrics_path, sep="\t")
+            else:
+                if not path.exists(metrics_path):
+                    pd.DataFrame(metrics, index=[0]).to_csv(
+                        metrics_path, index=False, sep="\t"
+                    )
+                else:
+                    pd.DataFrame(metrics, index=[0]).to_csv(
+                        metrics_path, index=False, sep="\t", mode="a", header=False
+                    )
         else:
             results_df.describe().to_csv(metrics_path, sep="\t")
-            
-        
-            
 
     def _ensemble_to_tsv(
         self,
@@ -2070,7 +2077,6 @@ class MapsManager:
         selection: str,
         data_group: str = "test",
         use_labels: bool = True,
-        workdir: str = None,
     ):
         """
         Writes image-level performance files from mode level performances.
@@ -2095,11 +2101,7 @@ class MapsManager:
             validation_dataset, split, selection, self.mode, verbose=False
         )
 
-        if workdir is not None: 
-            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
-        else: 
-            maps_out_path = self.maps_path
-
+        maps_out_path = self.maps_path
 
         performance_dir = path.join(
             maps_out_path,
@@ -2135,7 +2137,6 @@ class MapsManager:
         selection: str,
         data_group: str = "test",
         use_labels: bool = True,
-        workdir: str = None, 
     ):
         """
         Copy mode-level TSV files to name them as image-level TSV files
@@ -2152,11 +2153,7 @@ class MapsManager:
         )
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
-        if workdir is not None: 
-            maps_out_path = path.join(workdir, Path(self.maps_path).stem)
-        else: 
-            maps_out_path = self.maps_path
-
+        maps_out_path = self.maps_path
 
         performance_dir = path.join(
             maps_out_path,
@@ -2253,10 +2250,12 @@ class MapsManager:
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
             logger.debug(f"Transfer from {transfer_class}")
-            if 'model' in transfer_state.keys():
+            if "model" in transfer_state.keys():
                 model.transfer_weights(transfer_state["model"], transfer_class)
-            elif 'model_state_dict' in transfer_state.keys():
-                model.transfer_weights(transfer_state["model_state_dict"], transfer_class)
+            elif "model_state_dict" in transfer_state.keys():
+                model.transfer_weights(
+                    transfer_state["model_state_dict"], transfer_class
+                )
             else:
                 raise KeyError("Unknow key in model state dictionnary.")
 
@@ -2447,11 +2446,11 @@ class MapsManager:
             )
             if not path.exists(model_path):
                 model_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                "model.pt",
-            )
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    "model.pt",
+                )
 
         logger.info(
             f"Loading model trained for split {split} "
@@ -2592,4 +2591,3 @@ class MapsManager:
                 )
             )
         return map_pt
-
