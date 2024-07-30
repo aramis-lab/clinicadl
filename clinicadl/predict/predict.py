@@ -1,6 +1,6 @@
 # coding: utf8
-from typing import List
 from pathlib import Path
+from typing import List
 
 from clinicadl import MapsManager
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
@@ -27,7 +27,6 @@ def predict(
     sample_latent: int = 0,
     save_caps: bool = False,
     skip_leak_check: bool = False,
-    workdir: str  = None,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -49,7 +48,7 @@ def predict(
         overwrite: If True former definition of data group is erased
         save_tensor: For reconstruction task only, if True it will save the reconstruction as .pt file in the MAPS.
         save_nifti: For reconstruction task only, if True it will save the reconstruction as NIfTI file in the MAPS.
-        sample_latent: For reconstruction task only, will sample the latent space multiple times to generate multiple 
+        sample_latent: For reconstruction task only, will sample the latent space multiple times to generate multiple
             reconstructions for a single input.
     """
     verbose_list = ["warning", "info", "debug"]
@@ -89,9 +88,8 @@ def predict(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
-        pythae=pythae, 
+        pythae=pythae,
         sample_latent=sample_latent,
         save_caps=save_caps,
-        skip_leak_check= skip_leak_check,
-        workdir = workdir,
+        skip_leak_check=skip_leak_check,
     )
