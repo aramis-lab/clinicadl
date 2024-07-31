@@ -7,8 +7,11 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
+from clinicadl.utils.predict_manager.predict_manager import PredictManager
+from tests.testing_tools import clean_folder, compare_folders
 
 from .testing_tools import compare_folders, modify_maps
+
 
 
 @pytest.fixture(
@@ -100,7 +103,8 @@ def test_predict(cmdopt, tmp_path, test_name):
     #         f.write(json_data)
 
     maps_manager = MapsManager(model_folder, verbose="debug")
-    maps_manager.predict(
+    predict_manager = PredictManager(maps_manager)
+    predict_manager.predict(
         data_group="test-RANDOM",
         caps_directory=input_dir / "caps_random",
         tsv_path=input_dir / "caps_random/data.tsv",
