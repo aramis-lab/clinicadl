@@ -1,0 +1,49 @@
+name: CLI Tests
+
+on:
+  push:
+    branches: ["dev", "refactoring"]
+  pull_request:
+    branches: ["dev", "refactoring"]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+env:
+  POETRY_VERSION: '1.8.3'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test-cli:
+    if: github.event.pull_request.draft == false
+    runs-on:
+      - self-hosted
+      - Linux
+      - ubuntu
+      - cpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Run CLI tests
+        run: |
+          source /builds/miniconda3/etc/profile.d/conda.sh
+          make env.conda
+          conda activate "${{ github.workspace }}"/env
+          make install
+          cd tests
+          poetry run pytest \
+          --junitxml=./test-reports/test_cli_report.xml \
+          --disable-warnings \
+          --verbose \
+          test_cli.py
