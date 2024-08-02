@@ -1,5 +1,5 @@
 from torch import Tensor
-from torch.nn import MultiMarginLoss
+from torch.nn import BCEWithLogitsLoss, MultiMarginLoss
 
 from clinicadl.losses import ImplementedLoss, LossConfig, get_loss_function
 
@@ -22,3 +22,9 @@ def test_get_loss_function():
     assert updated_config.p == 2
     assert updated_config.margin == 1.0
     assert updated_config.weight == [1, 2, 3]
+
+    config = LossConfig(loss="BCEWithLogitsLoss", pos_weight=[1, 2, 3])
+    loss, updated_config = get_loss_function(config)
+    assert isinstance(loss, BCEWithLogitsLoss)
+    assert (loss.pos_weight == Tensor([1, 2, 3])).all()
+    assert updated_config.pos_weight == [1, 2, 3]
