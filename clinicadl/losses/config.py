@@ -5,9 +5,9 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     NonNegativeFloat,
-    NonNegativeInt,
     PositiveFloat,
     field_validator,
+    model_validator,
 )
 
 from clinicadl.utils.enum import BaseEnum
@@ -17,19 +17,24 @@ from clinicadl.utils.factories import DefaultFromLibrary
 class ClassificationLoss(str, BaseEnum):
     """Losses that can be used only for classification."""
 
-    CROSS_ENTROPY = "CrossEntropyLoss"
-    MULTI_MARGIN = "MultiMarginLoss"
+    CROSS_ENTROPY = "CrossEntropyLoss"  # for multi-class classification, inputs are unormalized logits and targets are int (same dimension without the class channel)
+    MULTI_MARGIN = "MultiMarginLoss"  # no particular restriction on the input, targets are int (same dimension without th class channel)
+    BCE = "BCELoss"  # for binary classification, targets and inputs should be probabilities and have same shape
+    BCE_LOGITS = "BCEWithLogitsLoss"  # for binary classification, targets should be probabilities and inputs logits, and have the same shape. More stable numerically
 
 
-class ImplementedLoss(str, BaseEnum):
+class ImplementedLoss(str, Enum):
     """Implemented losses in ClinicaDL."""
 
     CROSS_ENTROPY = "CrossEntropyLoss"
     MULTI_MARGIN = "MultiMarginLoss"
+    BCE = "BCELoss"
+    BCE_LOGITS = "BCEWithLogitsLoss"
     L1 = "L1Loss"
     MSE = "MSELoss"
     HUBER = "HuberLoss"
     SMOOTH_L1 = "SmoothL1Loss"
+    KLDIV = "KLDivLoss"  # if log_target=False, target must be positive
 
     @classmethod
     def _missing_(cls, value):
@@ -65,11 +70,15 @@ class LossConfig(BaseModel):
     margin: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
     weight: Union[
         Optional[List[NonNegativeFloat]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    ignore_index: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    ] = DefaultFromLibrary.YES  # a weight for each class
+    ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
     label_smoothing: Union[
         NonNegativeFloat, DefaultFromLibrary
     ] = DefaultFromLibrary.YES
+    log_target: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    pos_weight: Union[
+        Optional[List[NonNegativeFloat]], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES  # a positive weight for each class
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
@@ -83,3 +92,27 @@ class LossConfig(BaseModel):
                 0 <= v <= 1
             ), f"label_smoothing must be between 0 and 1 but it has been set to {v}."
         return v
+
+    @field_validator("ignore_index")
+    @classmethod
+    def validator_ignore_index(cls, v):
+        if isinstance(v, int):
+            assert (
+                v == -100 or 0 <= v
+            ), "ignore_index must be a positive int (or -100 when disabled)."
+        return v
+
+    @model_validator(mode="after")
+    def model_validator(self):
+        if (
+            self.loss == ImplementedLoss.BCE_LOGITS
+            and self.weight is not None
+            and self.weight != DefaultFromLibrary.YES
+        ):
+            raise ValueError("Cannot use weight with BCEWithLogitsLoss.")
+        elif (
+            self.loss == ImplementedLoss.BCE
+            and self.weight is not None
+            and self.weight != DefaultFromLibrary.YES
+        ):
+            raise ValueError("Cannot use weight with BCELoss.")

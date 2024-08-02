@@ -10,18 +10,15 @@ def test_get_loss_function():
         get_loss_function(config)
 
     config = LossConfig(loss="MultiMarginLoss", reduction="sum", weight=[1, 2, 3], p=2)
-    loss, config_dict = get_loss_function(config)
+    loss, updated_config = get_loss_function(config)
     assert isinstance(loss, MultiMarginLoss)
     assert loss.reduction == "sum"
     assert loss.p == 2
     assert loss.margin == 1.0
     assert (loss.weight == Tensor([1, 2, 3])).all()
-    assert config_dict == {
-        "loss": "MultiMarginLoss",
-        "reduction": "sum",
-        "p": 2,
-        "margin": 1.0,
-        "weight": [1, 2, 3],
-        "size_average": None,
-        "reduce": None,
-    }
+
+    assert updated_config.loss == "MultiMarginLoss"
+    assert updated_config.reduction == "sum"
+    assert updated_config.p == 2
+    assert updated_config.margin == 1.0
+    assert updated_config.weight == [1, 2, 3]
