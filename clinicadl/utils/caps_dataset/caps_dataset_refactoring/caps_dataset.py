@@ -10,7 +10,7 @@ import pandas as pd
 import torch
 import torchio as tio
 import torchvision.transforms as transforms
-from clinica.utils.exceptions import ClinicaCAPSError
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from torch.utils.data import Dataset
 
 from clinicadl.extract.extract_utils import (
@@ -176,7 +176,7 @@ class CapsDataset(Dataset):
             )
             image_path = image_dir / image_filename
         # Try to find .pt file
-        except ClinicaCAPSError:
+        except ClinicaDLCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
             print(file_type)
