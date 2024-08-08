@@ -1,6 +1,7 @@
 import errno
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 
@@ -23,7 +24,7 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
 
 
 def read_preprocessing(json_path: str) -> Dict[str, Any]:
-    if not json_path.endswith(".json"):
+    if not Path(json_path).name.endswith(".json"):
         json_path += ".json"
 
     if not os.path.isfile(json_path):
