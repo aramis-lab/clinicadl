@@ -22,8 +22,8 @@ class OptimizationConfig(BaseModel):
     @model_validator(mode="after")
     def model_validator(self) -> OptimizationConfig:
         """
-        Checks if parameter groups mentioned for the LR scheduler matches
-        with those mentioned for the optimizer.
+        Checks if parameter groups mentioned for the optimizer are mentioned
+        for the LR scheduler.
         """
         if isinstance(self.lr_scheduler.min_lr, dict):
             scheduler_keys = set(self.lr_scheduler.min_lr.keys())
@@ -32,9 +32,5 @@ class OptimizationConfig(BaseModel):
                 assert (
                     key in scheduler_keys
                 ), f"You mentioned the parameter group '{key}' for the optimizer, so you must also pass a min_lr for this group."
-            for key in scheduler_keys - set({"ELSE"}):
-                assert (
-                    key in optimizer_keys
-                ), f"You mentioned the parameter group '{key}' for min_lr, but it doesn't correspond to any group passed to the optimizer."
 
         return self

@@ -54,7 +54,15 @@ def get_optimizer(
             union_groups.update(set(params_names))
 
         other_params = _get_params_not_in_group(network, union_groups)
-        list_args_groups.append({"params": other_params})
+        try:
+            next(other_params)
+        except StopIteration:  # there is no other param in the network
+            pass
+        else:
+            other_params = _get_params_not_in_group(
+                network, union_groups
+            )  # reset the generator
+            list_args_groups.append({"params": other_params})
 
     optimizer = optimizer_class(list_args_groups, **args_global)
     updated_config = OptimizerConfig(optimizer=config.optimizer, **default_args)

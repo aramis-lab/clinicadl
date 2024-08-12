@@ -25,21 +25,19 @@ def test_OptimizationConfig():
     assert config.early_stopping.lower_bound == 0
     assert config.optimizer.optimizer == "SGD"
 
+
+def test_model_validation():
     optimizer_config = OptimizerConfig(lr={"param_0": 1}, weight_decay={"param_1": 1})
 
-    scheduler_config = LRSchedulerConfig(
-        min_lr={"param_0": 1, "param_2": 10, "ELSE": 100}
-    )
+    scheduler_config = LRSchedulerConfig(min_lr={"param_0": 1, "param_2": 10})
     with pytest.raises(ValidationError):
         OptimizationConfig(optimizer=optimizer_config, lr_scheduler=scheduler_config)
 
-    scheduler_config = LRSchedulerConfig(min_lr={"param_0": 1, "ELSE": 100})
+    scheduler_config = LRSchedulerConfig(min_lr={"param_0": 1})
     with pytest.raises(ValidationError):
         OptimizationConfig(optimizer=optimizer_config, lr_scheduler=scheduler_config)
 
-    scheduler_config = LRSchedulerConfig(
-        min_lr={"param_0": 1, "param_1": 10, "ELSE": 100}
-    )
+    scheduler_config = LRSchedulerConfig(min_lr={"param_0": 1, "param_1": 10})
     OptimizationConfig(optimizer=optimizer_config, lr_scheduler=scheduler_config)
 
 
@@ -62,7 +60,7 @@ def network():
     return network
 
 
-def test_group_coherence(network):
+def test_group_order(network):
     from clinicadl.optim.lr_scheduler import get_lr_scheduler
     from clinicadl.optim.optimizer import get_optimizer
 

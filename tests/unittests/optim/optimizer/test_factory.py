@@ -82,6 +82,7 @@ def test_get_optimizer(network):
     assert not updated_config.maximize
     assert not updated_config.differentiable
 
+    # special cases
     config = OptimizerConfig(
         optimizer="Adagrad",
         lr_decay={"ELSE": 100},
@@ -89,6 +90,13 @@ def test_get_optimizer(network):
     optimizer, _ = get_optimizer(network, config)
     assert len(optimizer.param_groups) == 1
     assert optimizer.param_groups[0]["lr_decay"] == 100
+
+    config = OptimizerConfig(
+        optimizer="Adagrad",
+        lr_decay={"conv1": 100, "dense1": 10, "final": 1},
+    )
+    optimizer, _ = get_optimizer(network, config)
+    assert len(optimizer.param_groups) == 3
 
 
 def test_regroup_args():
