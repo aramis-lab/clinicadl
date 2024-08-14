@@ -1,9 +1,11 @@
+import os
 from logging import getLogger
 from pathlib import Path
-import os
 
 
-def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
+def DeepLearningPrepareData(
+    caps_directory: Path, tsv_file: Path, n_proc, parameters, mood_abdom: bool = False
+):
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
@@ -56,7 +58,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
-    def write_output_imgs(output_mode, container, subfolder):
+    def write_output_imgs(output_mode, container, subfolder, mood_abdom: bool = False):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
             output_file_dir = Path(
@@ -68,8 +70,18 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             )
             if not Path(output_file_dir).is_dir():
                 os.makedirs(output_file_dir)
+
             output_file = Path(output_file_dir, filename)
+
+            if mood_abdom:
+                import torch
+                from skimage.transform import resize
+
+                output_img = resize(tensor.numpy(), output_shape=(256, 256, 256))
+                output_img = torch.tensor(output_img)
+
             save_tensor(tensor, output_file)
+
             logger.debug(f"    Output tensor saved at {output_file}")
 
     if parameters["mode"] == "image" or not parameters["prepare_dl"]:
@@ -82,7 +94,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             subfolder = "image_based"
             output_mode = extract_images(file)
             logger.debug(f"    Image extracted.")
-            write_output_imgs(output_mode, container, subfolder)
+            write_output_imgs(output_mode, container, subfolder, mood_abdom=mood_abdom)
 
         Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
 
