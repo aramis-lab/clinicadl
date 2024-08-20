@@ -99,7 +99,7 @@ def container_from_filename(bids_or_caps_filename: str) -> str:
     import os
     import re
 
-    bids_or_caps_filename = str(bids_or_caps_filename) #Path(bids_or_caps_filename)
+    bids_or_caps_filename = str(bids_or_caps_filename)  # Path(bids_or_caps_filename)
 
     m = re.search(r"(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)", bids_or_caps_filename)
     if not m:
@@ -109,7 +109,6 @@ def container_from_filename(bids_or_caps_filename: str) -> str:
         )
     subject = m.group(1)
     session = m.group(2)
-
 
     return f"subjects/{subject}/{session}"
 
@@ -245,7 +244,7 @@ def get_subject_session_list(
     if subject_session_file is not None:
         subject_session_file = Path(subject_session_file)
 
-    if tsv_dir is not None: 
+    if tsv_dir is not None:
         tsv_dir = Path(tsv_dir)
 
     return read_participant_tsv(subject_session_file)
@@ -557,9 +556,7 @@ def find_sub_ses_pattern_path(
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
-    print(current_pattern)
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
-    print(current_glob_found)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:
         #   - there is a problem somewhere which made us catch too many files
@@ -611,7 +608,7 @@ def _are_multiple_runs(files: List[str]) -> bool:
 
     _files = files
     files = []
-    for file in _files: 
+    for file in _files:
         files.append(Path(file))
 
     # Exit quickly if less than one file or if at least one file does not have the entity run
@@ -688,7 +685,7 @@ def _get_entities(files: List[str], common_suffix: str) -> dict:
 
     _files = files
     files = []
-    for file in _files: 
+    for file in _files:
         files.append(Path(file))
 
     found_entities = defaultdict(set)
@@ -734,7 +731,7 @@ def _check_common_properties_of_files(
 
     _files = files
     files = []
-    for file in _files: 
+    for file in _files:
         files.append(Path(file))
 
     extracted_properties = {property_extractor(f) for f in files}
@@ -1007,7 +1004,6 @@ def clinicadl_file_reader(
 
     input_directory = Path(input_directory)
 
-    print(information)
     _check_information(information)
     pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)
