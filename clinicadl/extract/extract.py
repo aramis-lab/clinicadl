@@ -9,6 +9,7 @@ def DeepLearningPrepareData(
     n_proc,
     parameters,
     tmp_dir: str = None,
+    mood_abdom: bool = False,
 ):
     from joblib import Parallel, delayed
     from torch import save as save_tensor
@@ -62,7 +63,7 @@ def DeepLearningPrepareData(
     ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
-    def write_output_imgs(output_mode, container, subfolder):
+    def write_output_imgs(output_mode, container, subfolder, mood_abdom: bool = False):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
             output_file_dir = Path(
@@ -77,13 +78,13 @@ def DeepLearningPrepareData(
 
             output_file = Path(output_file_dir, filename)
 
-            # if mood_abdom:
-            #     # import torch
-            #     # from skimage.transform import resize
+            if mood_abdom:
+                # import torch
+                # from skimage.transform import resize
 
-            #     tensor = tensor.resize_(256, 256, 256)
-            #     # output_img = resize(tensor.numpy(), output_shape=(256, 256, 256))
-            #     # output_img = torch.tensor(output_img)
+                tensor = tensor.resize_(256, 256, 256)
+                # output_img = resize(tensor.numpy(), output_shape=(256, 256, 256))
+                # output_img = torch.tensor(output_img)
 
             save_tensor(tensor, output_file)
 
@@ -99,7 +100,7 @@ def DeepLearningPrepareData(
             subfolder = "image_based"
             output_mode = extract_images(file)
             logger.debug("Image extracted.")
-            write_output_imgs(output_mode, container, subfolder)
+            write_output_imgs(output_mode, container, subfolder, mood_abdom=mood_abdom)
 
         Parallel(n_jobs=n_proc, temp_folder=tmp_dir)(
             delayed(prepare_image)(file) for file in input_files
