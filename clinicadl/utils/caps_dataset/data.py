@@ -10,7 +10,9 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
+from pythae.data.datasets import DatasetOutput
 from torch.utils.data import Dataset
+from torchio.transforms import Resize
 
 from clinicadl.extract.extract_utils import (
     PATTERN_DICT,
@@ -31,8 +33,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
-
-from pythae.data.datasets import DatasetOutput
 
 logger = getLogger("clinicadl")
 
@@ -356,7 +356,6 @@ class CapsDatasetImage(CapsDataset):
 
 
 class PythaeCAPS(CapsDatasetImage):
-
     def __init__(
         self,
         caps_directory,
@@ -373,15 +372,15 @@ class PythaeCAPS(CapsDatasetImage):
             label_presence=False,
             all_transformations=all_transformations,
         )
-    
+
     def __getitem__(self, index):
         X = super().__getitem__(index)
         return DatasetOutput(
-            data=X['data'],
-            participant_id=X['participant_id'],
-            session_id=X['session_id'],
-            image_id=X['image_id'],
-            image_path=X['image_path'],
+            data=X["data"],
+            participant_id=X["participant_id"],
+            session_id=X["session_id"],
+            image_id=X["image_id"],
+            image_path=X["image_path"],
         )
 
 
@@ -1026,7 +1025,8 @@ def get_transforms(
     if normalize:
         transformations_list.append(MinMaxNormalization())
     if size_reduction:
-        transformations_list.append(SizeReduction(size_reduction_factor))
+        # transformations_list.append(SizeReduction(size_reduction_factor))
+        transformations_list.append(Resize((256, 256, 256)))
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)
