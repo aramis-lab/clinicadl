@@ -1082,7 +1082,6 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
                 )
             test_df.reset_index(inplace=True, drop=True)
     else:
-        print(test_path)
         if test_path.suffix == ".tsv":
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}

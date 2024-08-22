@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 import torchio as tio
 import torchvision.transforms as transforms
-from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from torch.utils.data import Dataset
 
 from clinicadl.extract.extract_utils import (
@@ -28,6 +27,7 @@ from clinicadl.extract.extract_utils import (
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
@@ -179,7 +179,6 @@ class CapsDataset(Dataset):
         except ClinicaDLCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            print(file_type)
             results = clinicadl_file_reader(
                 [participant], [session], self.caps_directory, file_type
             )
@@ -230,6 +229,7 @@ class CapsDataset(Dataset):
             image tensor of the full image first image.
         """
         import nibabel as nib
+
         from clinicadl.utils.clinica_utils import clinicadl_file_reader
 
         participant_id = self.df.loc[0, "participant_id"]

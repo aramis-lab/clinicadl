@@ -4,12 +4,11 @@ from typing import Any, Dict, Tuple
 
 import toml
 
+from clinicadl.random_search.random_search_classification_utils import sampling_fn
+from clinicadl.random_search.random_search_pythae_parameters import RS_PYTHAE_DICT
 from clinicadl.train.train_utils import build_train_dict
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.preprocessing import read_preprocessing
-
-from clinicadl.random_search.random_search_classification_utils import sampling_fn
-from clinicadl.random_search.random_search_pythae_parameters import RS_PYTHAE_DICT
 
 
 def get_vae_space_dict(launch_directory, toml_name):
@@ -128,7 +127,6 @@ def vae_random_sampling(space_dict):
         "n_layer_per_block_decoder": "randint",
         "block_type": "choice",
     }
-    print(space_dict)
     if space_dict["architecture"] in RS_PYTHAE_DICT.keys():
         sampling_vae_dict.update(RS_PYTHAE_DICT[space_dict["architecture"]])
 
