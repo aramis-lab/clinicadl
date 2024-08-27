@@ -1,13 +1,13 @@
 import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
-from clinicadl.predict.config import PredictConfig
+from clinicadl.predict.config import DataConfig
 
 # predict specific
 use_labels = click.option(
     "--use_labels/--no_labels",
     show_default=True,
-    default=get_default("use_labels", PredictConfig),
+    default=get_default("use_labels", DataConfig),
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 save_tensor = click.option(

@@ -23,17 +23,18 @@ class DataConfig(BaseModel):  # TODO : put in data module
     that must be passed by the user.
     """
 
-    caps_directory: Path
     baseline: bool = False
-    diagnoses: Tuple[str, ...] = ("AD", "CN")
+    caps_directory: Path
     data_df: Optional[pd.DataFrame] = None
+    data_tsv: Optional[Path] = None
+    diagnoses: Tuple[str, ...] = ("AD", "CN")
     label: Optional[str] = None
     label_code: Union[str, Dict[str, int], None] = {}
     multi_cohort: bool = False
     mask_path: Optional[Path] = None
-    preprocessing_json: Optional[Path] = None
-    data_tsv: Optional[Path] = None
     n_subjects: int = 300
+    preprocessing_json: Optional[Path] = None
+    use_labels: bool = True
     # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 

@@ -95,7 +95,7 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 @regression.label
 @regression.selection_metrics
 @regression.loss
-def cli(**kwargs):
+def cli(no_gpu, **kwargs):
     """
     Train a deep learning model to learn a regression task on neuroimaging data.
     CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.

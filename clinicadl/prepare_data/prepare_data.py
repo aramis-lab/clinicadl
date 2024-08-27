@@ -5,8 +5,10 @@ from typing import Optional
 from joblib import Parallel, delayed
 from torch import save as save_tensor
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import compute_folder_and_file_type
+from clinicadl.caps_dataset.caps_dataset_config import (
+    CapsDatasetConfig,
+    compute_folder_and_file_type,
+)
 from clinicadl.caps_dataset.extraction.config import (
     ExtractionConfig,
     ExtractionImageConfig,

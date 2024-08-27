@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predict.predict_manager import Predictor
 
 from .testing_tools import compare_folders, modify_maps
 
@@ -111,7 +111,7 @@ def test_predict(cmdopt, tmp_path, test_name):
         overwrite=True,
         diagnoses=["CN"],
     )
-    predict_manager = PredictManager(predict_config)
+    predict_manager = Predictor(predict_config)
     predict_manager.predict()
 
     for mode in modes:
