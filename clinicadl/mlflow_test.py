@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import warnings
 from urllib.parse import urlparse

@@ -1,6 +1,17 @@
 from enum import Enum
 
 
+class BaseEnum(Enum):
+    """Base Enum object that will print valid inputs if the value passed is not valid."""
+
+    @classmethod
+    def _missing_(cls, value):
+        raise ValueError(
+            f"{value} is not a valid {cls.__name__}. Valid ones are: "
+            + ", ".join([repr(m.value) for m in cls])
+        )
+
+
 class Task(str, Enum):
     """Tasks that can be performed in ClinicaDL."""
 
@@ -44,7 +55,7 @@ class Pathology(str, Enum):
     SVPPA = "svppa"
 
 
-class BIDSModality(str, Enum):
+class ImageModality(str, Enum):
     """Possible modality for images in clinicaDL."""
 
     T1 = "t1"

@@ -4,10 +4,10 @@ from typing import Tuple
 from pydantic import computed_field, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
-from clinicadl.config.config import NetworkConfig as BaseNetworkConfig
-from clinicadl.config.config import ValidationConfig as BaseValidationConfig
+from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils.enum import ClassificationLoss, ClassificationMetric, Task
+from clinicadl.validation.validation import ValidationConfig as BaseValidationConfig
 
 logger = getLogger("clinicadl.classification_config")
 

@@ -14,8 +14,9 @@ from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,
     write_missing_mods,
 )
-from clinicadl.preprocessing.preprocessing import write_preprocessing
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
+from clinicadl.utils.iotools.clinica_utils import FileType
+from clinicadl.utils.iotools.iotools import check_and_clean, commandline_to_json
+from clinicadl.utils.iotools.utils import write_preprocessing
 
 logger = getLogger("clinicadl.generate.shepplogan")
 
@@ -129,11 +130,11 @@ def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
         "slice_mode": "single",
         "discarded_slices": 0,
         "num_slices": 1,
-        "file_type": {
-            "pattern": f"*_space-SheppLogan_phantom.nii.gz",
-            "description": "Custom suffix",
-            "needed_pipeline": "shepplogan",
-        },
+        "file_type": FileType(
+            pattern="*_space-SheppLogan_phantom.nii.gz",
+            description="Custom suffix",
+            needed_pipeline="shepplogan",
+        ).model_dump(),
     }
     write_preprocessing(preprocessing_dict, generated_caps_directory)
     write_missing_mods(generated_caps_directory, data_df)

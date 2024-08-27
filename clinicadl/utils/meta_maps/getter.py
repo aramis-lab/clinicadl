@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl import MapsManager
+from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.exceptions import MAPSError
 
 

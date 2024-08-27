@@ -5,9 +5,9 @@ from pathlib import Path
 
 import toml
 
+from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.maps_manager.maps_manager_utils import (
-    read_json,
+from clinicadl.utils.iotools.maps_manager_utils import (
     remove_unused_tasks,
 )
 
