@@ -3,7 +3,8 @@ from typing import Optional
 
 import pandas as pd
 
-from clinicadl.splitter.split_utils import check_selection_metric, print_description_log
+from clinicadl.metrics.utils import check_selection_metric
+from clinicadl.splitter.split_utils import print_description_log
 from clinicadl.utils.exceptions import MAPSError
 
 
