@@ -332,43 +332,43 @@ class MapsManager:
                 torch.save(output, tensor_path / output_filename)
                 logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-    def find_splits(self) -> List[int]:
-        """Find which splits that were trained in the MAPS."""
-        splits = [
-            int(split.name.split("-")[1])
-            for split in list(self.maps_path.iterdir())
-            if split.name.startswith(f"{self.split_name}-")
-        ]
-        return splits
+    # def find_splits(self) -> List[int]:
+    #     """Find which splits that were trained in the MAPS."""
+    #     splits = [
+    #         int(split.name.split("-")[1])
+    #         for split in list(self.maps_path.iterdir())
+    #         if split.name.startswith(f"{self.split_name}-")
+    #     ]
+    #     return splits
 
-    def find_stopped_splits(self) -> List[int]:
-        """Find which splits for which training was not completed."""
-        existing_split_list = self.find_splits()
-        stopped_splits = [
-            split
-            for split in existing_split_list
-            if (self.maps_path / f"{self.split_name}-{split}" / "tmp")
-            in list((self.maps_path / f"{self.split_name}-{split}").iterdir())
-        ]
-        return stopped_splits
+    # def find_stopped_splits(self) -> List[int]:
+    #     """Find which splits for which training was not completed."""
+    #     existing_split_list = self.find_splits()
+    #     stopped_splits = [
+    #         split
+    #         for split in existing_split_list
+    #         if (self.maps_path / f"{self.split_name}-{split}" / "tmp")
+    #         in list((self.maps_path / f"{self.split_name}-{split}").iterdir())
+    #     ]
+    #     return stopped_splits
 
-    def find_finished_splits(self) -> List[int]:
-        """Find which splits for which training was completed."""
-        finished_splits = list()
-        existing_split_list = self.find_splits()
-        stopped_splits = self.find_stopped_splits()
-        for split in existing_split_list:
-            if split not in stopped_splits:
-                performance_dir_list = [
-                    performance_dir
-                    for performance_dir in list(
-                        (self.maps_path / f"{self.split_name}-{split}").iterdir()
-                    )
-                    if "best-" in performance_dir.name
-                ]
-                if len(performance_dir_list) > 0:
-                    finished_splits.append(split)
-        return finished_splits
+    # def find_finished_splits(self) -> List[int]:
+    #     """Find which splits for which training was completed."""
+    #     finished_splits = list()
+    #     existing_split_list = self.find_splits()
+    #     stopped_splits = self.find_stopped_splits()
+    #     for split in existing_split_list:
+    #         if split not in stopped_splits:
+    #             performance_dir_list = [
+    #                 performance_dir
+    #                 for performance_dir in list(
+    #                     (self.maps_path / f"{self.split_name}-{split}").iterdir()
+    #                 )
+    #                 if "best-" in performance_dir.name
+    #             ]
+    #             if len(performance_dir_list) > 0:
+    #                 finished_splits.append(split)
+    #     return finished_splits
 
     def _ensemble_prediction(
         self,

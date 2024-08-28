@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
 from clinicadl.maps_manager.maps_manager import MapsManager
+from clinicadl.splitter.split_utils import find_splits
 
 logger = getLogger("clinicadl.cross_validation_config")
 
@@ -34,5 +35,5 @@ class CrossValidationConfig(
     def adapt_cross_val_with_maps_manager_info(self, maps_manager: MapsManager):
         # TEMPORARY
         if not self.split:
-            self.split = maps_manager.find_splits()
+            self.split = find_splits(maps_manager.maps_path, maps_manager.split_name)
         logger.debug(f"List of splits {self.split}")
