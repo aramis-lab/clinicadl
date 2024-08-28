@@ -22,7 +22,7 @@ from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
-from clinicadl.utils.metric_module import RetainBest
+from clinicadl.metrics.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed

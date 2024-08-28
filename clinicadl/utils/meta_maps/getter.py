@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 
 from clinicadl.maps_manager.maps_manager import MapsManager
-from clinicadl.splitter.split_utils import find_selection_metrics, find_splits
+from clinicadl.metrics.utils import find_selection_metrics, get_metrics
+from clinicadl.splitter.split_utils import find_splits
 from clinicadl.utils.exceptions import MAPSError
 
 
@@ -46,8 +47,12 @@ def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):
             )
             selection_set = selection_set | set(selection_metrics)
             for metric in selection_metrics:
-                validation_metrics = maps_manager.get_metrics(
-                    "validation", split, metric
+                validation_metrics = get_metrics(
+                    maps_manager.maps_path,
+                    maps_manager.split_name,
+                    "validation",
+                    split,
+                    metric,
                 )
                 if evaluation_metric not in validation_metrics:
                     raise MAPSError(

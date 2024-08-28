@@ -16,11 +16,11 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.maps_manager.maps_manager import MapsManager
-from clinicadl.predict.config import PredictConfig
-from clinicadl.splitter.split_utils import (
+from clinicadl.metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
+from clinicadl.predict.config import PredictConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
