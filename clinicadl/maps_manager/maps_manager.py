@@ -14,6 +14,10 @@ from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
+from clinicadl.splitter.split_utils import (
+    check_selection_metric,
+    find_selection_metrics,
+)
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP, init_ddp
@@ -343,7 +347,9 @@ class MapsManager:
         """Computes the results on the image-level."""
 
         if not selection_metrics:
-            selection_metrics = self._find_selection_metrics(split)
+            selection_metrics = find_selection_metrics(
+                self.maps_path, self.split_name, split
+            )
 
         for selection_metric in selection_metrics:
             #####################
@@ -457,41 +463,41 @@ class MapsManager:
         else:
             return "split"
 
-    def _find_selection_metrics(self, split):
-        """Find which selection metrics are available in MAPS for a given split."""
+    # def _find_selection_metrics(self, split):
+    #     """Find which selection metrics are available in MAPS for a given split."""
 
-        split_path = self.maps_path / f"{self.split_name}-{split}"
-        if not split_path.is_dir():
-            raise MAPSError(
-                f"Training of split {split} was not performed."
-                f"Please execute maps_manager.train(split_list=[{split}])"
-            )
+    #     split_path = self.maps_path / f"{self.split_name}-{split}"
+    #     if not split_path.is_dir():
+    #         raise MAPSError(
+    #             f"Training of split {split} was not performed."
+    #             f"Please execute maps_manager.train(split_list=[{split}])"
+    #         )
 
-        return [
-            metric.name.split("-")[1]
-            for metric in list(split_path.iterdir())
-            if metric.name[:5:] == "best-"
-        ]
+    #     return [
+    #         metric.name.split("-")[1]
+    #         for metric in list(split_path.iterdir())
+    #         if metric.name[:5:] == "best-"
+    #     ]
 
-    def _check_selection_metric(self, split, selection_metric=None):
-        """Check that a given selection metric is available for a given split."""
-        available_metrics = self._find_selection_metrics(split)
+    # def _check_selection_metric(self, split, selection_metric=None):
+    #     """Check that a given selection metric is available for a given split."""
+    #     available_metrics = self._find_selection_metrics(split)
 
-        if not selection_metric:
-            if len(available_metrics) > 1:
-                raise ClinicaDLArgumentError(
-                    f"Several metrics are available for split {split}. "
-                    f"Please choose which one you want to read among {available_metrics}"
-                )
-            else:
-                selection_metric = available_metrics[0]
-        else:
-            if selection_metric not in available_metrics:
-                raise ClinicaDLArgumentError(
-                    f"The metric {selection_metric} is not available."
-                    f"Please choose among is the available metrics {available_metrics}."
-                )
-        return selection_metric
+    #     if not selection_metric:
+    #         if len(available_metrics) > 1:
+    #             raise ClinicaDLArgumentError(
+    #                 f"Several metrics are available for split {split}. "
+    #                 f"Please choose which one you want to read among {available_metrics}"
+    #             )
+    #         else:
+    #             selection_metric = available_metrics[0]
+    #     else:
+    #         if selection_metric not in available_metrics:
+    #             raise ClinicaDLArgumentError(
+    #                 f"The metric {selection_metric} is not available."
+    #                 f"Please choose among is the available metrics {available_metrics}."
+    #             )
+    #     return selection_metric
 
     ###############################
     # File writers                #
@@ -1037,7 +1043,9 @@ class MapsManager:
         -------
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
-        selection_metric = self._check_selection_metric(split, selection_metric)
+        selection_metric = check_selection_metric(
+            self.maps_path, self.split_name, split, selection_metric
+        )
         if self.multi_network:
             if network is None:
                 raise ClinicaDLArgumentError(
@@ -1087,7 +1095,9 @@ class MapsManager:
             (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
             identifies the image in the BIDS / CAPS.
         """
-        selection_metric = self._check_selection_metric(split, selection_metric)
+        selection_metric = check_selection_metric(
+            self.maps_path, self.split_name, split, selection_metric
+        )
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
         prediction_dir = (
@@ -1127,7 +1137,9 @@ class MapsManager:
         Returns:
             (dict[str:float]): Values of the metrics
         """
-        selection_metric = self._check_selection_metric(split, selection_metric)
+        selection_metric = check_selection_metric(
+            self.maps_path, self.split_name, split, selection_metric
+        )
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
         prediction_dir = (

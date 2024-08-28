@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from clinicadl.maps_manager.maps_manager import MapsManager
-from clinicadl.splitter.split_utils import find_splits
+from clinicadl.splitter.split_utils import find_selection_metrics, find_splits
 from clinicadl.utils.exceptions import MAPSError
 
 
@@ -39,7 +39,11 @@ def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):
         split_set = split_set | set(split_list)
         for split in split_set:
             performances_dict[job][split] = dict()
-            selection_metrics = maps_manager._find_selection_metrics(split)
+            selection_metrics = find_selection_metrics(
+                maps_manager.maps_path,
+                maps_manager.split_name,
+                split,
+            )
             selection_set = selection_set | set(selection_metrics)
             for metric in selection_metrics:
                 validation_metrics = maps_manager.get_metrics(
