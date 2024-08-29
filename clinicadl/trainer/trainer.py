@@ -14,6 +14,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from clinicadl.splitter.split_utils import find_finished_splits, find_stopped_splits
 from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.utils.early_stopping.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
@@ -21,7 +22,7 @@ from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
-from clinicadl.utils.metric_module import RetainBest
+from clinicadl.metrics.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
@@ -140,8 +141,16 @@ class Trainer:
         splits : List[int]
             The splits that must be resumed.
         """
-        stopped_splits = set(self.maps_manager.find_stopped_splits())
-        finished_splits = set(self.maps_manager.find_finished_splits())
+        stopped_splits = set(
+            find_stopped_splits(
+                self.maps_manager.maps_path, self.maps_manager.split_name
+            )
+        )
+        finished_splits = set(
+            find_finished_splits(
+                self.maps_manager.maps_path, self.maps_manager.split_name
+            )
+        )
         # TODO : check these two lines. Why do we need a split_manager?
         split_manager = self.maps_manager._init_split_manager(split_list=splits)
         split_iterator = split_manager.split_iterator()

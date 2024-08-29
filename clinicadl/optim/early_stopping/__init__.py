@@ -1,2 +1,2 @@
 from .config import EarlyStoppingConfig
-from .early_stopping import EarlyStopping
+from .early_stopper import EarlyStopping
