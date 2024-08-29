@@ -70,6 +70,7 @@ def test_ClassifierConfig():
         bias=False,
         last_act=None,
     )
+    assert config.network == "Classifier"
     assert config.in_shape == (1, 3, 3)
     assert config.classes == 2
     assert config.channels == (2, 4)
@@ -94,6 +95,7 @@ def test_CriticConfig():
         dropout=0.1,
         bias=False,
     )
+    assert config.network == "Critic"
     assert config.in_shape == (1, 3, 3)
     assert config.channels == (2, 4)
     assert config.strides == (1, 1)
@@ -117,6 +119,7 @@ def test_DiscriminatorConfig():
         bias=False,
         last_act=("eLu", {"alpha": 0.5}),
     )
+    assert config.network == "Discriminator"
     assert config.in_shape == (1, 3, 3)
     assert config.channels == (2, 4)
     assert config.strides == (1, 1)

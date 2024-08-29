@@ -113,6 +113,7 @@ def test_AutoEncoderConfig():
         bias=False,
         padding=1,
     )
+    assert config.network == "AutoEncoder"
     assert config.spatial_dims == 2
     assert config.in_channels == 1
     assert config.out_channels == 1
@@ -150,6 +151,7 @@ def test_VarAutoEncoderConfig():
         padding=1,
         use_sigmoid=False,
     )
+    assert config.network == "VarAutoEncoder"
     assert config.spatial_dims == 2
     assert config.in_shape == (1, 10, 10)
     assert config.out_channels == 1

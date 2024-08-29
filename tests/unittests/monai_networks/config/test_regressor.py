@@ -59,6 +59,7 @@ def test_RegressorConfig():
         dropout=0.1,
         bias=False,
     )
+    assert config.network == "Regressor"
     assert config.in_shape == (1, 3, 3)
     assert config.out_shape == (1,)
     assert config.channels == (2, 4)

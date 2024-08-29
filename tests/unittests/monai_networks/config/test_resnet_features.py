@@ -49,6 +49,7 @@ def test_ResNetFeaturesConfig():
         spatial_dims=2,
         in_channels=2,
     )
+    assert config.network == "ResNetFeatures"
     assert config.model_name == "resnet200"
     assert not config.pretrained
     assert config.spatial_dims == 2

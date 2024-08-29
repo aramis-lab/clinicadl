@@ -85,6 +85,7 @@ def test_UNetConfig():
         bias=False,
         adn_ordering="A",
     )
+    assert config.network == "UNet"
     assert config.spatial_dims == 2
     assert config.in_channels == 1
     assert config.out_channels == 1
@@ -116,6 +117,7 @@ def test_AttentionUnetConfig():
         bias=False,
         adn_ordering="DA",
     )
+    assert config.network == "AttentionUnet"
     assert config.spatial_dims == 2
     assert config.in_channels == 1
     assert config.out_channels == 1

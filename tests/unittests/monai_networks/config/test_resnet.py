@@ -9,7 +9,6 @@ def dummy_arguments():
     args = {
         "block": "basic",
         "layers": (2, 2, 2, 2),
-        "spatial_dims": 3,
     }
     return args
 
@@ -67,6 +66,7 @@ def test_ResNetConfig():
         bias_downsample=False,
         act=("relu", {"inplace": False}),
     )
+    assert config.network == "ResNet"
     assert config.block == "bottleneck"
     assert config.layers == (2, 2, 2, 2)
     assert config.block_inplanes == (2, 4, 8, 16)

@@ -59,6 +59,7 @@ def test_GeneratorConfig():
         dropout=0.1,
         bias=False,
     )
+    assert config.network == "Generator"
     assert config.latent_shape == (3,)
     assert config.start_shape == (1, 3)
     assert config.channels == (2, 4)

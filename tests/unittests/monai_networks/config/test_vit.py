@@ -11,7 +11,6 @@ from clinicadl.monai_networks.config.vit import (
 def dummy_arguments():
     args = {
         "in_channels": 2,
-        "spatial_dims": 3,
     }
     return args
 
@@ -109,6 +108,7 @@ def test_ViTConfig():
         post_activation=None,
         qkv_bias=True,
     )
+    assert config.network == "ViT"
     assert config.in_channels == 2
     assert config.img_size == 16
     assert config.patch_size == 4
@@ -144,6 +144,7 @@ def test_ViTAutoEncConfig():
         spatial_dims=3,
         qkv_bias=True,
     )
+    assert config.network == "ViTAutoEnc"
     assert config.in_channels == 2
     assert config.img_size == 16
     assert config.patch_size == 4

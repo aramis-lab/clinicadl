@@ -63,6 +63,7 @@ def test_FullyConnectedNetConfig():
         bias=False,
         adn_ordering="ADN",
     )
+    assert config.network == "FullyConnectedNet"
     assert config.in_channels == 5
     assert config.out_channels == 1
     assert config.hidden_channels == (3, 2)
@@ -84,6 +85,7 @@ def test_VarFullyConnectedNetConfig():
         bias=False,
         adn_ordering="ADN",
     )
+    assert config.network == "VarFullyConnectedNet"
     assert config.in_channels == 5
     assert config.out_channels == 1
     assert config.latent_size == 16

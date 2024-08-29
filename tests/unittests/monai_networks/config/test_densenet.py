@@ -35,6 +35,7 @@ def test_DenseNetConfig():
         norm=("batch", {"eps": 0.5}),
         dropout_prob=0.1,
     )
+    assert config.network == "DenseNet"
     assert config.spatial_dims == 2
     assert config.in_channels == 1
     assert config.out_channels == 1

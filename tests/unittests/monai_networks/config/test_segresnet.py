@@ -27,6 +27,7 @@ def test_SegResNetConfig():
         blocks_up=[3, 2, 1],
         upsample_mode="pixelshuffle",
     )
+    assert config.network == "SegResNet"
     assert config.spatial_dims == 2
     assert config.init_filters == 3
     assert config.in_channels == 1
