@@ -14,46 +14,19 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import NetworkBaseConfig
+from .base import NetworkConfig
+from .utils.enum import (
+    ImplementedNetworks,
+    ResNetBlocks,
+    ResNets,
+    ShortcutTypes,
+    UpsampleModes,
+)
 
 __all__ = ["ResNetConfig", "ResNetFeaturesConfig", "SegResNetConfig"]
 
 
-class ResNetBlocks(str, Enum):
-    """Supported ResNet blocks."""
-
-    BASIC = "basic"
-    BOTTLENECK = "bottleneck"
-
-
-class ShortcutTypes(str, Enum):
-    """Supported shortcut types."""
-
-    A = "A"
-    B = "B"
-
-
-class ResNets(str, Enum):
-    """Supported ResNet networks."""
-
-    RESNET_10 = "resnet10"
-    RESNET_18 = "resnet18"
-    RESNET_34 = "resnet34"
-    RESNET_50 = "resnet50"
-    RESNET_101 = "resnet101"
-    RESNET_152 = "resnet152"
-    RESNET_200 = "resnet200"
-
-
-class UpsampleModes(str, Enum):
-    """Supported upsampling modes."""
-
-    DECONV = "deconv"
-    NON_TRAINABLE = "nontrainable"
-    PIXEL_SHUFFLE = "pixelshuffle"
-
-
-class ResNetConfig(NetworkBaseConfig):
+class ResNetConfig(NetworkConfig):
     """Config class for ResNet."""
 
     block: ResNetBlocks
@@ -76,9 +49,16 @@ class ResNetConfig(NetworkBaseConfig):
     bias_downsample: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.RES_NET
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
-        return self.spatial_dims
+        return self.spatial_dims if self.spatial_dims != DefaultFromLibrary.YES else 3
 
     @model_validator(mode="after")
     def model_validator(self):
@@ -95,7 +75,7 @@ class ResNetConfig(NetworkBaseConfig):
         return self
 
 
-class ResNetFeaturesConfig(NetworkBaseConfig):
+class ResNetFeaturesConfig(NetworkConfig):
     """Config class for ResNet backbones."""
 
     model_name: ResNets
@@ -105,9 +85,16 @@ class ResNetFeaturesConfig(NetworkBaseConfig):
     in_channels: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.RES_NET_FEATURES
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
-        return self.spatial_dims
+        return self.spatial_dims if self.spatial_dims != DefaultFromLibrary.YES else 3
 
     @model_validator(mode="after")
     def model_validator(self):
@@ -123,7 +110,7 @@ class ResNetFeaturesConfig(NetworkBaseConfig):
         return self
 
 
-class SegResNetConfig(NetworkBaseConfig):
+class SegResNetConfig(NetworkConfig):
     """Config class for SegResNet."""
 
     spatial_dims: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -143,9 +130,16 @@ class SegResNetConfig(NetworkBaseConfig):
     upsample_mode: Union[UpsampleModes, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.SEG_RES_NET
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
-        return self.spatial_dims
+        return self.spatial_dims if self.spatial_dims != DefaultFromLibrary.YES else 3
 
     @field_validator("dropout_prob")
     @classmethod

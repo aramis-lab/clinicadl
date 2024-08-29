@@ -11,33 +11,18 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import NetworkBaseConfig
+from .base import NetworkConfig
+from .utils.enum import (
+    ClassificationActivation,
+    ImplementedNetworks,
+    PatchEmbeddingTypes,
+    PosEmbeddingTypes,
+)
 
 __all__ = ["ViTConfig", "ViTAutoEncConfig"]
 
 
-class PatchEmbeddingTypes(str, Enum):
-    """Supported patch embedding types."""
-
-    CONV = "conv"
-    PERCEPTRON = "perceptron"
-
-
-class PosEmbeddingTypes(str, Enum):
-    """Supported positional embedding types."""
-
-    NONE = "none"
-    LEARNABLE = "learnable"
-    SINCOS = "sincos"
-
-
-class ClassificationActivation(str, Enum):
-    """Supported activation layer for classification."""
-
-    TANH = "Tanh"
-
-
-class ViTConfig(NetworkBaseConfig):
+class ViTConfig(NetworkConfig):
     """Config class for ViT networks."""
 
     in_channels: PositiveInt
@@ -63,25 +48,31 @@ class ViTConfig(NetworkBaseConfig):
     save_attn: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.VIT
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
-        return self.spatial_dims
+        return self.spatial_dims if self.spatial_dims != DefaultFromLibrary.YES else 3
 
     @field_validator("dropout_rate")
     def validator_dropout(cls, v):
         """Checks that dropout is between 0 and 1."""
         return cls.base_validator_dropout(v)
 
-    # TODO : add einops in dependencies
-    # @model_validator(mode="before")
-    # def check_einops(self):
-    #     """Checks if the library einops is installed."""
-    #     from importlib import util
+    @model_validator(mode="before")
+    def check_einops(self):
+        """Checks if the library einops is installed."""
+        from importlib import util
 
-    #     spec = util.find_spec("einops")
-    #     if spec is None:
-    #         raise ModuleNotFoundError("einops is not installed")
-    #     return self
+        spec = util.find_spec("einops")
+        if spec is None:
+            raise ModuleNotFoundError("einops is not installed")
+        return self
 
     @model_validator(mode="after")
     def model_validator(self):
@@ -118,6 +109,7 @@ class ViTConfig(NetworkBaseConfig):
         numerator: Union[int, Tuple[int, ...]],
         denominator: Union[int, Tuple[int, ...]],
     ) -> bool:
+        print(self.dim)
         """Checks if numerator is divisible by denominator."""
         if isinstance(numerator, int):
             numerator = (numerator,) * self.dim
@@ -134,6 +126,12 @@ class ViTAutoEncConfig(ViTConfig):
 
     out_channels: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     deconv_chns: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.VIT_AE
 
     @model_validator(mode="after")
     def model_validator_bis(self):

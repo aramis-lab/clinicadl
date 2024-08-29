@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 
 from pydantic import (
@@ -16,10 +17,14 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .utils.enum import ImplementedActFunctions, ImplementedNormLayers
+from .utils.enum import (
+    ImplementedActFunctions,
+    ImplementedNetworks,
+    ImplementedNormLayers,
+)
 
 
-class NetworkBaseConfig(BaseModel, ABC):
+class NetworkConfig(BaseModel, ABC):
     """Base config class to configure neural networks."""
 
     kernel_size: Union[
@@ -50,6 +55,13 @@ class NetworkBaseConfig(BaseModel, ABC):
     )
 
     @computed_field
+    @property
+    @abstractmethod
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+
+    @computed_field
+    @property
     @abstractmethod
     def dim(self) -> int:
         """Dimension of the images."""
@@ -123,7 +135,7 @@ class NetworkBaseConfig(BaseModel, ABC):
         return True
 
 
-class VaryingDepthNetworkConfig(NetworkBaseConfig, ABC):
+class VaryingDepthNetworkConfig(NetworkConfig, ABC):
     """
     Base config class to configure neural networks.
     More precisely, we refer to MONAI's networks with 'channels' and 'strides' parameters.

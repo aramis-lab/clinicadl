@@ -5,6 +5,7 @@ from typing import Tuple
 from pydantic import PositiveInt, computed_field, field_validator
 
 from .base import VaryingDepthNetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["RegressorConfig"]
 
@@ -16,6 +17,13 @@ class RegressorConfig(VaryingDepthNetworkConfig):
     out_shape: Tuple[PositiveInt, ...]
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.REGRESSOR
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
         return len(self.in_shape[1:])

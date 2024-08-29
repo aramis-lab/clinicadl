@@ -1,1 +1,2 @@
-from .factory import ImplementedNetworks, create_training_config
+from .factory import create_network_config
+from .utils.enum import ImplementedNetworks

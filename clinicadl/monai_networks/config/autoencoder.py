@@ -10,6 +10,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import VaryingDepthNetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["AutoEncoderConfig", "VarAutoEncoderConfig"]
 
@@ -33,6 +34,13 @@ class AutoEncoderConfig(VaryingDepthNetworkConfig):
     ] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.AE
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
         return self.spatial_dims
@@ -66,6 +74,12 @@ class VarAutoEncoderConfig(AutoEncoderConfig):
     in_channels: Optional[int] = None
     latent_size: PositiveInt
     use_sigmoid: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.VAE
 
     @model_validator(mode="after")
     def model_validator_bis(self):

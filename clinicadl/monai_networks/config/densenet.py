@@ -11,12 +11,13 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import NetworkBaseConfig
+from .base import NetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["DenseNetConfig"]
 
 
-class DenseNetConfig(NetworkBaseConfig):
+class DenseNetConfig(NetworkConfig):
     """Config class for DenseNet."""
 
     spatial_dims: PositiveInt
@@ -31,6 +32,13 @@ class DenseNetConfig(NetworkBaseConfig):
     dropout_prob: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.DENSE_NET
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
         return self.spatial_dims

@@ -11,6 +11,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import VaryingDepthNetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["UNetConfig", "AttentionUnetConfig"]
 
@@ -24,6 +25,13 @@ class UNetConfig(VaryingDepthNetworkConfig):
     adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.UNET
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
         return self.spatial_dims
@@ -48,3 +56,9 @@ class UNetConfig(VaryingDepthNetworkConfig):
 
 class AttentionUnetConfig(UNetConfig):
     """Config class for Attention UNet."""
+
+    @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.ATT_UNET

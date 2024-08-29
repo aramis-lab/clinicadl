@@ -9,6 +9,7 @@ from pydantic import (
 )
 
 from .base import VaryingDepthNetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["GeneratorConfig"]
 
@@ -20,6 +21,13 @@ class GeneratorConfig(VaryingDepthNetworkConfig):
     start_shape: Tuple[PositiveInt, ...]
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.GENERATOR
+
+    @computed_field
+    @property
     def dim(self) -> int:
         """Dimension of the images."""
         return len(self.start_shape[1:])

@@ -11,12 +11,13 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import NetworkBaseConfig
+from .base import NetworkConfig
+from .utils.enum import ImplementedNetworks
 
 __all__ = ["FullyConnectedNetConfig", "VarFullyConnectedNetConfig"]
 
 
-class FullyConnectedNetConfig(NetworkBaseConfig):
+class FullyConnectedNetConfig(NetworkConfig):
     """Config class for fully connected networks."""
 
     in_channels: PositiveInt
@@ -28,6 +29,13 @@ class FullyConnectedNetConfig(NetworkBaseConfig):
     ] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.FCN
+
+    @computed_field
+    @property
     def dim(self) -> Optional[int]:
         """Dimension of the images."""
         return None
@@ -39,7 +47,7 @@ class FullyConnectedNetConfig(NetworkBaseConfig):
         return cls.base_validator_dropout(v)
 
 
-class VarFullyConnectedNetConfig(NetworkBaseConfig):
+class VarFullyConnectedNetConfig(NetworkConfig):
     """Config class for fully connected networks."""
 
     in_channels: PositiveInt
@@ -53,6 +61,13 @@ class VarFullyConnectedNetConfig(NetworkBaseConfig):
     ] = DefaultFromLibrary.YES
 
     @computed_field
+    @property
+    def network(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.VAR_FCN
+
+    @computed_field
+    @property
     def dim(self) -> Optional[int]:
         """Dimension of the images."""
         return None
