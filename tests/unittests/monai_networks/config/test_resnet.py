@@ -21,11 +21,11 @@ def dummy_arguments():
         {"block_inplanes": (2, 4, 8, 16), "shortcut_type": "C"},
     ]
 )
-def bad_inputs(request: pytest.FixtureRequest, dummy_arguments: dict[str, int]):
+def bad_inputs(request, dummy_arguments):
     return {**dummy_arguments, **request.param}
 
 
-def test_fails_validations(bad_inputs: dict):
+def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
         ResNetConfig(**bad_inputs)
 
@@ -41,11 +41,11 @@ def test_fails_validations(bad_inputs: dict):
         {"block_inplanes": (2, 4, 8, 16), "conv1_t_size": 3, "conv1_t_stride": 3},
     ]
 )
-def good_inputs(request: pytest.FixtureRequest, dummy_arguments: dict[str, int]):
+def good_inputs(request: pytest.FixtureRequest, dummy_arguments):
     return {**dummy_arguments, **request.param}
 
 
-def test_passes_validations(good_inputs: dict):
+def test_passes_validations(good_inputs):
     ResNetConfig(**good_inputs)
 
 
