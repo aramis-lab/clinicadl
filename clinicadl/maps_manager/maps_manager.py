@@ -404,10 +404,14 @@ class MapsManager:
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
+        from clinicadl.utils.enum import Task
+        from clinicadl.utils.task_manager.task_manager import get_default_network
+
+        self.netowrk_task = Task(self.parameters["network_task"])
         self.task_manager = self._init_task_manager(df=train_df)
 
         if self.parameters["architecture"] == "default":
-            self.parameters["architecture"] = self.task_manager.get_default_network()
+            self.parameters["architecture"] = get_default_network(self.netowrk_task)
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (

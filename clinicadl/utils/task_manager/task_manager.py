@@ -13,6 +13,21 @@ from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.network.network import Network
 from clinicadl.utils import cluster
+from clinicadl.utils.enum import Task
+
+# if network_task == Task.CLASSIFICATION:
+# elif network_task == Task.REGRESSION:
+# elif network_task == Task.RECONSTRUCTION:
+
+
+def get_default_network(network_task: Task) -> str:  # return Network
+    """Returns the default network to use when no architecture is specified."""
+    if network_task == Task.CLASSIFICATION:
+        return "Conv5_FC3"
+    elif network_task == Task.REGRESSION:
+        return "Conv5_FC3"
+    elif network_task == Task.RECONSTRUCTION:
+        return "AE_Conv5_FC3"
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
@@ -167,12 +182,6 @@ class TaskManager:
         Raises:
             ClinicaDLArgumentError: if the criterion is not compatible with the task.
         """
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def get_default_network() -> Network:
-        """Returns the default network to use when no architecture is specified."""
         pass
 
     def test(

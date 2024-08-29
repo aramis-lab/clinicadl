@@ -258,7 +258,3 @@ class ClassificationManager(TaskManager):
                 f"Classification loss must be chosen in {compatible_losses}."
             )
         return getattr(nn, criterion)()
-
-    @staticmethod
-    def get_default_network():
-        return "Conv5_FC3"

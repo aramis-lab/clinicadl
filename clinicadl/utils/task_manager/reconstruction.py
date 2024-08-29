@@ -183,7 +183,3 @@ class ReconstructionManager(TaskManager):
 
             return VAEContinuousBernoulliLoss
         return getattr(nn, criterion)()
-
-    @staticmethod
-    def get_default_network():
-        return "AE_Conv5_FC3"
