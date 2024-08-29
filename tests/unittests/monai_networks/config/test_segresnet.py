@@ -35,7 +35,7 @@ def test_SegResNetConfig():
     assert config.dropout_prob == 0.1
     assert config.act == ("elu", {"inplace": False})
     assert config.norm == ("group", {"num_groups": 4})
-    assert config.use_conv_final == False
+    assert not config.use_conv_final
     assert config.blocks_down == (1, 2, 3)
     assert config.blocks_up == (3, 2, 1)
     assert config.upsample_mode == "pixelshuffle"
