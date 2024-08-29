@@ -16,6 +16,10 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.maps_manager.maps_manager import MapsManager
+from clinicadl.metrics.utils import (
+    check_selection_metric,
+    find_selection_metrics,
+)
 from clinicadl.predict.config import PredictConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
@@ -137,8 +141,10 @@ class PredictManager:
                 )
             # Erase previous TSV files on master process
             if not self._config.selection_metrics:
-                split_selection_metrics = self.maps_manager._find_selection_metrics(
-                    split
+                split_selection_metrics = find_selection_metrics(
+                    self.maps_manager.maps_path,
+                    self.maps_manager.split_name,
+                    split,
                 )
             else:
                 split_selection_metrics = self._config.selection_metrics
@@ -701,8 +707,10 @@ class PredictManager:
                 num_workers=self._config.n_proc,
             )
             if not self._config.selection_metrics:
-                self._config.selection_metrics = (
-                    self.maps_manager._find_selection_metrics(split)
+                self._config.selection_metrics = find_selection_metrics(
+                    self.maps_manager.maps_path,
+                    self.maps_manager.split_name,
+                    split,
                 )
             for selection_metric in self._config.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
@@ -823,8 +831,10 @@ class PredictManager:
                     #     split_list = self.maps_manager.find_splits()
                     assert self._config.split
                     for split in self._config.split:
-                        selection_metrics = self.maps_manager._find_selection_metrics(
-                            split
+                        selection_metrics = find_selection_metrics(
+                            self.maps_manager.maps_path,
+                            self.maps_manager.split_name,
+                            split,
                         )
                         for selection in selection_metrics:
                             results_path = (
@@ -1032,8 +1042,11 @@ class PredictManager:
             (torch.Tensor): Tensor of the interpretability map.
         """
 
-        selection_metric = self.maps_manager._check_selection_metric(
-            split, selection_metric
+        selection_metric = check_selection_metric(
+            self.maps_manager.maps_path,
+            self.maps_manager.split_name,
+            split,
+            selection_metric,
         )
         if verbose:
             self.maps_manager._print_description_log(
