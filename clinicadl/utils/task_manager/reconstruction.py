@@ -17,13 +17,9 @@ class ReconstructionManager(TaskManager):
     @property
     def columns(self):
         columns = ["participant_id", "session_id", f"{self.mode}_id"]
-        for metric in self.evaluation_metrics:
+        for metric in evaluation_metrics(self.netowrk_task):
             columns.append(metric)
         return columns
-
-    @property
-    def evaluation_metrics(self):
-        return ["MAE", "RMSE", "PSNR", "SSIM"]
 
     @property
     def save_outputs(self):

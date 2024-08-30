@@ -41,47 +41,25 @@ def get_default_network(network_task: Task) -> str:  # return Network
 
 def get_criterion(
     network_task: Union[str, Task], criterion: Optional[str] = None
-) -> _Loss:
+) -> nn.Module:
     """
     Gives the optimization criterion.
     Must check that it is compatible with the task.
 
     Args:
-        criterion: name of the loss as written in Pytorch.
+        criterion: name of the loss as written in PyTorch.
     Raises:
         ClinicaDLArgumentError: if the criterion is not compatible with the task.
     """
 
-    network_task = Task(network_task)
-
-    if network_task == Task.CLASSIFICATION:
-        compatible_losses = [e.value for e in ClassificationLoss]
-        if criterion is None:
-            return nn.CrossEntropyLoss()
+    def validate_criterion(criterion, compatible_losses):
         if criterion not in compatible_losses:
             raise ClinicaDLArgumentError(
-                f"Classification loss must be chosen in {compatible_losses}."
+                f"Loss must be chosen from {compatible_losses}."
             )
         return getattr(nn, criterion)()
 
-    elif network_task == Task.REGRESSION:
-        compatible_losses = [e.value for e in RegressionLoss]
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Regression loss must be chosen in {compatible_losses}."
-            )
-        return getattr(nn, criterion)()
-
-    elif network_task == Task.RECONSTRUCTION:
-        compatible_losses = [e.value for e in ReconstructionLoss]
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Reconstruction loss must be chosen in {compatible_losses}."
-            )
+    def handle_reconstruction_loss(criterion, compatible_losses):
         if criterion == "VAEGaussianLoss":
             from clinicadl.network.vae.vae_utils import VAEGaussianLoss
 
@@ -94,7 +72,36 @@ def get_criterion(
             from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
 
             return VAEContinuousBernoulliLoss
-        return getattr(nn, criterion)()
+        else:
+            return validate_criterion(criterion, compatible_losses)
+
+    network_task = Task(network_task)
+
+    if network_task == Task.CLASSIFICATION:
+        compatible_losses = [e.value for e in ClassificationLoss]
+        return (
+            nn.CrossEntropyLoss()
+            if criterion is None
+            else validate_criterion(criterion, compatible_losses)
+        )
+
+    elif network_task == Task.REGRESSION:
+        compatible_losses = [e.value for e in RegressionLoss]
+        return (
+            nn.MSELoss()
+            if criterion is None
+            else validate_criterion(criterion, compatible_losses)
+        )
+
+    elif network_task == Task.RECONSTRUCTION:
+        compatible_losses = [e.value for e in ReconstructionLoss]
+        return (
+            nn.MSELoss()
+            if criterion is None
+            else handle_reconstruction_loss(criterion, compatible_losses)
+        )
+
+    raise ClinicaDLArgumentError("Unknown task type.")
 
 
 def output_size(
@@ -148,6 +155,19 @@ def generate_label_code(
         return None
 
 
+def evaluation_metrics(network_task: Union[str, Task]):
+    """
+    Evaluation metrics which can be used to evaluate the task.
+    """
+    network_task = Task(network_task)
+    if network_task == Task.CLASSIFICATION:
+        return [e.value for e in ClassificationMetric]
+    elif network_task == Task.REGRESSION:
+        return [e.value for e in RegressionMetric]
+    elif network_task == Task.RECONSTRUCTION:
+        return [e.value for e in ReconstructionMetric]
+
+
 # TODO: add function to check that the output size of the network corresponds to what is expected to
 #  perform the task
 class TaskManager:
@@ -165,12 +185,6 @@ class TaskManager:
 
     @property
     @abstractmethod
-    def evaluation_metrics(self):
-        """
-        Evaluation metrics which can be used to evaluate the task.
-        """
-        pass
-
     @property
     @abstractmethod
     def save_outputs(self):

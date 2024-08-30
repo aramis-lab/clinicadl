@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.trainer.config.train import TrainConfig
 
-from clinicadl.utils.task_manager.task_manager import get_criterion
+from clinicadl.utils.task_manager.task_manager import evaluation_metrics, get_criterion
 
 logger = getLogger("clinicadl.trainer")
 
@@ -778,7 +778,7 @@ class Trainer:
         if cluster.master:
             log_writer = LogWriter(
                 self.maps_manager.maps_path,
-                self.maps_manager.task_manager.evaluation_metrics + ["loss"],
+                evaluation_metrics(self.maps_manager.netowrk_task) + ["loss"],
                 split,
                 resume=resume,
                 beginning_epoch=beginning_epoch,
@@ -1078,7 +1078,7 @@ class Trainer:
 
         log_writer = LogWriter(
             self.maps_manager.maps_path,
-            self.maps_manager.task_manager.evaluation_metrics + ["loss"],
+            evaluation_metrics(self.maps_manager.netowrk_task) + ["loss"],
             split,
             resume=resume,
             beginning_epoch=beginning_epoch,

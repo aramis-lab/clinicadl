@@ -31,7 +31,11 @@ from clinicadl.utils.iotools.maps_manager_utils import (
     add_default_values,
 )
 from clinicadl.utils.iotools.utils import path_encoder
-from clinicadl.utils.task_manager.task_manager import generate_label_code, output_size
+from clinicadl.utils.task_manager.task_manager import (
+    evaluation_metrics,
+    generate_label_code,
+    output_size,
+)
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -449,7 +453,7 @@ class MapsManager:
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
-        possible_selection_metrics_set = set(self.task_manager.evaluation_metrics) | {
+        possible_selection_metrics_set = set(evaluation_metrics(self.netowrk_task)) | {
             "loss"
         }
         if not set(self.parameters["selection_metrics"]).issubset(
