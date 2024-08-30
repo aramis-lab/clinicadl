@@ -5,6 +5,11 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.distributed as dist
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+)
 from torch import Tensor, nn
 from torch.cuda.amp import autocast
 from torch.nn.functional import softmax
@@ -32,6 +37,8 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 # elif network_task == Task.RECONSTRUCTION:
 
 
+# This function is not useful anymore since we introduced config class
+# default network will automatically be initialized when running the task
 def get_default_network(network_task: Task) -> str:  # return Network
     """Returns the default network to use when no architecture is specified."""
     if network_task == Task.CLASSIFICATION:
@@ -109,7 +116,7 @@ def get_criterion(
 
 def output_size(
     network_task: Union[str, Task],
-    input_size: Sequence[int],
+    input_size: Optional[Sequence[int]],
     df: pd.DataFrame,
     label: str,
 ) -> Union[int, Sequence[int]]:
@@ -719,8 +726,27 @@ def generate_sampler(
     return get_sampler(weights)
 
 
-class TaskManager:
-    def __init__(self, mode: str, n_classes: int = None):
+class TaskConfig(BaseModel):
+    mode: str
+    network_task: Task
+    n_classe: Optional[int] = None
+    df: Optional[pd.DataFrame] = None
+    label: Optional[str] = None
+
+    def __init__(
+        self,
+        network_task: Union[str, Task],
+        mode: str,
+        n_classes: Optional[int] = None,
+        df: Optional[pd.DataFrame] = None,
+        label: Optional[str] = None,
+    ):
+        network_task = Task(network_task)
+        if network_task == Task.CLASSIFICATION:
+            if n_classes is None and df is not None:
+                n_classes = output_size(Task.CLASSIFICATION, None, df, label)
+            self.n_classes = n_classes
+
         self.mode = mode
         self.metrics_module = MetricModule(
             evaluation_metrics(network_task), n_classes=n_classes
