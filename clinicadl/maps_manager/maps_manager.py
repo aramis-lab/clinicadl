@@ -32,9 +32,12 @@ from clinicadl.utils.iotools.maps_manager_utils import (
 )
 from clinicadl.utils.iotools.utils import path_encoder
 from clinicadl.utils.task_manager.task_manager import (
+    ensemble_prediction,
     evaluation_metrics,
     generate_label_code,
     output_size,
+    test,
+    test_da,
 )
 
 logger = getLogger("clinicadl.maps_manager")
@@ -74,7 +77,6 @@ class MapsManager:
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
             self.parameters = add_default_values(test_parameters)
-            # self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
             )  # Used only for retro-compatibility
@@ -167,7 +169,7 @@ class MapsManager:
             )
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
-            prediction_df, metrics = self.task_manager.test(
+            prediction_df, metrics = test(
                 model,
                 dataloader,
                 criterion,
@@ -246,8 +248,13 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            prediction_df, metrics = self.task_manager.test_da(
-                model, dataloader, criterion, target=target, report_ci=report_ci
+            prediction_df, metrics = test_da(
+                self.network_task,
+                model,
+                dataloader,
+                criterion,
+                target=target,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
@@ -412,11 +419,10 @@ class MapsManager:
         from clinicadl.utils.enum import Task
         from clinicadl.utils.task_manager.task_manager import get_default_network
 
-        self.netowrk_task = Task(self.parameters["network_task"])
-        # self.task_manager = self._init_task_manager(df=train_df)
+        self.network_task = Task(self.parameters["network_task"])
 
         if self.parameters["architecture"] == "default":
-            self.parameters["architecture"] = get_default_network(self.netowrk_task)
+            self.parameters["architecture"] = get_default_network(self.network_task)
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (
@@ -425,7 +431,7 @@ class MapsManager:
             or self.parameters["label_code"] is None
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = generate_label_code(
-                self.netowrk_task, train_df, self.label
+                self.network_task, train_df, self.label
             )
 
         full_dataset = return_dataset(
@@ -441,7 +447,7 @@ class MapsManager:
             {
                 "num_networks": full_dataset.elem_per_image,
                 "output_size": output_size(
-                    self.netowrk_task, full_dataset.size, full_dataset.df, self.label
+                    self.network_task, full_dataset.size, full_dataset.df, self.label
                 ),
                 "input_size": full_dataset.size,
             }
@@ -453,7 +459,7 @@ class MapsManager:
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
-        possible_selection_metrics_set = set(evaluation_metrics(self.netowrk_task)) | {
+        possible_selection_metrics_set = set(evaluation_metrics(self.network_task)) | {
             "loss"
         }
         if not set(self.parameters["selection_metrics"]).issubset(
@@ -717,7 +723,8 @@ class MapsManager:
 
         performance_dir.mkdir(parents=True, exist_ok=True)
 
-        df_final, metrics = self.task_manager.ensemble_prediction(
+        df_final, metrics = ensemble_prediction(
+            self.network_task,
             test_df,
             validation_df,
             selection_threshold=self.selection_threshold,

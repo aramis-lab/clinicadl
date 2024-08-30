@@ -140,7 +140,7 @@ class PredictManager:
             # Find label code if not given
             if self._config.is_given_label_code(self.maps_manager.label, label_code):
                 generate_label_code(
-                    self.maps_manager.netowrk_task, group_df, self._config.label
+                    self.maps_manager.network_task, group_df, self._config.label
                 )
             # Erase previous TSV files on master process
             if not self._config.selection_metrics:

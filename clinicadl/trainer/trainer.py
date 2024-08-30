@@ -37,7 +37,14 @@ if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.trainer.config.train import TrainConfig
 
-from clinicadl.utils.task_manager.task_manager import evaluation_metrics, get_criterion
+from clinicadl.utils.task_manager.task_manager import (
+    evaluation_metrics,
+    generate_sampler,
+    get_criterion,
+    save_outputs,
+    test,
+    test_da,
+)
 
 logger = getLogger("clinicadl.trainer")
 
@@ -320,7 +327,8 @@ class Trainer:
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
             )
-            train_sampler = self.maps_manager.task_manager.generate_sampler(
+            train_sampler = generate_sampler(
+                self.maps_manager.network_task,
                 data_train,
                 self.config.dataloader.sampler,
                 dp_degree=cluster.world_size,
@@ -445,7 +453,8 @@ class Trainer:
                     cnn_index=network,
                 )
 
-                train_sampler = self.maps_manager.task_manager.generate_sampler(
+                train_sampler = generate_sampler(
+                    self.maps_manager.network_task,
                     data_train,
                     self.config.dataloader.sampler,
                     dp_degree=cluster.world_size,
@@ -590,8 +599,10 @@ class Trainer:
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
             )
-            train_source_sampler = self.maps_manager.task_manager.generate_sampler(
-                data_train_source, self.config.dataloader.sampler
+            train_source_sampler = generate_sampler(
+                self.maps_manager.network_task,
+                data_train_source,
+                self.config.dataloader.sampler,
             )
 
             logger.info(
@@ -852,16 +863,18 @@ class Trainer:
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = self.maps_manager.task_manager.test(
-                                model,
-                                train_loader,
-                                criterion,
+                            _, metrics_train = test(
+                                network_task=self.maps_manager.network_task,
+                                model=model,
+                                dataloader=train_loader,
+                                criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
-                            _, metrics_valid = self.maps_manager.task_manager.test(
-                                model,
-                                valid_loader,
-                                criterion,
+                            _, metrics_valid = test(
+                                network_task=self.maps_manager.network_task,
+                                model=model,
+                                dataloader=valid_loader,
+                                criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
 
@@ -911,11 +924,19 @@ class Trainer:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = self.maps_manager.task_manager.test(
-                    model, train_loader, criterion, amp=self.maps_manager.std_amp
+                _, metrics_train = test(
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=train_loader,
+                    criterion=criterion,
+                    amp=self.maps_manager.std_amp,
                 )
-                _, metrics_valid = self.maps_manager.task_manager.test(
-                    model, valid_loader, criterion, amp=self.maps_manager.std_amp
+                _, metrics_valid = test(
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=valid_loader,
+                    criterion=criterion,
+                    amp=self.maps_manager.std_amp,
                 )
 
                 model.train()
@@ -986,7 +1007,7 @@ class Trainer:
             network=network,
         )
 
-        if self.maps_manager.task_manager.save_outputs:
+        if save_outputs(self.maps_manager.network_task):
             self.maps_manager._compute_output_tensors(
                 train_loader.dataset,
                 "train",
@@ -1134,7 +1155,8 @@ class Trainer:
                         (
                             _,
                             metrics_train_target,
-                        ) = self.maps_manager.task_manager.test_da(
+                        ) = test_da(
+                            self.maps_manager.network_task,
                             model,
                             train_target_loader,
                             criterion,
@@ -1145,7 +1167,8 @@ class Trainer:
                         (
                             _,
                             metrics_valid_target,
-                        ) = self.maps_manager.task_manager.test_da(
+                        ) = test_da(
+                            self.maps_manager.network_task,
                             model,
                             valid_loader,
                             criterion,
@@ -1178,14 +1201,22 @@ class Trainer:
                         (
                             _,
                             metrics_train_source,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model, train_source_loader, criterion, alpha
+                        ) = test_da(
+                            self.maps_manager.network_task,
+                            model,
+                            train_source_loader,
+                            criterion,
+                            alpha,
                         )
                         (
                             _,
                             metrics_valid_source,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model, valid_source_loader, criterion, alpha
+                        ) = test_da(
+                            self.maps_manager.network_task,
+                            model,
+                            valid_source_loader,
+                            criterion,
+                            alpha,
                         )
 
                         model.train()
@@ -1233,7 +1264,8 @@ class Trainer:
                 logger.info(
                     f"Evaluate source data at the end of the epoch {epoch} with alpha: {alpha}."
                 )
-                _, metrics_train_source = self.maps_manager.task_manager.test_da(
+                _, metrics_train_source = test_da(
+                    self.maps_manager.network_task,
                     model,
                     train_source_loader,
                     criterion,
@@ -1241,7 +1273,8 @@ class Trainer:
                     True,
                     False,
                 )
-                _, metrics_valid_source = self.maps_manager.task_manager.test_da(
+                _, metrics_valid_source = test_da(
+                    self.maps_manager.network_task,
                     model,
                     valid_source_loader,
                     criterion,
@@ -1267,14 +1300,16 @@ class Trainer:
                     f"at the end of iteration {i}"
                 )
 
-            _, metrics_train_target = self.maps_manager.task_manager.test_da(
+            _, metrics_train_target = test_da(
+                self.maps_manager.network_task,
                 model,
                 train_target_loader,
                 criterion,
                 alpha,
                 target=True,
             )
-            _, metrics_valid_target = self.maps_manager.task_manager.test_da(
+            _, metrics_valid_target = test_da(
+                self.maps_manager.network_task,
                 model,
                 valid_loader,
                 criterion,
@@ -1352,7 +1387,7 @@ class Trainer:
             alpha=0,
         )
 
-        if self.maps_manager.task_manager.save_outputs:
+        if save_outputs(self.maps_manager.network_task):
             self.maps_manager._compute_output_tensors(
                 train_target_loader.dataset,
                 "train",
