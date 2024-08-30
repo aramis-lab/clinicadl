@@ -1,10 +1,10 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch import Tensor
+from torch import Tensor, nn
 from torch.cuda.amp import autocast
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
@@ -13,7 +13,16 @@ from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.network.network import Network
 from clinicadl.utils import cluster
-from clinicadl.utils.enum import Task
+from clinicadl.utils.enum import (
+    ClassificationLoss,
+    ClassificationMetric,
+    ReconstructionLoss,
+    ReconstructionMetric,
+    RegressionLoss,
+    RegressionMetric,
+    Task,
+)
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 # if network_task == Task.CLASSIFICATION:
 # elif network_task == Task.REGRESSION:
@@ -28,6 +37,115 @@ def get_default_network(network_task: Task) -> str:  # return Network
         return "Conv5_FC3"
     elif network_task == Task.RECONSTRUCTION:
         return "AE_Conv5_FC3"
+
+
+def get_criterion(
+    network_task: Union[str, Task], criterion: Optional[str] = None
+) -> _Loss:
+    """
+    Gives the optimization criterion.
+    Must check that it is compatible with the task.
+
+    Args:
+        criterion: name of the loss as written in Pytorch.
+    Raises:
+        ClinicaDLArgumentError: if the criterion is not compatible with the task.
+    """
+
+    network_task = Task(network_task)
+
+    if network_task == Task.CLASSIFICATION:
+        compatible_losses = [e.value for e in ClassificationLoss]
+        if criterion is None:
+            return nn.CrossEntropyLoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Classification loss must be chosen in {compatible_losses}."
+            )
+        return getattr(nn, criterion)()
+
+    elif network_task == Task.REGRESSION:
+        compatible_losses = [e.value for e in RegressionLoss]
+        if criterion is None:
+            return nn.MSELoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Regression loss must be chosen in {compatible_losses}."
+            )
+        return getattr(nn, criterion)()
+
+    elif network_task == Task.RECONSTRUCTION:
+        compatible_losses = [e.value for e in ReconstructionLoss]
+        if criterion is None:
+            return nn.MSELoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Reconstruction loss must be chosen in {compatible_losses}."
+            )
+        if criterion == "VAEGaussianLoss":
+            from clinicadl.network.vae.vae_utils import VAEGaussianLoss
+
+            return VAEGaussianLoss
+        elif criterion == "VAEBernoulliLoss":
+            from clinicadl.network.vae.vae_utils import VAEBernoulliLoss
+
+            return VAEBernoulliLoss
+        elif criterion == "VAEContinuousBernoulliLoss":
+            from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
+
+            return VAEContinuousBernoulliLoss
+        return getattr(nn, criterion)()
+
+
+def output_size(
+    network_task: Union[str, Task],
+    input_size: Sequence[int],
+    df: pd.DataFrame,
+    label: str,
+) -> Union[int, Sequence[int]]:
+    """
+    Computes the output_size needed to perform the task.
+
+    Args:
+        input_size: size of the input.
+        df: meta-data of the training set.
+        label: name of the column containing the labels.
+    Returns:
+        output_size
+    """
+    network_task = Task(network_task)
+    if network_task == Task.CLASSIFICATION:
+        label_code = generate_label_code(network_task, df, label)
+        return len(label_code)
+
+    elif network_task == Task.REGRESSION:
+        return 1
+
+    elif network_task == Task.RECONSTRUCTION:
+        return input_size
+
+
+def generate_label_code(
+    network_task: Union[str, Task], df: pd.DataFrame, label: str
+) -> Optional[Dict[str, int]]:
+    """
+    Generates a label code that links the output node number to label value.
+
+    Args:
+        df: meta-data of the training set.
+        label: name of the column containing the labels.
+    Returns:
+        label_code
+    """
+
+    network_task = Task(network_task)
+    if network_task == Task.CLASSIFICATION:
+        unique_labels = list(set(getattr(df, label)))
+        unique_labels.sort()
+        return {str(key): value for value, key in enumerate(unique_labels)}
+
+    elif network_task == Task.REGRESSION or network_task == Task.RECONSTRUCTION:
+        return None
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
@@ -118,37 +236,6 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def generate_label_code(df: pd.DataFrame, label: str) -> Optional[Dict[str, int]]:
-        """
-        Generates a label code that links the output node number to label value.
-
-        Args:
-            df: meta-data of the training set.
-            label: name of the column containing the labels.
-        Returns:
-            label_code
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def output_size(
-        input_size: Sequence[int], df: pd.DataFrame, label: str
-    ) -> Sequence[int]:
-        """
-        Computes the output_size needed to perform the task.
-
-        Args:
-            input_size: size of the input.
-            df: meta-data of the training set.
-            label: name of the column containing the labels.
-        Returns:
-            output_size
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
     def generate_sampler(
         dataset: CapsDataset,
         sampler_option: str = "random",
@@ -167,20 +254,6 @@ class TaskManager:
             rank: process id within the data parallelism communicator.
         Returns:
             callable given to the training data loader.
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def get_criterion(criterion: str = None) -> _Loss:
-        """
-        Gives the optimization criterion.
-        Must check that it is compatible with the task.
-
-        Args:
-            criterion: name of the loss as written in Pytorch.
-        Raises:
-            ClinicaDLArgumentError: if the criterion is not compatible with the task.
         """
         pass
 

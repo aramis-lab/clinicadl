@@ -53,14 +53,6 @@ class RegressionManager(TaskManager):
         )
 
     @staticmethod
-    def generate_label_code(df, label):
-        return None
-
-    @staticmethod
-    def output_size(input_size, df, label):
-        return 1
-
-    @staticmethod
     def generate_sampler(
         dataset: CapsDataset,
         sampler_option="random",
@@ -166,21 +158,3 @@ class RegressionManager(TaskManager):
             results = None
 
         return df_final, results
-
-    @staticmethod
-    def get_criterion(criterion=None):
-        compatible_losses = [
-            "L1Loss",
-            "MSELoss",
-            "KLDivLoss",
-            "BCEWithLogitsLoss",
-            "HuberLoss",
-            "SmoothL1Loss",
-        ]
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Regression loss must be chosen in {compatible_losses}."
-            )
-        return getattr(nn, criterion)()

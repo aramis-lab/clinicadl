@@ -31,6 +31,7 @@ from clinicadl.utils.iotools.maps_manager_utils import (
     add_default_values,
 )
 from clinicadl.utils.iotools.utils import path_encoder
+from clinicadl.utils.task_manager.task_manager import generate_label_code, output_size
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -43,7 +44,7 @@ class MapsManager:
     def __init__(
         self,
         maps_path: Path,
-        parameters: Dict[str, Any] = None,
+        parameters: Optional[Dict[str, Any]] = None,
         verbose: str = "info",
     ):
         """
@@ -69,7 +70,7 @@ class MapsManager:
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
             self.parameters = add_default_values(test_parameters)
-            self.task_manager = self._init_task_manager(n_classes=self.output_size)
+            # self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
             )  # Used only for retro-compatibility
@@ -408,7 +409,7 @@ class MapsManager:
         from clinicadl.utils.task_manager.task_manager import get_default_network
 
         self.netowrk_task = Task(self.parameters["network_task"])
-        self.task_manager = self._init_task_manager(df=train_df)
+        # self.task_manager = self._init_task_manager(df=train_df)
 
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = get_default_network(self.netowrk_task)
@@ -419,8 +420,8 @@ class MapsManager:
             or len(self.parameters["label_code"]) == 0
             or self.parameters["label_code"] is None
         ):  # Allows to set custom label code in TOML
-            self.parameters["label_code"] = self.task_manager.generate_label_code(
-                train_df, self.label
+            self.parameters["label_code"] = generate_label_code(
+                self.netowrk_task, train_df, self.label
             )
 
         full_dataset = return_dataset(
@@ -435,8 +436,8 @@ class MapsManager:
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "output_size": self.task_manager.output_size(
-                    full_dataset.size, full_dataset.df, self.label
+                "output_size": output_size(
+                    self.netowrk_task, full_dataset.size, full_dataset.df, self.label
                 ),
                 "input_size": full_dataset.size,
             }
@@ -916,29 +917,29 @@ class MapsManager:
 
         return split_class(**kwargs)
 
-    def _init_task_manager(
-        self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
-    ):
-        from clinicadl.utils.task_manager import (
-            ClassificationManager,
-            ReconstructionManager,
-            RegressionManager,
-        )
+    # def _init_task_manager(
+    #     self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
+    # ):
+    #     from clinicadl.utils.task_manager import (
+    #         ClassificationManager,
+    #         ReconstructionManager,
+    #         RegressionManager,
+    #     )
 
-        if self.network_task == "classification":
-            if n_classes is not None:
-                return ClassificationManager(self.mode, n_classes=n_classes)
-            else:
-                return ClassificationManager(self.mode, df=df, label=self.label)
-        elif self.network_task == "regression":
-            return RegressionManager(self.mode)
-        elif self.network_task == "reconstruction":
-            return ReconstructionManager(self.mode)
-        else:
-            raise NotImplementedError(
-                f"Task {self.network_task} is not implemented in ClinicaDL. "
-                f"Please choose between classification, regression and reconstruction."
-            )
+    #     if self.network_task == "classification":
+    #         if n_classes is not None:
+    #             return ClassificationManager(self.mode, n_classes=n_classes)
+    #         else:
+    #             return ClassificationManager(self.mode, df=df, label=self.label)
+    #     elif self.network_task == "regression":
+    #         return RegressionManager(self.mode)
+    #     elif self.network_task == "reconstruction":
+    #         return ReconstructionManager(self.mode)
+    #     else:
+    #         raise NotImplementedError(
+    #             f"Task {self.network_task} is not implemented in ClinicaDL. "
+    #             f"Please choose between classification, regression and reconstruction."
+    #         )
 
     ###############################
     # Getters                     #

@@ -28,6 +28,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
+from clinicadl.utils.task_manager.task_manager import generate_label_code, get_criterion
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -123,7 +124,9 @@ class PredictManager:
         )
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
-        criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
+        criterion = get_criterion(
+            self.maps_manager.network_task, self.maps_manager.loss
+        )
         self._check_data_group(df=group_df)
 
         assert self._config.split  # don't know if needed ? try to raise an exception ?
@@ -136,8 +139,8 @@ class PredictManager:
             )
             # Find label code if not given
             if self._config.is_given_label_code(self.maps_manager.label, label_code):
-                self.maps_manager.task_manager.generate_label_code(
-                    group_df, self._config.label
+                generate_label_code(
+                    self.maps_manager.netowrk_task, group_df, self._config.label
                 )
             # Erase previous TSV files on master process
             if not self._config.selection_metrics:

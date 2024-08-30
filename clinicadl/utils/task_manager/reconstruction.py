@@ -94,14 +94,6 @@ class ReconstructionManager(TaskManager):
         return metrics
 
     @staticmethod
-    def output_size(input_size, df, label):
-        return input_size
-
-    @staticmethod
-    def generate_label_code(df, label):
-        return None
-
-    @staticmethod
     def generate_sampler(
         dataset: CapsDataset,
         sampler_option="random",
@@ -150,36 +142,3 @@ class ReconstructionManager(TaskManager):
             None
         """
         return None, None
-
-    @staticmethod
-    def get_criterion(criterion=None):
-        compatible_losses = [
-            "L1Loss",
-            "MSELoss",
-            "KLDivLoss",
-            "BCEWithLogitsLoss",
-            "HuberLoss",
-            "SmoothL1Loss",
-            "VAEGaussianLoss",
-            "VAEBernoulliLoss",
-            "VAEContinuousBernoulliLoss",
-        ]
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Reconstruction loss must be chosen in {compatible_losses}."
-            )
-        if criterion == "VAEGaussianLoss":
-            from clinicadl.network.vae.vae_utils import VAEGaussianLoss
-
-            return VAEGaussianLoss
-        elif criterion == "VAEBernoulliLoss":
-            from clinicadl.network.vae.vae_utils import VAEBernoulliLoss
-
-            return VAEBernoulliLoss
-        elif criterion == "VAEContinuousBernoulliLoss":
-            from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
-
-            return VAEContinuousBernoulliLoss
-        return getattr(nn, criterion)()

@@ -80,17 +80,6 @@ class ClassificationManager(TaskManager):
         )
 
     @staticmethod
-    def generate_label_code(df, label):
-        unique_labels = list(set(getattr(df, label)))
-        unique_labels.sort()
-        return {str(key): value for value, key in enumerate(unique_labels)}
-
-    @staticmethod
-    def output_size(input_size, df, label):
-        label_code = ClassificationManager.generate_label_code(df, label)
-        return len(label_code)
-
-    @staticmethod
     def generate_sampler(
         dataset: CapsDataset,
         sampler_option="random",
@@ -247,14 +236,3 @@ class ClassificationManager(TaskManager):
             results = None
 
         return df_final, results
-
-    @staticmethod
-    def get_criterion(criterion=None):
-        compatible_losses = ["CrossEntropyLoss", "MultiMarginLoss"]
-        if criterion is None:
-            return nn.CrossEntropyLoss()
-        if criterion not in compatible_losses:
-            raise ClinicaDLArgumentError(
-                f"Classification loss must be chosen in {compatible_losses}."
-            )
-        return getattr(nn, criterion)()
