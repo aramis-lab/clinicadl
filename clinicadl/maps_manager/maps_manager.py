@@ -76,14 +76,12 @@ class MapsManager:
                 )
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
-            from clinicadl.trainer.task_manager import TaskConfig
+            # from clinicadl.trainer.task_manager import TaskConfig
 
             self.parameters = add_default_values(test_parameters)
-            self.task_config = TaskConfig(
-                network_task=self.network_task,
-                mode=self.mode,
-                n_classes=self.output_size,
-            )
+
+            ## to initialize the task parameters
+            self.n_classes = self.output_size
 
             self.split_name = (
                 self._check_split_wording()
@@ -429,13 +427,12 @@ class MapsManager:
             self.parameters["label"] = None
 
         from clinicadl.trainer.task_manager import (
-            TaskConfig,
             get_default_network,
         )
         from clinicadl.utils.enum import Task
 
         self.network_task = Task(self.parameters["network_task"])
-        self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
+        # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
         # self.task_manager = self._init_task_manager(df=train_df)
 
         if self.parameters["architecture"] == "default":
