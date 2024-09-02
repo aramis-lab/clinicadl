@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.trainer.config.train import TrainConfig
 
-from clinicadl.utils.task_manager.task_manager import (
+from clinicadl.trainer.task_manager import (
     evaluation_metrics,
     generate_sampler,
     get_criterion,

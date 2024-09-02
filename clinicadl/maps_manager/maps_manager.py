@@ -19,6 +19,14 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.predict.utils import get_prediction
+from clinicadl.trainer.task_manager import (
+    ensemble_prediction,
+    evaluation_metrics,
+    generate_label_code,
+    output_size,
+    test,
+    test_da,
+)
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP, init_ddp
@@ -31,14 +39,6 @@ from clinicadl.utils.iotools.maps_manager_utils import (
     add_default_values,
 )
 from clinicadl.utils.iotools.utils import path_encoder
-from clinicadl.utils.task_manager.task_manager import (
-    ensemble_prediction,
-    evaluation_metrics,
-    generate_label_code,
-    output_size,
-    test,
-    test_da,
-)
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -76,7 +76,7 @@ class MapsManager:
                 )
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
-            from clinicadl.utils.task_manager.task_manager import TaskConfig
+            from clinicadl.trainer.task_manager import TaskConfig
 
             self.parameters = add_default_values(test_parameters)
             self.task_config = TaskConfig(
@@ -424,11 +424,11 @@ class MapsManager:
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
-        from clinicadl.utils.enum import Task
-        from clinicadl.utils.task_manager.task_manager import (
+        from clinicadl.trainer.task_manager import (
             TaskConfig,
             get_default_network,
         )
+        from clinicadl.utils.enum import Task
 
         self.network_task = Task(self.parameters["network_task"])
         self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)

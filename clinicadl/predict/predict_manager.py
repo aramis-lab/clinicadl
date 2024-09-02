@@ -21,6 +21,7 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.predict.config import PredictConfig
+from clinicadl.trainer.task_manager import generate_label_code, get_criterion
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
@@ -28,7 +29,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.task_manager.task_manager import generate_label_code, get_criterion
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]

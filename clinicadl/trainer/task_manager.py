@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     computed_field,
+    model_validator,
 )
 from torch import Tensor, nn
 from torch.cuda.amp import autocast
@@ -729,25 +730,32 @@ def generate_sampler(
 class TaskConfig(BaseModel):
     mode: str
     network_task: Task
+
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+
+
+class RegressionConfig(TaskConfig):
+    network_task = Task.REGRESSION
+
+
+class ReconstructionConfig(TaskConfig):
+    network_task = Task.RECONSTRUCTION
+
+
+class ClassificationConfig(TaskConfig):
+    network_task = Task.CLASSIFICATION
+
     n_classe: Optional[int] = None
     df: Optional[pd.DataFrame] = None
     label: Optional[str] = None
 
-    def __init__(
-        self,
-        network_task: Union[str, Task],
-        mode: str,
-        n_classes: Optional[int] = None,
-        df: Optional[pd.DataFrame] = None,
-        label: Optional[str] = None,
-    ):
-        network_task = Task(network_task)
-        if network_task == Task.CLASSIFICATION:
-            if n_classes is None and df is not None:
-                n_classes = output_size(Task.CLASSIFICATION, None, df, label)
-            self.n_classes = n_classes
+    @model_validator(mode="after")
+    def model_validator(self):
+        if self.n_classes is None:
+            n_classes = output_size(Task.CLASSIFICATION, None, self.df, self.label)
+        self.n_classes = n_classes
 
-        self.mode = mode
         self.metrics_module = MetricModule(
-            evaluation_metrics(network_task), n_classes=n_classes
+            evaluation_metrics(self.network_task), n_classes=self.n_classes
         )
