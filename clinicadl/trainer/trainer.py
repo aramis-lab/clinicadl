@@ -864,6 +864,9 @@ class Trainer:
                             evaluation_flag = False
 
                             _, metrics_train = test(
+                                mode=self.maps_manager.mode,
+                                metrics_module=self.maps_manager.metrics_module,
+                                n_classes=self.maps_manager.n_classes,
                                 network_task=self.maps_manager.network_task,
                                 model=model,
                                 dataloader=train_loader,
@@ -871,6 +874,9 @@ class Trainer:
                                 amp=self.maps_manager.std_amp,
                             )
                             _, metrics_valid = test(
+                                mode=self.maps_manager.mode,
+                                metrics_module=self.maps_manager.metrics_module,
+                                n_classes=self.maps_manager.n_classes,
                                 network_task=self.maps_manager.network_task,
                                 model=model,
                                 dataloader=valid_loader,

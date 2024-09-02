@@ -178,9 +178,13 @@ class MapsManager:
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
             prediction_df, metrics = test(
-                model,
-                dataloader,
-                criterion,
+                mode=self.mode,
+                metrics_module=self.metrics_module,
+                n_classes=self.n_classes,
+                network_task=self.network_task,
+                model=model,
+                dataloader=dataloader,
+                criterion=criterion,
                 use_labels=use_labels,
                 amp=amp,
                 report_ci=report_ci,
@@ -737,6 +741,9 @@ class MapsManager:
         performance_dir.mkdir(parents=True, exist_ok=True)
 
         df_final, metrics = ensemble_prediction(
+            self.mode,
+            self.metrics_module,
+            self.n_classes,
             self.network_task,
             test_df,
             validation_df,

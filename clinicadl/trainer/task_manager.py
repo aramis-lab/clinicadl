@@ -40,14 +40,14 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 # This function is not useful anymore since we introduced config class
 # default network will automatically be initialized when running the task
-def get_default_network(network_task: Task) -> str:  # return Network
+def get_default_network(network_task: Task) -> str:
     """Returns the default network to use when no architecture is specified."""
-    if network_task == Task.CLASSIFICATION:
-        return "Conv5_FC3"
-    elif network_task == Task.REGRESSION:
-        return "Conv5_FC3"
-    elif network_task == Task.RECONSTRUCTION:
-        return "AE_Conv5_FC3"
+    task_network_map = {
+        Task.CLASSIFICATION: "Conv5_FC3",
+        Task.REGRESSION: "Conv5_FC3",
+        Task.RECONSTRUCTION: "AE_Conv5_FC3",
+    }
+    return task_network_map.get(network_task, "Unknown Task")
 
 
 def get_criterion(
@@ -58,35 +58,20 @@ def get_criterion(
     Must check that it is compatible with the task.
 
     Args:
+        network_task: Task type as a string or Task enum
         criterion: name of the loss as written in PyTorch.
     Raises:
         ClinicaDLArgumentError: if the criterion is not compatible with the task.
     """
 
-    def validate_criterion(criterion, compatible_losses):
-        if criterion not in compatible_losses:
+    network_task = Task(network_task)
+
+    def validate_criterion(criterion_name: str, compatible_losses: List[str]):
+        if criterion_name not in compatible_losses:
             raise ClinicaDLArgumentError(
                 f"Loss must be chosen from {compatible_losses}."
             )
-        return getattr(nn, criterion)()
-
-    def handle_reconstruction_loss(criterion, compatible_losses):
-        if criterion == "VAEGaussianLoss":
-            from clinicadl.network.vae.vae_utils import VAEGaussianLoss
-
-            return VAEGaussianLoss
-        elif criterion == "VAEBernoulliLoss":
-            from clinicadl.network.vae.vae_utils import VAEBernoulliLoss
-
-            return VAEBernoulliLoss
-        elif criterion == "VAEContinuousBernoulliLoss":
-            from clinicadl.network.vae.vae_utils import VAEContinuousBernoulliLoss
-
-            return VAEContinuousBernoulliLoss
-        else:
-            return validate_criterion(criterion, compatible_losses)
-
-    network_task = Task(network_task)
+        return getattr(nn, criterion_name)()
 
     if network_task == Task.CLASSIFICATION:
         compatible_losses = [e.value for e in ClassificationLoss]
@@ -96,7 +81,7 @@ def get_criterion(
             else validate_criterion(criterion, compatible_losses)
         )
 
-    elif network_task == Task.REGRESSION:
+    if network_task == Task.REGRESSION:
         compatible_losses = [e.value for e in RegressionLoss]
         return (
             nn.MSELoss()
@@ -104,15 +89,28 @@ def get_criterion(
             else validate_criterion(criterion, compatible_losses)
         )
 
-    elif network_task == Task.RECONSTRUCTION:
+    if network_task == Task.RECONSTRUCTION:
         compatible_losses = [e.value for e in ReconstructionLoss]
+        reconstruction_losses = {
+            "VAEGaussianLoss": "VAEGaussianLoss",
+            "VAEBernoulliLoss": "VAEBernoulliLoss",
+            "VAEContinuousBernoulliLoss": "VAEContinuousBernoulliLoss",
+        }
+
+        if criterion in reconstruction_losses:
+            from clinicadl.network.vae.vae_utils import (
+                VAEBernoulliLoss,
+                VAEContinuousBernoulliLoss,
+                VAEGaussianLoss,
+            )
+
+            return eval(reconstruction_losses[criterion])
+
         return (
             nn.MSELoss()
             if criterion is None
-            else handle_reconstruction_loss(criterion, compatible_losses)
+            else validate_criterion(criterion, compatible_losses)
         )
-
-    raise ClinicaDLArgumentError("Unknown task type.")
 
 
 def output_size(
@@ -133,12 +131,9 @@ def output_size(
     """
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION:
-        label_code = generate_label_code(network_task, df, label)
-        return len(label_code)
-
+        return len(generate_label_code(network_task, df, label))
     elif network_task == Task.REGRESSION:
         return 1
-
     elif network_task == Task.RECONSTRUCTION:
         return input_size
 
@@ -158,12 +153,10 @@ def generate_label_code(
 
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION:
-        unique_labels = list(set(getattr(df, label)))
-        unique_labels.sort()
+        unique_labels = sorted(set(df[label]))
         return {str(key): value for value, key in enumerate(unique_labels)}
 
-    elif network_task == Task.REGRESSION or network_task == Task.RECONSTRUCTION:
-        return None
+    return None
 
 
 def evaluation_metrics(network_task: Union[str, Task]):
@@ -180,6 +173,9 @@ def evaluation_metrics(network_task: Union[str, Task]):
 
 
 def test(
+    mode: str,
+    metrics_module: MetricModule,
+    n_classes: int,
     network_task,
     model: Network,
     dataloader: DataLoader,
@@ -274,6 +270,9 @@ def test(
 
 
 def test_da(
+    mode: str,
+    metrics_module: MetricModule,
+    n_classes: int,
     network_task: Union[str, Task],
     model: Network,
     dataloader: DataLoader,
@@ -441,8 +440,8 @@ def generate_test_row(
 
 def compute_metrics(
     network_task: Union[str, Task],
-    metrics_module,
     results_df: pd.DataFrame,
+    metrics_module: Optional[MetricModule] = None,
     report_ci: bool = False,
 ) -> Dict[str, float]:
     """
@@ -456,11 +455,13 @@ def compute_metrics(
 
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION or network_task == Task.REGRESSION:
-        return metrics_module.apply(
-            results_df.true_label.values,
-            results_df.predicted_label.values,
-            report_ci=report_ci,
-        )
+        if metrics_module is not None:
+            return metrics_module.apply(
+                results_df.true_label.values,
+                results_df.predicted_label.values,
+                report_ci=report_ci,
+            )
+
     elif network_task == Task.RECONSTRUCTION:
         if not report_ci:
             return {
@@ -481,7 +482,7 @@ def compute_metrics(
         for metric in evaluation_metrics(Task.RECONSTRUCTION):
             metric_vals = results_df[metric]
 
-            metric_result = metric_vals.mean()
+            metric_result = str(metric_vals.mean())
 
             metric_vals = (metric_vals,)
             # Compute confidence intervals only if there are at least two samples in the data.
@@ -518,6 +519,9 @@ def compute_metrics(
 
 
 def ensemble_prediction(
+    mode: str,
+    metrics_module: MetricModule,
+    n_classes: int,
     network_task: Union[str, Task],
     performance_df: pd.DataFrame,
     validation_df: pd.DataFrame,
@@ -727,35 +731,35 @@ def generate_sampler(
     return get_sampler(weights)
 
 
-class TaskConfig(BaseModel):
-    mode: str
-    network_task: Task
+# class TaskConfig(BaseModel):
+#     mode: str
+#     network_task: Task
 
-    # pydantic config
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
-
-class RegressionConfig(TaskConfig):
-    network_task = Task.REGRESSION
+#     # pydantic config
+#     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
-class ReconstructionConfig(TaskConfig):
-    network_task = Task.RECONSTRUCTION
+# class RegressionConfig(TaskConfig):
+#     network_task = Task.REGRESSION
 
 
-class ClassificationConfig(TaskConfig):
-    network_task = Task.CLASSIFICATION
+# class ReconstructionConfig(TaskConfig):
+#     network_task = Task.RECONSTRUCTION
 
-    n_classe: Optional[int] = None
-    df: Optional[pd.DataFrame] = None
-    label: Optional[str] = None
 
-    @model_validator(mode="after")
-    def model_validator(self):
-        if self.n_classes is None:
-            n_classes = output_size(Task.CLASSIFICATION, None, self.df, self.label)
-        self.n_classes = n_classes
+# class ClassificationConfig(TaskConfig):
+#     network_task = Task.CLASSIFICATION
 
-        self.metrics_module = MetricModule(
-            evaluation_metrics(self.network_task), n_classes=self.n_classes
-        )
+#     n_classe: Optional[int] = None
+#     df: Optional[pd.DataFrame] = None
+#     label: Optional[str] = None
+
+#     @model_validator(mode="after")
+#     def model_validator(self):
+#         if self.n_classes is None:
+#             n_classes = output_size(Task.CLASSIFICATION, None, self.df, self.label)
+#         self.n_classes = n_classes
+
+#         self.metrics_module = MetricModule(
+#             evaluation_metrics(self.network_task), n_classes=self.n_classes
+#         )
