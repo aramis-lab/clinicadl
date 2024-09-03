@@ -250,7 +250,7 @@ def test(
         metrics_dict = None
     else:
         metrics_dict = compute_metrics(
-            network_task, metrics_module, results_df, report_ci=report_ci
+            network_task, results_df, metrics_module, report_ci=report_ci
         )
         for loss_component in total_loss.keys():
             dist.reduce(total_loss[loss_component], dst=0)
@@ -324,7 +324,7 @@ def test_da(
         metrics_dict = None
     else:
         metrics_dict = compute_metrics(
-            network_task, metrics_module, results_df, report_ci=report_ci
+            network_task, results_df, metrics_module, report_ci=report_ci
         )
         if report_ci:
             metrics_dict["Metric_names"].append("loss")
@@ -635,7 +635,7 @@ def ensemble_prediction(
         )
 
     results = (
-        compute_metrics(network_task, metrics_module, df_final, report_ci=False)
+        compute_metrics(network_task, df_final, metrics_module, report_ci=False)
         if use_labels
         else None
     )
