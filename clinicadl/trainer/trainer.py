@@ -764,7 +764,7 @@ class Trainer:
             amp=self.config.computational.amp,
         )
         criterion = get_criterion(
-            self.maps_manager.netowrk_task, self.config.model.loss
+            self.maps_manager.network_task, self.config.model.loss
         )
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
@@ -789,7 +789,7 @@ class Trainer:
         if cluster.master:
             log_writer = LogWriter(
                 self.maps_manager.maps_path,
-                evaluation_metrics(self.maps_manager.netowrk_task) + ["loss"],
+                evaluation_metrics(self.maps_manager.network_task) + ["loss"],
                 split,
                 resume=resume,
                 beginning_epoch=beginning_epoch,
@@ -1111,7 +1111,7 @@ class Trainer:
 
         log_writer = LogWriter(
             self.maps_manager.maps_path,
-            evaluation_metrics(self.maps_manager.netowrk_task) + ["loss"],
+            evaluation_metrics(self.maps_manager.network_task) + ["loss"],
             split,
             resume=resume,
             beginning_epoch=beginning_epoch,
