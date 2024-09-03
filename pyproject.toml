@@ -101,4 +101,4 @@ line-ending = "auto"
 summary = ''
 skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml"
 quiet-level = 3
-ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources"
+ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources,adn"
