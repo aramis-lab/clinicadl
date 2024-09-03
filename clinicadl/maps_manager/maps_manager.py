@@ -82,7 +82,6 @@ class MapsManager:
             self.parameters = add_default_values(test_parameters)
 
             ## to initialize the task parameters
-            self.n_classes = self.output_size
             self.metrics_module = MetricModule(
                 evaluation_metrics(network_task=self.network_task),
                 n_classes=self.n_classes,
@@ -440,7 +439,7 @@ class MapsManager:
         # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
         # self.task_manager = self._init_task_manager(df=train_df)
         if self.network_task == Task.CLASSIFICATION:
-            self.n_classes = self.output_size(None, train_df, self.label)
+            self.n_classes = output_size(self.network_task, None, train_df, self.label)
         # self.metrics_module = MetricModule(evaluation_metrics(self.network_task))
 
         if self.parameters["architecture"] == "default":
