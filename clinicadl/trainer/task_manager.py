@@ -233,7 +233,9 @@ def test(
                     data,
                     outputs.float(),
                 )
-                row_df = pd.DataFrame(row, columns=self.columns)
+                row_df = pd.DataFrame(
+                    row, columns=columns(network_task, mode, n_classes)
+                )
                 results_df = pd.concat([results_df, row_df])
 
             del outputs, loss_dict
