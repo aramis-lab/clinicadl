@@ -439,8 +439,9 @@ class MapsManager:
         self.network_task = Task(self.parameters["network_task"])
         # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
         # self.task_manager = self._init_task_manager(df=train_df)
-        self.df = train_df
-        self.metrics_module = MetricModule(evaluation_metrics(self.network_task))
+        if self.network_task == Task.CLASSIFICATION:
+            self.n_classes = self.output_size(None, train_df, self.label)
+        # self.metrics_module = MetricModule(evaluation_metrics(self.network_task))
 
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = get_default_network(self.network_task)
