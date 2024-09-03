@@ -225,7 +225,7 @@ class ClassificationMetric(str, Enum):  # TODO : put in metric module
     MK = "MK"
     LR_PLUS = "LR_plus"
     LR_MINUS = "LR_minus"
-    LOSS = "loss"
+    # LOSS = "loss"
 
 
 class ReconstructionLoss(str, Enum):  # TODO : put in loss module
@@ -264,7 +264,7 @@ class ReconstructionMetric(str, Enum):  # TODO : put in metric module
     RMSE = "RMSE"
     PSNR = "PSNR"
     SSIM = "SSIM"
-    LOSS = "loss"
+    # LOSS = "loss"
 
 
 class RegressionLoss(str, Enum):  # TODO : put in loss module
@@ -284,7 +284,7 @@ class RegressionMetric(str, Enum):  # TODO : put in metric module
     R2_score = "R2_score"
     MAE = "MAE"
     RMSE = "RMSE"
-    LOSS = "loss"
+    # LOSS = "loss"
 
 
 class GenerateType(str, Enum):

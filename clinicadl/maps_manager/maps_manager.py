@@ -447,7 +447,7 @@ class MapsManager:
             self.n_classes = None
 
         self.metrics_module = MetricModule(
-            evaluation_metrics(network_task=self.network_task) + ["loss"],
+            evaluation_metrics(network_task=self.network_task),
             n_classes=self.n_classes,
         )
         if self.parameters["architecture"] == "default":
