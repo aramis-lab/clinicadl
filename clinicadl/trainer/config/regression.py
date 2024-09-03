@@ -37,7 +37,7 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
 class ValidationConfig(BaseValidationConfig):
     """Config class for the validation procedure in regression mode."""
 
-    selection_metrics: Tuple[RegressionMetric, ...] = (RegressionMetric.LOSS,)
+    selection_metrics: Tuple[RegressionMetric, ...] = ()  # (RegressionMetric.LOSS,)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
