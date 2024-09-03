@@ -723,7 +723,7 @@ class Trainer:
         train_loader: DataLoader,
         valid_loader: DataLoader,
         split: int,
-        network: int = None,
+        network: Optional[int] = None,
         resume: bool = False,
         callbacks: List[Callback] = [],
     ):
@@ -1168,11 +1168,14 @@ class Trainer:
                             _,
                             metrics_train_target,
                         ) = test_da(
-                            self.maps_manager.network_task,
-                            model,
-                            train_target_loader,
-                            criterion,
-                            alpha,
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=train_target_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                             target=True,
                         )  # TO CHECK
 
@@ -1180,11 +1183,14 @@ class Trainer:
                             _,
                             metrics_valid_target,
                         ) = test_da(
-                            self.maps_manager.network_task,
-                            model,
-                            valid_loader,
-                            criterion,
-                            alpha,
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=valid_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                             target=True,
                         )
 
@@ -1214,21 +1220,27 @@ class Trainer:
                             _,
                             metrics_train_source,
                         ) = test_da(
-                            self.maps_manager.network_task,
-                            model,
-                            train_source_loader,
-                            criterion,
-                            alpha,
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=train_source_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                         )
                         (
                             _,
                             metrics_valid_source,
                         ) = test_da(
-                            self.maps_manager.network_task,
-                            model,
-                            valid_source_loader,
-                            criterion,
-                            alpha,
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=valid_source_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                         )
 
                         model.train()
@@ -1277,22 +1289,28 @@ class Trainer:
                     f"Evaluate source data at the end of the epoch {epoch} with alpha: {alpha}."
                 )
                 _, metrics_train_source = test_da(
-                    self.maps_manager.network_task,
-                    model,
-                    train_source_loader,
-                    criterion,
-                    alpha,
-                    True,
-                    False,
+                    mode=self.maps_manager.mode,
+                    n_classes=self.maps_manager.n_classes,
+                    metrics_module=self.maps_manager.metrics_module,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=train_source_loader,
+                    criterion=criterion,
+                    alpha=alpha,
+                    target=True,
+                    report_ci=False,
                 )
                 _, metrics_valid_source = test_da(
-                    self.maps_manager.network_task,
-                    model,
-                    valid_source_loader,
-                    criterion,
-                    alpha,
-                    True,
-                    False,
+                    mode=self.maps_manager.mode,
+                    n_classes=self.maps_manager.n_classes,
+                    metrics_module=self.maps_manager.metrics_module,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=valid_source_loader,
+                    criterion=criterion,
+                    alpha=alpha,
+                    target=True,
+                    report_ci=False,
                 )
 
                 log_writer.step(
@@ -1313,19 +1331,25 @@ class Trainer:
                 )
 
             _, metrics_train_target = test_da(
-                self.maps_manager.network_task,
-                model,
-                train_target_loader,
-                criterion,
-                alpha,
+                mode=self.maps_manager.mode,
+                n_classes=self.maps_manager.n_classes,
+                metrics_module=self.maps_manager.metrics_module,
+                network_task=self.maps_manager.network_task,
+                model=model,
+                dataloader=train_target_loader,
+                criterion=criterion,
+                alpha=alpha,
                 target=True,
             )
             _, metrics_valid_target = test_da(
-                self.maps_manager.network_task,
-                model,
-                valid_loader,
-                criterion,
-                alpha,
+                mode=self.maps_manager.mode,
+                n_classes=self.maps_manager.n_classes,
+                metrics_module=self.maps_manager.metrics_module,
+                network_task=self.maps_manager.network_task,
+                model=model,
+                dataloader=valid_loader,
+                criterion=criterion,
+                alpha=alpha,
                 target=True,
             )
 
@@ -1444,7 +1468,7 @@ class Trainer:
     def _init_optimizer(
         self,
         model: DDP,
-        split: int = None,
+        split: Optional[int] = None,
         resume: bool = False,
     ) -> torch.optim.Optimizer:
         """
@@ -1497,7 +1521,8 @@ class Trainer:
             Profiler context manager.
         """
         if self.config.optimization.profiler:
-            from clinicadl.utils.maps_manager.cluster.profiler import (
+            # TODO: no more profiler ????
+            from clinicadl.utils.cluster.profiler import (
                 ProfilerActivity,
                 profile,
                 schedule,
@@ -1543,7 +1568,7 @@ class Trainer:
         state: Dict[str, Any],
         metrics_dict: Optional[Dict[str, bool]],
         split: int,
-        network: int = None,
+        network: Optional[int] = None,
         filename: str = "checkpoint.pth.tar",
         save_all_models: bool = False,
     ) -> None:
