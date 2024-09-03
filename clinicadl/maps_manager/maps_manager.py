@@ -14,6 +14,7 @@ from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
+from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
@@ -77,7 +78,9 @@ class MapsManager:
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
             # from clinicadl.trainer.task_manager import TaskConfig
-
+            self.metrics_module = MetricModule(
+                self.evaluation_metrics, n_classes=self.n_classes
+            )
             self.parameters = add_default_values(test_parameters)
 
             ## to initialize the task parameters
@@ -434,6 +437,9 @@ class MapsManager:
         self.network_task = Task(self.parameters["network_task"])
         # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
         # self.task_manager = self._init_task_manager(df=train_df)
+        self.metrics_module = MetricModule(
+            self.evaluation_metrics, n_classes=self.n_classes
+        )
 
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = get_default_network(self.network_task)
