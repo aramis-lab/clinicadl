@@ -24,27 +24,25 @@ logger = getLogger("clinicadl.metric")
 
 
 class MetricModule:
-    def __init__(self, metrics: List[str], n_classes: int = 2):
+    def __init__(self, metrics, n_classes=2):
         self.n_classes = n_classes
-        self.metrics = self._initialize_metrics(metrics)
 
-    def _initialize_metrics(self, metrics: List[str]) -> Dict[str, Callable]:
-        """Initialize the metrics dictionary with the appropriate functions."""
-        metric_methods = {
-            method_name[8:]: getattr(self, method_name)
-            for method_name in dir(self)
-            if method_name.startswith("compute_")
-        }
-
-        initialized_metrics = {}
+        # Check if wanted metrics are implemented
+        list_fn = [
+            method_name
+            for method_name in dir(MetricModule)
+            if callable(getattr(MetricModule, method_name))
+        ]
+        self.metrics = dict()
         for metric in metrics:
-            if metric.lower() in metric_methods:
-                initialized_metrics[metric] = metric_methods[metric.lower()]
+            if f"compute_{metric.lower()}" in list_fn:
+                self.metrics[metric] = getattr(
+                    MetricModule, f"compute_{metric.lower()}"
+                )
             else:
                 raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module."
                 )
-        return initialized_metrics
 
     def apply(
         self, y_: List[float], y_pred_: List[float], report_ci: bool
