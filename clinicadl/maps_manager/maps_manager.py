@@ -82,6 +82,9 @@ class MapsManager:
             self.parameters = add_default_values(test_parameters)
 
             ## to initialize the task parameters
+            self.n_classes = output_size(self.network_task, None, self.df, self.label)
+            # self.n_classes = n_classes
+            # self.metrics_module = MetricModule(self.evaluation_metrics, n_classes=n_classes)
             self.metrics_module = MetricModule(
                 evaluation_metrics(network_task=self.network_task),
                 n_classes=self.n_classes,
@@ -440,8 +443,13 @@ class MapsManager:
         # self.task_manager = self._init_task_manager(df=train_df)
         if self.network_task == Task.CLASSIFICATION:
             self.n_classes = output_size(self.network_task, None, train_df, self.label)
-        # self.metrics_module = MetricModule(evaluation_metrics(self.network_task))
+        else:
+            self.n_classes = None
 
+        self.metrics_module = MetricModule(
+            evaluation_metrics(network_task=self.network_task),
+            n_classes=self.n_classes,
+        )
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = get_default_network(self.network_task)
         if "selection_threshold" not in self.parameters:
