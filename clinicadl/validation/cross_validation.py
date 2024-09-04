@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
-from clinicadl.maps_manager.maps_manager import MapsManager
+# from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.splitter.split_utils import find_splits
 
 logger = getLogger("clinicadl.cross_validation_config")
@@ -32,7 +32,9 @@ class CrossValidationConfig(
             return tuple(v)
         return v  # TODO : check that split exists (and check coherence with n_splits)
 
-    def adapt_cross_val_with_maps_manager_info(self, maps_manager: MapsManager):
+    def adapt_cross_val_with_maps_manager_info(
+        self, maps_manager
+    ):  # maps_manager is of type MapsManager but need to be in a MapsConfig type in the future
         # TEMPORARY
         if not self.split:
             self.split = find_splits(maps_manager.maps_path, maps_manager.split_name)
