@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
@@ -350,7 +350,7 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.std_amp):
+                with autocast("cuda", enabled=self.std_amp):
                     output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]

@@ -12,7 +12,7 @@ from pydantic import (
     model_validator,
 )
 from torch import Tensor, nn
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torch.nn.functional import softmax
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler, sampler
@@ -240,7 +240,7 @@ def test(
     with torch.no_grad():
         for i, data in enumerate(dataloader):
             # initialize the loss list to save the loss components
-            with autocast(enabled=amp):
+            with autocast("cuda", enabled=amp):
                 outputs, loss_dict = model(data, criterion, use_labels=use_labels)
 
             if i == 0:

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -509,7 +509,7 @@ class PredictManager:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                with autocast(enabled=self.maps_manager.std_amp):
+                with autocast("cuda", enabled=self.maps_manager.std_amp):
                     _, latent, _ = model.module._forward(
                         image.unsqueeze(0).to(model.device)
                     )
@@ -583,7 +583,7 @@ class PredictManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.maps_manager.std_amp):
+                with autocast("cuda", enabled=self.maps_manager.std_amp):
                     output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
