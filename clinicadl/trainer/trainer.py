@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.trainer.config.train import TrainConfig
 
-from clinicadl.trainer.task_manager import (
+from clinicadl.trainer.tasks_utils import (
     evaluation_metrics,
     generate_sampler,
     get_criterion,
@@ -804,7 +805,7 @@ class Trainer:
             selection_metrics=list(self.config.validation.selection_metrics)
         )
 
-        scaler = GradScaler(enabled=self.maps_manager.std_amp)
+        scaler = GradScaler("cuda", enabled=self.config.computational.amp)
         profiler = self._init_profiler()
 
         if self.config.callbacks.track_exp == "wandb":
@@ -817,9 +818,6 @@ class Trainer:
             scheduler = ReduceLROnPlateau(
                 optimizer, mode="min", factor=0.1, verbose=True
             )
-
-        scaler = GradScaler(enabled=self.config.computational.amp)
-        profiler = self._init_profiler()
 
         while epoch < self.config.optimization.epochs and not early_stopping.step(
             metrics_valid["loss"]
@@ -842,7 +840,7 @@ class Trainer:
                     ) % self.config.optimization.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
-                        with autocast(enabled=self.maps_manager.std_amp):
+                        with autocast("cuda", enabled=self.maps_manager.std_amp):
                             _, loss_dict = model(data, criterion)
                         logger.debug(f"Train loss dictionary {loss_dict}")
                         loss = loss_dict["loss"]

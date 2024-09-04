@@ -20,7 +20,7 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.predict.utils import get_prediction
-from clinicadl.trainer.task_manager import (
+from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
     generate_label_code,
@@ -433,7 +433,7 @@ class MapsManager:
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
-        from clinicadl.trainer.task_manager import (
+        from clinicadl.trainer.tasks_utils import (
             get_default_network,
         )
         from clinicadl.utils.enum import Task
