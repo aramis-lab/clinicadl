@@ -56,6 +56,8 @@ class ValidationConfig(BaseValidationConfig):
     def list_to_tuples(cls, v):
         if isinstance(v, list):
             return tuple(v)
+        if "loss" not in v:
+            v.add("loss")
         return v
 
 
