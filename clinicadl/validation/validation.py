@@ -16,7 +16,7 @@ class ValidationConfig(BaseModel):
     """
 
     evaluation_steps: NonNegativeInt = 0
-    selection_metrics: Tuple[str, ...] = ("loss",)
+    selection_metrics: Tuple[str, ...] = ()
     valid_longitudinal: bool = False
     skip_leak_check: bool = False
     # pydantic config
@@ -26,6 +26,4 @@ class ValidationConfig(BaseModel):
     def list_to_tuples(cls, v):
         if isinstance(v, list):
             return tuple(v)
-        if "loss" not in v:
-            v.add("loss")
         return v

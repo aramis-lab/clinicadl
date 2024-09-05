@@ -37,15 +37,12 @@ class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
 class ValidationConfig(BaseValidationConfig):
     """Config class for the validation procedure in reconstruction mode."""
 
-    # selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
-    selection_metrics: Tuple[Union[ReconstructionMetric, str], ...] = ("loss",)
+    selection_metrics: Tuple[ReconstructionMetric, ...] = (ReconstructionMetric.LOSS,)
 
     @field_validator("selection_metrics", mode="before")
     def list_to_tuples(cls, v):
         if isinstance(v, list):
             return tuple(v)
-        if "loss" not in v:
-            v.add("loss")
         return v
 
 
