@@ -82,13 +82,32 @@ class MapsManager:
             self.parameters = add_default_values(test_parameters)
 
             ## to initialize the task parameters
-            self.n_classes = output_size(self.network_task, None, self.df, self.label)
-            # self.n_classes = n_classes
-            # self.metrics_module = MetricModule(self.evaluation_metrics, n_classes=n_classes)
-            self.metrics_module = MetricModule(
-                evaluation_metrics(network_task=self.network_task),
-                n_classes=self.n_classes,
-            )
+
+            # self.task_manager = self._init_task_manager()
+
+            self.n_classes = self.output_size
+            if self.network_task == "classification":
+                if self.n_classes is None:
+                    self.n_classes = output_size(
+                        self.network_task, None, self.df, self.label
+                    )
+                self.metrics_module = MetricModule(
+                    evaluation_metrics(self.network_task), n_classes=self.n_classes
+                )
+
+            elif (
+                self.network_task == "regression"
+                or self.network_task == "reconstruction"
+            ):
+                self.metrics_module = MetricModule(
+                    evaluation_metrics(self.network_task), n_classes=None
+                )
+
+            else:
+                raise NotImplementedError(
+                    f"Task {self.network_task} is not implemented in ClinicaDL. "
+                    f"Please choose between classification, regression and reconstruction."
+                )
 
             self.split_name = (
                 self._check_split_wording()
@@ -441,16 +460,22 @@ class MapsManager:
         self.network_task = Task(self.parameters["network_task"])
         # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
         # self.task_manager = self._init_task_manager(df=train_df)
-        if self.network_task == Task.CLASSIFICATION:
+        if self.network_task == "classification":
             self.n_classes = output_size(self.network_task, None, train_df, self.label)
+            self.metrics_module = MetricModule(
+                evaluation_metrics(self.network_task), n_classes=self.n_classes
+            )
+
+        elif self.network_task == "regression" or self.network_task == "reconstruction":
+            self.metrics_module = MetricModule(
+                evaluation_metrics(self.network_task), n_classes=None
+            )
+
         else:
-            self.n_classes = None
-        print(self.network_task)
-        print(evaluation_metrics(network_task=self.network_task))
-        self.metrics_module = MetricModule(
-            evaluation_metrics(network_task=self.network_task),
-            n_classes=self.n_classes,
-        )
+            raise NotImplementedError(
+                f"Task {self.network_task} is not implemented in ClinicaDL. "
+                f"Please choose between classification, regression and reconstruction."
+            )
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = get_default_network(self.network_task)
         if "selection_threshold" not in self.parameters:

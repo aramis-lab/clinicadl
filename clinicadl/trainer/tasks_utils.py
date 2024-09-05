@@ -142,9 +142,9 @@ def get_criterion(
 
 def output_size(
     network_task: Union[str, Task],
-    input_size: Optional[Sequence[int]],
-    df: pd.DataFrame,
-    label: str,
+    input_size: Optional[Sequence[int]] = None,
+    df: Optional[pd.DataFrame] = None,
+    label: Optional[str] = None,
 ) -> Union[int, Sequence[int]]:
     """
     Computes the output_size needed to perform the task.
