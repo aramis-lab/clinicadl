@@ -445,7 +445,8 @@ class MapsManager:
             self.n_classes = output_size(self.network_task, None, train_df, self.label)
         else:
             self.n_classes = None
-
+        print(self.network_task)
+        print(evaluation_metrics(network_task=self.network_task))
         self.metrics_module = MetricModule(
             evaluation_metrics(network_task=self.network_task),
             n_classes=self.n_classes,

@@ -192,11 +192,19 @@ def evaluation_metrics(network_task: Union[str, Task]):
     """
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION:
-        return [e.value for e in ClassificationMetric].remove("loss")
+        x = [e.value for e in ClassificationMetric]
+        x.remove("loss")
+        return x
     elif network_task == Task.REGRESSION:
-        return [e.value for e in RegressionMetric].remove("loss")
+        x = [e.value for e in RegressionMetric]
+        x.remove("loss")
+        return x
     elif network_task == Task.RECONSTRUCTION:
-        return [e.value for e in ReconstructionMetric].remove("loss")
+        x = [e.value for e in ReconstructionMetric]
+        x.remove("loss")
+        return x
+    else:
+        raise ValueError("Unknown network task")
 
 
 def test(

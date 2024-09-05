@@ -33,6 +33,7 @@ class MetricModule:
             for method_name in dir(MetricModule)
             if callable(getattr(MetricModule, method_name))
         ]
+        print(metrics)
         self.metrics = dict()
         for metric in metrics:
             if f"compute_{metric.lower()}" in list_fn:
