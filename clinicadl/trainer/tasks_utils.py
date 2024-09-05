@@ -192,11 +192,11 @@ def evaluation_metrics(network_task: Union[str, Task]):
     """
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION:
-        return [e.value for e in ClassificationMetric]
+        return [e.value for e in ClassificationMetric].remove("loss")
     elif network_task == Task.REGRESSION:
-        return [e.value for e in RegressionMetric]
+        return [e.value for e in RegressionMetric].remove("loss")
     elif network_task == Task.RECONSTRUCTION:
-        return [e.value for e in ReconstructionMetric]
+        return [e.value for e in ReconstructionMetric].remove("loss")
 
 
 def test(
