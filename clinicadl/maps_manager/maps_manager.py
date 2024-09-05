@@ -467,6 +467,7 @@ class MapsManager:
             )
 
         elif self.network_task == "regression" or self.network_task == "reconstruction":
+            self.n_classes = None
             self.metrics_module = MetricModule(
                 evaluation_metrics(self.network_task), n_classes=None
             )
