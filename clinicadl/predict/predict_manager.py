@@ -1066,7 +1066,8 @@ class PredictManager:
             )
         if participant_id is None and session_id is None:
             map_pt = torch.load(
-                map_dir / f"mean_{self.maps_manager.mode}-{mode_id}_map.pt"
+                map_dir / f"mean_{self.maps_manager.mode}-{mode_id}_map.pt",
+                weights_only=True,
             )
         elif participant_id is None or session_id is None:
             raise ValueError(
@@ -1077,6 +1078,7 @@ class PredictManager:
         else:
             map_pt = torch.load(
                 map_dir
-                / f"{participant_id}_{session_id}_{self.maps_manager.mode}-{mode_id}_map.pt"
+                / f"{participant_id}_{session_id}_{self.maps_manager.mode}-{mode_id}_map.pt",
+                weights_only=True,
             )
         return map_pt
