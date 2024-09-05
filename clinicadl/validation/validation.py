@@ -16,7 +16,7 @@ class ValidationConfig(BaseModel):
     """
 
     evaluation_steps: NonNegativeInt = 0
-    selection_metrics: Tuple[str, ...] = ()
+    selection_metrics: Tuple[str, ...] = ("loss",)
     valid_longitudinal: bool = False
     skip_leak_check: bool = False
     # pydantic config
