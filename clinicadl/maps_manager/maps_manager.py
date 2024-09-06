@@ -914,7 +914,9 @@ class MapsManager:
                 / "tmp"
                 / "checkpoint.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path, map_location=device)
+            checkpoint_state = torch.load(
+                checkpoint_path, map_location=device, weights_only=True
+            )
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path:
@@ -1129,7 +1131,7 @@ class MapsManager:
             f"selected according to best validation {selection_metric} "
             f"at path {model_path}."
         )
-        return torch.load(model_path, map_location=map_location)
+        return torch.load(model_path, map_location=map_location, weights_only=True)
 
     @property
     def std_amp(self) -> bool:

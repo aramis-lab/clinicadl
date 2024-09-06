@@ -1504,7 +1504,9 @@ class Trainer:
                 / "tmp"
                 / "optimizer.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
+            checkpoint_state = torch.load(
+                checkpoint_path, map_location=model.device, weights_only=True
+            )
             model.load_optim_state_dict(optimizer, checkpoint_state["optimizer"])
 
         return optimizer

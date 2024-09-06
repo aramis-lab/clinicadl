@@ -111,7 +111,7 @@ def quality_check(
 
     # Load QC model
     logger.debug("Loading quality check model.")
-    model.load_state_dict(torch.load(model_file))
+    model.load_state_dict(torch.load(model_file, weights_only=True))
     model.eval()
     if computational_config.gpu:
         logger.debug("Working on GPU.")

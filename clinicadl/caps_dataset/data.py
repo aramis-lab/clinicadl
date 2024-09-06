@@ -226,7 +226,7 @@ class CapsDataset(Dataset):
 
         try:
             image_path = self._get_image_path(participant_id, session_id, cohort)
-            image = torch.load(image_path)
+            image = torch.load(image_path, weights_only=True)
         except IndexError:
             file_type = self.config.extraction.file_type
             results = clinicadl_file_reader(
@@ -316,7 +316,7 @@ class CapsDatasetImage(CapsDataset):
         participant, session, cohort, _, label, domain = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
-        image = torch.load(image_path)
+        image = torch.load(image_path, weights_only=True)
 
         train_trf, trf = self.config.transforms.get_transforms()
 
@@ -385,10 +385,12 @@ class CapsDatasetPatch(CapsDataset):
                 self.config.extraction.stride_size,
                 patch_idx,
             )
-            patch_tensor = torch.load(Path(patch_dir).resolve() / patch_filename)
+            patch_tensor = torch.load(
+                Path(patch_dir).resolve() / patch_filename, weights_only=True
+            )
 
         else:
-            image = torch.load(image_path)
+            image = torch.load(image_path, weights_only=True)
             patch_tensor = extract_patch_tensor(
                 image,
                 self.config.extraction.patch_size,
@@ -504,10 +506,10 @@ class CapsDatasetRoi(CapsDataset):
             roi_filename = extract_roi_path(
                 image_path, mask_path, self.config.extraction.roi_uncrop_output
             )
-            roi_tensor = torch.load(Path(roi_dir) / roi_filename)
+            roi_tensor = torch.load(Path(roi_dir) / roi_filename, weights_only=True)
 
         else:
-            image = torch.load(image_path)
+            image = torch.load(image_path, weights_only=True)
             mask_array = self.mask_arrays[roi_idx]
             roi_tensor = extract_roi_tensor(
                 image, mask_array, self.config.extraction.uncropped_roi
@@ -653,11 +655,13 @@ class CapsDatasetSlice(CapsDataset):
                 self.config.extraction.slice_mode,
                 slice_idx,
             )
-            slice_tensor = torch.load(Path(slice_dir) / slice_filename)
+            slice_tensor = torch.load(
+                Path(slice_dir) / slice_filename, weights_only=True
+            )
 
         else:
             image_path = self._get_image_path(participant, session, cohort)
-            image = torch.load(image_path)
+            image = torch.load(image_path, weights_only=True)
             slice_tensor = extract_slice_tensor(
                 image,
                 self.config.extraction.slice_direction,
