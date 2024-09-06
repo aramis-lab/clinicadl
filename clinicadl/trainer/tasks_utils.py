@@ -564,7 +564,7 @@ def ensemble_prediction(
     validation_df: pd.DataFrame,
     selection_threshold: Optional[float] = None,
     use_labels: bool = True,
-    method: str = "soft",
+    method: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, float]]:
     """
     Compute the results at the image-level by assembling the results on parts of the image.
@@ -583,97 +583,188 @@ def ensemble_prediction(
         the results and metrics on the image level
     """
 
-    def check_prediction(row):
-        return int(row["true_label"] == row["predicted_label"])
-
-    def calculate_weights_classification(method: str) -> pd.Series:
-        if method == "soft":
-            # Compute the sub-level accuracies on the validation set:
-            validation_df["accurate_prediction"] = validation_df.apply(
-                lambda x: check_prediction(x), axis=1
-            )
-            sub_level_accuracies = validation_df.groupby(f"{mode}_id")[
-                "accurate_prediction"
-            ].mean()
-
-            if selection_threshold is not None:
-                sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
-            return sub_level_accuracies / sub_level_accuracies.sum()
-
-        elif method == "hard":
-            n_modes = validation_df[f"{mode}_id"].nunique()
-            return pd.Series(np.ones((n_modes, 1)))
-
-        else:
-            raise NotImplementedError(
-                f"Ensemble method {method} was not implemented. "
-                f"Please choose in ['hard', 'soft']."
-            )
-
-    def calculate_weights_regression(method: str) -> np.ndarray:
-        if method != "hard":
-            raise NotImplementedError(
-                f"The only method implemented for regression is hard-voting."
-            )
-        n_modes = validation_df[f"{mode}_id"].nunique()
-        return np.ones(n_modes)
-
-    def create_final_dataframe(
-        subject_df: pd.DataFrame,
-        weight_series: pd.Series,
-        label: int,
-        is_classification: bool,
-    ) -> pd.DataFrame:
-        if is_classification:
-            proba_list = [
-                np.average(subject_df[f"proba{i}"], weights=weight_series)
-                for i in range(n_classes)
-            ]
-            prediction = proba_list.index(max(proba_list))
-            row = [[subject, session, 0, label, prediction] + proba_list]
-        else:
-            prediction = np.average(
-                subject_df["predicted_label"], weights=weight_series
-            )
-            row = [[subject, session, 0, label, prediction]]
-        return pd.DataFrame(row, columns=columns(network_task, mode, n_classes))
-
-    network_task = Task(network_task)
-    df_final = pd.DataFrame(columns=columns(network_task, mode, n_classes))
-
     if network_task == Task.CLASSIFICATION:
-        weight_series = calculate_weights_classification(method)
+        if method is None:
+            method = "soft"
+        return ensemble_prediction_classification(
+            network_task,
+            mode,
+            metrics_module,
+            n_classes,
+            performance_df,
+            validation_df,
+            selection_threshold,
+            use_labels,
+            method,
+        )
     elif network_task == Task.REGRESSION:
-        weight_series = calculate_weights_regression(method)
+        if method is None:
+            method = "hard"
+        return ensemble_prediction_regression(
+            network_task,
+            mode,
+            metrics_module,
+            n_classes,
+            performance_df,
+            validation_df,
+            selection_threshold,
+            use_labels,
+            method,
+        )
     elif network_task == Task.RECONSTRUCTION:
         return None, None
 
+
+def ensemble_prediction_regression(
+    network_task,
+    mode: str,
+    metrics_module: MetricModule,
+    n_classes: int,
+    performance_df,
+    validation_df,
+    selection_threshold=None,
+    use_labels=True,
+    method="hard",
+):
+    """
+    Compute the results at the image-level by assembling the results on parts of the image.
+
+    Args:
+        performance_df (pd.DataFrame): results that need to be assembled.
+        validation_df (pd.DataFrame): results on the validation set used to compute the performance
+            of each separate part of the image.
+        selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
+            if their associated performance is too low.
+        use_labels (bool): If True, metrics are computed and the label column values must be different
+            from None.
+        method (str): method to assemble the results. Current implementation proposes only hard-voting.
+
+    Returns:
+        df_final (pd.DataFrame) the results on the image level
+        results (Dict[str, float]) the metrics on the image level
+    """
+
+    if method != "hard":
+        raise NotImplementedError(
+            f"You asked for {method} ensemble method. "
+            f"The only method implemented for regression is hard-voting."
+        )
+
+    n_modes = validation_df[f"{mode}_id"].nunique()
+    weight_series = np.ones(n_modes)
+
+    # Sort to allow weighted average computation
+    performance_df.sort_values(
+        ["participant_id", "session_id", f"{mode}_id"], inplace=True
+    )
+
+    # Soft majority vote
+    df_final = pd.DataFrame(columns=columns(network_task, mode, n_classes))
+    for (subject, session), subject_df in performance_df.groupby(
+        ["participant_id", "session_id"]
+    ):
+        label = subject_df["true_label"].unique().item()
+        prediction = np.average(subject_df["predicted_label"], weights=weight_series)
+        row = [[subject, session, 0, label, prediction]]
+        row_df = pd.DataFrame(row, columns=columns(network_task, mode, n_classes))
+        df_final = pd.concat([df_final, row_df])
+
+    if use_labels:
+        results = compute_metrics(
+            network_task, df_final, metrics_module, report_ci=False
+        )
+    else:
+        results = None
+
+    return df_final, results
+
+
+def ensemble_prediction_classification(
+    network_task,
+    mode: str,
+    metrics_module: MetricModule,
+    n_classes: int,
+    performance_df,
+    validation_df,
+    selection_threshold=None,
+    use_labels=True,
+    method="soft",
+):
+    """
+    Computes hard or soft voting based on the probabilities in performance_df. Weights are computed based
+    on the balanced accuracies of validation_df.
+
+    ref: S. Raschka. Python Machine Learning., 2015
+
+    Args:
+        performance_df (pd.DataFrame): Results that need to be assembled.
+        validation_df (pd.DataFrame): Results on the validation set used to compute the performance
+            of each separate part of the image.
+        selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
+            if their associated performance is too low.
+        use_labels (bool): If True, metrics are computed and the label column values must be different
+            from None.
+        method (str): method to assemble the results. Current implementation proposes soft or hard-voting.
+
+    Returns:
+        df_final (pd.DataFrame) the results on the image level
+        results (Dict[str, float]) the metrics on the image level
+    """
+
+    def check_prediction(row):
+        if row["true_label"] == row["predicted_label"]:
+            return 1
+        else:
+            return 0
+
+    if method == "soft":
+        # Compute the sub-level accuracies on the validation set:
+        validation_df["accurate_prediction"] = validation_df.apply(
+            lambda x: check_prediction(x), axis=1
+        )
+        sub_level_accuracies = validation_df.groupby(f"{mode}_id")[
+            "accurate_prediction"
+        ].mean()
+        if selection_threshold is not None:
+            sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
+        weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+    elif method == "hard":
+        n_modes = validation_df[f"{mode}_id"].nunique()
+        weight_series = pd.DataFrame(np.ones((n_modes, 1)))
+    else:
+        raise NotImplementedError(
+            f"Ensemble method {method} was not implemented. "
+            f"Please choose in ['hard', 'soft']."
+        )
+
+    # Sort to allow weighted average computation
     performance_df.sort_values(
         ["participant_id", "session_id", f"{mode}_id"], inplace=True
     )
     weight_series.sort_index(inplace=True)
 
+    # Soft majority vote
+    df_final = pd.DataFrame(columns=columns(network_task, mode, n_classes))
     for (subject, session), subject_df in performance_df.groupby(
         ["participant_id", "session_id"]
     ):
         label = subject_df["true_label"].unique().item()
-        df_final = pd.concat(
-            [
-                df_final,
-                create_final_dataframe(
-                    subject_df,
-                    weight_series,
-                    label,
-                    network_task == Task.CLASSIFICATION,
-                ),
-            ]
-        )
+        proba_list = [
+            np.average(subject_df[f"proba{i}"], weights=weight_series)
+            for i in range(n_classes)
+        ]
+        prediction = proba_list.index(max(proba_list))
+        row = [[subject, session, 0, label, prediction] + proba_list]
+        row_df = pd.DataFrame(row, columns=columns(network_task, mode, n_classes))
+        df_final = pd.concat([df_final, row_df])
 
-    results = (
-        compute_metrics(network_task, df_final, metrics_module, report_ci=False)
-        if use_labels
-        else None
-    )
+    if use_labels:
+        results = compute_metrics(
+            network_task, df_final, metrics_module, report_ci=False
+        )
+    else:
+        results = None
+
     return df_final, results
 
 
@@ -793,10 +884,10 @@ def generate_sampler(
 
 #     @model_validator(mode="after")
 #     def model_validator(self):
-#         if self.n_classes is None:
-#             n_classes = output_size(Task.CLASSIFICATION, None, self.df, self.label)
-#         self.n_classes = n_classes
+#         if n_classes is None:
+#             n_classes = output_size(Task.CLASSIFICATION, None, df, label)
+#         n_classes = n_classes
 
-#         self.metrics_module = MetricModule(
-#             evaluation_metrics(self.network_task), n_classes=self.n_classes
+#         metrics_module = MetricModule(
+#             evaluation_metrics(network_task), n_classes=n_classes
 #         )
