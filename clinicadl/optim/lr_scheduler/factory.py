@@ -49,6 +49,11 @@ def get_lr_scheduler(
             config_dict_["min_lr"].append(
                 config_dict["min_lr"]["ELSE"]
             )  # ELSE must be the last group
+        else:
+            default_min_lr = get_args_and_defaults(scheduler_class.__init__)[1][
+                "min_lr"
+            ]
+            config_dict_["min_lr"].append(default_min_lr)
     scheduler = scheduler_class(optimizer, **config_dict_)
 
     updated_config = LRSchedulerConfig(scheduler=config.scheduler, **config_dict)

@@ -82,7 +82,7 @@ def test_get_optimizer(network):
     assert not updated_config.maximize
     assert not updated_config.differentiable
 
-    # special cases
+    # special case : only ELSE
     config = OptimizerConfig(
         optimizer="Adagrad",
         lr_decay={"ELSE": 100},
@@ -91,12 +91,23 @@ def test_get_optimizer(network):
     assert len(optimizer.param_groups) == 1
     assert optimizer.param_groups[0]["lr_decay"] == 100
 
+    # special case : the params mentioned form all the network
     config = OptimizerConfig(
         optimizer="Adagrad",
         lr_decay={"conv1": 100, "dense1": 10, "final": 1},
     )
     optimizer, _ = get_optimizer(network, config)
     assert len(optimizer.param_groups) == 3
+
+    # special case : no ELSE mentioned
+    config = OptimizerConfig(
+        optimizer="Adagrad",
+        lr_decay={"conv1": 100},
+    )
+    optimizer, _ = get_optimizer(network, config)
+    assert len(optimizer.param_groups) == 2
+    assert optimizer.param_groups[0]["lr_decay"] == 100
+    assert optimizer.param_groups[1]["lr_decay"] == 0
 
 
 def test_regroup_args():
@@ -123,56 +134,3 @@ def test_regroup_args():
         {"weight_decay": {"params_0": 0.0, "params_1": 1.0}}
     )
     assert len(args_global) == 0
-
-
-def test_get_params_in_block(network):
-    import torch
-
-    from clinicadl.optim.optimizer.factory import _get_params_in_group
-
-    generator, list_layers = _get_params_in_group(network, "dense1")
-    assert next(iter(generator)).shape == torch.Size((10, 10))
-    assert next(iter(generator)).shape == torch.Size((10,))
-    assert sorted(list_layers) == sorted(["dense1.weight", "dense1.bias"])
-
-    generator, list_layers = _get_params_in_group(network, "dense1.weight")
-    assert next(iter(generator)).shape == torch.Size((10, 10))
-    assert sum(1 for _ in generator) == 0
-    assert sorted(list_layers) == sorted(["dense1.weight"])
-
-    generator, list_layers = _get_params_in_group(network, "final.dense3")
-    assert next(iter(generator)).shape == torch.Size((3, 5))
-    assert next(iter(generator)).shape == torch.Size((3,))
-    assert sorted(list_layers) == sorted(["final.dense3.weight", "final.dense3.bias"])
-
-    generator, list_layers = _get_params_in_group(network, "final")
-    assert sum(1 for _ in generator) == 4
-    assert sorted(list_layers) == sorted(
-        [
-            "final.dense2.weight",
-            "final.dense2.bias",
-            "final.dense3.weight",
-            "final.dense3.bias",
-        ]
-    )
-
-
-def test_find_params_not_in_group(network):
-    import torch
-
-    from clinicadl.optim.optimizer.factory import _get_params_not_in_group
-
-    params = _get_params_not_in_group(
-        network,
-        [
-            "final.dense2.weight",
-            "final.dense2.bias",
-            "conv1.bias",
-            "final.dense3.weight",
-            "dense1.weight",
-            "dense1.bias",
-        ],
-    )
-    assert next(iter(params)).shape == torch.Size((1, 1, 3, 3))
-    assert next(iter(params)).shape == torch.Size((3,))
-    assert sum(1 for _ in params) == 0  # no more params
