@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Tuple
+from typing import Tuple, Union
 
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 

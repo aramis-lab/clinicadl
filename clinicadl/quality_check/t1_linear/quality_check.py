@@ -8,7 +8,7 @@ from typing import Optional
 
 import pandas as pd
 import torch
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
@@ -111,7 +111,7 @@ def quality_check(
 
     # Load QC model
     logger.debug("Loading quality check model.")
-    model.load_state_dict(torch.load(model_file))
+    model.load_state_dict(torch.load(model_file, weights_only=True))
     model.eval()
     if computational_config.gpu:
         logger.debug("Working on GPU.")
@@ -153,7 +153,7 @@ def quality_check(
             inputs = data["image"]
             if computational_config.gpu:
                 inputs = inputs.cuda()
-            with autocast(enabled=computational_config.amp):
+            with autocast("cuda", enabled=computational_config.amp):
                 outputs = softmax(model(inputs))
             # We cast back to 32bits. It should be a no-op as softmax is not eligible
             # to fp16 and autocast is forbidden on CPU (output would be bf16 otherwise).

@@ -83,7 +83,7 @@ class QCDataset(Dataset):
             )
 
             image_path = image_dir / image_filename
-            image = torch.load(image_path)
+            image = torch.load(image_path, weights_only=True)
             image = self.pt_transform(image)
         else:
             image_path = clinicadl_file_reader(

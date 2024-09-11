@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -37,6 +38,14 @@ if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
     from clinicadl.trainer.config.train import TrainConfig
 
+from clinicadl.trainer.tasks_utils import (
+    evaluation_metrics,
+    generate_sampler,
+    get_criterion,
+    save_outputs,
+    test,
+    test_da,
+)
 
 logger = getLogger("clinicadl.trainer")
 
@@ -319,7 +328,8 @@ class Trainer:
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
             )
-            train_sampler = self.maps_manager.task_manager.generate_sampler(
+            train_sampler = generate_sampler(
+                self.maps_manager.network_task,
                 data_train,
                 self.config.dataloader.sampler,
                 dp_degree=cluster.world_size,
@@ -444,7 +454,8 @@ class Trainer:
                     cnn_index=network,
                 )
 
-                train_sampler = self.maps_manager.task_manager.generate_sampler(
+                train_sampler = generate_sampler(
+                    self.maps_manager.network_task,
                     data_train,
                     self.config.dataloader.sampler,
                     dp_degree=cluster.world_size,
@@ -589,8 +600,10 @@ class Trainer:
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
             )
-            train_source_sampler = self.maps_manager.task_manager.generate_sampler(
-                data_train_source, self.config.dataloader.sampler
+            train_source_sampler = generate_sampler(
+                self.maps_manager.network_task,
+                data_train_source,
+                self.config.dataloader.sampler,
             )
 
             logger.info(
@@ -711,7 +724,7 @@ class Trainer:
         train_loader: DataLoader,
         valid_loader: DataLoader,
         split: int,
-        network: int = None,
+        network: Optional[int] = None,
         resume: bool = False,
         callbacks: List[Callback] = [],
     ):
@@ -751,7 +764,9 @@ class Trainer:
             fsdp=self.config.computational.fully_sharded_data_parallel,
             amp=self.config.computational.amp,
         )
-        criterion = self.maps_manager.task_manager.get_criterion(self.config.model.loss)
+        criterion = get_criterion(
+            self.maps_manager.network_task, self.config.model.loss
+        )
 
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         self.callback_handler.on_train_begin(
@@ -775,7 +790,7 @@ class Trainer:
         if cluster.master:
             log_writer = LogWriter(
                 self.maps_manager.maps_path,
-                self.maps_manager.task_manager.evaluation_metrics + ["loss"],
+                evaluation_metrics(self.maps_manager.network_task) + ["loss"],
                 split,
                 resume=resume,
                 beginning_epoch=beginning_epoch,
@@ -790,7 +805,7 @@ class Trainer:
             selection_metrics=list(self.config.validation.selection_metrics)
         )
 
-        scaler = GradScaler(enabled=self.maps_manager.std_amp)
+        scaler = GradScaler("cuda", enabled=self.config.computational.amp)
         profiler = self._init_profiler()
 
         if self.config.callbacks.track_exp == "wandb":
@@ -803,9 +818,6 @@ class Trainer:
             scheduler = ReduceLROnPlateau(
                 optimizer, mode="min", factor=0.1, verbose=True
             )
-
-        scaler = GradScaler(enabled=self.config.computational.amp)
-        profiler = self._init_profiler()
 
         while epoch < self.config.optimization.epochs and not early_stopping.step(
             metrics_valid["loss"]
@@ -828,7 +840,7 @@ class Trainer:
                     ) % self.config.optimization.accumulation_steps == 0
                     sync = nullcontext() if update else model.no_sync()
                     with sync:
-                        with autocast(enabled=self.maps_manager.std_amp):
+                        with autocast("cuda", enabled=self.maps_manager.std_amp):
                             _, loss_dict = model(data, criterion)
                         logger.debug(f"Train loss dictionary {loss_dict}")
                         loss = loss_dict["loss"]
@@ -849,16 +861,24 @@ class Trainer:
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = self.maps_manager.task_manager.test(
-                                model,
-                                train_loader,
-                                criterion,
+                            _, metrics_train = test(
+                                mode=self.maps_manager.mode,
+                                metrics_module=self.maps_manager.metrics_module,
+                                n_classes=self.maps_manager.n_classes,
+                                network_task=self.maps_manager.network_task,
+                                model=model,
+                                dataloader=train_loader,
+                                criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
-                            _, metrics_valid = self.maps_manager.task_manager.test(
-                                model,
-                                valid_loader,
-                                criterion,
+                            _, metrics_valid = test(
+                                mode=self.maps_manager.mode,
+                                metrics_module=self.maps_manager.metrics_module,
+                                n_classes=self.maps_manager.n_classes,
+                                network_task=self.maps_manager.network_task,
+                                model=model,
+                                dataloader=valid_loader,
+                                criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
 
@@ -908,11 +928,25 @@ class Trainer:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = self.maps_manager.task_manager.test(
-                    model, train_loader, criterion, amp=self.maps_manager.std_amp
+                _, metrics_train = test(
+                    mode=self.maps_manager.mode,
+                    metrics_module=self.maps_manager.metrics_module,
+                    n_classes=self.maps_manager.n_classes,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=train_loader,
+                    criterion=criterion,
+                    amp=self.maps_manager.std_amp,
                 )
-                _, metrics_valid = self.maps_manager.task_manager.test(
-                    model, valid_loader, criterion, amp=self.maps_manager.std_amp
+                _, metrics_valid = test(
+                    mode=self.maps_manager.mode,
+                    metrics_module=self.maps_manager.metrics_module,
+                    n_classes=self.maps_manager.n_classes,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=valid_loader,
+                    criterion=criterion,
+                    amp=self.maps_manager.std_amp,
                 )
 
                 model.train()
@@ -983,7 +1017,7 @@ class Trainer:
             network=network,
         )
 
-        if self.maps_manager.task_manager.save_outputs:
+        if save_outputs(self.maps_manager.network_task):
             self.maps_manager._compute_output_tensors(
                 train_loader.dataset,
                 "train",
@@ -1051,7 +1085,9 @@ class Trainer:
             transfer_selection=self.config.transfer_learning.transfer_selection_metric,
         )
 
-        criterion = self.maps_manager.task_manager.get_criterion(self.config.model.loss)
+        criterion = get_criterion(
+            self.maps_manager.network_task, self.config.model.loss
+        )
         logger.debug(f"Criterion for {self.config.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
 
@@ -1073,7 +1109,7 @@ class Trainer:
 
         log_writer = LogWriter(
             self.maps_manager.maps_path,
-            self.maps_manager.task_manager.evaluation_metrics + ["loss"],
+            evaluation_metrics(self.maps_manager.network_task) + ["loss"],
             split,
             resume=resume,
             beginning_epoch=beginning_epoch,
@@ -1129,22 +1165,30 @@ class Trainer:
                         (
                             _,
                             metrics_train_target,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model,
-                            train_target_loader,
-                            criterion,
-                            alpha,
+                        ) = test_da(
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=train_target_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                             target=True,
                         )  # TO CHECK
 
                         (
                             _,
                             metrics_valid_target,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model,
-                            valid_loader,
-                            criterion,
-                            alpha,
+                        ) = test_da(
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=valid_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                             target=True,
                         )
 
@@ -1173,14 +1217,28 @@ class Trainer:
                         (
                             _,
                             metrics_train_source,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model, train_source_loader, criterion, alpha
+                        ) = test_da(
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=train_source_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                         )
                         (
                             _,
                             metrics_valid_source,
-                        ) = self.maps_manager.task_manager.test_da(
-                            model, valid_source_loader, criterion, alpha
+                        ) = test_da(
+                            mode=self.maps_manager.mode,
+                            n_classes=self.maps_manager.n_classes,
+                            metrics_module=self.maps_manager.metrics_module,
+                            network_task=self.maps_manager.network_task,
+                            model=model,
+                            dataloader=valid_source_loader,
+                            criterion=criterion,
+                            alpha=alpha,
                         )
 
                         model.train()
@@ -1228,21 +1286,29 @@ class Trainer:
                 logger.info(
                     f"Evaluate source data at the end of the epoch {epoch} with alpha: {alpha}."
                 )
-                _, metrics_train_source = self.maps_manager.task_manager.test_da(
-                    model,
-                    train_source_loader,
-                    criterion,
-                    alpha,
-                    True,
-                    False,
+                _, metrics_train_source = test_da(
+                    mode=self.maps_manager.mode,
+                    n_classes=self.maps_manager.n_classes,
+                    metrics_module=self.maps_manager.metrics_module,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=train_source_loader,
+                    criterion=criterion,
+                    alpha=alpha,
+                    target=True,
+                    report_ci=False,
                 )
-                _, metrics_valid_source = self.maps_manager.task_manager.test_da(
-                    model,
-                    valid_source_loader,
-                    criterion,
-                    alpha,
-                    True,
-                    False,
+                _, metrics_valid_source = test_da(
+                    mode=self.maps_manager.mode,
+                    n_classes=self.maps_manager.n_classes,
+                    metrics_module=self.maps_manager.metrics_module,
+                    network_task=self.maps_manager.network_task,
+                    model=model,
+                    dataloader=valid_source_loader,
+                    criterion=criterion,
+                    alpha=alpha,
+                    target=True,
+                    report_ci=False,
                 )
 
                 log_writer.step(
@@ -1262,18 +1328,26 @@ class Trainer:
                     f"at the end of iteration {i}"
                 )
 
-            _, metrics_train_target = self.maps_manager.task_manager.test_da(
-                model,
-                train_target_loader,
-                criterion,
-                alpha,
+            _, metrics_train_target = test_da(
+                mode=self.maps_manager.mode,
+                n_classes=self.maps_manager.n_classes,
+                metrics_module=self.maps_manager.metrics_module,
+                network_task=self.maps_manager.network_task,
+                model=model,
+                dataloader=train_target_loader,
+                criterion=criterion,
+                alpha=alpha,
                 target=True,
             )
-            _, metrics_valid_target = self.maps_manager.task_manager.test_da(
-                model,
-                valid_loader,
-                criterion,
-                alpha,
+            _, metrics_valid_target = test_da(
+                mode=self.maps_manager.mode,
+                n_classes=self.maps_manager.n_classes,
+                metrics_module=self.maps_manager.metrics_module,
+                network_task=self.maps_manager.network_task,
+                model=model,
+                dataloader=valid_loader,
+                criterion=criterion,
+                alpha=alpha,
                 target=True,
             )
 
@@ -1347,7 +1421,7 @@ class Trainer:
             alpha=0,
         )
 
-        if self.maps_manager.task_manager.save_outputs:
+        if save_outputs(self.maps_manager.network_task):
             self.maps_manager._compute_output_tensors(
                 train_target_loader.dataset,
                 "train",
@@ -1392,7 +1466,7 @@ class Trainer:
     def _init_optimizer(
         self,
         model: DDP,
-        split: int = None,
+        split: Optional[int] = None,
         resume: bool = False,
     ) -> torch.optim.Optimizer:
         """
@@ -1430,7 +1504,9 @@ class Trainer:
                 / "tmp"
                 / "optimizer.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
+            checkpoint_state = torch.load(
+                checkpoint_path, map_location=model.device, weights_only=True
+            )
             model.load_optim_state_dict(optimizer, checkpoint_state["optimizer"])
 
         return optimizer
@@ -1445,7 +1521,8 @@ class Trainer:
             Profiler context manager.
         """
         if self.config.optimization.profiler:
-            from clinicadl.utils.maps_manager.cluster.profiler import (
+            # TODO: no more profiler ????
+            from clinicadl.utils.cluster.profiler import (
                 ProfilerActivity,
                 profile,
                 schedule,
@@ -1491,7 +1568,7 @@ class Trainer:
         state: Dict[str, Any],
         metrics_dict: Optional[Dict[str, bool]],
         split: int,
-        network: int = None,
+        network: Optional[int] = None,
         filename: str = "checkpoint.pth.tar",
         save_all_models: bool = False,
     ) -> None:

@@ -8,17 +8,26 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
+from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
 from clinicadl.predict.utils import get_prediction
+from clinicadl.trainer.tasks_utils import (
+    ensemble_prediction,
+    evaluation_metrics,
+    generate_label_code,
+    output_size,
+    test,
+    test_da,
+)
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP, init_ddp
@@ -43,7 +52,7 @@ class MapsManager:
     def __init__(
         self,
         maps_path: Path,
-        parameters: Dict[str, Any] = None,
+        parameters: Optional[Dict[str, Any]] = None,
         verbose: str = "info",
     ):
         """
@@ -68,8 +77,38 @@ class MapsManager:
                 )
             test_parameters = self.get_parameters()
             # test_parameters = path_decoder(test_parameters)
+            # from clinicadl.trainer.task_manager import TaskConfig
+
             self.parameters = add_default_values(test_parameters)
-            self.task_manager = self._init_task_manager(n_classes=self.output_size)
+
+            ## to initialize the task parameters
+
+            # self.task_manager = self._init_task_manager()
+
+            self.n_classes = self.output_size
+            if self.network_task == "classification":
+                if self.n_classes is None:
+                    self.n_classes = output_size(
+                        self.network_task, None, self.df, self.label
+                    )
+                self.metrics_module = MetricModule(
+                    evaluation_metrics(self.network_task), n_classes=self.n_classes
+                )
+
+            elif (
+                self.network_task == "regression"
+                or self.network_task == "reconstruction"
+            ):
+                self.metrics_module = MetricModule(
+                    evaluation_metrics(self.network_task), n_classes=None
+                )
+
+            else:
+                raise NotImplementedError(
+                    f"Task {self.network_task} is not implemented in ClinicaDL. "
+                    f"Please choose between classification, regression and reconstruction."
+                )
+
             self.split_name = (
                 self._check_split_wording()
             )  # Used only for retro-compatibility
@@ -162,10 +201,14 @@ class MapsManager:
             )
             model = DDP(model, fsdp=self.fully_sharded_data_parallel, amp=self.amp)
 
-            prediction_df, metrics = self.task_manager.test(
-                model,
-                dataloader,
-                criterion,
+            prediction_df, metrics = test(
+                mode=self.mode,
+                metrics_module=self.metrics_module,
+                n_classes=self.n_classes,
+                network_task=self.network_task,
+                model=model,
+                dataloader=dataloader,
+                criterion=criterion,
                 use_labels=use_labels,
                 amp=amp,
                 report_ci=report_ci,
@@ -241,8 +284,13 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-            prediction_df, metrics = self.task_manager.test_da(
-                model, dataloader, criterion, target=target, report_ci=report_ci
+            prediction_df, metrics = test_da(
+                self.network_task,
+                model,
+                dataloader,
+                criterion,
+                target=target,
+                report_ci=report_ci,
             )
             if use_labels:
                 if network is not None:
@@ -321,7 +369,7 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.std_amp):
+                with autocast("cuda", enabled=self.std_amp):
                     output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
@@ -404,10 +452,33 @@ class MapsManager:
         if "label" not in self.parameters:
             self.parameters["label"] = None
 
-        self.task_manager = self._init_task_manager(df=train_df)
+        from clinicadl.trainer.tasks_utils import (
+            get_default_network,
+        )
+        from clinicadl.utils.enum import Task
 
+        self.network_task = Task(self.parameters["network_task"])
+        # self.task_config = TaskConfig(self.network_task, self.mode, df=train_df)
+        # self.task_manager = self._init_task_manager(df=train_df)
+        if self.network_task == "classification":
+            self.n_classes = output_size(self.network_task, None, train_df, self.label)
+            self.metrics_module = MetricModule(
+                evaluation_metrics(self.network_task), n_classes=self.n_classes
+            )
+
+        elif self.network_task == "regression" or self.network_task == "reconstruction":
+            self.n_classes = None
+            self.metrics_module = MetricModule(
+                evaluation_metrics(self.network_task), n_classes=None
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Task {self.network_task} is not implemented in ClinicaDL. "
+                f"Please choose between classification, regression and reconstruction."
+            )
         if self.parameters["architecture"] == "default":
-            self.parameters["architecture"] = self.task_manager.get_default_network()
+            self.parameters["architecture"] = get_default_network(self.network_task)
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (
@@ -415,8 +486,8 @@ class MapsManager:
             or len(self.parameters["label_code"]) == 0
             or self.parameters["label_code"] is None
         ):  # Allows to set custom label code in TOML
-            self.parameters["label_code"] = self.task_manager.generate_label_code(
-                train_df, self.label
+            self.parameters["label_code"] = generate_label_code(
+                self.network_task, train_df, self.label
             )
 
         full_dataset = return_dataset(
@@ -431,8 +502,8 @@ class MapsManager:
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "output_size": self.task_manager.output_size(
-                    full_dataset.size, full_dataset.df, self.label
+                "output_size": output_size(
+                    self.network_task, full_dataset.size, full_dataset.df, self.label
                 ),
                 "input_size": full_dataset.size,
             }
@@ -444,7 +515,7 @@ class MapsManager:
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
-        possible_selection_metrics_set = set(self.task_manager.evaluation_metrics) | {
+        possible_selection_metrics_set = set(evaluation_metrics(self.network_task)) | {
             "loss"
         }
         if not set(self.parameters["selection_metrics"]).issubset(
@@ -708,7 +779,11 @@ class MapsManager:
 
         performance_dir.mkdir(parents=True, exist_ok=True)
 
-        df_final, metrics = self.task_manager.ensemble_prediction(
+        df_final, metrics = ensemble_prediction(
+            self.mode,
+            self.metrics_module,
+            self.n_classes,
+            self.network_task,
             test_df,
             validation_df,
             selection_threshold=self.selection_threshold,
@@ -839,7 +914,9 @@ class MapsManager:
                 / "tmp"
                 / "checkpoint.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path, map_location=device)
+            checkpoint_state = torch.load(
+                checkpoint_path, map_location=device, weights_only=True
+            )
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path:
@@ -912,29 +989,29 @@ class MapsManager:
 
         return split_class(**kwargs)
 
-    def _init_task_manager(
-        self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
-    ):
-        from clinicadl.utils.task_manager import (
-            ClassificationManager,
-            ReconstructionManager,
-            RegressionManager,
-        )
+    # def _init_task_manager(
+    #     self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
+    # ):
+    #     from clinicadl.utils.task_manager import (
+    #         ClassificationManager,
+    #         ReconstructionManager,
+    #         RegressionManager,
+    #     )
 
-        if self.network_task == "classification":
-            if n_classes is not None:
-                return ClassificationManager(self.mode, n_classes=n_classes)
-            else:
-                return ClassificationManager(self.mode, df=df, label=self.label)
-        elif self.network_task == "regression":
-            return RegressionManager(self.mode)
-        elif self.network_task == "reconstruction":
-            return ReconstructionManager(self.mode)
-        else:
-            raise NotImplementedError(
-                f"Task {self.network_task} is not implemented in ClinicaDL. "
-                f"Please choose between classification, regression and reconstruction."
-            )
+    #     if self.network_task == "classification":
+    #         if n_classes is not None:
+    #             return ClassificationManager(self.mode, n_classes=n_classes)
+    #         else:
+    #             return ClassificationManager(self.mode, df=df, label=self.label)
+    #     elif self.network_task == "regression":
+    #         return RegressionManager(self.mode)
+    #     elif self.network_task == "reconstruction":
+    #         return ReconstructionManager(self.mode)
+    #     else:
+    #         raise NotImplementedError(
+    #             f"Task {self.network_task} is not implemented in ClinicaDL. "
+    #             f"Please choose between classification, regression and reconstruction."
+    #         )
 
     ###############################
     # Getters                     #
@@ -1054,7 +1131,7 @@ class MapsManager:
             f"selected according to best validation {selection_metric} "
             f"at path {model_path}."
         )
-        return torch.load(model_path, map_location=map_location)
+        return torch.load(model_path, map_location=map_location, weights_only=True)
 
     @property
     def std_amp(self) -> bool:

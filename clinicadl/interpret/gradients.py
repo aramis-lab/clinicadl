@@ -1,7 +1,7 @@
 import abc
 
 import torch
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
@@ -28,7 +28,7 @@ class VanillaBackProp(Gradients):
         # Forward
         input_batch = input_batch.to(self.device)
         input_batch.requires_grad = True
-        with autocast(enabled=amp):
+        with autocast("cuda", enabled=amp):
             if hasattr(self.model, "variational") and self.model.variational:
                 _, _, _, model_output = self.model(input_batch)
             else:
@@ -94,7 +94,7 @@ class GradCam(Gradients):
         # Get last conv feature map
         feature_maps = conv_part(input_batch).detach()
         feature_maps.requires_grad = True
-        with autocast(enabled=amp):
+        with autocast("cuda", enabled=amp):
             model_output = fc_part(pre_fc_part(feature_maps))
         # Target for backprop
         one_hot_output = torch.zeros_like(model_output)

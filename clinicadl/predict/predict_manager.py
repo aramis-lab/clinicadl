@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -21,6 +21,7 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.predict.config import PredictConfig
+from clinicadl.trainer.tasks_utils import generate_label_code, get_criterion
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
 from clinicadl.utils.exceptions import (
@@ -123,7 +124,9 @@ class PredictManager:
         )
         group_df = self._config.create_groupe_df()
         self._check_data_group(group_df)
-        criterion = self.maps_manager.task_manager.get_criterion(self.maps_manager.loss)
+        criterion = get_criterion(
+            self.maps_manager.network_task, self.maps_manager.loss
+        )
         self._check_data_group(df=group_df)
 
         assert self._config.split  # don't know if needed ? try to raise an exception ?
@@ -136,8 +139,8 @@ class PredictManager:
             )
             # Find label code if not given
             if self._config.is_given_label_code(self.maps_manager.label, label_code):
-                self.maps_manager.task_manager.generate_label_code(
-                    group_df, self._config.label
+                generate_label_code(
+                    self.maps_manager.network_task, group_df, self._config.label
                 )
             # Erase previous TSV files on master process
             if not self._config.selection_metrics:
@@ -506,7 +509,7 @@ class PredictManager:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                with autocast(enabled=self.maps_manager.std_amp):
+                with autocast("cuda", enabled=self.maps_manager.std_amp):
                     _, latent, _ = model.module._forward(
                         image.unsqueeze(0).to(model.device)
                     )
@@ -580,7 +583,7 @@ class PredictManager:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast(enabled=self.maps_manager.std_amp):
+                with autocast("cuda", enabled=self.maps_manager.std_amp):
                     output = model(x)
                 output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
@@ -1066,7 +1069,8 @@ class PredictManager:
             )
         if participant_id is None and session_id is None:
             map_pt = torch.load(
-                map_dir / f"mean_{self.maps_manager.mode}-{mode_id}_map.pt"
+                map_dir / f"mean_{self.maps_manager.mode}-{mode_id}_map.pt",
+                weights_only=True,
             )
         elif participant_id is None or session_id is None:
             raise ValueError(
@@ -1077,6 +1081,7 @@ class PredictManager:
         else:
             map_pt = torch.load(
                 map_dir
-                / f"{participant_id}_{session_id}_{self.maps_manager.mode}-{mode_id}_map.pt"
+                / f"{participant_id}_{session_id}_{self.maps_manager.mode}-{mode_id}_map.pt",
+                weights_only=True,
             )
         return map_pt
