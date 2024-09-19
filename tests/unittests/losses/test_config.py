@@ -47,7 +47,7 @@ from clinicadl.losses.config import (
     ],
 )
 def test_validation_fail(config, args):
-    with pytest.raises((ValidationError, ValueError)):
+    with pytest.raises(ValidationError):
         config(**args)
 
 
