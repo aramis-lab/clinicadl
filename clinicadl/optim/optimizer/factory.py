@@ -31,6 +31,11 @@ def get_optimizer(
         The updated config class: the arguments set to default will be updated
         with their effective values (the default values from the library).
         Useful for reproducibility.
+
+    Raises
+    ------
+    AttributeError
+        If a parameter group mentioned in the config class cannot be found in the network.
     """
     optimizer_class = getattr(optim, config.optimizer)
     expected_args, default_args = get_args_and_defaults(optimizer_class.__init__)
@@ -65,7 +70,7 @@ def get_optimizer(
             list_args_groups.append({"params": other_params})
 
     optimizer = optimizer_class(list_args_groups, **args_global)
-    updated_config = OptimizerConfig(optimizer=config.optimizer, **default_args)
+    updated_config = config.model_copy(update=default_args)
 
     return optimizer, updated_config
 
@@ -152,6 +157,11 @@ def _get_params_in_group(
     List[str]
         The name of all the parameters in the group.
 
+    Raises
+    ------
+    AttributeError
+        If `group` cannot be found in the network.
+
     Examples
     --------
     >>> net = nn.Sequential(
@@ -168,7 +178,12 @@ def _get_params_in_group(
     """
     group_hierarchy = group.split(".")
     for name in group_hierarchy:
-        network = getattr(network, name)
+        try:
+            network = getattr(network, name)
+        except AttributeError as exc:
+            raise AttributeError(
+                f"There is no such group as {group} in the network."
+            ) from exc
 
     try:
         params = network.parameters()
