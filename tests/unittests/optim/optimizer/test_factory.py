@@ -1,12 +1,25 @@
 from collections import OrderedDict
 
 import pytest
+import torch
 import torch.nn as nn
+from torch.optim import Adagrad
+
+from clinicadl.optim.optimizer import (
+    ImplementedOptimizer,
+    create_optimizer_config,
+    get_optimizer,
+)
+from clinicadl.optim.optimizer.factory import (
+    _get_params_in_group,
+    _get_params_not_in_group,
+    _regroup_args,
+)
 
 
 @pytest.fixture
 def network():
-    network = nn.Sequential(
+    net = nn.Sequential(
         OrderedDict(
             [
                 ("conv1", nn.Conv2d(1, 1, kernel_size=3)),
@@ -14,31 +27,22 @@ def network():
             ]
         )
     )
-    network.add_module(
+    net.add_module(
         "final",
         nn.Sequential(
             OrderedDict([("dense2", nn.Linear(10, 5)), ("dense3", nn.Linear(5, 3))])
         ),
     )
-    return network
+    return net
 
 
 def test_get_optimizer(network):
-    from torch.optim import Adagrad
-
-    from clinicadl.optim.optimizer import (
-        ImplementedOptimizer,
-        OptimizerConfig,
-        get_optimizer,
-    )
-
-    for optimizer in [e.value for e in ImplementedOptimizer]:
-        config = OptimizerConfig(optimizer=optimizer)
+    for optimizer in ImplementedOptimizer:
+        config = create_optimizer_config(optimizer=optimizer)()
         optimizer, _ = get_optimizer(network, config)
         assert len(optimizer.param_groups) == 1
 
-    config = OptimizerConfig(
-        optimizer="Adagrad",
+    config = create_optimizer_config("Adagrad")(
         lr=1e-5,
         weight_decay={"final.dense3.weight": 1.0, "dense1": 0.1},
         lr_decay={"dense1": 10, "ELSE": 100},
@@ -82,17 +86,16 @@ def test_get_optimizer(network):
     assert not updated_config.maximize
     assert not updated_config.differentiable
 
-    # special cases
-    config = OptimizerConfig(
-        optimizer="Adagrad",
+    # special cases 1
+    config = create_optimizer_config("Adagrad")(
         lr_decay={"ELSE": 100},
     )
     optimizer, _ = get_optimizer(network, config)
     assert len(optimizer.param_groups) == 1
     assert optimizer.param_groups[0]["lr_decay"] == 100
 
-    config = OptimizerConfig(
-        optimizer="Adagrad",
+    # special cases 2
+    config = create_optimizer_config("Adagrad")(
         lr_decay={"conv1": 100, "dense1": 10, "final": 1},
     )
     optimizer, _ = get_optimizer(network, config)
@@ -100,8 +103,6 @@ def test_get_optimizer(network):
 
 
 def test_regroup_args():
-    from clinicadl.optim.optimizer.factory import _regroup_args
-
     args = {
         "weight_decay": {"params_0": 0.0, "params_1": 1.0},
         "alpha": {"params_1": 0.5, "ELSE": 0.1},
@@ -126,10 +127,6 @@ def test_regroup_args():
 
 
 def test_get_params_in_block(network):
-    import torch
-
-    from clinicadl.optim.optimizer.factory import _get_params_in_group
-
     generator, list_layers = _get_params_in_group(network, "dense1")
     assert next(iter(generator)).shape == torch.Size((10, 10))
     assert next(iter(generator)).shape == torch.Size((10,))
@@ -158,10 +155,6 @@ def test_get_params_in_block(network):
 
 
 def test_find_params_not_in_group(network):
-    import torch
-
-    from clinicadl.optim.optimizer.factory import _get_params_not_in_group
-
     params = _get_params_not_in_group(
         network,
         [
