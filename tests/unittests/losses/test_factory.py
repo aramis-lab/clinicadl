@@ -9,7 +9,9 @@ def test_get_loss_function():
         config = create_loss_config(loss=loss)()
         _ = get_loss_function(config)
 
-    config = create_loss_config("Multi Margin")(reduction="sum", weight=[1, 2, 3], p=2)
+    config = create_loss_config("MultiMarginLoss")(
+        reduction="sum", weight=[1, 2, 3], p=2
+    )
     loss, updated_config = get_loss_function(config)
     assert isinstance(loss, MultiMarginLoss)
     assert loss.reduction == "sum"
@@ -23,7 +25,7 @@ def test_get_loss_function():
     assert updated_config.margin == 1.0
     assert updated_config.weight == [1, 2, 3]
 
-    config = create_loss_config("BCE With Logits")(pos_weight=[1, 2, 3])
+    config = create_loss_config("BCEWithLogitsLoss")(pos_weight=[1, 2, 3])
     loss, updated_config = get_loss_function(config)
     assert isinstance(loss, BCEWithLogitsLoss)
     assert (loss.pos_weight == Tensor([1, 2, 3])).all()
