@@ -16,16 +16,16 @@ from .enum import ImplementedLoss, Order, Reduction
 
 __all__ = [
     "LossConfig",
-    "NLLConfig",
-    "CrossEntropyConfig",
-    "BCEConfig",
-    "BCEWithLogitsConfig",
-    "MultiMarginConfig",
-    "KLDivConfig",
-    "HuberConfig",
-    "SmoothL1Config",
-    "L1Config",
-    "MSEConfig",
+    "NLLLossConfig",
+    "CrossEntropyLossConfig",
+    "BCELossConfig",
+    "BCEWithLogitsLossConfig",
+    "MultiMarginLossConfig",
+    "KLDivLossConfig",
+    "HuberLossConfig",
+    "SmoothL1LossConfig",
+    "L1LossConfig",
+    "MSELossConfig",
     "create_loss_config",
 ]
 
@@ -45,20 +45,20 @@ class LossConfig(BaseModel, ABC):
     @computed_field
     @property
     @abstractmethod
-    def loss(self) -> str:
-        """The name of the loss."""
+    def loss(self) -> ImplementedLoss:
+        """ImplementedLoss.e name of the loss."""
 
 
-class NLLConfig(LossConfig):
+class NLLLossConfig(LossConfig):
     """Config class for Negative Log Likelihood loss."""
 
     ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "NLLLoss"
+        return ImplementedLoss.NLL
 
     @field_validator("ignore_index")
     @classmethod
@@ -70,7 +70,7 @@ class NLLConfig(LossConfig):
         return v
 
 
-class CrossEntropyConfig(NLLConfig):
+class CrossEntropyLossConfig(NLLLossConfig):
     """Config class for Cross Entropy loss."""
 
     label_smoothing: Union[
@@ -79,9 +79,9 @@ class CrossEntropyConfig(NLLConfig):
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "CrossEntropyLoss"
+        return ImplementedLoss.CROSS_ENTROPY
 
     @field_validator("label_smoothing")
     @classmethod
@@ -93,16 +93,16 @@ class CrossEntropyConfig(NLLConfig):
         return v
 
 
-class BCEConfig(LossConfig):
+class BCELossConfig(LossConfig):
     """Config class for Binary Cross Entropy loss."""
 
     weight: Optional[List[NonNegativeFloat]] = None
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "BCELoss"
+        return ImplementedLoss.BCE
 
     @field_validator("weight")
     @classmethod
@@ -114,16 +114,16 @@ class BCEConfig(LossConfig):
         return v
 
 
-class BCEWithLogitsConfig(BCEConfig):
+class BCEWithLogitsLossConfig(BCELossConfig):
     """Config class for Binary Cross Entropy With Logits loss."""
 
     pos_weight: Union[Optional[List[Any]], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "BCEWithLogitsLoss"
+        return ImplementedLoss.BCE_LOGITS
 
     @field_validator("pos_weight")
     @classmethod
@@ -144,7 +144,7 @@ class BCEWithLogitsConfig(BCEConfig):
             return (isinstance(item, float) or isinstance(item, int)) and item >= 0
 
 
-class MultiMarginConfig(LossConfig):
+class MultiMarginLossConfig(LossConfig):
     """Config class for Multi Margin loss."""
 
     p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -152,65 +152,65 @@ class MultiMarginConfig(LossConfig):
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "MultiMarginLoss"
+        return ImplementedLoss.MULTI_MARGIN
 
 
-class KLDivConfig(LossConfig):
+class KLDivLossConfig(LossConfig):
     """Config class for Kullback-Leibler Divergence loss."""
 
     log_target: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "KLDivLoss"
+        return ImplementedLoss.KLDIV
 
 
-class HuberConfig(LossConfig):
+class HuberLossConfig(LossConfig):
     """Config class for Huber loss."""
 
     delta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "HuberLoss"
+        return ImplementedLoss.HUBER
 
 
-class SmoothL1Config(LossConfig):
+class SmoothL1LossConfig(LossConfig):
     """Config class for Smooth L1 loss."""
 
     beta: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "SmoothL1Loss"
+        return ImplementedLoss.SMOOTH_L1
 
 
-class L1Config(LossConfig):
+class L1LossConfig(LossConfig):
     """Config class for L1 loss."""
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "L1Loss"
+        return ImplementedLoss.L1
 
 
-class MSEConfig(LossConfig):
+class MSELossConfig(LossConfig):
     """Config class for Mean Squared Error loss."""
 
     @computed_field
     @property
-    def loss(self) -> str:
+    def loss(self) -> ImplementedLoss:
         """The name of the loss."""
-        return "MSELoss"
+        return ImplementedLoss.MSE
 
 
 def create_loss_config(
@@ -235,7 +235,7 @@ def create_loss_config(
         If `loss` is not supported.
     """
     loss = ImplementedLoss(loss)
-    config_name = "".join([loss.replace(" ", ""), "Config"])
+    config_name = "".join([loss, "Config"])
     config = globals()[config_name]
 
     return config

@@ -1,19 +1,18 @@
 import pytest
-import torch
 from pydantic import ValidationError
 
 from clinicadl.losses import ImplementedLoss
 from clinicadl.losses.config import (
-    BCEConfig,
-    BCEWithLogitsConfig,
-    CrossEntropyConfig,
-    HuberConfig,
-    KLDivConfig,
-    L1Config,
-    MSEConfig,
-    MultiMarginConfig,
-    NLLConfig,
-    SmoothL1Config,
+    BCELossConfig,
+    BCEWithLogitsLossConfig,
+    CrossEntropyLossConfig,
+    HuberLossConfig,
+    KLDivLossConfig,
+    L1LossConfig,
+    MSELossConfig,
+    MultiMarginLossConfig,
+    NLLLossConfig,
+    SmoothL1LossConfig,
     create_loss_config,
 )
 
@@ -21,29 +20,29 @@ from clinicadl.losses.config import (
 @pytest.mark.parametrize(
     "config,args",
     [
-        (L1Config, {"reduction": "none"}),
-        (MSEConfig, {"reduction": "none"}),
-        (CrossEntropyConfig, {"reduction": "none"}),
-        (CrossEntropyConfig, {"weight": [1, -1, 2]}),
-        (CrossEntropyConfig, {"ignore_index": -1}),
-        (CrossEntropyConfig, {"label_smoothing": 1.1}),
-        (NLLConfig, {"reduction": "none"}),
-        (NLLConfig, {"weight": [1, -1, 2]}),
-        (NLLConfig, {"ignore_index": -1}),
-        (KLDivConfig, {"reduction": "none"}),
-        (BCEConfig, {"reduction": "none"}),
-        (BCEConfig, {"weight": [0, 1]}),
-        (BCEWithLogitsConfig, {"reduction": "none"}),
-        (BCEWithLogitsConfig, {"weight": [0, 1]}),
-        (BCEWithLogitsConfig, {"pos_weight": [[1, -1, 2]]}),
-        (BCEWithLogitsConfig, {"pos_weight": [["a", "b"]]}),
-        (HuberConfig, {"reduction": "none"}),
-        (HuberConfig, {"delta": 0.0}),
-        (SmoothL1Config, {"reduction": "none"}),
-        (SmoothL1Config, {"beta": -1.0}),
-        (MultiMarginConfig, {"reduction": "none"}),
-        (MultiMarginConfig, {"p": 3}),
-        (MultiMarginConfig, {"weight": [1, -1, 2]}),
+        (L1LossConfig, {"reduction": "none"}),
+        (MSELossConfig, {"reduction": "none"}),
+        (CrossEntropyLossConfig, {"reduction": "none"}),
+        (CrossEntropyLossConfig, {"weight": [1, -1, 2]}),
+        (CrossEntropyLossConfig, {"ignore_index": -1}),
+        (CrossEntropyLossConfig, {"label_smoothing": 1.1}),
+        (NLLLossConfig, {"reduction": "none"}),
+        (NLLLossConfig, {"weight": [1, -1, 2]}),
+        (NLLLossConfig, {"ignore_index": -1}),
+        (KLDivLossConfig, {"reduction": "none"}),
+        (BCELossConfig, {"reduction": "none"}),
+        (BCELossConfig, {"weight": [0, 1]}),
+        (BCEWithLogitsLossConfig, {"reduction": "none"}),
+        (BCEWithLogitsLossConfig, {"weight": [0, 1]}),
+        (BCEWithLogitsLossConfig, {"pos_weight": [[1, -1, 2]]}),
+        (BCEWithLogitsLossConfig, {"pos_weight": [["a", "b"]]}),
+        (HuberLossConfig, {"reduction": "none"}),
+        (HuberLossConfig, {"delta": 0.0}),
+        (SmoothL1LossConfig, {"reduction": "none"}),
+        (SmoothL1LossConfig, {"beta": -1.0}),
+        (MultiMarginLossConfig, {"reduction": "none"}),
+        (MultiMarginLossConfig, {"p": 3}),
+        (MultiMarginLossConfig, {"weight": [1, -1, 2]}),
     ],
 )
 def test_validation_fail(config, args):
@@ -54,10 +53,10 @@ def test_validation_fail(config, args):
 @pytest.mark.parametrize(
     "config,args",
     [
-        (L1Config, {"reduction": "mean"}),
-        (MSEConfig, {"reduction": "mean"}),
+        (L1LossConfig, {"reduction": "mean"}),
+        (MSELossConfig, {"reduction": "mean"}),
         (
-            CrossEntropyConfig,
+            CrossEntropyLossConfig,
             {
                 "reduction": "mean",
                 "weight": [1, 0, 2],
@@ -65,17 +64,17 @@ def test_validation_fail(config, args):
                 "label_smoothing": 0.5,
             },
         ),
-        (NLLConfig, {"reduction": "mean", "weight": [1, 0, 2], "ignore_index": 1}),
-        (KLDivConfig, {"reduction": "mean", "log_target": True}),
-        (BCEConfig, {"reduction": "sum", "weight": None}),
+        (NLLLossConfig, {"reduction": "mean", "weight": [1, 0, 2], "ignore_index": 1}),
+        (KLDivLossConfig, {"reduction": "mean", "log_target": True}),
+        (BCELossConfig, {"reduction": "sum", "weight": None}),
         (
-            BCEWithLogitsConfig,
+            BCEWithLogitsLossConfig,
             {"reduction": "sum", "weight": None, "pos_weight": [[1, 0, 2]]},
         ),
-        (HuberConfig, {"reduction": "sum", "delta": 0.1}),
-        (SmoothL1Config, {"reduction": "sum", "beta": 0.0}),
+        (HuberLossConfig, {"reduction": "sum", "delta": 0.1}),
+        (SmoothL1LossConfig, {"reduction": "sum", "beta": 0.0}),
         (
-            MultiMarginConfig,
+            MultiMarginLossConfig,
             {"reduction": "sum", "p": 1, "margin": -0.1, "weight": [1, 0, 2]},
         ),
     ],
@@ -86,16 +85,20 @@ def test_validation_pass(config, args):
         assert getattr(c, arg) == value
 
 
-def test_create_loss_config():
-    for loss in ImplementedLoss:
-        create_loss_config(loss)
-
-    config_class = create_loss_config("Multi Margin")
-    config = config_class(
-        margin=0.1,
-        reduction="sum",
-    )
-    assert isinstance(config, MultiMarginConfig)
-    assert config.p == "DefaultFromLibrary"
-    assert config.margin == 0.1
-    assert config.reduction == "sum"
+@pytest.mark.parametrize(
+    "name,config",
+    [
+        ("BCELoss", BCELossConfig),
+        ("BCEWithLogitsLoss", BCEWithLogitsLossConfig),
+        ("CrossEntropyLoss", CrossEntropyLossConfig),
+        ("HuberLoss", HuberLossConfig),
+        ("KLDivLoss", KLDivLossConfig),
+        ("L1Loss", L1LossConfig),
+        ("MSELoss", MSELossConfig),
+        ("MultiMarginLoss", MultiMarginLossConfig),
+        ("NLLLoss", NLLLossConfig),
+        ("SmoothL1Loss", SmoothL1LossConfig),
+    ],
+)
+def test_create_loss_config(name, config):
+    assert create_loss_config(name) == config
