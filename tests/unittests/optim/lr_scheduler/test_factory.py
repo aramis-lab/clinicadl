@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
 
 from clinicadl.optim.lr_scheduler import (
     ImplementedLRScheduler,
-    LRSchedulerConfig,
+    create_lr_scheduler_config,
     get_lr_scheduler,
 )
 
@@ -33,17 +33,12 @@ def test_get_lr_scheduler():
         lr=10.0,
     )
 
-    for scheduler in [e.value for e in ImplementedLRScheduler]:
-        if scheduler == "StepLR":
-            config = LRSchedulerConfig(scheduler=scheduler, step_size=1)
-        elif scheduler == "MultiStepLR":
-            config = LRSchedulerConfig(scheduler=scheduler, milestones=[1, 2, 3])
-        else:
-            config = LRSchedulerConfig(scheduler=scheduler)
-        get_lr_scheduler(optimizer, config)
+    args = {"step_size": 1, "milestones": [1, 2]}
+    for scheduler in ImplementedLRScheduler:
+        config = create_lr_scheduler_config(scheduler=scheduler)(**args)
+        _ = get_lr_scheduler(optimizer, config)
 
-    config = LRSchedulerConfig(
-        scheduler="ReduceLROnPlateau",
+    config = create_lr_scheduler_config(scheduler="ReduceLROnPlateau")(
         mode="max",
         factor=0.123,
         threshold=1e-1,
@@ -77,7 +72,8 @@ def test_get_lr_scheduler():
     scheduler, updated_config = get_lr_scheduler(optimizer, config)
     assert scheduler.min_lrs == [0.1, 0.01, 1]
 
-    config = LRSchedulerConfig()
+    # no lr scheduler
+    config = create_lr_scheduler_config(None)()
     scheduler, updated_config = get_lr_scheduler(optimizer, config)
     assert isinstance(scheduler, LambdaLR)
     assert updated_config.scheduler is None

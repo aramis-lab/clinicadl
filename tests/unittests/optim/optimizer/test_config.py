@@ -1,5 +1,4 @@
 import pytest
-import torch
 from pydantic import ValidationError
 
 from clinicadl.optim.optimizer.config import (
