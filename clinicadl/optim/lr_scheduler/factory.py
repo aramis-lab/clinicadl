@@ -51,6 +51,6 @@ def get_lr_scheduler(
             )  # ELSE must be the last group
     scheduler = scheduler_class(optimizer, **config_dict_)
 
-    updated_config = LRSchedulerConfig(scheduler=config.scheduler, **config_dict)
+    updated_config = config.model_copy(update=config_dict)
 
     return scheduler, updated_config
