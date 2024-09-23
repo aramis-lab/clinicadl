@@ -47,7 +47,6 @@ class ImplementedLoss(str, Enum):
 class Reduction(str, Enum):
     """Supported reduction method in ClinicaDL."""
 
-    NONE = "none"
     MEAN = "mean"
     SUM = "sum"
 

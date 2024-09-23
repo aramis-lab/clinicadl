@@ -6,12 +6,12 @@ from clinicadl.losses import LossConfig
 
 def test_LossConfig():
     config = LossConfig(
-        loss="SmoothL1Loss", margin=10.0, delta=2.0, reduction="none", weight=None
+        loss="SmoothL1Loss", margin=10.0, delta=2.0, reduction="sum", weight=None
     )
     assert config.loss == "SmoothL1Loss"
     assert config.margin == 10.0
     assert config.delta == 2.0
-    assert config.reduction == "none"
+    assert config.reduction == "sum"
     assert config.p == "DefaultFromLibrary"
 
     with pytest.raises(ValueError):

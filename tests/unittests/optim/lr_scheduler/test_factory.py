@@ -17,6 +17,7 @@ def test_get_lr_scheduler():
             [
                 ("linear1", nn.Linear(4, 3)),
                 ("linear2", nn.Linear(3, 2)),
+                ("linear3", nn.Linear(2, 1)),
             ]
         )
     )
@@ -28,6 +29,9 @@ def test_get_lr_scheduler():
             },
             {
                 "params": network.linear2.parameters(),
+            },
+            {
+                "params": network.linear3.parameters(),
             },
         ],
         lr=10.0,
@@ -53,7 +57,7 @@ def test_get_lr_scheduler():
     assert scheduler.threshold == 1e-1
     assert scheduler.threshold_mode == "rel"
     assert scheduler.cooldown == 3
-    assert scheduler.min_lrs == [0.1, 0.01]
+    assert scheduler.min_lrs == [0.1, 0.01, 0.0]
     assert scheduler.eps == 1e-8
 
     assert updated_config.scheduler == "ReduceLROnPlateau"
@@ -66,11 +70,13 @@ def test_get_lr_scheduler():
     assert updated_config.min_lr == {"linear2": 0.01, "linear1": 0.1}
     assert updated_config.eps == 1e-8
 
-    network.add_module("linear3", nn.Linear(3, 2))
-    optimizer.add_param_group({"params": network.linear3.parameters()})
     config.min_lr = {"ELSE": 1, "linear2": 0.01, "linear1": 0.1}
     scheduler, updated_config = get_lr_scheduler(optimizer, config)
     assert scheduler.min_lrs == [0.1, 0.01, 1]
+
+    config.min_lr = 1
+    scheduler, updated_config = get_lr_scheduler(optimizer, config)
+    assert scheduler.min_lrs == [1.0, 1.0, 1.0]
 
     # no lr scheduler
     config = create_lr_scheduler_config(None)()

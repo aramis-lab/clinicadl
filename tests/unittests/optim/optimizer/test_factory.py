@@ -101,6 +101,16 @@ def test_get_optimizer(network):
     optimizer, _ = get_optimizer(network, config)
     assert len(optimizer.param_groups) == 3
 
+    # special case : no ELSE mentioned
+    config = OptimizerConfig(
+        optimizer="Adagrad",
+        lr_decay={"conv1": 100},
+    )
+    optimizer, _ = get_optimizer(network, config)
+    assert len(optimizer.param_groups) == 2
+    assert optimizer.param_groups[0]["lr_decay"] == 100
+    assert optimizer.param_groups[1]["lr_decay"] == 0
+
 
 def test_regroup_args():
     args = {

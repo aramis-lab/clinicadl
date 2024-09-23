@@ -1,12 +1,12 @@
-from typing import Any, Dict, Iterable, Iterator, List, Tuple
+from typing import Any, Dict, Tuple
 
-import torch
 import torch.nn as nn
 import torch.optim as optim
 
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
 from .config import OptimizerConfig
+from .utils import get_params_in_groups, get_params_not_in_groups
 
 
 def get_optimizer(
@@ -50,23 +50,16 @@ def get_optimizer(
         list_args_groups = network.parameters()
     else:
         list_args_groups = []
-        union_groups = set()
         args_groups = sorted(args_groups.items())  # order in the list is important
         for group, args in args_groups:
-            params, params_names = _get_params_in_group(network, group)
+            params, _ = get_params_in_groups(network, group)
             args.update({"params": params})
             list_args_groups.append(args)
-            union_groups.update(set(params_names))
 
-        other_params = _get_params_not_in_group(network, union_groups)
-        try:
-            next(other_params)
-        except StopIteration:  # there is no other param in the network
-            pass
-        else:
-            other_params = _get_params_not_in_group(
-                network, union_groups
-            )  # reset the generator
+        other_params, params_names = get_params_not_in_groups(
+            network, [group for group, _ in args_groups]
+        )
+        if len(params_names) > 0:
             list_args_groups.append({"params": other_params})
 
     optimizer = optimizer_class(list_args_groups, **args_global)
