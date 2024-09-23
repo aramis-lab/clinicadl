@@ -1,5 +1,6 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Tuple
 
+import torch
 import torch.nn as nn
 import torch.optim as optim
 

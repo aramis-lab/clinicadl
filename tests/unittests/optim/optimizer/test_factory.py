@@ -102,10 +102,7 @@ def test_get_optimizer(network):
     assert len(optimizer.param_groups) == 3
 
     # special case : no ELSE mentioned
-    config = OptimizerConfig(
-        optimizer="Adagrad",
-        lr_decay={"conv1": 100},
-    )
+    config = create_optimizer_config("Adagrad")(lr_decay={"conv1": 100})
     optimizer, _ = get_optimizer(network, config)
     assert len(optimizer.param_groups) == 2
     assert optimizer.param_groups[0]["lr_decay"] == 100
