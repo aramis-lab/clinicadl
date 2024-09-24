@@ -1,5 +1,6 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Tuple
 
+import torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -31,6 +32,11 @@ def get_optimizer(
         The updated config class: the arguments set to default will be updated
         with their effective values (the default values from the library).
         Useful for reproducibility.
+
+    Raises
+    ------
+    AttributeError
+        If a parameter group mentioned in the config class cannot be found in the network.
     """
     optimizer_class = getattr(optim, config.optimizer)
     expected_args, default_args = get_args_and_defaults(optimizer_class.__init__)
@@ -58,7 +64,7 @@ def get_optimizer(
             list_args_groups.append({"params": other_params})
 
     optimizer = optimizer_class(list_args_groups, **args_global)
-    updated_config = OptimizerConfig(optimizer=config.optimizer, **default_args)
+    updated_config = config.model_copy(update=default_args)
 
     return optimizer, updated_config
 
@@ -119,3 +125,90 @@ def _regroup_args(
             args_global[arg] = value
 
     return args_groups, args_global
+
+
+def _get_params_in_group(
+    network: nn.Module, group: str
+) -> Tuple[Iterator[torch.Tensor], List[str]]:
+    """
+    Gets the parameters of a specific group of a neural network.
+
+    Parameters
+    ----------
+    network : nn.Module
+        The neural network.
+    group : str
+        The name of the group, e.g. a layer or a block.
+        If it is a sub-block, the hierarchy should be
+        specified with "." (see examples).
+        Will work even if the group is reduced to a base layer
+        (e.g. group = "dense.weight" or "dense.bias").
+
+    Returns
+    -------
+    Iterator[torch.Tensor]
+        A generator that contains the parameters of the group.
+    List[str]
+        The name of all the parameters in the group.
+
+    Raises
+    ------
+    AttributeError
+        If `group` cannot be found in the network.
+
+    Examples
+    --------
+    >>> net = nn.Sequential(
+            OrderedDict(
+                [
+                    ("conv1", nn.Conv2d(1, 1, kernel_size=3)),
+                    ("final", nn.Sequential(OrderedDict([("dense1", nn.Linear(10, 10))]))),
+                ]
+            )
+        )
+    >>> generator, params_names = _get_params_in_group(network, "final.dense1")
+    >>> params_names
+    ["final.dense1.weight", "final.dense1.bias"]
+    """
+    group_hierarchy = group.split(".")
+    for name in group_hierarchy:
+        try:
+            network = getattr(network, name)
+        except AttributeError as exc:
+            raise AttributeError(
+                f"There is no such group as {group} in the network."
+            ) from exc
+
+    try:
+        params = network.parameters()
+        params_names = [
+            ".".join([group, name]) for name, _ in network.named_parameters()
+        ]
+    except AttributeError:  # we already reached params
+        params = (param for param in [network])
+        params_names = [group]
+
+    return params, params_names
+
+
+def _get_params_not_in_group(
+    network: nn.Module, group: Iterable[str]
+) -> Iterator[torch.Tensor]:
+    """
+    Finds the parameters of a neural networks that
+    are not in a group.
+
+    Parameters
+    ----------
+    network : nn.Module
+        The neural network.
+    group : List[str]
+        The group of parameters.
+
+    Returns
+    -------
+    Iterator[torch.Tensor]
+        A generator of all the parameters that are not in the input
+        group.
+    """
+    return (param[1] for param in network.named_parameters() if param[0] not in group)

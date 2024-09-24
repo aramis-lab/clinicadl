@@ -1,38 +1,32 @@
-from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     NonNegativeFloat,
     PositiveFloat,
+    computed_field,
     field_validator,
 )
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
+from .enum import ImplementedOptimizer
 
-class ImplementedOptimizer(str, Enum):
-    """Implemented optimizers in ClinicaDL."""
-
-    ADADELTA = "Adadelta"
-    ADAGRAD = "Adagrad"
-    ADAM = "Adam"
-    RMS_PROP = "RMSprop"
-    SGD = "SGD"
-
-    @classmethod
-    def _missing_(cls, value):
-        raise ValueError(
-            f"{value} is not implemented. Implemented optimizers are: "
-            + ", ".join([repr(m.value) for m in cls])
-        )
+__all__ = [
+    "OptimizerConfig",
+    "AdadeltaConfig",
+    "AdagradConfig",
+    "AdamConfig",
+    "RMSpropConfig",
+    "SGDConfig",
+    "create_optimizer_config",
+]
 
 
-class OptimizerConfig(BaseModel):
-    """Config class to configure the optimizer."""
-
-    optimizer: ImplementedOptimizer = ImplementedOptimizer.ADAM
+class OptimizerConfig(BaseModel, ABC):
+    """Base config class for the optimizer."""
 
     lr: Union[
         PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary
@@ -40,36 +34,9 @@ class OptimizerConfig(BaseModel):
     weight_decay: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    betas: Union[
-        Tuple[NonNegativeFloat, NonNegativeFloat],
-        Dict[str, Tuple[NonNegativeFloat, NonNegativeFloat]],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES
-    alpha: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    rho: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    lr_decay: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
     eps: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    dampening: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    initial_accumulator_value: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-
-    centered: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
-    nesterov: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
-    amsgrad: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
     foreach: Union[
         Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
@@ -81,14 +48,19 @@ class OptimizerConfig(BaseModel):
         bool, Dict[str, bool], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     fused: Union[
-        Optional[bool], Dict[str, bool], DefaultFromLibrary
+        Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
     )
 
-    @field_validator("betas", "rho", "alpha", "dampening")
+    @computed_field
+    @property
+    @abstractmethod
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+
     @classmethod
     def validator_proba(cls, v, ctx):
         name = ctx.field_name
@@ -128,3 +100,131 @@ class OptimizerConfig(BaseModel):
                 groups.update(set(value.keys()))
 
         return list(groups)
+
+
+class AdadeltaConfig(OptimizerConfig):
+    """Config class for Adadelta optimizer."""
+
+    rho: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+        return ImplementedOptimizer.ADADELTA
+
+    @field_validator("rho")
+    def validator_rho(cls, v, ctx):
+        return cls.validator_proba(v, ctx)
+
+
+class AdagradConfig(OptimizerConfig):
+    """Config class for Adagrad optimizer."""
+
+    lr_decay: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    initial_accumulator_value: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+        return ImplementedOptimizer.ADAGRAD
+
+
+class AdamConfig(OptimizerConfig):
+    """Config class for Adam optimizer."""
+
+    betas: Union[
+        Tuple[NonNegativeFloat, NonNegativeFloat],
+        Dict[str, Tuple[NonNegativeFloat, NonNegativeFloat]],
+        DefaultFromLibrary,
+    ] = DefaultFromLibrary.YES
+    amsgrad: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+        return ImplementedOptimizer.ADAM
+
+    @field_validator("betas")
+    def validator_betas(cls, v, ctx):
+        return cls.validator_proba(v, ctx)
+
+
+class RMSpropConfig(OptimizerConfig):
+    """Config class for RMSprop optimizer."""
+
+    alpha: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    momentum: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    centered: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+        return ImplementedOptimizer.RMS_PROP
+
+    @field_validator("alpha")
+    def validator_alpha(cls, v, ctx):
+        return cls.validator_proba(v, ctx)
+
+
+class SGDConfig(OptimizerConfig):
+    """Config class for SGD optimizer."""
+
+    momentum: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    dampening: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    nesterov: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def optimizer(self) -> ImplementedOptimizer:
+        """The name of the optimizer."""
+        return ImplementedOptimizer.SGD
+
+    @field_validator("dampening")
+    def validator_dampening(cls, v, ctx):
+        return cls.validator_proba(v, ctx)
+
+
+def create_optimizer_config(
+    optimizer: Union[str, ImplementedOptimizer],
+) -> Type[OptimizerConfig]:
+    """
+    A factory function to create a config class suited for the optimizer.
+
+    Parameters
+    ----------
+    optimizer : Union[str, ImplementedOptimizer]
+        The name of the optimizer.
+
+    Returns
+    -------
+    Type[OptimizerConfig]
+        The config class.
+
+    Raises
+    ------
+    ValueError
+        If `optimizer` is not supported.
+    """
+    optimizer = ImplementedOptimizer(optimizer)
+    config_name = "".join([optimizer, "Config"])
+    config = globals()[config_name]
+
+    return config

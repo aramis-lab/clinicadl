@@ -56,6 +56,6 @@ def get_lr_scheduler(
             config_dict_["min_lr"].append(default_min_lr)
     scheduler = scheduler_class(optimizer, **config_dict_)
 
-    updated_config = LRSchedulerConfig(scheduler=config.scheduler, **config_dict)
+    updated_config = config.model_copy(update=config_dict)
 
     return scheduler, updated_config
