@@ -39,6 +39,6 @@ def get_loss_function(config: LossConfig) -> Tuple[torch.nn.Module, LossConfig]:
         config_dict_["pos_weight"] = torch.Tensor(config_dict_["pos_weight"])
     loss = loss_class(**config_dict_)
 
-    updated_config = LossConfig(loss=config.loss, **config_dict)
+    updated_config = config.model_copy(update=config_dict)
 
     return loss, updated_config
