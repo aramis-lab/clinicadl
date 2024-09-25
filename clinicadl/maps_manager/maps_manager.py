@@ -893,10 +893,9 @@ class MapsManager:
             content = f.read()
 
     def read_maps_json(self):
-        """Returns the training parameters dictionary."""
+        """Returns the training dictionary."""
         json_path = self.config.maps_path / "maps.json"
-        parameters = read_json(json_path)
-        return parameters
+        return read_json(json_path)
 
     def get_state_dict(
         self,
