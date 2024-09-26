@@ -33,6 +33,7 @@ from clinicadl.utils.iotools.trainer_utils import (
     patch_to_read_json,
 )
 from clinicadl.trainer.tasks_utils import create_training_config
+from clinicadl.validator.validator import Validator
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
@@ -43,8 +44,6 @@ from clinicadl.trainer.tasks_utils import (
     generate_sampler,
     get_criterion,
     save_outputs,
-    test,
-    test_da,
 )
 
 logger = getLogger("clinicadl.trainer")
@@ -64,6 +63,7 @@ class Trainer:
         """
         self.config = config
         self.maps_manager = self._init_maps_manager(config)
+        self.validator = Validator()
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
@@ -371,12 +371,14 @@ class Trainer:
             )
 
             if cluster.master:
-                self.maps_manager._ensemble_prediction(
+                self.validator._ensemble_prediction(
+                    self.maps_manager,
                     "train",
                     split,
                     self.config.validation.selection_metrics,
                 )
-                self.maps_manager._ensemble_prediction(
+                self.validator._ensemble_prediction(
+                    self.maps_manager,
                     "validation",
                     split,
                     self.config.validation.selection_metrics,
@@ -495,12 +497,14 @@ class Trainer:
                 resume = False
 
             if cluster.master:
-                self.maps_manager._ensemble_prediction(
+                self.validator._ensemble_prediction(
+                    self.maps_manager,
                     "train",
                     split,
                     self.config.validation.selection_metrics,
                 )
-                self.maps_manager._ensemble_prediction(
+                self.validator._ensemble_prediction(
+                    self.maps_manager,
                     "validation",
                     split,
                     self.config.validation.selection_metrics,
@@ -706,12 +710,14 @@ class Trainer:
                 resume=resume,
             )
 
-            self.maps_manager._ensemble_prediction(
+            self.validator._ensemble_prediction(
+                self.maps_manager,
                 "train",
                 split,
                 self.config.validation.selection_metrics,
             )
-            self.maps_manager._ensemble_prediction(
+            self.validator._ensemble_prediction(
+                self.maps_manager,
                 "validation",
                 split,
                 self.config.validation.selection_metrics,
@@ -861,7 +867,7 @@ class Trainer:
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = test(
+                            _, metrics_train = self.validator.test(
                                 mode=self.maps_manager.mode,
                                 metrics_module=self.maps_manager.metrics_module,
                                 n_classes=self.maps_manager.n_classes,
@@ -871,7 +877,7 @@ class Trainer:
                                 criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
-                            _, metrics_valid = test(
+                            _, metrics_valid = self.validator.test(
                                 mode=self.maps_manager.mode,
                                 metrics_module=self.maps_manager.metrics_module,
                                 n_classes=self.maps_manager.n_classes,
@@ -928,7 +934,7 @@ class Trainer:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = test(
+                _, metrics_train = self.validator.test(
                     mode=self.maps_manager.mode,
                     metrics_module=self.maps_manager.metrics_module,
                     n_classes=self.maps_manager.n_classes,
@@ -938,7 +944,7 @@ class Trainer:
                     criterion=criterion,
                     amp=self.maps_manager.std_amp,
                 )
-                _, metrics_valid = test(
+                _, metrics_valid = self.validator.test(
                     mode=self.maps_manager.mode,
                     metrics_module=self.maps_manager.metrics_module,
                     n_classes=self.maps_manager.n_classes,
@@ -998,7 +1004,8 @@ class Trainer:
             epoch += 1
 
         del model
-        self.maps_manager._test_loader(
+        self.validator._test_loader(
+            self.maps_manager,
             train_loader,
             criterion,
             "train",
@@ -1007,7 +1014,8 @@ class Trainer:
             amp=self.maps_manager.std_amp,
             network=network,
         )
-        self.maps_manager._test_loader(
+        self.validator._test_loader(
+            self.maps_manager,
             valid_loader,
             criterion,
             "validation",
@@ -1018,7 +1026,8 @@ class Trainer:
         )
 
         if save_outputs(self.maps_manager.network_task):
-            self.maps_manager._compute_output_tensors(
+            self.validator._compute_output_tensors(
+                self.maps_manager,
                 train_loader.dataset,
                 "train",
                 split,
@@ -1026,7 +1035,8 @@ class Trainer:
                 nb_images=1,
                 network=network,
             )
-            self.maps_manager._compute_output_tensors(
+            self.validator._compute_output_tensors(
+                self.maps_manager,
                 valid_loader.dataset,
                 "validation",
                 split,
@@ -1400,7 +1410,8 @@ class Trainer:
 
             epoch += 1
 
-        self.maps_manager._test_loader_ssda(
+        self.validator._test_loader_ssda(
+            self.maps_manager,
             train_target_loader,
             criterion,
             data_group="train",
@@ -1410,7 +1421,8 @@ class Trainer:
             target=True,
             alpha=0,
         )
-        self.maps_manager._test_loader_ssda(
+        self.validator._test_loader_ssda(
+            self.maps_manager,
             valid_loader,
             criterion,
             data_group="validation",
@@ -1422,7 +1434,8 @@ class Trainer:
         )
 
         if save_outputs(self.maps_manager.network_task):
-            self.maps_manager._compute_output_tensors(
+            self.validator._compute_output_tensors(
+                self.maps_manager,
                 train_target_loader.dataset,
                 "train",
                 split,
@@ -1430,7 +1443,8 @@ class Trainer:
                 nb_images=1,
                 network=network,
             )
-            self.maps_manager._compute_output_tensors(
+            self.validator._compute_output_tensors(
+                self.maps_manager,
                 train_target_loader.dataset,
                 "validation",
                 split,
