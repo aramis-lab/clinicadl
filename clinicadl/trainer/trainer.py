@@ -70,11 +70,13 @@ class Trainer:
         # temporary: to match CLI data. TODO : change CLI data
 
         parameters, maps_path = create_parameters_dict(config)
+
         if maps_path.is_dir():
             return MapsManager(
                 maps_path, verbose=None
             )  # TODO : precise which parameters in config are useful
         else:
+            parameters["maps_path"] = maps_path
             return MapsManager(
                 maps_path, parameters, verbose=None
             )  # TODO : precise which parameters in config are useful
@@ -106,7 +108,7 @@ class Trainer:
         if not (config_file).is_file():
             raise FileNotFoundError(f"No file found at {str(config_file)}.")
         config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
-        config_dict["maps_dir"] = maps_path
+        config_dict["maps_path"] = maps_path
         config_object = create_training_config(config_dict["network_task"])(
             **config_dict
         )

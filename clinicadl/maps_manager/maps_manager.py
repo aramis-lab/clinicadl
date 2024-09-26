@@ -112,7 +112,9 @@ class MapsManager:
 
         # Initiate MAPS
         else:
+            print(parameters)
             config = TmpConfig(**parameters)
+            config.check_args()
 
             config.split_name = "split"  # Used only for retro-compatibility
             if cluster.master:
@@ -127,7 +129,7 @@ class MapsManager:
                 (maps_path / "groups").mkdir(parents=True)
 
                 logger.info(f"A new MAPS was created at {maps_path}")
-                self.write_parameters(config.maps_path, self.config.model_dump())
+                self.write_parameters(config.maps_path, dict(config.model_dump()))
                 self._write_requirements_version()
                 self._write_training_data()
                 self._write_train_val_groups()
@@ -465,7 +467,7 @@ class MapsManager:
         logger.debug("Writing training data...")
 
         train_df = load_data_test(
-            self.config.tsv_directory,
+            self.config.tsv_path,
             self.config.diagnoses,
             baseline=False,
             multi_cohort=self.config.multi_cohort,

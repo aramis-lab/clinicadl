@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 import torchvision.transforms as torch_transforms
@@ -53,7 +53,7 @@ logger = getLogger("clinicadl.tmp")
 
 class TmpConfig(BaseModel):
     """
-    arguments needed : caps_directory, maps_dir, loss
+    arguments needed : caps_directory, maps_path, loss
     """
 
     output_size: Optional[int] = None
@@ -63,9 +63,10 @@ class TmpConfig(BaseModel):
     split_name: Optional[str] = None
     selection_threshold: Optional[int] = None
     num_networks: Optional[int] = None
-    input_size: Optional[int] = None
+    input_size: Optional[Sequence[int]] = None
     validation: str = "SingleSplit"
     std_amp: Optional[bool] = None
+    preprocessing_dict: Optional[dict] = None
 
     emissions_calculator: bool = False
     track_exp: Optional[ExperimentTracking] = None
@@ -76,7 +77,7 @@ class TmpConfig(BaseModel):
 
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
-    tsv_directory: Optional[Path] = None  # not needed in predict ?
+    tsv_path: Optional[Path] = None  # not needed in predict ?
 
     caps_directory: Path
     baseline: bool = False
@@ -145,7 +146,7 @@ class TmpConfig(BaseModel):
     skip_leak_check: bool = False
 
     # pydantic config
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
     def check_mandatory_args(self) -> Self:
@@ -153,9 +154,9 @@ class TmpConfig(BaseModel):
             raise ClinicaDLArgumentError(
                 "caps_directory is a mandatory argument and it's set to None"
             )
-        if self.tsv_directory is None:
+        if self.tsv_path is None:
             raise ClinicaDLArgumentError(
-                "tsv_directory is a mandatory argument and it's set to None"
+                "tsv_path is a mandatory argument and it's set to None"
             )
         if self.preprocessing_dict is None:
             raise ClinicaDLArgumentError(
@@ -171,7 +172,6 @@ class TmpConfig(BaseModel):
             )
         return self
 
-    @model_validator(mode="after")
     def check_args(self) -> Self:
         transfo_config = TransformsConfig(
             normalize=self.normalize,
@@ -182,7 +182,7 @@ class TmpConfig(BaseModel):
         if self.network_task == "classification":
             from clinicadl.maps_manager.config import init_split_manager
 
-            if self.n_splits > 1:
+            if self.n_splits > 1 and self.validation == "SingleSplit":
                 self.validation = "KFoldSplit"
 
             split_manager = init_split_manager(
@@ -249,7 +249,6 @@ class TmpConfig(BaseModel):
                 f"must be a subset of metrics used for evaluation "
                 f"{possible_selection_metrics_set}."
             )
-        return self
 
     @model_validator(mode="after")
     def check_gpu(self) -> Self:
@@ -266,9 +265,12 @@ class TmpConfig(BaseModel):
             )
         return self
 
-    @field_validator("split", mode="before")
-    @field_validator("diagnoses", mode="before")
-    @field_validator("selection_metrics", mode="before")
+    @field_validator("track_exp", mode="before")
+    def check_track_exp(cls, v):
+        if v == "":
+            return None
+
+    @field_validator("split", "diagnoses", "selection_metrics", mode="before")
     def list_to_tuples(cls, v):
         if isinstance(v, list):
             return tuple(v)
@@ -345,9 +347,8 @@ class TmpConfig(BaseModel):
 
         return caps_dict
 
-    @computed_field
-    @property
-    def preprocessing_dict(self) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def check_preprocessing_dict(self) -> Self:
         """
         Gets the preprocessing dictionary from a preprocessing json file.
 
@@ -363,38 +364,41 @@ class TmpConfig(BaseModel):
         """
         from clinicadl.caps_dataset.data import CapsDataset
 
-        if self.preprocessing_json is not None:
-            if not self.multi_cohort:
-                preprocessing_json = (
-                    self.caps_directory / "tensor_extraction" / self.preprocessing_json
-                )
-            else:
-                caps_dict = self.caps_dict
-                json_found = False
-                for caps_name, caps_path in caps_dict.items():
+        if self.preprocessing_dict is None:
+            if self.preprocessing_json is not None:
+                if not self.multi_cohort:
                     preprocessing_json = (
-                        caps_path / "tensor_extraction" / self.preprocessing_json
+                        self.caps_directory
+                        / "tensor_extraction"
+                        / self.preprocessing_json
                     )
-                    if preprocessing_json.is_file():
-                        logger.info(
-                            f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+                else:
+                    caps_dict = self.caps_dict
+                    json_found = False
+                    for caps_name, caps_path in caps_dict.items():
+                        preprocessing_json = (
+                            caps_path / "tensor_extraction" / self.preprocessing_json
                         )
-                        json_found = True
-                if not json_found:
-                    raise ValueError(
-                        f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
-                        f"in {caps_dict}."
-                    )
+                        if preprocessing_json.is_file():
+                            logger.info(
+                                f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+                            )
+                            json_found = True
+                    if not json_found:
+                        raise ValueError(
+                            f"Preprocessing JSON {self.preprocessing_json} was not found for any CAPS "
+                            f"in {caps_dict}."
+                        )
 
-        preprocessing_dict = read_preprocessing(preprocessing_json)
+                self.preprocessing_dict = read_preprocessing(preprocessing_json)
 
-        if (
-            preprocessing_dict["mode"] == "roi"
-            and "roi_background_value" not in preprocessing_dict
-        ):
-            preprocessing_dict["roi_background_value"] = 0
+            if (
+                self.preprocessing_dict["mode"] == "roi"
+                and "roi_background_value" not in self.preprocessing_dict
+            ):
+                self.preprocessing_dict["roi_background_value"] = 0
 
-        return preprocessing_dict
+        return self
 
     @computed_field
     @property
