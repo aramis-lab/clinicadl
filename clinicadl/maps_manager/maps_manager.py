@@ -7,8 +7,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 import torch
-import torch.distributed as dist
-from torch.amp import autocast
 
 from clinicadl.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.caps_dataset.data import (
@@ -18,7 +16,6 @@ from clinicadl.maps_manager.tmp_config import TmpConfig
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
-    find_selection_metrics,
 )
 from clinicadl.predict.utils import get_prediction
 from clinicadl.trainer.tasks_utils import (
@@ -27,8 +24,6 @@ from clinicadl.trainer.tasks_utils import (
     evaluation_metrics,
     generate_label_code,
     output_size,
-    test,
-    test_da,
 )
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils import cluster
@@ -81,62 +76,69 @@ class MapsManager:
 
             test_parameters = self.read_maps_json()
             config = TmpConfig(**test_parameters)
-
-            config.n_classes = config.output_size
-            if config.network_task == "classification":
-                if config.n_classes is None:
-                    config.n_classes = output_size(
-                        config.network_task, None, config.data_df, config.label
-                    )
-                config.metrics_module = MetricModule(
-                    evaluation_metrics(config.network_task), n_classes=config.n_classes
-                )
-
-            elif (
-                config.network_task == "regression"
-                or config.network_task == "reconstruction"
-            ):
-                config.metrics_module = MetricModule(
-                    evaluation_metrics(config.network_task), n_classes=None
-                )
-
-            else:
-                raise NotImplementedError(
-                    f"Task {config.network_task} is not implemented in ClinicaDL. "
-                    f"Please choose between classification, regression and reconstruction."
-                )
-
-            config.split_name = (
-                self._check_split_wording()
-            )  # Used only for retro-compatibility
+            self.init_existing_maps(config)
 
         # Initiate MAPS
         else:
             print(parameters)
             config = TmpConfig(**parameters)
-            config.check_args()
-
-            config.split_name = "split"  # Used only for retro-compatibility
-            if cluster.master:
-                if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                    maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
-                ):
-                    raise MAPSError(
-                        f"You are trying to create a new MAPS at {maps_path} but "
-                        f"this already corresponds to a file or a non-empty folder. \n"
-                        f"Please remove it or choose another location."
-                    )
-                (maps_path / "groups").mkdir(parents=True)
-
-                logger.info(f"A new MAPS was created at {maps_path}")
-                self.write_parameters(config.maps_path, dict(config.model_dump()))
-                self._write_requirements_version()
-                self._write_training_data()
-                self._write_train_val_groups()
-                self._write_information()
+            self.init_new_maps(config)
 
         self.config = config
         init_ddp(gpu=self.config.gpu, logger=logger)
+
+    def init_existing_maps(self, config: TmpConfig):
+        config.n_classes = config.output_size
+        if config.network_task == "classification":
+            if config.n_classes is None:
+                config.n_classes = output_size(
+                    config.network_task, None, config.data_df, config.label
+                )
+            config.metrics_module = MetricModule(
+                evaluation_metrics(config.network_task), n_classes=config.n_classes
+            )
+
+        elif (
+            config.network_task == "regression"
+            or config.network_task == "reconstruction"
+        ):
+            config.metrics_module = MetricModule(
+                evaluation_metrics(config.network_task), n_classes=None
+            )
+
+        else:
+            raise NotImplementedError(
+                f"Task {config.network_task} is not implemented in ClinicaDL. "
+                f"Please choose between classification, regression and reconstruction."
+            )
+
+        config.split_name = (
+            self._check_split_wording()
+        )  # Used only for retro-compatibility
+
+    def init_new_maps(self, config: TmpConfig):
+        config.check_args()
+        config.split_name = "split"  # Used only for retro-compatibility
+        if cluster.master:
+            if (
+                config.maps_path.is_dir() and config.maps_path.is_file()
+            ) or (  # Non-folder file
+                config.maps_path.is_dir()
+                and list(config.maps_path.iterdir())  # Non empty folder
+            ):
+                raise MAPSError(
+                    f"You are trying to create a new MAPS at {config.maps_path} but "
+                    f"this already corresponds to a file or a non-empty folder. \n"
+                    f"Please remove it or choose another location."
+                )
+            (config.maps_path / "groups").mkdir(parents=True)
+
+            logger.info(f"A new MAPS was created at {config.maps_path}")
+            self.write_parameters(config.maps_path, dict(config.model_dump()))
+            self._write_requirements_version()
+            self._write_training_data()
+            self._write_train_val_groups()
+            self._write_information()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -145,282 +147,11 @@ class MapsManager:
         else:
             raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
 
-    ###################################
-    # High-level functions templates  #
-    ###################################
-    def _test_loader(
-        self,
-        dataloader,
-        criterion,
-        data_group: str,
-        split: int,
-        selection_metrics,
-        use_labels=True,
-        gpu=None,
-        amp=False,
-        network=None,
-        report_ci=True,
-    ):
-        """
-        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
-
-        Args:
-            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
-            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
-            data_group (str): name of the data group used for the testing task.
-            split (int): Index of the split used to train the model tested.
-            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
-            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            if cluster.master:
-                log_dir = (
-                    self.config.maps_path
-                    / f"{self.config.split_name}-{split}"
-                    / f"best-{selection_metric}"
-                    / data_group
-                )
-                self.write_description_log(
-                    log_dir,
-                    data_group,
-                    dataloader.dataset.config.data.caps_dict,
-                    dataloader.dataset.config.data.data_df,
-                )
-
-            # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.config.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-            )
-            model = DDP(
-                model, fsdp=self.config.fully_sharded_data_parallel, amp=self.config.amp
-            )
-
-            prediction_df, metrics = test(
-                mode=self.config.mode,
-                metrics_module=self.config.metrics_module,
-                n_classes=self.config.n_classes,
-                network_task=self.config.network_task,
-                model=model,
-                dataloader=dataloader,
-                criterion=criterion,
-                use_labels=use_labels,
-                amp=amp,
-                report_ci=report_ci,
-            )
-            if use_labels:
-                if network is not None:
-                    metrics[f"{self.config.mode}_id"] = network
-
-                loss_to_log = (
-                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
-                )
-
-                logger.info(
-                    f"{self.config.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
-                )
-
-            if cluster.master:
-                # Replace here
-                self._mode_level_to_tsv(
-                    prediction_df,
-                    metrics,
-                    split,
-                    selection_metric,
-                    data_group=data_group,
-                )
-
-    def _test_loader_ssda(
-        self,
-        dataloader,
-        criterion,
-        alpha,
-        data_group,
-        split,
-        selection_metrics,
-        use_labels=True,
-        gpu=None,
-        network=None,
-        target=False,
-        report_ci=True,
-    ):
-        """
-        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
-
-        Args:
-            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
-            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
-            data_group (str): name of the data group used for the testing task.
-            split (int): Index of the split used to train the model tested.
-            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
-            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            log_dir = (
-                self.config.maps_path
-                / f"{self.config.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-            )
-            self.write_description_log(
-                log_dir,
-                data_group,
-                dataloader.dataset.caps_dict,
-                dataloader.dataset.df,
-            )
-
-            # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.config.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-            )
-            prediction_df, metrics = test_da(
-                self.config.network_task,
-                model,
-                dataloader,
-                criterion,
-                target=target,
-                report_ci=report_ci,
-            )
-            if use_labels:
-                if network is not None:
-                    metrics[f"{self.config.mode}_id"] = network
-
-                if report_ci:
-                    loss_to_log = metrics["Metric_values"][-1]
-                else:
-                    loss_to_log = metrics["loss"]
-
-                logger.info(
-                    f"{self.config.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
-                )
-
-            # Replace here
-            self._mode_level_to_tsv(
-                prediction_df, metrics, split, selection_metric, data_group=data_group
-            )
-
-    @torch.no_grad()
-    def _compute_output_tensors(
-        self,
-        dataset,
-        data_group,
-        split,
-        selection_metrics,
-        nb_images=None,
-        gpu=None,
-        network=None,
-    ):
-        """
-        Compute the output tensors and saves them in the MAPS.
-
-        Args:
-            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
-            data_group (str): name of the data group used for the task.
-            split (int): split number.
-            selection_metrics (list[str]): metrics used for model selection.
-            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.config.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-                nb_unfrozen_layer=self.config.nb_unfrozen_layer,
-            )
-            model = DDP(
-                model, fsdp=self.config.fully_sharded_data_parallel, amp=self.config.amp
-            )
-            model.eval()
-
-            tensor_path = (
-                self.maps_path
-                / f"{self.config.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-                / "tensors"
-            )
-            if cluster.master:
-                tensor_path.mkdir(parents=True, exist_ok=True)
-            dist.barrier()
-
-            if nb_images is None:  # Compute outputs for the whole data set
-                nb_modes = len(dataset)
-            else:
-                nb_modes = nb_images * dataset.elem_per_image
-
-            for i in [
-                *range(cluster.rank, nb_modes, cluster.world_size),
-                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
-            ]:
-                data = dataset[i]
-                image = data["image"]
-                x = image.unsqueeze(0).to(model.device)
-                with autocast("cuda", enabled=self.config.std_amp):
-                    output = model(x)
-                output = output.squeeze(0).cpu().float()
-                participant_id = data["participant_id"]
-                session_id = data["session_id"]
-                mode_id = data[f"{self.config.mode}_id"]
-                input_filename = f"{participant_id}_{session_id}_{self.config.mode}-{mode_id}_input.pt"
-                output_filename = f"{participant_id}_{session_id}_{self.config.mode}-{mode_id}_output.pt"
-                torch.save(image, tensor_path / input_filename)
-                torch.save(output, tensor_path / output_filename)
-                logger.debug(f"File saved at {[input_filename, output_filename]}")
-
-    def _ensemble_prediction(
-        self,
-        data_group,
-        split,
-        selection_metrics,
-        use_labels=True,
-        skip_leak_check=False,
-    ):
-        """Computes the results on the image-level."""
-
-        if not selection_metrics:
-            selection_metrics = find_selection_metrics(
-                self.config.maps_path, self.config.split_name, split
-            )
-
-        for selection_metric in selection_metrics:
-            #####################
-            # Soft voting
-            if self.config.num_networks > 1 and not skip_leak_check:
-                self._ensemble_to_tsv(
-                    split,
-                    selection=selection_metric,
-                    data_group=data_group,
-                    use_labels=use_labels,
-                )
-            elif self.config.mode != "image" and not skip_leak_check:
-                self._mode_to_image_tsv(
-                    split,
-                    selection=selection_metric,
-                    data_group=data_group,
-                    use_labels=use_labels,
-                )
-
     ###############################
     # Checks                      #
     ###############################
 
+    # TODO: To put elsewhere
     def _check_split_wording(self):
         """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
 
@@ -757,6 +488,8 @@ class MapsManager:
     ###############################
     # Objects initialization      #
     ###############################
+
+    # TODO: to put in ClinicaDL model ?
     def _init_model(
         self,
         transfer_path: Optional[Path] = None,
@@ -846,6 +579,7 @@ class MapsManager:
 
         return model, current_epoch
 
+    # TODO: To put in the splitter
     def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
         # A intégrer directement dans _init_split_manager
         from clinicadl.validation import split_manager

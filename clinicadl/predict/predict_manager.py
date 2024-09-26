@@ -29,6 +29,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
+from clinicadl.validator.validator import Validator
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -38,6 +39,7 @@ class PredictManager:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
+        self.validator = Validator()
 
     def predict(
         self,
@@ -183,7 +185,8 @@ class PredictManager:
                     split_selection_metrics,
                 )
             if cluster.master:
-                self.maps_manager._ensemble_prediction(
+                self.validator._ensemble_prediction(
+                    self.maps_manager,
                     self._config.data_group,
                     split,
                     self._config.selection_metrics,
@@ -288,12 +291,13 @@ class PredictManager:
                 if self._config.n_proc is not None
                 else self.maps_manager.n_proc,
             )
-            self.maps_manager._test_loader(
-                test_loader,
-                criterion,
-                self._config.data_group,
-                split,
-                split_selection_metrics,
+            self.validator._test_loader(
+                maps_manager=self.maps_manager,
+                dataloader=test_loader,
+                criterion=criterion,
+                data_group=self._config.data_group,
+                split=split,
+                selection_metrics=split_selection_metrics,
                 use_labels=self._config.use_labels,
                 gpu=self._config.gpu,
                 amp=self._config.amp,
@@ -301,7 +305,8 @@ class PredictManager:
             )
             if self._config.save_tensor:
                 logger.debug("Saving tensors")
-                self.maps_manager._compute_output_tensors(
+                self.validator._compute_output_tensors(
+                    self.maps_manager,
                     data_test,
                     self._config.data_group,
                     split,
@@ -416,7 +421,8 @@ class PredictManager:
             if self._config.n_proc is not None
             else self.maps_manager.n_proc,
         )
-        self.maps_manager._test_loader(
+        self.validator._test_loader(
+            self.maps_manager,
             test_loader,
             criterion,
             self._config.data_group,
@@ -428,7 +434,8 @@ class PredictManager:
         )
         if self._config.save_tensor:
             logger.debug("Saving tensors")
-            self.maps_manager._compute_output_tensors(
+            self.validator._compute_output_tensors(
+                self.maps_manager,
                 data_test,
                 self._config.data_group,
                 split,

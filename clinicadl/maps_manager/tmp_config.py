@@ -172,7 +172,7 @@ class TmpConfig(BaseModel):
             )
         return self
 
-    def check_args(self) -> Self:
+    def check_args(self):
         transfo_config = TransformsConfig(
             normalize=self.normalize,
             size_reduction=self.size_reduction,
