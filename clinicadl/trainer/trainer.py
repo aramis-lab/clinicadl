@@ -44,8 +44,6 @@ from clinicadl.trainer.tasks_utils import (
     generate_sampler,
     get_criterion,
     save_outputs,
-    test,
-    test_da,
 )
 
 logger = getLogger("clinicadl.trainer")
@@ -869,7 +867,7 @@ class Trainer:
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = test(
+                            _, metrics_train = self.validator.test(
                                 mode=self.maps_manager.mode,
                                 metrics_module=self.maps_manager.metrics_module,
                                 n_classes=self.maps_manager.n_classes,
@@ -879,7 +877,7 @@ class Trainer:
                                 criterion=criterion,
                                 amp=self.maps_manager.std_amp,
                             )
-                            _, metrics_valid = test(
+                            _, metrics_valid = self.validator.test(
                                 mode=self.maps_manager.mode,
                                 metrics_module=self.maps_manager.metrics_module,
                                 n_classes=self.maps_manager.n_classes,
@@ -936,7 +934,7 @@ class Trainer:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = test(
+                _, metrics_train = self.validator.test(
                     mode=self.maps_manager.mode,
                     metrics_module=self.maps_manager.metrics_module,
                     n_classes=self.maps_manager.n_classes,
@@ -946,7 +944,7 @@ class Trainer:
                     criterion=criterion,
                     amp=self.maps_manager.std_amp,
                 )
-                _, metrics_valid = test(
+                _, metrics_valid = self.validator.test(
                     mode=self.maps_manager.mode,
                     metrics_module=self.maps_manager.metrics_module,
                     n_classes=self.maps_manager.n_classes,
