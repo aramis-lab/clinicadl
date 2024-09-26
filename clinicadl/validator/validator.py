@@ -40,20 +40,6 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class Validator:
-    def __init__(
-        self,
-        # maps_path: Path,
-        # split_name,
-        # num_networks,
-        # mode,
-    ):
-        # maps_manager.maps_path = maps_path
-        # maps_manager.split_name = split_name
-        # maps_manager.num_networks = num_networks
-        # maps_manager.mode = mode
-
-        print("test")
-
     def test(
         self,
         mode: str,
