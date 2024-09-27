@@ -15,7 +15,6 @@ image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
 
 DeepLearningPrepareData(image_config)
 
-
 dataset = return_dataset(
     input_dir,
     data_df,
