@@ -180,7 +180,7 @@ class TmpConfig(BaseModel):
         )
 
         if self.network_task == "classification":
-            from clinicadl.maps_manager.config import init_split_manager
+            from clinicadl.splitter.split_utils import init_split_manager
 
             if self.n_splits > 1 and self.validation == "SingleSplit":
                 self.validation = "KFoldSplit"

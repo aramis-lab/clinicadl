@@ -20,6 +20,7 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.predict.utils import get_prediction
+from clinicadl.splitter.split_utils import init_split_manager
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -95,7 +96,7 @@ class InOutManager:
     ):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
-        split_manager = self._init_split_manager()
+        split_manager = init_split_manager()
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]

@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.caps_dataset.data import return_dataset
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.trainer.config.classification import ClassificationConfig
 from clinicadl.trainer.trainer import Trainer
@@ -12,6 +15,22 @@ image_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
 
 DeepLearningPrepareData(image_config)
 
+
+dataset = return_dataset(
+    input_dir,
+    data_df,
+    preprocessing_dict,
+    transforms_config,
+    label,
+    label_code,
+    cnn_index,
+    label_presence,
+    multi_cohort,
+)
+
+
 config = ClassificationConfig()
 trainer = Trainer(config)
-trainer.train(split_list=config.cross_validation.split, overwrite=True)
+trainer.train(
+    dataset.dataloader,
+)

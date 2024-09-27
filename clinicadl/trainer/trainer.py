@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import pandas as pd
 import torch
@@ -34,6 +34,8 @@ from clinicadl.utils.iotools.trainer_utils import (
 )
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
+from clinicadl.splitter.split_utils import init_split_manager
+from clinicadl.maps_manager.tmp_config import TmpConfig
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
@@ -62,6 +64,8 @@ class Trainer:
         config : TrainConfig
         """
         self.config = config
+        self.tmp_config = TmpConfig(**config.model_dump())
+
         self.maps_manager = self._init_maps_manager(config)
         self.validator = Validator()
         self._check_args()
@@ -163,7 +167,11 @@ class Trainer:
             )
         )
         # TODO : check these two lines. Why do we need a split_manager?
-        split_manager = self.maps_manager._init_split_manager(split_list=splits)
+        split_manager = init_split_manager(
+            validation=self.tmp_config.validation,
+            parameters=self.tmp_config.model_dump(),
+            split_list=splits,
+        )
         split_iterator = split_manager.split_iterator()
         ###
         absent_splits = set(split_iterator) - stopped_splits - finished_splits
@@ -211,9 +219,21 @@ class Trainer:
         MAPSError
             If splits specified in input already exist and overwrite is False.
         """
-        existing_splits = []
 
-        split_manager = self.maps_manager._init_split_manager(split_list)
+        self.check_split_list(split_list=split_list, overwrite=overwrite)
+
+        if self.config.model.multi_network:
+            self._train_multi(split_list, resume=False)
+        elif self.config.ssda.ssda_network:
+            self._train_ssda(split_list, resume=False)
+        else:
+            self._train_single(split_list, resume=False)
+
+    def check_split_list(self, split_list, overwrite):
+        existing_splits = []
+        split_manager = init_split_manager(
+            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+        )
         for split in split_manager.split_iterator():
             split_path = (
                 self.maps_manager.maps_path / f"{self.maps_manager.split_name}-{split}"
@@ -231,13 +251,6 @@ class Trainer:
                 f"specify a list of splits not intersecting the previous list, "
                 f"or use overwrite to erase previously trained splits."
             )
-
-        if self.config.model.multi_network:
-            self._train_multi(split_list, resume=False)
-        elif self.config.ssda.ssda_network:
-            self._train_ssda(split_list, resume=False)
-        else:
-            self._train_single(split_list, resume=False)
 
     def _resume(
         self,
@@ -258,7 +271,9 @@ class Trainer:
             If splits specified in input do not exist.
         """
         missing_splits = []
-        split_manager = self.maps_manager._init_split_manager(split_list)
+        split_manager = init_split_manager(
+            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+        )
 
         for split in split_manager.split_iterator():
             if not (
@@ -281,6 +296,66 @@ class Trainer:
         else:
             self._train_single(split_list, resume=True)
 
+    def get_dataloader(
+        self,
+        input_dir: Path,
+        data_df: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        transforms_config: TransformsConfig,
+        label: Optional[str] = None,
+        label_code: Optional[Dict[str, int]] = None,
+        cnn_index: Optional[int] = None,
+        label_presence: bool = True,
+        multi_cohort: bool = False,
+        network_task: Union[str, Task] = "classification",
+        sampler_option: str = "random",
+        n_bins: int = 5,
+        dp_degree: Optional[int] = None,
+        rank: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        n_proc: Optional[int] = None,
+        worker_init_fn: Optional[function] = None,
+        shuffle: Optional[bool] = None,
+        num_replicas: Optional[int] = None,
+        homemade_sampler: bool = False,
+    ):
+        dataset = return_dataset(
+            input_dir=input_dir,
+            data_df=data_df,
+            preprocessing_dict=preprocessing_dict,
+            transforms_config=transforms_config,
+            multi_cohort=multi_cohort,
+            label=label,
+            label_code=label_code,
+        )
+        if homemade_sampler:
+            sampler = generate_sampler(
+                network_task=network_task,
+                dataset=dataset,
+                sampler_option=sampler_option,
+                dp_degree=dp_degree,
+                rank=rank,
+            )
+        else:
+            sampler = DistributedSampler(
+                dataset,
+                num_replicas=num_replicas,
+                rank=rank,
+                shuffle=shuffle,
+            )
+
+        train_loader = DataLoader(
+            dataset=dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=n_proc,
+            worker_init_fn=worker_init_fn,
+            shuffle=shuffle,
+        )
+        logger.debug(f"Train loader size is {len(train_loader)}")
+
+        return train_loader
+
     def _train_single(
         self,
         split_list: Optional[List[int]] = None,
@@ -297,9 +372,10 @@ class Trainer:
         resume : bool (optional, default=False)
             If True, the job is resumed from checkpoint.
         """
-        # train_transforms, all_transforms = self.config.transforms.get_transforms()
 
-        split_manager = self.maps_manager._init_split_manager(split_list)
+        split_manager = init_split_manager(
+            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+        )
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(
@@ -311,56 +387,45 @@ class Trainer:
             split_df_dict = split_manager[split]
 
             logger.debug("Loading training data...")
-            data_train = return_dataset(
-                self.config.data.caps_directory,
-                split_df_dict["train"],
-                self.config.data.preprocessing_dict,
+
+            train_loader = self.get_dataloader(
+                input_dir=self.config.data.caps_directory,
+                data_df=split_df_dict["train"],
+                preprocessing_dict=self.config.data.preprocessing_dict,
                 transforms_config=self.config.transforms,
                 multi_cohort=self.config.data.multi_cohort,
                 label=self.config.data.label,
                 label_code=self.maps_manager.label_code,
-            )
-            logger.debug("Loading validation data...")
-            data_valid = return_dataset(
-                self.config.data.caps_directory,
-                split_df_dict["validation"],
-                self.config.data.preprocessing_dict,
-                transforms_config=self.config.transforms,
-                multi_cohort=self.config.data.multi_cohort,
-                label=self.config.data.label,
-                label_code=self.maps_manager.label_code,
-            )
-            train_sampler = generate_sampler(
-                self.maps_manager.network_task,
-                data_train,
-                self.config.dataloader.sampler,
+                network_task=self.maps_manager.network_task,
+                sampler_option=self.config.dataloader.sampler,
                 dp_degree=cluster.world_size,
                 rank=cluster.rank,
-            )
-            logger.debug(
-                f"Getting train and validation loader with batch size {self.config.dataloader.batch_size}"
-            )
-            train_loader = DataLoader(
-                data_train,
                 batch_size=self.config.dataloader.batch_size,
-                sampler=train_sampler,
-                num_workers=self.config.dataloader.n_proc,
+                n_proc=self.config.dataloader.n_proc,
                 worker_init_fn=pl_worker_init_function,
+                homemade_sampler=True,
             )
+
             logger.debug(f"Train loader size is {len(train_loader)}")
-            valid_sampler = DistributedSampler(
-                data_valid,
+            logger.debug("Loading validation data...")
+
+            valid_loader = self.get_dataloader(
+                input_dir=self.config.data.caps_directory,
+                data_df=split_df_dict["validation"],
+                preprocessing_dict=self.config.data.preprocessing_dict,
+                transforms_config=self.config.transforms,
+                multi_cohort=self.config.data.multi_cohort,
+                label=self.config.data.label,
+                label_code=self.maps_manager.label_code,
+                network_task=self.maps_manager.network_task,
                 num_replicas=cluster.world_size,
                 rank=cluster.rank,
-                shuffle=False,
-            )
-            valid_loader = DataLoader(
-                data_valid,
                 batch_size=self.config.dataloader.batch_size,
+                n_proc=self.config.dataloader.n_proc,
                 shuffle=False,
-                num_workers=self.config.dataloader.n_proc,
-                sampler=valid_sampler,
+                homemade_sampler=False,
             )
+
             logger.debug(f"Validation loader size is {len(valid_loader)}")
             from clinicadl.callbacks.callbacks import CodeCarbonTracker
 
@@ -406,7 +471,9 @@ class Trainer:
         """
         # train_transforms, all_transforms = self.config.transforms.get_transforms()
 
-        split_manager = self.maps_manager._init_split_manager(split_list)
+        split_manager = init_split_manager(
+            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+        )
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(
@@ -437,54 +504,41 @@ class Trainer:
             for network in range(first_network, self.maps_manager.num_networks):
                 logger.info(f"Train network {network}")
 
-                data_train = return_dataset(
-                    self.config.data.caps_directory,
-                    split_df_dict["train"],
-                    self.config.data.preprocessing_dict,
+                train_loader = self.get_dataloader(
+                    input_dir=self.config.data.caps_directory,
+                    data_df=split_df_dict["train"],
+                    preprocessing_dict=self.config.data.preprocessing_dict,
                     transforms_config=self.config.transforms,
                     multi_cohort=self.config.data.multi_cohort,
                     label=self.config.data.label,
                     label_code=self.maps_manager.label_code,
                     cnn_index=network,
-                )
-                data_valid = return_dataset(
-                    self.config.data.caps_directory,
-                    split_df_dict["validation"],
-                    self.config.data.preprocessing_dict,
-                    transforms_config=self.config.transforms,
-                    multi_cohort=self.config.data.multi_cohort,
-                    label=self.config.data.label,
-                    label_code=self.maps_manager.label_code,
-                    cnn_index=network,
-                )
-
-                train_sampler = generate_sampler(
-                    self.maps_manager.network_task,
-                    data_train,
-                    self.config.dataloader.sampler,
+                    network_task=self.maps_manager.network_task,
+                    sampler_option=self.config.dataloader.sampler,
                     dp_degree=cluster.world_size,
                     rank=cluster.rank,
-                )
-                train_loader = DataLoader(
-                    data_train,
                     batch_size=self.config.dataloader.batch_size,
-                    sampler=train_sampler,
-                    num_workers=self.config.dataloader.n_proc,
+                    n_proc=self.config.dataloader.n_proc,
                     worker_init_fn=pl_worker_init_function,
+                    homemade_sampler=True,
                 )
 
-                valid_sampler = DistributedSampler(
-                    data_valid,
+                valid_loader = self.get_dataloader(
+                    input_dir=self.config.data.caps_directory,
+                    data_df=split_df_dict["validation"],
+                    preprocessing_dict=self.config.data.preprocessing_dict,
+                    transforms_config=self.config.transforms,
+                    multi_cohort=self.config.data.multi_cohort,
+                    label=self.config.data.label,
+                    label_code=self.maps_manager.label_code,
+                    cnn_index=network,
+                    network_task=self.maps_manager.network_task,
                     num_replicas=cluster.world_size,
                     rank=cluster.rank,
-                    shuffle=False,
-                )
-                valid_loader = DataLoader(
-                    data_valid,
                     batch_size=self.config.dataloader.batch_size,
+                    n_proc=self.config.dataloader.n_proc,
                     shuffle=False,
-                    num_workers=self.config.dataloader.n_proc,
-                    sampler=valid_sampler,
+                    homemade_sampler=False,
                 )
                 from clinicadl.callbacks.callbacks import CodeCarbonTracker
 
