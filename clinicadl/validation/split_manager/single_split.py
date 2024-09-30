@@ -23,7 +23,6 @@ class SingleSplit(SplitManager):
             multi_cohort,
             split_list,
         )
-        self.validation = "SingleSplit"
 
     def max_length(self) -> int:
         return 1

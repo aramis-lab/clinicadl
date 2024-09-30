@@ -166,7 +166,7 @@ class Trainer:
         )
         # TODO : check these two lines. Why do we need a split_manager?
         split_manager = init_split_manager(
-            validation=self.config.validation,
+            validation=self.maps_manager.validation,
             parameters=self.config.model_dump(),
             split_list=splits,
         )
@@ -225,7 +225,7 @@ class Trainer:
 
         else:
             split_manager = init_split_manager(
-                self.config.validation, self.config.model_dump(), split_list
+                self.maps_manager.validation, self.config.model_dump(), split_list
             )
             for split in split_manager.split_iterator():
                 logger.info(f"Training split {split}")
@@ -249,7 +249,7 @@ class Trainer:
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
         split_manager = init_split_manager(
-            self.config.validation, self.config.model_dump(), split_list
+            self.maps_manager.validation, self.config.model_dump(), split_list
         )
         for split in split_manager.split_iterator():
             split_path = (
@@ -289,7 +289,7 @@ class Trainer:
         """
         missing_splits = []
         split_manager = init_split_manager(
-            self.config.validation, self.config.model_dump(), split_list
+            self.maps_manager.validation, self.config.model_dump(), split_list
         )
 
         for split in split_manager.split_iterator():
@@ -310,7 +310,7 @@ class Trainer:
             self._train_ssda(split_list, resume=True)
         else:
             split_manager = init_split_manager(
-                self.config.validation, self.config.model_dump(), split_list
+                self.maps_manager.validation, self.config.model_dump(), split_list
             )
             for split in split_manager.split_iterator():
                 logger.info(f"Training split {split}")
