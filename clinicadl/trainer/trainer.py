@@ -35,7 +35,6 @@ from clinicadl.utils.iotools.trainer_utils import (
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
 from clinicadl.splitter.split_utils import init_split_manager
-from clinicadl.maps_manager.tmp_config import TmpConfig
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
@@ -64,7 +63,6 @@ class Trainer:
         config : TrainConfig
         """
         self.config = config
-        self.tmp_config = TmpConfig(**config.model_dump())
 
         self.maps_manager = self._init_maps_manager(config)
         self.validator = Validator()
@@ -168,8 +166,8 @@ class Trainer:
         )
         # TODO : check these two lines. Why do we need a split_manager?
         split_manager = init_split_manager(
-            validation=self.tmp_config.validation,
-            parameters=self.tmp_config.model_dump(),
+            validation=self.config.validation,
+            parameters=self.config.model_dump(),
             split_list=splits,
         )
         split_iterator = split_manager.split_iterator()
@@ -232,7 +230,7 @@ class Trainer:
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
         split_manager = init_split_manager(
-            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+            self.config.validation, self.config.model_dump(), split_list
         )
         for split in split_manager.split_iterator():
             split_path = (
@@ -272,7 +270,7 @@ class Trainer:
         """
         missing_splits = []
         split_manager = init_split_manager(
-            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+            self.config.validation, self.config.model_dump(), split_list
         )
 
         for split in split_manager.split_iterator():
@@ -374,7 +372,7 @@ class Trainer:
         """
 
         split_manager = init_split_manager(
-            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+            self.config.validation, self.config.model_dump(), split_list
         )
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -472,7 +470,7 @@ class Trainer:
         # train_transforms, all_transforms = self.config.transforms.get_transforms()
 
         split_manager = init_split_manager(
-            self.tmp_config.validation, self.tmp_config.model_dump(), split_list
+            self.config.validation, self.config.model_dump(), split_list
         )
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
