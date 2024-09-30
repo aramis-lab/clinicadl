@@ -25,6 +25,7 @@ class KFoldSplit(SplitManager):
             split_list,
         )
         self.n_splits = n_splits
+        self.validation = "Kfold"
 
     def max_length(self) -> int:
         return self.n_splits
