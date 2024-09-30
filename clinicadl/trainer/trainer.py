@@ -460,6 +460,7 @@ class Trainer:
             split,
             resume=resume,
             callbacks=[CodeCarbonTracker],
+            network=network,
         )
 
         if network is not None:
