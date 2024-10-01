@@ -583,6 +583,7 @@ def ensemble_prediction_classification(
         print(subject_df)
         for i in range(n_classes):
             print(subject_df[f"proba{i}"])
+        print(weight_series)
         proba_list = [
             np.average(subject_df[f"proba{i}"], weights=weight_series)
             for i in range(n_classes)
