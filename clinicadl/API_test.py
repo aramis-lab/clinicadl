@@ -53,6 +53,7 @@ for split in splitter.split_iterator():
             network=network,
             resume=resume,  # in a config class
             callbacks=[CodeCarbonTracker],  # in a config class ?
+            validator=validator,
         )
 
         validator._ensemble_prediction(

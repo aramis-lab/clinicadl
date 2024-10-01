@@ -149,6 +149,7 @@ class PredictManager:
                     self._config.data_group,
                     split,
                     self._config.skip_leak_check,
+                    selection_metrics=split_selection_metrics,
                 )
 
     def _predict_multi(
@@ -254,7 +255,7 @@ class PredictManager:
                 criterion=criterion,
                 data_group=self._config.data_group,
                 split=split,
-                # selection_metrics=split_selection_metrics,
+                selection_metrics=split_selection_metrics,
                 # use_labels=self._config.use_labels,
                 # gpu=self._config.gpu,
                 # amp=self._config.amp,
@@ -267,6 +268,7 @@ class PredictManager:
                     data_test,
                     self._config.data_group,
                     split,
+                    selection_metrics=split_selection_metrics,
                     network=network,
                 )
             if self._config.save_nifti:
@@ -382,7 +384,7 @@ class PredictManager:
             criterion,
             self._config.data_group,
             split,
-            # split_selection_metrics,
+            selection_metrics=split_selection_metrics,
             # use_labels=self._config.use_labels,
             # gpu=self._config.gpu,
             # amp=self._config.amp,
@@ -394,7 +396,7 @@ class PredictManager:
                 data_test,
                 self._config.data_group,
                 split,
-                # self._config.selection_metrics,
+                self._config.selection_metrics,
                 # gpu=self._config.gpu,
             )
         if self._config.save_nifti:

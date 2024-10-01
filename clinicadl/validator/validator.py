@@ -160,6 +160,7 @@ class Validator:
         criterion: _Loss,
         data_group: str,
         split: int,
+        selection_metrics,
         network: Optional[int] = None,
     ):
         """
@@ -176,7 +177,7 @@ class Validator:
             amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in self.config.selection_metrics:
+        for selection_metric in selection_metrics:
             if cluster.master:
                 log_dir = (
                     maps_manager.maps_path
@@ -242,6 +243,7 @@ class Validator:
         dataset,
         data_group,
         split,
+        selection_metrics,
         nb_images=None,
         network: Optional[int] = None,
     ):
@@ -257,7 +259,7 @@ class Validator:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in self.config.selection_metrics:
+        for selection_metric in selection_metrics:
             # load the best trained model during the training
             model, _ = maps_manager._init_model(
                 transfer_path=maps_manager.maps_path,
@@ -314,11 +316,12 @@ class Validator:
         maps_manager: MapsManager,
         data_group: str,
         split: int,
+        selection_metrics,
         skip_leak_check=False,
     ):
         """Computes the results on the image-level."""
 
-        if not self.config.selection_metrics:
+        if not selection_metrics:
             selection_metrics = find_selection_metrics(
                 maps_manager.maps_path, maps_manager.split_name, split
             )
