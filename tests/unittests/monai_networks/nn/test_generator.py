@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import Flatten, Linear
 
-from clinicadl.monai_networks.nn import MLP, FCNDecoder, Generator
+from clinicadl.monai_networks.nn import MLP, ConvDecoder, Generator
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def test_generator(input_tensor, start_shape, channels, mlp_args):
     )
     output = net(input_tensor)
     assert output.shape[1:] == net.output_shape
-    assert isinstance(net.convolutions, FCNDecoder)
+    assert isinstance(net.convolutions, ConvDecoder)
     assert isinstance(net.mlp, MLP)
 
     if mlp_args is None or mlp_args["hidden_channels"] == []:

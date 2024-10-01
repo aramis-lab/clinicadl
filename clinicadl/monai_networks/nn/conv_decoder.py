@@ -27,7 +27,7 @@ from .utils import (
 )
 
 
-class FCNDecoder(nn.Sequential):
+class ConvDecoder(nn.Sequential):
     """
     Fully convolutional decoder network with transposed convolutions, unpooling, normalization, activation
     and dropout layers.
@@ -123,7 +123,7 @@ class FCNDecoder(nn.Sequential):
 
     Examples
     --------
-    >>> FCNDecoder(
+    >>> ConvDecoder(
             in_shape=(16, 4, 4),
             channels=[8, 4, 1],
             kernel_size=(3, 5),
@@ -140,7 +140,7 @@ class FCNDecoder(nn.Sequential):
             bias=True,
             adn_ordering="NDA",
         )
-    FCNDecoder(
+    ConvDecoder(
         (layer_0): Convolution(
             (conv): ConvTranspose2d(16, 8, kernel_size=(3, 5), stride=(2, 2), padding=(1, 1))
             (adn): ADN(

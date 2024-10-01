@@ -5,7 +5,7 @@ import numpy as np
 import torch.nn as nn
 from monai.networks.layers.simplelayers import Reshape
 
-from .fcn_decoder import FCNDecoder
+from .conv_decoder import ConvDecoder
 from .mlp import MLP
 from .utils import check_conv_args, check_mlp_args
 
@@ -16,7 +16,7 @@ class Generator(nn.Sequential):
 
     This network is a simple aggregation of a Multi Layer Perceptron (:py:class:
     `clinicadl.monai_networks.nn.mlp.MLP`) and a Fully Convolutional Network
-    (:py:class:`clinicadl.monai_networks.nn.fcn_decoder.FCNDecoder`).
+    (:py:class:`clinicadl.monai_networks.nn.conv_decoder.ConvDecoder`).
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ class Generator(nn.Sequential):
         `output_shape`).
     conv_args : Dict[str, Any]
         the arguments for the convolutional part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.fcn_decoder.FCNDecoder`, except `in_shape` that
+        :py:class:`clinicadl.monai_networks.nn.conv_decoder.ConvDecoder`, except `in_shape` that
         is specified here via `start_shape`. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part. The arguments are those accepted by
@@ -59,7 +59,7 @@ class Generator(nn.Sequential):
             (output): Linear(in_features=16, out_features=32, bias=True)
         )
         (reshape): Reshape()
-        (convolutions): FCNDecoder(
+        (convolutions): ConvDecoder(
             (layer_0): Convolution(
                 (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
             )
@@ -80,7 +80,7 @@ class Generator(nn.Sequential):
             (output): Linear(in_features=8, out_features=32, bias=True)
         )
         (reshape): Reshape()
-        (convolutions): FCNDecoder(
+        (convolutions): ConvDecoder(
             (layer_0): Convolution(
                 (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
             )
@@ -113,7 +113,7 @@ class Generator(nn.Sequential):
         )
 
         self.reshape = Reshape(*start_shape)
-        self.convolutions = FCNDecoder(
+        self.convolutions = ConvDecoder(
             in_shape=start_shape,
             **conv_args,
         )

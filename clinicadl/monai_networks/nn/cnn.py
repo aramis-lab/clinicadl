@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import numpy as np
 import torch.nn as nn
 
-from .fcn_encoder import FCNEncoder
+from .conv_encoder import ConvEncoder
 from .mlp import MLP
 from .utils import check_conv_args, check_mlp_args
 
@@ -14,7 +14,7 @@ class CNN(nn.Sequential):
     A regressor/classifier with first convolutional layers and then fully connected layers.
 
     This network is a simple aggregation of a Fully Convolutional Network (:py:class:`clinicadl.
-    monai_networks.nn.fcn_encoder.FCNEncoder`) and a Multi Layer Perceptron (:py:class:`clinicadl.
+    monai_networks.nn.conv_encoder.ConvEncoder`) and a Multi Layer Perceptron (:py:class:`clinicadl.
     monai_networks.nn.mlp.MLP`).
 
     Parameters
@@ -25,7 +25,7 @@ class CNN(nn.Sequential):
         number of variables to predict.
     conv_args : Dict[str, Any]
         the arguments for the convolutional part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.fcn_encoder.FCNEncoder`, except `in_shape`
+        :py:class:`clinicadl.monai_networks.nn.conv_encoder.ConvEncoder`, except `in_shape`
         that is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part. The arguments are those accepted by
@@ -44,7 +44,7 @@ class CNN(nn.Sequential):
             mlp_args={"hidden_channels": [5], "act": "elu", "norm": None, "output_act": "softmax"},
         )
     CNN(
-        (convolutions): FCNEncoder(
+        (convolutions): ConvEncoder(
             (layer_0): Convolution(
                 (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
             )
@@ -74,7 +74,7 @@ class CNN(nn.Sequential):
             conv_args={"channels": [2, 4], "norm": None, "act": None},
         )
     CNN(
-        (convolutions): FCNEncoder(
+        (convolutions): ConvEncoder(
             (layer_0): Convolution(
                 (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
             )
@@ -100,7 +100,7 @@ class CNN(nn.Sequential):
         check_conv_args(conv_args)
         check_mlp_args(mlp_args)
 
-        self.convolutions = FCNEncoder(
+        self.convolutions = ConvEncoder(
             in_shape=in_shape,
             **conv_args,
         )

@@ -34,7 +34,7 @@ class VAE(nn.Module):
         size of the latent vector.
     conv_args : Dict[str, Any]
         the arguments for the convolutional part of the encoder. The arguments are those accepted
-        by :py:class:`clinicadl.monai_networks.nn.fcn_encoder.FCNEncoder`, except `in_shape` that
+        by :py:class:`clinicadl.monai_networks.nn.conv_encoder.ConvEncoder`, except `in_shape` that
         is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part of the encoder . The arguments are those accepted by
@@ -70,7 +70,7 @@ class VAE(nn.Module):
         )
     VAE(
         (encoder): CNN(
-            (convolutions): FCNEncoder(
+            (convolutions): ConvEncoder(
                 (layer_0): Convolution(
                     (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
                 )
@@ -111,7 +111,7 @@ class VAE(nn.Module):
                 )
             )
             (reshape): Reshape()
-            (convolutions): FCNDecoder(
+            (convolutions): ConvDecoder(
                 (layer_0): Convolution(
                     (conv): ConvTranspose2d(2, 2, kernel_size=(3, 3), stride=(1, 1))
                 )

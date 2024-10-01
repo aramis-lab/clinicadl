@@ -22,7 +22,7 @@ from .utils import (
 )
 
 
-class FCNEncoder(nn.Sequential):
+class ConvEncoder(nn.Sequential):
     """
     Fully convolutional encoder network with convolutional, pooling, normalization, activation
     and dropout layers.
@@ -103,7 +103,7 @@ class FCNEncoder(nn.Sequential):
 
     Examples
     --------
-    >>> FCNEncoder(
+    >>> ConvEncoder(
             in_shape=(1, 64, 64),
             channels=[2, 4, 8],
             kernel_size=(3, 5),
@@ -119,7 +119,7 @@ class FCNEncoder(nn.Sequential):
             bias=True,
             adn_ordering="NDA",
         )
-    FCNEncoder(
+    ConvEncoder(
         (layer_0): Convolution(
             (conv): Conv2d(1, 2, kernel_size=(3, 5), stride=(1, 1), padding=(1, 1))
             (adn): ADN(

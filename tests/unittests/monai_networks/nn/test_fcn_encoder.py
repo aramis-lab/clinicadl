@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import ELU, AvgPool2d, Conv2d, Dropout, InstanceNorm2d, MaxPool2d
 
-from clinicadl.monai_networks.nn import FCNEncoder
+from clinicadl.monai_networks.nn import ConvEncoder
 from clinicadl.monai_networks.nn.layers import ActFunction
 
 
@@ -19,7 +19,7 @@ def _check_output(output, expected_out_channels):
 
 @pytest.mark.parametrize("act", [act for act in ActFunction])
 def test_activations(input_tensor, act):
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=act, output_act=act
     )
     output = net(input_tensor)
@@ -83,7 +83,7 @@ def test_params(
     bias,
     adn_ordering,
 ):
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
         channels=[2, 4, 1],
         kernel_size=kernel_size,
@@ -156,7 +156,7 @@ def test_params(
 def test_activation_parameters(input_tensor):
     act = ("ELU", {"alpha": 0.1})
     output_act = ("ELU", {"alpha": 0.2})
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
         channels=[2, 4, 1],
         act=act,
@@ -169,7 +169,7 @@ def test_activation_parameters(input_tensor):
     assert isinstance(net.output_act, ELU)
     assert net.output_act.alpha == 0.2
 
-    net = FCNEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=None)
+    net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=None)
     with pytest.raises(AttributeError):
         net.layer_0.adn.A
     with pytest.raises(AttributeError):
@@ -180,13 +180,13 @@ def test_activation_parameters(input_tensor):
 
 def test_norm_parameters(input_tensor):
     norm = ("instance", {"momentum": 1.0})
-    net = FCNEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=norm)
+    net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=norm)
     assert isinstance(net.layer_0.adn.N, InstanceNorm2d)
     assert net.layer_0.adn.N.momentum == 1.0
     assert isinstance(net.layer_1.adn.N, InstanceNorm2d)
     assert net.layer_1.adn.N.momentum == 1.0
 
-    net = FCNEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=None)
+    net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=None)
     with pytest.raises(AttributeError):
         net.layer_0.adn.N
     with pytest.raises(AttributeError):
@@ -195,7 +195,7 @@ def test_norm_parameters(input_tensor):
 
 def test_pool_parameters(input_tensor):
     pooling = ("avg", {"kernel_size": 3, "stride": 2})
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
         channels=[2, 4, 1],
         pooling=pooling,
@@ -208,7 +208,7 @@ def test_pool_parameters(input_tensor):
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])
 def test_adn_ordering(input_tensor, adn_ordering):
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
         channels=[2, 4, 1],
         dropout=0.1,
@@ -231,7 +231,7 @@ def test_adn_ordering(input_tensor, adn_ordering):
     "input_tensor", [torch.randn(2, 1, 16), torch.randn(2, 3, 20, 21, 22)]
 )
 def test_other_dimensions(input_tensor):
-    net = FCNEncoder(
+    net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
         channels=[2, 4, 1],
     )
@@ -254,7 +254,7 @@ def test_other_dimensions(input_tensor):
 )
 def test_checks(input_tensor, kwargs):
     with pytest.raises(ValueError):
-        FCNEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], **kwargs)
+        ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -287,14 +287,14 @@ def test_checks(input_tensor, kwargs):
 def test_check_pool_layers(pooling, error):
     if error:
         with pytest.raises(ValueError):
-            FCNEncoder(
+            ConvEncoder(
                 in_shape=(1, 10, 10),
                 channels=[2, 4, 1],
                 pooling=pooling,
                 pooling_indices=[0, 1],
             )
     else:
-        FCNEncoder(
+        ConvEncoder(
             in_shape=(1, 10, 10),
             channels=[2, 4, 1],
             pooling=pooling,

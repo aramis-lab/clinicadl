@@ -5,7 +5,7 @@ import numpy as np
 import torch.nn as nn
 
 from .cnn import CNN
-from .fcn_encoder import FCNEncoder
+from .conv_encoder import ConvEncoder
 from .generator import Generator
 from .layers import UnpoolingLayer, UpsamplingMode
 from .mlp import MLP
@@ -40,7 +40,7 @@ class AutoEncoder(nn.Sequential):
         size of the latent vector.
     conv_args : Dict[str, Any]
         the arguments for the convolutional part of the encoder. The arguments are those accepted
-        by :py:class:`clinicadl.monai_networks.nn.fcn_encoder.FCNEncoder`, except `in_shape` that
+        by :py:class:`clinicadl.monai_networks.nn.conv_encoder.ConvEncoder`, except `in_shape` that
         is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part of the encoder . The arguments are those accepted by
@@ -79,7 +79,7 @@ class AutoEncoder(nn.Sequential):
         )
     AutoEncoder(
         (encoder): CNN(
-            (convolutions): FCNEncoder(
+            (convolutions): ConvEncoder(
                 (layer_0): Convolution(
                     (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
                     (adn): ADN(
@@ -123,7 +123,7 @@ class AutoEncoder(nn.Sequential):
                 )
             )
             (reshape): Reshape()
-            (convolutions): FCNDecoder(
+            (convolutions): ConvDecoder(
                 (layer_0): Convolution(
                     (conv): ConvTranspose2d(4, 4, kernel_size=(3, 3), stride=(1, 1))
                     (adn): ADN(
@@ -188,27 +188,27 @@ class AutoEncoder(nn.Sequential):
         return args
 
     def _invert_conv_args(
-        self, args: Dict[str, Any], fcn: FCNEncoder
+        self, args: Dict[str, Any], conv: ConvEncoder
     ) -> Dict[str, Any]:
         """
-        Inverts arguments passed for the FCN part of the encoder, to get the FCN part of
-        the decoder.
+        Inverts arguments passed for the convolutional part of the encoder, to get the convolutional
+        part of the decoder.
         """
-        args["channels"] = self._invert_list_arg(fcn.channels)[:-1] + [
+        args["channels"] = self._invert_list_arg(conv.channels)[:-1] + [
             self.out_channels
         ]
 
-        args["kernel_size"] = self._invert_list_arg(fcn.kernel_size)
-        args["stride"] = self._invert_list_arg(fcn.stride)
-        args["padding"] = self._invert_list_arg(fcn.padding)
-        args["dilation"] = self._invert_list_arg(fcn.dilation)
-        args["output_padding"] = self._get_output_padding_list(fcn)
+        args["kernel_size"] = self._invert_list_arg(conv.kernel_size)
+        args["stride"] = self._invert_list_arg(conv.stride)
+        args["padding"] = self._invert_list_arg(conv.padding)
+        args["dilation"] = self._invert_list_arg(conv.dilation)
+        args["output_padding"] = self._get_output_padding_list(conv)
 
         args["unpooling_indices"] = (
-            fcn.n_layers - np.array(fcn.pooling_indices) - 2
+            conv.n_layers - np.array(conv.pooling_indices) - 2
         ).astype(int)
         args["unpooling"] = []
-        for size_before_pool in fcn.size_before_pool[::-1]:
+        for size_before_pool in conv.size_before_pool[::-1]:
             args["unpooling"].append(self._invert_pooling_layer(size_before_pool))
 
         if "pooling" in args:
@@ -239,16 +239,16 @@ class AutoEncoder(nn.Sequential):
         )
 
     @classmethod
-    def _get_output_padding_list(cls, fcn: FCNEncoder) -> List[Tuple[int, ...]]:
+    def _get_output_padding_list(cls, conv: ConvEncoder) -> List[Tuple[int, ...]]:
         """
         Finds output padding list.
         """
         output_padding = []
         size_before_conv = (
-            fcn.size_before_conv if len(fcn.size_before_conv) > 0 else [fcn.in_shape]
+            conv.size_before_conv if len(conv.size_before_conv) > 0 else [conv.in_shape]
         )
         for size, k, s, p, d in zip(
-            size_before_conv, fcn.kernel_size, fcn.stride, fcn.padding, fcn.dilation
+            size_before_conv, conv.kernel_size, conv.stride, conv.padding, conv.dilation
         ):
             out_p = cls._find_output_padding(size, k, s, p, d)
             output_padding.append(out_p)
