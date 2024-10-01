@@ -226,8 +226,6 @@ class Trainer:
             n_classes=self.maps_manager.n_classes,
             network_task=self.maps_manager.network_task,
             amp=self.maps_manager.std_amp,
-            use_labels=self.maps_manager.use_labels,
-            report_ci=self.maps_manager.report_ci,
             selection_metrics=self.config.validation.selection_metrics,
         )
 
