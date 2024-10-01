@@ -40,6 +40,7 @@ class ValidatorConfig(BaseModel):
         validate_assignment=True,
         use_enum_values=True,
         validate_default=True,
+        arbitrary_types_allowed=True,
     )
 
     @computed_field
@@ -48,9 +49,9 @@ class ValidatorConfig(BaseModel):
     def metric(self) -> str:
         """The name of the metric."""
 
-    @field_validator("get_not_nans", mode="after")
-    @classmethod
-    def validator_get_not_nans(cls, v):
-        assert not v, "get_not_nans not supported in ClinicaDL. Please set to False."
+    # @field_validator("get_not_nans", mode="after")
+    # @classmethod
+    # def validator_get_not_nans(cls, v):
+    #     assert not v, "get_not_nans not supported in ClinicaDL. Please set to False."
 
-        return v
+    #     return v
