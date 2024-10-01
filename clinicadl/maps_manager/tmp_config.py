@@ -50,6 +50,8 @@ from clinicadl.utils.iotools.utils import read_preprocessing
 
 logger = getLogger("clinicadl.tmp")
 
+#### this class is not used in clinicadl but I just want to keep it in case
+
 
 class TmpConfig(BaseModel):
     """

@@ -35,6 +35,7 @@ from clinicadl.utils.iotools.trainer_utils import (
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
 from clinicadl.splitter.split_utils import init_split_manager
+from clinicadl.transforms.config import TransformsConfig
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback

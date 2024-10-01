@@ -27,9 +27,44 @@ dataset = return_dataset(
     multi_cohort,
 )
 
+split_config = SplitConfig()
+splitter = Splitter(split_config)
 
-config = ClassificationConfig()
-trainer = Trainer(config)
-trainer.train(
-    dataset.dataloader,
-)
+validator_config = ValidatorConfig()
+validator = Validator(validator_config)
+
+train_config = ClassificationConfig()
+trainer = Trainer(train_config, validator)
+
+for split in splitter.split_iterator():
+    for network in range(
+        first_network, self.maps_manager.num_networks
+    ):  # for multi_network
+        ###### actual _train_single method of the Trainer ############
+        train_loader = trainer.get_dataloader(dataset, split, network, "train", config)
+        valid_loader = validator.get_dataloader(
+            dataset, split, network, "valid", config
+        )  # ?? validatior, trainer ?
+
+        trainer._train(
+            train_loader,
+            valid_loader,
+            split=split,
+            network=network,
+            resume=resume,  # in a config class
+            callbacks=[CodeCarbonTracker],  # in a config class ?
+        )
+
+        validator._ensemble_prediction(
+            self.maps_manager,
+            "train",
+            split,
+            self.config.validation.selection_metrics,
+        )
+        validator._ensemble_prediction(
+            self.maps_manager,
+            "validation",
+            split,
+            self.config.validation.selection_metrics,
+        )
+        ###### end ############
