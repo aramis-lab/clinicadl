@@ -50,12 +50,6 @@ class Validator:
         dataloader: DataLoader,
         criterion: _Loss,
         metrics_module: MetricModule,
-        # mode: str,
-        # n_classes: int,
-        # network_task,
-        # use_labels: bool = True,
-        # amp: bool = False,
-        # report_ci=False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -248,10 +242,8 @@ class Validator:
         dataset,
         data_group,
         split,
-        selection_metrics,
         nb_images=None,
-        gpu=None,
-        network=None,
+        network: Optional[int] = None,
     ):
         """
         Compute the output tensors and saves them in the MAPS.
@@ -265,20 +257,20 @@ class Validator:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in selection_metrics:
+        for selection_metric in self.config.selection_metrics:
             # load the best trained model during the training
             model, _ = maps_manager._init_model(
                 transfer_path=maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=gpu,
+                gpu=self.config.gpu,
                 network=network,
                 nb_unfrozen_layer=maps_manager.nb_unfrozen_layer,
             )
             model = DDP(
                 model,
-                fsdp=maps_manager.fully_sharded_data_parallel,
-                amp=maps_manager.amp,
+                fsdp=self.config.fsdp,
+                amp=self.config.amp,
             )
             model.eval()
 
@@ -305,14 +297,14 @@ class Validator:
                 data = dataset[i]
                 image = data["image"]
                 x = image.unsqueeze(0).to(model.device)
-                with autocast("cuda", enabled=maps_manager.std_amp):
+                with autocast("cuda", enabled=self.config.std_amp):
                     output = model(x)
                 output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
-                mode_id = data[f"{maps_manager.mode}_id"]
-                input_filename = f"{participant_id}_{session_id}_{maps_manager.mode}-{mode_id}_input.pt"
-                output_filename = f"{participant_id}_{session_id}_{maps_manager.mode}-{mode_id}_output.pt"
+                mode_id = data[f"{self.config.mode}_id"]
+                input_filename = f"{participant_id}_{session_id}_{self.config.mode}-{mode_id}_input.pt"
+                output_filename = f"{participant_id}_{session_id}_{self.config.mode}-{mode_id}_output.pt"
                 torch.save(image, tensor_path / input_filename)
                 torch.save(output, tensor_path / output_filename)
                 logger.debug(f"File saved at {[input_filename, output_filename]}")
@@ -320,15 +312,13 @@ class Validator:
     def _ensemble_prediction(
         self,
         maps_manager: MapsManager,
-        data_group,
-        split,
-        selection_metrics,
-        use_labels=True,
+        data_group: str,
+        split: int,
         skip_leak_check=False,
     ):
         """Computes the results on the image-level."""
 
-        if not selection_metrics:
+        if not self.config.selection_metrics:
             selection_metrics = find_selection_metrics(
                 maps_manager.maps_path, maps_manager.split_name, split
             )
@@ -336,19 +326,19 @@ class Validator:
         for selection_metric in selection_metrics:
             #####################
             # Soft voting
-            if maps_manager.num_networks > 1 and not skip_leak_check:
+            if self.config.num_networks > 1 and not skip_leak_check:
                 maps_manager._ensemble_to_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
-                    use_labels=use_labels,
+                    use_labels=self.config.use_labels,
                 )
-            elif maps_manager.mode != "image" and not skip_leak_check:
+            elif self.config.mode != "image" and not skip_leak_check:
                 maps_manager._mode_to_image_tsv(
                     split,
                     selection=selection_metric,
                     data_group=data_group,
-                    use_labels=use_labels,
+                    use_labels=self.config.use_labels,
                 )
 
     def test_da(

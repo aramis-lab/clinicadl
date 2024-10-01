@@ -17,21 +17,21 @@ class ValidatorConfig(BaseModel):
 
     # maps_path: Path
     mode: str
+
     metrics_module: Optional = None
-    n_classes: int = 1
-    network_task: str
-    # model: Network
-    # dataloader: DataLoader
-    # criterion: _Loss
-    use_labels: bool = True
-    amp: bool = False
-    fsdp: bool = False
-    report_ci = False
-    gpu: Optional[bool] = None
+    report_ci: bool = False
     selection_metrics: list
 
+    n_classes: int = 1
+    network_task: str
+    num_networks: int = 1
+    use_labels: bool = True
+
+    gpu: Optional[bool] = None
+    amp: bool = False
+    fsdp: bool = False
+
     split_name: Optional[str] = None
-    num_networks: Optional[int] = None
     nb_unfrozen_layers: Optional[int] = None
     std_amp: Optional[bool] = None
 

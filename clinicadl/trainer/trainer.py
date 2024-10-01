@@ -228,6 +228,7 @@ class Trainer:
             amp=self.maps_manager.std_amp,
             use_labels=use_labels,
             report_ci=report_ci,
+            selection_metrics=self.config.validation.selection_metrics,
         )
 
         validator = Validator(validator_config=validator_config)
@@ -526,13 +527,11 @@ class Trainer:
                 self.maps_manager,
                 "train",
                 split,
-                self.config.validation.selection_metrics,
             )
             validator._ensemble_prediction(
                 self.maps_manager,
                 "validation",
                 split,
-                self.config.validation.selection_metrics,
             )
 
             self._erase_tmp(split)
@@ -740,13 +739,11 @@ class Trainer:
                 self.maps_manager,
                 "train",
                 split,
-                self.config.validation.selection_metrics,
             )
             validator._ensemble_prediction(
                 self.maps_manager,
                 "validation",
                 split,
-                self.config.validation.selection_metrics,
             )
 
             self._erase_tmp(split)
@@ -1021,8 +1018,6 @@ class Trainer:
             criterion,
             "train",
             split,
-            self.config.validation.selection_metrics,
-            amp=self.maps_manager.std_amp,
             network=network,
         )
         validator._test_loader(
@@ -1031,8 +1026,6 @@ class Trainer:
             criterion,
             "validation",
             split,
-            self.config.validation.selection_metrics,
-            amp=self.maps_manager.std_amp,
             network=network,
         )
 
@@ -1042,7 +1035,6 @@ class Trainer:
                 train_loader.dataset,
                 "train",
                 split,
-                self.config.validation.selection_metrics,
                 nb_images=1,
                 network=network,
             )
@@ -1051,7 +1043,6 @@ class Trainer:
                 valid_loader.dataset,
                 "validation",
                 split,
-                self.config.validation.selection_metrics,
                 nb_images=1,
                 network=network,
             )
