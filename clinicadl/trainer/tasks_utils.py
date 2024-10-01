@@ -580,6 +580,9 @@ def ensemble_prediction_classification(
         ["participant_id", "session_id"]
     ):
         label = subject_df["true_label"].unique().item()
+        print(subject_df)
+        for i in range(n_classes):
+            print(subject_df[f"proba{i}"])
         proba_list = [
             np.average(subject_df[f"proba{i}"], weights=weight_series)
             for i in range(n_classes)

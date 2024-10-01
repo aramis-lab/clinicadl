@@ -330,6 +330,25 @@ class Trainer:
                 else:
                     self._train_single(split, split_df_dict, resume=True)
 
+    def init_first_network(self, resume, split):
+        first_network = 0
+        if resume:
+            training_logs = [
+                int(network_folder.split("-")[1])
+                for network_folder in list(
+                    (
+                        self.maps_manager.maps_path
+                        / f"{self.maps_manager.split_name}-{split}"
+                        / "training_logs"
+                    ).iterdir()
+                )
+            ]
+            first_network = max(training_logs)
+            if not (self.maps_manager.maps_path / "tmp").is_dir():
+                first_network += 1
+                resume = False
+        return resume, first_network
+
     def get_dataloader(
         self,
         input_dir: Path,
@@ -481,25 +500,6 @@ class Trainer:
             )
 
             self._erase_tmp(split)
-
-    def init_first_network(self, resume, split):
-        first_network = 0
-        if resume:
-            training_logs = [
-                int(network_folder.split("-")[1])
-                for network_folder in list(
-                    (
-                        self.maps_manager.maps_path
-                        / f"{self.maps_manager.split_name}-{split}"
-                        / "training_logs"
-                    ).iterdir()
-                )
-            ]
-            first_network = max(training_logs)
-            if not (self.maps_manager.maps_path / "tmp").is_dir():
-                first_network += 1
-                resume = False
-        return resume, first_network
 
     def _train_ssda(
         self,
