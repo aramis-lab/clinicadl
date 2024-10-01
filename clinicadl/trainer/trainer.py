@@ -380,6 +380,7 @@ class Trainer:
             multi_cohort=multi_cohort,
             label=label,
             label_code=label_code,
+            cnn_index=cnn_index,
         )
         if homemade_sampler:
             sampler = generate_sampler(
