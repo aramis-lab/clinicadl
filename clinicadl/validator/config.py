@@ -15,15 +15,23 @@ from clinicadl.utils.factories import DefaultFromLibrary
 class ValidatorConfig(BaseModel):
     """Base config class to configure the validator."""
 
-    maps_path: Path
+    # maps_path: Path
     mode: str
+    metrics_module: Optional = None
+    n_classes: int = 1
     network_task: str
+    # model: Network
+    # dataloader: DataLoader
+    # criterion: _Loss
+    use_labels: bool = True
+    amp: bool = False
+    fsdp: bool = False
+    report_ci = False
+    gpu: Optional[bool] = None
+    selection_metrics: list
+
     split_name: Optional[str] = None
     num_networks: Optional[int] = None
-    fsdp: Optional[bool] = None
-    amp: Optional[bool] = None
-    metrics_module: Optional = None
-    n_classes: Optional[int] = None
     nb_unfrozen_layers: Optional[int] = None
     std_amp: Optional[bool] = None
 

@@ -34,6 +34,7 @@ from clinicadl.utils.iotools.trainer_utils import (
 )
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
+from clinicadl.validator.config import ValidatorConfig
 from clinicadl.splitter.split_utils import init_split_manager
 from clinicadl.transforms.config import TransformsConfig
 
@@ -66,7 +67,6 @@ class Trainer:
         self.config = config
 
         self.maps_manager = self._init_maps_manager(config)
-        self.validator = Validator()
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
@@ -146,7 +146,7 @@ class Trainer:
             )
         return cls.from_json(maps_path / "maps.json", maps_path)
 
-    def resume(self, splits: List[int]) -> None:
+    def resume(self, splits: List[int], validator_config=ValidatorConfig) -> None:
         """
         Resume a prematurely stopped training.
 
@@ -187,9 +187,9 @@ class Trainer:
                 "Training has been completed on all the splits you passed."
             )
         if len(stopped_splits) > 0:
-            self._resume(list(stopped_splits))
+            self._resume(validator_config, list(stopped_splits))
         if len(absent_splits) > 0:
-            self.train(list(absent_splits), overwrite=True)
+            self.train(validator_config, list(absent_splits), overwrite=True)
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
@@ -199,6 +199,7 @@ class Trainer:
 
     def train(
         self,
+        # validator_config: ValidatorConfig,
         split_list: Optional[List[int]] = None,
         overwrite: bool = False,
     ) -> None:
@@ -220,10 +221,20 @@ class Trainer:
             If splits specified in input already exist and overwrite is False.
         """
 
+        validator_config = ValidatorConfig(
+            mode=self.maps_manager.mode,
+            n_classes=self.maps_manager.n_classes,
+            network_task=self.maps_manager.network_task,
+            amp=self.maps_manager.std_amp,
+            use_labels=use_labels,
+            report_ci=report_ci,
+        )
+
+        validator = Validator(validator_config=validator_config)
         self.check_split_list(split_list=split_list, overwrite=overwrite)
 
         if self.config.ssda.ssda_network:
-            self._train_ssda(split_list, resume=False)
+            self._train_ssda(validator=validator, split_list=split_list, resume=False)
 
         else:
             split_manager = self.maps_manager._init_split_manager(split_list)
@@ -244,10 +255,19 @@ class Trainer:
                     resume, first_network = self.init_first_network(False, split)
                     for network in range(first_network, self.maps_manager.num_networks):
                         self._train_single(
-                            split, split_df_dict, network=network, resume=resume
+                            split=split,
+                            split_df_dict=split_df_dict,
+                            validator=validator,
+                            network=network,
+                            resume=resume,
                         )
                 else:
-                    self._train_single(split, split_df_dict, resume=False)
+                    self._train_single(
+                        split=split,
+                        split_df_dict=split_df_dict,
+                        validator=validator,
+                        resume=False,
+                    )
 
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
@@ -275,6 +295,7 @@ class Trainer:
 
     def _resume(
         self,
+        validator_config: ValidatorConfig,
         split_list: Optional[List[int]] = None,
     ) -> None:
         """
@@ -291,6 +312,8 @@ class Trainer:
         MAPSError
             If splits specified in input do not exist.
         """
+
+        validator = Validator(validator_config)
         missing_splits = []
         # split_manager = init_split_manager(
         #     self.maps_manager.validation, self.config.model_dump(), split_list
@@ -311,7 +334,7 @@ class Trainer:
             )
 
         if self.config.ssda.ssda_network:
-            self._train_ssda(split_list, resume=True)
+            self._train_ssda(validator, split_list, resume=True)
         else:
             for split in split_manager.split_iterator():
                 logger.info(f"Training split {split}")
@@ -326,10 +349,19 @@ class Trainer:
                     resume, first_network = self.init_first_network(True, split)
                     for network in range(first_network, self.maps_manager.num_networks):
                         self._train_single(
-                            split, split_df_dict, network=network, resume=resume
+                            split=split,
+                            split_df_dict=split_df_dict,
+                            network=network,
+                            resume=resume,
+                            validator=validator,
                         )
                 else:
-                    self._train_single(split, split_df_dict, resume=True)
+                    self._train_single(
+                        split=split,
+                        split_df_dict=split_df_dict,
+                        validator=validator,
+                        resume=True,
+                    )
 
     def init_first_network(self, resume, split):
         first_network = 0
@@ -415,6 +447,7 @@ class Trainer:
         self,
         split,
         split_df_dict: Dict,
+        validator: Validator,
         network: Optional[int] = None,
         resume: bool = False,
     ) -> None:
@@ -478,7 +511,8 @@ class Trainer:
         self._train(
             train_loader,
             valid_loader,
-            split,
+            split=split,
+            validator=validator,
             resume=resume,
             callbacks=[CodeCarbonTracker],
             network=network,
@@ -488,13 +522,13 @@ class Trainer:
             resume = False
 
         if cluster.master:
-            self.validator._ensemble_prediction(
+            validator._ensemble_prediction(
                 self.maps_manager,
                 "train",
                 split,
                 self.config.validation.selection_metrics,
             )
-            self.validator._ensemble_prediction(
+            validator._ensemble_prediction(
                 self.maps_manager,
                 "validation",
                 split,
@@ -505,6 +539,7 @@ class Trainer:
 
     def _train_ssda(
         self,
+        validator: Validator,
         split_list: Optional[List[int]] = None,
         resume: bool = False,
     ) -> None:
@@ -696,17 +731,18 @@ class Trainer:
                 train_target_unl_loader,
                 valid_loader_target,
                 valid_loader_source,
-                split,
+                validator=validator,
+                split=split,
                 resume=resume,
             )
 
-            self.validator._ensemble_prediction(
+            validator._ensemble_prediction(
                 self.maps_manager,
                 "train",
                 split,
                 self.config.validation.selection_metrics,
             )
-            self.validator._ensemble_prediction(
+            validator._ensemble_prediction(
                 self.maps_manager,
                 "validation",
                 split,
@@ -720,6 +756,7 @@ class Trainer:
         train_loader: DataLoader,
         valid_loader: DataLoader,
         split: int,
+        validator: Validator,
         network: Optional[int] = None,
         resume: bool = False,
         callbacks: List[Callback] = [],
@@ -857,25 +894,17 @@ class Trainer:
                         ):
                             evaluation_flag = False
 
-                            _, metrics_train = self.validator.test(
-                                mode=self.maps_manager.mode,
+                            _, metrics_train = validator.test(
                                 metrics_module=self.maps_manager.metrics_module,
-                                n_classes=self.maps_manager.n_classes,
-                                network_task=self.maps_manager.network_task,
                                 model=model,
                                 dataloader=train_loader,
                                 criterion=criterion,
-                                amp=self.maps_manager.std_amp,
                             )
-                            _, metrics_valid = self.validator.test(
-                                mode=self.maps_manager.mode,
+                            _, metrics_valid = validator.test(
                                 metrics_module=self.maps_manager.metrics_module,
-                                n_classes=self.maps_manager.n_classes,
-                                network_task=self.maps_manager.network_task,
                                 model=model,
                                 dataloader=valid_loader,
                                 criterion=criterion,
-                                amp=self.maps_manager.std_amp,
                             )
 
                             model.train()
@@ -924,25 +953,17 @@ class Trainer:
                 model.zero_grad(set_to_none=True)
                 logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-                _, metrics_train = self.validator.test(
-                    mode=self.maps_manager.mode,
+                _, metrics_train = validator.test(
                     metrics_module=self.maps_manager.metrics_module,
-                    n_classes=self.maps_manager.n_classes,
-                    network_task=self.maps_manager.network_task,
                     model=model,
                     dataloader=train_loader,
                     criterion=criterion,
-                    amp=self.maps_manager.std_amp,
                 )
-                _, metrics_valid = self.validator.test(
-                    mode=self.maps_manager.mode,
+                _, metrics_valid = validator.test(
                     metrics_module=self.maps_manager.metrics_module,
-                    n_classes=self.maps_manager.n_classes,
-                    network_task=self.maps_manager.network_task,
                     model=model,
                     dataloader=valid_loader,
                     criterion=criterion,
-                    amp=self.maps_manager.std_amp,
                 )
 
                 model.train()
@@ -994,7 +1015,7 @@ class Trainer:
             epoch += 1
 
         del model
-        self.validator._test_loader(
+        validator._test_loader(
             self.maps_manager,
             train_loader,
             criterion,
@@ -1004,7 +1025,7 @@ class Trainer:
             amp=self.maps_manager.std_amp,
             network=network,
         )
-        self.validator._test_loader(
+        validator._test_loader(
             self.maps_manager,
             valid_loader,
             criterion,
@@ -1016,7 +1037,7 @@ class Trainer:
         )
 
         if save_outputs(self.maps_manager.network_task):
-            self.validator._compute_output_tensors(
+            validator._compute_output_tensors(
                 self.maps_manager,
                 train_loader.dataset,
                 "train",
@@ -1025,7 +1046,7 @@ class Trainer:
                 nb_images=1,
                 network=network,
             )
-            self.validator._compute_output_tensors(
+            validator._compute_output_tensors(
                 self.maps_manager,
                 valid_loader.dataset,
                 "validation",
@@ -1044,6 +1065,7 @@ class Trainer:
         train_target_unl_loader: DataLoader,
         valid_loader: DataLoader,
         valid_source_loader: DataLoader,
+        validator: Validator,
         split: int,
         network: Optional[Any] = None,
         resume: bool = False,
@@ -1400,7 +1422,7 @@ class Trainer:
 
             epoch += 1
 
-        self.validator._test_loader_ssda(
+        validator._test_loader_ssda(
             self.maps_manager,
             train_target_loader,
             criterion,
@@ -1411,7 +1433,7 @@ class Trainer:
             target=True,
             alpha=0,
         )
-        self.validator._test_loader_ssda(
+        validator._test_loader_ssda(
             self.maps_manager,
             valid_loader,
             criterion,
@@ -1424,7 +1446,7 @@ class Trainer:
         )
 
         if save_outputs(self.maps_manager.network_task):
-            self.validator._compute_output_tensors(
+            validator._compute_output_tensors(
                 self.maps_manager,
                 train_target_loader.dataset,
                 "train",
@@ -1433,7 +1455,7 @@ class Trainer:
                 nb_images=1,
                 network=network,
             )
-            self.validator._compute_output_tensors(
+            validator._compute_output_tensors(
                 self.maps_manager,
                 train_target_loader.dataset,
                 "validation",

@@ -31,6 +31,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     MAPSError,
 )
+from clinicadl.validator.config import ValidatorConfig
 
 logger = getLogger("clinicadl.maps_manager")
 level_list: List[str] = ["warning", "info", "debug"]
@@ -40,18 +41,21 @@ level_list: List[str] = ["warning", "info", "debug"]
 
 
 class Validator:
+    def __init__(self, validator_config: ValidatorConfig):
+        self.config = validator_config
+
     def test(
         self,
-        mode: str,
-        metrics_module: MetricModule,
-        n_classes: int,
-        network_task,
         model: Network,
         dataloader: DataLoader,
         criterion: _Loss,
-        use_labels: bool = True,
-        amp: bool = False,
-        report_ci=False,
+        metrics_module: MetricModule,
+        # mode: str,
+        # n_classes: int,
+        # network_task,
+        # use_labels: bool = True,
+        # amp: bool = False,
+        # report_ci=False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
@@ -77,13 +81,19 @@ class Validator:
         model.eval()
         dataloader.dataset.eval()
 
-        results_df = pd.DataFrame(columns=columns(network_task, mode, n_classes))
+        results_df = pd.DataFrame(
+            columns=columns(
+                self.config.network_task, self.config.mode, self.config.n_classes
+            )
+        )
         total_loss = {}
         with torch.no_grad():
             for i, data in enumerate(dataloader):
                 # initialize the loss list to save the loss components
-                with autocast("cuda", enabled=amp):
-                    outputs, loss_dict = model(data, criterion, use_labels=use_labels)
+                with autocast("cuda", enabled=self.config.amp):
+                    outputs, loss_dict = model(
+                        data, criterion, use_labels=self.config.use_labels
+                    )
 
                 if i == 0:
                     for loss_component in loss_dict.keys():
@@ -94,16 +104,21 @@ class Validator:
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
                     row = generate_test_row(
-                        network_task,
-                        mode,
+                        self.config.network_task,
+                        self.config.mode,
                         metrics_module,
-                        n_classes,
+                        self.config.n_classes,
                         idx,
                         data,
                         outputs.float(),
                     )
                     row_df = pd.DataFrame(
-                        row, columns=columns(network_task, mode, n_classes)
+                        row,
+                        columns=columns(
+                            self.config.network_task,
+                            self.config.mode,
+                            self.config.n_classes,
+                        ),
                     )
                     results_df = pd.concat([results_df, row_df])
 
@@ -117,17 +132,20 @@ class Validator:
         del dataframes
         results_df.reset_index(inplace=True, drop=True)
 
-        if not use_labels:
+        if not self.config.use_labels:
             metrics_dict = None
         else:
             metrics_dict = compute_metrics(
-                network_task, results_df, metrics_module, report_ci=report_ci
+                self.config.network_task,
+                results_df,
+                metrics_module,
+                report_ci=self.config.report_ci,
             )
             for loss_component in total_loss.keys():
                 dist.reduce(total_loss[loss_component], dst=0)
                 loss_value = total_loss[loss_component].item() / cluster.world_size
 
-                if report_ci:
+                if self.config.report_ci:
                     metrics_dict["Metric_names"].append(loss_component)
                     metrics_dict["Metric_values"].append(loss_value)
                     metrics_dict["Lower_CI"].append("N/A")
@@ -141,95 +159,14 @@ class Validator:
 
         return results_df, metrics_dict
 
-    def test_da(
-        self,
-        mode: str,
-        metrics_module: MetricModule,
-        n_classes: int,
-        network_task: Union[str, Task],
-        model: Network,
-        dataloader: DataLoader,
-        criterion: _Loss,
-        alpha: float = 0,
-        use_labels: bool = True,
-        target: bool = True,
-        report_ci=False,
-    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
-        """
-        Computes the predictions and evaluation metrics.
-
-        Args:
-            model: the model trained.
-            dataloader: wrapper of a CapsDataset.
-            criterion: function to calculate the loss.
-            use_labels: If True the true_label will be written in output DataFrame
-                and metrics dict will be created.
-        Returns:
-            the results and metrics on the image level.
-        """
-        model.eval()
-        dataloader.dataset.eval()
-        results_df = pd.DataFrame(columns=columns(network_task, mode, n_classes))
-        total_loss = 0
-        with torch.no_grad():
-            for i, data in enumerate(dataloader):
-                outputs, loss_dict = model.compute_outputs_and_loss_test(
-                    data, criterion, alpha, target
-                )
-                total_loss += loss_dict["loss"].item()
-
-                # Generate detailed DataFrame
-                for idx in range(len(data["participant_id"])):
-                    row = generate_test_row(
-                        network_task,
-                        mode,
-                        metrics_module,
-                        n_classes,
-                        idx,
-                        data,
-                        outputs,
-                    )
-                    row_df = pd.DataFrame(
-                        row, columns=columns(network_task, mode, n_classes)
-                    )
-                    results_df = pd.concat([results_df, row_df])
-
-                del outputs, loss_dict
-            results_df.reset_index(inplace=True, drop=True)
-
-        if not use_labels:
-            metrics_dict = None
-        else:
-            metrics_dict = compute_metrics(
-                network_task, results_df, metrics_module, report_ci=report_ci
-            )
-            if report_ci:
-                metrics_dict["Metric_names"].append("loss")
-                metrics_dict["Metric_values"].append(total_loss)
-                metrics_dict["Lower_CI"].append("N/A")
-                metrics_dict["Upper_CI"].append("N/A")
-                metrics_dict["SE"].append("N/A")
-
-            else:
-                metrics_dict["loss"] = total_loss
-
-        torch.cuda.empty_cache()
-
-        return results_df, metrics_dict
-
     def _test_loader(
         self,
         maps_manager: MapsManager,
-        dataloader,
-        criterion,
+        dataloader: DataLoader,
+        criterion: _Loss,
         data_group: str,
         split: int,
-        selection_metrics,
-        use_labels=True,
-        gpu=None,
-        amp=False,
-        network=None,
-        report_ci=True,
+        network: Optional[int] = None,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -245,7 +182,7 @@ class Validator:
             amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
             network (int): Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in selection_metrics:
+        for selection_metric in self.config.selection_metrics:
             if cluster.master:
                 log_dir = (
                     maps_manager.maps_path
@@ -265,37 +202,33 @@ class Validator:
                 transfer_path=maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=gpu,
+                gpu=self.config.gpu,
                 network=network,
             )
             model = DDP(
                 model,
-                fsdp=maps_manager.fully_sharded_data_parallel,
-                amp=maps_manager.amp,
+                fsdp=self.config.fsdp,
+                amp=self.config.fsdp,
             )
 
             prediction_df, metrics = self.test(
-                mode=maps_manager.mode,
                 metrics_module=maps_manager.metrics_module,
-                n_classes=maps_manager.n_classes,
-                network_task=maps_manager.network_task,
                 model=model,
                 dataloader=dataloader,
                 criterion=criterion,
-                use_labels=use_labels,
-                amp=amp,
-                report_ci=report_ci,
             )
-            if use_labels:
+            if self.config.use_labels:
                 if network is not None:
-                    metrics[f"{maps_manager.mode}_id"] = network
+                    metrics[f"{self.config.mode}_id"] = network
 
                 loss_to_log = (
-                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                    metrics["Metric_values"][-1]
+                    if self.config.report_ci
+                    else metrics["loss"]
                 )
 
                 logger.info(
-                    f"{maps_manager.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
+                    f"{self.config.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
                 )
 
             if cluster.master:
@@ -307,85 +240,6 @@ class Validator:
                     selection_metric,
                     data_group=data_group,
                 )
-
-    def _test_loader_ssda(
-        self,
-        maps_manager: MapsManager,
-        dataloader,
-        criterion,
-        alpha,
-        data_group,
-        split,
-        selection_metrics,
-        use_labels=True,
-        gpu=None,
-        network=None,
-        target=False,
-        report_ci=True,
-    ):
-        """
-        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
-
-        Args:
-            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
-            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
-            data_group (str): name of the data group used for the testing task.
-            split (int): Index of the split used to train the model tested.
-            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
-            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            log_dir = (
-                maps_manager.maps_path
-                / f"{maps_manager.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-            )
-            maps_manager.write_description_log(
-                log_dir,
-                data_group,
-                dataloader.dataset.caps_dict,
-                dataloader.dataset.df,
-            )
-
-            # load the best trained model during the training
-            model, _ = maps_manager._init_model(
-                transfer_path=maps_manager.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-            )
-            prediction_df, metrics = self.test_da(
-                network_task=maps_manager.network_task,
-                model=model,
-                dataloader=dataloader,
-                criterion=criterion,
-                target=target,
-                report_ci=report_ci,
-                mode=maps_manager.mode,
-                metrics_module=maps_manager.metrics_module,
-                n_classes=maps_manager.n_classes,
-            )
-            if use_labels:
-                if network is not None:
-                    metrics[f"{maps_manager.mode}_id"] = network
-
-                if report_ci:
-                    loss_to_log = metrics["Metric_values"][-1]
-                else:
-                    loss_to_log = metrics["loss"]
-
-                logger.info(
-                    f"{maps_manager.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
-                )
-
-            # Replace here
-            maps_manager._mode_level_to_tsv(
-                prediction_df, metrics, split, selection_metric, data_group=data_group
-            )
 
     @torch.no_grad()
     def _compute_output_tensors(
@@ -496,3 +350,158 @@ class Validator:
                     data_group=data_group,
                     use_labels=use_labels,
                 )
+
+    def test_da(
+        self,
+        mode: str,
+        metrics_module: MetricModule,
+        n_classes: int,
+        network_task: Union[str, Task],
+        model: Network,
+        dataloader: DataLoader,
+        criterion: _Loss,
+        alpha: float = 0,
+        use_labels: bool = True,
+        target: bool = True,
+        report_ci=False,
+    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+        """
+        Computes the predictions and evaluation metrics.
+
+        Args:
+            model: the model trained.
+            dataloader: wrapper of a CapsDataset.
+            criterion: function to calculate the loss.
+            use_labels: If True the true_label will be written in output DataFrame
+                and metrics dict will be created.
+        Returns:
+            the results and metrics on the image level.
+        """
+        model.eval()
+        dataloader.dataset.eval()
+        results_df = pd.DataFrame(columns=columns(network_task, mode, n_classes))
+        total_loss = 0
+        with torch.no_grad():
+            for i, data in enumerate(dataloader):
+                outputs, loss_dict = model.compute_outputs_and_loss_test(
+                    data, criterion, alpha, target
+                )
+                total_loss += loss_dict["loss"].item()
+
+                # Generate detailed DataFrame
+                for idx in range(len(data["participant_id"])):
+                    row = generate_test_row(
+                        network_task,
+                        mode,
+                        metrics_module,
+                        n_classes,
+                        idx,
+                        data,
+                        outputs,
+                    )
+                    row_df = pd.DataFrame(
+                        row, columns=columns(network_task, mode, n_classes)
+                    )
+                    results_df = pd.concat([results_df, row_df])
+
+                del outputs, loss_dict
+            results_df.reset_index(inplace=True, drop=True)
+
+        if not use_labels:
+            metrics_dict = None
+        else:
+            metrics_dict = compute_metrics(
+                network_task, results_df, metrics_module, report_ci=report_ci
+            )
+            if report_ci:
+                metrics_dict["Metric_names"].append("loss")
+                metrics_dict["Metric_values"].append(total_loss)
+                metrics_dict["Lower_CI"].append("N/A")
+                metrics_dict["Upper_CI"].append("N/A")
+                metrics_dict["SE"].append("N/A")
+
+            else:
+                metrics_dict["loss"] = total_loss
+
+        torch.cuda.empty_cache()
+
+        return results_df, metrics_dict
+
+    def _test_loader_ssda(
+        self,
+        maps_manager: MapsManager,
+        dataloader,
+        criterion,
+        alpha,
+        data_group,
+        split,
+        selection_metrics,
+        use_labels=True,
+        gpu=None,
+        network=None,
+        target=False,
+        report_ci=True,
+    ):
+        """
+        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
+
+        Args:
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
+            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
+            data_group (str): name of the data group used for the testing task.
+            split (int): Index of the split used to train the model tested.
+            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            log_dir = (
+                maps_manager.maps_path
+                / f"{maps_manager.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+            )
+            maps_manager.write_description_log(
+                log_dir,
+                data_group,
+                dataloader.dataset.caps_dict,
+                dataloader.dataset.df,
+            )
+
+            # load the best trained model during the training
+            model, _ = maps_manager._init_model(
+                transfer_path=maps_manager.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+            prediction_df, metrics = self.test_da(
+                network_task=maps_manager.network_task,
+                model=model,
+                dataloader=dataloader,
+                criterion=criterion,
+                target=target,
+                report_ci=report_ci,
+                mode=maps_manager.mode,
+                metrics_module=maps_manager.metrics_module,
+                n_classes=maps_manager.n_classes,
+            )
+            if use_labels:
+                if network is not None:
+                    metrics[f"{maps_manager.mode}_id"] = network
+
+                if report_ci:
+                    loss_to_log = metrics["Metric_values"][-1]
+                else:
+                    loss_to_log = metrics["loss"]
+
+                logger.info(
+                    f"{maps_manager.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
+                )
+
+            # Replace here
+            maps_manager._mode_level_to_tsv(
+                prediction_df, metrics, split, selection_metric, data_group=data_group
+            )
