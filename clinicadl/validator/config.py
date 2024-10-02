@@ -18,7 +18,7 @@ class ValidatorConfig(BaseModel):
     # maps_path: Path
     mode: str
 
-    metrics_module: Optional = None
+    # metrics_module: Optional = None
     report_ci: bool = False
     selection_metrics: list
 

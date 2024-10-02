@@ -69,3 +69,5 @@ for split in splitter.split_iterator():
             self.config.validation.selection_metrics,
         )
         ###### end ############
+
+test_loader = get_dataloader(dataset, split, network, "train", config)
