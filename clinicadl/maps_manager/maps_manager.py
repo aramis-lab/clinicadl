@@ -17,6 +17,7 @@ from clinicadl.metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predict.utils import get_prediction
+from clinicadl.splitter.split_utils import init_split_manager
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -174,7 +175,7 @@ class MapsManager:
             size_reduction_factor=self.size_reduction_factor,
         )
 
-        split_manager = self._init_split_manager(None)
+        split_manager = init_split_manager(self.validation, self.parameters)
         train_df = split_manager[0]["train"]
         if "label" not in self.parameters:
             self.parameters["label"] = None
@@ -320,7 +321,7 @@ class MapsManager:
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
-        split_manager = self._init_split_manager()
+        split_manager = init_split_manager(self.validation, self.parameters)
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]
@@ -673,72 +674,6 @@ class MapsManager:
                     logger.info(f"Layer {name} unfrozen {param.requires_grad}")
 
         return model, current_epoch
-
-    def _init_split_manager(self, split_list=None, ssda_bool: bool = False):
-        from clinicadl.validation import split_manager
-
-        split_class = getattr(split_manager, self.validation)
-        args = list(
-            split_class.__init__.__code__.co_varnames[
-                : split_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        args.remove("split_list")
-        kwargs = {"split_list": split_list}
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-
-        if ssda_bool:
-            kwargs["caps_directory"] = self.caps_target
-            kwargs["tsv_path"] = self.tsv_target_lab
-
-        return split_class(**kwargs)
-
-    def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
-        # A intégrer directement dans _init_split_manager
-        from clinicadl.validation import split_manager
-
-        split_class = getattr(split_manager, self.validation)
-        args = list(
-            split_class.__init__.__code__.co_varnames[
-                : split_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        args.remove("split_list")
-        kwargs = {"split_list": split_list}
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-
-        kwargs["caps_directory"] = Path(caps_dir)
-        kwargs["tsv_path"] = Path(tsv_dir)
-
-        return split_class(**kwargs)
-
-    # def _init_task_manager(
-    #     self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
-    # ):
-    #     from clinicadl.utils.task_manager import (
-    #         ClassificationManager,
-    #         ReconstructionManager,
-    #         RegressionManager,
-    #     )
-
-    #     if self.network_task == "classification":
-    #         if n_classes is not None:
-    #             return ClassificationManager(self.mode, n_classes=n_classes)
-    #         else:
-    #             return ClassificationManager(self.mode, df=df, label=self.label)
-    #     elif self.network_task == "regression":
-    #         return RegressionManager(self.mode)
-    #     elif self.network_task == "reconstruction":
-    #         return ReconstructionManager(self.mode)
-    #     else:
-    #         raise NotImplementedError(
-    #             f"Task {self.network_task} is not implemented in ClinicaDL. "
-    #             f"Please choose between classification, regression and reconstruction."
-    #         )
 
     ###############################
     # Getters                     #
