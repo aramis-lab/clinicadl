@@ -8,6 +8,7 @@ from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.maps_manager.config import MapsManagerConfig
+from clinicadl.splitter.config import SplitConfig
 from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import InterpretationMethod
@@ -50,5 +51,6 @@ class InterpretConfig(
     ValidationConfig,
     ComputationalConfig,
     DataLoaderConfig,
+    SplitConfig,
 ):
     """Config class to perform Transfer Learning."""
