@@ -17,7 +17,7 @@ from clinicadl.metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predict.utils import get_prediction
-from clinicadl.splitter.split_manager.split_manager import init_splitter
+from clinicadl.splitter.splitter import init_splitter
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,

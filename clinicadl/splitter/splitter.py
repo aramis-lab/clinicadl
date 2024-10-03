@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
 from clinicadl.caps_dataset.data_config import DataConfig
+from clinicadl.splitter.config import SplitConfig, SplitterConfig
 from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -22,18 +23,22 @@ def init_splitter(
     split_list=None,
 ):
     data_config = DataConfig(**parameters)
-    split_config = ValidationConfig(**parameters)
+    validation_config = ValidationConfig(**parameters)
+    split_config = SplitConfig(**parameters)
 
-    return Splitter(
-        data_config=data_config, validation_config=split_config, split_list=split_list
+    splitter_config = SplitterConfig(
+        data_config=data_config,
+        validation_config=validation_config,
+        split_config=split_config,
     )
+
+    return Splitter(splitter_config, split_list=split_list)
 
 
 class Splitter:
     def __init__(
         self,
-        data_config: DataConfig,
-        validation_config: ValidationConfig,
+        config: SplitterConfig,
         split_list: Optional[List[int]] = None,
     ):
         """_summary_
@@ -48,19 +53,18 @@ class Splitter:
             _description_
 
         """
-        self.data_config = data_config
-        self.validation_config = validation_config
+        self.config = config
         self.split_list = split_list
 
-        self.caps_dict = self.data_config.caps_dict  # TODO : check if useful ?
+        self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
 
     def max_length(self) -> int:
         """Maximum number of splits"""
-        return self.validation_config.n_splits
+        return self.config.split.n_splits
 
     def __len__(self):
         if not self.split_list:
-            return self.validation_config.n_splits
+            return self.config.split.n_splits
         else:
             return len(self.split_list)
 
@@ -72,7 +76,7 @@ class Splitter:
         Returns:
             list[int]: list of all possible splits
         """
-        return [i for i in range(self.validation_config.n_splits)]
+        return [i for i in range(self.config.split.n_splits)]
 
     def __getitem__(self, item) -> Dict:
         """
@@ -85,8 +89,8 @@ class Splitter:
         """
         self._check_item(item)
 
-        if self.data_config.multi_cohort:
-            tsv_df = pd.read_csv(self.validation_config.tsv_path, sep="\t")
+        if self.config.data.multi_cohort:
+            tsv_df = pd.read_csv(self.config.split.tsv_path, sep="\t")
             train_df = pd.DataFrame()
             valid_df = pd.DataFrame()
             found_diagnoses = set()
@@ -96,9 +100,9 @@ class Splitter:
                 cohort_diagnoses = (
                     tsv_df.at[idx, "diagnoses"].replace(" ", "").split(",")
                 )
-                if bool(set(cohort_diagnoses) & set(self.data_config.diagnoses)):
+                if bool(set(cohort_diagnoses) & set(self.config.data.diagnoses)):
                     target_diagnoses = list(
-                        set(cohort_diagnoses) & set(self.data_config.diagnoses)
+                        set(cohort_diagnoses) & set(self.config.data.diagnoses)
                     )
 
                     cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
@@ -109,13 +113,13 @@ class Splitter:
                     train_df = pd.concat([train_df, cohort_train_df])
                     valid_df = pd.concat([valid_df, cohort_valid_df])
                     found_diagnoses = found_diagnoses | (
-                        set(cohort_diagnoses) & set(self.data_config.diagnoses)
+                        set(cohort_diagnoses) & set(self.config.data.diagnoses)
                     )
 
-            if found_diagnoses != set(self.data_config.diagnoses):
+            if found_diagnoses != set(self.config.data.diagnoses):
                 raise ValueError(
                     f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
-                    f"do not correspond to the diagnoses wanted {set(self.data_config.diagnoses)}."
+                    f"do not correspond to the diagnoses wanted {set(self.config.data.diagnoses)}."
                 )
             train_df.reset_index(inplace=True, drop=True)
             valid_df.reset_index(inplace=True, drop=True)
@@ -177,10 +181,10 @@ class Splitter:
         """Concatenated the diagnoses needed to form the train and validation sets."""
 
         if cohort_diagnoses is None:
-            cohort_diagnoses = self.data_config.diagnoses
+            cohort_diagnoses = self.config.data.diagnoses
 
         tmp_cohort_path = (
-            cohort_path if cohort_path is not None else self.validation_config.tsv_path
+            cohort_path if cohort_path is not None else self.config.split.tsv_path
         )
         train_path, valid_path = self._get_tsv_paths(
             tmp_cohort_path,
@@ -188,14 +192,14 @@ class Splitter:
         )
 
         logger.debug(f"Training data loaded at {train_path}")
-        if self.data_config.baseline:
+        if self.config.data.baseline:
             train_path = train_path / "train_baseline.tsv"
         else:
             train_path = train_path / "train.tsv"
         train_df = self.load_data(train_path, cohort_diagnoses)
 
         logger.debug(f"Validation data loaded at {valid_path}")
-        if self.validation_config.valid_longitudinal:
+        if self.config.validation.valid_longitudinal:
             valid_path = valid_path / "validation.tsv"
         else:
             valid_path = valid_path / "validation_baseline.tsv"
@@ -229,7 +233,7 @@ class Splitter:
     def split_iterator(self):
         """Returns an iterable to iterate on all splits wanted."""
         if not self.split_list:
-            return range(self.validation_config.n_splits)
+            return range(self.config.split.n_splits)
         else:
             return self.split_list
 

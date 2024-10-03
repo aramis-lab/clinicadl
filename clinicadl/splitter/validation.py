@@ -23,22 +23,11 @@ class ValidationConfig(BaseModel):
     valid_longitudinal: bool = False
     skip_leak_check: bool = False
 
-    n_splits: NonNegativeInt = 0
-    split: Optional[Tuple[NonNegativeInt, ...]] = None
-    tsv_path: Optional[Path] = None  # not needed in predict ?
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
-    @field_validator("split", "selection_metrics", mode="before")
+    @field_validator("selection_metrics", mode="before")
     def validator_split(cls, v):
         if isinstance(v, list):
             return tuple(v)
         return v  # TODO : check that split exists (and check coherence with n_splits)
-
-    def adapt_cross_val_with_maps_manager_info(
-        self, maps_manager
-    ):  # maps_manager is of type MapsManager but need to be in a MapsConfig type in the future
-        # TEMPORARY
-        if not self.split:
-            self.split = find_splits(maps_manager.maps_path, maps_manager.split_name)
-        logger.debug(f"List of splits {self.split}")

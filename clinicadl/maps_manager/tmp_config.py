@@ -183,7 +183,7 @@ class TmpConfig(BaseModel):
         )
 
         if self.network_task == "classification":
-            from clinicadl.splitter.split_manager.split_manager import (
+            from clinicadl.splitter.splitter import (
                 init_splitter,
             )
 
