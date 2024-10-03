@@ -181,7 +181,7 @@ def test_fails_validations(bad_inputs, training_config):
 def test_passes_validations(good_inputs, training_config):
     c = training_config(**good_inputs)
     assert not c.computational.gpu
-    assert c.cross_validation.n_splits == 7
+    assert c.validation.n_splits == 7
     assert c.optimizer.optimizer == "Adagrad"
     assert c.transforms.data_augmentation == ("Smoothing",)
     assert c.data.diagnoses == ("AD",)
