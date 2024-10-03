@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl.maps_manager.maps_manager import MapsManager
-from clinicadl.splitter.split_manager.split_manager import init_split_manager
+from clinicadl.splitter.split_manager.split_manager import init_splitter
 
 from .testing_tools import modify_maps
 
@@ -49,7 +49,7 @@ def test_resume(cmdopt, tmp_path, test_name):
     assert flag_error
 
     maps_manager = MapsManager(maps_stopped)
-    split_manager = init_split_manager(parameters=maps_manager.parameters)
+    split_manager = init_splitter(parameters=maps_manager.parameters)
     for split in split_manager.split_iterator():
         performances_flag = (
             maps_stopped / f"split-{split}" / "best-loss" / "train"

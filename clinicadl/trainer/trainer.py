@@ -34,7 +34,7 @@ from clinicadl.utils.iotools.trainer_utils import (
 )
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
-from clinicadl.splitter.split_manager.split_manager import init_split_manager
+from clinicadl.splitter.split_manager.split_manager import init_splitter
 from clinicadl.transforms.config import TransformsConfig
 
 if TYPE_CHECKING:
@@ -157,7 +157,7 @@ class Trainer:
         """
         stopped_splits = set(
             find_stopped_splits(
-                self.maps_manager.maps_path, self.maps_manager.split_name
+                self.config.maps_manager.maps_dir, self.maps_manager.split_name
             )
         )
         finished_splits = set(
@@ -166,7 +166,7 @@ class Trainer:
             )
         )
         # TODO : check these two lines. Why do we need a split_manager?
-        split_manager = init_split_manager(
+        split_manager = init_splitter(
             parameters=self.config.get_dict(),
             split_list=splits,
         )
@@ -224,7 +224,7 @@ class Trainer:
             self._train_ssda(split_list, resume=False)
 
         else:
-            split_manager = init_split_manager(
+            split_manager = init_splitter(
                 parameters=self.config.get_dict(),
                 split_list=split_list,
             )
@@ -249,7 +249,7 @@ class Trainer:
 
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
-        split_manager = init_split_manager(
+        split_manager = init_splitter(
             parameters=self.config.get_dict(),
             split_list=split_list,
         )
@@ -290,7 +290,7 @@ class Trainer:
             If splits specified in input do not exist.
         """
         missing_splits = []
-        split_manager = init_split_manager(
+        split_manager = init_splitter(
             parameters=self.config.get_dict(),
             split_list=split_list,
         )
@@ -518,11 +518,11 @@ class Trainer:
             If True, the job is resumed from checkpoint.
         """
 
-        split_manager = init_split_manager(
+        split_manager = init_splitter(
             parameters=self.config.get_dict(),
             split_list=split_list,
         )
-        split_manager_target_lab = init_split_manager(
+        split_manager_target_lab = init_splitter(
             parameters=self.config.get_dict(),
             split_list=split_list,
         )

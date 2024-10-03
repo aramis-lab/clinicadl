@@ -17,7 +17,7 @@ from clinicadl.utils.iotools.clinica_utils import check_caps_folder
 logger = getLogger("clinicadl.split_manager")
 
 
-def init_split_manager(
+def init_splitter(
     parameters,
     split_list=None,
 ):
@@ -47,18 +47,6 @@ class Splitter:
         split_list : Optional[List[int]] (optional, default=None)
             _description_
 
-        Examples
-        --------
-        >>> _input_
-        _output_
-
-        Notes
-        -----
-        _notes_
-
-        See Also
-        --------
-        - _related_
         """
         self.data_config = data_config
         self.validation_config = validation_config

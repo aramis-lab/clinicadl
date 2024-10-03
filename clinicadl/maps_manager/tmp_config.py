@@ -184,13 +184,13 @@ class TmpConfig(BaseModel):
 
         if self.network_task == "classification":
             from clinicadl.splitter.split_manager.split_manager import (
-                init_split_manager,
+                init_splitter,
             )
 
             if self.n_splits > 1 and self.validation == "SingleSplit":
                 self.validation = "KFoldSplit"
 
-            split_manager = init_split_manager(
+            split_manager = init_splitter(
                 validation=self.validation,
                 parameters=self.model_dump(),
                 split_list=None,
