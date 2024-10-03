@@ -5,20 +5,23 @@ from typing import Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
-# from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.splitter.split_utils import find_splits
 
-logger = getLogger("clinicadl.cross_validation_config")
+logger = getLogger("clinicadl.validation_config")
 
 
-class CrossValidationConfig(
-    BaseModel
-):  # TODO : put in data/cross-validation/splitter module
+class ValidationConfig(BaseModel):
     """
-    Config class to configure the cross validation procedure.
+    Abstract config class for the validation procedure.
 
-    tsv_directory is an argument that must be passed by the user.
+    selection_metrics is specific to the task, thus it needs
+    to be specified in a subclass.
     """
+
+    evaluation_steps: NonNegativeInt = 0
+    selection_metrics: Tuple[str, ...] = ()
+    valid_longitudinal: bool = False
+    skip_leak_check: bool = False
 
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
@@ -26,7 +29,7 @@ class CrossValidationConfig(
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
-    @field_validator("split", mode="before")
+    @field_validator("split", "selection_metrics", mode="before")
     def validator_split(cls, v):
         if isinstance(v, list):
             return tuple(v)

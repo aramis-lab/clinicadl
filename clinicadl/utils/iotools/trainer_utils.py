@@ -22,8 +22,9 @@ def create_parameters_dict(config):
     parameters["preprocessing_dict_target"] = parameters["preprocessing_json_target"]
     del parameters["preprocessing_json_target"]
     del parameters["preprocessing_json"]
-    parameters["tsv_path"] = parameters["tsv_directory"]
-    del parameters["tsv_directory"]
+    if "tsv_directory" in parameters:
+        parameters["tsv_path"] = parameters["tsv_directory"]
+        del parameters["tsv_directory"]
     parameters["compensation"] = parameters["compensation"].value
     parameters["size_reduction_factor"] = parameters["size_reduction_factor"].value
     if parameters["track_exp"]:

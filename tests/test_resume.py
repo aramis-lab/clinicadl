@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl.maps_manager.maps_manager import MapsManager
-from clinicadl.splitter.split_utils import init_split_manager
+from clinicadl.splitter.split_manager.split_manager import init_split_manager
 
 from .testing_tools import modify_maps
 

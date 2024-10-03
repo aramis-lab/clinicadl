@@ -17,7 +17,7 @@ from clinicadl.metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predict.utils import get_prediction
-from clinicadl.splitter.split_utils import init_split_manager
+from clinicadl.splitter.split_manager.split_manager import init_split_manager
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -111,6 +111,7 @@ class MapsManager:
 
         # Initiate MAPS
         else:
+            print(parameters)
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 

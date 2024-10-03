@@ -19,13 +19,12 @@ from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.network.config import NetworkConfig
 from clinicadl.optimizer.optimization import OptimizationConfig
 from clinicadl.optimizer.optimizer import OptimizerConfig
+from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.early_stopping.config import EarlyStoppingConfig
 from clinicadl.utils.enum import Task
-from clinicadl.validation.cross_validation import CrossValidationConfig
-from clinicadl.validation.validation import ValidationConfig
 
 logger = getLogger("clinicadl.training_config")
 
@@ -40,7 +39,6 @@ class TrainConfig(BaseModel, ABC):
 
     callbacks: CallbacksConfig
     computational: ComputationalConfig
-    cross_validation: CrossValidationConfig
     data: DataConfig
     dataloader: DataLoaderConfig
     early_stopping: EarlyStoppingConfig
@@ -67,7 +65,6 @@ class TrainConfig(BaseModel, ABC):
         super().__init__(
             callbacks=kwargs,
             computational=kwargs,
-            cross_validation=kwargs,
             data=kwargs,
             dataloader=kwargs,
             early_stopping=kwargs,
@@ -87,7 +84,6 @@ class TrainConfig(BaseModel, ABC):
         """Updates the configs with a dict given by the user."""
         self.callbacks.__dict__.update(config_dict)
         self.computational.__dict__.update(config_dict)
-        self.cross_validation.__dict__.update(config_dict)
         self.data.__dict__.update(config_dict)
         self.dataloader.__dict__.update(config_dict)
         self.early_stopping.__dict__.update(config_dict)
@@ -116,3 +112,16 @@ class TrainConfig(BaseModel, ABC):
         path = Path(path)
         config_dict = extract_config_from_toml_file(path, self.network_task)
         self._update(config_dict)
+
+    def get_dict(self):
+        out_dict = {}
+
+        def get_full_dict(input_dict_: dict, output_dict: dict):
+            for key, value in input_dict_.items():
+                if isinstance(value, dict):
+                    get_full_dict(value, output_dict=output_dict)
+                else:
+                    output_dict[key] = value
+            return output_dict
+
+        return get_full_dict(self.model_dump(), out_dict)

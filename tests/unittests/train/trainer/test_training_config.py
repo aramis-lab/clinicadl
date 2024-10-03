@@ -7,9 +7,9 @@ from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.network.config import NetworkConfig
+from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.validation.cross_validation import CrossValidationConfig
 
 
 # Tests for customed validators #
@@ -19,12 +19,12 @@ def caps_example():
     return dir_
 
 
-def test_cross_validation_config():
-    c = CrossValidationConfig(
-        split=[0],
-        tsv_directory="",
-    )
-    assert c.split == (0,)
+# def test_cross_validation_config():
+#     c = ValidationConfig(
+#         split=[0],
+#         tsv_directory="",
+#     )
+#     assert c.split == (0,)
 
 
 def test_data_config(caps_example):

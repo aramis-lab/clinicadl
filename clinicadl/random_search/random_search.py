@@ -38,4 +38,4 @@ def launch_search(launch_directory: Path, job_name):
         output_maps_directory=maps_directory, **options
     )
     trainer = Trainer(training_config)
-    trainer.train(split_list=training_config.cross_validation.split, overwrite=True)
+    trainer.train(split_list=training_config.validation.split, overwrite=True)
