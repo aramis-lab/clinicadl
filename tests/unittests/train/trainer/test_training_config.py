@@ -188,7 +188,7 @@ def test_passes_validations(good_inputs, training_config):
     assert c.dataloader.batch_size == 1
     assert c.transforms.size_reduction_factor == 5
     assert c.optimizer.learning_rate == 1e-1
-    assert c.cross_validation.split == (0,)
+    assert c.validation.split == (0,)
     assert c.early_stopping.tolerance == 0.0
 
 
