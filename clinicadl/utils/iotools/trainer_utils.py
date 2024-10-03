@@ -22,9 +22,9 @@ def create_parameters_dict(config):
     parameters["preprocessing_dict_target"] = parameters["preprocessing_json_target"]
     del parameters["preprocessing_json_target"]
     del parameters["preprocessing_json"]
-    if "tsv_directory" in parameters:
-        parameters["tsv_path"] = parameters["tsv_directory"]
-        del parameters["tsv_directory"]
+    # if "tsv_path" in parameters:
+    #     parameters["tsv_path"] = parameters["tsv_path"]
+    #     del parameters["tsv_path"]
     parameters["compensation"] = parameters["compensation"].value
     parameters["size_reduction_factor"] = parameters["size_reduction_factor"].value
     if parameters["track_exp"]:
@@ -73,7 +73,7 @@ def create_parameters_dict(config):
 
 
 def patch_to_read_json(config_dict):
-    config_dict["tsv_directory"] = config_dict["tsv_path"]
+    config_dict["tsv_path"] = config_dict["tsv_path"]
     if ("track_exp" in config_dict) and (config_dict["track_exp"] == ""):
         config_dict["track_exp"] = None
     config_dict["preprocessing_json"] = config_dict["preprocessing_dict"][

@@ -35,7 +35,7 @@ def dummy_arguments(caps_example):
     args = {
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
-        "tsv_directory": "",
+        "tsv_path": "",
         "maps_dir": "",
         "gpu": False,
     }

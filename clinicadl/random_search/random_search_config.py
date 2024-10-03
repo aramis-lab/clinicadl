@@ -84,7 +84,7 @@ def training_config_for_random_models(base_training_config):
         The user must specified at least the following arguments:
             - caps_directory
             - preprocessing_json
-            - tsv_directory
+            - tsv_path
             - output_maps_directory
             - convolutions_dict
             - n_fcblocks

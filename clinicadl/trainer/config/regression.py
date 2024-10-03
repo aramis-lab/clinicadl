@@ -53,7 +53,7 @@ class RegressionConfig(TrainConfig):
     The user must specified at least the following arguments:
     - caps_directory
     - preprocessing_json
-    - tsv_directory
+    - tsv_path
     - output_maps_directory
     """
 

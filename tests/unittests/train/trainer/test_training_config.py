@@ -22,7 +22,7 @@ def caps_example():
 # def test_cross_validation_config():
 #     c = ValidationConfig(
 #         split=[0],
-#         tsv_directory="",
+#         tsv_path="",
 #     )
 #     assert c.split == (0,)
 
@@ -113,7 +113,7 @@ def dummy_arguments(caps_example):
     args = {
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
-        "tsv_directory": "",
+        "tsv_path": "",
         "maps_dir": "",
         "gpu": False,
         "architecture": "",

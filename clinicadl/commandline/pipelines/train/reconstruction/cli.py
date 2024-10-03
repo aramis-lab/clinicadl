@@ -33,7 +33,7 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 # Mandatory arguments
 @arguments.caps_directory
 @arguments.preprocessing_json
-@arguments.tsv_directory
+@arguments.tsv_path
 @arguments.output_maps
 # Options
 # Computational

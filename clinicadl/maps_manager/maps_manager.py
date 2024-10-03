@@ -176,7 +176,7 @@ class MapsManager:
             size_reduction_factor=self.size_reduction_factor,
         )
 
-        split_manager = init_split_manager(self.validation, self.parameters)
+        split_manager = init_split_manager(parameters=self.parameters)
         train_df = split_manager[0]["train"]
         if "label" not in self.parameters:
             self.parameters["label"] = None
@@ -322,7 +322,7 @@ class MapsManager:
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
-        split_manager = init_split_manager(self.validation, self.parameters)
+        split_manager = init_split_manager(parameters=self.parameters)
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]

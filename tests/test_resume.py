@@ -49,7 +49,7 @@ def test_resume(cmdopt, tmp_path, test_name):
     assert flag_error
 
     maps_manager = MapsManager(maps_stopped)
-    split_manager = init_split_manager(maps_manager.validation, maps_manager.parameters)
+    split_manager = init_split_manager(parameters=maps_manager.parameters)
     for split in split_manager.split_iterator():
         performances_flag = (
             maps_stopped / f"split-{split}" / "best-loss" / "train"
