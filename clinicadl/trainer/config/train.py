@@ -76,6 +76,7 @@ class TrainConfig(BaseModel, ABC):
             optimization=kwargs,
             optimizer=kwargs,
             reproducibility=kwargs,
+            split=kwargs,
             ssda=kwargs,
             transfer_learning=kwargs,
             transforms=kwargs,
@@ -95,6 +96,7 @@ class TrainConfig(BaseModel, ABC):
         self.optimization.__dict__.update(config_dict)
         self.optimizer.__dict__.update(config_dict)
         self.reproducibility.__dict__.update(config_dict)
+        self.split.__dict__.update(config_dict)
         self.ssda.__dict__.update(config_dict)
         self.transfer_learning.__dict__.update(config_dict)
         self.transforms.__dict__.update(config_dict)
