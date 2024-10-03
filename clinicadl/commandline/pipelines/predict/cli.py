@@ -3,10 +3,10 @@ import click
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     computational,
-    cross_validation,
     data,
     dataloader,
     maps_manager,
+    split,
     validation,
 )
 from clinicadl.commandline.pipelines.predict import options
@@ -29,7 +29,7 @@ from clinicadl.predict.predict_manager import PredictManager
 @data.diagnoses
 @validation.skip_leak_check
 @validation.selection_metrics
-@cross_validation.split
+@split.split
 @computational.gpu
 @computational.amp
 @dataloader.n_proc

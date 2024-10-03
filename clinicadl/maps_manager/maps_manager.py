@@ -105,17 +105,11 @@ class MapsManager:
                     f"Please choose between classification, regression and reconstruction."
                 )
 
-            self.split_name = (
-                self._check_split_wording()
-            )  # Used only for retro-compatibility
-
         # Initiate MAPS
         else:
-            print(parameters)
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
-            self.split_name = "split"  # Used only for retro-compatibility
             if cluster.master:
                 if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
                     maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
@@ -326,12 +320,7 @@ class MapsManager:
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]
-                group_path = (
-                    self.maps_path
-                    / "groups"
-                    / data_group
-                    / f"{self.split_name}-{split}"
-                )
+                group_path = self.maps_path / "groups" / data_group / f"split-{split}"
                 group_path.mkdir(parents=True, exist_ok=True)
 
                 columns = ["participant_id", "session_id", "cohort"]
@@ -422,10 +411,7 @@ class MapsManager:
             data_group: the name referring to the data group on which evaluation is performed.
         """
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
         performance_dir.mkdir(parents=True, exist_ok=True)
         performance_path = (
@@ -482,7 +468,6 @@ class MapsManager:
             validation_dataset = "validation"
         test_df = get_prediction(
             self.maps_path,
-            self.split_name,
             data_group,
             split,
             selection,
@@ -491,7 +476,6 @@ class MapsManager:
         )
         validation_df = get_prediction(
             self.maps_path,
-            self.split_name,
             validation_dataset,
             split,
             selection,
@@ -500,10 +484,7 @@ class MapsManager:
         )
 
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
 
         performance_dir.mkdir(parents=True, exist_ok=True)
@@ -551,7 +532,6 @@ class MapsManager:
         """
         sub_df = get_prediction(
             self.maps_path,
-            self.split_name,
             data_group,
             split,
             selection,
@@ -561,10 +541,7 @@ class MapsManager:
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
         sub_df.to_csv(
             performance_dir / f"{data_group}_image_level_prediction.tsv",
@@ -638,10 +615,7 @@ class MapsManager:
 
         if resume:
             checkpoint_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / "tmp"
-                / "checkpoint.pth.tar"
+                self.maps_path / f"split-{split}" / "tmp" / "checkpoint.pth.tar"
             )
             checkpoint_state = torch.load(
                 checkpoint_path, map_location=device, weights_only=True
@@ -694,10 +668,7 @@ class MapsManager:
             selection_metric (str): Metric used for best weights selection.
         """
         log_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection_metric}" / data_group
         )
         log_path = log_dir / "description.log"
         with log_path.open(mode="r") as f:
@@ -767,7 +738,7 @@ class MapsManager:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = check_selection_metric(
-            self.maps_path, self.split_name, split, selection_metric
+            self.maps_path, split, selection_metric
         )
         if self.multi_network:
             if network is None:
@@ -777,14 +748,14 @@ class MapsManager:
             else:
                 model_path = (
                     self.maps_path
-                    / f"{self.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{selection_metric}"
                     / f"network-{network}_model.pth.tar"
                 )
         else:
             model_path = (
                 self.maps_path
-                / f"{self.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / "model.pth.tar"
             )

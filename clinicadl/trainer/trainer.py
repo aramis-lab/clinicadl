@@ -155,16 +155,8 @@ class Trainer:
         splits : List[int]
             The splits that must be resumed.
         """
-        stopped_splits = set(
-            find_stopped_splits(
-                self.config.maps_manager.maps_dir, self.maps_manager.split_name
-            )
-        )
-        finished_splits = set(
-            find_finished_splits(
-                self.maps_manager.maps_path, self.maps_manager.split_name
-            )
-        )
+        stopped_splits = set(find_stopped_splits(self.config.maps_manager.maps_dir))
+        finished_splits = set(find_finished_splits(self.maps_manager.maps_path))
         # TODO : check these two lines. Why do we need a split_manager?
         split_manager = init_splitter(
             parameters=self.config.get_dict(),
@@ -254,9 +246,7 @@ class Trainer:
             split_list=split_list,
         )
         for split in split_manager.split_iterator():
-            split_path = (
-                self.maps_manager.maps_path / f"{self.maps_manager.split_name}-{split}"
-            )
+            split_path = self.maps_manager.maps_path / f"split-{split}"
             if split_path.is_dir():
                 if overwrite:
                     if cluster.master:
@@ -295,11 +285,7 @@ class Trainer:
             split_list=split_list,
         )
         for split in split_manager.split_iterator():
-            if not (
-                self.maps_manager.maps_path
-                / f"{self.maps_manager.split_name}-{split}"
-                / "tmp"
-            ).is_dir():
+            if not (self.maps_manager.maps_path / f"split-{split}" / "tmp").is_dir():
                 missing_splits.append(split)
 
         if len(missing_splits) > 0:
@@ -336,9 +322,7 @@ class Trainer:
                 int(network_folder.split("-")[1])
                 for network_folder in list(
                     (
-                        self.maps_manager.maps_path
-                        / f"{self.maps_manager.split_name}-{split}"
-                        / "training_logs"
+                        self.maps_manager.maps_path / f"split-{split}" / "training_logs"
                     ).iterdir()
                 )
             ]
@@ -1506,7 +1490,7 @@ class Trainer:
         if resume:
             checkpoint_path = (
                 self.maps_manager.maps_path
-                / f"{self.maps_manager.split_name}-{split}"
+                / f"split-{split}"
                 / "tmp"
                 / "optimizer.pth.tar"
             )
@@ -1562,11 +1546,7 @@ class Trainer:
         split : int
             The split on which the model has been trained.
         """
-        tmp_path = (
-            self.maps_manager.maps_path
-            / f"{self.maps_manager.split_name}-{split}"
-            / "tmp"
-        )
+        tmp_path = self.maps_manager.maps_path / f"split-{split}" / "tmp"
         shutil.rmtree(tmp_path)
 
     def _write_weights(
@@ -1599,20 +1579,14 @@ class Trainer:
             Whether to save model weights at every epoch.
             If False, only the best model will be saved.
         """
-        checkpoint_dir = (
-            self.maps_manager.maps_path
-            / f"{self.maps_manager.split_name}-{split}"
-            / "tmp"
-        )
+        checkpoint_dir = self.maps_manager.maps_path / f"split-{split}" / "tmp"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = checkpoint_dir / filename
         torch.save(state, checkpoint_path)
 
         if save_all_models:
             all_models_dir = (
-                self.maps_manager.maps_path
-                / f"{self.maps_manager.split_name}-{split}"
-                / "all_models"
+                self.maps_manager.maps_path / f"split-{split}" / "all_models"
             )
             all_models_dir.mkdir(parents=True, exist_ok=True)
             torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
@@ -1626,7 +1600,7 @@ class Trainer:
             for metric_name, metric_bool in metrics_dict.items():
                 metric_path = (
                     self.maps_manager.maps_path
-                    / f"{self.maps_manager.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{metric_name}"
                 )
                 if metric_bool:

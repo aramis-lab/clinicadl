@@ -10,7 +10,6 @@ from clinicadl.utils.exceptions import MAPSError
 
 def get_prediction(
     maps_path: Path,
-    split_name: str,
     data_group: str,
     split: int = 0,
     selection_metric: Optional[str] = None,
@@ -31,15 +30,11 @@ def get_prediction(
         (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
         identifies the image in the BIDS / CAPS.
     """
-    selection_metric = check_selection_metric(
-        maps_path, split_name, split, selection_metric
-    )
+    selection_metric = check_selection_metric(maps_path, split, selection_metric)
     if verbose:
-        print_description_log(
-            maps_path, split_name, data_group, split, selection_metric
-        )
+        print_description_log(maps_path, data_group, split, selection_metric)
     prediction_dir = (
-        maps_path / f"{split_name}-{split}" / f"best-{selection_metric}" / data_group
+        maps_path / f"split-{split}" / f"best-{selection_metric}" / data_group
     )
     if not prediction_dir.is_dir():
         raise MAPSError(

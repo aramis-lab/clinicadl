@@ -4,7 +4,6 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     callbacks,
     computational,
-    cross_validation,
     data,
     dataloader,
     early_stopping,
@@ -13,6 +12,7 @@ from clinicadl.commandline.modules_options import (
     optimization,
     optimizer,
     reproducibility,
+    split,
     ssda,
     transforms,
     validation,
@@ -70,8 +70,8 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 @ssda.tsv_target_unlab
 @ssda.preprocessing_json_target
 # Cross validation
-@cross_validation.n_splits
-@cross_validation.split
+@split.n_splits
+@split.split
 # Optimization
 @optimizer.optimizer
 @optimizer.weight_decay
