@@ -19,6 +19,7 @@ from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.network.config import NetworkConfig
 from clinicadl.optimizer.optimization import OptimizationConfig
 from clinicadl.optimizer.optimizer import OptimizerConfig
+from clinicadl.splitter.config import SplitConfig
 from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
@@ -48,6 +49,7 @@ class TrainConfig(BaseModel, ABC):
     optimization: OptimizationConfig
     optimizer: OptimizerConfig
     reproducibility: ReproducibilityConfig
+    split: SplitConfig
     ssda: SSDAConfig
     transfer_learning: TransferLearningConfig
     transforms: TransformsConfig

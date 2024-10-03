@@ -181,14 +181,14 @@ def test_fails_validations(bad_inputs, training_config):
 def test_passes_validations(good_inputs, training_config):
     c = training_config(**good_inputs)
     assert not c.computational.gpu
-    assert c.validation.n_splits == 7
+    assert c.split.n_splits == 7
     assert c.optimizer.optimizer == "Adagrad"
     assert c.transforms.data_augmentation == ("Smoothing",)
     assert c.data.diagnoses == ("AD",)
     assert c.dataloader.batch_size == 1
     assert c.transforms.size_reduction_factor == 5
     assert c.optimizer.learning_rate == 1e-1
-    assert c.validation.split == (0,)
+    assert c.split.split == (0,)
     assert c.early_stopping.tolerance == 0.0
 
 
