@@ -34,7 +34,8 @@ from clinicadl.utils.iotools.trainer_utils import (
 )
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.validator.validator import Validator
-from clinicadl.splitter.splitter import init_splitter
+from clinicadl.splitter.splitter import Splitter
+from clinicadl.splitter.config import SplitterConfig
 from clinicadl.transforms.config import TransformsConfig
 
 if TYPE_CHECKING:
@@ -158,10 +159,10 @@ class Trainer:
         stopped_splits = set(find_stopped_splits(self.config.maps_manager.maps_dir))
         finished_splits = set(find_finished_splits(self.maps_manager.maps_path))
         # TODO : check these two lines. Why do we need a split_manager?
-        split_manager = init_splitter(
-            parameters=self.config.get_dict(),
-            split_list=splits,
-        )
+
+        splitter_config = SplitterConfig(**self.config.get_dict())
+        split_manager = Splitter(splitter_config, split_list=splits)
+
         split_iterator = split_manager.split_iterator()
         ###
         absent_splits = set(split_iterator) - stopped_splits - finished_splits
@@ -216,10 +217,9 @@ class Trainer:
             self._train_ssda(split_list, resume=False)
 
         else:
-            split_manager = init_splitter(
-                parameters=self.config.get_dict(),
-                split_list=split_list,
-            )
+            splitter_config = SplitterConfig(**self.config.get_dict())
+            split_manager = Splitter(splitter_config, split_list=split_list)
+
             for split in split_manager.split_iterator():
                 logger.info(f"Training split {split}")
                 seed_everything(
@@ -241,10 +241,8 @@ class Trainer:
 
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
-        split_manager = init_splitter(
-            parameters=self.config.get_dict(),
-            split_list=split_list,
-        )
+        splitter_config = SplitterConfig(**self.config.get_dict())
+        split_manager = Splitter(splitter_config, split_list=split_list)
         for split in split_manager.split_iterator():
             split_path = self.maps_manager.maps_path / f"split-{split}"
             if split_path.is_dir():
@@ -280,10 +278,8 @@ class Trainer:
             If splits specified in input do not exist.
         """
         missing_splits = []
-        split_manager = init_splitter(
-            parameters=self.config.get_dict(),
-            split_list=split_list,
-        )
+        splitter_config = SplitterConfig(**self.config.get_dict())
+        split_manager = Splitter(splitter_config, split_list=split_list)
         for split in split_manager.split_iterator():
             if not (self.maps_manager.maps_path / f"split-{split}" / "tmp").is_dir():
                 missing_splits.append(split)
@@ -502,14 +498,10 @@ class Trainer:
             If True, the job is resumed from checkpoint.
         """
 
-        split_manager = init_splitter(
-            parameters=self.config.get_dict(),
-            split_list=split_list,
-        )
-        split_manager_target_lab = init_splitter(
-            parameters=self.config.get_dict(),
-            split_list=split_list,
-        )
+        splitter_config = SplitterConfig(**self.config.get_dict())
+
+        split_manager = Splitter(splitter_config, split_list=split_list)
+        split_manager_target_lab = Splitter(splitter_config, split_list=split_list)
 
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")

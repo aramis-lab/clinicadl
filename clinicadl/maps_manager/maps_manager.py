@@ -17,7 +17,8 @@ from clinicadl.metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predict.utils import get_prediction
-from clinicadl.splitter.splitter import init_splitter
+from clinicadl.splitter.config import SplitterConfig
+from clinicadl.splitter.splitter import Splitter
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -169,8 +170,9 @@ class MapsManager:
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
+        splitter_config = SplitterConfig(**self.parameters)
+        split_manager = Splitter(splitter_config)
 
-        split_manager = init_splitter(parameters=self.parameters)
         train_df = split_manager[0]["train"]
         if "label" not in self.parameters:
             self.parameters["label"] = None
@@ -316,7 +318,8 @@ class MapsManager:
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
-        split_manager = init_splitter(parameters=self.parameters)
+        splitter_config = SplitterConfig(**self.parameters)
+        split_manager = Splitter(splitter_config)
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]

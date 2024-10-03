@@ -111,4 +111,4 @@ def cli(**kwargs):
     options = merge_cli_and_config_file_options(Task.REGRESSION, **kwargs)
     config = RegressionConfig(**options)
     trainer = Trainer(config)
-    trainer.train(split_list=config.validation.split, overwrite=True)
+    trainer.train(split_list=config.split.split, overwrite=True)
