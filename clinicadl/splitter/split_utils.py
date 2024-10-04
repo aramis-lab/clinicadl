@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 
 def find_splits(maps_path: Path) -> List[int]:
@@ -7,7 +7,7 @@ def find_splits(maps_path: Path) -> List[int]:
     splits = [
         int(split.name.split("-")[1])
         for split in list(maps_path.iterdir())
-        if split.name.startswith(f"split-")
+        if split.name.startswith("split-")
     ]
     return splits
 

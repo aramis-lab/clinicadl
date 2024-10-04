@@ -5,15 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
-from clinicadl.caps_dataset.data_config import DataConfig
-from clinicadl.splitter.config import SplitConfig, SplitterConfig
-from clinicadl.splitter.validation import ValidationConfig
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
-)
-from clinicadl.utils.iotools.clinica_utils import check_caps_folder
+from clinicadl.splitter.config import SplitterConfig
 
 logger = getLogger("clinicadl.split_manager")
 
@@ -147,9 +139,7 @@ class Splitter:
         return df
 
     @staticmethod
-    def load_data(
-        tsv_path: Path, cohort_diagnoses: Optional[List[str]] = None
-    ) -> pd.DataFrame:
+    def load_data(tsv_path: Path, cohort_diagnoses: List[str]) -> pd.DataFrame:
         df = Splitter.get_dataframe_from_tsv_path(tsv_path)
         df = df[df.diagnosis.isin((cohort_diagnoses))]
         df.reset_index(inplace=True, drop=True)
@@ -164,7 +154,7 @@ class Splitter:
         """Concatenated the diagnoses needed to form the train and validation sets."""
 
         if cohort_diagnoses is None:
-            cohort_diagnoses = self.config.data.diagnoses
+            cohort_diagnoses = list(self.config.data.diagnoses)
 
         tmp_cohort_path = (
             cohort_path if cohort_path is not None else self.config.split.tsv_path

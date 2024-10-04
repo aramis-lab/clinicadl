@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 from datetime import datetime
 from logging import getLogger
@@ -50,7 +51,7 @@ class MapsManager:
         self,
         maps_path: Path,
         parameters: Optional[Dict[str, Any]] = None,
-        verbose: str = "info",
+        verbose: Optional[str] = "info",
     ):
         """
 
@@ -569,13 +570,13 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path: Path = None,
-        transfer_selection=None,
-        nb_unfrozen_layer=0,
-        split=None,
-        resume=False,
-        gpu=None,
-        network=None,
+        transfer_path: Optional[Path] = None,
+        transfer_selection: Optional[str] = None,
+        nb_unfrozen_layer: int = 0,
+        split: Optional[int] = None,
+        resume: bool = False,
+        gpu: bool = False,
+        network: Optional[int] = None,
     ):
         """
         Instantiate the model
@@ -778,3 +779,67 @@ class MapsManager:
         then calls the internal FSDP AMP mechanisms.
         """
         return self.amp and not self.fully_sharded_data_parallel
+
+    def _erase_tmp(self, split: int):
+        """
+        Erases checkpoints of the model and optimizer at the end of training.
+
+        Parameters
+        ----------
+        split : int
+            The split on which the model has been trained.
+        """
+        tmp_path = self.maps_path / f"split-{split}" / "tmp"
+        shutil.rmtree(tmp_path)
+
+    def _write_weights(
+        self,
+        state: Dict[str, Any],
+        metrics_dict: Optional[Dict[str, bool]],
+        split: int,
+        network: Optional[int] = None,
+        filename: str = "checkpoint.pth.tar",
+        save_all_models: bool = False,
+    ) -> None:
+        """
+        Update checkpoint and save the best model according to a set of
+        metrics.
+
+        Parameters
+        ----------
+        state : Dict[str, Any]
+            The state of the training (model weights, epoch, etc.).
+        metrics_dict : Optional[Dict[str, bool]]
+            The output of RetainBest step. If None, only the checkpoint
+            is saved.
+        split : int
+            The split number.
+        network : int (optional, default=None)
+            The network number (multi-network framework).
+        filename : str (optional, default="checkpoint.pth.tar")
+            The name of the checkpoint file.
+        save_all_models : bool (optional, default=False)
+            Whether to save model weights at every epoch.
+            If False, only the best model will be saved.
+        """
+        checkpoint_dir = self.maps_path / f"split-{split}" / "tmp"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint_path = checkpoint_dir / filename
+        torch.save(state, checkpoint_path)
+
+        if save_all_models:
+            all_models_dir = self.maps_path / f"split-{split}" / "all_models"
+            all_models_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
+
+        best_filename = "model.pth.tar"
+        if network is not None:
+            best_filename = f"network-{network}_model.pth.tar"
+
+        # Save model according to several metrics
+        if metrics_dict is not None:
+            for metric_name, metric_bool in metrics_dict.items():
+                metric_path = self.maps_path / f"split-{split}" / f"best-{metric_name}"
+                if metric_bool:
+                    metric_path.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(checkpoint_path, metric_path / best_filename)

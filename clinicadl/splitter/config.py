@@ -23,7 +23,7 @@ class SplitConfig(BaseModel):
 
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
-    tsv_path: Path  # not needed in predict ?
+    tsv_path: Optional[Path] = None  # not needed in interpret !
 
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
@@ -39,7 +39,7 @@ class SplitConfig(BaseModel):
     ):  # maps_manager is of type MapsManager but need to be in a MapsConfig type in the future
         # TEMPORARY
         if not self.split:
-            self.split = find_splits(maps_manager.maps_path)
+            self.split = tuple(find_splits(maps_manager.maps_path))
         logger.debug(f"List of splits {self.split}")
 
 

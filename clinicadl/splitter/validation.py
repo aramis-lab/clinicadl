@@ -1,11 +1,8 @@
 from logging import getLogger
-from pathlib import Path
-from typing import Optional, Tuple
+from typing import Tuple
 
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
-
-from clinicadl.splitter.split_utils import find_splits
 
 logger = getLogger("clinicadl.validation_config")
 
