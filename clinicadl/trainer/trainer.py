@@ -450,7 +450,7 @@ class Trainer:
                 self.config.validation.selection_metrics,
             )
 
-            self._erase_tmp(split)
+            self.maps_manager._erase_tmp(split)
 
     def _train_ssda(
         self,
@@ -662,7 +662,7 @@ class Trainer:
                 self.config.validation.selection_metrics,
             )
 
-            self._erase_tmp(split)
+            self.maps_manager._erase_tmp(split)
 
     def _train(
         self,

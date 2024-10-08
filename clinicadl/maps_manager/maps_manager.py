@@ -575,7 +575,7 @@ class MapsManager:
         nb_unfrozen_layer: int = 0,
         split: Optional[int] = None,
         resume: bool = False,
-        gpu: bool = False,
+        gpu: Optional[bool] = None,
         network: Optional[int] = None,
     ):
         """
