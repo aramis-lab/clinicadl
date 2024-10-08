@@ -17,7 +17,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+<<<<<<< HEAD
         python-version: [ '3.9', '3.10', '3.11', '3.12']
+=======
+        python-version: ['3.9', '3.10', '3.11']
+>>>>>>> 78ccf96c ([MAINT] Drop python 3.8 (#663))
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
