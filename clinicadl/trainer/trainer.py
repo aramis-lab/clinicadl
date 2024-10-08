@@ -336,7 +336,7 @@ class Trainer:
         dp_degree: Optional[int] = None,
         rank: Optional[int] = None,
         worker_init_fn: Optional[Callable[[int], None]] = None,
-        shuffle: bool = True,
+        shuffle: Optional[bool] = None,
         num_replicas: Optional[int] = None,
         homemade_sampler: bool = False,
     ):
