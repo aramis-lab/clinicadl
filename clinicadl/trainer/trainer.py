@@ -33,7 +33,8 @@ from clinicadl.utils.iotools.trainer_utils import (
     patch_to_read_json,
 )
 from clinicadl.trainer.tasks_utils import create_training_config
-from clinicadl.validator.validator import Validator
+from clinicadl.validator.validator import Predictor
+from clinicadl.validator.config import PredictConfig
 from clinicadl.splitter.splitter import Splitter
 from clinicadl.splitter.config import SplitterConfig
 from clinicadl.transforms.config import TransformsConfig
@@ -67,7 +68,8 @@ class Trainer:
         self.config = config
 
         self.maps_manager = self._init_maps_manager(config)
-        self.validator = Validator()
+        predict_config = PredictConfig(**config.get_dict())
+        self.validator = Predictor(predict_config)
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:

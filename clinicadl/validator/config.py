@@ -1,47 +1,40 @@
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Optional, Union
+from logging import getLogger
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    computed_field,
-    field_validator,
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
+from clinicadl.maps_manager.config import (
+    MapsManagerConfig as MapsManagerBaseConfig,
 )
+from clinicadl.splitter.config import SplitConfig
+from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
+from clinicadl.validator.validation import ValidationConfig
 
-from clinicadl.utils.factories import DefaultFromLibrary
+logger = getLogger("clinicadl.predict_config")
 
 
-class ValidatorConfig(BaseModel):
-    """Base config class to configure the validator."""
+class MapsManagerConfig(MapsManagerBaseConfig):
+    save_tensor: bool = False
+    save_latent_tensor: bool = False
 
-    maps_path: Path
-    mode: str
-    network_task: str
-    num_networks: Optional[int] = None
-    fsdp: Optional[bool] = None
-    amp: Optional[bool] = None
-    metrics_module: Optional = None
-    n_classes: Optional[int] = None
-    nb_unfrozen_layers: Optional[int] = None
-    std_amp: Optional[bool] = None
+    def check_output_saving_tensor(self, network_task: str) -> None:
+        # Check if task is reconstruction for "save_tensor" and "save_nifti"
+        if self.save_tensor and network_task != "reconstruction":
+            raise ClinicaDLArgumentError(
+                "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
+            )
 
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True,
-        use_enum_values=True,
-        validate_default=True,
-    )
 
-    @computed_field
-    @property
-    @abstractmethod
-    def metric(self) -> str:
-        """The name of the metric."""
+class DataConfig(DataBaseConfig):
+    use_labels: bool = True
 
-    @field_validator("get_not_nans", mode="after")
-    @classmethod
-    def validator_get_not_nans(cls, v):
-        assert not v, "get_not_nans not supported in ClinicaDL. Please set to False."
 
-        return v
+class PredictConfig(
+    MapsManagerConfig,
+    DataConfig,
+    ValidationConfig,
+    ComputationalConfig,
+    DataLoaderConfig,
+    SplitConfig,
+):
+    """Config class to perform Transfer Learning."""

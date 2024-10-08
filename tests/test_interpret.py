@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.validator.validator import PredictManager
 
 
 @pytest.fixture(params=["classification", "regression"])

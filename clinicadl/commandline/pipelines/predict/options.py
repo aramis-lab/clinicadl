@@ -1,7 +1,7 @@
 import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
-from clinicadl.predict.config import PredictConfig
+from clinicadl.validator.config import PredictConfig
 
 # predict specific
 use_labels = click.option(
