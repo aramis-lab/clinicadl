@@ -18,7 +18,6 @@ class ValidatorConfig(BaseModel):
     maps_path: Path
     mode: str
     network_task: str
-    split_name: Optional[str] = None
     num_networks: Optional[int] = None
     fsdp: Optional[bool] = None
     amp: Optional[bool] = None

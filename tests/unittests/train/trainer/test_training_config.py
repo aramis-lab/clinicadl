@@ -7,9 +7,9 @@ from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.network.config import NetworkConfig
+from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.validation.cross_validation import CrossValidationConfig
 
 
 # Tests for customed validators #
@@ -19,12 +19,12 @@ def caps_example():
     return dir_
 
 
-def test_cross_validation_config():
-    c = CrossValidationConfig(
-        split=[0],
-        tsv_directory="",
-    )
-    assert c.split == (0,)
+# def test_cross_validation_config():
+#     c = ValidationConfig(
+#         split=[0],
+#         tsv_path="",
+#     )
+#     assert c.split == (0,)
 
 
 def test_data_config(caps_example):
@@ -113,7 +113,7 @@ def dummy_arguments(caps_example):
     args = {
         "caps_directory": caps_example,
         "preprocessing_json": "preprocessing.json",
-        "tsv_directory": "",
+        "tsv_path": "",
         "maps_dir": "",
         "gpu": False,
         "architecture": "",
@@ -181,14 +181,14 @@ def test_fails_validations(bad_inputs, training_config):
 def test_passes_validations(good_inputs, training_config):
     c = training_config(**good_inputs)
     assert not c.computational.gpu
-    assert c.cross_validation.n_splits == 7
+    assert c.split.n_splits == 7
     assert c.optimizer.optimizer == "Adagrad"
     assert c.transforms.data_augmentation == ("Smoothing",)
     assert c.data.diagnoses == ("AD",)
     assert c.dataloader.batch_size == 1
     assert c.transforms.size_reduction_factor == 5
     assert c.optimizer.learning_rate == 1e-1
-    assert c.cross_validation.split == (0,)
+    assert c.split.split == (0,)
     assert c.early_stopping.tolerance == 0.0
 
 

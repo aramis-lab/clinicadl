@@ -68,3 +68,16 @@ for split in splitter.split_iterator():
             self.config.validation.selection_metrics,
         )
         ###### end ############
+
+
+for split in splitter.split_iterator():
+    for network in range(
+        first_network, self.maps_manager.num_networks
+    ):  # for multi_network
+        ###### actual _train_single method of the Trainer ############
+        test_loader = trainer.get_dataloader(dataset, split, network, "test", config)
+        validator.predict(test_loader)
+
+interpret_config = InterpretConfig(**kwargs)
+predict_manager = PredictManager(interpret_config)
+predict_manager.interpret()

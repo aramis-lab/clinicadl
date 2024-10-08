@@ -148,7 +148,6 @@ class PredictManager:
             if not self._config.selection_metrics:
                 split_selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
-                    self.maps_manager.split_name,
                     split,
                 )
             else:
@@ -156,7 +155,7 @@ class PredictManager:
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
-                    / f"{self.maps_manager.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{selection}"
                     / self._config.data_group
                 )
@@ -497,7 +496,7 @@ class PredictManager:
             model.eval()
             tensor_path = (
                 self.maps_manager.maps_path
-                / f"{self.maps_manager.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / self._config.data_group
                 / "latent_tensors"
@@ -574,7 +573,7 @@ class PredictManager:
             model.eval()
             nifti_path = (
                 self.maps_manager.maps_path
-                / f"{self.maps_manager.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / self._config.data_group
                 / "nifti_images"
@@ -719,14 +718,13 @@ class PredictManager:
             if not self._config.selection_metrics:
                 self._config.selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
-                    self.maps_manager.split_name,
                     split,
                 )
             for selection_metric in self._config.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
                     self.maps_manager.maps_path
-                    / f"{self.maps_manager.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{selection_metric}"
                     / self._config.data_group
                     / f"interpret-{self._config.name}"
@@ -843,13 +841,12 @@ class PredictManager:
                     for split in self._config.split:
                         selection_metrics = find_selection_metrics(
                             self.maps_manager.maps_path,
-                            self.maps_manager.split_name,
                             split,
                         )
                         for selection in selection_metrics:
                             results_path = (
                                 self.maps_manager.maps_path
-                                / f"{self.maps_manager.split_name}-{split}"
+                                / f"split-{split}"
                                 / f"best-{selection}"
                                 / self._config.data_group
                             )
@@ -927,12 +924,12 @@ class PredictManager:
                     "Information on train or validation data can only be "
                     "loaded if a split number is given"
                 )
-            elif not (group_path / f"{self.maps_manager.split_name}-{split}").is_dir():
+            elif not (group_path / f"split-{split}").is_dir():
                 raise MAPSError(
                     f"Split {split} is not available for data group {data_group}."
                 )
             else:
-                group_path = group_path / f"{self.maps_manager.split_name}-{split}"
+                group_path = group_path / f"split-{split}"
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
@@ -1054,7 +1051,6 @@ class PredictManager:
 
         selection_metric = check_selection_metric(
             self.maps_manager.maps_path,
-            self.maps_manager.split_name,
             split,
             selection_metric,
         )
@@ -1064,7 +1060,7 @@ class PredictManager:
             )
         map_dir = (
             self.maps_manager.maps_path
-            / f"{self.maps_manager.split_name}-{split}"
+            / f"split-{split}"
             / f"best-{selection_metric}"
             / data_group
             / f"interpret-{name}"

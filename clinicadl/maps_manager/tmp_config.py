@@ -81,6 +81,7 @@ class TmpConfig(BaseModel):
     split: Optional[Tuple[NonNegativeInt, ...]] = None
     tsv_path: Optional[Path] = None  # not needed in predict ?
 
+    # DataConfig
     caps_directory: Path
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
@@ -182,12 +183,10 @@ class TmpConfig(BaseModel):
         )
 
         if self.network_task == "classification":
-            from clinicadl.splitter.split_utils import init_split_manager
-
             if self.n_splits > 1 and self.validation == "SingleSplit":
                 self.validation = "KFoldSplit"
 
-            split_manager = init_split_manager(
+            split_manager = init_splitter(
                 validation=self.validation,
                 parameters=self.model_dump(),
                 split_list=None,

@@ -19,9 +19,7 @@ data_tsv = click.argument("data_tsv", type=click.Path(exists=True, path_type=Pat
 merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True, path_type=Path))
 
 # TSV TOOLS
-tsv_directory = click.argument(
-    "tsv_directory", type=click.Path(exists=True, path_type=Path)
-)
+tsv_path = click.argument("tsv_path", type=click.Path(exists=True, path_type=Path))
 old_tsv_dir = click.argument(
     "old_tsv_dir", type=click.Path(exists=True, path_type=Path)
 )

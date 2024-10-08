@@ -19,11 +19,12 @@ class ValidationConfig(BaseModel):
     selection_metrics: Tuple[str, ...] = ()
     valid_longitudinal: bool = False
     skip_leak_check: bool = False
+
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("selection_metrics", mode="before")
-    def list_to_tuples(cls, v):
+    def validator_split(cls, v):
         if isinstance(v, list):
             return tuple(v)
-        return v
+        return v  # TODO : check that split exists (and check coherence with n_splits)

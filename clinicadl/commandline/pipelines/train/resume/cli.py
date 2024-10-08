@@ -2,14 +2,14 @@ import click
 
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
-    cross_validation,
+    split,
 )
 from clinicadl.trainer.trainer import Trainer
 
 
 @click.command(name="resume", no_args_is_help=True)
 @arguments.input_maps
-@cross_validation.split
+@split.split
 def cli(input_maps_directory, split):
     """Resume training job in specified maps.
 

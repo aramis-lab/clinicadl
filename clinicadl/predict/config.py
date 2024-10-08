@@ -5,10 +5,10 @@ from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.maps_manager.config import (
     MapsManagerConfig as MapsManagerBaseConfig,
 )
+from clinicadl.splitter.config import SplitConfig
+from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
-from clinicadl.validation.cross_validation import CrossValidationConfig
-from clinicadl.validation.validation import ValidationConfig
 
 logger = getLogger("clinicadl.predict_config")
 
@@ -33,8 +33,8 @@ class PredictConfig(
     MapsManagerConfig,
     DataConfig,
     ValidationConfig,
-    CrossValidationConfig,
     ComputationalConfig,
     DataLoaderConfig,
+    SplitConfig,
 ):
     """Config class to perform Transfer Learning."""

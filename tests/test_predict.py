@@ -119,14 +119,12 @@ def test_predict(cmdopt, tmp_path, test_name):
     for mode in modes:
         get_prediction(
             predict_manager.maps_manager.maps_path,
-            predict_manager.maps_manager.split_name,
             data_group="test-RANDOM",
             mode=mode,
         )
         if use_labels:
             get_metrics(
                 predict_manager.maps_manager.maps_path,
-                predict_manager.maps_manager.split_name,
                 data_group="test-RANDOM",
                 mode=mode,
             )

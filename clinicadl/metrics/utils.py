@@ -7,10 +7,10 @@ from clinicadl.splitter.split_utils import print_description_log
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, MAPSError
 
 
-def find_selection_metrics(maps_path: Path, split_name: str, split):
+def find_selection_metrics(maps_path: Path, split):
     """Find which selection metrics are available in MAPS for a given split."""
 
-    split_path = maps_path / f"{split_name}-{split}"
+    split_path = maps_path / f"split-{split}"
     if not split_path.is_dir():
         raise KeyError(
             f"Training of split {split} was not performed."
@@ -24,11 +24,9 @@ def find_selection_metrics(maps_path: Path, split_name: str, split):
     ]
 
 
-def check_selection_metric(
-    maps_path: Path, split_name: str, split, selection_metric=None
-):
+def check_selection_metric(maps_path: Path, split, selection_metric=None):
     """Check that a given selection metric is available for a given split."""
-    available_metrics = find_selection_metrics(maps_path, split_name, split)
+    available_metrics = find_selection_metrics(maps_path, split)
 
     if not selection_metric:
         if len(available_metrics) > 1:
@@ -49,7 +47,6 @@ def check_selection_metric(
 
 def get_metrics(
     maps_path: Path,
-    split_name: str,
     data_group: str,
     split: int = 0,
     selection_metric: Optional[str] = None,
@@ -68,15 +65,11 @@ def get_metrics(
     Returns:
         (dict[str:float]): Values of the metrics
     """
-    selection_metric = check_selection_metric(
-        maps_path, split_name, split, selection_metric
-    )
+    selection_metric = check_selection_metric(maps_path, split, selection_metric)
     if verbose:
-        print_description_log(
-            maps_path, split_name, data_group, split, selection_metric
-        )
+        print_description_log(maps_path, data_group, split, selection_metric)
     prediction_dir = (
-        maps_path / f"{split_name}-{split}" / f"best-{selection_metric}" / data_group
+        maps_path / f"split-{split}" / f"best-{selection_metric}" / data_group
     )
     if not prediction_dir.is_dir():
         raise MAPSError(

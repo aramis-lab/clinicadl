@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 from datetime import datetime
 from logging import getLogger
@@ -17,6 +18,8 @@ from clinicadl.metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predict.utils import get_prediction
+from clinicadl.splitter.config import SplitterConfig
+from clinicadl.splitter.splitter import Splitter
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -48,7 +51,7 @@ class MapsManager:
         self,
         maps_path: Path,
         parameters: Optional[Dict[str, Any]] = None,
-        verbose: str = "info",
+        verbose: Optional[str] = "info",
     ):
         """
 
@@ -104,16 +107,11 @@ class MapsManager:
                     f"Please choose between classification, regression and reconstruction."
                 )
 
-            self.split_name = (
-                self._check_split_wording()
-            )  # Used only for retro-compatibility
-
         # Initiate MAPS
         else:
             self._check_args(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
-            self.split_name = "split"  # Used only for retro-compatibility
             if cluster.master:
                 if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
                     maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
@@ -173,8 +171,9 @@ class MapsManager:
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
+        splitter_config = SplitterConfig(**self.parameters)
+        split_manager = Splitter(splitter_config)
 
-        split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
         if "label" not in self.parameters:
             self.parameters["label"] = None
@@ -320,16 +319,12 @@ class MapsManager:
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
         logger.debug("Writing training and validation groups...")
-        split_manager = self._init_split_manager()
+        splitter_config = SplitterConfig(**self.parameters)
+        split_manager = Splitter(splitter_config)
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
                 df = split_manager[split][data_group]
-                group_path = (
-                    self.maps_path
-                    / "groups"
-                    / data_group
-                    / f"{self.split_name}-{split}"
-                )
+                group_path = self.maps_path / "groups" / data_group / f"split-{split}"
                 group_path.mkdir(parents=True, exist_ok=True)
 
                 columns = ["participant_id", "session_id", "cohort"]
@@ -420,10 +415,7 @@ class MapsManager:
             data_group: the name referring to the data group on which evaluation is performed.
         """
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
         performance_dir.mkdir(parents=True, exist_ok=True)
         performance_path = (
@@ -480,7 +472,6 @@ class MapsManager:
             validation_dataset = "validation"
         test_df = get_prediction(
             self.maps_path,
-            self.split_name,
             data_group,
             split,
             selection,
@@ -489,7 +480,6 @@ class MapsManager:
         )
         validation_df = get_prediction(
             self.maps_path,
-            self.split_name,
             validation_dataset,
             split,
             selection,
@@ -498,10 +488,7 @@ class MapsManager:
         )
 
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
 
         performance_dir.mkdir(parents=True, exist_ok=True)
@@ -549,7 +536,6 @@ class MapsManager:
         """
         sub_df = get_prediction(
             self.maps_path,
-            self.split_name,
             data_group,
             split,
             selection,
@@ -559,10 +545,7 @@ class MapsManager:
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
         performance_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection}" / data_group
         )
         sub_df.to_csv(
             performance_dir / f"{data_group}_image_level_prediction.tsv",
@@ -587,13 +570,13 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path: Path = None,
-        transfer_selection=None,
-        nb_unfrozen_layer=0,
-        split=None,
-        resume=False,
-        gpu=None,
-        network=None,
+        transfer_path: Optional[Path] = None,
+        transfer_selection: Optional[str] = None,
+        nb_unfrozen_layer: int = 0,
+        split: Optional[int] = None,
+        resume: bool = False,
+        gpu: Optional[bool] = None,
+        network: Optional[int] = None,
     ):
         """
         Instantiate the model
@@ -636,10 +619,7 @@ class MapsManager:
 
         if resume:
             checkpoint_path = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / "tmp"
-                / "checkpoint.pth.tar"
+                self.maps_path / f"split-{split}" / "tmp" / "checkpoint.pth.tar"
             )
             checkpoint_state = torch.load(
                 checkpoint_path, map_location=device, weights_only=True
@@ -674,72 +654,6 @@ class MapsManager:
 
         return model, current_epoch
 
-    def _init_split_manager(self, split_list=None, ssda_bool: bool = False):
-        from clinicadl.validation import split_manager
-
-        split_class = getattr(split_manager, self.validation)
-        args = list(
-            split_class.__init__.__code__.co_varnames[
-                : split_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        args.remove("split_list")
-        kwargs = {"split_list": split_list}
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-
-        if ssda_bool:
-            kwargs["caps_directory"] = self.caps_target
-            kwargs["tsv_path"] = self.tsv_target_lab
-
-        return split_class(**kwargs)
-
-    def _init_split_manager_ssda(self, caps_dir, tsv_dir, split_list=None):
-        # A intégrer directement dans _init_split_manager
-        from clinicadl.validation import split_manager
-
-        split_class = getattr(split_manager, self.validation)
-        args = list(
-            split_class.__init__.__code__.co_varnames[
-                : split_class.__init__.__code__.co_argcount
-            ]
-        )
-        args.remove("self")
-        args.remove("split_list")
-        kwargs = {"split_list": split_list}
-        for arg in args:
-            kwargs[arg] = self.parameters[arg]
-
-        kwargs["caps_directory"] = Path(caps_dir)
-        kwargs["tsv_path"] = Path(tsv_dir)
-
-        return split_class(**kwargs)
-
-    # def _init_task_manager(
-    #     self, df: Optional[pd.DataFrame] = None, n_classes: Optional[int] = None
-    # ):
-    #     from clinicadl.utils.task_manager import (
-    #         ClassificationManager,
-    #         ReconstructionManager,
-    #         RegressionManager,
-    #     )
-
-    #     if self.network_task == "classification":
-    #         if n_classes is not None:
-    #             return ClassificationManager(self.mode, n_classes=n_classes)
-    #         else:
-    #             return ClassificationManager(self.mode, df=df, label=self.label)
-    #     elif self.network_task == "regression":
-    #         return RegressionManager(self.mode)
-    #     elif self.network_task == "reconstruction":
-    #         return ReconstructionManager(self.mode)
-    #     else:
-    #         raise NotImplementedError(
-    #             f"Task {self.network_task} is not implemented in ClinicaDL. "
-    #             f"Please choose between classification, regression and reconstruction."
-    #         )
-
     ###############################
     # Getters                     #
     ###############################
@@ -758,10 +672,7 @@ class MapsManager:
             selection_metric (str): Metric used for best weights selection.
         """
         log_dir = (
-            self.maps_path
-            / f"{self.split_name}-{split}"
-            / f"best-{selection_metric}"
-            / data_group
+            self.maps_path / f"split-{split}" / f"best-{selection_metric}" / data_group
         )
         log_path = log_dir / "description.log"
         with log_path.open(mode="r") as f:
@@ -831,7 +742,7 @@ class MapsManager:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = check_selection_metric(
-            self.maps_path, self.split_name, split, selection_metric
+            self.maps_path, split, selection_metric
         )
         if self.multi_network:
             if network is None:
@@ -841,14 +752,14 @@ class MapsManager:
             else:
                 model_path = (
                     self.maps_path
-                    / f"{self.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{selection_metric}"
                     / f"network-{network}_model.pth.tar"
                 )
         else:
             model_path = (
                 self.maps_path
-                / f"{self.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / "model.pth.tar"
             )
@@ -868,3 +779,67 @@ class MapsManager:
         then calls the internal FSDP AMP mechanisms.
         """
         return self.amp and not self.fully_sharded_data_parallel
+
+    def _erase_tmp(self, split: int):
+        """
+        Erases checkpoints of the model and optimizer at the end of training.
+
+        Parameters
+        ----------
+        split : int
+            The split on which the model has been trained.
+        """
+        tmp_path = self.maps_path / f"split-{split}" / "tmp"
+        shutil.rmtree(tmp_path)
+
+    def _write_weights(
+        self,
+        state: Dict[str, Any],
+        metrics_dict: Optional[Dict[str, bool]],
+        split: int,
+        network: Optional[int] = None,
+        filename: str = "checkpoint.pth.tar",
+        save_all_models: bool = False,
+    ) -> None:
+        """
+        Update checkpoint and save the best model according to a set of
+        metrics.
+
+        Parameters
+        ----------
+        state : Dict[str, Any]
+            The state of the training (model weights, epoch, etc.).
+        metrics_dict : Optional[Dict[str, bool]]
+            The output of RetainBest step. If None, only the checkpoint
+            is saved.
+        split : int
+            The split number.
+        network : int (optional, default=None)
+            The network number (multi-network framework).
+        filename : str (optional, default="checkpoint.pth.tar")
+            The name of the checkpoint file.
+        save_all_models : bool (optional, default=False)
+            Whether to save model weights at every epoch.
+            If False, only the best model will be saved.
+        """
+        checkpoint_dir = self.maps_path / f"split-{split}" / "tmp"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint_path = checkpoint_dir / filename
+        torch.save(state, checkpoint_path)
+
+        if save_all_models:
+            all_models_dir = self.maps_path / f"split-{split}" / "all_models"
+            all_models_dir.mkdir(parents=True, exist_ok=True)
+            torch.save(state, all_models_dir / f"model_epoch_{state['epoch']}.pth.tar")
+
+        best_filename = "model.pth.tar"
+        if network is not None:
+            best_filename = f"network-{network}_model.pth.tar"
+
+        # Save model according to several metrics
+        if metrics_dict is not None:
+            for metric_name, metric_bool in metrics_dict.items():
+                metric_path = self.maps_path / f"split-{split}" / f"best-{metric_name}"
+                if metric_bool:
+                    metric_path.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(checkpoint_path, metric_path / best_filename)

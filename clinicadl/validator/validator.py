@@ -249,7 +249,7 @@ class Validator:
             if cluster.master:
                 log_dir = (
                     maps_manager.maps_path
-                    / f"{maps_manager.split_name}-{split}"
+                    / f"split-{split}"
                     / f"best-{selection_metric}"
                     / data_group
                 )
@@ -339,7 +339,7 @@ class Validator:
         for selection_metric in selection_metrics:
             log_dir = (
                 maps_manager.maps_path
-                / f"{maps_manager.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / data_group
             )
@@ -430,7 +430,7 @@ class Validator:
 
             tensor_path = (
                 maps_manager.maps_path
-                / f"{maps_manager.split_name}-{split}"
+                / f"split-{split}"
                 / f"best-{selection_metric}"
                 / data_group
                 / "tensors"
@@ -475,9 +475,7 @@ class Validator:
         """Computes the results on the image-level."""
 
         if not selection_metrics:
-            selection_metrics = find_selection_metrics(
-                maps_manager.maps_path, maps_manager.split_name, split
-            )
+            selection_metrics = find_selection_metrics(maps_manager.maps_path, split)
 
         for selection_metric in selection_metrics:
             #####################

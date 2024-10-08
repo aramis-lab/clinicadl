@@ -4,6 +4,7 @@ from typing import Tuple, Union
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
 from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
+from clinicadl.splitter.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils.enum import (
     Normalization,
@@ -11,7 +12,6 @@ from clinicadl.utils.enum import (
     ReconstructionMetric,
     Task,
 )
-from clinicadl.validation.validation import ValidationConfig as BaseValidationConfig
 
 logger = getLogger("clinicadl.reconstruction_config")
 
@@ -53,7 +53,7 @@ class ReconstructionConfig(TrainConfig):
     The user must specified at least the following arguments:
     - caps_directory
     - preprocessing_json
-    - tsv_directory
+    - tsv_path
     - output_maps_directory
     """
 

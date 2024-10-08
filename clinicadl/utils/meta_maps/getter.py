@@ -36,20 +36,18 @@ def meta_maps_analysis(launch_dir: Path, evaluation_metric="loss"):
     for job in jobs_list:
         performances_dict[job] = dict()
         maps_manager = MapsManager(launch_dir / job)
-        split_list = find_splits(maps_manager.maps_path, maps_manager.split_name)
+        split_list = find_splits(maps_manager.maps_path)
         split_set = split_set | set(split_list)
         for split in split_set:
             performances_dict[job][split] = dict()
             selection_metrics = find_selection_metrics(
                 maps_manager.maps_path,
-                maps_manager.split_name,
                 split,
             )
             selection_set = selection_set | set(selection_metrics)
             for metric in selection_metrics:
                 validation_metrics = get_metrics(
                     maps_manager.maps_path,
-                    maps_manager.split_name,
                     "validation",
                     split,
                     metric,

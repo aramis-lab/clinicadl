@@ -4,7 +4,7 @@ import click
 
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
-    cross_validation,
+    split,
 )
 from clinicadl.trainer.trainer import Trainer
 
@@ -12,7 +12,7 @@ from clinicadl.trainer.trainer import Trainer
 @click.command(name="from_json", no_args_is_help=True)
 @arguments.config_file
 @arguments.output_maps
-@cross_validation.split
+@split.split
 def cli(**kwargs):
     """
     Replicate a deep learning training based on a previously created JSON file.
