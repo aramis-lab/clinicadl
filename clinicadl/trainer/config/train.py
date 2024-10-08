@@ -20,12 +20,12 @@ from clinicadl.network.config import NetworkConfig
 from clinicadl.optimizer.optimization import OptimizationConfig
 from clinicadl.optimizer.optimizer import OptimizerConfig
 from clinicadl.splitter.config import SplitConfig
-from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.early_stopping.config import EarlyStoppingConfig
 from clinicadl.utils.enum import Task
+from clinicadl.validator.validation import ValidationConfig
 
 logger = getLogger("clinicadl.training_config")
 

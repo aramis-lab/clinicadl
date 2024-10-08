@@ -6,9 +6,9 @@ from clinicadl.maps_manager.config import (
     MapsManagerConfig as MapsManagerBaseConfig,
 )
 from clinicadl.splitter.config import SplitConfig
-from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
+from clinicadl.validator.validation import ValidationConfig
 
 logger = getLogger("clinicadl.predict_config")
 

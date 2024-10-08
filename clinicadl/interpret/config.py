@@ -9,9 +9,9 @@ from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.splitter.config import SplitConfig
-from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import InterpretationMethod
+from clinicadl.validator.validation import ValidationConfig
 
 logger = getLogger("clinicadl.interpret_config")
 

@@ -164,15 +164,17 @@ class PredictManager:
                     tsv_file.unlink()
             self._config.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
-                self._predict_multi(
-                    group_parameters,
-                    group_df,
-                    transforms,
-                    label_code,
-                    criterion,
-                    split,
-                    split_selection_metrics,
-                )
+                for network in range(self.maps_manager.num_networks):
+                    self._predict_single(
+                        group_parameters,
+                        group_df,
+                        transforms,
+                        label_code,
+                        criterion,
+                        split,
+                        split_selection_metrics,
+                        network,
+                    )
             else:
                 self._predict_single(
                     group_parameters,
@@ -193,139 +195,6 @@ class PredictManager:
                     self._config.skip_leak_check,
                 )
 
-    def _predict_multi(
-        self,
-        group_parameters,
-        group_df,
-        transforms,
-        label_code,
-        criterion,
-        split,
-        split_selection_metrics,
-    ):
-        """_summary_
-        Parameters
-        ----------
-        group_parameters : _type_
-            _description_
-        group_df : _type_
-            _description_
-        all_transforms : _type_
-            _description_
-        use_labels : _type_
-            _description_
-        label : _type_
-            _description_
-        label_code : _type_
-            _description_
-        batch_size : _type_
-            _description_
-        n_proc : _type_
-            _description_
-        criterion : _type_
-            _description_
-        data_group : _type_
-            _description_
-        split : _type_
-            _description_
-        split_selection_metrics : _type_
-            _description_
-        gpu : _type_
-            _description_
-        amp : _type_
-            _description_
-        save_tensor : _type_
-            _description_
-        save_latent_tensor : _type_
-            _description_
-        save_nifti : _type_
-            _description_
-        selection_metrics : _type_
-            _description_
-        Examples
-        --------
-        >>> _input_
-        _output_
-        Notes
-        -----
-        _notes_
-        See Also
-        --------
-        - _related_
-        """
-        assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
-
-        for network in range(self.maps_manager.num_networks):
-            data_test = return_dataset(
-                group_parameters["caps_directory"],
-                group_df,
-                self.maps_manager.preprocessing_dict,
-                transforms_config=transforms,
-                multi_cohort=group_parameters["multi_cohort"],
-                label_presence=self._config.use_labels,
-                label=self._config.label,
-                label_code=(
-                    self.maps_manager.label_code
-                    if label_code == "default"
-                    else label_code
-                ),
-                cnn_index=network,
-            )
-            test_loader = DataLoader(
-                data_test,
-                batch_size=(
-                    self._config.batch_size
-                    if self._config.batch_size is not None
-                    else self.maps_manager.batch_size
-                ),
-                shuffle=False,
-                sampler=DistributedSampler(
-                    data_test,
-                    num_replicas=cluster.world_size,
-                    rank=cluster.rank,
-                    shuffle=False,
-                ),
-                num_workers=self._config.n_proc
-                if self._config.n_proc is not None
-                else self.maps_manager.n_proc,
-            )
-            self.validator._test_loader(
-                maps_manager=self.maps_manager,
-                dataloader=test_loader,
-                criterion=criterion,
-                data_group=self._config.data_group,
-                split=split,
-                selection_metrics=split_selection_metrics,
-                use_labels=self._config.use_labels,
-                gpu=self._config.gpu,
-                amp=self._config.amp,
-                network=network,
-            )
-            if self._config.save_tensor:
-                logger.debug("Saving tensors")
-                self.validator._compute_output_tensors(
-                    self.maps_manager,
-                    data_test,
-                    self._config.data_group,
-                    split,
-                    self._config.selection_metrics,
-                    gpu=self._config.gpu,
-                    network=network,
-                )
-            if self._config.save_nifti:
-                self._compute_output_nifti(
-                    data_test,
-                    split,
-                    network=network,
-                )
-            if self._config.save_latent_tensor:
-                self._compute_latent_tensors(
-                    dataset=data_test,
-                    split=split,
-                    network=network,
-                )
-
     def _predict_single(
         self,
         group_parameters,
@@ -335,57 +204,9 @@ class PredictManager:
         criterion,
         split,
         split_selection_metrics,
+        network: Optional[int] = None,
     ):
-        """_summary_
-        Parameters
-        ----------
-        group_parameters : _type_
-            _description_
-        group_df : _type_
-            _description_
-        all_transforms : _type_
-            _description_
-        use_labels : _type_
-            _description_
-        label : _type_
-            _description_
-        label_code : _type_
-            _description_
-        batch_size : _type_
-            _description_
-        n_proc : _type_
-            _description_
-        criterion : _type_
-            _description_
-        data_group : _type_
-            _description_
-        split : _type_
-            _description_
-        split_selection_metrics : _type_
-            _description_
-        gpu : _type_
-            _description_
-        amp : _type_
-            _description_
-        save_tensor : _type_
-            _description_
-        save_latent_tensor : _type_
-            _description_
-        save_nifti : _type_
-            _description_
-        selection_metrics : _type_
-            _description_
-        Examples
-        --------
-        >>> _input_
-        _output_
-        Notes
-        -----
-        _notes_
-        See Also
-        --------
-        - _related_
-        """
+        """_summary_"""
 
         assert isinstance(self._config, PredictConfig)
         # assert self._config.label
@@ -401,6 +222,7 @@ class PredictManager:
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
+            cnn_index=network,
         )
         test_loader = DataLoader(
             data_test,
@@ -421,35 +243,39 @@ class PredictManager:
             else self.maps_manager.n_proc,
         )
         self.validator._test_loader(
-            self.maps_manager,
-            test_loader,
-            criterion,
-            self._config.data_group,
-            split,
-            split_selection_metrics,
+            maps_manager=self.maps_manager,
+            dataloader=test_loader,
+            criterion=criterion,
+            data_group=self._config.data_group,
+            split=split,
+            selection_metrics=split_selection_metrics,
             use_labels=self._config.use_labels,
             gpu=self._config.gpu,
             amp=self._config.amp,
+            network=network,
         )
         if self._config.save_tensor:
             logger.debug("Saving tensors")
             self.validator._compute_output_tensors(
-                self.maps_manager,
-                data_test,
-                self._config.data_group,
-                split,
-                self._config.selection_metrics,
+                maps_manager=self.maps_manager,
+                dataset=data_test,
+                data_group=self._config.data_group,
+                split=split,
+                selection_metrics=self._config.selection_metrics,
                 gpu=self._config.gpu,
+                network=network,
             )
         if self._config.save_nifti:
             self._compute_output_nifti(
-                data_test,
-                split,
+                dataset=data_test,
+                split=split,
+                network=network,
             )
         if self._config.save_latent_tensor:
             self._compute_latent_tensors(
                 dataset=data_test,
                 split=split,
+                network=network,
             )
 
     def _compute_latent_tensors(

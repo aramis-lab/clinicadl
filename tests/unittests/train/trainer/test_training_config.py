@@ -7,9 +7,9 @@ from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.network.config import NetworkConfig
-from clinicadl.splitter.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
+from clinicadl.validator.validation import ValidationConfig
 
 
 # Tests for customed validators #

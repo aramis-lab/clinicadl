@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.distributed as dist
-from torch.amp import autocast
+from torch.amp.autocast_mode import autocast
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 
