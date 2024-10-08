@@ -8,7 +8,7 @@ import pytest
 
 from clinicadl.metrics.utils import get_metrics
 from clinicadl.validator.utils import get_prediction
-from clinicadl.validator.validator import PredictManager
+from clinicadl.validator.validator import Validator
 
 from .testing_tools import compare_folders, modify_maps
 
@@ -113,7 +113,7 @@ def test_predict(cmdopt, tmp_path, test_name):
         overwrite=True,
         diagnoses=["CN"],
     )
-    predict_manager = PredictManager(predict_config)
+    predict_manager = Validator(predict_config)
     predict_manager.predict()
 
     for mode in modes:

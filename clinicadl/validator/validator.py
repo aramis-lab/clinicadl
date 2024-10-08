@@ -44,7 +44,7 @@ logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 
 
-class Predictor:
+class Validator:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config

@@ -10,7 +10,7 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.interpret import options
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.validator.validator import PredictManager
+from clinicadl.validator.validator import Validator
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -42,7 +42,7 @@ def cli(**kwargs):
     """
 
     interpret_config = InterpretConfig(**kwargs)
-    predict_manager = PredictManager(interpret_config)
+    predict_manager = Validator(interpret_config)
     predict_manager.interpret()
 
 

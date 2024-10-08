@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.validator.validator import PredictManager
+from clinicadl.validator.validator import Validator
 
 
 @pytest.fixture(params=["classification", "regression"])
@@ -83,7 +83,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
             name=f"test-{method}",
             method_cls=method,
         )
-        interpret_manager = PredictManager(interpret_config)
+        interpret_manager = Validator(interpret_config)
         interpret_manager.interpret()
         interpret_map = interpret_manager.get_interpretation(
             "train", f"test-{interpret_config.method}"
