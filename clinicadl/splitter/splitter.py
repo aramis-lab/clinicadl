@@ -180,7 +180,6 @@ class Splitter:
 
         return train_df, valid_df
 
-    @abc.abstractmethod
     def _get_tsv_paths(self, cohort_path, *args) -> Tuple[Path, Path]:
         """
         Computes the paths to the TSV files needed depending on the split structure.
@@ -202,7 +201,6 @@ class Splitter:
             valid_path = cohort_path
             return train_path, valid_path
 
-    @abc.abstractmethod
     def split_iterator(self):
         """Returns an iterable to iterate on all splits wanted."""
         if not self.split_list:
