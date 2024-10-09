@@ -77,7 +77,6 @@ class InterpretConfig(BaseModel):
             data=kwargs,
             split=kwargs,
             validation=kwargs,
-            transforms=kwargs,
             interpret=kwargs,
         )
 
@@ -90,7 +89,6 @@ class InterpretConfig(BaseModel):
         self.split.__dict__.update(config_dict)
         self.computational.__dict__.update(config_dict)
         self.dataloader.__dict__.update(config_dict)
-        self.transforms.__dict__.update(config_dict)
         self.interpret.__dict__.update(config_dict)
 
     def adapt_with_maps_manager_info(self, maps_manager: MapsManager):
@@ -114,10 +112,3 @@ class InterpretConfig(BaseModel):
 
         self.split.adapt_cross_val_with_maps_manager_info(maps_manager)
         self.maps_manager.check_output_saving_tensor(maps_manager.network_task)
-
-        self.transforms = TransformsConfig(
-            normalize=maps_manager.normalize,
-            data_augmentation=maps_manager.data_augmentation,
-            size_reduction=maps_manager.size_reduction,
-            size_reduction_factor=maps_manager.size_reduction_factor,
-        )
