@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.maps_manager.config import MapsManagerConfigBase
+from clinicadl.maps_manager.config import MapsManagerConfig as MapsManagerConfigBase
 from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
@@ -20,6 +20,8 @@ logger = getLogger("clinicadl.interpret_config")
 
 
 class MapsManagerConfig(MapsManagerConfigBase):
+    save_tensor: bool = False
+
     def check_output_saving_tensor(self, network_task: str) -> None:
         # Check if task is reconstruction for "save_tensor" and "save_nifti"
         if self.save_tensor and network_task != "reconstruction":
