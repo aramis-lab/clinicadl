@@ -28,7 +28,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-torch = "^2.1.0"
+torch = "^2.3.0"
 torchvision = "*"
 tensorboard = "*"
 toml = "*"
