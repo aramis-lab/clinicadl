@@ -78,6 +78,7 @@ class InterpretConfig(BaseModel):
             split=kwargs,
             validation=kwargs,
             transforms=kwargs,
+            interpret=kwargs,
         )
 
     def _update(self, config_dict: Dict[str, Any]) -> None:
@@ -90,6 +91,7 @@ class InterpretConfig(BaseModel):
         self.computational.__dict__.update(config_dict)
         self.dataloader.__dict__.update(config_dict)
         self.transforms.__dict__.update(config_dict)
+        self.interpret.__dict__.update(config_dict)
 
     def adapt_with_maps_manager_info(self, maps_manager: MapsManager):
         self.maps_manager.check_output_saving_nifti(maps_manager.network_task)
