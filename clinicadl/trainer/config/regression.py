@@ -5,9 +5,9 @@ from pydantic import computed_field, field_validator
 
 from clinicadl.caps_dataset.data_config import DataConfig as BaseDataConfig
 from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
+from clinicadl.predictor.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils.enum import RegressionLoss, RegressionMetric, Task
-from clinicadl.validator.validation import ValidationConfig as BaseValidationConfig
 
 logger = getLogger("clinicadl.reconstruction_config")
 logger = getLogger("clinicadl.regression_config")

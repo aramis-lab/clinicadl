@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from clinicadl.metrics.utils import get_metrics
-from clinicadl.validator.utils import get_prediction
-from clinicadl.validator.validator import Validator
+from clinicadl.predictor.predictor import Predictor
+from clinicadl.predictor.utils import get_prediction
 
 from .testing_tools import compare_folders, modify_maps
 
@@ -101,7 +101,7 @@ def test_predict(cmdopt, tmp_path, test_name):
     #     with open(json_path, "w") as f:
     #         f.write(json_data)
 
-    from clinicadl.validator.config import PredictConfig
+    from clinicadl.predictor.config import PredictConfig
 
     predict_config = PredictConfig(
         maps_dir=model_folder,
@@ -113,7 +113,7 @@ def test_predict(cmdopt, tmp_path, test_name):
         overwrite=True,
         diagnoses=["CN"],
     )
-    predict_manager = Validator(predict_config)
+    predict_manager = Predictor(predict_config)
     predict_manager.predict()
 
     for mode in modes:

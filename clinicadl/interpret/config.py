@@ -8,10 +8,10 @@ from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.maps_manager.config import MapsManagerConfig
+from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import InterpretationMethod
-from clinicadl.validator.validation import ValidationConfig
 
 logger = getLogger("clinicadl.interpret_config")
 
@@ -44,13 +44,13 @@ class InterpretBaseConfig(BaseModel):
             raise ValueError(f"The method {self.method.value} is not implemented")
 
 
-class InterpretConfig(
-    MapsManagerConfig,
-    InterpretBaseConfig,
-    DataConfig,
-    ValidationConfig,
-    ComputationalConfig,
-    DataLoaderConfig,
-    SplitConfig,
-):
+class InterpretConfig(BaseModel):
     """Config class to perform Transfer Learning."""
+
+    maps_manager: MapsManagerConfig
+    data: DataConfig
+    validation: ValidationConfig
+    computational: ComputationalConfig
+    dataloader: DataLoaderConfig
+    split: SplitConfig
+    interpret: InterpretBaseConfig

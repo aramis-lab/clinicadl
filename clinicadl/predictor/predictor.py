@@ -23,6 +23,7 @@ from clinicadl.metrics.utils import (
     find_selection_metrics,
 )
 from clinicadl.network.network import Network
+from clinicadl.predictor.config import PredictConfig
 from clinicadl.trainer.tasks_utils import (
     columns,
     compute_metrics,
@@ -38,16 +39,17 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.validator.config import PredictConfig
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 
 
-class Validator:
+class Predictor:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
-        self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
+
+        self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
+        self._config.adapt_with_maps_manager_info(self.maps_manager)
 
     def predict(
         self,
@@ -105,78 +107,49 @@ class Validator:
         _output_
         """
 
-        assert isinstance(self._config, PredictConfig)
-
-        self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.diagnoses = (
-            self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
-        )
-
-        self._config.batch_size = (
-            self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
-        )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
-        )
-
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
-        self._config.check_output_saving_tensor(self.maps_manager.network_task)
-
-        transforms = TransformsConfig(
-            normalize=self.maps_manager.normalize,
-            data_augmentation=self.maps_manager.data_augmentation,
-            size_reduction=self.maps_manager.size_reduction,
-            size_reduction_factor=self.maps_manager.size_reduction_factor,
-        )
-        group_df = self._config.create_groupe_df()
+        group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
         criterion = get_criterion(
             self.maps_manager.network_task, self.maps_manager.loss
         )
-        self._check_data_group(df=group_df)
 
-        assert self._config.split  # don't know if needed ? try to raise an exception ?
-        # assert self._config.label
-
-        for split in self._config.split:
+        for split in self._config.split.split:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
-                self._config.data_group, split
+                self._config.maps_manager.data_group, split
             )
             # Find label code if not given
-            if self._config.is_given_label_code(self.maps_manager.label, label_code):
+            if self._config.data.is_given_label_code(
+                self.maps_manager.label, label_code
+            ):
                 generate_label_code(
-                    self.maps_manager.network_task, group_df, self._config.label
+                    self.maps_manager.network_task, group_df, self._config.data.label
                 )
             # Erase previous TSV files on master process
-            if not self._config.selection_metrics:
+            if not self._config.validation.selection_metrics:
                 split_selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
                     split,
                 )
             else:
-                split_selection_metrics = self._config.selection_metrics
+                split_selection_metrics = self._config.validation.selection_metrics
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
                     / f"split-{split}"
                     / f"best-{selection}"
-                    / self._config.data_group
+                    / self._config.maps_manager.data_group
                 )
-                tsv_pattern = f"{self._config.data_group}*.tsv"
+                tsv_pattern = f"{self._config.maps_manager.data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-            self._config.check_label(self.maps_manager.label)
+            self._config.data.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
                 for network in range(self.maps_manager.num_networks):
                     self._predict_single(
                         group_parameters,
                         group_df,
-                        transforms,
+                        self._config.transforms,
                         label_code,
                         criterion,
                         split,
@@ -187,7 +160,7 @@ class Validator:
                 self._predict_single(
                     group_parameters,
                     group_df,
-                    transforms,
+                    self._config.transforms,
                     label_code,
                     criterion,
                     split,
@@ -196,11 +169,11 @@ class Validator:
             if cluster.master:
                 self._ensemble_prediction(
                     self.maps_manager,
-                    self._config.data_group,
+                    self._config.maps_manager.data_group,
                     split,
-                    self._config.selection_metrics,
-                    self._config.use_labels,
-                    self._config.skip_leak_check,
+                    self._config.validation.selection_metrics,
+                    self._config.data.use_labels,
+                    self._config.validation.skip_leak_check,
                 )
 
     def _predict_single(
@@ -217,16 +190,16 @@ class Validator:
         """_summary_"""
 
         assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
+        # assert self._config.data.label
 
         data_test = return_dataset(
             group_parameters["caps_directory"],
             group_df,
             self.maps_manager.preprocessing_dict,
-            transforms_config=transforms,
+            transforms_config=self._config.transforms,
             multi_cohort=group_parameters["multi_cohort"],
-            label_presence=self._config.use_labels,
-            label=self._config.label,
+            label_presence=self._config.data.use_labels,
+            label=self._config.data.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
@@ -235,8 +208,8 @@ class Validator:
         test_loader = DataLoader(
             data_test,
             batch_size=(
-                self._config.batch_size
-                if self._config.batch_size is not None
+                self._config.dataloader.batch_size
+                if self._config.dataloader.batch_size is not None
                 else self.maps_manager.batch_size
             ),
             shuffle=False,
@@ -246,40 +219,40 @@ class Validator:
                 rank=cluster.rank,
                 shuffle=False,
             ),
-            num_workers=self._config.n_proc
-            if self._config.n_proc is not None
+            num_workers=self._config.dataloader.n_proc
+            if self._config.dataloader.n_proc is not None
             else self.maps_manager.n_proc,
         )
         self._test_loader(
             maps_manager=self.maps_manager,
             dataloader=test_loader,
             criterion=criterion,
-            data_group=self._config.data_group,
+            data_group=self._config.maps_manager.data_group,
             split=split,
             selection_metrics=split_selection_metrics,
-            use_labels=self._config.use_labels,
-            gpu=self._config.gpu,
-            amp=self._config.amp,
+            use_labels=self._config.data.use_labels,
+            gpu=self._config.computational.gpu,
+            amp=self._config.computational.amp,
             network=network,
         )
-        if self._config.save_tensor:
+        if self._config.maps_manager.save_tensor:
             logger.debug("Saving tensors")
             self._compute_output_tensors(
                 maps_manager=self.maps_manager,
                 dataset=data_test,
-                data_group=self._config.data_group,
+                data_group=self._config.maps_manager.data_group,
                 split=split,
-                selection_metrics=self._config.selection_metrics,
-                gpu=self._config.gpu,
+                selection_metrics=self._config.validation.selection_metrics,
+                gpu=self._config.computational.gpu,
                 network=network,
             )
-        if self._config.save_nifti:
+        if self._config.maps_manager.save_nifti:
             self._compute_output_nifti(
                 dataset=data_test,
                 split=split,
                 network=network,
             )
-        if self._config.save_latent_tensor:
+        if self._config.maps_manager.save_latent_tensor:
             self._compute_latent_tensors(
                 dataset=data_test,
                 split=split,
@@ -312,13 +285,13 @@ class Validator:
         network : _type_ (optional, default=None)
             Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self._config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self._config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -332,7 +305,7 @@ class Validator:
                 self.maps_manager.maps_path
                 / f"split-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self._config.maps_manager.data_group
                 / "latent_tensors"
             )
             if cluster.master:
@@ -389,13 +362,13 @@ class Validator:
         import nibabel as nib
         from numpy import eye
 
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self._config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self._config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -409,7 +382,7 @@ class Validator:
                 self.maps_manager.maps_path
                 / f"split-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self._config.maps_manager.data_group
                 / "nifti_images"
             )
             if cluster.master:
@@ -498,21 +471,24 @@ class Validator:
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.diagnoses = (
+        self._config.data.diagnoses = (
             self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
+            if self._config.data.diagnoses is None
+            or len(self._config.data.diagnoses) == 0
+            else self._config.data.diagnoses
         )
-        self._config.batch_size = (
+        self._config.dataloader.batch_size = (
             self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
+            if not self._config.dataloader.batch_size
+            else self._config.dataloader.batch_size
         )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
+        self._config.dataloader.n_proc = (
+            self.maps_manager.n_proc
+            if not self._config.dataloader.n_proc
+            else self._config.dataloader.n_proc
         )
 
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
+        self._config.split.adapt_cross_val_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -524,14 +500,14 @@ class Validator:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-        group_df = self._config.create_groupe_df()
+        group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
 
         assert self._config.split
-        for split in self._config.split:
+        for split in self._config.split.split:
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
-                self._config.data_group, split
+                self._config.maps_manager.data_group, split
             )
             data_test = return_dataset(
                 parameters_group["caps_directory"],
@@ -545,22 +521,22 @@ class Validator:
             )
             test_loader = DataLoader(
                 data_test,
-                batch_size=self._config.batch_size,
+                batch_size=self._config.dataloader.batch_size,
                 shuffle=False,
-                num_workers=self._config.n_proc,
+                num_workers=self._config.dataloader.n_proc,
             )
-            if not self._config.selection_metrics:
-                self._config.selection_metrics = find_selection_metrics(
+            if not self._config.validation.selection_metrics:
+                self._config.validation.selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
                     split,
                 )
-            for selection_metric in self._config.selection_metrics:
+            for selection_metric in self._config.validation.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
                     self.maps_manager.maps_path
                     / f"split-{split}"
                     / f"best-{selection_metric}"
-                    / self._config.data_group
+                    / self._config.maps_manager.data_group
                     / f"interpret-{self._config.name}"
                 )
                 if (results_path).is_dir():
@@ -576,28 +552,28 @@ class Validator:
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
-                    gpu=self._config.gpu,
+                    gpu=self._config.computational.gpu,
                 )
-                interpreter = self._config.get_method()(model)
+                interpreter = self._config.interpret.get_method()(model)
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
                     map_pt = interpreter.generate_gradients(
                         images,
-                        self._config.target_node,
-                        level=self._config.level,
-                        amp=self._config.amp,
+                        self._config.interpret.target_node,
+                        level=self._config.interpret.level,
+                        amp=self._config.computational.amp,
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.maps_manager.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
-                        if self._config.save_individual:
+                        if self._config.interpret.save_individual:
                             single_path = (
                                 results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
-                            if self._config.save_nifti:
+                            if self._config.maps_manager.save_nifti:
                                 import nibabel as nib
                                 from numpy import eye
 
@@ -615,7 +591,7 @@ class Validator:
                         mode_map,
                         results_path / f"mean_{self.maps_manager.mode}-{i}_map.pt",
                     )
-                    if self._config.save_nifti:
+                    if self._config.maps_manager.save_nifti:
                         import nibabel as nib
                         from numpy import eye
 
@@ -662,17 +638,21 @@ class Validator:
             when caps_directory or df are not given and data group does not exist
 
         """
-        group_dir = self.maps_manager.maps_path / "groups" / self._config.data_group
+        group_dir = (
+            self.maps_manager.maps_path
+            / "groups"
+            / self._config.maps_manager.data_group
+        )
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if self._config.overwrite:
-                if self._config.data_group in ["train", "validation"]:
+            if self._config.maps_manager.overwrite:
+                if self._config.maps_manager.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     # if not split_list:
                     #     split_list = self.maps_manager.find_splits()
                     assert self._config.split
-                    for split in self._config.split:
+                    for split in self._config.split.split:
                         selection_metrics = find_selection_metrics(
                             self.maps_manager.maps_path,
                             split,
@@ -682,40 +662,40 @@ class Validator:
                                 self.maps_manager.maps_path
                                 / f"split-{split}"
                                 / f"best-{selection}"
-                                / self._config.data_group
+                                / self._config.maps_manager.data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
             elif df is not None or (
-                self._config.caps_directory is not None
-                and self._config.caps_directory != Path("")
+                self._config.data.caps_directory is not None
+                and self._config.data.caps_directory != Path("")
             ):
                 raise ClinicaDLArgumentError(
-                    f"Data group {self._config.data_group} is already defined. "
+                    f"Data group {self._config.maps_manager.data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {self._config.data_group} please set overwrite to True."
+                    f"To erase {self._config.maps_manager.data_group} please set overwrite to True."
                 )
 
         elif not group_dir.is_dir() and (
-            self._config.caps_directory is None or df is None
+            self._config.data.caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
-                f"The data group {self._config.data_group} does not already exist. "
+                f"The data group {self._config.maps_manager.data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            if self._config.skip_leak_check:
+            if self._config.validation.skip_leak_check:
                 logger.info("Skipping data leakage check")
             else:
-                self._check_leakage(self._config.data_group, df)
+                self._check_leakage(self._config.maps_manager.data_group, df)
             self._write_data_group(
-                self._config.data_group,
+                self._config.maps_manager.data_group,
                 df,
-                self._config.caps_directory,
-                self._config.multi_cohort,
-                label=self._config.label,
+                self._config.data.caps_directory,
+                self._config.data.multi_cohort,
+                label=self._config.data.label,
             )
 
     def get_group_info(
@@ -831,8 +811,8 @@ class Validator:
         group_path.mkdir(parents=True)
 
         columns = ["participant_id", "session_id", "cohort"]
-        if self._config.label in df.columns.values:
-            columns += [self._config.label]
+        if self._config.data.label in df.columns.values:
+            columns += [self._config.data.label]
         if label is not None and label in df.columns.values:
             columns += [label]
 
