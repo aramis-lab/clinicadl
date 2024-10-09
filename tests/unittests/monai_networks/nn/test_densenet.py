@@ -128,7 +128,9 @@ def test_get_densenet(name, num_outputs, output_act):
 def test_get_densenet_output():
     from torchvision.models import densenet121
 
-    densenet = get_densenet("densenet121", num_outputs=None, pretrained=True).features
+    densenet = get_densenet(
+        CommonDenseNet.DENSENET_121, num_outputs=None, pretrained=True
+    ).features
     gt = densenet121(weights="DEFAULT").features
     x = torch.randn(1, 3, 128, 128)
     assert (densenet(x) == gt(x)).all()

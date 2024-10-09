@@ -166,10 +166,10 @@ class DenseNet(nn.Sequential):
 class CommonDenseNet(str, Enum):
     """Supported DenseNet networks."""
 
-    DENSENET_121 = "densenet121"
-    DENSENET_161 = "densenet161"
-    DENSENET_169 = "densenet169"
-    DENSENET_201 = "densenet201"
+    DENSENET_121 = "DenseNet-121"
+    DENSENET_161 = "DenseNet-161"
+    DENSENET_169 = "DenseNet-169"
+    DENSENET_201 = "DenseNet-201"
 
 
 def get_densenet(
@@ -187,7 +187,7 @@ def get_densenet(
     The user can also use the pretrained models from `torchvision`. Note that the last fully connected layer will not
     used pretrained weights, as it is task specific.
 
-    .. warning:: `densenet121`, `densenet161`, `densenet169` and `densenet201` only works with 2D images.
+    .. warning:: `DenseNet-121`, `DenseNet-161`, `DenseNet-169` and `DenseNet-201` only works with 2D images with 3 channels.
 
     Notes: `torchvision` does not provide an implementation for `DenseNet-264` but provides a `DenseNet-161` that is not
     mentioned in the paper.
@@ -195,7 +195,7 @@ def get_densenet(
     Parameters
     ----------
     model : Union[str, CommonDenseNet]
-        The name of the DenseNet. Available networks are `densenet121`, `densenet161`, `densenet169` and `densenet201`.
+        The name of the DenseNet. Available networks are `DenseNet-121`, `DenseNet-161`, `DenseNet-169` and `DenseNet-201`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
         If None, the features before the last fully connected layer will be returned.
@@ -265,7 +265,7 @@ def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:
     """
     To update the old nomenclature in the pretrained state dict.
     Adapted from `_load_state_dict` in [torchvision.models.densenet](https://pytorch.org/vision/main
-    /_modules/torchvision/models/densenet.html#densenet121).
+    /_modules/torchvision/models/densenet.html).
     """
     pattern = re.compile(
         r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$"

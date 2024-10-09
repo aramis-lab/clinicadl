@@ -51,6 +51,7 @@ class GeneralResNet(nn.Module):
 
         self._check_args_consistency(n_res_blocks, n_features)
         self.squeeze_excitation = True if se_reduction else False
+        self.se_reduction = se_reduction
         self.n_features = n_features
         self.bottleneck_reduction = bottleneck_reduction
         self.spatial_dims = spatial_dims
@@ -138,6 +139,7 @@ class GeneralResNet(nn.Module):
             in_planes = self.n_features
             if self.squeeze_excitation:
                 block = SEResNetBlock
+                block.reduction = self.se_reduction
             else:
                 block = ResNetBlock
         elif block_type == ResNetBlockType.BOTTLENECK:
@@ -146,6 +148,7 @@ class GeneralResNet(nn.Module):
             )
             if self.squeeze_excitation:
                 block = SEResNetBottleneck
+                block.reduction = self.se_reduction
             else:
                 block = ResNetBottleneck
             block.expansion = self.bottleneck_reduction
@@ -290,7 +293,7 @@ class ResNet(GeneralResNet):
         number of channels in the input image.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
-        If None, the features before classification layers (including average pooling) will be returned.
+        If None, the features before the last fully connected layer (including average pooling) will be returned.
     block_type : Union[str, ResNetBlockType] (optional, default=ResNetBlockType.BASIC)
         type of residual block. Either `basic` or `bottleneck`. Default to `basic`, as in `ResNet-18`.
     n_res_blocks : Sequence[int] (optional, default=(2, 2, 2, 2))
@@ -432,11 +435,11 @@ class ResNet(GeneralResNet):
 class CommonResNet(str, Enum):
     """Supported ResNet networks."""
 
-    RESNET_18 = "resnet18"
-    RESNET_34 = "resnet34"
-    RESNET_50 = "resnet50"
-    RESNET_101 = "resnet101"
-    RESNET_152 = "resnet152"
+    RESNET_18 = "ResNet-18"
+    RESNET_34 = "ResNet-34"
+    RESNET_50 = "ResNet-50"
+    RESNET_101 = "ResNet-101"
+    RESNET_152 = "ResNet-152"
 
 
 def get_resnet(
@@ -454,12 +457,13 @@ def get_resnet(
     The user can also use the pretrained models from `torchvision`. Note that the last fully connected layer will not
     used pretrained weights, as it is task specific.
 
-    .. warning:: `resnet18`, `resnet34`, `resnet50`, `resnet101` and `resnet152` only works with 2D images with 3 channels.
+    .. warning:: `ResNet-18`, `ResNet-34`, `ResNet-50`, `ResNet-101` and `ResNet-152` only works with 2D images with 3
+    channels.
 
     Parameters
     ----------
-    model : Union[str, CommonDenseNet]
-        The name of the ResNet. Available networks are `resnet18`, `resnet34`, `resnet50`, `resnet101` and `resnet152`.
+    model : Union[str, CommonResNet]
+        The name of the ResNet. Available networks are `ResNet-18`, `ResNet-34`, `ResNet-50`, `ResNet-101` and `ResNet-152`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
         If None, the features before the last fully connected layer will be returned.
