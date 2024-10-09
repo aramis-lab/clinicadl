@@ -207,7 +207,7 @@ class RandomArchitecture(CNN):
         out_channels = last_conv["out_channels"]
         flattened_shape = np.ceil(np.array(initial_shape) / 2**n_conv)
         flattened_shape[0] = out_channels
-        in_features = np.product(flattened_shape)
+        in_features = np.prod(flattened_shape)
 
         # Sample number of FC layers
         ratio = (in_features / n_classes) ** (1 / n_fcblocks)
