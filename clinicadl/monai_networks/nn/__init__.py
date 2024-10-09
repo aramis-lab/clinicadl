@@ -5,4 +5,5 @@ from .conv_encoder import ConvEncoder
 from .densenet import DenseNet, get_densenet
 from .generator import Generator
 from .mlp import MLP
+from .resnet import ResNet, get_resnet
 from .vae import VAE
