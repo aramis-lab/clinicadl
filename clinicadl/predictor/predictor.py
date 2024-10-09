@@ -48,6 +48,14 @@ class Predictor:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self._config = _config
 
+        from clinicadl.splitter.config import SplitterConfig
+        from clinicadl.splitter.splitter import Splitter
+
+        self.splitter = Splitter(
+            SplitterConfig(
+                data=_config.data, split=_config.split, validation=_config.validation
+            )
+        )
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
 
@@ -113,7 +121,7 @@ class Predictor:
             self.maps_manager.network_task, self.maps_manager.loss
         )
 
-        for split in self._config.split.split:
+        for split in self.splitter.split_iterator():
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
                 self._config.maps_manager.data_group, split
@@ -471,24 +479,7 @@ class Predictor:
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.data.diagnoses = (
-            self.maps_manager.diagnoses
-            if self._config.data.diagnoses is None
-            or len(self._config.data.diagnoses) == 0
-            else self._config.data.diagnoses
-        )
-        self._config.dataloader.batch_size = (
-            self.maps_manager.batch_size
-            if not self._config.dataloader.batch_size
-            else self._config.dataloader.batch_size
-        )
-        self._config.dataloader.n_proc = (
-            self.maps_manager.n_proc
-            if not self._config.dataloader.n_proc
-            else self._config.dataloader.n_proc
-        )
-
-        self._config.split.adapt_cross_val_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -504,7 +495,7 @@ class Predictor:
         self._check_data_group(group_df)
 
         assert self._config.split
-        for split in self._config.split.split:
+        for split in self.splitter.split_iterator():
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
                 self._config.maps_manager.data_group, split
@@ -537,14 +528,14 @@ class Predictor:
                     / f"split-{split}"
                     / f"best-{selection_metric}"
                     / self._config.maps_manager.data_group
-                    / f"interpret-{self._config.name}"
+                    / f"interpret-{self._config.interpret.name}"
                 )
                 if (results_path).is_dir():
-                    if self._config.overwrite_name:
+                    if self._config.interpret.overwrite_name:
                         shutil.rmtree(results_path)
                     else:
                         raise MAPSError(
-                            f"Interpretation name {self._config.name} is already written. "
+                            f"Interpretation name {self._config.interpret.name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
