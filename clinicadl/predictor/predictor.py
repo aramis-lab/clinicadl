@@ -2,7 +2,7 @@ import json
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 import torch
@@ -51,11 +51,10 @@ class Predictor:
         from clinicadl.splitter.config import SplitterConfig
         from clinicadl.splitter.splitter import Splitter
 
-        self.splitter = Splitter(
-            SplitterConfig(
-                data=_config.data, split=_config.split, validation=_config.validation
-            )
-        )
+        tmp = _config.data.model_dump(exclude=set(["preprocessing_dict", "mode"]))
+        tmp.update(_config.split.model_dump())
+        tmp.update(_config.validation.model_dump())
+        self.splitter = Splitter(SplitterConfig(**tmp))
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
 
