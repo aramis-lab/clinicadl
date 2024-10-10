@@ -58,6 +58,7 @@ class TmpConfig(BaseModel):
     arguments needed : caps_directory, maps_path, loss
     """
 
+    # ???
     output_size: Optional[int] = None
     n_classes: Optional[int] = None
     network_task: Optional[str] = None
@@ -70,18 +71,21 @@ class TmpConfig(BaseModel):
     std_amp: Optional[bool] = None
     preprocessing_dict: Optional[dict] = None
 
+    # CALLBACKS
     emissions_calculator: bool = False
     track_exp: Optional[ExperimentTracking] = None
 
+    # COMPUTATIONAL
     amp: bool = False
     fully_sharded_data_parallel: bool = False
     gpu: bool = True
 
+    # SPLIT
     n_splits: NonNegativeInt = 0
     split: Optional[Tuple[NonNegativeInt, ...]] = None
     tsv_path: Optional[Path] = None  # not needed in predict ?
 
-    # DataConfig
+    # DATA
     caps_directory: Path
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
@@ -94,55 +98,68 @@ class TmpConfig(BaseModel):
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
 
+    # DATALOADER
     batch_size: PositiveInt = 8
     n_proc: PositiveInt = 2
     sampler: Sampler = Sampler.RANDOM
 
+    # EARLY STOPPING
     patience: NonNegativeInt = 0
     tolerance: NonNegativeFloat = 0.0
+    patience_epochs: NonNegativeInt = 0
 
+    # LEARNING RATE
     adaptive_learning_rate: bool = False
 
+    # MAPS MANAGER
     maps_path: Path
     data_group: Optional[str] = None
     overwrite: bool = False
     save_nifti: bool = False
 
+    # NETWORK
     architecture: str = "default"
     dropout: NonNegativeFloat = 0.0
     loss: str
     multi_network: bool = False
 
+    # OPTIMIZATION
     accumulation_steps: PositiveInt = 1
     epochs: PositiveInt = 20
     profiler: bool = False
 
+    # OPTIMIZER
     learning_rate: PositiveFloat = 1e-4
     optimizer: Optimizer = Optimizer.ADAM
     weight_decay: NonNegativeFloat = 1e-4
 
+    # REPRODUCIBILITY
     compensation: Compensation = Compensation.MEMORY
     deterministic: bool = False
     save_all_models: bool = False
     seed: int = 0
     config_file: Optional[Path] = None
 
+    # SSDA
     caps_target: Path = Path("")
     preprocessing_json_target: Path = Path("")
     ssda_network: bool = False
     tsv_target_lab: Path = Path("")
     tsv_target_unlab: Path = Path("")
 
+    # TRANSFER LEARNING
     nb_unfrozen_layer: NonNegativeInt = 0
     transfer_path: Optional[Path] = None
     transfer_selection_metric: str = "loss"
 
+    # TRANSFORMS
     data_augmentation: Tuple[Transform, ...] = ()
     train_transformations: Optional[Tuple[Transform, ...]] = None
     normalize: bool = True
     size_reduction: bool = False
     size_reduction_factor: SizeReductionFactor = SizeReductionFactor.TWO
 
+    # VALIDATION
     evaluation_steps: NonNegativeInt = 0
     selection_metrics: Tuple[str, ...] = ()
     valid_longitudinal: bool = False

@@ -51,7 +51,9 @@ class Predictor:
         from clinicadl.splitter.config import SplitterConfig
         from clinicadl.splitter.splitter import Splitter
 
-        tmp = _config.data.model_dump(exclude=set(["preprocessing_dict", "mode"]))
+        tmp = _config.data.model_dump(
+            exclude=set(["preprocessing_dict", "mode", "caps_dict"])
+        )
         tmp.update(_config.split.model_dump())
         tmp.update(_config.validation.model_dump())
         self.splitter = Splitter(SplitterConfig(**tmp))
