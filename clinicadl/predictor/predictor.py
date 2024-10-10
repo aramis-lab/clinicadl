@@ -51,76 +51,29 @@ class Predictor:
         from clinicadl.splitter.config import SplitterConfig
         from clinicadl.splitter.splitter import Splitter
 
-        tmp = _config.data.model_dump(
-            exclude=set(["preprocessing_dict", "mode", "caps_dict"])
-        )
-        tmp.update(_config.split.model_dump())
-        tmp.update(_config.validation.model_dump())
-        self.splitter = Splitter(SplitterConfig(**tmp))
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
+
+        tmp = self._config.data.model_dump(
+            exclude=set(["preprocessing_dict", "mode", "caps_dict"])
+        )
+        tmp.update(self._config.split.model_dump())
+        tmp.update(self._config.validation.model_dump())
+        self.splitter = Splitter(SplitterConfig(**tmp))
 
     def predict(
         self,
         label_code: Union[str, dict[str, int]] = "default",
     ):
-        """Performs the prediction task on a subset of caps_directory defined in a TSV file.
-        Parameters
-        ----------
-        data_group : str
-            name of the data group tested.
-        caps_directory : Path (optional, default=None)
-            path to the CAPS folder. For more information please refer to
-            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-            Default will load the value of an existing data group
-        tsv_path : Path (optional, default=None)
-            path to a TSV file containing the list of participants and sessions to test.
-            Default will load the DataFrame of an existing data group
-        split_list : List[int] (optional, default=None)
-            list of splits to test. Default perform prediction on all splits available.
-        selection_metrics : List[str] (optional, default=None)
-            list of selection metrics to test.
-                Default performs the prediction on all selection metrics available.
-        multi_cohort : bool (optional, default=False)
-            If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses : List[str] (optional, default=())
-            List of diagnoses to load if tsv_path is a split_directory.
-            Default uses the same as in training step.
-        use_labels : bool (optional, default=True)
-            If True, the labels must exist in test meta-data and metrics are computed.
-        batch_size : int (optional, default=None)
-            If given, sets the value of batch_size, else use the same as in training step.
-        n_proc : int (optional, default=None)
-            If given, sets the value of num_workers, else use the same as in training step.
-        gpu : bool (optional, default=None)
-            If given, a new value for the device of the model will be computed.
-        amp : bool (optional, default=False)
-            If enabled, uses Automatic Mixed Precision (requires GPU usage).
-        overwrite : bool (optional, default=False)
-            If True erase the occurrences of data_group.
-        label : str (optional, default=None)
-            Target label used for training (if network_task in [`regression`, `classification`]).
-        label_code : Optional[Dict[str, int]] (optional, default="default")
-            dictionary linking the target values to a node number.
-        save_tensor : bool (optional, default=False)
-            If true, save the tensor predicted for reconstruction task
-        save_nifti : bool (optional, default=False)
-            If true, save the nifti associated to the prediction for reconstruction task.
-        save_latent_tensor : bool (optional, default=False)
-            If true, save the tensor from the latent space for reconstruction task.
-        skip_leak_check : bool (optional, default=False)
-            If true, skip the leak check (not recommended).
-        Examples
-        --------
-        >>> _input_
-        _output_
-        """
+        """Performs the prediction task on a subset of caps_directory defined in a TSV file."""
 
         group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
         criterion = get_criterion(
             self.maps_manager.network_task, self.maps_manager.loss
         )
+
+        print(f"enter split iterato: {self.splitter.split_iterator()}")
 
         for split in self.splitter.split_iterator():
             logger.info(f"Prediction of split {split}")
@@ -142,6 +95,7 @@ class Predictor:
                 )
             else:
                 split_selection_metrics = self._config.validation.selection_metrics
+            print(f" split selection metrics : {split_selection_metrics}")
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
@@ -149,9 +103,11 @@ class Predictor:
                     / f"best-{selection}"
                     / self._config.maps_manager.data_group
                 )
+                print(f"tsv_dir: {tsv_dir}")
                 tsv_pattern = f"{self._config.maps_manager.data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
+            print("out boucle")
             self._config.data.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
                 for network in range(self.maps_manager.num_networks):
@@ -246,6 +202,7 @@ class Predictor:
         )
         if self._config.maps_manager.save_tensor:
             logger.debug("Saving tensors")
+            print("save_tensor")
             self._compute_output_tensors(
                 maps_manager=self.maps_manager,
                 dataset=data_test,
@@ -424,59 +381,6 @@ class Predictor:
     def interpret(self):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-        Parameters
-        ----------
-        data_group : str
-            Name of the data group interpreted.
-        name : str
-            Name of the interpretation procedure.
-        method : str
-            Method used for extraction (ex: gradients, grad-cam...).
-        caps_directory : Path (optional, default=None)
-            Path to the CAPS folder. For more information please refer to
-            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-            Default will load the value of an existing data group.
-        tsv_path : Path (optional, default=None)
-            Path to a TSV file containing the list of participants and sessions to test.
-            Default will load the DataFrame of an existing data group.
-        split_list : list[int] (optional, default=None)
-            List of splits to interpret. Default perform interpretation on all splits available.
-        selection_metrics : list[str] (optional, default=None)
-            List of selection metrics to interpret.
-            Default performs the interpretation on all selection metrics available.
-        multi_cohort : bool (optional, default=False)
-            If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses : list[str] (optional, default=())
-            List of diagnoses to load if tsv_path is a split_directory.
-            Default uses the same as in training step.
-        target_node : int (optional, default=0)
-            Node from which the interpretation is computed.
-        save_individual : bool (optional, default=False)
-            If True saves the individual map of each participant / session couple.
-        batch_size : int (optional, default=None)
-            If given, sets the value of batch_size, else use the same as in training step.
-        n_proc : int (optional, default=None)
-            If given, sets the value of num_workers, else use the same as in training step.
-        gpu : bool (optional, default=None)
-            If given, a new value for the device of the model will be computed.
-        amp : bool (optional, default=False)
-            If enabled, uses Automatic Mixed Precision (requires GPU usage).
-        overwrite : bool (optional, default=False)
-            If True erase the occurrences of data_group.
-        overwrite_name : bool (optional, default=False)
-            If True erase the occurrences of name.
-        level : int (optional, default=None)
-            Layer number in the convolutional part after which the feature map is chosen.
-        save_nifti : bool (optional, default=False)
-            If True, save the interpretation map in nifti format.
-        Raises
-        ------
-        NotImplementedError
-            If the method is not implemented
-        NotImplementedError
-            If the interpretaion of multi network is asked
-        MAPSError
-            If the interpretation has already been determined.
         """
         assert isinstance(self._config, InterpretConfig)
 
@@ -603,22 +507,6 @@ class Predictor:
 
         Parameters
         ----------
-        data_group : str
-            name of the data group
-        caps_directory : str (optional, default=None)
-            input CAPS directory
-        df : pd.DataFrame (optional, default=None)
-            Table of participant_id / session_id of the data group
-        multi_cohort : bool (optional, default=False)
-            indicates if the input data comes from several CAPS
-        overwrite : bool (optional, default=False)
-            If True former definition of data group is erased
-        label : str (optional, default=None)
-            label name if applicable
-        split_list : list[int] (optional, default=None)
-            _description_
-        skip_leak_check : bool (optional, default=False)
-            _description_
 
         Raises
         ------
@@ -636,13 +524,15 @@ class Predictor:
             / self._config.maps_manager.data_group
         )
         logger.debug(f"Group path {group_dir}")
+        print(f"group_dir: {group_dir}")
         if group_dir.is_dir():  # Data group already exists
+            print("is dir")
             if self._config.maps_manager.overwrite:
                 if self._config.maps_manager.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    # if not split_list:
-                    #     split_list = self.maps_manager.find_splits()
+                    if not self._config.split.split:
+                        self._config.split.split = self.maps_manager.find_splits()
                     assert self._config.split
                     for split in self._config.split.split:
                         selection_metrics = find_selection_metrics(
@@ -1155,6 +1045,7 @@ class Predictor:
 
             if cluster.master:
                 # Replace here
+                print("before saving")
                 maps_manager._mode_level_to_tsv(
                     prediction_df,
                     metrics,

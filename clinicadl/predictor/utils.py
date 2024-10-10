@@ -36,6 +36,7 @@ def get_prediction(
     prediction_dir = (
         maps_path / f"split-{split}" / f"best-{selection_metric}" / data_group
     )
+    print(prediction_dir)
     if not prediction_dir.is_dir():
         raise MAPSError(
             f"No prediction corresponding to data group {data_group} was found."

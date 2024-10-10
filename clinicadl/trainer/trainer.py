@@ -163,7 +163,7 @@ class Trainer:
         # TODO : check these two lines. Why do we need a split_manager?
 
         splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config, split_list=splits)
+        split_manager = Splitter(splitter_config)
 
         split_iterator = split_manager.split_iterator()
         ###

@@ -98,3 +98,8 @@ class PredictConfig(BaseModel):
             size_reduction=maps_manager.size_reduction,
             size_reduction_factor=maps_manager.size_reduction_factor,
         )
+
+        if self.split.split is None and self.split.n_splits == 0:
+            from clinicadl.splitter.split_utils import find_splits
+
+            self.split.split = find_splits(self.maps_manager.maps_dir)

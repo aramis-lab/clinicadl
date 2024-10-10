@@ -14,7 +14,7 @@ class Splitter:
     def __init__(
         self,
         config: SplitterConfig,
-        split_list: Optional[List[int]] = None,
+        # split_list: Optional[List[int]] = None,
     ):
         """_summary_
 
@@ -29,7 +29,7 @@ class Splitter:
 
         """
         self.config = config
-        self.split_list = split_list
+        # self.config.split.split = split_list
 
         self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
 
@@ -38,10 +38,10 @@ class Splitter:
         return self.config.split.n_splits
 
     def __len__(self):
-        if not self.split_list:
+        if not self.config.split.split:
             return self.config.split.n_splits
         else:
-            return len(self.split_list)
+            return len(self.config.split.split)
 
     @property
     def allowed_splits_list(self):
@@ -203,10 +203,13 @@ class Splitter:
 
     def split_iterator(self):
         """Returns an iterable to iterate on all splits wanted."""
-        if not self.split_list:
+        print(self.config.split.split)
+        print(self.config.split.n_splits)
+        print(self.config.split.split)
+        if not self.config.split.split:
             return range(self.config.split.n_splits)
         else:
-            return self.split_list
+            return self.config.split.split
 
     def _check_item(self, item):
         if item not in self.allowed_splits_list:

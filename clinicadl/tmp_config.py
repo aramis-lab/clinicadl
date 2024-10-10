@@ -299,7 +299,7 @@ class TmpConfig(BaseModel):
     ):  # maps_manager is of type MapsManager but need to be in a MapsConfig type in the future
         # TEMPORARY
         if not self.split:
-            self.split = find_splits(maps_manager.maps_path, maps_manager.split_name)
+            self.split = find_splits(maps_manager.maps_path)
         logger.debug(f"List of splits {self.split}")
 
     def create_groupe_df(self):
