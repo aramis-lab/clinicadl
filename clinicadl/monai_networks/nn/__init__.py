@@ -1,3 +1,4 @@
+from .att_unet import AttentionUNet
 from .autoencoder import AutoEncoder
 from .cnn import CNN
 from .conv_decoder import ConvDecoder
