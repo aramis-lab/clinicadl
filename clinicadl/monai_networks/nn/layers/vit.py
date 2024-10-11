@@ -1,60 +1,89 @@
-"""This module only aims to override MONAI's module representations, in order to have submodules in the right order."""
+from functools import partial
+from typing import Callable, Optional
 
-from monai.networks.blocks.mlp import MLPBlock
-from monai.networks.blocks.selfattention import SABlock
-from monai.networks.blocks.transformerblock import (
-    TransformerBlock as BaseTransformerBlock,
-)
-from torch.nn.modules.module import _addindent
+import torch
+import torch.nn as nn
+from torchvision.models.vision_transformer import MLPBlock
 
 
-class TransformerBlock(BaseTransformerBlock):
-    """
-    A transformer block, based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
-    """
+class EncoderBlock(nn.Module):
+    """Transformer encoder block."""
 
-    def __repr__(self):
-        lines = [
-            "(norm1): " + _addindent(repr(self.norm1), 2),
-            "(attn): " + _addindent(_attn_repr(self.attn), 2),
-            "(norm2): " + _addindent(repr(self.norm2), 2),
-            "(mlp): " + _addindent(_mlp_repr(self.mlp), 2),
-        ]
+    def __init__(
+        self,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float,
+        attention_dropout: float,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ) -> None:
+        super().__init__()
+        self.num_heads = num_heads
 
-        main_str = self._get_name() + "("
-        main_str += "\n  " + "\n  ".join(lines) + "\n"
-        main_str += ")"
-        return main_str
+        # Attention block
+        self.norm1 = norm_layer(hidden_dim)
+        self.self_attention = nn.MultiheadAttention(
+            hidden_dim, num_heads, dropout=attention_dropout, batch_first=True
+        )
+        self.dropout = nn.Dropout(dropout)
+
+        # MLP block
+        self.norm2 = norm_layer(hidden_dim)
+        self.mlp = MLPBlock(hidden_dim, mlp_dim, dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+
+        x = self.norm1(x)
+        x, _ = self.self_attention(x, x, x, need_weights=False)
+        x = self.dropout(x)
+        x += residual
+
+        y = self.norm2(x)
+        y = self.mlp(y)
+        return x + y
 
 
-def _mlp_repr(mlp: MLPBlock) -> str:
-    """Representation of the mlp block."""
-    lines = [
-        "(linear1): " + _addindent(repr(mlp.linear1), 2),
-        "(fn): " + _addindent(repr(mlp.fn), 2),
-        "(drop1): " + _addindent(repr(mlp.drop1), 2),
-        "(linear2): " + _addindent(repr(mlp.linear2), 2),
-        "(drop2): " + _addindent(repr(mlp.drop2), 2),
-    ]
+class Encoder(nn.Module):
+    """Encoder with multiple transformer blocks."""
 
-    main_str = mlp._get_name() + "("
-    main_str += "\n  " + "\n  ".join(lines) + "\n"
-    main_str += ")"
-    return main_str
+    def __init__(
+        self,
+        seq_length: int,
+        num_layers: int,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float,
+        attention_dropout: float,
+        pos_embedding: Optional[nn.Parameter] = None,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ) -> None:
+        super().__init__()
 
+        if pos_embedding is not None:
+            self.pos_embedding = pos_embedding
+        else:
+            self.pos_embedding = nn.Parameter(
+                torch.empty(1, seq_length, hidden_dim).normal_(std=0.02)
+            )  # from BERT
+        self.dropout = nn.Dropout(dropout)
+        layers = nn.ModuleList()
+        for _ in range(num_layers):
+            layers.append(
+                EncoderBlock(
+                    num_heads,
+                    hidden_dim,
+                    mlp_dim,
+                    dropout,
+                    attention_dropout,
+                    norm_layer,
+                )
+            )
+        self.layers = nn.Sequential(*layers)
+        self.norm = norm_layer(hidden_dim)
 
-def _attn_repr(sa: SABlock) -> str:
-    """Representation of the attention block."""
-    lines = [
-        "(qkv): " + _addindent(repr(sa.qkv), 2),
-        "(input_rearrange): " + _addindent(repr(sa.input_rearrange), 2),
-        "(drop_weights): " + _addindent(repr(sa.drop_weights), 2),
-        "(out_rearrange): " + _addindent(repr(sa.out_rearrange), 2),
-        "(drop_output): " + _addindent(repr(sa.drop_output), 2),
-    ]
-
-    main_str = sa._get_name() + "("
-    main_str += "\n  " + "\n  ".join(lines) + "\n"
-    main_str += ")"
-    return main_str
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x + self.pos_embedding
+        return self.norm(self.layers(self.dropout(x)))

@@ -1,14 +1,17 @@
+import math
 import re
 from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Optional, Sequence, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
-from monai.networks.blocks.patchembedding import PatchEmbeddingBlock
+from monai.networks.blocks.pos_embed_utils import build_sincos_position_embedding
+from monai.networks.layers import Conv
 from monai.networks.layers.utils import get_act_layer
-from monai.networks.nets import ViT as BaseViT
+from monai.utils import ensure_tuple_rep
 from torch.hub import load_state_dict_from_url
 from torchvision.models.vision_transformer import (
     ViT_B_16_Weights,
@@ -18,7 +21,7 @@ from torchvision.models.vision_transformer import (
 )
 
 from .layers import ActFunction
-from .layers.vit import TransformerBlock
+from .layers.vit import Encoder
 from .utils import ActivationParameters
 
 
@@ -29,26 +32,26 @@ class PosEmbedType(str, Enum):
     SINCOS = "sincos"
 
 
-class ViT(BaseViT):
+class ViT(nn.Module):
     """
     Vision Transformer based on the [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale]
     (https://arxiv.org/pdf/2010.11929) paper.
-    Adapted from [MONAI's implementation](https://docs.monai.io/en/stable/networks.html#vit).
+    Adapted from [torchvision's implementation](https://pytorch.org/vision/main/models/vision_transformer.html).
 
     The user can customize the patch size, the embedding dimension, the number of transformer blocks, the number of
-    attention heads, as well as other parameters like the type of positional embedding.
-
-    Note: the network returns the output of the network as well as patch embeddings after each transformer block.
+    attention heads, as well as other parameters like the type of position embedding.
 
     Parameters
     ----------
     in_shape : Sequence[int]
         sequence of integers stating the dimension of the input tensor (minus batch dimension).
     patch_size : Union[Sequence[int], int]
-        sequence of integers stating the patch size (minus batch and channel dimensions).
+        sequence of integers stating the patch size (minus batch and channel dimensions). If int, the same
+        patch size will be used for all dimensions.
+        Patch size must divide image size in all dimensions.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer will be returned.
+        If None, the patch embeddings after the last transformer block will be returned.
     embedding_dim : int (optional, default=768)
         size of the embedding vectors. Must be divisible by `num_heads` as each head will be responsible for
         a part of the embedding vectors. Default to 768, as for 'ViT-Base' in the original paper.
@@ -61,12 +64,13 @@ class ViT(BaseViT):
         size of the hidden layer in the MLP part of the transformer block. Default to 3072, as for 'ViT-Base'
         in the original paper.
     pos_embed_type : Optional[Union[str, PosEmbedType]] (optional, default="learnable")
-        type of positional embedding. Can be either `"learnable"`, `"sincos"` or `None`.\n
-        - `learnable`: the positional embeddings are parameters that will be learned during the training
+        type of position embedding. Can be either `"learnable"`, `"sincos"` or `None`.\n
+        - `learnable`: the position embeddings are parameters that will be learned during the training
         process.
-        - `sincos`: the positional embeddings are fixed and determined with sinus and cosinus formulas (see Dosovitskiy et al.,
-        'Attention Is All You Need, https://arxiv.org/pdf/1706.03762).
-        - `None`: no positional embeddings are used.\n
+        - `sincos`: the position embeddings are fixed and determined with sinus and cosinus formulas (based on Dosovitskiy et al.,
+        'Attention Is All You Need, https://arxiv.org/pdf/1706.03762). Only implemented for 2D and 3D images. With `sincos`
+        position embedding, `embedding_dim` must be divisible by 4 for 2D images and by 6 for 3D images.
+        - `None`: no position embeddings are used.\n
         Default to `"learnable"`, as in the original paper.
     output_act : ActivationParameters (optional, default=ActFunction.TANH)
         if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
@@ -92,33 +96,45 @@ class ViT(BaseViT):
             output_act="softmax",
         )
     ViT(
-        (patch_embedding): PatchEmbeddingBlock(
-            (patch_embeddings): Conv2d(3, 32, kernel_size=(4, 4), stride=(4, 4))
+        (conv_proj): Conv2d(3, 32, kernel_size=(4, 4), stride=(4, 4))
+        (encoder): Encoder(
             (dropout): Dropout(p=0.0, inplace=False)
-        )
-        (blocks): ModuleList(
-            (0-1): 2 x TransformerBlock(
-                (norm1): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
-                (attn): SABlock(
-                    (qkv): Linear(in_features=32, out_features=96, bias=True)
-                    (input_rearrange): Rearrange('b h (qkv l d) -> qkv b l h d', qkv=3, l=4)
-                    (drop_weights): Dropout(p=0.0, inplace=False)
-                    (out_rearrange): Rearrange('b h l d -> b l (h d)')
-                    (drop_output): Dropout(p=0.0, inplace=False)
+            (layers): Sequential(
+                (0): EncoderBlock(
+                    (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                    (self_attention): MultiheadAttention(
+                        (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+                    )
+                    (dropout): Dropout(p=0.0, inplace=False)
+                    (norm2): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                    (mlp): MLPBlock(
+                        (0): Linear(in_features=32, out_features=128, bias=True)
+                        (1): GELU(approximate='none')
+                        (2): Dropout(p=0.0, inplace=False)
+                        (3): Linear(in_features=128, out_features=32, bias=True)
+                        (4): Dropout(p=0.0, inplace=False)
+                    )
                 )
-                (norm2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
-                (mlp): MLPBlock(
-                    (linear1): Linear(in_features=32, out_features=128, bias=True)
-                    (fn): GELU(approximate='none')
-                    (drop1): Dropout(p=0.0, inplace=False)
-                    (linear2): Linear(in_features=128, out_features=32, bias=True)
-                    (drop2): Dropout(p=0.0, inplace=False)
+                (1): EncoderBlock(
+                    (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                    (self_attention): MultiheadAttention(
+                        (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+                    )
+                    (dropout): Dropout(p=0.0, inplace=False)
+                    (norm2): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                    (mlp): MLPBlock(
+                        (0): Linear(in_features=32, out_features=128, bias=True)
+                        (1): GELU(approximate='none')
+                        (2): Dropout(p=0.0, inplace=False)
+                        (3): Linear(in_features=128, out_features=32, bias=True)
+                        (4): Dropout(p=0.0, inplace=False)
+                    )
                 )
             )
+            (norm): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
         )
-        (norm): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
-        (classification_head): Sequential(
-            (linear): Linear(in_features=32, out_features=2, bias=True)
+        (fc): Sequential(
+            (out): Linear(in_features=32, out_features=2, bias=True)
             (output_act): Softmax(dim=None)
         )
     )
@@ -137,60 +153,129 @@ class ViT(BaseViT):
         output_act: ActivationParameters = ActFunction.TANH,
         dropout: Optional[float] = None,
     ) -> None:
-        super(BaseViT, self).__init__()
-        pos_embed_type = self._check_pos_embedding(pos_embed_type)
-        self._check_embedding_dim(embedding_dim, num_heads)
-        in_channels, *img_size = in_shape
-        spatial_dims = len(img_size)
-        dropout_rate = dropout if dropout else 0.0
+        super().__init__()
 
+        self.in_channels, *self.img_size = in_shape
+        self.spatial_dims = len(self.img_size)
+        self.patch_size = ensure_tuple_rep(patch_size, self.spatial_dims)
+
+        self._check_embedding_dim(embedding_dim, num_heads)
+        self._check_patch_size(self.img_size, self.patch_size)
+        self.embedding_dim = embedding_dim
         self.classification = True if num_outputs else False
-        self.patch_embedding = PatchEmbeddingBlock(
-            in_channels=in_channels,
-            img_size=img_size,
-            patch_size=patch_size,
-            hidden_size=embedding_dim,
-            num_heads=num_heads,
-            proj_type="conv",
-            pos_embed_type=pos_embed_type,
-            dropout_rate=dropout_rate,
-            spatial_dims=spatial_dims,
+        dropout = dropout if dropout else 0.0
+
+        self.conv_proj = Conv[Conv.CONV, self.spatial_dims](  # pylint: disable=not-callable
+            in_channels=self.in_channels,
+            out_channels=self.embedding_dim,
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
         )
-        self.blocks = nn.ModuleList(
-            [
-                TransformerBlock(
-                    hidden_size=embedding_dim,
-                    mlp_dim=mlp_dim,
-                    num_heads=num_heads,
-                    dropout_rate=dropout_rate,
-                    qkv_bias=True,
-                    save_attn=False,
-                )
-                for _ in range(num_layers)
-            ]
+        self.seq_length = int(
+            np.prod(np.array(self.img_size) // np.array(self.patch_size))
         )
-        self.norm = nn.LayerNorm(embedding_dim)
+
+        # Add a class token
         if self.classification:
-            self.cls_token = nn.Parameter(torch.zeros(1, 1, embedding_dim))
-            self.classification_head = nn.Sequential(
+            self.class_token = nn.Parameter(torch.zeros(1, 1, self.embedding_dim))
+            self.seq_length += 1
+
+        pos_embedding = self._get_pos_embedding(pos_embed_type)
+        self.encoder = Encoder(
+            self.seq_length,
+            num_layers,
+            num_heads,
+            self.embedding_dim,
+            mlp_dim,
+            dropout=dropout,
+            attention_dropout=dropout,
+            pos_embedding=pos_embedding,
+        )
+
+        if self.classification:
+            self.class_token = nn.Parameter(torch.zeros(1, 1, embedding_dim))
+            self.fc = nn.Sequential(
                 OrderedDict([("out", nn.Linear(embedding_dim, num_outputs))])
             )
-            self.classification_head.output_act = (
-                get_act_layer(output_act) if output_act else None
-            )
-
-    @classmethod
-    def _check_pos_embedding(
-        cls, pos_embed_type: Optional[Union[str, PosEmbedType]]
-    ) -> Union[str, PosEmbedType]:
-        """
-        Checks positional embedding and converts None to a string.
-        """
-        if pos_embed_type:
-            pos_embed_type = PosEmbedType(pos_embed_type)
+            self.fc.output_act = get_act_layer(output_act) if output_act else None
         else:
-            pos_embed_type = "none"
-        return pos_embed_type
+            self.fc = None
+
+        self._init_layers()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.conv_proj(x)
+        # (n, hidden_dim, n_h, n_w) -> (n, (h * w * d), hidden_dim)
+        x = x.flatten(2).transpose(-1, -2)
+        n = x.shape[0]
+
+        # Expand the class token to the full batch
+        if self.fc:
+            batch_class_token = self.class_token.expand(n, -1, -1)
+            x = torch.cat([batch_class_token, x], dim=1)
+
+        x = self.encoder(x)
+
+        # Classifier "token" as used by standard language architectures
+        if self.fc:
+            x = x[:, 0]
+            x = self.fc(x)
+
+        return x
+
+    def _get_pos_embedding(
+        self, pos_embed_type: Optional[Union[str, PosEmbedType]]
+    ) -> Optional[nn.Parameter]:
+        """
+        Gets position embeddings. If `pos_embed_type` is "learnable", will return None as it will be handled
+        by the encoder module.
+        """
+        if pos_embed_type is None:
+            pos_embed = nn.Parameter(
+                torch.zeros(1, self.seq_length, self.embedding_dim)
+            )
+            pos_embed.requires_grad = False
+            return pos_embed
+
+        pos_embed_type = PosEmbedType(pos_embed_type)
+
+        if pos_embed_type == PosEmbedType.LEARN:
+            return None  # will be initialized inside the Encoder
+
+        elif pos_embed_type == PosEmbedType.SINCOS:
+            if self.spatial_dims != 2 and self.spatial_dims != 3:
+                raise ValueError(
+                    f"{self.spatial_dims}D sincos position embedding not implemented"
+                )
+            elif self.spatial_dims == 2 and self.embedding_dim % 4:
+                raise ValueError(
+                    f"embedding_dim must be divisible by 4 for 2D sincos position embedding. Got embedding_dim={self.embedding_dim}"
+                )
+            elif self.spatial_dims == 3 and self.embedding_dim % 6:
+                raise ValueError(
+                    f"embedding_dim must be divisible by 6 for 3D sincos position embedding. Got embedding_dim={self.embedding_dim}"
+                )
+            grid_size = []
+            for in_size, pa_size in zip(self.img_size, self.patch_size):
+                grid_size.append(in_size // pa_size)
+            pos_embed = build_sincos_position_embedding(
+                grid_size, self.embedding_dim, self.spatial_dims
+            )
+            if self.classification:
+                pos_embed = torch.nn.Parameter(
+                    torch.cat([torch.zeros(1, 1, self.embedding_dim), pos_embed], dim=1)
+                )  # add 0 for class token pos embedding
+                pos_embed.requires_grad = False
+            return pos_embed
+
+    def _init_layers(self):
+        """
+        Initializes some layers, based on torchvision's implementation: https://pytorch.org/vision/main/
+        _modules/torchvision/models/vision_transformer.html
+        """
+        fan_in = self.conv_proj.in_channels * np.prod(self.conv_proj.kernel_size)
+        nn.init.trunc_normal_(self.conv_proj.weight, std=math.sqrt(1 / fan_in))
+        nn.init.zeros_(self.conv_proj.bias)
 
     @classmethod
     def _check_embedding_dim(cls, embedding_dim: int, num_heads: int) -> None:
@@ -202,6 +287,20 @@ class ViT(BaseViT):
                 f"embedding_dim should be divisible by num_heads. Got embedding_dim={embedding_dim} "
                 f" and num_heads={num_heads}"
             )
+
+    @classmethod
+    def _check_patch_size(
+        cls, img_size: Tuple[int, ...], patch_size: Tuple[int, ...]
+    ) -> None:
+        """
+        Checks consistency between image size and patch size.
+        """
+        for i, p in zip(img_size, patch_size):
+            if i % p != 0:
+                raise ValueError(
+                    f"img_size should be divisible by patch_size. Got img_size={img_size} "
+                    f" and patch_size={patch_size}"
+                )
 
 
 class CommonViT(str, Enum):
@@ -227,8 +326,6 @@ def get_vit(
 
     The user can also use the pretrained models from `torchvision`. Note that the last fully connected layer will not
     used pretrained weights, as it is task specific.
-
-    Note: the networks return the output of the network as well as patch embeddings after each transformer block.
 
     .. warning:: `ViT-B/16`, `ViT-B/32`, `ViT-L/16` and `ViT-L/32` work with 2D images of size (224, 224), with 3 channels.
 
@@ -303,14 +400,15 @@ def get_vit(
 
     if pretrained:
         pretrained_dict = load_state_dict_from_url(model_url, progress=True)
-        if num_outputs:
-            fc_layers = deepcopy(vit.classification_head)
-            vit.classification_head = None
-            vit.load_state_dict(_state_dict_adapter(pretrained_dict))
-            vit.classification_head = fc_layers
-        else:
+        if num_outputs is None:
             del pretrained_dict["class_token"]
-            vit.load_state_dict(_state_dict_adapter(pretrained_dict))
+            pretrained_dict["encoder.pos_embedding"] = pretrained_dict[
+                "encoder.pos_embedding"
+            ][:, 1:]  # remove class token position embedding
+        fc_layers = deepcopy(vit.fc)
+        vit.fc = None
+        vit.load_state_dict(_state_dict_adapter(pretrained_dict))
+        vit.fc = fc_layers
 
     return vit
 
@@ -318,22 +416,13 @@ def get_vit(
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:
     """
     A mapping between torchvision's layer names and ours.
-    Also remove the position embedding of the classification token, as it does not
-    exist in our implementation.
     """
     state_dict = {k: v for k, v in state_dict.items() if "heads" not in k}
 
     mappings = [
-        ("class_token", "cls_token"),
-        ("conv_proj", "patch_embedding.patch_embeddings"),
-        ("encoder.pos_embedding", "patch_embedding.position_embeddings"),
-        ("encoder.ln", "norm"),
-        (r"encoder\.layers\.encoder_layer_(\d+)", r"blocks.\1"),
-        ("self_attention", "attn"),
-        ("in_proj_weight", "qkv.weight"),
-        ("in_proj_bias", "qkv.bias"),
+        ("ln_", "norm"),
         ("ln", "norm"),
-        (r"_(\d+)", r"\1"),
+        (r"encoder_layer_(\d+)", r"\1"),
     ]
 
     for key in list(state_dict.keys()):
@@ -341,9 +430,5 @@ def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:
         for transform in mappings:
             new_key = re.sub(transform[0], transform[1], new_key)
         state_dict[new_key] = state_dict.pop(key)
-
-    state_dict["patch_embedding.position_embeddings"] = state_dict[
-        "patch_embedding.position_embeddings"
-    ][:, 1:]  # pos embedding for the classification token is always 0 here
 
     return state_dict
