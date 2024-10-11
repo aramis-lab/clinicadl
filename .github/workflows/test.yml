@@ -18,10 +18,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
 <<<<<<< HEAD
+<<<<<<< HEAD
         python-version: [ '3.9', '3.10', '3.11', '3.12']
 =======
         python-version: ['3.9', '3.10', '3.11']
 >>>>>>> 78ccf96c ([MAINT] Drop python 3.8 (#663))
+=======
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+>>>>>>> 3c40944b ([MAINT] Support python `3.12` (#667))
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
