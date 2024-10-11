@@ -27,15 +27,15 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-torch = "^2.1.0"
+python = ">=3.9,<3.13"
+torch = "^2.3.0"
 torchvision = "*"
 tensorboard = "*"
 toml = "*"
-pandas = "^1.2"
-numpy = "^1.17"
-scikit-learn = "^1.0"
-scikit-image = "^0.21"
+pandas = "^2"
+numpy = "^2"
+scikit-learn = "^1"
+scikit-image = "^0.24"
 joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
