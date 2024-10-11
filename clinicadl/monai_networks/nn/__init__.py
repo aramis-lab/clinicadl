@@ -7,5 +7,6 @@ from .generator import Generator
 from .mlp import MLP
 from .resnet import ResNet, get_resnet
 from .senet import SEResNet, get_seresnet
+from .unet import UNet
 from .vae import VAE
 from .vit import ViT, get_vit
