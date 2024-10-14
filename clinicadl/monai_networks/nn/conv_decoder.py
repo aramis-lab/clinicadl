@@ -37,7 +37,8 @@ class ConvDecoder(nn.Sequential):
     in_shape : Sequence[int]
         sequence of integers stating the dimension of the input tensor (minus batch dimension).
     channels : Sequence[int]
-        sequence of integers stating the output channels of each transposed convolution.
+        sequence of integers stating the output channels of each transposed convolution. Thus, this
+        parameter also controls the number of transposed convolutions.
     kernel_size : ConvParameters (optional, default=3)
         the kernel size of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
@@ -78,7 +79,7 @@ class ConvDecoder(nn.Sequential):
         If list (of tuples or integers), it will be interpreted as the dilations for each layer.
         The length of the list must be equal to the number of transposed convolution layers (i.e.
         `len(channels)`).
-    unpooling : UnpoolingParameters (optional, default=(UnpoolingLayer.UPSAMPLE, {"scale_factor": 2}))
+    unpooling : Optional[UnpoolingParameters] (optional, default=(UnpoolingLayer.UPSAMPLE, {"scale_factor": 2}))
         the unpooling mode and the arguments of the unpooling layer, passed as `(unpooling_mode, arguments)`.
         If None, no unpooling will be performed in the network.\n
         `unpooling_mode` can be either `upsample` or `convtranspose`. Please refer to PyTorch's [Upsample]
@@ -92,17 +93,17 @@ class ConvDecoder(nn.Sequential):
         indices of the transposed convolution layers after which unpooling should be performed.
         If None, no unpooling will be performed. Unpooling cannot be performed after the last
         transposed convolution layer.
-    act : ActivationParameters (optional, default=ActFunction.PRELU)
+    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a transposed convolution layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
         If None, no last activation will be applied.
-    norm : NormalizationParameters (optional, default=NormLayer.INSTANCE)
+    norm : Optional[NormalizationParameters] (optional, default=NormLayer.INSTANCE)
         the normalization type used after a transposed convolution layer, and optionally the arguments of the normalization
         layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
@@ -176,14 +177,14 @@ class ConvDecoder(nn.Sequential):
         padding: ConvParameters = 0,
         output_padding: ConvParameters = 0,
         dilation: ConvParameters = 1,
-        unpooling: UnpoolingParameters = (
+        unpooling: Optional[UnpoolingParameters] = (
             UnpoolingLayer.UPSAMPLE,
             {"scale_factor": 2},
         ),
         unpooling_indices: Optional[Sequence[int]] = None,
-        act: ActivationParameters = ActFunction.PRELU,
-        output_act: ActivationParameters = None,
-        norm: NormalizationParameters = NormLayer.INSTANCE,
+        act: Optional[ActivationParameters] = ActFunction.PRELU,
+        output_act: Optional[ActivationParameters] = None,
+        norm: Optional[NormalizationParameters] = NormLayer.INSTANCE,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
@@ -214,7 +215,6 @@ class ConvDecoder(nn.Sequential):
         self.unpooling_indices = check_pool_indices(unpooling_indices, self.n_layers)
         self.unpooling = self._check_unpool_layers(unpooling)
         self.act = act
-        self.output_act_type = output_act
         self.norm = check_norm_layer(norm)
         self.dropout = dropout
         self.bias = bias
@@ -252,9 +252,7 @@ class ConvDecoder(nn.Sequential):
                 self.add_module(f"unpool_{n_unpoolings}", unpooling_layer)
                 n_unpoolings += 1
 
-        if self.output_act_type:
-            output_act_layer = get_act_layer(self.output_act_type)
-            self.add_module("output_act", output_act_layer)
+        self.output_act = get_act_layer(output_act) if output_act else None
 
     def _get_convtranspose_layer(
         self,

@@ -95,5 +95,5 @@ def test_mu_log_var():
         conv_args={"channels": []},
         mlp_args={"hidden_channels": [12]},
     )
-    assert net.mu.in_features == 12
-    assert net.log_var.in_features == 12
+    assert net.mu.linear.in_features == 12
+    assert net.log_var.linear.in_features == 12

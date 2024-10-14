@@ -27,18 +27,18 @@ class MLP(BaseMLP):
     out_channels : int
         number of output channels.
     hidden_channels : Sequence[int]
-        number of output channels for each hidden layer.
-    act : ActivationParameters (optional, default=ActFunction.PRELU)
+        number of output channels for each hidden layer. Thus, this parameter also controls the number of hidden layers.
+    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a linear layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
         If None, no last activation will be applied.
-    norm : NormalizationParameters (optional, default=NormLayer.BATCH)
+    norm : Optional[NormalizationParameters] (optional, default=NormLayer.BATCH)
         the normalization type used after a linear layer, and optionally the arguments of the normalization
         layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
@@ -91,23 +91,19 @@ class MLP(BaseMLP):
         in_channels: int,
         out_channels: int,
         hidden_channels: Sequence[int],
-        act: ActivationParameters = ActFunction.PRELU,
-        output_act: ActivationParameters = None,
-        norm: NormalizationParameters = NormLayer.BATCH,
+        act: Optional[ActivationParameters] = ActFunction.PRELU,
+        output_act: Optional[ActivationParameters] = None,
+        norm: Optional[NormalizationParameters] = NormLayer.BATCH,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
     ) -> None:
-        self.output_act_type = output_act
         self.norm = check_norm_layer(norm)
         super().__init__(
             in_channels, out_channels, hidden_channels, dropout, act, bias, adn_ordering
         )
-        if self.output_act_type:
-            output_act_layer = get_act_layer(self.output_act_type)
-            self.output = nn.Sequential(
-                OrderedDict([("linear", self.output), ("output_act", output_act_layer)])
-            )
+        self.output = nn.Sequential(OrderedDict([("linear", self.output)]))
+        self.output.output_act = get_act_layer(output_act) if output_act else None
 
     def _get_layer(self, in_channels: int, out_channels: int, bias: bool) -> nn.Module:
         """

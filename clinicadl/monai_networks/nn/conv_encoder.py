@@ -36,7 +36,8 @@ class ConvEncoder(nn.Sequential):
     in_shape : Sequence[int]
         sequence of integers stating the dimension of the input tensor (minus batch dimension).
     channels : Sequence[int]
-        sequence of integers stating the output channels of each convolutional layer.
+        sequence of integers stating the output channels of each convolutional layer. Thus, this
+        parameter also controls the number of convolutional layers.
     kernel_size : ConvParameters (optional, default=3)
         the kernel size of the convolutional layers. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
@@ -65,7 +66,7 @@ class ConvEncoder(nn.Sequential):
         will be used for all the layers.\n
         If list (of tuples or integers), it will be interpreted as the dilations for each layer.
         The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    pooling : PoolingParameters (optional, default=(PoolingLayer.MAX, {"kernel_size": 2}))
+    pooling : Optional[PoolingParameters] (optional, default=(PoolingLayer.MAX, {"kernel_size": 2}))
         the pooling mode and the arguments of the pooling layer, passed as `(pooling_mode, arguments)`.
         If None, no pooling will be performed in the network.\n
         `pooling_mode` can be either `max` or `avg`. Please refer to PyTorch's [MaxPool](https://pytorch.org/docs/
@@ -76,17 +77,17 @@ class ConvEncoder(nn.Sequential):
         indices of the convolutional layers after which pooling should be performed.
         If None, no pooling will be performed. Pooling cannot be performed after the last
         convolutional layer.
-    act : ActivationParameters (optional, default=ActFunction.PRELU)
+    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a convolutional layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
         If None, no last activation will be applied.
-    norm : NormalizationParameters (optional, default=NormLayer.INSTANCE)
+    norm : Optional[NormalizationParameters] (optional, default=NormLayer.INSTANCE)
         the normalization type used after a convolutional layer, and optionally the arguments of the normalization
         layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
@@ -158,14 +159,14 @@ class ConvEncoder(nn.Sequential):
         stride: ConvParameters = 1,
         padding: ConvParameters = 0,
         dilation: ConvParameters = 1,
-        pooling: PoolingParameters = (
+        pooling: Optional[PoolingParameters] = (
             PoolingLayer.MAX,
             {"kernel_size": 2},
         ),
         pooling_indices: Optional[Sequence[int]] = None,
-        act: ActivationParameters = ActFunction.PRELU,
-        output_act: ActivationParameters = None,
-        norm: NormalizationParameters = NormLayer.INSTANCE,
+        act: Optional[ActivationParameters] = ActFunction.PRELU,
+        output_act: Optional[ActivationParameters] = None,
+        norm: Optional[NormalizationParameters] = NormLayer.INSTANCE,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
@@ -193,7 +194,6 @@ class ConvEncoder(nn.Sequential):
         self.pooling_indices = check_pool_indices(pooling_indices, self.n_layers)
         self.pooling = self._check_pool_layers(pooling)
         self.act = act
-        self.output_act_type = output_act
         self.norm = check_norm_layer(norm)
         self.dropout = dropout
         self.bias = bias
@@ -231,9 +231,7 @@ class ConvEncoder(nn.Sequential):
                 self.add_module(f"pool_{n_poolings}", pooling_layer)
                 n_poolings += 1
 
-        if self.output_act_type:
-            output_act_layer = get_act_layer(self.output_act_type)
-            self.add_module("output_act", output_act_layer)
+        self.output_act = get_act_layer(output_act) if output_act else None
 
     def _get_conv_layer(
         self,

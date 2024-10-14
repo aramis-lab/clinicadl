@@ -15,7 +15,7 @@ class ConvBlock(nn.Sequential):
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
-        act: Optional[ActivationParameters] = ActFunction.RELU,
+        act: ActivationParameters = ActFunction.RELU,
         dropout: Optional[float] = None,
     ):
         super().__init__()
@@ -59,7 +59,7 @@ class UpSample(nn.Sequential):
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
-        act: Optional[ActivationParameters] = ActFunction.RELU,
+        act: ActivationParameters = ActFunction.RELU,
         dropout: Optional[float] = None,
     ):
         super().__init__()
@@ -88,7 +88,7 @@ class DownBlock(nn.Sequential):
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
-        act: Optional[ActivationParameters] = ActFunction.RELU,
+        act: ActivationParameters = ActFunction.RELU,
         dropout: Optional[float] = None,
     ):
         super().__init__()

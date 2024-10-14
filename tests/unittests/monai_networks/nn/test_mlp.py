@@ -43,16 +43,16 @@ def test_params(input_tensor, dropout, norm, bias, adn_ordering):
         adn_ordering=adn_ordering,
     )
     assert net(input_tensor).shape == (8, 2)
-    assert isinstance(net.output, Linear)
+    assert isinstance(net.output.linear, Linear)
 
     if bias:
         assert len(net.hidden_0.linear.bias) > 0
         assert len(net.hidden_1.linear.bias) > 0
-        assert len(net.output.bias) > 0
+        assert len(net.output.linear.bias) > 0
     else:
         assert net.hidden_0.linear.bias is None
         assert net.hidden_1.linear.bias is None
-        assert net.output.bias is None
+        assert net.output.linear.bias is None
     if isinstance(dropout, float) and "D" in adn_ordering:
         assert net.hidden_0.adn.D.p == dropout
         assert net.hidden_1.adn.D.p == dropout
@@ -80,7 +80,7 @@ def test_activation_parameters():
         net.hidden_0.adn.A
     with pytest.raises(AttributeError):
         net.hidden_1.adn.A
-    assert isinstance(net.output, Linear)
+    assert net.output.output_act is None
 
 
 def test_norm_parameters():

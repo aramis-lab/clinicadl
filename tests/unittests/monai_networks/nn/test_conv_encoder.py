@@ -174,8 +174,7 @@ def test_activation_parameters(input_tensor):
         net.layer_0.adn.A
     with pytest.raises(AttributeError):
         net.layer_1.adn.A
-    with pytest.raises(AttributeError):
-        net.output_act
+    assert net.output_act is None
 
 
 def test_norm_parameters(input_tensor):

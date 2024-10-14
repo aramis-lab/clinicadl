@@ -31,7 +31,9 @@ def ensure_list_of_tuples(
         return parameter
 
 
-def check_norm_layer(norm: NormalizationParameters) -> NormalizationParameters:
+def check_norm_layer(
+    norm: Optional[NormalizationParameters],
+) -> Optional[NormalizationParameters]:
     """
     Checks that the argument for normalization layers has the right format (i.e.
     `norm_type` or (`norm_type`, `norm_layer_parameters`)) and checks potential

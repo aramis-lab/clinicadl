@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from .enum import (
     ActFunction,
@@ -12,19 +12,19 @@ ConvParameters = Union[SingleLayerConvParameter, List[SingleLayerConvParameter]]
 
 PoolingType = Union[str, PoolingLayer]
 SingleLayerPoolingParameters = Tuple[PoolingType, Dict[str, Any]]
-PoolingParameters = Optional[
-    Union[SingleLayerPoolingParameters, List[SingleLayerPoolingParameters]]
+PoolingParameters = Union[
+    SingleLayerPoolingParameters, List[SingleLayerPoolingParameters]
 ]
 
 UnpoolingType = Union[str, UnpoolingLayer]
 SingleLayerUnpoolingParameters = Tuple[UnpoolingType, Dict[str, Any]]
-UnpoolingParameters = Optional[
-    Union[SingleLayerUnpoolingParameters, List[SingleLayerUnpoolingParameters]]
+UnpoolingParameters = Union[
+    SingleLayerUnpoolingParameters, List[SingleLayerUnpoolingParameters]
 ]
 
 NormalizationType = Union[str, NormLayer]
-NormalizationParameters = Optional[
-    Union[NormalizationType, Tuple[NormalizationType, Dict[str, Any]]]
+NormalizationParameters = Union[
+    NormalizationType, Tuple[NormalizationType, Dict[str, Any]]
 ]
 
 ActivationType = Union[str, ActFunction]

@@ -45,7 +45,7 @@ class VAE(nn.Module):
     out_channels : Optional[int] (optional, default=None)
         number of output channels. If None, the output will have the same number of channels as the
         input.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
@@ -127,7 +127,7 @@ class VAE(nn.Module):
         conv_args: Dict[str, Any],
         mlp_args: Optional[Dict[str, Any]] = None,
         out_channels: Optional[int] = None,
-        output_act: ActivationParameters = None,
+        output_act: Optional[ActivationParameters] = None,
         upsampling_mode: Union[str, UpsamplingMode] = UpsamplingMode.NEAREST,
     ) -> None:
         super().__init__()

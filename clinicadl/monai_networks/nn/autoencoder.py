@@ -50,7 +50,7 @@ class AutoEncoder(nn.Sequential):
     out_channels : Optional[int] (optional, default=None)
         number of output channels. If None, the output will have the same number of channels as the
         input.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
@@ -148,14 +148,14 @@ class AutoEncoder(nn.Sequential):
         conv_args: Dict[str, Any],
         mlp_args: Optional[Dict[str, Any]] = None,
         out_channels: Optional[int] = None,
-        output_act: ActivationParameters = None,
+        output_act: Optional[ActivationParameters] = None,
         upsampling_mode: Union[str, UpsamplingMode] = UpsamplingMode.NEAREST,
     ) -> None:
         super().__init__()
         self.in_shape = in_shape
         self.upsampling_mode = self._check_upsampling_mode(upsampling_mode)
         self.out_channels = out_channels if out_channels else self.in_shape[0]
-        self.output_act_type = output_act
+        self.output_act = output_act
 
         self.encoder = CNN(
             in_shape=self.in_shape,
@@ -215,7 +215,7 @@ class AutoEncoder(nn.Sequential):
         if "pooling_indices" in args:
             del args["pooling_indices"]
 
-        args["output_act"] = self.output_act_type if self.output_act_type else None
+        args["output_act"] = self.output_act if self.output_act else None
 
         return args
 

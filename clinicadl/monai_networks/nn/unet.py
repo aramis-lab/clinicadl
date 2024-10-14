@@ -19,7 +19,7 @@ class BaseUNet(nn.Module, ABC):
         in_channels: int,
         out_channels: int,
         channels: Sequence[int] = (64, 128, 256, 512, 1024),
-        act: Optional[ActivationParameters] = ActFunction.RELU,
+        act: ActivationParameters = ActFunction.RELU,
         output_act: Optional[ActivationParameters] = None,
         dropout: Optional[float] = None,
     ):
@@ -106,9 +106,9 @@ class UNet(BaseUNet):
         sequence of integers stating the number of channels in each UNet block. Thus, this parameter also controls
         the number of UNet blocks. The length `channels` should be nos less than 2.\n
         Default to `(64, 128, 256, 512, 1024)`, as in the original paper.
-    act : Optional[ActivationParameters] (optional, default=ActFunction.RELU)
+    act : ActivationParameters (optional, default=ActFunction.RELU)
         the activation function used in the convolutional part, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
+        Should be passed as `activation_name` or `(activation_name, arguments)`.
         `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional

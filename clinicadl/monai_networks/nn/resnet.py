@@ -284,7 +284,7 @@ class ResNet(GeneralResNet):
     in each block, as well as other parameters like the type of residual block used.
 
     ResNet is a fully convolutional network that can work with input of any size, provided that is it large
-    enough not be reduced to a 1-pixel image (before the adaptative average pooling).
+    enough not to be reduced to a 1-pixel image (before the adaptative average pooling).
 
     Parameters
     ----------
@@ -323,7 +323,7 @@ class ResNet(GeneralResNet):
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.\n
         Default is "relu", as in the original paper.
-    output_act : ActivationParameters (optional, default=None)
+    output_act : Optional[ActivationParameters] (optional, default=None)
         if `num_outputs` is not None, a potential activation layer applied to the outputs of the network.
         Should be pass in the same way as `act`.
         If None, no last activation will be applied.
@@ -423,7 +423,7 @@ class ResNet(GeneralResNet):
         init_conv_stride: Union[Sequence[int], int] = 2,
         bottleneck_reduction: int = 4,
         act: ActivationParameters = ("relu", {"inplace": True}),
-        output_act: ActivationParameters = None,
+        output_act: Optional[ActivationParameters] = None,
     ) -> None:
         super().__init__(
             spatial_dims=spatial_dims,
