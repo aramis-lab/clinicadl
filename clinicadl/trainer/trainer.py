@@ -74,10 +74,6 @@ class Trainer:
         ### test
         splitter_config = SplitterConfig(**self.config.get_dict())
         self.splitter = Splitter(splitter_config)
-        self.splitter.check_split_list(
-            self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite
-        )
-
         self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
@@ -240,7 +236,9 @@ class Trainer:
             # splitter_config = SplitterConfig(**self.config.get_dict())
             # self.splitter = Splitter(splitter_config)
             # self.splitter.check_split_list(self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite)
-
+            self.splitter.check_split_list(
+                self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite
+            )
             for split in self.splitter.split_iterator():
                 logger.info(f"Training split {split}")
                 seed_everything(
