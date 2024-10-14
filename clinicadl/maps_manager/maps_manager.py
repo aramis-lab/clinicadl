@@ -17,7 +17,7 @@ from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
 )
-from clinicadl.predictor.utils import get_prediction
+from clinicadl.predict.utils import get_prediction
 from clinicadl.splitter.config import SplitterConfig
 from clinicadl.splitter.splitter import Splitter
 from clinicadl.trainer.tasks_utils import (
@@ -138,6 +138,10 @@ class MapsManager:
             return self.parameters[name]
         else:
             raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
+
+    ###################################
+    # High-level functions templates  #
+    ###################################
 
     ###############################
     # Checks                      #
