@@ -205,6 +205,7 @@ class Trainer:
             self.config.data.label_code = generate_label_code(
                 self.config.network_task, train_df, self.config.data.label
             )
+        print(self.config.data.label_code)
 
     def train(
         self,
@@ -366,7 +367,7 @@ class Trainer:
             transforms_config=self.config.transforms,
             multi_cohort=self.config.data.multi_cohort,
             label=self.config.data.label,
-            label_code=self.maps_manager.label_code,
+            label_code=self.config.data.label_code,
             cnn_index=cnn_index,
         )
         if homemade_sampler:
