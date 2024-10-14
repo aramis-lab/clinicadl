@@ -31,6 +31,8 @@ class PoolingLayer(CaseInsensitiveEnum):
 
     MAX = "max"
     AVG = "avg"
+    ADAPT_AVG = "adaptiveavg"
+    ADAPT_MAX = "adaptivemax"
 
 
 class NormLayer(CaseInsensitiveEnum):

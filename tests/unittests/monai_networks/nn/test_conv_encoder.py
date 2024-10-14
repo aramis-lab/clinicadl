@@ -1,6 +1,15 @@
 import pytest
 import torch
-from torch.nn import ELU, AvgPool2d, Conv2d, Dropout, InstanceNorm2d, MaxPool2d
+from torch.nn import (
+    ELU,
+    AdaptiveAvgPool2d,
+    AdaptiveMaxPool2d,
+    AvgPool2d,
+    Conv2d,
+    Dropout,
+    InstanceNorm2d,
+    MaxPool2d,
+)
 
 from clinicadl.monai_networks.nn import ConvEncoder
 from clinicadl.monai_networks.nn.layers.utils import ActFunction
@@ -29,7 +38,18 @@ def test_activations(input_tensor, act):
 @pytest.mark.parametrize(
     "kernel_size,stride,padding,dilation,pooling,pooling_indices,norm,dropout,bias,adn_ordering",
     [
-        (3, 1, 0, 1, ("max", {"kernel_size": 3}), [1], "batch", None, True, "ADN"),
+        (
+            3,
+            1,
+            0,
+            1,
+            ("adaptivemax", {"output_size": 1}),
+            [2],
+            "batch",
+            None,
+            True,
+            "ADN",
+        ),
         (
             (4, 4),
             (2, 1),
@@ -47,8 +67,12 @@ def test_activations(input_tensor, act):
             1,
             (2, 1),
             1,
-            [("avg", {"kernel_size": 2}), ("max", {"kernel_size": 2})],
-            [0, 1],
+            [
+                ("avg", {"kernel_size": 2}),
+                ("max", {"kernel_size": 2}),
+                ("adaptiveavg", {"output_size": (2, 3)}),
+            ],
+            [0, 1, 2],
             "syncbatch",
             0.5,
             True,
@@ -101,56 +125,61 @@ def test_params(
     output = net(input_tensor)
     assert _check_output(output, expected_out_channels=1)
     assert output.shape[2:] == net.final_size
-    assert isinstance(net.layer_2.conv, Conv2d)
+    assert isinstance(net.layer2.conv, Conv2d)
     with pytest.raises(IndexError):
-        net.layer_2[1]  # no adn at the end
+        net.layer2[1]  # no adn at the end
 
     named_layers = list(net.named_children())
     if pooling and pooling_indices and pooling_indices != []:
         for i, idx in enumerate(pooling_indices):
             name, layer = named_layers[idx + 1 + i]
-            assert name == f"pool_{i}"
-            if net.pooling[i][0] == "max":
+            assert name == f"pool{i}"
+            pooling_mode = net.pooling[i][0]
+            if pooling_mode == "max":
                 assert isinstance(layer, MaxPool2d)
-            else:
+            elif pooling_mode == "avg":
                 assert isinstance(layer, AvgPool2d)
+            elif pooling_mode == "adaptivemax":
+                assert isinstance(layer, AdaptiveMaxPool2d)
+            else:
+                assert isinstance(layer, AdaptiveAvgPool2d)
     else:
         for name, layer in named_layers:
             assert not isinstance(layer, AvgPool2d) or isinstance(layer, MaxPool2d)
             assert "pool" not in name
 
     assert (
-        net.layer_0.conv.kernel_size == kernel_size
+        net.layer0.conv.kernel_size == kernel_size
         if isinstance(kernel_size, tuple)
         else (kernel_size, kernel_size)
     )
     assert (
-        net.layer_0.conv.stride == stride
+        net.layer0.conv.stride == stride
         if isinstance(stride, tuple)
         else (stride, stride)
     )
     assert (
-        net.layer_0.conv.padding == padding
+        net.layer0.conv.padding == padding
         if isinstance(padding, tuple)
         else (padding, padding)
     )
     assert (
-        net.layer_0.conv.dilation == dilation
+        net.layer0.conv.dilation == dilation
         if isinstance(dilation, tuple)
         else (dilation, dilation)
     )
 
     if bias:
-        assert len(net.layer_0.conv.bias) > 0
-        assert len(net.layer_1.conv.bias) > 0
-        assert len(net.layer_2.conv.bias) > 0
+        assert len(net.layer0.conv.bias) > 0
+        assert len(net.layer1.conv.bias) > 0
+        assert len(net.layer2.conv.bias) > 0
     else:
-        assert net.layer_0.conv.bias is None
-        assert net.layer_1.conv.bias is None
-        assert net.layer_2.conv.bias is None
+        assert net.layer0.conv.bias is None
+        assert net.layer1.conv.bias is None
+        assert net.layer2.conv.bias is None
     if isinstance(dropout, float) and "D" in adn_ordering:
-        assert net.layer_0.adn.D.p == dropout
-        assert net.layer_1.adn.D.p == dropout
+        assert net.layer0.adn.D.p == dropout
+        assert net.layer1.adn.D.p == dropout
 
 
 def test_activation_parameters(input_tensor):
@@ -162,37 +191,37 @@ def test_activation_parameters(input_tensor):
         act=act,
         output_act=output_act,
     )
-    assert isinstance(net.layer_0.adn.A, ELU)
-    assert net.layer_0.adn.A.alpha == 0.1
-    assert isinstance(net.layer_1.adn.A, ELU)
-    assert net.layer_1.adn.A.alpha == 0.1
+    assert isinstance(net.layer0.adn.A, ELU)
+    assert net.layer0.adn.A.alpha == 0.1
+    assert isinstance(net.layer1.adn.A, ELU)
+    assert net.layer1.adn.A.alpha == 0.1
     assert isinstance(net.output_act, ELU)
     assert net.output_act.alpha == 0.2
 
     net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=None)
     with pytest.raises(AttributeError):
-        net.layer_0.adn.A
+        net.layer0.adn.A
     with pytest.raises(AttributeError):
-        net.layer_1.adn.A
+        net.layer1.adn.A
     assert net.output_act is None
 
 
 def test_norm_parameters(input_tensor):
     norm = ("instance", {"momentum": 1.0})
     net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=norm)
-    assert isinstance(net.layer_0.adn.N, InstanceNorm2d)
-    assert net.layer_0.adn.N.momentum == 1.0
-    assert isinstance(net.layer_1.adn.N, InstanceNorm2d)
-    assert net.layer_1.adn.N.momentum == 1.0
+    assert isinstance(net.layer0.adn.N, InstanceNorm2d)
+    assert net.layer0.adn.N.momentum == 1.0
+    assert isinstance(net.layer1.adn.N, InstanceNorm2d)
+    assert net.layer1.adn.N.momentum == 1.0
 
     net = ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=None)
     with pytest.raises(AttributeError):
-        net.layer_0.adn.N
+        net.layer0.adn.N
     with pytest.raises(AttributeError):
-        net.layer_1.adn.N
+        net.layer1.adn.N
 
 
-def test_pool_parameters(input_tensor):
+def test_poolparameters(input_tensor):
     pooling = ("avg", {"kernel_size": 3, "stride": 2})
     net = ConvEncoder(
         in_shape=input_tensor.shape[1:],
@@ -200,9 +229,9 @@ def test_pool_parameters(input_tensor):
         pooling=pooling,
         pooling_indices=[1],
     )
-    assert isinstance(net.pool_0, AvgPool2d)
-    assert net.pool_0.stride == 2
-    assert net.pool_0.kernel_size == 3
+    assert isinstance(net.pool0, AvgPool2d)
+    assert net.pool0.stride == 2
+    assert net.pool0.kernel_size == 3
 
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])
@@ -217,13 +246,13 @@ def test_adn_ordering(input_tensor, adn_ordering):
     )
     objects = {"D": Dropout, "N": InstanceNorm2d, "A": ELU}
     for i, letter in enumerate(adn_ordering):
-        assert isinstance(net.layer_0.adn[i], objects[letter])
-        assert isinstance(net.layer_1.adn[i], objects[letter])
+        assert isinstance(net.layer0.adn[i], objects[letter])
+        assert isinstance(net.layer1.adn[i], objects[letter])
     for letter in set(["A", "D", "N"]) - set(adn_ordering):
         with pytest.raises(AttributeError):
-            getattr(net.layer_0.adn, letter)
+            getattr(net.layer0.adn, letter)
         with pytest.raises(AttributeError):
-            getattr(net.layer_1.adn, letter)
+            getattr(net.layer1.adn, letter)
 
 
 @pytest.mark.parametrize(
@@ -246,14 +275,19 @@ def test_other_dimensions(input_tensor):
         {"stride": [1, 1]},
         {"padding": [1, 1]},
         {"dilation": (1,)},
-        {"pooling_indices": [0, 1, 2]},
+        {"pooling_indices": [0, 1, 2, 3]},
         {"pooling": "avg", "pooling_indices": [0]},
         {"norm": "group"},
+        {"in_shape": (1, 10, 10), "stride": 2, "channels": [2, 4, 6, 8]},
     ],
 )
 def test_checks(input_tensor, kwargs):
+    if "channels" not in kwargs:
+        kwargs["channels"] = [2, 4, 1]
+    if "in_shape" not in kwargs:
+        kwargs["in_shape"] = (1, 55, 54)
     with pytest.raises(ValueError):
-        ConvEncoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], **kwargs)
+        ConvEncoder(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -283,7 +317,7 @@ def test_checks(input_tensor, kwargs):
         ),
     ],
 )
-def test_check_pool_layers(pooling, error):
+def test_check_poollayers(pooling, error):
     if error:
         with pytest.raises(ValueError):
             ConvEncoder(

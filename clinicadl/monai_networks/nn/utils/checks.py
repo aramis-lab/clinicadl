@@ -104,11 +104,7 @@ def check_pool_indices(
     """
     if pooling_indices is not None:
         for idx in pooling_indices:
-            if idx == n_layers - 1:
-                raise ValueError(
-                    f"index {idx} has been passed in (un)pooling_indices, but can't (un)pool after the last layer."
-                )
-            elif idx > n_layers - 1:
+            if idx > n_layers - 1:
                 raise ValueError(
                     f"indices in (un)pooling_indices must be smaller than len(channels)-1, got (un)pooling_indices={pooling_indices} and len(channels)={n_layers}"
                 )

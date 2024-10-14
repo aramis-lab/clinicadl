@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn.utils.shapes import (
+    _calculate_adaptivepool_out_shape,
     _calculate_avgpool_out_shape,
     _calculate_maxpool_out_shape,
     _calculate_upsample_out_shape,
@@ -148,7 +149,7 @@ def test_calculate_avgpool_out_shape(
     input_tensor, kernel_size, stride, padding, ceil_mode
 ):
     in_shape = input_tensor.shape[2:]
-    dim = len(input_tensor.shape[2:])
+    dim = len(in_shape)
     args = {
         "kernel_size": kernel_size,
         "stride": stride,
@@ -170,6 +171,34 @@ def test_calculate_avgpool_out_shape(
     )
 
 
+@pytest.mark.parametrize(
+    "input_tensor,kwargs",
+    [
+        (INPUT_3D, {"output_size": 1}),
+        (INPUT_2D, {"output_size": (1, 2)}),
+        (INPUT_1D, {"output_size": 3}),
+    ],
+)
+def test_calculate_adaptivepool_out_shape(input_tensor, kwargs):
+    in_shape = input_tensor.shape[2:]
+    dim = len(in_shape)
+    if dim == 1:
+        avg_pool = torch.nn.AdaptiveAvgPool1d
+        max_pool = torch.nn.AdaptiveMaxPool1d
+    elif dim == 2:
+        avg_pool = torch.nn.AdaptiveAvgPool2d
+        max_pool = torch.nn.AdaptiveMaxPool2d
+    else:
+        avg_pool = torch.nn.AdaptiveAvgPool3d
+        max_pool = torch.nn.AdaptiveMaxPool3d
+
+    output_shape = max_pool(**kwargs)(input_tensor).shape[2:]
+    assert _calculate_adaptivepool_out_shape(in_shape, **kwargs) == output_shape
+
+    output_shape = avg_pool(**kwargs)(input_tensor).shape[2:]
+    assert _calculate_adaptivepool_out_shape(in_shape, **kwargs) == output_shape
+
+
 def test_calculate_pool_out_shape():
     in_shape = INPUT_3D.shape[2:]
     assert calculate_pool_out_shape(
@@ -189,6 +218,16 @@ def test_calculate_pool_out_shape():
         padding=(1, 2, 3),
         ceil_mode=True,
     ) == (9, 10, 12)
+    assert calculate_pool_out_shape(
+        pool_mode="adaptiveavg",
+        in_shape=in_shape,
+        output_size=(3, 4, 5),
+    ) == (3, 4, 5)
+    assert calculate_pool_out_shape(
+        pool_mode="adaptivemax",
+        in_shape=in_shape,
+        output_size=1,
+    ) == (1, 1, 1)
     with pytest.raises(ValueError):
         calculate_pool_out_shape(
             pool_mode="abc",
@@ -205,8 +244,10 @@ def test_calculate_pool_out_shape():
     "input_tensor,kwargs",
     [
         (INPUT_3D, {"scale_factor": 2}),
-        (INPUT_2D, {"size": (40, 40)}),
-        (INPUT_1D, {"scale_factor": 3}),
+        (INPUT_2D, {"size": (40, 41)}),
+        (INPUT_2D, {"size": 40}),
+        (INPUT_2D, {"scale_factor": (3, 2)}),
+        (INPUT_1D, {"scale_factor": 2}),
     ],
 )
 def test_calculate_upsample_out_shape(input_tensor, kwargs):

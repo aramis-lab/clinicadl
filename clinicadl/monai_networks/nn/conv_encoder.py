@@ -69,9 +69,8 @@ class ConvEncoder(nn.Sequential):
     pooling : Optional[PoolingParameters] (optional, default=(PoolingLayer.MAX, {"kernel_size": 2}))
         the pooling mode and the arguments of the pooling layer, passed as `(pooling_mode, arguments)`.
         If None, no pooling will be performed in the network.\n
-        `pooling_mode` can be either `max` or `avg`. Please refer to PyTorch's [MaxPool](https://pytorch.org/docs/
-        stable/generated/torch.nn.MaxPool2d.html) or [AvgPool](https://pytorch.org/docs/stable/generated/
-        torch.nn.AvgPool2d.html) to know the mandatory and optional arguments.\n
+        `pooling_mode` can be either `max`, `avg`, `adaptivemax` or `adaptiveavg`. Please refer to PyTorch's [documentation]
+        (https://pytorch.org/docs/stable/nn.html#pooling-layers) to know the mandatory and optional arguments.\n
         If a list is passed, it will be understood as `(pooling_mode, arguments)` for each pooling layer.
     pooling_indices : Optional[Sequence[int]] (optional, default=None)
         indices of the convolutional layers after which pooling should be performed.
@@ -125,7 +124,7 @@ class ConvEncoder(nn.Sequential):
             adn_ordering="NDA",
         )
     ConvEncoder(
-        (layer_0): Convolution(
+        (layer0): Convolution(
             (conv): Conv2d(1, 2, kernel_size=(3, 5), stride=(1, 1), padding=(1, 1))
             (adn): ADN(
                 (N): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -133,8 +132,8 @@ class ConvEncoder(nn.Sequential):
                 (A): ELU(alpha=1.0)
             )
         )
-        (pool_0): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
-        (layer_1): Convolution(
+        (pool0): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+        (layer1): Convolution(
             (conv): Conv2d(2, 4, kernel_size=(3, 5), stride=(1, 1), padding=(0, 1))
             (adn): ADN(
                 (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -142,8 +141,8 @@ class ConvEncoder(nn.Sequential):
                 (A): ELU(alpha=1.0)
             )
         )
-        (pool_1): AvgPool2d(kernel_size=2, stride=2, padding=0)
-        (layer_2): Convolution(
+        (pool1): AvgPool2d(kernel_size=2, stride=2, padding=0)
+        (layer2): Convolution(
             (conv): Conv2d(4, 8, kernel_size=(3, 5), stride=(1, 1))
         )
         (output_act): ReLU()
@@ -223,12 +222,12 @@ class ConvEncoder(nn.Sequential):
                 dilation=d,
                 is_last=(i == len(channels) - 1),
             )
-            self.add_module(f"layer_{i}", conv_layer)
+            self.add_module(f"layer{i}", conv_layer)
             echannel = c  # use the output channel number as the input for the next loop
             if self.pooling and i in self.pooling_indices:
                 self.size_before_pool.append(self.final_size)
                 pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
-                self.add_module(f"pool_{n_poolings}", pooling_layer)
+                self.add_module(f"pool{n_poolings}", pooling_layer)
                 n_poolings += 1
 
         self.output_act = get_act_layer(output_act) if output_act else None
@@ -305,12 +304,26 @@ class ConvEncoder(nn.Sequential):
                 "pooling must be a double (or a list of doubles) with first the type of pooling and then the parameters "
                 f"of the pooling layer in a dict. Got {pooling}"
             )
-        _ = PoolingLayer(pooling[0])  # check pooling mode
+        pooling_type = PoolingLayer(pooling[0])
         args = pooling[1]
-        if not isinstance(args, dict) or "kernel_size" not in args:
+        if not isinstance(args, dict):
             raise ValueError(
-                "The arguments of the pooling layer must be passed in a dict, that contains at least "
-                f"a value for the mandatory argument `kernel_size`. Got {args}"
+                f"The arguments of the pooling layer must be passed in a dict. Got {args}"
+            )
+        if (
+            pooling_type == PoolingLayer.MAX or pooling_type == PoolingLayer.AVG
+        ) and "kernel_size" not in args:
+            raise ValueError(
+                f"For {pooling_type} pooling mode, `kernel_size` argument must be passed. "
+                f"Got {args}"
+            )
+        elif (
+            pooling_type == PoolingLayer.ADAPT_AVG
+            or pooling_type == PoolingLayer.ADAPT_MAX
+        ) and "output_size" not in args:
+            raise ValueError(
+                f"For {pooling_type} pooling mode, `output_size` argument must be passed. "
+                f"Got {args}"
             )
 
     def _check_pool_layers(self, pooling: PoolingParameters) -> PoolingParameters:

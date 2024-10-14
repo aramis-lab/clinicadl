@@ -19,6 +19,7 @@ def calculate_conv_out_shape(
     stride: Union[Sequence[int], int],
     padding: Union[Sequence[int], int],
     dilation: Union[Sequence[int], int],
+    **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of a convolution layer. All arguments can be scalars or multiple
@@ -45,7 +46,7 @@ def calculate_convtranspose_out_shape(
     padding: Union[Sequence[int], int],
     output_padding: Union[Sequence[int], int],
     dilation: Union[Sequence[int], int],
-    **kwargs,  # to pass arguments with layer.__dict__
+    **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of a transposed convolution layer. All arguments can be scalars or
@@ -72,12 +73,7 @@ def calculate_convtranspose_out_shape(
 def calculate_pool_out_shape(
     pool_mode: Union[str, PoolingLayer],
     in_shape: Union[Sequence[int], int],
-    kernel_size: Union[Sequence[int], int],
-    stride: Union[Sequence[int], int],
-    padding: Union[Sequence[int], int],
-    dilation: Union[Sequence[int], int] = 1,
-    ceil_mode: bool = False,
-    **kwargs,  # to pass arguments with layer.__dict__
+    **kwargs,
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of a pooling layer. The first argument is the type of pooling
@@ -87,13 +83,11 @@ def calculate_pool_out_shape(
     """
     pool_mode = PoolingLayer(pool_mode)
     if pool_mode == PoolingLayer.MAX:
-        return _calculate_maxpool_out_shape(
-            in_shape, kernel_size, stride, padding, dilation, ceil_mode
-        )
+        return _calculate_maxpool_out_shape(in_shape, **kwargs)
     elif pool_mode == PoolingLayer.AVG:
-        return _calculate_avgpool_out_shape(
-            in_shape, kernel_size, stride, padding, ceil_mode
-        )
+        return _calculate_avgpool_out_shape(in_shape, **kwargs)
+    elif pool_mode == PoolingLayer.ADAPT_MAX or pool_mode == PoolingLayer.ADAPT_AVG:
+        return _calculate_adaptivepool_out_shape(in_shape, **kwargs)
 
 
 def calculate_unpool_out_shape(
@@ -120,6 +114,7 @@ def _calculate_maxpool_out_shape(
     padding: Union[Sequence[int], int],
     dilation: Union[Sequence[int], int],
     ceil_mode: bool = False,
+    **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of a MaxPool layer.
@@ -148,6 +143,7 @@ def _calculate_avgpool_out_shape(
     stride: Union[Sequence[int], int],
     padding: Union[Sequence[int], int],
     ceil_mode: bool = False,
+    **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of an AvgPool layer.
@@ -165,22 +161,37 @@ def _calculate_avgpool_out_shape(
     return tuple(int(s) for s in out_shape_np)
 
 
+def _calculate_adaptivepool_out_shape(
+    in_shape: Union[Sequence[int], int],
+    output_size: Union[Sequence[int], int],
+    **kwargs,  # for uniformization
+) -> Tuple[int, ...]:
+    """
+    Calculates the output shape of an AdaptiveMaxPool or AdaptiveAvgPool layer.
+    """
+    in_shape_np = np.atleast_1d(in_shape)
+    out_shape_np = np.ones_like(in_shape_np) * np.atleast_1d(output_size)
+
+    return tuple(int(s) for s in out_shape_np)
+
+
 def _calculate_upsample_out_shape(
     in_shape: Union[Sequence[int], int],
-    scale_factor: Optional[int] = None,
-    size: Optional[int] = None,
-    **kwargs,
+    scale_factor: Optional[Union[Sequence[int], int]] = None,
+    size: Optional[Union[Sequence[int], int]] = None,
+    **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of an Upsample layer.
     """
+    in_shape_np = np.atleast_1d(in_shape)
     if size and scale_factor:
         raise ValueError("Pass either size or scale_factor, not both.")
     elif size:
-        return size
+        out_shape_np = np.ones_like(in_shape_np) * np.atleast_1d(size)
     elif scale_factor:
-        in_shape_np = np.atleast_1d(in_shape)
         out_shape_np = in_shape_np * scale_factor
-        return tuple(int(s) for s in out_shape_np)
     else:
         raise ValueError("Pass one of size or scale_factor.")
+
+    return tuple(int(s) for s in out_shape_np)
