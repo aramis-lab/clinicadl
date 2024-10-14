@@ -53,7 +53,11 @@ class Predictor:
 
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
-        print(self._config.data.model_dump())
+        print(
+            self._config.data.model_dump(
+                exclude=set(["preprocessing_dict", "mode", "caps_dict"])
+            )
+        )
         tmp = self._config.data.model_dump(
             exclude=set(["preprocessing_dict", "mode", "caps_dict"])
         )
