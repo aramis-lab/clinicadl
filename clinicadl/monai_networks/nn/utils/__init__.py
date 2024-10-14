@@ -11,12 +11,3 @@ from .shapes import (
     calculate_pool_out_shape,
     calculate_unpool_out_shape,
 )
-from .types import (
-    ActivationParameters,
-    LayersParameters,
-    NormalizationParameters,
-    PoolingParameters,
-    SingleLayerPoolingParameters,
-    SingleLayerUnpoolingParameters,
-    UnpoolingParameters,
-)

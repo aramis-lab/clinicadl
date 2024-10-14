@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from clinicadl.monai_networks.nn.layers import PoolingLayer, UnpoolingLayer
+from ..layers.utils import PoolingLayer, UnpoolingLayer
 
 __all__ = [
     "calculate_conv_out_shape",

@@ -3,7 +3,7 @@ import torch
 
 from clinicadl.monai_networks.nn import DenseNet, get_densenet
 from clinicadl.monai_networks.nn.densenet import CommonDenseNet
-from clinicadl.monai_networks.nn.layers import ActFunction
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)

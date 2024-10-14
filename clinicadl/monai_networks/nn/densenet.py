@@ -14,7 +14,7 @@ from torchvision.models.densenet import (
     DenseNet201_Weights,
 )
 
-from .utils import ActivationParameters
+from .layers.utils import ActivationParameters
 
 
 class DenseNet(nn.Sequential):

@@ -5,8 +5,7 @@ import torch
 import torch.nn as nn
 
 from .autoencoder import AutoEncoder
-from .layers import UpsamplingMode
-from .utils import ActivationParameters
+from .layers.utils import ActivationParameters, UpsamplingMode
 
 
 class VAE(nn.Module):

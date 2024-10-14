@@ -20,9 +20,8 @@ from torchvision.models.vision_transformer import (
     ViT_L_32_Weights,
 )
 
-from .layers import ActFunction
+from .layers.utils import ActFunction, ActivationParameters
 from .layers.vit import Encoder
-from .utils import ActivationParameters
 
 
 class PosEmbedType(str, Enum):

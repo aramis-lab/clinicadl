@@ -20,7 +20,7 @@ from torchvision.models.resnet import (
 
 from .layers.resnet import ResNetBlock, ResNetBottleneck
 from .layers.senet import SEResNetBlock, SEResNetBottleneck
-from .utils import ActivationParameters
+from .layers.utils import ActivationParameters
 
 
 class ResNetBlockType(str, Enum):

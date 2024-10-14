@@ -7,18 +7,18 @@ from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer
 from monai.utils.misc import ensure_tuple
 
-from .layers import (
+from .layers.unpool import get_unpool_layer
+from .layers.utils import (
     ActFunction,
+    ActivationParameters,
+    ConvParameters,
+    NormalizationParameters,
     NormLayer,
+    SingleLayerUnpoolingParameters,
     UnpoolingLayer,
-    get_unpool_layer,
+    UnpoolingParameters,
 )
 from .utils import (
-    ActivationParameters,
-    LayersParameters,
-    NormalizationParameters,
-    SingleLayerUnpoolingParameters,
-    UnpoolingParameters,
     calculate_convtranspose_out_shape,
     calculate_unpool_out_shape,
     check_norm_layer,
@@ -38,7 +38,7 @@ class ConvDecoder(nn.Sequential):
         sequence of integers stating the dimension of the input tensor (minus batch dimension).
     channels : Sequence[int]
         sequence of integers stating the output channels of each transposed convolution.
-    kernel_size : LayersParameters (optional, default=3)
+    kernel_size : ConvParameters (optional, default=3)
         the kernel size of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -46,7 +46,7 @@ class ConvDecoder(nn.Sequential):
         If list (of tuples or integers), it will be interpreted as the kernel sizes for each layer.
         The length of the list must be equal to the number of transposed convolution layers (i.e.
         `len(channels)`).
-    stride : LayersParameters (optional, default=1)
+    stride : ConvParameters (optional, default=1)
         the stride of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -54,7 +54,7 @@ class ConvDecoder(nn.Sequential):
         If list (of tuples or integers), it will be interpreted as the strides for each layer.
         The length of the list must be equal to the number of transposed convolution layers (i.e.
         `len(channels)`).
-    padding : LayersParameters (optional, default=0)
+    padding : ConvParameters (optional, default=0)
         the padding of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -62,7 +62,7 @@ class ConvDecoder(nn.Sequential):
         If list (of tuples or integers), it will be interpreted as the paddings for each layer.
         The length of the list must be equal to the number of transposed convolution layers (i.e.
         `len(channels)`).
-    output_padding : LayersParameters (optional, default=0)
+    output_padding : ConvParameters (optional, default=0)
         the output padding of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -70,7 +70,7 @@ class ConvDecoder(nn.Sequential):
         If list (of tuples or integers), it will be interpreted as the output paddings for each layer.
         The length of the list must be equal to the number of transposed convolution layers (i.e.
         `len(channels)`).
-    dilation : LayersParameters (optional, default=1)
+    dilation : ConvParameters (optional, default=1)
         the dilation factor of the transposed convolutions. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -104,7 +104,7 @@ class ConvDecoder(nn.Sequential):
         If None, no last activation will be applied.
     norm : NormalizationParameters (optional, default=NormLayer.INSTANCE)
         the normalization type used after a transposed convolution layer, and optionally the arguments of the normalization
-        layers. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
+        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
         `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
         [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
@@ -171,11 +171,11 @@ class ConvDecoder(nn.Sequential):
         self,
         in_shape: Sequence[int],
         channels: Sequence[int],
-        kernel_size: LayersParameters = 3,
-        stride: LayersParameters = 1,
-        padding: LayersParameters = 0,
-        output_padding: LayersParameters = 0,
-        dilation: LayersParameters = 1,
+        kernel_size: ConvParameters = 3,
+        stride: ConvParameters = 1,
+        padding: ConvParameters = 0,
+        output_padding: ConvParameters = 0,
+        dilation: ConvParameters = 1,
         unpooling: UnpoolingParameters = (
             UnpoolingLayer.UPSAMPLE,
             {"scale_factor": 2},
@@ -274,7 +274,7 @@ class ConvDecoder(nn.Sequential):
             self.final_size, kernel_size, stride, padding, output_padding, dilation
         )
         if self.norm == NormLayer.LAYER:
-            norm = ("layer", {"normalized_shape": self.final_size})
+            norm = ("layer", {"normalized_shape": (out_channels, *self.final_size)})
         else:
             norm = self.norm
 

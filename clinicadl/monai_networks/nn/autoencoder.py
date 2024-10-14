@@ -7,10 +7,9 @@ import torch.nn as nn
 from .cnn import CNN
 from .conv_encoder import ConvEncoder
 from .generator import Generator
-from .layers import UnpoolingLayer, UpsamplingMode
+from .layers.utils import ActivationParameters, UnpoolingLayer, UpsamplingMode
 from .mlp import MLP
 from .utils import (
-    ActivationParameters,
     calculate_conv_out_shape,
     calculate_convtranspose_out_shape,
 )

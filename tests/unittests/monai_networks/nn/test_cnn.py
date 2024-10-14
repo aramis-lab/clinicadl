@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import Flatten, Linear, Softmax
 
-from clinicadl.monai_networks.nn import CNN, MLP, FCNEncoder
+from clinicadl.monai_networks.nn import CNN, MLP, ConvEncoder
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 1, 15, 16)
@@ -24,7 +24,7 @@ def test_cnn(input_tensor, channels, mlp_args):
     )
     output = net(input_tensor)
     assert output.shape == (3, 2)
-    assert isinstance(net.convolutions, FCNEncoder)
+    assert isinstance(net.convolutions, ConvEncoder)
     assert isinstance(net.mlp, MLP)
 
     if mlp_args is None or mlp_args["hidden_channels"] == []:

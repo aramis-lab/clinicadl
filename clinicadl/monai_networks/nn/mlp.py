@@ -7,12 +7,13 @@ from monai.networks.blocks import ADN
 from monai.networks.layers.utils import get_act_layer
 from monai.networks.nets import FullyConnectedNet as BaseMLP
 
-from .layers import ActFunction, NormLayer
-from .utils import (
+from .layers.utils import (
+    ActFunction,
     ActivationParameters,
     NormalizationParameters,
-    check_norm_layer,
+    NormLayer,
 )
+from .utils import check_norm_layer
 
 
 class MLP(BaseMLP):
@@ -39,7 +40,7 @@ class MLP(BaseMLP):
         If None, no last activation will be applied.
     norm : NormalizationParameters (optional, default=NormLayer.BATCH)
         the normalization type used after a linear layer, and optionally the arguments of the normalization
-        layers. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
+        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
         `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
         [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and

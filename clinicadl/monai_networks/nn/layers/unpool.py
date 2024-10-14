@@ -4,7 +4,7 @@ import torch.nn as nn
 from monai.networks.layers.factories import LayerFactory, split_args
 from monai.utils import has_option
 
-from .enum import UnpoolingLayer
+from .utils import UnpoolingLayer
 
 Unpool = LayerFactory(
     name="Unpooling layers", description="Factory for creating unpooling layers."

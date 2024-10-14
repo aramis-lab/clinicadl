@@ -3,8 +3,8 @@ from typing import Any, Optional, Sequence, Union
 
 from clinicadl.utils.factories import get_args_and_defaults
 
+from .layers.utils import ActivationParameters
 from .resnet import GeneralResNet, ResNet, ResNetBlockType
-from .utils import ActivationParameters
 
 
 class SEResNet(GeneralResNet):

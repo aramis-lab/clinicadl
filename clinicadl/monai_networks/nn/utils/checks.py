@@ -1,8 +1,11 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from clinicadl.monai_networks.nn.layers import NormLayer, PoolingLayer
-
-from .types import LayersParameters, NormalizationParameters
+from ..layers.utils import (
+    ConvParameters,
+    NormalizationParameters,
+    NormLayer,
+    PoolingLayer,
+)
 
 __all__ = [
     "ensure_list_of_tuples",
@@ -14,14 +17,14 @@ __all__ = [
 
 
 def ensure_list_of_tuples(
-    parameter: LayersParameters, dim: int, n_layers: int, name: str
+    parameter: ConvParameters, dim: int, n_layers: int, name: str
 ) -> List[Tuple[int, ...]]:
     """
     Checks spatial parameters (e.g. kernel_size) and returns a list of tuples.
     Each element of the list corresponds to the parameters of one layer, and
     each element of the tuple corresponds to the parameters for one dimension.
     """
-    parameter = _check_layer_parameter(parameter, dim, n_layers, name)
+    parameter = _check_conv_parameter(parameter, dim, n_layers, name)
     if isinstance(parameter, tuple):
         return [parameter] * n_layers if n_layers > 0 else [parameter]
     else:
@@ -112,8 +115,8 @@ def check_pool_indices(
         return []
 
 
-def _check_layer_parameter(
-    parameter: LayersParameters, dim: int, n_layers: int, name: str
+def _check_conv_parameter(
+    parameter: ConvParameters, dim: int, n_layers: int, name: str
 ) -> Union[Tuple[int, ...], List[Tuple[int, ...]]]:
     """
     Checks spatial parameters (e.g. kernel_size).
@@ -134,7 +137,7 @@ def _check_layer_parameter(
             )
         checked_params = []
         for param in parameter:
-            checked_params.append(_check_layer_parameter(param, dim, n_layers, name))
+            checked_params.append(_check_conv_parameter(param, dim, n_layers, name))
         return checked_params
     else:
         raise ValueError(f"{name} must be an int, a tuple or a list. Got {name}")

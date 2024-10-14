@@ -3,7 +3,7 @@ import torch
 from torch.nn import ELU, AvgPool2d, Conv2d, Dropout, InstanceNorm2d, MaxPool2d
 
 from clinicadl.monai_networks.nn import ConvEncoder
-from clinicadl.monai_networks.nn.layers import ActFunction
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 
 
 @pytest.fixture

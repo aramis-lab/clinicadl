@@ -4,9 +4,7 @@ import torch.nn as nn
 from monai.networks.blocks.convolutions import Convolution
 from monai.networks.layers.utils import get_pool_layer
 
-from clinicadl.monai_networks.nn.utils import ActivationParameters
-
-from .enum import ActFunction, NormLayer
+from .utils import ActFunction, ActivationParameters, NormLayer
 
 
 class ConvBlock(nn.Sequential):

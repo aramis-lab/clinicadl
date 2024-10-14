@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from clinicadl.monai_networks.nn.layers import (
+from .enum import (
     ActFunction,
     NormLayer,
     PoolingLayer,
     UnpoolingLayer,
 )
 
-SingleLayerParameter = Union[int, Tuple[int, ...]]
-LayersParameters = Union[SingleLayerParameter, List[SingleLayerParameter]]
+SingleLayerConvParameter = Union[int, Tuple[int, ...]]
+ConvParameters = Union[SingleLayerConvParameter, List[SingleLayerConvParameter]]
 
 PoolingType = Union[str, PoolingLayer]
 SingleLayerPoolingParameters = Tuple[PoolingType, Dict[str, Any]]

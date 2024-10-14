@@ -2,8 +2,8 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn import ResNet, get_resnet
-from clinicadl.monai_networks.nn.layers import ActFunction
 from clinicadl.monai_networks.nn.layers.resnet import ResNetBlock, ResNetBottleneck
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 from clinicadl.monai_networks.nn.resnet import CommonResNet
 
 INPUT_1D = torch.randn(3, 1, 16)

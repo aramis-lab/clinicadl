@@ -1,7 +1,7 @@
 import pytest
 
 from clinicadl.monai_networks.nn.utils.checks import (
-    _check_layer_parameter,
+    _check_conv_parameter,
     check_conv_args,
     check_mlp_args,
     check_norm_layer,
@@ -23,15 +23,15 @@ from clinicadl.monai_networks.nn.utils.checks import (
         (5.0, None),
     ],
 )
-def test_check_layer_parameter(parameter, expected_output):
+def test_check_conv_parameter(parameter, expected_output):
     if expected_output:
         assert (
-            _check_layer_parameter(parameter, dim=3, n_layers=2, name="abc")
+            _check_conv_parameter(parameter, dim=3, n_layers=2, name="abc")
             == expected_output
         )
     else:
         with pytest.raises(ValueError):
-            _check_layer_parameter(parameter, dim=3, n_layers=2, name="abc")
+            _check_conv_parameter(parameter, dim=3, n_layers=2, name="abc")
 
 
 @pytest.mark.parametrize(

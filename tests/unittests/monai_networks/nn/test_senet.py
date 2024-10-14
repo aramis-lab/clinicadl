@@ -2,8 +2,8 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn import SEResNet, get_seresnet
-from clinicadl.monai_networks.nn.layers import ActFunction
 from clinicadl.monai_networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 from clinicadl.monai_networks.nn.senet import CommonSEResNet
 
 INPUT_1D = torch.randn(3, 1, 16)

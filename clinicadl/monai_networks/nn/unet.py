@@ -6,9 +6,8 @@ import torch.nn as nn
 from monai.networks.blocks.convolutions import Convolution
 from monai.networks.layers.utils import get_act_layer
 
-from .layers import ActFunction
 from .layers.unet import ConvBlock, DownBlock, UpSample
-from .utils import ActivationParameters
+from .layers.utils import ActFunction, ActivationParameters
 
 
 class BaseUNet(nn.Module, ABC):

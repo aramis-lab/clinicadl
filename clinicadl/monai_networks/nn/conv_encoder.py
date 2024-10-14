@@ -7,13 +7,17 @@ from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer, get_pool_layer
 from monai.utils.misc import ensure_tuple
 
-from .layers import ActFunction, NormLayer, PoolingLayer
-from .utils import (
+from .layers.utils import (
+    ActFunction,
     ActivationParameters,
-    LayersParameters,
+    ConvParameters,
     NormalizationParameters,
+    NormLayer,
+    PoolingLayer,
     PoolingParameters,
     SingleLayerPoolingParameters,
+)
+from .utils import (
     calculate_conv_out_shape,
     calculate_pool_out_shape,
     check_norm_layer,
@@ -33,28 +37,28 @@ class ConvEncoder(nn.Sequential):
         sequence of integers stating the dimension of the input tensor (minus batch dimension).
     channels : Sequence[int]
         sequence of integers stating the output channels of each convolutional layer.
-    kernel_size : LayersParameters (optional, default=3)
+    kernel_size : ConvParameters (optional, default=3)
         the kernel size of the convolutional layers. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
         will be used for all the layers.\n
         If list (of tuples or integers), it will be interpreted as the kernel sizes for each layer.
         The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    stride : LayersParameters (optional, default=1)
+    stride : ConvParameters (optional, default=1)
         the stride of the convolutional layers. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
         will be used for all the layers.\n
         If list (of tuples or integers), it will be interpreted as the strides for each layer.
         The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    padding : LayersParameters (optional, default=0)
+    padding : ConvParameters (optional, default=0)
         the padding of the convolutional layers. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
         will be used for all the layers.\n
         If list (of tuples or integers), it will be interpreted as the paddings for each layer.
         The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    dilation : LayersParameters (optional, default=1)
+    dilation : ConvParameters (optional, default=1)
         the dilation factor of the convolutional layers. Can be an integer, a tuple or a list.\n
         If integer, the value will be used for all layers and all dimensions.\n
         If tuple (of integers), it will be interpreted as the values for each dimension. These values
@@ -84,7 +88,7 @@ class ConvEncoder(nn.Sequential):
         If None, no last activation will be applied.
     norm : NormalizationParameters (optional, default=NormLayer.INSTANCE)
         the normalization type used after a convolutional layer, and optionally the arguments of the normalization
-        layers. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
+        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
         `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
         [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
@@ -150,10 +154,10 @@ class ConvEncoder(nn.Sequential):
         self,
         in_shape: Sequence[int],
         channels: Sequence[int],
-        kernel_size: LayersParameters = 3,
-        stride: LayersParameters = 1,
-        padding: LayersParameters = 0,
-        dilation: LayersParameters = 1,
+        kernel_size: ConvParameters = 3,
+        stride: ConvParameters = 1,
+        padding: ConvParameters = 0,
+        dilation: ConvParameters = 1,
         pooling: PoolingParameters = (
             PoolingLayer.MAX,
             {"kernel_size": 2},
@@ -250,7 +254,7 @@ class ConvEncoder(nn.Sequential):
         self._check_size()
 
         if self.norm == NormLayer.LAYER:
-            norm = ("layer", {"normalized_shape": self.final_size})
+            norm = ("layer", {"normalized_shape": (out_channels, *self.final_size)})
         else:
             norm = self.norm
 

@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from typing import Callable, Optional
 
 import torch
@@ -7,10 +6,16 @@ from monai.networks.blocks.squeeze_and_excitation import ChannelSELayer
 from monai.networks.layers.factories import Conv, Norm
 from monai.networks.layers.utils import get_act_layer
 
-from clinicadl.monai_networks.nn.utils import ActivationParameters
+from .utils import ActivationParameters
 
 
 class SEResNetBlock(nn.Module):
+    """
+    ResNet basic block. Adapted from MONAI's ResNetBlock:
+    https://github.com/Project-MONAI/MONAI/blob/59a7211070538586369afd4a01eca0a7fe2e742e/
+    monai/networks/nets/resnet.py#L71
+    """
+
     expansion = 1
     reduction = 16
 
@@ -18,7 +23,7 @@ class SEResNetBlock(nn.Module):
         self,
         in_planes: int,
         planes: int,
-        spatial_dims: int = 3,
+        spatial_dims: int,
         stride: int = 1,
         downsample: Optional[nn.Module] = None,
         act: ActivationParameters = ("relu", {"inplace": True}),
@@ -67,6 +72,12 @@ class SEResNetBlock(nn.Module):
 
 
 class SEResNetBottleneck(nn.Module):
+    """
+    ResNet bottleneck block. Adapted from MONAI's ResNetBottleneck:
+    https://github.com/Project-MONAI/MONAI/blob/59a7211070538586369afd4a01eca0a7fe2e742e/
+    monai/networks/nets/resnet.py#L124
+    """
+
     expansion = 4
     reduction = 16
 

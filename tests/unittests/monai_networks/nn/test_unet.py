@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn import UNet
-from clinicadl.monai_networks.nn.layers import ActFunction
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(2, 1, 16)
 INPUT_2D = torch.randn(2, 2, 32, 64)

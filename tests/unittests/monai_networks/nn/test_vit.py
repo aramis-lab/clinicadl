@@ -3,7 +3,7 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn import ViT, get_vit
-from clinicadl.monai_networks.nn.layers import ActFunction
+from clinicadl.monai_networks.nn.layers.utils import ActFunction
 from clinicadl.monai_networks.nn.vit import CommonViT
 
 INPUT_1D = torch.randn(2, 1, 16)
