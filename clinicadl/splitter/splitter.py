@@ -1,4 +1,5 @@
 import abc
+import shutil
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -6,6 +7,8 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
 from clinicadl.splitter.config import SplitterConfig
+from clinicadl.utils import cluster
+from clinicadl.utils.exceptions import MAPSError
 
 logger = getLogger("clinicadl.split_manager")
 
@@ -213,4 +216,22 @@ class Splitter:
         if item not in self.allowed_splits_list:
             raise IndexError(
                 f"Split index {item} out of allowed splits {self.allowed_splits_list}."
+            )
+
+    def check_split_list(self, maps_path, overwrite):
+        existing_splits = []
+        for split in self.split_iterator():
+            split_path = maps_path / f"split-{split}"
+            if split_path.is_dir():
+                if overwrite:
+                    if cluster.master:
+                        shutil.rmtree(split_path)
+                else:
+                    existing_splits.append(split)
+
+        if len(existing_splits) > 0:
+            raise MAPSError(
+                f"Splits {existing_splits} already exist. Please "
+                f"specify a list of splits not intersecting the previous list, "
+                f"or use overwrite to erase previously trained splits."
             )

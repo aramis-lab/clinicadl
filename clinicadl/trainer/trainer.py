@@ -1,6 +1,6 @@
 from __future__ import annotations  # noqa: I001
 
-import shutil
+
 from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
@@ -71,6 +71,12 @@ class Trainer:
         predict_config = PredictConfig(**config.get_dict())
         self.validator = Predictor(predict_config)
         self._check_args()
+        ### test
+        splitter_config = SplitterConfig(**self.config.get_dict())
+        self.splitter = Splitter(splitter_config)
+        self.splitter.check_split_list(
+            self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite
+        )
 
     def _init_maps_manager(self, config) -> MapsManager:
         # temporary: to match CLI data. TODO : change CLI data
@@ -161,12 +167,12 @@ class Trainer:
         """
         stopped_splits = set(find_stopped_splits(self.config.maps_manager.maps_dir))
         finished_splits = set(find_finished_splits(self.maps_manager.maps_path))
-        # TODO : check these two lines. Why do we need a split_manager?
+        # TODO : check these two lines. Why do we need a self.splitter?
 
         splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config)
+        self.splitter = Splitter(splitter_config)
 
-        split_iterator = split_manager.split_iterator()
+        split_iterator = self.splitter.split_iterator()
         ###
         absent_splits = set(split_iterator) - stopped_splits - finished_splits
 
@@ -214,16 +220,15 @@ class Trainer:
             If splits specified in input already exist and overwrite is False.
         """
 
-        self.check_split_list(split_list=split_list, overwrite=overwrite)
-
         if self.config.ssda.ssda_network:
             self._train_ssda(split_list, resume=False)
 
         else:
-            splitter_config = SplitterConfig(**self.config.get_dict())
-            split_manager = Splitter(splitter_config)
+            # splitter_config = SplitterConfig(**self.config.get_dict())
+            # self.splitter = Splitter(splitter_config)
+            # self.splitter.check_split_list(self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite)
 
-            for split in split_manager.split_iterator():
+            for split in self.splitter.split_iterator():
                 logger.info(f"Training split {split}")
                 seed_everything(
                     self.config.reproducibility.seed,
@@ -231,7 +236,7 @@ class Trainer:
                     self.config.reproducibility.compensation,
                 )
 
-                split_df_dict = split_manager[split]
+                split_df_dict = self.splitter[split]
 
                 if self.config.model.multi_network:
                     resume, first_network = self.init_first_network(False, split)
@@ -242,25 +247,25 @@ class Trainer:
                 else:
                     self._train_single(split, split_df_dict, resume=False)
 
-    def check_split_list(self, split_list, overwrite):
-        existing_splits = []
-        splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config)
-        for split in split_manager.split_iterator():
-            split_path = self.maps_manager.maps_path / f"split-{split}"
-            if split_path.is_dir():
-                if overwrite:
-                    if cluster.master:
-                        shutil.rmtree(split_path)
-                else:
-                    existing_splits.append(split)
+    # def check_split_list(self, split_list, overwrite):
+    #     existing_splits = []
+    #     splitter_config = SplitterConfig(**self.config.get_dict())
+    #     self.splitter = Splitter(splitter_config)
+    #     for split in self.splitter.split_iterator():
+    #         split_path = self.maps_manager.maps_path / f"split-{split}"
+    #         if split_path.is_dir():
+    #             if overwrite:
+    #                 if cluster.master:
+    #                     shutil.rmtree(split_path)
+    #             else:
+    #                 existing_splits.append(split)
 
-        if len(existing_splits) > 0:
-            raise MAPSError(
-                f"Splits {existing_splits} already exist. Please "
-                f"specify a list of splits not intersecting the previous list, "
-                f"or use overwrite to erase previously trained splits."
-            )
+    #     if len(existing_splits) > 0:
+    #         raise MAPSError(
+    #             f"Splits {existing_splits} already exist. Please "
+    #             f"specify a list of splits not intersecting the previous list, "
+    #             f"or use overwrite to erase previously trained splits."
+    #         )
 
     def _resume(
         self,
@@ -282,8 +287,8 @@ class Trainer:
         """
         missing_splits = []
         splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config)
-        for split in split_manager.split_iterator():
+        self.splitter = Splitter(splitter_config)
+        for split in self.splitter.split_iterator():
             if not (self.maps_manager.maps_path / f"split-{split}" / "tmp").is_dir():
                 missing_splits.append(split)
 
@@ -296,7 +301,7 @@ class Trainer:
         if self.config.ssda.ssda_network:
             self._train_ssda(split_list, resume=True)
         else:
-            for split in split_manager.split_iterator():
+            for split in self.splitter.split_iterator():
                 logger.info(f"Training split {split}")
                 seed_everything(
                     self.config.reproducibility.seed,
@@ -304,7 +309,7 @@ class Trainer:
                     self.config.reproducibility.compensation,
                 )
 
-                split_df_dict = split_manager[split]
+                split_df_dict = self.splitter[split]
                 if self.config.model.multi_network:
                     resume, first_network = self.init_first_network(True, split)
                     for network in range(first_network, self.maps_manager.num_networks):
@@ -474,10 +479,10 @@ class Trainer:
 
         splitter_config = SplitterConfig(**self.config.get_dict())
 
-        split_manager = Splitter(splitter_config)
-        split_manager_target_lab = Splitter(splitter_config)
+        self.splitter = Splitter(splitter_config)
+        self.splitter_target_lab = Splitter(splitter_config)
 
-        for split in split_manager.split_iterator():
+        for split in self.splitter.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(
                 self.config.reproducibility.seed,
@@ -485,8 +490,8 @@ class Trainer:
                 self.config.reproducibility.compensation,
             )
 
-            split_df_dict = split_manager[split]
-            split_df_dict_target_lab = split_manager_target_lab[split]
+            split_df_dict = self.splitter[split]
+            split_df_dict_target_lab = self.splitter_target_lab[split]
 
             logger.debug("Loading source training data...")
             data_train_source = return_dataset(
