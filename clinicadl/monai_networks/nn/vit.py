@@ -72,7 +72,7 @@ class ViT(nn.Module):
         position embedding, `embedding_dim` must be divisible by 4 for 2D images and by 6 for 3D images.
         - `None`: no position embeddings are used.\n
         Default to `"learnable"`, as in the original paper.
-    output_act : ActivationParameters (optional, default=ActFunction.TANH)
+    output_act : Optional[ActivationParameters] (optional, default=ActFunction.TANH)
         if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
         and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
@@ -80,6 +80,7 @@ class ViT(nn.Module):
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.\n
+        Default to `"tanh"`, as in the original paper.
     dropout : Optional[float] (optional, default=None)
         dropout ratio. If None, no dropout.
 
@@ -99,23 +100,8 @@ class ViT(nn.Module):
         (conv_proj): Conv2d(3, 32, kernel_size=(4, 4), stride=(4, 4))
         (encoder): Encoder(
             (dropout): Dropout(p=0.0, inplace=False)
-            (layers): Sequential(
-                (0): EncoderBlock(
-                    (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
-                    (self_attention): MultiheadAttention(
-                        (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
-                    )
-                    (dropout): Dropout(p=0.0, inplace=False)
-                    (norm2): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
-                    (mlp): MLPBlock(
-                        (0): Linear(in_features=32, out_features=128, bias=True)
-                        (1): GELU(approximate='none')
-                        (2): Dropout(p=0.0, inplace=False)
-                        (3): Linear(in_features=128, out_features=32, bias=True)
-                        (4): Dropout(p=0.0, inplace=False)
-                    )
-                )
-                (1): EncoderBlock(
+            (layers): ModuleList(
+                (0-1): 2 x EncoderBlock(
                     (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
                     (self_attention): MultiheadAttention(
                         (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
@@ -150,7 +136,7 @@ class ViT(nn.Module):
         num_heads: int = 12,
         mlp_dim: int = 3072,
         pos_embed_type: Optional[Union[str, PosEmbedType]] = PosEmbedType.LEARN,
-        output_act: ActivationParameters = ActFunction.TANH,
+        output_act: Optional[ActivationParameters] = ActFunction.TANH,
         dropout: Optional[float] = None,
     ) -> None:
         super().__init__()

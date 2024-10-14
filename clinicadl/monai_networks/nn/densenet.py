@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 from enum import Enum
 from typing import Any, Mapping, Optional, Sequence, Union
 
@@ -68,33 +69,33 @@ class DenseNet(nn.Sequential):
         (features): Sequential(
             (conv0): Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
             (norm0): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            (relu0): ReLU(inplace=True)
+            (act0): ReLU(inplace=True)
             (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
             (denseblock1): _DenseBlock(
                 (denselayer1): _DenseLayer(
                     (layers): Sequential(
                         (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu1): ReLU(inplace=True)
+                        (act1): ReLU(inplace=True)
                         (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
                         (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu2): ReLU(inplace=True)
+                        (act2): ReLU(inplace=True)
                         (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
                     )
                 )
                 (denselayer2): _DenseLayer(
                     (layers): Sequential(
                         (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu1): ReLU(inplace=True)
+                        (act1): ReLU(inplace=True)
                         (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
                         (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu2): ReLU(inplace=True)
+                        (act2): ReLU(inplace=True)
                         (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
                     )
                 )
             )
             (transition1): _Transition(
                 (norm): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (relu): ReLU(inplace=True)
+                (act): ReLU(inplace=True)
                 (conv): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
                 (pool): AvgPool2d(kernel_size=2, stride=2, padding=0)
             )
@@ -102,20 +103,20 @@ class DenseNet(nn.Sequential):
                 (denselayer1): _DenseLayer(
                     (layers): Sequential(
                         (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu1): ReLU(inplace=True)
+                        (act1): ReLU(inplace=True)
                         (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
                         (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu2): ReLU(inplace=True)
+                        (act2): ReLU(inplace=True)
                         (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
                     )
                 )
                 (denselayer2): _DenseLayer(
                     (layers): Sequential(
                         (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu1): ReLU(inplace=True)
+                        (act1): ReLU(inplace=True)
                         (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
                         (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (relu2): ReLU(inplace=True)
+                        (act2): ReLU(inplace=True)
                         (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
                     )
                 )
@@ -123,7 +124,7 @@ class DenseNet(nn.Sequential):
             (norm5): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         )
         (fc): Sequential(
-            (relu): ReLU(inplace=True)
+            (act): ReLU(inplace=True)
             (pool): AdaptiveAvgPool2d(output_size=1)
             (flatten): Flatten(start_dim=1, end_dim=-1)
             (out): Linear(in_features=128, out_features=2, bias=True)
@@ -161,6 +162,24 @@ class DenseNet(nn.Sequential):
         self.fc = base_densenet.class_layers if num_outputs else None
         if self.fc:
             self.fc.output_act = get_act_layer(output_act) if output_act else None
+
+        self._rename_act(self)
+
+    @classmethod
+    def _rename_act(cls, module: nn.Module) -> None:
+        """
+        Rename activation layers from 'relu' to 'act'.
+        """
+        for name, layer in list(module.named_children()):
+            if "relu" in name:
+                module._modules = OrderedDict(
+                    [
+                        (key.replace("relu", "act"), sub_m)
+                        for key, sub_m in module._modules.items()
+                    ]
+                )
+            else:
+                cls._rename_act(layer)
 
 
 class CommonDenseNet(str, Enum):

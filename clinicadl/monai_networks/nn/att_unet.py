@@ -60,7 +60,7 @@ class AttentionUNet(BaseUNet):
             )
         )
         (down1): DownBlock(
-            (maxpool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+            (pool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
             (doubleconv): ConvBlock(
                 (0): Convolution(
                     (conv): Conv2d(4, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))

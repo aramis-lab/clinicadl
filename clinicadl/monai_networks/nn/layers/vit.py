@@ -69,9 +69,8 @@ class Encoder(nn.Module):
                 torch.empty(1, seq_length, hidden_dim).normal_(std=0.02)
             )  # from BERT
         self.dropout = nn.Dropout(dropout)
-        layers = nn.ModuleList()
-        for _ in range(num_layers):
-            layers.append(
+        self.layers = nn.ModuleList(
+            [
                 EncoderBlock(
                     num_heads,
                     hidden_dim,
@@ -80,10 +79,16 @@ class Encoder(nn.Module):
                     attention_dropout,
                     norm_layer,
                 )
-            )
-        self.layers = nn.Sequential(*layers)
+                for _ in range(num_layers)
+            ]
+        )
         self.norm = norm_layer(hidden_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.pos_embedding
-        return self.norm(self.layers(self.dropout(x)))
+
+        x = self.dropout(x)
+        for layer in self.layers:
+            x = layer(x)
+
+        return self.norm(x)

@@ -28,6 +28,4 @@ NormalizationParameters = Optional[
 ]
 
 ActivationType = Union[str, ActFunction]
-ActivationParameters = Optional[
-    Union[ActivationType, Tuple[ActivationType, Dict[str, Any]]]
-]
+ActivationParameters = Union[ActivationType, Tuple[ActivationType, Dict[str, Any]]]

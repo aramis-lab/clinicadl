@@ -94,7 +94,7 @@ class DownBlock(nn.Sequential):
         dropout: Optional[float] = None,
     ):
         super().__init__()
-        self.maxpool = get_pool_layer(("max", {"kernel_size": 2}), spatial_dims)
+        self.pool = get_pool_layer(("max", {"kernel_size": 2}), spatial_dims)
         self.doubleconv = ConvBlock(
             spatial_dims=spatial_dims,
             in_channels=in_channels,

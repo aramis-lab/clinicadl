@@ -1,9 +1,9 @@
 import pytest
 import torch
-from monai.networks.nets.resnet import ResNetBlock, ResNetBottleneck
 
 from clinicadl.monai_networks.nn import ResNet, get_resnet
 from clinicadl.monai_networks.nn.layers import ActFunction
+from clinicadl.monai_networks.nn.layers.resnet import ResNetBlock, ResNetBottleneck
 from clinicadl.monai_networks.nn.resnet import CommonResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
@@ -89,12 +89,12 @@ def test_resnet(
         getattr(net, f"layer{i+1}")
 
     assert (
-        net.conv1.kernel_size == init_conv_size
+        net.conv0.kernel_size == init_conv_size
         if isinstance(init_conv_size, tuple)
         else (init_conv_size,) * spatial_dims
     )
     assert (
-        net.conv1.stride == init_conv_stride
+        net.conv0.stride == init_conv_stride
         if isinstance(init_conv_stride, tuple)
         else (init_conv_stride,) * spatial_dims
     )
@@ -126,12 +126,12 @@ def test_activation_parameters():
         act=act,
         output_act=output_act,
     )
-    assert isinstance(net.layer1[0].act, torch.nn.ELU)
-    assert net.layer1[0].act.alpha == 0.1
-    assert isinstance(net.layer2[1].act, torch.nn.ELU)
-    assert net.layer2[1].act.alpha == 0.1
-    assert isinstance(net.act, torch.nn.ELU)
-    assert net.act.alpha == 0.1
+    assert isinstance(net.layer1[0].act1, torch.nn.ELU)
+    assert net.layer1[0].act1.alpha == 0.1
+    assert isinstance(net.layer2[1].act2, torch.nn.ELU)
+    assert net.layer2[1].act2.alpha == 0.1
+    assert isinstance(net.act0, torch.nn.ELU)
+    assert net.act0.alpha == 0.1
     assert isinstance(net.fc.output_act, torch.nn.ELU)
     assert net.fc.output_act.alpha == 0.2
 
@@ -147,27 +147,27 @@ def test_activation_parameters():
     ],
 )
 def test_get_resnet(name, num_outputs, output_act):
-    densenet = get_resnet(
+    resnet = get_resnet(
         name, num_outputs=num_outputs, output_act=output_act, pretrained=True
     )
     if num_outputs:
-        assert densenet.fc.out.out_features == num_outputs
+        assert resnet.fc.out.out_features == num_outputs
     else:
-        assert densenet.fc is None
+        assert resnet.fc is None
 
     if output_act and num_outputs:
-        assert densenet.fc.output_act is not None
+        assert resnet.fc.output_act is not None
     elif output_act and num_outputs is None:
         with pytest.raises(AttributeError):
-            densenet.fc.output_act
+            resnet.fc.output_act
 
 
 def test_get_resnet_output():
     from torchvision.models import resnet18
 
-    densenet = get_resnet(CommonResNet.RESNET_18, num_outputs=None, pretrained=True)
+    resnet = get_resnet(CommonResNet.RESNET_18, num_outputs=None, pretrained=True)
     gt = resnet18(weights="DEFAULT")
     gt.avgpool = torch.nn.Identity()
     gt.fc = torch.nn.Identity()
     x = torch.randn(1, 3, 128, 128)
-    assert (torch.flatten(densenet(x), start_dim=1) == gt(x)).all()
+    assert (torch.flatten(resnet(x), start_dim=1) == gt(x)).all()

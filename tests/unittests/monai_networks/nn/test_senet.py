@@ -92,12 +92,12 @@ def test_resnet(
         getattr(net, f"layer{i+1}")
 
     assert (
-        net.conv1.kernel_size == init_conv_size
+        net.conv0.kernel_size == init_conv_size
         if isinstance(init_conv_size, tuple)
         else (init_conv_size,) * spatial_dims
     )
     assert (
-        net.conv1.stride == init_conv_stride
+        net.conv0.stride == init_conv_stride
         if isinstance(init_conv_stride, tuple)
         else (init_conv_stride,) * spatial_dims
     )
@@ -131,12 +131,12 @@ def test_activation_parameters():
         output_act=output_act,
         se_reduction=2,
     )
-    assert isinstance(net.layer1[0].act, torch.nn.ELU)
-    assert net.layer1[0].act.alpha == 0.1
-    assert isinstance(net.layer2[1].act, torch.nn.ELU)
-    assert net.layer2[1].act.alpha == 0.1
-    assert isinstance(net.act, torch.nn.ELU)
-    assert net.act.alpha == 0.1
+    assert isinstance(net.layer1[0].act1, torch.nn.ELU)
+    assert net.layer1[0].act1.alpha == 0.1
+    assert isinstance(net.layer2[1].act2, torch.nn.ELU)
+    assert net.layer2[1].act2.alpha == 0.1
+    assert isinstance(net.act0, torch.nn.ELU)
+    assert net.act0.alpha == 0.1
     assert isinstance(net.fc.output_act, torch.nn.ELU)
     assert net.fc.output_act.alpha == 0.2
 
@@ -150,18 +150,18 @@ def test_activation_parameters():
     ],
 )
 def test_get_resnet(name, num_outputs, output_act):
-    densenet = get_seresnet(
+    seresnet = get_seresnet(
         name,
         num_outputs=num_outputs,
         output_act=output_act,
     )
     if num_outputs:
-        assert densenet.fc.out.out_features == num_outputs
+        assert seresnet.fc.out.out_features == num_outputs
     else:
-        assert densenet.fc is None
+        assert seresnet.fc is None
 
     if output_act and num_outputs:
-        assert densenet.fc.output_act is not None
+        assert seresnet.fc.output_act is not None
     elif output_act and num_outputs is None:
         with pytest.raises(AttributeError):
-            densenet.fc.output_act
+            seresnet.fc.output_act

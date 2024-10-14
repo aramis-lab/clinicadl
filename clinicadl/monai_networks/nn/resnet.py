@@ -1,13 +1,13 @@
+import re
 from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum
-from typing import Callable, Optional, Sequence, Type, Union
+from typing import Any, Callable, Mapping, Optional, Sequence, Type, Union
 
 import torch
 import torch.nn as nn
 from monai.networks.layers.factories import Conv, Norm, Pool
 from monai.networks.layers.utils import get_act_layer
-from monai.networks.nets.resnet import ResNetBlock, ResNetBottleneck
 from monai.utils import ensure_tuple_rep
 from torch.hub import load_state_dict_from_url
 from torchvision.models.resnet import (
@@ -18,6 +18,7 @@ from torchvision.models.resnet import (
     ResNet152_Weights,
 )
 
+from .layers.resnet import ResNetBlock, ResNetBottleneck
 from .layers.senet import SEResNetBlock, SEResNetBottleneck
 from .utils import ActivationParameters
 
@@ -69,7 +70,7 @@ class GeneralResNet(nn.Module):
         conv1_kernel_size = ensure_tuple_rep(init_conv_size, spatial_dims)
         conv1_stride = ensure_tuple_rep(init_conv_stride, spatial_dims)
 
-        self.conv1 = conv_type(  # pylint: disable=not-callable
+        self.conv0 = conv_type(  # pylint: disable=not-callable
             in_channels,
             self.in_planes,
             kernel_size=conv1_kernel_size,
@@ -77,9 +78,9 @@ class GeneralResNet(nn.Module):
             padding=tuple(k // 2 for k in conv1_kernel_size),
             bias=False,
         )
-        self.bn1 = norm_type(self.in_planes)  # pylint: disable=not-callable
-        self.act = get_act_layer(name=act)
-        self.maxpool = pool_type(kernel_size=3, stride=2, padding=1)  # pylint: disable=not-callable
+        self.norm0 = norm_type(self.in_planes)  # pylint: disable=not-callable
+        self.act0 = get_act_layer(name=act)
+        self.pool0 = pool_type(kernel_size=3, stride=2, padding=1)  # pylint: disable=not-callable
         self.layer1 = self._make_resnet_layer(
             block, in_planes[0], n_res_blocks[0], spatial_dims, act
         )
@@ -101,7 +102,7 @@ class GeneralResNet(nn.Module):
             nn.Sequential(
                 OrderedDict(
                     [
-                        ("avgpool", avgp_type(block_avgpool[spatial_dims])),  # pylint: disable=not-callable
+                        ("pool", avgp_type(block_avgpool[spatial_dims])),  # pylint: disable=not-callable
                         ("flatten", nn.Flatten(1)),
                         ("out", nn.Linear(n_features[-1], num_outputs)),
                     ]
@@ -116,10 +117,10 @@ class GeneralResNet(nn.Module):
         self._init_module(conv_type, norm_type)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.act(x)
-        x = self.maxpool(x)
+        x = self.conv0(x)
+        x = self.norm0(x)
+        x = self.act0(x)
+        x = self.pool0(x)
 
         for i in range(1, self.n_layers + 1):
             x = self.get_submodule(f"layer{i}")(x)
@@ -341,60 +342,68 @@ class ResNet(GeneralResNet):
             init_conv_size=5,
         )
     ResNet(
-        (conv1): Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
-        (bn1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (act): ReLU(inplace=True)
-        (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+        (conv0): Conv2d(1, 2, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
+        (norm0): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (act0): ReLU(inplace=True)
+        (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
         (layer1): Sequential(
             (0): ResNetBottleneck(
                 (conv1): Conv2d(2, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act2): ReLU(inplace=True)
                 (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 (downsample): Sequential(
                     (0): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
                     (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 )
+                (act3): ReLU(inplace=True)
             )
             (1): ResNetBottleneck(
                 (conv1): Conv2d(8, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act2): ReLU(inplace=True)
                 (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act3): ReLU(inplace=True)
             )
         )
         (layer2): Sequential(
             (0): ResNetBottleneck(
                 (conv1): Conv2d(8, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act2): ReLU(inplace=True)
                 (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 (downsample): Sequential(
                     (0): Conv2d(8, 16, kernel_size=(1, 1), stride=(2, 2), bias=False)
                     (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 )
+                (act3): ReLU(inplace=True)
             )
             (1): ResNetBottleneck(
                 (conv1): Conv2d(16, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act2): ReLU(inplace=True)
                 (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (bn3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act3): ReLU(inplace=True)
             )
         )
         (fc): Sequential(
-            (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+            (pool): AdaptiveAvgPool2d(output_size=(1, 1))
             (flatten): Flatten(start_dim=1, end_dim=-1)
             (out): Linear(in_features=16, out_features=2, bias=True)
             (output_act): Softmax(dim=None)
@@ -524,10 +533,28 @@ def get_resnet(
         fc_layers = deepcopy(resnet.fc)
         resnet.fc = None
         pretrained_dict = load_state_dict_from_url(model_url, progress=True)
-        features_state_dict = {
-            k: v for k, v in pretrained_dict.items() if "fc" not in k
-        }
-        resnet.load_state_dict(features_state_dict)
+        resnet.load_state_dict(_state_dict_adapter(pretrained_dict))
         resnet.fc = fc_layers
 
     return resnet
+
+
+def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:
+    """
+    A mapping between torchvision's layer names and ours.
+    """
+    state_dict = {k: v for k, v in state_dict.items() if "fc" not in k}
+
+    mappings = [
+        (r"(?<!\.)conv1", "conv0"),
+        (r"(?<!\.)bn1", "norm0"),
+        ("bn", "norm"),
+    ]
+
+    for key in list(state_dict.keys()):
+        new_key = key
+        for transform in mappings:
+            new_key = re.sub(transform[0], transform[1], new_key)
+        state_dict[new_key] = state_dict.pop(key)
+
+    return state_dict

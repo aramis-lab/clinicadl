@@ -62,6 +62,8 @@ def test_densenet(
             dense_layer = getattr(dense_block, f"denselayer{k}").layers
             assert dense_layer.conv1.out_channels == growth_rate * bottleneck_factor
             assert dense_layer.conv2.out_channels == growth_rate
+            if dropout:
+                assert dense_layer.dropout.p == dropout
         with pytest.raises(AttributeError):
             getattr(dense_block, f"denseblock{n+1}")
     with pytest.raises(AttributeError):
@@ -94,8 +96,8 @@ def test_activation_parameters():
         act=act,
         output_act=output_act,
     )
-    assert isinstance(net.features.denseblock1.denselayer1.layers.relu1, torch.nn.ELU)
-    assert net.features.denseblock1.denselayer1.layers.relu1.alpha == 0.1
+    assert isinstance(net.features.denseblock1.denselayer1.layers.act1, torch.nn.ELU)
+    assert net.features.denseblock1.denselayer1.layers.act1.alpha == 0.1
     assert isinstance(net.fc.output_act, torch.nn.ELU)
     assert net.fc.output_act.alpha == 0.2
 

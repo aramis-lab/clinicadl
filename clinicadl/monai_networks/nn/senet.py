@@ -44,17 +44,17 @@ class SEResNet(GeneralResNet):
             init_conv_size=5,
         )
     SEResNet(
-        (conv1): Conv2d(1, 8, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
-        (bn1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (act): ReLU(inplace=True)
-        (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+        (conv0): Conv2d(1, 8, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
+        (norm0): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (act0): ReLU(inplace=True)
+        (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
         (layer1): Sequential(
             (0): SEResNetBlock(
                 (conv1): Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 (se_layer): ChannelSELayer(
                     (avg_pool): AdaptiveAvgPool2d(output_size=1)
                     (fc): Sequential(
@@ -64,13 +64,14 @@ class SEResNet(GeneralResNet):
                         (3): Sigmoid()
                     )
                 )
+                (act2): ReLU(inplace=True)
             )
             (1): SEResNetBlock(
                 (conv1): Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act): ReLU(inplace=True)
+                (norm1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act1): ReLU(inplace=True)
                 (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (norm2): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
                 (se_layer): ChannelSELayer(
                     (avg_pool): AdaptiveAvgPool2d(output_size=1)
                     (fc): Sequential(
@@ -80,10 +81,11 @@ class SEResNet(GeneralResNet):
                         (3): Sigmoid()
                     )
                 )
+                (act2): ReLU(inplace=True)
             )
         )
         (fc): Sequential(
-            (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+            (pool): AdaptiveAvgPool2d(output_size=(1, 1))
             (flatten): Flatten(start_dim=1, end_dim=-1)
             (out): Linear(in_features=8, out_features=2, bias=True)
             (output_act): Softmax(dim=None)
@@ -157,7 +159,7 @@ def get_seresnet(
     Parameters
     ----------
     model : Union[str, CommonSEResNet]
-        the name of the ResNet. Available networks are `SE-ResNet-50`, `SE-ResNet-101` and `SE-ResNet-152`.
+        the name of the SEResNet. Available networks are `SE-ResNet-50`, `SE-ResNet-101` and `SE-ResNet-152`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
         If None, the features before the last fully connected layer will be returned.
