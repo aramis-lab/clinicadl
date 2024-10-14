@@ -76,8 +76,6 @@ class Predictor:
             self.maps_manager.network_task, self.maps_manager.loss
         )
 
-        print(f"enter split iterato: {self.splitter.split_iterator()}")
-
         for split in self.splitter.split_iterator():
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
@@ -98,7 +96,6 @@ class Predictor:
                 )
             else:
                 split_selection_metrics = self._config.validation.selection_metrics
-            print(f" split selection metrics : {split_selection_metrics}")
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
@@ -106,11 +103,10 @@ class Predictor:
                     / f"best-{selection}"
                     / self._config.maps_manager.data_group
                 )
-                print(f"tsv_dir: {tsv_dir}")
                 tsv_pattern = f"{self._config.maps_manager.data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-            print("out boucle")
+
             self._config.data.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
                 for network in range(self.maps_manager.num_networks):

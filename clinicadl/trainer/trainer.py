@@ -70,13 +70,15 @@ class Trainer:
         self.maps_manager = self._init_maps_manager(config)
         predict_config = PredictConfig(**config.get_dict())
         self.validator = Predictor(predict_config)
-        self._check_args()
+
         ### test
         splitter_config = SplitterConfig(**self.config.get_dict())
         self.splitter = Splitter(splitter_config)
         self.splitter.check_split_list(
             self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite
         )
+
+        self._check_args()
 
     def _init_maps_manager(self, config) -> MapsManager:
         # temporary: to match CLI data. TODO : change CLI data
@@ -196,6 +198,17 @@ class Trainer:
         # if (len(self.config.data.label_code) == 0):
         #     self.config.data.label_code = self.maps_manager.label_code
         # TODO: deal with label_code and replace self.maps_manager.label_code
+        from clinicadl.trainer.tasks_utils import generate_label_code
+
+        if (
+            "label_code" not in self.config.data.model_dump()
+            or len(self.config.data.label_code) == 0
+            or self.config.data.label_code is None
+        ):  # Allows to set custom label code in TOML
+            train_df = self.splitter[0]["train"]
+            self.config.data.label_code = generate_label_code(
+                self.config.network_task, train_df, self.config.data.label
+            )
 
     def train(
         self,

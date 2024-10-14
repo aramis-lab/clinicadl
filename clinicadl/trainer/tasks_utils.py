@@ -622,6 +622,7 @@ def generate_sampler(
 
     def calculate_weights_classification(df):
         labels = df[dataset.config.data.label].unique()
+        print(dataset.config.data.label_code)
         codes = {dataset.config.data.label_code[label] for label in labels}
         count = np.zeros(len(codes))
 
