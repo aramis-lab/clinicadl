@@ -220,7 +220,7 @@ class Trainer:
 
         else:
             splitter_config = SplitterConfig(**self.config.get_dict())
-            split_manager = Splitter(splitter_config, split_list=split_list)
+            split_manager = Splitter(splitter_config)
 
             for split in split_manager.split_iterator():
                 logger.info(f"Training split {split}")
@@ -244,7 +244,7 @@ class Trainer:
     def check_split_list(self, split_list, overwrite):
         existing_splits = []
         splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config, split_list=split_list)
+        split_manager = Splitter(splitter_config)
         for split in split_manager.split_iterator():
             split_path = self.maps_manager.maps_path / f"split-{split}"
             if split_path.is_dir():
@@ -281,7 +281,7 @@ class Trainer:
         """
         missing_splits = []
         splitter_config = SplitterConfig(**self.config.get_dict())
-        split_manager = Splitter(splitter_config, split_list=split_list)
+        split_manager = Splitter(splitter_config)
         for split in split_manager.split_iterator():
             if not (self.maps_manager.maps_path / f"split-{split}" / "tmp").is_dir():
                 missing_splits.append(split)
@@ -473,8 +473,8 @@ class Trainer:
 
         splitter_config = SplitterConfig(**self.config.get_dict())
 
-        split_manager = Splitter(splitter_config, split_list=split_list)
-        split_manager_target_lab = Splitter(splitter_config, split_list=split_list)
+        split_manager = Splitter(splitter_config)
+        split_manager_target_lab = Splitter(splitter_config)
 
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
