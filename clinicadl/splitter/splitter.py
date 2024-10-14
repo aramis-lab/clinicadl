@@ -203,9 +203,7 @@ class Splitter:
 
     def split_iterator(self):
         """Returns an iterable to iterate on all splits wanted."""
-        print(self.config.split.split)
-        print(self.config.split.n_splits)
-        print(self.config.split.split)
+
         if not self.config.split.split:
             return range(self.config.split.n_splits)
         else:
