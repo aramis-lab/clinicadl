@@ -118,6 +118,7 @@ class Trainer:
         config_object = create_training_config(config_dict["network_task"])(
             **config_dict
         )
+        print(config_object.model_dump())
         return cls(config_object)
 
     @classmethod

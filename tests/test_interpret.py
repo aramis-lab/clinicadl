@@ -25,10 +25,11 @@ def test_interpret(cmdopt, tmp_path, test_name):
     labels_dir_str = str(input_dir / "labels_list" / "2_fold")
     maps_tmp_out_dir = str(tmp_out_dir / "maps")
     if test_name == "classification":
+        caps_input = str(input_dir / "caps_image")
         cnn_input = [
             "train",
             "classification",
-            str(input_dir / "caps_image"),
+            caps_input,
             "t1-linear_mode-image.json",
             labels_dir_str,
             maps_tmp_out_dir,
@@ -42,10 +43,11 @@ def test_interpret(cmdopt, tmp_path, test_name):
         ]
 
     elif test_name == "regression":
+        caps_input = str(input_dir / "caps_patch")
         cnn_input = [
             "train",
             "regression",
-            str(input_dir / "caps_patch"),
+            caps_input,
             "t1-linear_mode-patch.json",
             labels_dir_str,
             maps_tmp_out_dir,
@@ -63,10 +65,10 @@ def test_interpret(cmdopt, tmp_path, test_name):
     if cmdopt["no-gpu"]:
         cnn_input.append("--no-gpu")
 
-    run_interpret(cnn_input, tmp_out_dir, ref_dir)
+    run_interpret(cnn_input, tmp_out_dir, ref_dir, caps_input)
 
 
-def run_interpret(cnn_input, tmp_out_dir, ref_dir):
+def run_interpret(cnn_input, tmp_out_dir, ref_dir, caps_input):
     from clinicadl.utils.enum import InterpretationMethod
 
     maps_path = tmp_out_dir / "maps"
@@ -82,6 +84,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
             data_group="train",
             name=f"test-{method}",
             method_cls=method,
+            caps_directory=caps_input,
         )
         interpret_manager = Predictor(interpret_config)
         interpret_manager.interpret()
