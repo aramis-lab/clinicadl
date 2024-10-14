@@ -1,18 +1,16 @@
-from collections import OrderedDict
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import torch
 import torch.nn as nn
-from monai.networks.blocks.squeeze_and_excitation import ChannelSELayer
 from monai.networks.layers.factories import Conv, Norm
 from monai.networks.layers.utils import get_act_layer
 
 from clinicadl.monai_networks.nn.utils import ActivationParameters
 
 
-class SEResNetBlock(nn.Module):
+class ResNetBlock(nn.Module):
     expansion = 1
-    reduction = 16
 
     def __init__(
         self,
@@ -35,13 +33,6 @@ class SEResNetBlock(nn.Module):
         self.act1 = get_act_layer(name=act)
         self.conv2 = conv_type(planes, planes, kernel_size=3, padding=1, bias=False)  # pylint: disable=not-callable
         self.norm2 = norm_type(planes)  # pylint: disable=not-callable
-        self.se_layer = ChannelSELayer(
-            spatial_dims=spatial_dims,
-            in_channels=planes,
-            r=self.reduction,
-            acti_type_1=("relu", {"inplace": True}),
-            acti_type_2="sigmoid",
-        )
         self.downsample = downsample
         self.act2 = get_act_layer(name=act)
         self.stride = stride
@@ -49,7 +40,7 @@ class SEResNetBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         residual = x
 
-        out = self.conv1(x)
+        out: torch.Tensor = self.conv1(x)
         out = self.norm1(out)
         out = self.act1(out)
 
@@ -59,22 +50,20 @@ class SEResNetBlock(nn.Module):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = self.se_layer(out)
         out += residual
         out = self.act2(out)
 
         return out
 
 
-class SEResNetBottleneck(nn.Module):
+class ResNetBottleneck(nn.Module):
     expansion = 4
-    reduction = 16
 
     def __init__(
         self,
         in_planes: int,
         planes: int,
-        spatial_dims: int,
+        spatial_dims: int = 3,
         stride: int = 1,
         downsample: Optional[nn.Module] = None,
         act: ActivationParameters = ("relu", {"inplace": True}),
@@ -96,13 +85,6 @@ class SEResNetBottleneck(nn.Module):
             planes, planes * self.expansion, kernel_size=1, bias=False
         )
         self.norm3 = norm_type(planes * self.expansion)  # pylint: disable=not-callable
-        self.se_layer = ChannelSELayer(
-            spatial_dims=spatial_dims,
-            in_channels=planes * self.expansion,
-            r=self.reduction,
-            acti_type_1=("relu", {"inplace": True}),
-            acti_type_2="sigmoid",
-        )
         self.downsample = downsample
         self.act3 = get_act_layer(name=act)
         self.stride = stride
@@ -110,7 +92,7 @@ class SEResNetBottleneck(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         residual = x
 
-        out = self.conv1(x)
+        out: torch.Tensor = self.conv1(x)
         out = self.norm1(out)
         out = self.act1(out)
 
@@ -124,7 +106,6 @@ class SEResNetBottleneck(nn.Module):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out = self.se_layer(out)
         out += residual
         out = self.act3(out)
 

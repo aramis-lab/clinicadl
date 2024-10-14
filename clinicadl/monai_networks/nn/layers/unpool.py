@@ -84,4 +84,4 @@ def get_unpool_layer(
     if has_option(unpool_type, "out_channels") and "out_channels" not in kw_args:
         kw_args["out_channels"] = out_channels
 
-    return unpool_type(**kw_args)
+    return unpool_type(**kw_args)  # pylint: disable=not-callable
