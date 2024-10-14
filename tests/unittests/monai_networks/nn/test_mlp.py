@@ -46,16 +46,16 @@ def test_params(input_tensor, dropout, norm, bias, adn_ordering):
     assert isinstance(net.output.linear, Linear)
 
     if bias:
-        assert len(net.hidden_0.linear.bias) > 0
-        assert len(net.hidden_1.linear.bias) > 0
+        assert len(net.hidden0.linear.bias) > 0
+        assert len(net.hidden1.linear.bias) > 0
         assert len(net.output.linear.bias) > 0
     else:
-        assert net.hidden_0.linear.bias is None
-        assert net.hidden_1.linear.bias is None
+        assert net.hidden0.linear.bias is None
+        assert net.hidden1.linear.bias is None
         assert net.output.linear.bias is None
     if isinstance(dropout, float) and "D" in adn_ordering:
-        assert net.hidden_0.adn.D.p == dropout
-        assert net.hidden_1.adn.D.p == dropout
+        assert net.hidden0.adn.D.p == dropout
+        assert net.hidden1.adn.D.p == dropout
 
 
 def test_activation_parameters():
@@ -68,28 +68,28 @@ def test_activation_parameters():
         act=act,
         output_act=output_act,
     )
-    assert isinstance(net.hidden_0.adn.A, ELU)
-    assert net.hidden_0.adn.A.alpha == 0.1
-    assert isinstance(net.hidden_1.adn.A, ELU)
-    assert net.hidden_1.adn.A.alpha == 0.1
+    assert isinstance(net.hidden0.adn.A, ELU)
+    assert net.hidden0.adn.A.alpha == 0.1
+    assert isinstance(net.hidden1.adn.A, ELU)
+    assert net.hidden1.adn.A.alpha == 0.1
     assert isinstance(net.output.output_act, ELU)
     assert net.output.output_act.alpha == 0.2
 
     net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], act=None)
     with pytest.raises(AttributeError):
-        net.hidden_0.adn.A
+        net.hidden0.adn.A
     with pytest.raises(AttributeError):
-        net.hidden_1.adn.A
+        net.hidden1.adn.A
     assert net.output.output_act is None
 
 
 def test_norm_parameters():
     norm = ("instance", {"momentum": 1.0})
     net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], norm=norm)
-    assert isinstance(net.hidden_0.adn.N, InstanceNorm1d)
-    assert net.hidden_0.adn.N.momentum == 1.0
-    assert isinstance(net.hidden_1.adn.N, InstanceNorm1d)
-    assert net.hidden_1.adn.N.momentum == 1.0
+    assert isinstance(net.hidden0.adn.N, InstanceNorm1d)
+    assert net.hidden0.adn.N.momentum == 1.0
+    assert isinstance(net.hidden1.adn.N, InstanceNorm1d)
+    assert net.hidden1.adn.N.momentum == 1.0
 
     net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], act=None)
     with pytest.raises(AttributeError):
@@ -111,13 +111,13 @@ def test_adn_ordering(adn_ordering):
     )
     objects = {"D": Dropout, "N": InstanceNorm1d, "A": ELU}
     for i, letter in enumerate(adn_ordering):
-        assert isinstance(net.hidden_0.adn[i], objects[letter])
-        assert isinstance(net.hidden_1.adn[i], objects[letter])
+        assert isinstance(net.hidden0.adn[i], objects[letter])
+        assert isinstance(net.hidden1.adn[i], objects[letter])
     for letter in set(["A", "D", "N"]) - set(adn_ordering):
         with pytest.raises(AttributeError):
-            getattr(net.hidden_0.adn, letter)
+            getattr(net.hidden0.adn, letter)
         with pytest.raises(AttributeError):
-            getattr(net.hidden_1.adn, letter)
+            getattr(net.hidden1.adn, letter)
 
 
 def test_checks():

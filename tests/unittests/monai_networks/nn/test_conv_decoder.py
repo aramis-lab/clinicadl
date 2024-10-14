@@ -36,7 +36,7 @@ def test_activations(input_tensor, act):
             1,
             1,
             ("upsample", {"scale_factor": 2}),
-            [1],
+            [2],
             "batch",
             None,
             True,
@@ -130,15 +130,15 @@ def test_params(
     output = net(input_tensor)
     assert _check_output(output, expected_out_channels=1)
     assert output.shape[2:] == net.final_size
-    assert isinstance(net.layer_2[0], ConvTranspose2d)
+    assert isinstance(net.layer2[0], ConvTranspose2d)
     with pytest.raises(IndexError):
-        net.layer_2[1]  # no adn at the end
+        net.layer2[1]  # no adn at the end
 
     named_layers = list(net.named_children())
     if unpooling and unpooling_indices and unpooling_indices != []:
         for i, idx in enumerate(unpooling_indices):
             name, layer = named_layers[idx + 1 + i]
-            assert name == f"unpool_{i}"
+            assert name == f"unpool{i}"
             if net.unpooling[i][0] == "upsample":
                 assert isinstance(layer, Upsample)
             else:
@@ -149,42 +149,42 @@ def test_params(
             assert "unpool" not in name
 
     assert (
-        net.layer_0[0].kernel_size == kernel_size
+        net.layer0[0].kernel_size == kernel_size
         if isinstance(kernel_size, tuple)
         else (kernel_size, kernel_size)
     )
     assert (
-        net.layer_0[0].stride == stride
+        net.layer0[0].stride == stride
         if isinstance(stride, tuple)
         else (stride, stride)
     )
     assert (
-        net.layer_0[0].padding == padding
+        net.layer0[0].padding == padding
         if isinstance(padding, tuple)
         else (padding, padding)
     )
     assert (
-        net.layer_0[0].output_padding == output_padding
+        net.layer0[0].output_padding == output_padding
         if isinstance(output_padding, tuple)
         else (output_padding, output_padding)
     )
     assert (
-        net.layer_0[0].dilation == dilation
+        net.layer0[0].dilation == dilation
         if isinstance(dilation, tuple)
         else (dilation, dilation)
     )
 
     if bias:
-        assert len(net.layer_0[0].bias) > 0
-        assert len(net.layer_1[0].bias) > 0
-        assert len(net.layer_2[0].bias) > 0
+        assert len(net.layer0[0].bias) > 0
+        assert len(net.layer1[0].bias) > 0
+        assert len(net.layer2[0].bias) > 0
     else:
-        assert net.layer_0[0].bias is None
-        assert net.layer_1[0].bias is None
-        assert net.layer_2[0].bias is None
+        assert net.layer0[0].bias is None
+        assert net.layer1[0].bias is None
+        assert net.layer2[0].bias is None
     if isinstance(dropout, float) and "D" in adn_ordering:
-        assert net.layer_0[1].D.p == dropout
-        assert net.layer_1[1].D.p == dropout
+        assert net.layer0[1].D.p == dropout
+        assert net.layer1[1].D.p == dropout
 
 
 def test_activation_parameters(input_tensor):
@@ -196,37 +196,37 @@ def test_activation_parameters(input_tensor):
         act=act,
         output_act=output_act,
     )
-    assert isinstance(net.layer_0[1].A, ELU)
-    assert net.layer_0[1].A.alpha == 0.1
-    assert isinstance(net.layer_1[1].A, ELU)
-    assert net.layer_1[1].A.alpha == 0.1
+    assert isinstance(net.layer0[1].A, ELU)
+    assert net.layer0[1].A.alpha == 0.1
+    assert isinstance(net.layer1[1].A, ELU)
+    assert net.layer1[1].A.alpha == 0.1
     assert isinstance(net.output_act, ELU)
     assert net.output_act.alpha == 0.2
 
     net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=None)
     with pytest.raises(AttributeError):
-        net.layer_0[1].A
+        net.layer0[1].A
     with pytest.raises(AttributeError):
-        net.layer_1[1].A
+        net.layer1[1].A
     assert net.output_act is None
 
 
 def test_norm_parameters(input_tensor):
     norm = ("instance", {"momentum": 1.0})
     net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=norm)
-    assert isinstance(net.layer_0[1].N, InstanceNorm2d)
-    assert net.layer_0[1].N.momentum == 1.0
-    assert isinstance(net.layer_1[1].N, InstanceNorm2d)
-    assert net.layer_1[1].N.momentum == 1.0
+    assert isinstance(net.layer0[1].N, InstanceNorm2d)
+    assert net.layer0[1].N.momentum == 1.0
+    assert isinstance(net.layer1[1].N, InstanceNorm2d)
+    assert net.layer1[1].N.momentum == 1.0
 
     net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=None)
     with pytest.raises(AttributeError):
-        net.layer_0[1].N
+        net.layer0[1].N
     with pytest.raises(AttributeError):
-        net.layer_1[1].N
+        net.layer1[1].N
 
 
-def test_unpool_parameters(input_tensor):
+def test_unpoolparameters(input_tensor):
     unpooling = ("convtranspose", {"kernel_size": 3, "stride": 2})
     net = ConvDecoder(
         in_shape=input_tensor.shape[1:],
@@ -234,9 +234,9 @@ def test_unpool_parameters(input_tensor):
         unpooling=unpooling,
         unpooling_indices=[1],
     )
-    assert isinstance(net.unpool_0, ConvTranspose2d)
-    assert net.unpool_0.stride == (2, 2)
-    assert net.unpool_0.kernel_size == (3, 3)
+    assert isinstance(net.unpool0, ConvTranspose2d)
+    assert net.unpool0.stride == (2, 2)
+    assert net.unpool0.kernel_size == (3, 3)
 
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])
@@ -251,13 +251,13 @@ def test_adn_ordering(input_tensor, adn_ordering):
     )
     objects = {"D": Dropout, "N": InstanceNorm2d, "A": ELU}
     for i, letter in enumerate(adn_ordering):
-        assert isinstance(net.layer_0[1][i], objects[letter])
-        assert isinstance(net.layer_1[1][i], objects[letter])
+        assert isinstance(net.layer0[1][i], objects[letter])
+        assert isinstance(net.layer1[1][i], objects[letter])
     for letter in set(["A", "D", "N"]) - set(adn_ordering):
         with pytest.raises(AttributeError):
-            getattr(net.layer_0[1], letter)
+            getattr(net.layer0[1], letter)
         with pytest.raises(AttributeError):
-            getattr(net.layer_1[1], letter)
+            getattr(net.layer1[1], letter)
 
 
 @pytest.mark.parametrize(
@@ -280,7 +280,7 @@ def test_other_dimensions(input_tensor):
         {"stride": [1, 1]},
         {"padding": [1, 1]},
         {"dilation": (1,)},
-        {"unpooling_indices": [0, 1, 2]},
+        {"unpooling_indices": [0, 1, 2, 3]},
         {"unpooling": "upsample", "unpooling_indices": [0]},
         {"norm": "group"},
     ],
@@ -317,7 +317,7 @@ def test_checks(input_tensor, kwargs):
         ),
     ],
 )
-def test_check_unpool_layer(unpooling, error):
+def test_check_unpoollayer(unpooling, error):
     if error:
         with pytest.raises(ValueError):
             ConvDecoder(

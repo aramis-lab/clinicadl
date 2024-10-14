@@ -50,7 +50,7 @@ class Generator(nn.Sequential):
     Generator(
         (mlp): MLP(
             (flatten): Flatten(start_dim=1, end_dim=-1)
-            (hidden_0): Sequential(
+            (hidden0): Sequential(
                 (linear): Linear(in_features=8, out_features=16, bias=True)
                 (adn): ADN(
                     (A): ELU(alpha=1.0)
@@ -60,10 +60,10 @@ class Generator(nn.Sequential):
         )
         (reshape): Reshape()
         (convolutions): ConvDecoder(
-            (layer_0): Convolution(
+            (layer0): Convolution(
                 (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
             )
-            (layer_1): Convolution(
+            (layer1): Convolution(
                 (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
             )
         )
@@ -81,10 +81,10 @@ class Generator(nn.Sequential):
         )
         (reshape): Reshape()
         (convolutions): ConvDecoder(
-            (layer_0): Convolution(
+            (layer0): Convolution(
                 (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
             )
-            (layer_1): Convolution(
+            (layer1): Convolution(
                 (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
             )
             (output_act): ReLU()

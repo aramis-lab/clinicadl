@@ -45,16 +45,16 @@ class CNN(nn.Sequential):
         )
     CNN(
         (convolutions): ConvEncoder(
-            (layer_0): Convolution(
+            (layer0): Convolution(
                 (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
             )
-            (layer_1): Convolution(
+            (layer1): Convolution(
                 (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
             )
         )
         (mlp): MLP(
             (flatten): Flatten(start_dim=1, end_dim=-1)
-            (hidden_0): Sequential(
+            (hidden0): Sequential(
                 (linear): Linear(in_features=144, out_features=5, bias=True)
                 (adn): ADN(
                     (A): ELU(alpha=1.0)
@@ -75,10 +75,10 @@ class CNN(nn.Sequential):
         )
     CNN(
         (convolutions): ConvEncoder(
-            (layer_0): Convolution(
+            (layer0): Convolution(
                 (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
             )
-            (layer_1): Convolution(
+            (layer1): Convolution(
                 (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
             )
         )

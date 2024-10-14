@@ -142,7 +142,7 @@ class ConvDecoder(nn.Sequential):
             adn_ordering="NDA",
         )
     ConvDecoder(
-        (layer_0): Convolution(
+        (layer0): Convolution(
             (conv): ConvTranspose2d(16, 8, kernel_size=(3, 5), stride=(2, 2), padding=(1, 1))
             (adn): ADN(
                 (N): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -150,8 +150,8 @@ class ConvDecoder(nn.Sequential):
                 (A): ELU(alpha=1.0)
             )
         )
-        (unpool_0): Upsample(scale_factor=2.0, mode='nearest')
-        (layer_1): Convolution(
+        (unpool0): Upsample(scale_factor=2.0, mode='nearest')
+        (layer1): Convolution(
             (conv): ConvTranspose2d(8, 4, kernel_size=(3, 5), stride=(2, 2))
             (adn): ADN(
                 (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -159,8 +159,8 @@ class ConvDecoder(nn.Sequential):
                 (A): ELU(alpha=1.0)
             )
         )
-        (unpool_1): Upsample(size=(32, 32), mode='nearest')
-        (layer_2): Convolution(
+        (unpool1): Upsample(size=(32, 32), mode='nearest')
+        (layer2): Convolution(
             (conv): ConvTranspose2d(4, 1, kernel_size=(3, 5), stride=(2, 2), output_padding=(1, 2))
         )
         (output_act): ReLU()
@@ -243,13 +243,13 @@ class ConvDecoder(nn.Sequential):
                 dilation=d,
                 is_last=(i == len(channels) - 1),
             )
-            self.add_module(f"layer_{i}", conv_layer)
+            self.add_module(f"layer{i}", conv_layer)
             echannel = c  # use the output channel number as the input for the next loop
             if self.unpooling and i in self.unpooling_indices:
                 unpooling_layer = self._get_unpool_layer(
                     self.unpooling[n_unpoolings], n_channels=c
                 )
-                self.add_module(f"unpool_{n_unpoolings}", unpooling_layer)
+                self.add_module(f"unpool{n_unpoolings}", unpooling_layer)
                 n_unpoolings += 1
 
         self.output_act = get_act_layer(output_act) if output_act else None

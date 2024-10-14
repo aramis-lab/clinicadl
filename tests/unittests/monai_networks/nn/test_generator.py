@@ -31,7 +31,7 @@ def test_generator(input_tensor, start_shape, channels, mlp_args):
     if mlp_args is None or mlp_args["hidden_channels"] == []:
         children = net.mlp.children()
         assert isinstance(next(children), Flatten)
-        assert isinstance(next(children), Linear)
+        assert isinstance(next(children).linear, Linear)
         with pytest.raises(StopIteration):
             next(children)
 

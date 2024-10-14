@@ -63,7 +63,7 @@ class MLP(BaseMLP):
         norm=("group", {"num_groups": 2}), bias=True, adn_ordering="ADN", output_act="softmax")
     MLP(
         (flatten): Flatten(start_dim=1, end_dim=-1)
-        (hidden_0): Sequential(
+        (hidden0): Sequential(
             (linear): Linear(in_features=12, out_features=8, bias=True)
             (adn): ADN(
                 (A): ELU(alpha=0.5)
@@ -71,7 +71,7 @@ class MLP(BaseMLP):
                 (N): GroupNorm(2, 8, eps=1e-05, affine=True)
             )
         )
-        (hidden_1): Sequential(
+        (hidden1): Sequential(
             (linear): Linear(in_features=8, out_features=4, bias=True)
             (adn): ADN(
                 (A): ELU(alpha=0.5)
@@ -104,6 +104,13 @@ class MLP(BaseMLP):
         )
         self.output = nn.Sequential(OrderedDict([("linear", self.output)]))
         self.output.output_act = get_act_layer(output_act) if output_act else None
+        # renaming
+        self._modules = OrderedDict(
+            [
+                (key.replace("hidden_", "hidden"), sub_m)
+                for key, sub_m in self._modules.items()
+            ]
+        )
 
     def _get_layer(self, in_channels: int, out_channels: int, bias: bool) -> nn.Module:
         """

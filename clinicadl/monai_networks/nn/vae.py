@@ -70,13 +70,13 @@ class VAE(nn.Module):
     VAE(
         (encoder): CNN(
             (convolutions): ConvEncoder(
-                (layer_0): Convolution(
+                (layer0): Convolution(
                     (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
                 )
             )
             (mlp): MLP(
                 (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden_0): Sequential(
+                (hidden0): Sequential(
                     (linear): Linear(in_features=392, out_features=16, bias=True)
                     (adn): ADN(
                         (N): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -97,7 +97,7 @@ class VAE(nn.Module):
         (decoder): Generator(
             (mlp): MLP(
                 (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden_0): Sequential(
+                (hidden0): Sequential(
                     (linear): Linear(in_features=4, out_features=16, bias=True)
                     (adn): ADN(
                         (N): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -111,7 +111,7 @@ class VAE(nn.Module):
             )
             (reshape): Reshape()
             (convolutions): ConvDecoder(
-                (layer_0): Convolution(
+                (layer0): Convolution(
                     (conv): ConvTranspose2d(2, 2, kernel_size=(3, 3), stride=(1, 1))
                 )
                 (output_act): Sigmoid()

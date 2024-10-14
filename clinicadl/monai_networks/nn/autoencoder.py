@@ -79,21 +79,21 @@ class AutoEncoder(nn.Sequential):
     AutoEncoder(
         (encoder): CNN(
             (convolutions): ConvEncoder(
-                (layer_0): Convolution(
+                (layer0): Convolution(
                     (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
                     (adn): ADN(
                         (N): InstanceNorm2d(2, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
                         (A): PReLU(num_parameters=1)
                     )
                 )
-                (pool_0): AvgPool2d(kernel_size=2, stride=2, padding=0)
-                (layer_1): Convolution(
+                (pool0): AvgPool2d(kernel_size=2, stride=2, padding=0)
+                (layer1): Convolution(
                     (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
                 )
             )
             (mlp): MLP(
                 (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden_0): Sequential(
+                (hidden0): Sequential(
                     (linear): Linear(in_features=100, out_features=32, bias=True)
                     (adn): ADN(
                         (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -109,7 +109,7 @@ class AutoEncoder(nn.Sequential):
         (decoder): Generator(
             (mlp): MLP(
                 (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden_0): Sequential(
+                (hidden0): Sequential(
                     (linear): Linear(in_features=8, out_features=32, bias=True)
                     (adn): ADN(
                         (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -123,15 +123,15 @@ class AutoEncoder(nn.Sequential):
             )
             (reshape): Reshape()
             (convolutions): ConvDecoder(
-                (layer_0): Convolution(
+                (layer0): Convolution(
                     (conv): ConvTranspose2d(4, 4, kernel_size=(3, 3), stride=(1, 1))
                     (adn): ADN(
                         (N): InstanceNorm2d(4, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
                         (A): PReLU(num_parameters=1)
                     )
                 )
-                (unpool_0): Upsample(size=(14, 14), mode=<UpsamplingMode.BILINEAR: 'bilinear'>)
-                (layer_1): Convolution(
+                (unpool0): Upsample(size=(14, 14), mode=<UpsamplingMode.BILINEAR: 'bilinear'>)
+                (layer1): Convolution(
                     (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
                 )
                 (output_act): Sigmoid()
