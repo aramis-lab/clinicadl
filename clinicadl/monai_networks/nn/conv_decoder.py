@@ -1,7 +1,6 @@
 from collections.abc import Sequence
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
-import numpy as np
 import torch.nn as nn
 from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer
@@ -11,8 +10,9 @@ from .layers.unpool import get_unpool_layer
 from .layers.utils import (
     ActFunction,
     ActivationParameters,
+    ConvNormalizationParameters,
+    ConvNormLayer,
     ConvParameters,
-    NormalizationParameters,
     NormLayer,
     SingleLayerUnpoolingParameters,
     UnpoolingLayer,
@@ -34,8 +34,10 @@ class ConvDecoder(nn.Sequential):
 
     Parameters
     ----------
-    in_shape : Sequence[int]
-        sequence of integers stating the dimension of the input tensor (minus batch dimension).
+    spatial_dims : int
+        number of spatial dimensions of the input image.
+    in_channels : int
+        number of channels in the input image.
     channels : Sequence[int]
         sequence of integers stating the output channels of each transposed convolution. Thus, this
         parameter also controls the number of transposed convolutions.
@@ -103,14 +105,14 @@ class ConvDecoder(nn.Sequential):
     output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
         If None, no last activation will be applied.
-    norm : Optional[NormalizationParameters] (optional, default=NormLayer.INSTANCE)
+    norm : Optional[ConvNormalizationParameters] (optional, default=NormLayer.INSTANCE)
         the normalization type used after a transposed convolution layer, and optionally the arguments of the normalization
         layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
-        `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
+        `norm_type` can be any value in {`batch`, `group`, `instance`, `syncbatch`}. Please refer to PyTorch's
         [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
         optional arguments for each of them.\n
-        Please note that arguments `num_channels`, `num_features` and `normalized_shape` of the normalization layer
+        Please note that arguments `num_channels`, `num_features` of the normalization layer
         should not be passed, as they are automatically inferred from the output of the previous layer in the network.
     dropout : Optional[float] (optional, default=None)
         dropout ratio. If None, no dropout.
@@ -125,7 +127,8 @@ class ConvDecoder(nn.Sequential):
     Examples
     --------
     >>> ConvDecoder(
-            in_shape=(16, 4, 4),
+            in_channels=16,
+            spatial_dims=2,
             channels=[8, 4, 1],
             kernel_size=(3, 5),
             stride=2,
@@ -170,7 +173,8 @@ class ConvDecoder(nn.Sequential):
 
     def __init__(
         self,
-        in_shape: Sequence[int],
+        spatial_dims: int,
+        in_channels: int,
         channels: Sequence[int],
         kernel_size: ConvParameters = 3,
         stride: ConvParameters = 1,
@@ -184,44 +188,48 @@ class ConvDecoder(nn.Sequential):
         unpooling_indices: Optional[Sequence[int]] = None,
         act: Optional[ActivationParameters] = ActFunction.PRELU,
         output_act: Optional[ActivationParameters] = None,
-        norm: Optional[NormalizationParameters] = NormLayer.INSTANCE,
+        norm: Optional[ConvNormalizationParameters] = ConvNormLayer.INSTANCE,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
+        _input_size: Optional[Sequence[int]] = None,
     ) -> None:
         super().__init__()
 
-        self.in_channels, *self.in_shape = ensure_tuple(in_shape)
-        self.dimensions = len(self.in_shape)
+        self._current_size = _input_size if _input_size else None
+
+        self.in_channels = in_channels
+        self.spatial_dims = spatial_dims
         self.channels = ensure_tuple(channels)
         self.n_layers = len(self.channels)
 
         self.kernel_size = ensure_list_of_tuples(
-            kernel_size, self.dimensions, self.n_layers, "kernel_size"
+            kernel_size, self.spatial_dims, self.n_layers, "kernel_size"
         )
         self.stride = ensure_list_of_tuples(
-            stride, self.dimensions, self.n_layers, "stride"
+            stride, self.spatial_dims, self.n_layers, "stride"
         )
         self.padding = ensure_list_of_tuples(
-            padding, self.dimensions, self.n_layers, "padding"
+            padding, self.spatial_dims, self.n_layers, "padding"
         )
         self.output_padding = ensure_list_of_tuples(
-            output_padding, self.dimensions, self.n_layers, "output_padding"
+            output_padding, self.spatial_dims, self.n_layers, "output_padding"
         )
         self.dilation = ensure_list_of_tuples(
-            dilation, self.dimensions, self.n_layers, "dilation"
+            dilation, self.spatial_dims, self.n_layers, "dilation"
         )
 
         self.unpooling_indices = check_pool_indices(unpooling_indices, self.n_layers)
         self.unpooling = self._check_unpool_layers(unpooling)
         self.act = act
         self.norm = check_norm_layer(norm)
+        if self.norm == NormLayer.LAYER:
+            raise ValueError("Layer normalization not implemented in ConvDecoder.")
         self.dropout = dropout
         self.bias = bias
         self.adn_ordering = adn_ordering
 
         echannel = self.in_channels
-        self.final_size = np.asarray(self.in_shape, dtype=int)
         n_unpoolings = 0
         for i, (c, k, s, p, o_p, d) in enumerate(
             zip(
@@ -254,6 +262,21 @@ class ConvDecoder(nn.Sequential):
 
         self.output_act = get_act_layer(output_act) if output_act else None
 
+    @property
+    def final_size(self):
+        """
+        To know the size of an image at the end of the network.
+        """
+        return self._current_size
+
+    @final_size.setter
+    def final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
+        """
+        Takes as input the function used to update the current image size.
+        """
+        if self._current_size is not None:
+            self._current_size = fct(self._current_size)
+
     def _get_convtranspose_layer(
         self,
         in_channels: int,
@@ -268,18 +291,14 @@ class ConvDecoder(nn.Sequential):
         """
         Gets the parametrized TransposedConvolution-ADN block and updates the current output size.
         """
-        self.final_size = calculate_convtranspose_out_shape(
-            self.final_size, kernel_size, stride, padding, output_padding, dilation
+        self.final_size = lambda size: calculate_convtranspose_out_shape(
+            size, kernel_size, stride, padding, output_padding, dilation
         )
-        if self.norm == NormLayer.LAYER:
-            norm = ("layer", {"normalized_shape": (out_channels, *self.final_size)})
-        else:
-            norm = self.norm
 
         return Convolution(
             is_transposed=True,
             conv_only=is_last,
-            spatial_dims=self.dimensions,
+            spatial_dims=self.spatial_dims,
             in_channels=in_channels,
             out_channels=out_channels,
             strides=stride,
@@ -288,7 +307,7 @@ class ConvDecoder(nn.Sequential):
             output_padding=output_padding,
             dilation=dilation,
             act=self.act,
-            norm=norm,
+            norm=self.norm,
             dropout=self.dropout,
             bias=self.bias,
             adn_ordering=self.adn_ordering,
@@ -302,13 +321,13 @@ class ConvDecoder(nn.Sequential):
         """
         unpool_layer = get_unpool_layer(
             unpooling,
-            spatial_dims=self.dimensions,
+            spatial_dims=self.spatial_dims,
             in_channels=n_channels,
             out_channels=n_channels,
         )
-        self.final_size = calculate_unpool_out_shape(
+        self.final_size = lambda size: calculate_unpool_out_shape(
             unpool_mode=unpooling[0],
-            in_shape=self.final_size,
+            in_shape=size,
             **unpool_layer.__dict__,
         )
         return unpool_layer

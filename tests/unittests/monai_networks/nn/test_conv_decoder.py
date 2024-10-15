@@ -11,19 +11,19 @@ def input_tensor():
     return torch.randn(2, 1, 8, 8)
 
 
-@pytest.mark.skip()
-def _check_output(output, expected_out_channels):
-    output_shape = output.shape
-    return len(output_shape) == 4 and output_shape[1] == expected_out_channels
-
-
 @pytest.mark.parametrize("act", [act for act in ActFunction])
 def test_activations(input_tensor, act):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=act, output_act=act
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
+        channels=[2, 4, 1],
+        act=act,
+        output_act=act,
     )
-    output = net(input_tensor)
-    assert _check_output(output, expected_out_channels=1)
+    output_shape = net(input_tensor).shape
+    return len(output_shape) == 4 and output_shape[1] == 1
 
 
 @pytest.mark.parametrize(
@@ -50,7 +50,7 @@ def test_activations(input_tensor, act):
             2,
             ("upsample", {"scale_factor": 2}),
             [0, 1],
-            "layer",
+            "instance",
             0.5,
             False,
             "DAN",
@@ -111,8 +111,35 @@ def test_params(
     bias,
     adn_ordering,
 ):
+    batch_size, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
+    # test size computation
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:],
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
+        channels=[2, 4, 1],
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        output_padding=output_padding,
+        dilation=dilation,
+        unpooling=unpooling,
+        unpooling_indices=unpooling_indices,
+        dropout=dropout,
+        act=None,
+        norm=norm,
+        bias=bias,
+        adn_ordering=adn_ordering,
+        _input_size=input_size,
+    )
+    output = net(input_tensor)
+    assert output.shape == (batch_size, 1, *net.final_size)
+
+    # other checks
+    net = ConvDecoder(
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
         channels=[2, 4, 1],
         kernel_size=kernel_size,
         stride=stride,
@@ -127,9 +154,6 @@ def test_params(
         bias=bias,
         adn_ordering=adn_ordering,
     )
-    output = net(input_tensor)
-    assert _check_output(output, expected_out_channels=1)
-    assert output.shape[2:] == net.final_size
     assert isinstance(net.layer2[0], ConvTranspose2d)
     with pytest.raises(IndexError):
         net.layer2[1]  # no adn at the end
@@ -188,10 +212,14 @@ def test_params(
 
 
 def test_activation_parameters(input_tensor):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     act = ("ELU", {"alpha": 0.1})
     output_act = ("ELU", {"alpha": 0.2})
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:],
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
         channels=[2, 4, 1],
         act=act,
         output_act=output_act,
@@ -203,7 +231,9 @@ def test_activation_parameters(input_tensor):
     assert isinstance(net.output_act, ELU)
     assert net.output_act.alpha == 0.2
 
-    net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], act=None)
+    net = ConvDecoder(
+        spatial_dims=spatial_dims, in_channels=in_channels, channels=[2, 4, 1], act=None
+    )
     with pytest.raises(AttributeError):
         net.layer0[1].A
     with pytest.raises(AttributeError):
@@ -212,24 +242,41 @@ def test_activation_parameters(input_tensor):
 
 
 def test_norm_parameters(input_tensor):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     norm = ("instance", {"momentum": 1.0})
-    net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=norm)
+    net = ConvDecoder(
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
+        channels=[2, 4, 1],
+        norm=norm,
+    )
     assert isinstance(net.layer0[1].N, InstanceNorm2d)
     assert net.layer0[1].N.momentum == 1.0
     assert isinstance(net.layer1[1].N, InstanceNorm2d)
     assert net.layer1[1].N.momentum == 1.0
 
-    net = ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], norm=None)
+    net = ConvDecoder(
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
+        channels=[2, 4, 1],
+        norm=None,
+    )
     with pytest.raises(AttributeError):
         net.layer0[1].N
     with pytest.raises(AttributeError):
         net.layer1[1].N
 
 
-def test_unpoolparameters(input_tensor):
+def test_unpool_parameters(input_tensor):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     unpooling = ("convtranspose", {"kernel_size": 3, "stride": 2})
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:],
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
         channels=[2, 4, 1],
         unpooling=unpooling,
         unpooling_indices=[1],
@@ -241,8 +288,12 @@ def test_unpoolparameters(input_tensor):
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])
 def test_adn_ordering(input_tensor, adn_ordering):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:],
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
         channels=[2, 4, 1],
         dropout=0.1,
         adn_ordering=adn_ordering,
@@ -264,13 +315,17 @@ def test_adn_ordering(input_tensor, adn_ordering):
     "input_tensor", [torch.randn(2, 1, 16), torch.randn(2, 3, 20, 21, 22)]
 )
 def test_other_dimensions(input_tensor):
+    batch_size, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     net = ConvDecoder(
-        in_shape=input_tensor.shape[1:],
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
         channels=[2, 4, 1],
+        _input_size=input_size,
     )
-    output_shape = net(input_tensor).shape
-    assert len(output_shape) == len(input_tensor.shape) and output_shape[1] == 1
-    assert output_shape[2:] == net.final_size
+    output = net(input_tensor)
+    assert output.shape == (batch_size, 1, *net.final_size)
 
 
 @pytest.mark.parametrize(
@@ -283,11 +338,20 @@ def test_other_dimensions(input_tensor):
         {"unpooling_indices": [0, 1, 2, 3]},
         {"unpooling": "upsample", "unpooling_indices": [0]},
         {"norm": "group"},
+        {"norm": "layer"},
     ],
 )
 def test_checks(input_tensor, kwargs):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     with pytest.raises(ValueError):
-        ConvDecoder(in_shape=input_tensor.shape[1:], channels=[2, 4, 1], **kwargs)
+        ConvDecoder(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            channels=[2, 4, 1],
+            **kwargs,
+        )
 
 
 @pytest.mark.parametrize(
@@ -317,18 +381,23 @@ def test_checks(input_tensor, kwargs):
         ),
     ],
 )
-def test_check_unpoollayer(unpooling, error):
+def test_check_unpool_layer(input_tensor, unpooling, error):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
     if error:
         with pytest.raises(ValueError):
             ConvDecoder(
-                in_shape=(1, 10, 10),
+                spatial_dims=spatial_dims,
+                in_channels=in_channels,
                 channels=[2, 4, 1],
                 unpooling=unpooling,
                 unpooling_indices=[0, 1],
             )
     else:
         ConvDecoder(
-            in_shape=(1, 10, 10),
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
             channels=[2, 4, 1],
             unpooling=unpooling,
             unpooling_indices=[0, 1],

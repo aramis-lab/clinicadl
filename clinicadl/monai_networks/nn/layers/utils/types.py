@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from .enum import (
     ActFunction,
+    ConvNormLayer,
     NormLayer,
     PoolingLayer,
     UnpoolingLayer,
@@ -25,6 +26,11 @@ UnpoolingParameters = Union[
 NormalizationType = Union[str, NormLayer]
 NormalizationParameters = Union[
     NormalizationType, Tuple[NormalizationType, Dict[str, Any]]
+]
+
+ConvNormalizationType = Union[str, ConvNormLayer]
+ConvNormalizationParameters = Union[
+    ConvNormalizationType, Tuple[ConvNormalizationType, Dict[str, Any]]
 ]
 
 ActivationType = Union[str, ActFunction]

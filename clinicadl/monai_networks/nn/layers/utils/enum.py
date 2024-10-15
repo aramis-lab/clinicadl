@@ -45,6 +45,15 @@ class NormLayer(CaseInsensitiveEnum):
     INSTANCE = "instance"
 
 
+class ConvNormLayer(CaseInsensitiveEnum):
+    """Supported normalization layers with convolutions in ClinicaDL."""
+
+    GROUP = "group"
+    SYNCBATCH = "syncbatch"
+    BATCH = "batch"
+    INSTANCE = "instance"
+
+
 class UpsamplingMode(CaseInsensitiveEnum):
     """Supported interpolation mode for Upsampling in ClinicaDL."""
 

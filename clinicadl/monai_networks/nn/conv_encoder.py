@@ -1,5 +1,6 @@
+from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 import torch.nn as nn
@@ -10,8 +11,9 @@ from monai.utils.misc import ensure_tuple
 from .layers.utils import (
     ActFunction,
     ActivationParameters,
+    ConvNormalizationParameters,
+    ConvNormLayer,
     ConvParameters,
-    NormalizationParameters,
     NormLayer,
     PoolingLayer,
     PoolingParameters,
@@ -33,8 +35,10 @@ class ConvEncoder(nn.Sequential):
 
     Parameters
     ----------
-    in_shape : Sequence[int]
-        sequence of integers stating the dimension of the input tensor (minus batch dimension).
+    spatial_dims : int
+        number of spatial dimensions of the input image.
+    in_channels : int
+        number of channels in the input image.
     channels : Sequence[int]
         sequence of integers stating the output channels of each convolutional layer. Thus, this
         parameter also controls the number of convolutional layers.
@@ -86,14 +90,14 @@ class ConvEncoder(nn.Sequential):
     output_act : Optional[ActivationParameters] (optional, default=None)
         a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
         If None, no last activation will be applied.
-    norm : Optional[NormalizationParameters] (optional, default=NormLayer.INSTANCE)
+    norm : Optional[ConvNormalizationParameters] (optional, default=NormLayer.INSTANCE)
         the normalization type used after a convolutional layer, and optionally the arguments of the normalization
         layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
         performed.\n
-        `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
+        `norm_type` can be any value in {`batch`, `group`, `instance`, `syncbatch`}. Please refer to PyTorch's
         [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
         optional arguments for each of them.\n
-        Please note that arguments `num_channels`, `num_features` and `normalized_shape` of the normalization layer
+        Please note that arguments `num_channels`, `num_features` of the normalization layer
         should not be passed, as they are automatically inferred from the output of the previous layer in the network.
     dropout : Optional[float] (optional, default=None)
         dropout ratio. If None, no dropout.
@@ -108,7 +112,8 @@ class ConvEncoder(nn.Sequential):
     Examples
     --------
     >>> ConvEncoder(
-            in_shape=(1, 64, 64),
+            spatial_dims=2,
+            in_channels=1,
             channels=[2, 4, 8],
             kernel_size=(3, 5),
             stride=1,
@@ -152,7 +157,8 @@ class ConvEncoder(nn.Sequential):
 
     def __init__(
         self,
-        in_shape: Sequence[int],
+        spatial_dims: int,
+        in_channels: int,
         channels: Sequence[int],
         kernel_size: ConvParameters = 3,
         stride: ConvParameters = 1,
@@ -165,43 +171,46 @@ class ConvEncoder(nn.Sequential):
         pooling_indices: Optional[Sequence[int]] = None,
         act: Optional[ActivationParameters] = ActFunction.PRELU,
         output_act: Optional[ActivationParameters] = None,
-        norm: Optional[NormalizationParameters] = NormLayer.INSTANCE,
+        norm: Optional[ConvNormalizationParameters] = NormLayer.INSTANCE,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
+        _input_size: Optional[Sequence[int]] = None,
     ) -> None:
         super().__init__()
 
-        self.in_channels, *self.in_shape = ensure_tuple(in_shape)
-        self.dimensions = len(self.in_shape)
+        self._current_size = _input_size if _input_size else None
+        self._size_details = [self._current_size] if _input_size else None
+
+        self.in_channels = in_channels
+        self.spatial_dims = spatial_dims
         self.channels = ensure_tuple(channels)
         self.n_layers = len(self.channels)
 
         self.kernel_size = ensure_list_of_tuples(
-            kernel_size, self.dimensions, self.n_layers, "kernel_size"
+            kernel_size, self.spatial_dims, self.n_layers, "kernel_size"
         )
         self.stride = ensure_list_of_tuples(
-            stride, self.dimensions, self.n_layers, "stride"
+            stride, self.spatial_dims, self.n_layers, "stride"
         )
         self.padding = ensure_list_of_tuples(
-            padding, self.dimensions, self.n_layers, "padding"
+            padding, self.spatial_dims, self.n_layers, "padding"
         )
         self.dilation = ensure_list_of_tuples(
-            dilation, self.dimensions, self.n_layers, "dilation"
+            dilation, self.spatial_dims, self.n_layers, "dilation"
         )
 
         self.pooling_indices = check_pool_indices(pooling_indices, self.n_layers)
         self.pooling = self._check_pool_layers(pooling)
         self.act = act
         self.norm = check_norm_layer(norm)
+        if self.norm == NormLayer.LAYER:
+            raise ValueError("Layer normalization not implemented in ConvEncoder.")
         self.dropout = dropout
         self.bias = bias
         self.adn_ordering = adn_ordering
 
-        self.size_before_pool = []
-        self.size_before_conv = []
         echannel = self.in_channels
-        self.final_size = np.asarray(self.in_shape, dtype=int)
         n_poolings = 0
         for i, (c, k, s, p, d) in enumerate(
             zip(
@@ -212,7 +221,6 @@ class ConvEncoder(nn.Sequential):
                 self.dilation,
             )
         ):
-            self.size_before_conv.append(self.final_size)
             conv_layer = self._get_conv_layer(
                 in_channels=echannel,
                 out_channels=c,
@@ -225,12 +233,35 @@ class ConvEncoder(nn.Sequential):
             self.add_module(f"layer{i}", conv_layer)
             echannel = c  # use the output channel number as the input for the next loop
             if self.pooling and i in self.pooling_indices:
-                self.size_before_pool.append(self.final_size)
                 pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
                 self.add_module(f"pool{n_poolings}", pooling_layer)
                 n_poolings += 1
 
         self.output_act = get_act_layer(output_act) if output_act else None
+
+    @property
+    def final_size(self):
+        """
+        To know the size of an image at the end of the network.
+        """
+        return self._current_size
+
+    @property
+    def size_details(self):
+        """
+        To know the sizes of intermediate images.
+        """
+        return self._size_details
+
+    @final_size.setter
+    def final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
+        """
+        Takes as input the function used to update the current image size.
+        """
+        if self._current_size is not None:
+            self._current_size = fct(self._current_size)
+            self._size_details.append(self._current_size)
+        self._check_size()
 
     def _get_conv_layer(
         self,
@@ -245,19 +276,13 @@ class ConvEncoder(nn.Sequential):
         """
         Gets the parametrized Convolution-ADN block and updates the current output size.
         """
-        self.final_size = calculate_conv_out_shape(
-            self.final_size, kernel_size, stride, padding, dilation
+        self.final_size = lambda size: calculate_conv_out_shape(
+            size, kernel_size, stride, padding, dilation
         )
-        self._check_size()
-
-        if self.norm == NormLayer.LAYER:
-            norm = ("layer", {"normalized_shape": (out_channels, *self.final_size)})
-        else:
-            norm = self.norm
 
         return Convolution(
             conv_only=is_last,
-            spatial_dims=self.dimensions,
+            spatial_dims=self.spatial_dims,
             in_channels=in_channels,
             out_channels=out_channels,
             strides=stride,
@@ -265,7 +290,7 @@ class ConvEncoder(nn.Sequential):
             padding=padding,
             dilation=dilation,
             act=self.act,
-            norm=norm,
+            norm=self.norm,
             dropout=self.dropout,
             bias=self.bias,
             adn_ordering=self.adn_ordering,
@@ -275,11 +300,10 @@ class ConvEncoder(nn.Sequential):
         """
         Gets the parametrized pooling layer and updates the current output size.
         """
-        pool_layer = get_pool_layer(pooling, spatial_dims=self.dimensions)
-        self.final_size = calculate_pool_out_shape(
-            pool_mode=pooling[0], in_shape=self.final_size, **pool_layer.__dict__
+        pool_layer = get_pool_layer(pooling, spatial_dims=self.spatial_dims)
+        self.final_size = lambda size: calculate_pool_out_shape(
+            pool_mode=pooling[0], in_shape=size, **pool_layer.__dict__
         )
-        self._check_size()
 
         return pool_layer
 
@@ -287,7 +311,7 @@ class ConvEncoder(nn.Sequential):
         """
         Checks that image size never reaches 0.
         """
-        if (np.array(self.final_size) <= 0).any():
+        if self._current_size is not None and (np.array(self._current_size) <= 0).any():
             raise ValueError(
                 f"Failed to build the network. An image of size 0 or less has been reached. Stopped at:\n {self}"
             )
