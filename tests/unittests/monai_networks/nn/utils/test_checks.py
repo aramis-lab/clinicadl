@@ -55,7 +55,9 @@ def test_ensure_list_of_tuples(parameter, expected_output):
     [
         ([0, 1, 2], 4, False),
         ([0, 1, 2], 3, False),
+        ([-1, 1, 2], 3, False),
         ([0, 1, 2], 2, True),
+        ([-2, 1, 2], 3, True),
     ],
 )
 def test_check_pool_indices(indices, n_layers, error):

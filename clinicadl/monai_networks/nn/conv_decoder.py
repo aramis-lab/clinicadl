@@ -93,8 +93,8 @@ class ConvDecoder(nn.Sequential):
         layers are not intended to modify the number of channels.
     unpooling_indices : Optional[Sequence[int]] (optional, default=None)
         indices of the transposed convolution layers after which unpooling should be performed.
-        If None, no unpooling will be performed. Unpooling cannot be performed after the last
-        transposed convolution layer.
+        If None, no unpooling will be performed. An index equal to -1 will be understood as a pooling layer before
+        the first transposed convolution.
     act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a transposed convolution layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
@@ -229,8 +229,15 @@ class ConvDecoder(nn.Sequential):
         self.bias = bias
         self.adn_ordering = adn_ordering
 
-        echannel = self.in_channels
         n_unpoolings = 0
+        if self.unpooling and -1 in self.unpooling_indices:
+            unpooling_layer = self._get_unpool_layer(
+                self.unpooling[n_unpoolings], n_channels=self.in_channels
+            )
+            self.add_module("init_unpool", unpooling_layer)
+            n_unpoolings += 1
+
+        echannel = self.in_channels
         for i, (c, k, s, p, o_p, d) in enumerate(
             zip(
                 self.channels,
@@ -257,7 +264,7 @@ class ConvDecoder(nn.Sequential):
                 unpooling_layer = self._get_unpool_layer(
                     self.unpooling[n_unpoolings], n_channels=c
                 )
-                self.add_module(f"unpool{n_unpoolings}", unpooling_layer)
+                self.add_module(f"unpool{i}", unpooling_layer)
                 n_unpoolings += 1
 
         self.output_act = get_act_layer(output_act) if output_act else None

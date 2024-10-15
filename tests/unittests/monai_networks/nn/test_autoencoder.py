@@ -26,7 +26,7 @@ from clinicadl.monai_networks.nn.layers.utils import ActFunction
             (1, 1, 0),
             1,
             ("avg", {"kernel_size": 3, "stride": 2}),
-            [0],
+            [-1],
         ),
         (
             torch.randn(2, 1, 51, 55, 45),
@@ -35,7 +35,7 @@ from clinicadl.monai_networks.nn.layers.utils import ActFunction
             0,
             1,
             ("max", {"kernel_size": 2, "ceil_mode": True}),
-            [0, 1],
+            [0, 1, 2],
         ),
         (
             torch.randn(2, 1, 51, 55, 45),
@@ -78,9 +78,11 @@ def test_out_channels():
         latent_size=3,
         conv_args={"channels": [2, 4, 8]},
         mlp_args={"hidden_channels": [8, 4]},
-        out_channels=2,
+        out_channels=3,
     )
-    assert net(input_tensor).shape == (2, 2, 64, 62, 61)
+    assert net(input_tensor).shape == (2, 3, 64, 62, 61)
+    assert net.decoder.convolutions.layer2.conv.in_channels == 2
+    assert net.decoder.convolutions.layer2.conv.out_channels == 3
 
 
 @pytest.mark.parametrize("act", [act for act in ActFunction])

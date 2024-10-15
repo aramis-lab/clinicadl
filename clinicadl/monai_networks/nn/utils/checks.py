@@ -108,7 +108,11 @@ def check_pool_indices(
                 raise ValueError(
                     f"indices in (un)pooling_indices must be smaller than len(channels)-1, got (un)pooling_indices={pooling_indices} and len(channels)={n_layers}"
                 )
-        return pooling_indices
+            elif idx < -1:
+                raise ValueError(
+                    f"indices in (un)pooling_indices must be greater or equal to -1, got (un)pooling_indices={pooling_indices}"
+                )
+        return sorted(pooling_indices)
     else:
         return []
 

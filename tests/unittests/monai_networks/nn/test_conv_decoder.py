@@ -162,7 +162,10 @@ def test_params(
     if unpooling and unpooling_indices and unpooling_indices != []:
         for i, idx in enumerate(unpooling_indices):
             name, layer = named_layers[idx + 1 + i]
-            assert name == f"unpool{i}"
+            if idx == -1:
+                assert name == "init_unpool"
+            else:
+                assert name == f"unpool{idx}"
             if net.unpooling[i][0] == "upsample":
                 assert isinstance(layer, Upsample)
             else:
@@ -281,9 +284,9 @@ def test_unpool_parameters(input_tensor):
         unpooling=unpooling,
         unpooling_indices=[1],
     )
-    assert isinstance(net.unpool0, ConvTranspose2d)
-    assert net.unpool0.stride == (2, 2)
-    assert net.unpool0.kernel_size == (3, 3)
+    assert isinstance(net.unpool1, ConvTranspose2d)
+    assert net.unpool1.stride == (2, 2)
+    assert net.unpool1.kernel_size == (3, 3)
 
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])

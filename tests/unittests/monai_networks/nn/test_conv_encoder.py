@@ -73,7 +73,7 @@ def test_activations(input_tensor, act):
                 ("max", {"kernel_size": 2}),
                 ("adaptiveavg", {"output_size": (2, 3)}),
             ],
-            [0, 1, 2],
+            [-1, 1, 2],
             "syncbatch",
             0.5,
             True,
@@ -157,7 +157,10 @@ def test_params(
     if pooling and pooling_indices and pooling_indices != []:
         for i, idx in enumerate(pooling_indices):
             name, layer = named_layers[idx + 1 + i]
-            assert name == f"pool{i}"
+            if idx == -1:
+                assert name == "init_pool"
+            else:
+                assert name == f"pool{idx}"
             pooling_mode = net.pooling[i][0]
             if pooling_mode == "max":
                 assert isinstance(layer, MaxPool2d)
@@ -276,9 +279,9 @@ def test_pool_parameters(input_tensor):
         pooling=pooling,
         pooling_indices=[1],
     )
-    assert isinstance(net.pool0, AvgPool2d)
-    assert net.pool0.stride == 2
-    assert net.pool0.kernel_size == 3
+    assert isinstance(net.pool1, AvgPool2d)
+    assert net.pool1.stride == 2
+    assert net.pool1.kernel_size == 3
 
 
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])

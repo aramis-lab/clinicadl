@@ -100,8 +100,13 @@ class CNN(nn.Sequential):
         check_conv_args(conv_args)
         check_mlp_args(mlp_args)
 
+        in_channels, *input_size = in_shape
+        spatial_dims = len(input_size)
+
         self.convolutions = ConvEncoder(
-            in_shape=in_shape,
+            in_channels=in_channels,
+            spatial_dims=spatial_dims,
+            _input_size=tuple(input_size),
             **conv_args,
         )
 

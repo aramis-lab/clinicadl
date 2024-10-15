@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Callable, Optional, Tuple
 
@@ -78,8 +77,8 @@ class ConvEncoder(nn.Sequential):
         If a list is passed, it will be understood as `(pooling_mode, arguments)` for each pooling layer.
     pooling_indices : Optional[Sequence[int]] (optional, default=None)
         indices of the convolutional layers after which pooling should be performed.
-        If None, no pooling will be performed. Pooling cannot be performed after the last
-        convolutional layer.
+        If None, no pooling will be performed. An index equal to -1 will be understood as an unpooling layer before
+        the first convolution.
     act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a convolutional layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
@@ -171,7 +170,7 @@ class ConvEncoder(nn.Sequential):
         pooling_indices: Optional[Sequence[int]] = None,
         act: Optional[ActivationParameters] = ActFunction.PRELU,
         output_act: Optional[ActivationParameters] = None,
-        norm: Optional[ConvNormalizationParameters] = NormLayer.INSTANCE,
+        norm: Optional[ConvNormalizationParameters] = ConvNormLayer.INSTANCE,
         dropout: Optional[float] = None,
         bias: bool = True,
         adn_ordering: str = "NDA",
@@ -210,8 +209,13 @@ class ConvEncoder(nn.Sequential):
         self.bias = bias
         self.adn_ordering = adn_ordering
 
-        echannel = self.in_channels
         n_poolings = 0
+        if self.pooling and -1 in self.pooling_indices:
+            pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
+            self.add_module("init_pool", pooling_layer)
+            n_poolings += 1
+
+        echannel = self.in_channels
         for i, (c, k, s, p, d) in enumerate(
             zip(
                 self.channels,
@@ -234,7 +238,7 @@ class ConvEncoder(nn.Sequential):
             echannel = c  # use the output channel number as the input for the next loop
             if self.pooling and i in self.pooling_indices:
                 pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
-                self.add_module(f"pool{n_poolings}", pooling_layer)
+                self.add_module(f"pool{i}", pooling_layer)
                 n_poolings += 1
 
         self.output_act = get_act_layer(output_act) if output_act else None

@@ -193,10 +193,12 @@ class AutoEncoder(nn.Sequential):
         Inverts arguments passed for the convolutional part of the encoder, to get the convolutional
         part of the decoder.
         """
-        args["channels"] = self._invert_list_arg(conv.channels)[:-1] + [
+        if len(args["channels"]) == 0:
+            return {"channels": []}
+
+        args["channels"] = self._invert_list_arg(conv.channels[:-1]) + [
             self.out_channels
         ]
-
         args["kernel_size"] = self._invert_list_arg(conv.kernel_size)
         args["stride"] = self._invert_list_arg(conv.stride)
         args["padding"] = self._invert_list_arg(conv.padding)
@@ -207,8 +209,13 @@ class AutoEncoder(nn.Sequential):
             conv.n_layers - np.array(conv.pooling_indices) - 2
         ).astype(int)
         args["unpooling"] = []
-        for size_before_pool in conv.size_before_pool[::-1]:
-            args["unpooling"].append(self._invert_pooling_layer(size_before_pool))
+        size_before_pools = [
+            size
+            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            if "pool" in layer_name
+        ]
+        for size in size_before_pools[::-1]:
+            args["unpooling"].append(self._invert_pooling_layer(size))
 
         if "pooling" in args:
             del args["pooling"]
@@ -243,11 +250,17 @@ class AutoEncoder(nn.Sequential):
         Finds output padding list.
         """
         output_padding = []
-        size_before_conv = (
-            conv.size_before_conv if len(conv.size_before_conv) > 0 else [conv.in_shape]
-        )
+        size_before_convs = [
+            size
+            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            if "layer" in layer_name
+        ]
         for size, k, s, p, d in zip(
-            size_before_conv, conv.kernel_size, conv.stride, conv.padding, conv.dilation
+            size_before_convs,
+            conv.kernel_size,
+            conv.stride,
+            conv.padding,
+            conv.dilation,
         ):
             out_p = cls._find_output_padding(size, k, s, p, d)
             output_padding.append(out_p)

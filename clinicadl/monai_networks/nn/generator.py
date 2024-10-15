@@ -24,7 +24,8 @@ class Generator(nn.Sequential):
         size of the latent vector.
     start_shape : Sequence[int]
         sequence of integers stating the initial shape of the image, i.e. the shape at the
-        beginning of the convolutional part.\n
+        beginning of the convolutional part (minus batch dimension, but including the number
+        of channels).\n
         Thus, `start_shape` determines the dimension of the output of the generator (the exact
         shape depends on the convolutional part and can be accessed via the class attribute
         `output_shape`).
@@ -113,8 +114,11 @@ class Generator(nn.Sequential):
         )
 
         self.reshape = Reshape(*start_shape)
+        inter_channels, *inter_size = start_shape
         self.convolutions = ConvDecoder(
-            in_shape=start_shape,
+            in_channels=inter_channels,
+            spatial_dims=len(inter_size),
+            _input_size=inter_size,
             **conv_args,
         )
 
