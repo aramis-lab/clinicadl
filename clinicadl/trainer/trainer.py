@@ -205,7 +205,9 @@ class Trainer:
             self.config.data.label_code = generate_label_code(
                 self.config.network_task, train_df, self.config.data.label
             )
-        print(self.config.data.label_code)
+            print(train_df)
+            print(self.config.network_task)
+        print("in check args : ", self.config.data.label_code)
 
     def train(
         self,
@@ -375,6 +377,7 @@ class Trainer:
                 network_task=self.maps_manager.network_task,
                 dataset=dataset,
                 sampler_option=sampler_option,
+                label_code=self.config.data.label_code,
                 dp_degree=dp_degree,
                 rank=rank,
             )
