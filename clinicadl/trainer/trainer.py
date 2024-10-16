@@ -154,7 +154,7 @@ class Trainer:
             )
         return cls.from_json(maps_path / "maps.json", maps_path)
 
-    def resume(self, splits: List[int]) -> None:
+    def resume(self) -> None:
         """
         Resume a prematurely stopped training.
 
@@ -164,7 +164,7 @@ class Trainer:
             The splits that must be resumed.
         """
         stopped_splits = set(find_stopped_splits(self.config.maps_manager.maps_dir))
-        finished_splits = set(find_finished_splits(self.maps_manager.maps_path))
+        finished_splits = set(find_finished_splits(self.config.maps_manager.maps_dir))
         # TODO : check these two lines. Why do we need a self.splitter?
 
         splitter_config = SplitterConfig(**self.config.get_dict())
@@ -173,6 +173,9 @@ class Trainer:
         split_iterator = self.splitter.split_iterator()
         ###
         absent_splits = set(split_iterator) - stopped_splits - finished_splits
+        print("split:", set(split_iterator))
+        print("stopped split:", stopped_splits)
+        print("finished split:", finished_splits)
 
         logger.info(
             f"Finished splits {finished_splits}\n"
