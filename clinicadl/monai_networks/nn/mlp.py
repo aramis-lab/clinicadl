@@ -1,6 +1,5 @@
 from collections import OrderedDict
-from collections.abc import Sequence
-from typing import Optional
+from typing import Optional, Sequence
 
 import torch.nn as nn
 from monai.networks.blocks import ADN

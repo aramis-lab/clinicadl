@@ -1,5 +1,4 @@
-from collections.abc import Sequence
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Sequence, Tuple
 
 import torch.nn as nn
 from monai.networks.blocks import Convolution

@@ -1,5 +1,4 @@
-from collections.abc import Sequence
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 import torch.nn as nn
