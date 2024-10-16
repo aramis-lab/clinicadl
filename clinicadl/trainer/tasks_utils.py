@@ -1,20 +1,31 @@
+from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
 import torch
+import torch.distributed as dist
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    model_validator,
+)
 from torch import Tensor, nn
+from torch.amp import autocast
 from torch.nn.functional import softmax
-from torch.utils.data import Sampler, sampler
+from torch.nn.modules.loss import _Loss
+from torch.utils.data import DataLoader, Sampler, sampler
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.caps_dataset.data import CapsDataset
 from clinicadl.metrics.metric_module import MetricModule
+from clinicadl.network.network import Network
 from clinicadl.trainer.config.train import TrainConfig
+from clinicadl.utils import cluster
 from clinicadl.utils.enum import (
     ClassificationLoss,
     ClassificationMetric,
-    Mode,
     ReconstructionLoss,
     ReconstructionMetric,
     RegressionLoss,
@@ -238,7 +249,7 @@ def save_outputs(network_task: Union[str, Task]):
 
 def generate_test_row(
     network_task: Union[str, Task],
-    mode: Mode,
+    mode: str,
     metrics_module,
     n_classes: int,
     idx: int,
@@ -263,7 +274,7 @@ def generate_test_row(
             [
                 data["participant_id"][idx],
                 data["session_id"][idx],
-                data[f"{mode.value}_id"][idx].item(),
+                data[f"{mode}_id"][idx].item(),
                 data["label"][idx].item(),
                 prediction,
             ]
@@ -275,7 +286,7 @@ def generate_test_row(
             [
                 data["participant_id"][idx],
                 data["session_id"][idx],
-                data[f"{mode.value}_id"][idx].item(),
+                data[f"{mode}_id"][idx].item(),
                 data["label"][idx].item(),
                 outputs[idx].item(),
             ]
@@ -287,7 +298,7 @@ def generate_test_row(
         row = [
             data["participant_id"][idx],
             data["session_id"][idx],
-            data[f"{mode.value}_id"][idx].item(),
+            data[f"{mode}_id"][idx].item(),
         ]
 
         for metric in evaluation_metrics(Task.RECONSTRUCTION):

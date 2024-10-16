@@ -580,11 +580,11 @@ class CapsDatasetRoi(CapsDataset):
         else:
             for template_ in Template:
                 if preprocessing_.name == template_.name:
-                    template_name = template_.value
+                    template_name = template_
 
             for pattern_ in Pattern:
                 if preprocessing_.name == pattern_.name:
-                    pattern = pattern_.value
+                    pattern = pattern_
 
         mask_location = caps_directory / "masks" / f"tpl-{template_name}"
 
