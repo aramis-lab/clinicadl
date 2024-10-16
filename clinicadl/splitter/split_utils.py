@@ -15,14 +15,12 @@ def find_splits(maps_path: Path) -> List[int]:
 def find_stopped_splits(maps_path: Path) -> List[int]:
     """Find which splits for which training was not completed."""
     existing_split_list = find_splits(maps_path)
-    stopped_splits = []
-    for split in existing_split_list:
-        for dir in list((maps_path / f"split-{split}").iterdir()):
-            if (
-                maps_path / f"split-{split}" / "tmp"
-            ).is_dir() or "best-" not in dir.name:
-                stopped_splits.append(split)
-
+    stopped_splits = [
+        split
+        for split in existing_split_list
+        if (maps_path / f"split-{split}" / "tmp")
+        in list((maps_path / f"split-{split}").iterdir())
+    ]
     return stopped_splits
 
 
