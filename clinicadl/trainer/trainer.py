@@ -243,7 +243,8 @@ class Trainer:
             # self.splitter = Splitter(splitter_config)
             # self.splitter.check_split_list(self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite)
             self.splitter.check_split_list(
-                self.config.maps_manager.maps_dir, self.config.maps_manager.overwrite
+                self.config.maps_manager.maps_dir,
+                overwrite,  # overwrite change so careful it is not the maps manager overwrite parameters here
             )
             for split in self.splitter.split_iterator():
                 logger.info(f"Training split {split}")
