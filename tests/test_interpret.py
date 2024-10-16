@@ -77,7 +77,9 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     assert train_error
 
     for method in list(InterpretationMethod):
-        from clinicadl.utils.iotools.train_utils import merge_cli_and_maps_json_options
+        from clinicadl.utils.iotools.train_utils import (
+            merge_options_and_maps_json_options,
+        )
 
         dict_ = {
             "maps_dir": maps_path,
@@ -85,7 +87,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
             "name": f"test-{method}",
             "method_cls": method,
         }
-        options = merge_cli_and_maps_json_options(maps_path / "maps.json", **dict_)
+        options = merge_options_and_maps_json_options(maps_path / "maps.json", **dict_)
         interpret_config = InterpretConfig(**options)
 
         interpret_manager = Predictor(interpret_config)
