@@ -54,11 +54,12 @@ class ConvNormLayer(CaseInsensitiveEnum):
     INSTANCE = "instance"
 
 
-class UpsamplingMode(CaseInsensitiveEnum):
-    """Supported interpolation mode for Upsampling in ClinicaDL."""
+class UnpoolingMode(CaseInsensitiveEnum):
+    """Supported unpooling mode for AutoEncoders in ClinicaDL."""
 
     NEAREST = "nearest"
     LINEAR = "linear"
     BILINEAR = "bilinear"
     BICUBIC = "bicubic"
     TRILINEAR = "trilinear"
+    CONV_TRANS = "convtranspose"

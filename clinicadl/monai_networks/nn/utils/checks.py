@@ -26,7 +26,7 @@ def ensure_list_of_tuples(
     """
     parameter = _check_conv_parameter(parameter, dim, n_layers, name)
     if isinstance(parameter, tuple):
-        return [parameter] * n_layers if n_layers > 0 else [parameter]
+        return [parameter] * n_layers
     else:
         return parameter
 

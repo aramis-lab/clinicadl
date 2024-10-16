@@ -16,9 +16,9 @@ __all__ = [
 def calculate_conv_out_shape(
     in_shape: Union[Sequence[int], int],
     kernel_size: Union[Sequence[int], int],
-    stride: Union[Sequence[int], int],
-    padding: Union[Sequence[int], int],
-    dilation: Union[Sequence[int], int],
+    stride: Union[Sequence[int], int] = 1,
+    padding: Union[Sequence[int], int] = 0,
+    dilation: Union[Sequence[int], int] = 1,
     **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
@@ -42,10 +42,10 @@ def calculate_conv_out_shape(
 def calculate_convtranspose_out_shape(
     in_shape: Union[Sequence[int], int],
     kernel_size: Union[Sequence[int], int],
-    stride: Union[Sequence[int], int],
-    padding: Union[Sequence[int], int],
-    output_padding: Union[Sequence[int], int],
-    dilation: Union[Sequence[int], int],
+    stride: Union[Sequence[int], int] = 1,
+    padding: Union[Sequence[int], int] = 0,
+    output_padding: Union[Sequence[int], int] = 0,
+    dilation: Union[Sequence[int], int] = 1,
     **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
@@ -110,15 +110,18 @@ def calculate_unpool_out_shape(
 def _calculate_maxpool_out_shape(
     in_shape: Union[Sequence[int], int],
     kernel_size: Union[Sequence[int], int],
-    stride: Union[Sequence[int], int],
-    padding: Union[Sequence[int], int],
-    dilation: Union[Sequence[int], int],
+    stride: Optional[Union[Sequence[int], int]] = None,
+    padding: Union[Sequence[int], int] = 0,
+    dilation: Union[Sequence[int], int] = 1,
     ceil_mode: bool = False,
     **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of a MaxPool layer.
     """
+    if stride is None:
+        stride = kernel_size
+
     in_shape_np = np.atleast_1d(in_shape)
     kernel_size_np = np.atleast_1d(kernel_size)
     stride_np = np.atleast_1d(stride)
@@ -140,14 +143,17 @@ def _calculate_maxpool_out_shape(
 def _calculate_avgpool_out_shape(
     in_shape: Union[Sequence[int], int],
     kernel_size: Union[Sequence[int], int],
-    stride: Union[Sequence[int], int],
-    padding: Union[Sequence[int], int],
+    stride: Optional[Union[Sequence[int], int]] = None,
+    padding: Union[Sequence[int], int] = 0,
     ceil_mode: bool = False,
     **kwargs,  # for uniformization
 ) -> Tuple[int, ...]:
     """
     Calculates the output shape of an AvgPool layer.
     """
+    if stride is None:
+        stride = kernel_size
+
     in_shape_np = np.atleast_1d(in_shape)
     kernel_size_np = np.atleast_1d(kernel_size)
     stride_np = np.atleast_1d(stride)

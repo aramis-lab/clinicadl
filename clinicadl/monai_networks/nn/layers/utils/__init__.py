@@ -4,7 +4,7 @@ from .enum import (
     NormLayer,
     PoolingLayer,
     UnpoolingLayer,
-    UpsamplingMode,
+    UnpoolingMode,
 )
 from .types import (
     ActivationParameters,

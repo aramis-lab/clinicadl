@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 import torch.nn as nn
@@ -305,9 +305,19 @@ class ConvEncoder(nn.Sequential):
         Gets the parametrized pooling layer and updates the current output size.
         """
         pool_layer = get_pool_layer(pooling, spatial_dims=self.spatial_dims)
+        old_size = self.final_size
         self.final_size = lambda size: calculate_pool_out_shape(
             pool_mode=pooling[0], in_shape=size, **pool_layer.__dict__
         )
+
+        if (
+            self.final_size is not None
+            and (np.array(old_size) < np.array(self.final_size)).any()
+        ):
+            raise ValueError(
+                f"You passed {pooling} as a pooling layer. But before this layer, the size of the image "
+                f"was {old_size}. So, pooling can't be performed."
+            )
 
         return pool_layer
 
@@ -354,7 +364,9 @@ class ConvEncoder(nn.Sequential):
                 f"Got {args}"
             )
 
-    def _check_pool_layers(self, pooling: PoolingParameters) -> PoolingParameters:
+    def _check_pool_layers(
+        self, pooling: PoolingParameters
+    ) -> List[SingleLayerPoolingParameters]:
         """
         Check argument pooling.
         """
@@ -371,7 +383,7 @@ class ConvEncoder(nn.Sequential):
                 )
         elif isinstance(pooling, tuple):
             self._check_single_pool_layer(pooling)
-            pooling = (pooling,) * len(self.pooling_indices)
+            pooling = [pooling] * len(self.pooling_indices)
         else:
             raise ValueError(
                 f"pooling can be either None, a double (string, dictionary) or a list of such doubles. Got {pooling}"

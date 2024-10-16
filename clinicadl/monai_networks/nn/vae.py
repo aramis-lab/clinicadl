@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from .autoencoder import AutoEncoder
-from .layers.utils import ActivationParameters, UpsamplingMode
+from .layers.utils import ActivationParameters, UnpoolingMode
 
 
 class VAE(nn.Module):
@@ -17,7 +17,8 @@ class VAE(nn.Module):
     symmetrical network.
 
     More precisely, to build the decoder, the order of the encoding layers is reverted, convolutions are
-    replaced by transposed convolutions and pooling layers are replaced by upsampling layers.
+    replaced by transposed convolutions and pooling layers are replaced by either upsampling or transposed
+    convolution layers.
     Please note that the order of `Activation`, `Dropout` and `Normalization`, defined with the
     argument `adn_ordering` in `conv_args`, is the same for the encoder and the decoder.
 
@@ -52,9 +53,18 @@ class VAE(nn.Module):
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.
-    upsampling_mode : Union[str, UpsamplingMode] (optional, default=UpsamplingMode.NEAREST)
-        interpolation mode for upsampling (see: https://pytorch.org/docs/stable/generated/
-        torch.nn.Upsample.html).
+    unpooling_mode : Union[str, UnpoolingMode] (optional, default=UnpoolingMode.NEAREST)
+        type of unpooling. Can be either `"nearest"`, `"linear"`, `"bilinear"`, `"bicubic"`, `"trilinear"` or
+        `"convtranspose"`.\n
+        - `nearest`: unpooling is performed by upsampling with the :italic:`nearest` algorithm (see [PyTorch's Upsample layer]
+        (https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html)).
+        - `linear`: unpooling is performed by upsampling with the :italic:`linear` algorithm. Only works with 1D images (excluding the
+        channel dimension).
+        - `bilinear`: unpooling is performed by upsampling with the :italic:`bilinear` algorithm. Only works with 2D images.
+        - `bicubic`: unpooling is performed by upsampling with the :italic:`bicubic` algorithm. Only works with 2D images.
+        - `trilinear`: unpooling is performed by upsampling with the :italic:`trilinear` algorithm. Only works with 3D images.
+        - `convtranspose`: unpooling is performed with a transposed convolution, whose parameters (kernel size, stride, etc.) are
+        computed to reverse the pooling operation.
 
     Examples
     --------
@@ -65,7 +75,7 @@ class VAE(nn.Module):
             mlp_args={"hidden_channels": [16], "output_act": "relu"},
             out_channels=2,
             output_act="sigmoid",
-            upsampling_mode="bilinear",
+            unpooling_mode="bilinear",
         )
     VAE(
         (encoder): CNN(
@@ -128,7 +138,7 @@ class VAE(nn.Module):
         mlp_args: Optional[Dict[str, Any]] = None,
         out_channels: Optional[int] = None,
         output_act: Optional[ActivationParameters] = None,
-        upsampling_mode: Union[str, UpsamplingMode] = UpsamplingMode.NEAREST,
+        unpooling_mode: Union[str, UnpoolingMode] = UnpoolingMode.NEAREST,
     ) -> None:
         super().__init__()
         ae = AutoEncoder(
@@ -138,7 +148,7 @@ class VAE(nn.Module):
             mlp_args,
             out_channels,
             output_act,
-            upsampling_mode,
+            unpooling_mode,
         )
 
         # replace last mlp layer by two parallel layers
