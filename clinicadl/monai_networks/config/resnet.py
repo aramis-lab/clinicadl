@@ -6,7 +6,7 @@ from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.monai_networks.nn.resnet import ResNetBlockType
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, PreTrainedConfig
+from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class ResNetConfig(NetworkConfig):
@@ -38,22 +38,32 @@ class ResNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET
 
 
-class ResNet18Config(PreTrainedConfig):
+class PreTrainedResNetConfig(PreTrainedConfig):
+    """Base config class for SOTA ResNets."""
+
+    @computed_field
+    @property
+    def _type(self) -> NetworkType:
+        """To know where to look for the network."""
+        return NetworkType.RESNET
+
+
+class ResNet18Config(PreTrainedResNetConfig):
     """Config class for ResNet-18."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET_18
 
 
-class ResNet34Config(PreTrainedConfig):
+class ResNet34Config(PreTrainedResNetConfig):
     """Config class for ResNet-34."""
 
     @computed_field
@@ -63,7 +73,7 @@ class ResNet34Config(PreTrainedConfig):
         return ImplementedNetworks.RESNET_34
 
 
-class ResNet50Config(PreTrainedConfig):
+class ResNet50Config(PreTrainedResNetConfig):
     """Config class for ResNet-50."""
 
     @computed_field
@@ -73,7 +83,7 @@ class ResNet50Config(PreTrainedConfig):
         return ImplementedNetworks.RESNET_50
 
 
-class ResNet101Config(PreTrainedConfig):
+class ResNet101Config(PreTrainedResNetConfig):
     """Config class for ResNet-101."""
 
     @computed_field
@@ -83,7 +93,7 @@ class ResNet101Config(PreTrainedConfig):
         return ImplementedNetworks.RESNET_101
 
 
-class ResNet152Config(PreTrainedConfig):
+class ResNet152Config(PreTrainedResNetConfig):
     """Config class for ResNet-152."""
 
     @computed_field

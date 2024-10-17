@@ -288,7 +288,7 @@ class ViT(nn.Module):
                 )
 
 
-class CommonViT(str, Enum):
+class SOTAViT(str, Enum):
     """Supported ViT networks."""
 
     B_16 = "ViT-B/16"
@@ -298,7 +298,7 @@ class CommonViT(str, Enum):
 
 
 def get_vit(
-    model: Union[str, CommonViT],
+    name: Union[str, SOTAViT],
     num_outputs: Optional[int],
     output_act: ActivationParameters = None,
     pretrained: bool = False,
@@ -316,7 +316,7 @@ def get_vit(
 
     Parameters
     ----------
-    model : Union[str, CommonViT]
+    model : Union[str, SOTAViT]
         The name of the Vision Transformer. Available networks are `ViT-B/16`, `ViT-B/32`, `ViT-L/16` and `ViT-L/32`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
@@ -338,8 +338,8 @@ def get_vit(
     ViT
         The network, with potentially pretrained weights.
     """
-    model = CommonViT(model)
-    if model == CommonViT.B_16:
+    name = SOTAViT(name)
+    if name == SOTAViT.B_16:
         in_shape = (3, 224, 224)
         patch_size = 16
         embedding_dim = 768
@@ -347,7 +347,7 @@ def get_vit(
         num_layers = 12
         num_heads = 12
         model_url = ViT_B_16_Weights.DEFAULT.url
-    elif model == CommonViT.B_32:
+    elif name == SOTAViT.B_32:
         in_shape = (3, 224, 224)
         patch_size = 32
         embedding_dim = 768
@@ -355,7 +355,7 @@ def get_vit(
         num_layers = 12
         num_heads = 12
         model_url = ViT_B_32_Weights.DEFAULT.url
-    elif model == CommonViT.L_16:
+    elif name == SOTAViT.L_16:
         in_shape = (3, 224, 224)
         patch_size = 16
         embedding_dim = 1024
@@ -363,7 +363,7 @@ def get_vit(
         num_layers = 24
         num_heads = 16
         model_url = ViT_L_16_Weights.DEFAULT.url
-    elif model == CommonViT.L_32:
+    elif name == SOTAViT.L_32:
         in_shape = (3, 224, 224)
         patch_size = 32
         embedding_dim = 1024
@@ -372,6 +372,7 @@ def get_vit(
         num_heads = 16
         model_url = ViT_L_32_Weights.DEFAULT.url
 
+    # pylint: disable=possibly-used-before-assignment
     vit = ViT(
         in_shape=in_shape,
         patch_size=patch_size,

@@ -1,38 +1,63 @@
-from typing import Tuple
+from typing import Any, Callable, Tuple, Union
 
-import monai.networks.nets as networks
 import torch.nn as nn
 
+import clinicadl.monai_networks.nn as nets
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
-from .config.base import NetworkConfig
+from .config import (
+    ImplementedNetworks,
+    NetworkConfig,
+    NetworkType,
+    create_network_config,
+)
 
 
-def get_network(config: NetworkConfig) -> Tuple[nn.Module, NetworkConfig]:
+def get_network(
+    name: Union[str, ImplementedNetworks], return_config: bool = False, **kwargs: Any
+) -> Union[nn.Module, Tuple[nn.Module, NetworkConfig]]:
     """
-    Factory function to get a Neural Network from MONAI.
+    Factory function to get a neural network from its name and parameters.
 
     Parameters
     ----------
-    config : NetworkConfig
-        The config class with the parameters of the network.
+    name : Union[str, ImplementedNetworks]
+        the name of the neural network. Check our documentation to know
+        available networks.
+    return_config : bool (optional, default=False)
+        if the function should return the config class regrouping the parameters of the
+        neural network. Useful to keep track of the hyperparameters.
+    kwargs : Any
+        the parameters of the neural network. Check our documentation on networks to
+        know these parameters.
 
     Returns
     -------
-    nn.Module
-        The neural network.
-    NetworkConfig
-        The updated config class: the arguments set to default will be updated
-        with their effective values (the default values from the library).
-        Useful for reproducibility.
+    Union[nn.Module, Tuple[nn.Module, NetworkConfig]]
+        the neural network, and the associated config class if `return_config` is True.
     """
-    network_class = getattr(networks, config.network)
-    expected_args, config_dict = get_args_and_defaults(network_class.__init__)
+    config = create_network_config(name)(**kwargs)
+    network_type = config._type  # pylint: disable=protected-access
+
+    if network_type == NetworkType.CUSTOM:
+        getter: type[nn.Module] = getattr(nets, config.name)
+        _, config_dict = get_args_and_defaults(getter.__init__)
+    else:  # sota networks
+        if network_type == NetworkType.RESNET:
+            getter: Callable[..., nn.Module] = nets.get_resnet
+        elif network_type == NetworkType.DENSENET:
+            getter: Callable[..., nn.Module] = nets.get_densenet
+        elif network_type == NetworkType.SE_RESNET:
+            getter: Callable[..., nn.Module] = nets.get_seresnet
+        elif network_type == NetworkType.VIT:
+            getter: Callable[..., nn.Module] = nets.get_vit
+        _, config_dict = get_args_and_defaults(getter)
+
     for arg, value in config.model_dump().items():
-        if arg in expected_args and value != DefaultFromLibrary.YES:
+        if value != DefaultFromLibrary.YES:  # update config with defaults
             config_dict[arg] = value
 
-    network = network_class(**config_dict)
+    network = getter(**config_dict)
     updated_config = config.model_copy(update=config_dict)
 
-    return network, updated_config
+    return network if not return_config else (network, updated_config)

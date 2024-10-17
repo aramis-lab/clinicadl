@@ -1,11 +1,10 @@
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import PositiveInt, computed_field
 
-from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetworks, NetworkType, PreTrainedConfig
 from .resnet import ResNetConfig
 
 
@@ -16,45 +15,46 @@ class SEResNetConfig(ResNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.SE_RESNET
 
 
-class SEResNetPreTrainedConfig(NetworkConfig):
+class PreTrainedSEResNetConfig(PreTrainedConfig):
     """Base config class for SOTA SE-ResNets."""
 
-    num_outputs: Optional[PositiveInt]
-    output_act: Union[
-        Optional[ActivationParameters], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    @computed_field
+    @property
+    def _type(self) -> NetworkType:
+        """To know where to look for the network."""
+        return NetworkType.SE_RESNET
 
 
-class SEResNet50Config(SEResNetPreTrainedConfig):
+class SEResNet50Config(PreTrainedSEResNetConfig):
     """Config class for SE-ResNet-50."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.SE_RESNET_50
 
 
-class SEResNet101Config(SEResNetPreTrainedConfig):
+class SEResNet101Config(PreTrainedSEResNetConfig):
     """Config class for SE-ResNet-101."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.SE_RESNET_101
 
 
-class SEResNet152Config(SEResNetPreTrainedConfig):
+class SEResNet152Config(PreTrainedSEResNetConfig):
     """Config class for SE-ResNet-152."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.SE_RESNET_152

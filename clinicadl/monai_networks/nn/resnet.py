@@ -441,7 +441,7 @@ class ResNet(GeneralResNet):
         )
 
 
-class CommonResNet(str, Enum):
+class SOTAResNet(str, Enum):
     """Supported ResNet networks."""
 
     RESNET_18 = "ResNet-18"
@@ -452,7 +452,7 @@ class CommonResNet(str, Enum):
 
 
 def get_resnet(
-    model: Union[str, CommonResNet],
+    name: Union[str, SOTAResNet],
     num_outputs: Optional[int],
     output_act: ActivationParameters = None,
     pretrained: bool = False,
@@ -471,7 +471,7 @@ def get_resnet(
 
     Parameters
     ----------
-    model : Union[str, CommonResNet]
+    model : Union[str, SOTAResNet]
         The name of the ResNet. Available networks are `ResNet-18`, `ResNet-34`, `ResNet-50`, `ResNet-101` and `ResNet-152`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
@@ -493,33 +493,34 @@ def get_resnet(
     ResNet
         The network, with potentially pretrained weights.
     """
-    model = CommonResNet(model)
-    if model == CommonResNet.RESNET_18:
+    name = SOTAResNet(name)
+    if name == SOTAResNet.RESNET_18:
         block_type = ResNetBlockType.BASIC
         n_res_blocks = (2, 2, 2, 2)
         n_features = (64, 128, 256, 512)
         model_url = ResNet18_Weights.DEFAULT.url
-    elif model == CommonResNet.RESNET_34:
+    elif name == SOTAResNet.RESNET_34:
         block_type = ResNetBlockType.BASIC
         n_res_blocks = (3, 4, 6, 3)
         n_features = (64, 128, 256, 512)
         model_url = ResNet34_Weights.DEFAULT.url
-    elif model == CommonResNet.RESNET_50:
+    elif name == SOTAResNet.RESNET_50:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 4, 6, 3)
         n_features = (256, 512, 1024, 2048)
         model_url = ResNet50_Weights.DEFAULT.url
-    elif model == CommonResNet.RESNET_101:
+    elif name == SOTAResNet.RESNET_101:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 4, 23, 3)
         n_features = (256, 512, 1024, 2048)
         model_url = ResNet101_Weights.DEFAULT.url
-    elif model == CommonResNet.RESNET_152:
+    elif name == SOTAResNet.RESNET_152:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 8, 36, 3)
         n_features = (256, 512, 1024, 2048)
         model_url = ResNet152_Weights.DEFAULT.url
 
+    # pylint: disable=possibly-used-before-assignment
     resnet = ResNet(
         spatial_dims=2,
         in_channels=3,

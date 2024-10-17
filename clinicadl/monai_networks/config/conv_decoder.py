@@ -60,6 +60,6 @@ class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.CONV_DECODER

@@ -5,7 +5,7 @@ from pydantic import PositiveFloat, PositiveInt, computed_field
 from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, PreTrainedConfig
+from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class DenseNetConfig(NetworkConfig):
@@ -28,46 +28,56 @@ class DenseNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.DENSENET
 
 
-class DenseNet121Config(PreTrainedConfig):
+class PreTrainedDenseNetConfig(PreTrainedConfig):
+    """Base config class for SOTA DenseNets."""
+
+    @computed_field
+    @property
+    def _type(self) -> NetworkType:
+        """To know where to look for the network."""
+        return NetworkType.DENSENET
+
+
+class DenseNet121Config(PreTrainedDenseNetConfig):
     """Config class for DenseNet-121."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.DENSENET_121
 
 
-class DenseNet161Config(PreTrainedConfig):
+class DenseNet161Config(PreTrainedDenseNetConfig):
     """Config class for DenseNet-161."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.DENSENET_161
 
 
-class DenseNet169Config(PreTrainedConfig):
+class DenseNet169Config(PreTrainedDenseNetConfig):
     """Config class for DenseNet-169."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.DENSENET_169
 
 
-class DenseNet201Config(PreTrainedConfig):
+class DenseNet201Config(PreTrainedDenseNetConfig):
     """Config class for DenseNet-201."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.DENSENET_201

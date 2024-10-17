@@ -1,4 +1,11 @@
+from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Optional, Union
+
+from pydantic import BaseModel, ConfigDict, PositiveInt, computed_field
+
+from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
+from clinicadl.utils.factories import DefaultFromLibrary
 
 
 class ImplementedNetworks(str, Enum):
@@ -22,10 +29,10 @@ class ImplementedNetworks(str, Enum):
     RESNET_50 = "ResNet-50"
     RESNET_101 = "ResNet-101"
     RESNET_152 = "ResNet-152"
-    SE_RESNET = "SE-ResNet"
-    SE_RESNET_50 = "SE-ResNet-50"
-    SE_RESNET_101 = "SE-ResNet-101"
-    SE_RESNET_152 = "SE-ResNet-152"
+    SE_RESNET = "SEResNet"
+    SE_RESNET_50 = "SEResNet-50"
+    SE_RESNET_101 = "SEResNet-101"
+    SE_RESNET_152 = "SEResNet-152"
     UNET = "UNet"
     ATT_UNET = "AttentionUNet"
     VIT = "ViT"
@@ -42,6 +49,19 @@ class ImplementedNetworks(str, Enum):
         )
 
 
+class NetworkType(str, Enum):
+    """
+    Useful to know where to look for the network.
+    See :py:func:`clinicadl.monai_networks.factory.get_network`
+    """
+
+    CUSTOM = "custom"  # our own networks
+    RESNET = "sota-ReNet"
+    DENSENET = "sota-DenseNet"
+    SE_RESNET = "sota-SE-ResNet"
+    VIT = "sota-ViT"
+
+
 class NetworkConfig(BaseModel, ABC):
     """Base config class to configure neural networks."""
 
@@ -55,61 +75,17 @@ class NetworkConfig(BaseModel, ABC):
     @computed_field
     @property
     @abstractmethod
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
 
-    @classmethod
-    def base_validator_dropout(cls, v):
-        """Checks that dropout is between 0 and 1."""
-        if isinstance(v, float):
-            assert (
-                0 <= v <= 1
-            ), f"dropout must be between 0 and 1 but it has been set to {v}."
-        return v
-
-    @field_validator("kernel_size", "up_kernel_size")
-    @classmethod
-    def base_is_odd(cls, value, field):
-        """Checks if a field is odd."""
-        if value != DefaultFromLibrary.YES:
-            if isinstance(value, int):
-                value_ = (value,)
-            else:
-                value_ = value
-            for v in value_:
-                assert v % 2 == 1, f"{field.field_name} must be odd."
-        return value
-
-    @classmethod
-    def base_at_least_2d(cls, v, ctx):
-        """Checks that a tuple has at least a length of two."""
-        if isinstance(v, tuple):
-            assert (
-                len(v) >= 2
-            ), f"{ctx.field_name} should have at least two dimensions (with the first one for the channel)."
-        return v
-
-    @model_validator(mode="after")
-    def base_model_validator(self):
-        """Checks coherence between parameters."""
-        if self.kernel_size != DefaultFromLibrary.YES:
-            assert self._check_dimensions(
-                self.kernel_size
-            ), f"You must passed an int or a sequence of {self.dim} ints (the dimensionality of your images) for kernel_size. You passed {self.kernel_size}."
-        if self.up_kernel_size != DefaultFromLibrary.YES:
-            assert self._check_dimensions(
-                self.up_kernel_size
-            ), f"You must passed an int or a sequence of {self.dim} ints (the dimensionality of your images) for up_kernel_size. You passed {self.up_kernel_size}."
-        return self
-
-    def _check_dimensions(
-        self,
-        value: Union[float, Tuple[float, ...]],
-    ) -> bool:
-        """Checks if a tuple has the right dimension."""
-        if isinstance(value, tuple):
-            return len(value) == self.dim
-        return True
+    @computed_field
+    @property
+    def _type(self) -> NetworkType:
+        """
+        To know where to look for the network.
+        Default to 'custom'.
+        """
+        return NetworkType.CUSTOM
 
 
 class PreTrainedConfig(NetworkConfig):

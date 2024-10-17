@@ -23,7 +23,7 @@ class UNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.UNET
 
@@ -33,6 +33,6 @@ class AttentionUNetConfig(UNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.ATT_UNET

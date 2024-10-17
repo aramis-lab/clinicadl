@@ -30,7 +30,7 @@ class AutoEncoderConfig(NetworkConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.AE
 
@@ -40,6 +40,6 @@ class VAEConfig(AutoEncoderConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VAE

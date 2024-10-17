@@ -182,7 +182,7 @@ class DenseNet(nn.Sequential):
                 cls._rename_act(layer)
 
 
-class CommonDenseNet(str, Enum):
+class SOTADenseNet(str, Enum):
     """Supported DenseNet networks."""
 
     DENSENET_121 = "DenseNet-121"
@@ -192,7 +192,7 @@ class CommonDenseNet(str, Enum):
 
 
 def get_densenet(
-    model: Union[str, CommonDenseNet],
+    name: Union[str, SOTADenseNet],
     num_outputs: Optional[int],
     output_act: ActivationParameters = None,
     pretrained: bool = False,
@@ -213,7 +213,7 @@ def get_densenet(
 
     Parameters
     ----------
-    model : Union[str, CommonDenseNet]
+    name : Union[str, SOTADenseNet]
         The name of the DenseNet. Available networks are `DenseNet-121`, `DenseNet-161`, `DenseNet-169` and `DenseNet-201`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
@@ -235,28 +235,29 @@ def get_densenet(
     DenseNet
         The network, with potentially pretrained weights.
     """
-    model = CommonDenseNet(model)
-    if model == CommonDenseNet.DENSENET_121:
+    name = SOTADenseNet(name)
+    if name == SOTADenseNet.DENSENET_121:
         n_dense_layers = (6, 12, 24, 16)
         growth_rate = 32
         init_features = 64
         model_url = DenseNet121_Weights.DEFAULT.url
-    elif model == CommonDenseNet.DENSENET_161:
+    elif name == SOTADenseNet.DENSENET_161:
         n_dense_layers = (6, 12, 36, 24)
         growth_rate = 48
         init_features = 96
         model_url = DenseNet161_Weights.DEFAULT.url
-    elif model == CommonDenseNet.DENSENET_169:
+    elif name == SOTADenseNet.DENSENET_169:
         n_dense_layers = (6, 12, 32, 32)
         growth_rate = 32
         init_features = 64
         model_url = DenseNet169_Weights.DEFAULT.url
-    elif model == CommonDenseNet.DENSENET_201:
+    elif name == SOTADenseNet.DENSENET_201:
         n_dense_layers = (6, 12, 48, 32)
         growth_rate = 32
         init_features = 64
         model_url = DenseNet201_Weights.DEFAULT.url
 
+    # pylint: disable=possibly-used-before-assignment
     densenet = DenseNet(
         spatial_dims=2,
         in_channels=3,

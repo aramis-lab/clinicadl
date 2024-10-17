@@ -6,7 +6,7 @@ from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.monai_networks.nn.vit import PosEmbedType
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, PreTrainedConfig
+from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class ViTConfig(NetworkConfig):
@@ -29,46 +29,56 @@ class ViTConfig(NetworkConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VIT
 
 
-class ViTB16Config(PreTrainedConfig):
+class PreTrainedViTConfig(PreTrainedConfig):
+    """Base config class for SOTA ResNets."""
+
+    @computed_field
+    @property
+    def _type(self) -> NetworkType:
+        """To know where to look for the network."""
+        return NetworkType.VIT
+
+
+class ViTB16Config(PreTrainedViTConfig):
     """Config class for ViT-B/16."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VIT_B_16
 
 
-class ViTB32Config(PreTrainedConfig):
+class ViTB32Config(PreTrainedViTConfig):
     """Config class for ViT-B/32."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VIT_B_32
 
 
-class ViTL16Config(PreTrainedConfig):
+class ViTL16Config(PreTrainedViTConfig):
     """Config class for ViT-L/16."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VIT_L_16
 
 
-class ViTL32Config(PreTrainedConfig):
+class ViTL32Config(PreTrainedViTConfig):
     """Config class for ViT-L/32."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.VIT_L_32

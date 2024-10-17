@@ -133,7 +133,7 @@ class SEResNet(GeneralResNet):
                 )
 
 
-class CommonSEResNet(str, Enum):
+class SOTAResNet(str, Enum):
     """Supported SEResNet networks."""
 
     SE_RESNET_50 = "SE-ResNet-50"
@@ -142,9 +142,10 @@ class CommonSEResNet(str, Enum):
 
 
 def get_seresnet(
-    model: Union[str, CommonSEResNet],
+    name: Union[str, SOTAResNet],
     num_outputs: Optional[int],
     output_act: ActivationParameters = None,
+    pretrained: bool = False,
 ) -> SEResNet:
     """
     To get a Squeeze-and-Excitation ResNet implemented in the [Squeeze-and-Excitation Networks](https://arxiv.org/pdf/
@@ -158,7 +159,7 @@ def get_seresnet(
 
     Parameters
     ----------
-    model : Union[str, CommonSEResNet]
+    model : Union[str, SOTAResNet]
         the name of the SEResNet. Available networks are `SE-ResNet-50`, `SE-ResNet-101` and `SE-ResNet-152`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
@@ -171,26 +172,35 @@ def get_seresnet(
         `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
         (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
         arguments for each of them.
+    pretrained : bool (optional, default=False)
+        pretrained networks are not yet available for SE-ResNets. Leave this argument to False.
 
     Returns
     -------
     SEResNet
         the network.
     """
-    model = CommonSEResNet(model)
-    if model == CommonSEResNet.SE_RESNET_50:
+    if pretrained is not False:
+        raise ValueError(
+            "Pretrained networks are not yet available for SE-ResNets. Please leave "
+            "'pretrained' to False."
+        )
+
+    name = SOTAResNet(name)
+    if name == SOTAResNet.SE_RESNET_50:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 4, 6, 3)
         n_features = (256, 512, 1024, 2048)
-    elif model == CommonSEResNet.SE_RESNET_101:
+    elif name == SOTAResNet.SE_RESNET_101:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 4, 23, 3)
         n_features = (256, 512, 1024, 2048)
-    elif model == CommonSEResNet.SE_RESNET_152:
+    elif name == SOTAResNet.SE_RESNET_152:
         block_type = ResNetBlockType.BOTTLENECK
         n_res_blocks = (3, 8, 36, 3)
         n_features = (256, 512, 1024, 2048)
 
+    # pylint: disable=possibly-used-before-assignment
     resnet = SEResNet(
         spatial_dims=2,
         in_channels=3,
