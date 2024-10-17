@@ -34,7 +34,7 @@ class Splitter:
         self.config = config
         # self.config.split.split = split_list
 
-        self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
+        # self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
 
     def max_length(self) -> int:
         """Maximum number of splits"""
