@@ -68,7 +68,7 @@ class ResNet34Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET_34
 
@@ -78,7 +78,7 @@ class ResNet50Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET_50
 
@@ -88,7 +88,7 @@ class ResNet101Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET_101
 
@@ -98,6 +98,6 @@ class ResNet152Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.RESNET_152

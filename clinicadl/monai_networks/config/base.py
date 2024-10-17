@@ -23,7 +23,7 @@ class ImplementedNetworks(str, Enum):
     DENSENET_161 = "DenseNet-161"
     DENSENET_169 = "DenseNet-169"
     DENSENET_201 = "DenseNet-201"
-    RESNET = "VarFullyConnectedNet"
+    RESNET = "ResNet"
     RESNET_18 = "ResNet-18"
     RESNET_34 = "ResNet-34"
     RESNET_50 = "ResNet-50"
@@ -56,9 +56,9 @@ class NetworkType(str, Enum):
     """
 
     CUSTOM = "custom"  # our own networks
-    RESNET = "sota-ReNet"
+    RESNET = "sota-ResNet"
     DENSENET = "sota-DenseNet"
-    SE_RESNET = "sota-SE-ResNet"
+    SE_RESNET = "sota-SEResNet"
     VIT = "sota-ViT"
 
 

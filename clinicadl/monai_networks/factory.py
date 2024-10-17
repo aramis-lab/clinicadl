@@ -41,7 +41,17 @@ def get_network(
 
     if network_type == NetworkType.CUSTOM:
         getter: type[nn.Module] = getattr(nets, config.name)
-        _, config_dict = get_args_and_defaults(getter.__init__)
+        if config.name == ImplementedNetworks.SE_RESNET:
+            _, config_dict = get_args_and_defaults(
+                getattr(nets, ImplementedNetworks.RESNET.value).__init__
+            )  # defaults SE-ResNet are the defaults of ResNet
+        elif config.name == ImplementedNetworks.ATT_UNET:
+            _, config_dict = get_args_and_defaults(
+                getattr(nets, ImplementedNetworks.UNET.value).__init__
+            )
+        else:
+            _, config_dict = get_args_and_defaults(getter.__init__)
+
     else:  # sota networks
         if network_type == NetworkType.RESNET:
             getter: Callable[..., nn.Module] = nets.get_resnet

@@ -30,7 +30,7 @@ from .senet import (
     SEResNetConfig,
 )
 from .unet import AttentionUNetConfig, UNetConfig
-from .vit import ViTConfig
+from .vit import ViTB16Config, ViTB32Config, ViTConfig, ViTL16Config, ViTL32Config
 
 
 def create_network_config(
