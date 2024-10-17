@@ -27,6 +27,8 @@ def cli(**kwargs):
     logger.info(f"Reading JSON file at path {kwargs['config_file']}...")
 
     trainer = Trainer.from_json(
-        config_file=kwargs["config_file"], maps_path=kwargs["output_maps_directory"]
+        config_file=kwargs["config_file"],
+        maps_path=kwargs["output_maps_directory"],
+        split=kwargs["split"],
     )
     trainer.train(split_list=kwargs["split"], overwrite=True)

@@ -181,7 +181,6 @@ def generate_label_code(
     network_task = Task(network_task)
     if network_task == Task.CLASSIFICATION:
         unique_labels = sorted(set(df[label]))
-        print("unique labels", unique_labels)
         return {str(key): value for value, key in enumerate(unique_labels)}
 
     return None
@@ -624,7 +623,6 @@ def generate_sampler(
 
     def calculate_weights_classification(df):
         labels = df[dataset.config.data.label].unique()
-        print(dataset.config.data.label_code)
         codes = {label_code[label] for label in labels}
         count = np.zeros(len(codes))
 

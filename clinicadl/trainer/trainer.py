@@ -71,7 +71,7 @@ class Trainer:
         predict_config = PredictConfig(**config.get_dict())
         self.validator = Predictor(predict_config)
 
-        ### test
+        # test
         splitter_config = SplitterConfig(**self.config.get_dict())
         self.splitter = Splitter(splitter_config)
         self._check_args()
@@ -92,7 +92,12 @@ class Trainer:
             )  # TODO : precise which parameters in config are useful
 
     @classmethod
-    def from_json(cls, config_file: str | Path, maps_path: str | Path) -> Trainer:
+    def from_json(
+        cls,
+        config_file: str | Path,
+        maps_path: str | Path,
+        split: Optional[list[int]] = None,
+    ) -> Trainer:
         """
         Creates a Trainer from a json configuration file.
 
@@ -119,10 +124,10 @@ class Trainer:
             raise FileNotFoundError(f"No file found at {str(config_file)}.")
         config_dict = patch_to_read_json(read_json(config_file))  # TODO : remove patch
         config_dict["maps_dir"] = maps_path
+        config_dict["split"] = split if split else ()
         config_object = create_training_config(config_dict["network_task"])(
             **config_dict
         )
-        print(config_object.model_dump())
         return cls(config_object)
 
     @classmethod
@@ -173,9 +178,6 @@ class Trainer:
         split_iterator = self.splitter.split_iterator()
         ###
         absent_splits = set(split_iterator) - stopped_splits - finished_splits
-        print("split:", set(split_iterator))
-        print("stopped split:", stopped_splits)
-        print("finished split:", finished_splits)
 
         logger.info(
             f"Finished splits {finished_splits}\n"
@@ -194,8 +196,8 @@ class Trainer:
 
     def _check_args(self):
         self.config.reproducibility.seed = get_seed(self.config.reproducibility.seed)
-        # if (len(self.config.data.label_code) == 0):
-        #     self.config.data.label_code = self.maps_manager.label_code
+        if len(self.config.data.label_code) == 0:
+            self.config.data.label_code = self.maps_manager.label_code
         # TODO: deal with label_code and replace self.maps_manager.label_code
         from clinicadl.trainer.tasks_utils import generate_label_code
 
@@ -208,9 +210,6 @@ class Trainer:
             self.config.data.label_code = generate_label_code(
                 self.config.network_task, train_df, self.config.data.label
             )
-            print(train_df)
-            print(self.config.network_task)
-        print("in check args : ", self.config.data.label_code)
 
     def train(
         self,

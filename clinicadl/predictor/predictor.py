@@ -53,19 +53,11 @@ class Predictor:
 
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
-        print(
-            self._config.data.model_dump(
-                exclude=set(["preprocessing_dict", "mode", "caps_dict"])
-            )
-        )
         tmp = self._config.data.model_dump(
             exclude=set(["preprocessing_dict", "mode", "caps_dict"])
         )
-        print(tmp)
         tmp.update(self._config.split.model_dump())
-        print(tmp)
         tmp.update(self._config.validation.model_dump())
-        print(tmp)
         self.splitter = Splitter(SplitterConfig(**tmp))
 
     def predict(
@@ -205,7 +197,6 @@ class Predictor:
         )
         if self._config.maps_manager.save_tensor:
             logger.debug("Saving tensors")
-            print("save_tensor")
             self._compute_output_tensors(
                 maps_manager=self.maps_manager,
                 dataset=data_test,
@@ -526,9 +517,7 @@ class Predictor:
             / self._config.maps_manager.data_group
         )
         logger.debug(f"Group path {group_dir}")
-        print(f"group_dir: {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            print("is dir")
             if self._config.maps_manager.overwrite:
                 if self._config.maps_manager.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
@@ -1047,7 +1036,6 @@ class Predictor:
 
             if cluster.master:
                 # Replace here
-                print("before saving")
                 maps_manager._mode_level_to_tsv(
                     prediction_df,
                     metrics,
