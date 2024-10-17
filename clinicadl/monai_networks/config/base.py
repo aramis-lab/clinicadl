@@ -1,57 +1,55 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple, Union
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    NonNegativeFloat,
-    NonNegativeInt,
-    PositiveInt,
-    computed_field,
-    field_validator,
-    model_validator,
-)
 
-from clinicadl.utils.factories import DefaultFromLibrary
+class ImplementedNetworks(str, Enum):
+    """Implemented neural networks in ClinicaDL."""
 
-from .utils.enum import (
-    ImplementedActFunctions,
-    ImplementedNetworks,
-    ImplementedNormLayers,
-)
+    MLP = "MLP"
+    CONV_ENCODER = "ConvEncoder"
+    CONV_DECODER = "ConvDecoder"
+    CNN = "CNN"
+    GENERATOR = "Generator"
+    AE = "AutoEncoder"
+    VAE = "VAE"
+    DENSENET = "DenseNet"
+    DENSENET_121 = "DenseNet-121"
+    DENSENET_161 = "DenseNet-161"
+    DENSENET_169 = "DenseNet-169"
+    DENSENET_201 = "DenseNet-201"
+    RESNET = "VarFullyConnectedNet"
+    RESNET_18 = "ResNet-18"
+    RESNET_34 = "ResNet-34"
+    RESNET_50 = "ResNet-50"
+    RESNET_101 = "ResNet-101"
+    RESNET_152 = "ResNet-152"
+    SE_RESNET = "SE-ResNet"
+    SE_RESNET_50 = "SE-ResNet-50"
+    SE_RESNET_101 = "SE-ResNet-101"
+    SE_RESNET_152 = "SE-ResNet-152"
+    UNET = "UNet"
+    ATT_UNET = "AttentionUNet"
+    VIT = "ViT"
+    VIT_B_16 = "ViT-B/16"
+    VIT_B_32 = "ViT-B/32"
+    VIT_L_16 = "ViT-L/16"
+    VIT_L_32 = "ViT-L/32"
+
+    @classmethod
+    def _missing_(cls, value):
+        raise ValueError(
+            f"{value} is not implemented. Implemented neural networks are: "
+            + ", ".join([repr(m.value) for m in cls])
+        )
 
 
 class NetworkConfig(BaseModel, ABC):
     """Base config class to configure neural networks."""
 
-    kernel_size: Union[
-        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    up_kernel_size: Union[
-        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    num_res_units: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    act: Union[
-        ImplementedActFunctions,
-        Tuple[ImplementedActFunctions, Dict[str, Any]],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES
-    norm: Union[
-        ImplementedNormLayers,
-        Tuple[ImplementedNormLayers, Dict[str, Any]],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES
-    bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
-    adn_ordering: Union[Optional[str], DefaultFromLibrary] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True,
         use_enum_values=True,
         validate_default=True,
-        protected_namespaces=(),
     )
 
     @computed_field
@@ -59,12 +57,6 @@ class NetworkConfig(BaseModel, ABC):
     @abstractmethod
     def network(self) -> ImplementedNetworks:
         """The name of the network."""
-
-    @computed_field
-    @property
-    @abstractmethod
-    def dim(self) -> int:
-        """Dimension of the images."""
 
     @classmethod
     def base_validator_dropout(cls, v):
@@ -87,21 +79,6 @@ class NetworkConfig(BaseModel, ABC):
             for v in value_:
                 assert v % 2 == 1, f"{field.field_name} must be odd."
         return value
-
-    @field_validator("adn_ordering", mode="after")
-    @classmethod
-    def base_adn_validator(cls, v):
-        """Checks ADN sequence."""
-        if v != DefaultFromLibrary.YES:
-            for letter in v:
-                assert (
-                    letter in {"A", "D", "N"}
-                ), f"adn_ordering must be composed by 'A', 'D' or/and 'N'. You passed {letter}."
-            assert len(v) == len(
-                set(v)
-            ), "adn_ordering cannot contain duplicated letter."
-
-        return v
 
     @classmethod
     def base_at_least_2d(cls, v, ctx):
@@ -135,34 +112,11 @@ class NetworkConfig(BaseModel, ABC):
         return True
 
 
-class VaryingDepthNetworkConfig(NetworkConfig, ABC):
-    """
-    Base config class to configure neural networks.
-    More precisely, we refer to MONAI's networks with 'channels' and 'strides' parameters.
-    """
+class PreTrainedConfig(NetworkConfig):
+    """Base config class for SOTA networks."""
 
-    channels: Tuple[PositiveInt, ...]
-    strides: Tuple[Union[PositiveInt, Tuple[PositiveInt, ...]], ...]
-    dropout: Union[
-        Optional[NonNegativeFloat], DefaultFromLibrary
+    num_outputs: Optional[PositiveInt]
+    output_act: Union[
+        Optional[ActivationParameters], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-
-    @field_validator("dropout")
-    @classmethod
-    def validator_dropout(cls, v):
-        """Checks that dropout is between 0 and 1."""
-        return cls.base_validator_dropout(v)
-
-    @model_validator(mode="after")
-    def channels_strides_validator(self):
-        """Checks coherence between parameters."""
-        n_layers = len(self.channels)
-        assert (
-            len(self.strides) == n_layers
-        ), f"There are {n_layers} layers but you passed {len(self.strides)} strides."
-        for s in self.strides:
-            assert self._check_dimensions(
-                s
-            ), f"You must passed an int or a sequence of {self.dim} ints (the dimensionality of your images) for strides. You passed {s}."
-
-        return self
+    pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
