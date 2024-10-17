@@ -13,7 +13,6 @@ from clinicadl.commandline.modules_options import (
     optimizer,
     reproducibility,
     split,
-    ssda,
     transforms,
     validation,
 )
@@ -61,12 +60,6 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 @dataloader.batch_size
 @dataloader.sampler
 @dataloader.n_proc
-# ssda o
-@ssda.ssda_network
-@ssda.caps_target
-@ssda.tsv_target_lab
-@ssda.tsv_target_unlab
-@ssda.preprocessing_json_target
 # Cross validation
 @split.n_splits
 @split.split

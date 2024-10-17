@@ -14,7 +14,6 @@ from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.maps_manager.config import MapsManagerConfig
 from clinicadl.network.config import NetworkConfig
 from clinicadl.optimizer.optimization import OptimizationConfig
@@ -50,7 +49,6 @@ class TrainConfig(BaseModel, ABC):
     optimizer: OptimizerConfig
     reproducibility: ReproducibilityConfig
     split: SplitConfig
-    ssda: SSDAConfig
     transfer_learning: TransferLearningConfig
     transforms: TransformsConfig
     validation: ValidationConfig
@@ -77,7 +75,6 @@ class TrainConfig(BaseModel, ABC):
             optimizer=kwargs,
             reproducibility=kwargs,
             split=kwargs,
-            ssda=kwargs,
             transfer_learning=kwargs,
             transforms=kwargs,
             validation=kwargs,
@@ -97,7 +94,6 @@ class TrainConfig(BaseModel, ABC):
         self.optimizer.__dict__.update(config_dict)
         self.reproducibility.__dict__.update(config_dict)
         self.split.__dict__.update(config_dict)
-        self.ssda.__dict__.update(config_dict)
         self.transfer_learning.__dict__.update(config_dict)
         self.transforms.__dict__.update(config_dict)
         self.validation.__dict__.update(config_dict)
