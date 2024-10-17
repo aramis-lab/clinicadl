@@ -2,12 +2,25 @@ import pytest
 
 from clinicadl.monai_networks.nn.utils.checks import (
     _check_conv_parameter,
+    check_adn_ordering,
     check_conv_args,
     check_mlp_args,
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
 )
+
+
+@pytest.mark.parametrize(
+    "adn,error",
+    [("ADN", False), ("ND", False), ("A", False), ("AAD", True), ("ADM", True)],
+)
+def test_check_adn_ordering(adn, error):
+    if error:
+        with pytest.raises(ValueError):
+            check_adn_ordering(adn)
+    else:
+        check_adn_ordering(adn)
 
 
 @pytest.mark.parametrize(

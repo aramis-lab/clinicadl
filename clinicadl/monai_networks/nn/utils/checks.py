@@ -65,6 +65,28 @@ def check_norm_layer(
     return norm
 
 
+def check_adn_ordering(adn: str) -> str:
+    """
+    Checks ADN sequence.
+    """
+    if not isinstance(adn, str):
+        raise ValueError(f"adn_ordering must be a string. Got {adn}")
+
+    for letter in adn:
+        if letter not in {
+            "A",
+            "D",
+            "N",
+        }:
+            raise ValueError(
+                f"adn_ordering must be composed by 'A', 'D' or/and 'N'. Got {letter}"
+            )
+    if len(adn) != len(set(adn)):
+        raise ValueError(f"adn_ordering cannot contain duplicated letter. Got {adn}")
+
+    return adn
+
+
 def check_conv_args(conv_args: Dict[str, Any]) -> None:
     """
     Checks that `conv_args` is a dict with at least the mandatory argument `channels`.

@@ -12,7 +12,7 @@ from .layers.utils import (
     NormalizationParameters,
     NormLayer,
 )
-from .utils import check_norm_layer
+from .utils import check_adn_ordering, check_norm_layer
 
 
 class MLP(BaseMLP):
@@ -99,7 +99,13 @@ class MLP(BaseMLP):
     ) -> None:
         self.norm = check_norm_layer(norm)
         super().__init__(
-            in_channels, out_channels, hidden_channels, dropout, act, bias, adn_ordering
+            in_channels,
+            out_channels,
+            hidden_channels,
+            dropout,
+            act,
+            bias,
+            check_adn_ordering(adn_ordering),
         )
         self.output = nn.Sequential(OrderedDict([("linear", self.output)]))
         self.output.output_act = get_act_layer(output_act) if output_act else None

@@ -20,6 +20,7 @@ from .layers.utils import (
 from .utils import (
     calculate_conv_out_shape,
     calculate_pool_out_shape,
+    check_adn_ordering,
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
@@ -206,7 +207,7 @@ class ConvEncoder(nn.Sequential):
             raise ValueError("Layer normalization not implemented in ConvEncoder.")
         self.dropout = dropout
         self.bias = bias
-        self.adn_ordering = adn_ordering
+        self.adn_ordering = check_adn_ordering(adn_ordering)
 
         n_poolings = 0
         if self.pooling and -1 in self.pooling_indices:

@@ -20,6 +20,7 @@ from .layers.utils import (
 from .utils import (
     calculate_convtranspose_out_shape,
     calculate_unpool_out_shape,
+    check_adn_ordering,
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
@@ -226,7 +227,7 @@ class ConvDecoder(nn.Sequential):
             raise ValueError("Layer normalization not implemented in ConvDecoder.")
         self.dropout = dropout
         self.bias = bias
-        self.adn_ordering = adn_ordering
+        self.adn_ordering = check_adn_ordering(adn_ordering)
 
         n_unpoolings = 0
         if self.unpooling and -1 in self.unpooling_indices:

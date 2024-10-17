@@ -1,4 +1,5 @@
 from .checks import (
+    check_adn_ordering,
     check_conv_args,
     check_mlp_args,
     check_norm_layer,
