@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.commandline import arguments
@@ -10,7 +12,7 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.interpret import options
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predictor.predictor import Predictor
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -40,9 +42,13 @@ def cli(**kwargs):
     NAME is the name of the saliency map task.
     METHOD is the method used to extract an attribution map.
     """
+    from clinicadl.utils.iotools.train_utils import merge_cli_and_maps_json_options
 
-    interpret_config = InterpretConfig(**kwargs)
-    predict_manager = PredictManager(interpret_config)
+    dict_ = merge_cli_and_maps_json_options(
+        Path(kwargs["input_maps"]) / "maps.json", **kwargs
+    )
+    interpret_config = InterpretConfig(**dict_)
+    predict_manager = Predictor(interpret_config)
     predict_manager.interpret()
 
 

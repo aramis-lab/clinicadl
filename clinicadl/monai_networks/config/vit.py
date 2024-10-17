@@ -109,7 +109,6 @@ class ViTConfig(NetworkConfig):
         numerator: Union[int, Tuple[int, ...]],
         denominator: Union[int, Tuple[int, ...]],
     ) -> bool:
-        print(self.dim)
         """Checks if numerator is divisible by denominator."""
         if isinstance(numerator, int):
             numerator = (numerator,) * self.dim

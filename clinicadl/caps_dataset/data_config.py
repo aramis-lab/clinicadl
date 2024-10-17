@@ -24,7 +24,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     that must be passed by the user.
     """
 
-    caps_directory: Path
+    caps_directory: Optional[Path] = None
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     data_df: Optional[pd.DataFrame] = None
@@ -147,15 +147,17 @@ class DataConfig(BaseModel):  # TODO : put in data module
                         f"in {caps_dict}."
                     )
 
-        preprocessing_dict = read_preprocessing(preprocessing_json)
+            preprocessing_dict = read_preprocessing(preprocessing_json)
 
-        if (
-            preprocessing_dict["mode"] == "roi"
-            and "roi_background_value" not in preprocessing_dict
-        ):
-            preprocessing_dict["roi_background_value"] = 0
+            if (
+                preprocessing_dict["mode"] == "roi"
+                and "roi_background_value" not in preprocessing_dict
+            ):
+                preprocessing_dict["roi_background_value"] = 0
 
-        return preprocessing_dict
+            return preprocessing_dict
+        else:
+            return None
 
     @computed_field
     @property

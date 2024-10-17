@@ -7,8 +7,8 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
 from clinicadl.caps_dataset.data_config import DataConfig
+from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.split_utils import find_splits
-from clinicadl.splitter.validation import ValidationConfig
 
 logger = getLogger("clinicadl.split_config")
 

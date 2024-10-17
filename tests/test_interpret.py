@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predictor.predictor import Predictor
 
 
 @pytest.fixture(params=["classification", "regression"])
@@ -77,14 +77,21 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     assert train_error
 
     for method in list(InterpretationMethod):
-        interpret_config = InterpretConfig(
-            maps_dir=maps_path,
-            data_group="train",
-            name=f"test-{method}",
-            method_cls=method,
+        from clinicadl.utils.iotools.train_utils import (
+            merge_options_and_maps_json_options,
         )
-        interpret_manager = PredictManager(interpret_config)
+
+        dict_ = {
+            "maps_dir": maps_path,
+            "data_group": "train",
+            "name": f"test-{method}",
+            "method_cls": method,
+        }
+        # options = merge_options_and_maps_json_options(maps_path / "maps.json", **dict_)
+        interpret_config = InterpretConfig(**dict_)
+
+        interpret_manager = Predictor(interpret_config)
         interpret_manager.interpret()
         interpret_map = interpret_manager.get_interpretation(
-            "train", f"test-{interpret_config.method}"
+            "train", f"test-{interpret_config.interpret.method}"
         )

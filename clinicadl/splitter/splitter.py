@@ -1,4 +1,5 @@
 import abc
+import shutil
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -6,6 +7,8 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
 from clinicadl.splitter.config import SplitterConfig
+from clinicadl.utils import cluster
+from clinicadl.utils.exceptions import MAPSError
 
 logger = getLogger("clinicadl.split_manager")
 
@@ -14,7 +17,7 @@ class Splitter:
     def __init__(
         self,
         config: SplitterConfig,
-        split_list: Optional[List[int]] = None,
+        # split_list: Optional[List[int]] = None,
     ):
         """_summary_
 
@@ -29,19 +32,19 @@ class Splitter:
 
         """
         self.config = config
-        self.split_list = split_list
+        # self.config.split.split = split_list
 
-        self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
+        # self.caps_dict = self.config.data.caps_dict  # TODO : check if useful ?
 
     def max_length(self) -> int:
         """Maximum number of splits"""
         return self.config.split.n_splits
 
     def __len__(self):
-        if not self.split_list:
+        if not self.config.split.split:
             return self.config.split.n_splits
         else:
-            return len(self.split_list)
+            return len(self.config.split.split)
 
     @property
     def allowed_splits_list(self):
@@ -203,13 +206,32 @@ class Splitter:
 
     def split_iterator(self):
         """Returns an iterable to iterate on all splits wanted."""
-        if not self.split_list:
+
+        if not self.config.split.split:
             return range(self.config.split.n_splits)
         else:
-            return self.split_list
+            return self.config.split.split
 
     def _check_item(self, item):
         if item not in self.allowed_splits_list:
             raise IndexError(
                 f"Split index {item} out of allowed splits {self.allowed_splits_list}."
+            )
+
+    def check_split_list(self, maps_path, overwrite):
+        existing_splits = []
+        for split in self.split_iterator():
+            split_path = maps_path / f"split-{split}"
+            if split_path.is_dir():
+                if overwrite:
+                    if cluster.master:
+                        shutil.rmtree(split_path)
+                else:
+                    existing_splits.append(split)
+
+        if len(existing_splits) > 0:
+            raise MAPSError(
+                f"Splits {existing_splits} already exist. Please "
+                f"specify a list of splits not intersecting the previous list, "
+                f"or use overwrite to erase previously trained splits."
             )

@@ -2,7 +2,11 @@ from pathlib import Path
 
 from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.caps_dataset.data import return_dataset
+from clinicadl.predictor.config import PredictConfig
+from clinicadl.predictor.predictor import Predictor
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
+from clinicadl.splitter.config import SplitterConfig
+from clinicadl.splitter.splitter import Splitter
 from clinicadl.trainer.config.classification import ClassificationConfig
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing, Task
@@ -27,11 +31,11 @@ dataset = return_dataset(
     multi_cohort,
 )
 
-split_config = SplitConfig()
+split_config = SplitterConfig()
 splitter = Splitter(split_config)
 
-validator_config = ValidatorConfig()
-validator = Validator(validator_config)
+validator_config = PredictConfig()
+validator = Predictor(validator_config)
 
 train_config = ClassificationConfig()
 trainer = Trainer(train_config, validator)
@@ -78,6 +82,6 @@ for split in splitter.split_iterator():
         test_loader = trainer.get_dataloader(dataset, split, network, "test", config)
         validator.predict(test_loader)
 
-interpret_config = InterpretConfig(**kwargs)
-predict_manager = PredictManager(interpret_config)
+interpret_config = PredictConfig(**kwargs)
+predict_manager = Predictor(interpret_config)
 predict_manager.interpret()

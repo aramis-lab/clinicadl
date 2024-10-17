@@ -13,7 +13,6 @@ from clinicadl.commandline.modules_options import (
     optimizer,
     reproducibility,
     split,
-    ssda,
     transforms,
     validation,
 )
@@ -63,12 +62,6 @@ from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_option
 @dataloader.batch_size
 @dataloader.sampler
 @dataloader.n_proc
-# ssda option
-@ssda.ssda_network
-@ssda.caps_target
-@ssda.tsv_target_lab
-@ssda.tsv_target_unlab
-@ssda.preprocessing_json_target
 # Cross validation
 @split.n_splits
 @split.split
@@ -115,4 +108,5 @@ def cli(**kwargs):
     options = merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
     config = ClassificationConfig(**options)
     trainer = Trainer(config)
+
     trainer.train(split_list=config.split.split, overwrite=True)

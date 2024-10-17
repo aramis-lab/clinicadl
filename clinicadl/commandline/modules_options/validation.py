@@ -2,7 +2,7 @@ import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
-from clinicadl.splitter.validation import ValidationConfig
+from clinicadl.predictor.validation import ValidationConfig
 
 # Validation
 valid_longitudinal = click.option(
