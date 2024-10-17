@@ -24,7 +24,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
     that must be passed by the user.
     """
 
-    caps_directory: Path
+    caps_directory: Optional[Path] = None
     baseline: bool = False
     diagnoses: Tuple[str, ...] = ("AD", "CN")
     data_df: Optional[pd.DataFrame] = None

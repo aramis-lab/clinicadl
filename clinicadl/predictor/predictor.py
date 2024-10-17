@@ -402,7 +402,6 @@ class Predictor:
         group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
 
-        assert self._config.split
         for split in self.splitter.split_iterator():
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(

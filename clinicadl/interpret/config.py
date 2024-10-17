@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, field_validator
 
-from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
 from clinicadl.maps_manager.config import MapsManagerConfig as MapsManagerConfigBase
@@ -28,10 +28,6 @@ class MapsManagerConfig(MapsManagerConfigBase):
             raise ClinicaDLArgumentError(
                 "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
             )
-
-
-class DataConfig(DataBaseConfig):
-    caps_directory: Optional[Path] = None
 
 
 class InterpretBaseConfig(BaseModel):

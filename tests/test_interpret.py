@@ -87,11 +87,11 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
             "name": f"test-{method}",
             "method_cls": method,
         }
-        options = merge_options_and_maps_json_options(maps_path / "maps.json", **dict_)
-        interpret_config = InterpretConfig(**options)
+        # options = merge_options_and_maps_json_options(maps_path / "maps.json", **dict_)
+        interpret_config = InterpretConfig(**dict_)
 
         interpret_manager = Predictor(interpret_config)
         interpret_manager.interpret()
         interpret_map = interpret_manager.get_interpretation(
-            "train", f"test-{interpret_config.method}"
+            "train", f"test-{interpret_config.interpret.method}"
         )
