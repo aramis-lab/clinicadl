@@ -1,10 +1,15 @@
 import pytest
-from monai.networks.nets import ResNet
-from monai.networks.nets.resnet import ResNetBottleneck
-from torch.nn import Conv2d
 
-from clinicadl.monai_networks import get_network
-from clinicadl.monai_networks.config import create_network_config
+from clinicadl.monai_networks import (
+    ImplementedNetworks,
+    get_network,
+    get_network_from_config,
+)
+from clinicadl.monai_networks.config.autoencoder import AutoEncoderConfig
+from clinicadl.monai_networks.factory import _update_config_with_defaults
+from clinicadl.monai_networks.nn import AutoEncoder
+
+tested = []
 
 
 @pytest.mark.parametrize(
@@ -13,124 +18,285 @@ from clinicadl.monai_networks.config import create_network_config
         (
             "AutoEncoder",
             {
-                "spatial_dims": 3,
-                "in_channels": 1,
-                "out_channels": 1,
-                "channels": [2, 2],
-                "strides": [1, 1],
+                "in_shape": (1, 64, 65),
+                "latent_size": 1,
+                "conv_args": {"channels": [2, 4]},
             },
         ),
         (
-            "VarAutoEncoder",
+            "VAE",
             {
-                "spatial_dims": 3,
-                "in_shape": (1, 16, 16, 16),
-                "out_channels": 1,
-                "latent_size": 16,
-                "channels": [2, 2],
-                "strides": [1, 1],
+                "in_shape": (1, 64, 65),
+                "latent_size": 1,
+                "conv_args": {"channels": [2, 4]},
             },
         ),
         (
-            "Regressor",
+            "CNN",
             {
-                "in_shape": (1, 16, 16, 16),
-                "out_shape": (1, 16, 16, 16),
-                "channels": [2, 2],
-                "strides": [1, 1],
-            },
-        ),
-        (
-            "Classifier",
-            {
-                "in_shape": (1, 16, 16, 16),
-                "classes": 2,
-                "channels": [2, 2],
-                "strides": [1, 1],
-            },
-        ),
-        (
-            "Discriminator",
-            {"in_shape": (1, 16, 16, 16), "channels": [2, 2], "strides": [1, 1]},
-        ),
-        (
-            "Critic",
-            {"in_shape": (1, 16, 16, 16), "channels": [2, 2], "strides": [1, 1]},
-        ),
-        ("DenseNet", {"spatial_dims": 3, "in_channels": 1, "out_channels": 1}),
-        (
-            "FullyConnectedNet",
-            {"in_channels": 3, "out_channels": 1, "hidden_channels": [2, 3]},
-        ),
-        (
-            "VarFullyConnectedNet",
-            {
-                "in_channels": 1,
-                "out_channels": 1,
-                "latent_size": 16,
-                "encode_channels": [2, 2],
-                "decode_channels": [2, 2],
+                "in_shape": (1, 64, 65),
+                "num_outputs": 1,
+                "conv_args": {"channels": [2, 4]},
             },
         ),
         (
             "Generator",
             {
-                "latent_shape": (3,),
-                "start_shape": (1, 16, 16, 16),
-                "channels": [2, 2],
-                "strides": [1, 1],
+                "latent_size": 1,
+                "start_shape": (1, 5, 5),
+                "conv_args": {"channels": [2, 4]},
+            },
+        ),
+        (
+            "ConvDecoder",
+            {
+                "spatial_dims": 2,
+                "in_channels": 1,
+                "channels": [2, 4],
+            },
+        ),
+        (
+            "ConvEncoder",
+            {
+                "spatial_dims": 2,
+                "in_channels": 1,
+                "channels": [2, 4],
+            },
+        ),
+        (
+            "MLP",
+            {
+                "in_channels": 1,
+                "out_channels": 2,
+                "hidden_channels": [2, 4],
+            },
+        ),
+        (
+            "AttentionUNet",
+            {
+                "spatial_dims": 2,
+                "in_channels": 1,
+                "out_channels": 2,
+            },
+        ),
+        (
+            "UNet",
+            {
+                "spatial_dims": 2,
+                "in_channels": 1,
+                "out_channels": 2,
             },
         ),
         (
             "ResNet",
             {
-                "block": "bottleneck",
-                "layers": (4, 4, 4, 4),
-                "block_inplanes": (5, 5, 5, 5),
                 "spatial_dims": 2,
-            },
-        ),
-        ("ResNetFeatures", {"model_name": "resnet10"}),
-        ("SegResNet", {}),
-        (
-            "UNet",
-            {
-                "spatial_dims": 3,
                 "in_channels": 1,
-                "out_channels": 1,
-                "channels": [2, 2, 2],
-                "strides": [1, 1],
+                "num_outputs": 1,
             },
         ),
         (
-            "AttentionUnet",
+            "DenseNet",
             {
-                "spatial_dims": 3,
+                "spatial_dims": 2,
                 "in_channels": 1,
-                "out_channels": 1,
-                "channels": [2, 2, 2],
-                "strides": [1, 1],
+                "num_outputs": 1,
             },
         ),
-        ("ViT", {"in_channels": 3, "img_size": 16, "patch_size": 4}),
-        ("ViTAutoEnc", {"in_channels": 3, "img_size": 16, "patch_size": 4}),
+        (
+            "SEResNet",
+            {
+                "spatial_dims": 2,
+                "in_channels": 1,
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ViT",
+            {
+                "in_shape": (1, 64, 65),
+                "patch_size": (4, 5),
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ResNet-18",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ResNet-34",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ResNet-50",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ResNet-101",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ResNet-152",
+            {
+                "num_outputs": 1,
+                "pretrained": True,
+            },
+        ),
+        (
+            "DenseNet-121",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "DenseNet-161",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "DenseNet-169",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "DenseNet-201",
+            {
+                "num_outputs": 1,
+                "pretrained": True,
+            },
+        ),
+        (
+            "SEResNet-50",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "SEResNet-101",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "SEResNet-152",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ViT-B/16",
+            {
+                "num_outputs": 1,
+                "pretrained": True,
+            },
+        ),
+        (
+            "ViT-B/32",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ViT-L/16",
+            {
+                "num_outputs": 1,
+            },
+        ),
+        (
+            "ViT-L/32",
+            {
+                "num_outputs": 1,
+            },
+        ),
     ],
 )
 def test_get_network(network_name, params):
-    config = create_network_config(network_name)(**params)
-    network, updated_config = get_network(config)
+    tested.append(network_name)
+    _ = get_network(name=network_name, **params)
+    if network_name == "ViT-L/32":  # the last one
+        assert set(tested) == set(
+            net.value for net in ImplementedNetworks
+        )  # check we haven't miss a network
 
-    if network_name == "ResNet":
-        assert isinstance(network, ResNet)
-        assert isinstance(network.layer1[0], ResNetBottleneck)
-        assert len(network.layer1) == 4
-        assert network.layer1[0].conv1.in_channels == 5
-        assert isinstance(network.layer1[0].conv1, Conv2d)
 
-        assert updated_config.network == "ResNet"
-        assert updated_config.block == "bottleneck"
-        assert updated_config.layers == (4, 4, 4, 4)
-        assert updated_config.block_inplanes == (5, 5, 5, 5)
-        assert updated_config.spatial_dims == 2
-        assert updated_config.conv1_t_size == 7
-        assert updated_config.act == ("relu", {"inplace": True})
+def test_update_config_with_defaults():
+    config = AutoEncoderConfig(
+        latent_size=1,
+        in_shape=(1, 10, 10),
+        conv_args={"channels": [1, 2], "dropout": 0.2},
+        mlp_args={"hidden_channels": [5], "act": "relu"},
+    )
+    _update_config_with_defaults(config, AutoEncoder.__init__)
+    assert config.in_shape == (1, 10, 10)
+    assert config.latent_size == 1
+    assert config.conv_args.channels == [1, 2]
+    assert config.conv_args.dropout == 0.2
+    assert config.conv_args.act == "prelu"
+    assert config.mlp_args.hidden_channels == [5]
+    assert config.mlp_args.act == "relu"
+    assert config.mlp_args.norm == "batch"
+    assert config.out_channels is None
+
+
+def test_parameters():
+    net, updated_config = get_network(
+        "AutoEncoder",
+        return_config=True,
+        latent_size=1,
+        in_shape=(1, 10, 10),
+        conv_args={"channels": [1, 2], "dropout": 0.2},
+        mlp_args={"hidden_channels": [5], "act": "relu"},
+    )
+    assert isinstance(net, AutoEncoder)
+    assert net.encoder.mlp.out_channels == 1
+    assert net.encoder.mlp.hidden_channels == [5]
+    assert net.encoder.mlp.act == "relu"
+    assert net.encoder.mlp.norm == "batch"
+    assert net.in_shape == (1, 10, 10)
+    assert net.encoder.convolutions.channels == (1, 2)
+    assert net.encoder.convolutions.dropout == 0.2
+    assert net.encoder.convolutions.act == "prelu"
+
+    assert updated_config.in_shape == (1, 10, 10)
+    assert updated_config.latent_size == 1
+    assert updated_config.conv_args.channels == [1, 2]
+    assert updated_config.conv_args.dropout == 0.2
+    assert updated_config.conv_args.act == "prelu"
+    assert updated_config.mlp_args.hidden_channels == [5]
+    assert updated_config.mlp_args.act == "relu"
+    assert updated_config.mlp_args.norm == "batch"
+    assert updated_config.out_channels is None
+
+
+def test_without_return():
+    net = get_network(
+        "AutoEncoder",
+        return_config=False,
+        latent_size=1,
+        in_shape=(1, 10, 10),
+        conv_args={"channels": [1, 2]},
+    )
+    assert isinstance(net, AutoEncoder)
+
+
+def test_get_network_from_config():
+    config = AutoEncoderConfig(
+        latent_size=1,
+        in_shape=(1, 10, 10),
+        conv_args={"channels": [1, 2], "dropout": 0.2},
+        mlp_args={"hidden_channels": [5], "act": "relu"},
+    )
+    net, updated_config = get_network_from_config(config)
+    assert isinstance(net, AutoEncoder)
+    assert updated_config.conv_args.act == "prelu"
+    assert config.conv_args.act == "DefaultFromLibrary"

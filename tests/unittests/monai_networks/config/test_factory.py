@@ -9,9 +9,9 @@ def test_create_training_config():
     config = config_class(
         spatial_dims=1,
         in_channels=2,
-        out_channels=3,
+        num_outputs=None,
     )
-    assert config.network == "DenseNet"
+    assert config.name == "DenseNet"
     assert config.spatial_dims == 1
     assert config.in_channels == 2
-    assert config.out_channels == 3
+    assert config.num_outputs is None

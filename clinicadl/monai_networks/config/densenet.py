@@ -1,20 +1,11 @@
-from __future__ import annotations
+from typing import Optional, Sequence, Union
 
-from typing import Tuple, Union
+from pydantic import PositiveFloat, PositiveInt, computed_field
 
-from pydantic import (
-    NonNegativeFloat,
-    PositiveInt,
-    computed_field,
-    field_validator,
-)
-
+from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import NetworkConfig
-from .utils.enum import ImplementedNetworks
-
-__all__ = ["DenseNetConfig"]
+from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class DenseNetConfig(NetworkConfig):
@@ -22,29 +13,71 @@ class DenseNetConfig(NetworkConfig):
 
     spatial_dims: PositiveInt
     in_channels: PositiveInt
-    out_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    n_dense_layers: Union[
+        Sequence[PositiveInt], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
     init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    block_config: Union[
-        Tuple[PositiveInt, ...], DefaultFromLibrary
+    bottleneck_factor: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
+    output_act: Union[
+        Optional[ActivationParameters], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    bn_size: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    dropout_prob: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
-        return ImplementedNetworks.DENSE_NET
+        return ImplementedNetworks.DENSENET
+
+
+class PreTrainedDenseNetConfig(PreTrainedConfig):
+    """Base config class for SOTA DenseNets."""
 
     @computed_field
     @property
-    def dim(self) -> int:
-        """Dimension of the images."""
-        return self.spatial_dims
+    def _type(self) -> NetworkType:
+        """To know where to look for the network."""
+        return NetworkType.DENSENET
 
-    @field_validator("dropout_prob")
-    @classmethod
-    def validator_dropout(cls, v):
-        """Checks that dropout is between 0 and 1."""
-        return cls.base_validator_dropout(v)
+
+class DenseNet121Config(PreTrainedDenseNetConfig):
+    """Config class for DenseNet-121."""
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.DENSENET_121
+
+
+class DenseNet161Config(PreTrainedDenseNetConfig):
+    """Config class for DenseNet-161."""
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.DENSENET_161
+
+
+class DenseNet169Config(PreTrainedDenseNetConfig):
+    """Config class for DenseNet-169."""
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.DENSENET_169
+
+
+class DenseNet201Config(PreTrainedDenseNetConfig):
+    """Config class for DenseNet-201."""
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedNetworks:
+        """The name of the network."""
+        return ImplementedNetworks.DENSENET_201
