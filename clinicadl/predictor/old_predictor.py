@@ -17,12 +17,22 @@ from clinicadl.dataset.caps_dataset import (
 )
 from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.interpret.config import InterpretConfig
+<<<<<<<< HEAD:clinicadl/predictor/old_predictor.py
 from clinicadl.metrics.old_metrics.metric_module import MetricModule
 from clinicadl.metrics.old_metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
 from clinicadl.networks.old_network.network import Network
+========
+from clinicadl.maps_manager.maps_manager import MapsManager
+from clinicadl.metrics.metric_module import MetricModule
+from clinicadl.metrics.utils import (
+    check_selection_metric,
+    find_selection_metrics,
+)
+from clinicadl.network.network import Network
+>>>>>>>> 1ae72275 (Cb extract validator (#666)):clinicadl/predictor/predictor.py
 from clinicadl.predictor.config import PredictConfig
 from clinicadl.trainer.tasks_utils import (
     columns,
@@ -49,7 +59,11 @@ class Predictor:
         self._config = _config
 
         from clinicadl.splitter.config import SplitterConfig
+<<<<<<<< HEAD:clinicadl/predictor/old_predictor.py
         from clinicadl.splitter.old_splitter import Splitter
+========
+        from clinicadl.splitter.splitter import Splitter
+>>>>>>>> 1ae72275 (Cb extract validator (#666)):clinicadl/predictor/predictor.py
 
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)
@@ -1060,7 +1074,11 @@ class Predictor:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
+<<<<<<<< HEAD:clinicadl/predictor/old_predictor.py
             dataset (clinicadl.dataset.caps_dataset.CapsDataset): wrapper of the data set.
+========
+            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
+>>>>>>>> 1ae72275 (Cb extract validator (#666)):clinicadl/predictor/predictor.py
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.
