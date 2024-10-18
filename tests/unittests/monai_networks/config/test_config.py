@@ -117,6 +117,17 @@ def test_cnn_config():
     assert config.mlp_args == "DefaultFromLibrary"
 
 
+def test_generator_config():
+    from clinicadl.monai_networks.config.generator import GeneratorConfig
+
+    config = GeneratorConfig(
+        start_shape=(2, 10, 10), latent_size=2, conv_args={"channels": [1]}
+    )
+    assert config.start_shape == (2, 10, 10)
+    assert config.conv_args.channels == [1]
+    assert config.mlp_args == "DefaultFromLibrary"
+
+
 def test_conv_decoder_config():
     from clinicadl.monai_networks.config.conv_decoder import ConvDecoderConfig
 

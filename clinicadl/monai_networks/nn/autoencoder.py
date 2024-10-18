@@ -170,9 +170,10 @@ class AutoEncoder(nn.Sequential):
     ) -> None:
         super().__init__()
         self.in_shape = in_shape
-        self.unpooling_mode = self._check_unpooling_mode(unpooling_mode)
+        self.latent_size = latent_size
         self.out_channels = out_channels if out_channels else self.in_shape[0]
-        self.output_act = output_act
+        self._output_act = output_act
+        self.unpooling_mode = self._check_unpooling_mode(unpooling_mode)
         self.spatial_dims = len(in_shape[1:])
 
         self.encoder = CNN(
@@ -239,7 +240,7 @@ class AutoEncoder(nn.Sequential):
         if "pooling_indices" in args:
             del args["pooling_indices"]
 
-        args["output_act"] = self.output_act if self.output_act else None
+        args["output_act"] = self._output_act if self._output_act else None
 
         return args
 

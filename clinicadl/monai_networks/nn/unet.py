@@ -33,7 +33,6 @@ class BaseUNet(nn.Module, ABC):
         self.out_channels = out_channels
         self.channels = channels
         self.act = act
-        self.output_act = output_act
         self.dropout = dropout
 
         self.doubleconv = ConvBlock(
@@ -222,7 +221,7 @@ class UNet(BaseUNet):
 
         out = self.reduce_channels(x)
 
-        if self.output_act:
+        if self.output_act is not None:
             out = self.output_act(out)
 
         return out

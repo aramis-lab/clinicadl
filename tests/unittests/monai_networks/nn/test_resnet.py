@@ -4,7 +4,7 @@ import torch
 from clinicadl.monai_networks.nn import ResNet, get_resnet
 from clinicadl.monai_networks.nn.layers.resnet import ResNetBlock, ResNetBottleneck
 from clinicadl.monai_networks.nn.layers.utils import ActFunction
-from clinicadl.monai_networks.nn.resnet import CommonResNet
+from clinicadl.monai_networks.nn.resnet import SOTAResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)
@@ -139,11 +139,11 @@ def test_activation_parameters():
 @pytest.mark.parametrize(
     "name,num_outputs,output_act",
     [
-        (CommonResNet.RESNET_18, 1, "sigmoid"),
-        (CommonResNet.RESNET_34, 2, None),
-        (CommonResNet.RESNET_50, None, "sigmoid"),
-        (CommonResNet.RESNET_101, None, None),
-        (CommonResNet.RESNET_152, None, None),
+        (SOTAResNet.RESNET_18, 1, "sigmoid"),
+        (SOTAResNet.RESNET_34, 2, None),
+        (SOTAResNet.RESNET_50, None, "sigmoid"),
+        (SOTAResNet.RESNET_101, None, None),
+        (SOTAResNet.RESNET_152, None, None),
     ],
 )
 def test_get_resnet(name, num_outputs, output_act):
@@ -165,7 +165,7 @@ def test_get_resnet(name, num_outputs, output_act):
 def test_get_resnet_output():
     from torchvision.models import resnet18
 
-    resnet = get_resnet(CommonResNet.RESNET_18, num_outputs=None, pretrained=True)
+    resnet = get_resnet(SOTAResNet.RESNET_18, num_outputs=None, pretrained=True)
     gt = resnet18(weights="DEFAULT")
     gt.avgpool = torch.nn.Identity()
     gt.fc = torch.nn.Identity()

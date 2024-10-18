@@ -4,7 +4,7 @@ import torch
 from clinicadl.monai_networks.nn import SEResNet, get_seresnet
 from clinicadl.monai_networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
 from clinicadl.monai_networks.nn.layers.utils import ActFunction
-from clinicadl.monai_networks.nn.senet import CommonSEResNet
+from clinicadl.monai_networks.nn.senet import SOTAResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)
@@ -31,7 +31,7 @@ INPUT_3D = torch.randn(3, 3, 20, 21, 22)
         (INPUT_3D, 1, "bottleneck", (2,), (3,), (4, 3, 4), 2, 1, "tanh", "sigmoid", 2),
     ],
 )
-def test_resnet(
+def test_seresnet(
     input_tensor,
     num_outputs,
     block_type,
@@ -144,12 +144,12 @@ def test_activation_parameters():
 @pytest.mark.parametrize(
     "name,num_outputs,output_act",
     [
-        (CommonSEResNet.SE_RESNET_50, 1, "sigmoid"),
-        (CommonSEResNet.SE_RESNET_101, 2, None),
-        (CommonSEResNet.SE_RESNET_152, None, "sigmoid"),
+        (SOTAResNet.SE_RESNET_50, 1, "sigmoid"),
+        (SOTAResNet.SE_RESNET_101, 2, None),
+        (SOTAResNet.SE_RESNET_152, None, "sigmoid"),
     ],
 )
-def test_get_resnet(name, num_outputs, output_act):
+def test_get_seresnet(name, num_outputs, output_act):
     seresnet = get_seresnet(
         name,
         num_outputs=num_outputs,
@@ -165,3 +165,8 @@ def test_get_resnet(name, num_outputs, output_act):
     elif output_act and num_outputs is None:
         with pytest.raises(AttributeError):
             seresnet.fc.output_act
+
+
+def test_get_seresnet_error():
+    with pytest.raises(ValueError):
+        get_seresnet(SOTAResNet.SE_RESNET_50, num_outputs=1, pretrained=True)

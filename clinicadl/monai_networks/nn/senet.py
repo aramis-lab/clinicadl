@@ -136,9 +136,9 @@ class SEResNet(GeneralResNet):
 class SOTAResNet(str, Enum):
     """Supported SEResNet networks."""
 
-    SE_RESNET_50 = "SE-ResNet-50"
-    SE_RESNET_101 = "SE-ResNet-101"
-    SE_RESNET_152 = "SE-ResNet-152"
+    SE_RESNET_50 = "SEResNet-50"
+    SE_RESNET_101 = "SEResNet-101"
+    SE_RESNET_152 = "SEResNet-152"
 
 
 def get_seresnet(
@@ -153,14 +153,14 @@ def get_seresnet(
 
     Only the last fully connected layer will be changed to match `num_outputs`.
 
-    .. warning:: `SE-ResNet-50`, `SE-ResNet-101` and `SE-ResNet-152` only works with 2D images with 3 channels.
+    .. warning:: `SEResNet-50`, `SEResNet-101` and `SEResNet-152` only works with 2D images with 3 channels.
 
     Note: pretrained weights are not yet available for these networks.
 
     Parameters
     ----------
     model : Union[str, SOTAResNet]
-        the name of the SEResNet. Available networks are `SE-ResNet-50`, `SE-ResNet-101` and `SE-ResNet-152`.
+        the name of the SEResNet. Available networks are `SEResNet-50`, `SEResNet-101` and `SEResNet-152`.
     num_outputs : Optional[int]
         number of output variables after the last linear layer.\n
         If None, the features before the last fully connected layer will be returned.

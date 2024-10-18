@@ -201,7 +201,7 @@ class AttentionUNet(BaseUNet):
 
         out = self.reduce_channels(x)
 
-        if self.output_act:
+        if self.output_act is not None:
             out = self.output_act(out)
 
         return out

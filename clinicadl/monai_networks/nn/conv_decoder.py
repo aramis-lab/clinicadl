@@ -198,8 +198,8 @@ class ConvDecoder(nn.Sequential):
 
         self._current_size = _input_size if _input_size else None
 
-        self.in_channels = in_channels
         self.spatial_dims = spatial_dims
+        self.in_channels = in_channels
         self.channels = ensure_tuple(channels)
         self.n_layers = len(self.channels)
 

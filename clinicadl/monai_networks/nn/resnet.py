@@ -50,12 +50,20 @@ class GeneralResNet(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.spatial_dims = spatial_dims
+        self.in_channels = in_channels
+        self.num_outputs = num_outputs
+        self.block_type = block_type
         self._check_args_consistency(n_res_blocks, n_features)
-        self.squeeze_excitation = True if se_reduction else False
-        self.se_reduction = se_reduction
+        self.n_res_blocks = n_res_blocks
         self.n_features = n_features
         self.bottleneck_reduction = bottleneck_reduction
-        self.spatial_dims = spatial_dims
+        self.se_reduction = se_reduction
+        self.act = act
+        self.squeeze_excitation = True if se_reduction else False
+
+        self.init_conv_size = ensure_tuple_rep(init_conv_size, spatial_dims)
+        self.init_conv_stride = ensure_tuple_rep(init_conv_stride, spatial_dims)
 
         block, in_planes = self._get_block(block_type)
 
@@ -67,15 +75,12 @@ class GeneralResNet(nn.Module):
         self.n_layers = len(in_planes)
         self.bias_downsample = False
 
-        conv1_kernel_size = ensure_tuple_rep(init_conv_size, spatial_dims)
-        conv1_stride = ensure_tuple_rep(init_conv_stride, spatial_dims)
-
         self.conv0 = conv_type(  # pylint: disable=not-callable
             in_channels,
             self.in_planes,
-            kernel_size=conv1_kernel_size,
-            stride=conv1_stride,
-            padding=tuple(k // 2 for k in conv1_kernel_size),
+            kernel_size=self.init_conv_size,
+            stride=self.init_conv_stride,
+            padding=tuple(k // 2 for k in self.init_conv_size),
             bias=False,
         )
         self.norm0 = norm_type(self.in_planes)  # pylint: disable=not-callable

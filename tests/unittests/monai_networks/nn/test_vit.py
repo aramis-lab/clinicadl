@@ -4,7 +4,7 @@ import torch
 
 from clinicadl.monai_networks.nn import ViT, get_vit
 from clinicadl.monai_networks.nn.layers.utils import ActFunction
-from clinicadl.monai_networks.nn.vit import CommonViT
+from clinicadl.monai_networks.nn.vit import SOTAViT
 
 INPUT_1D = torch.randn(2, 1, 16)
 INPUT_2D = torch.randn(2, 2, 15, 16)
@@ -243,10 +243,10 @@ def test_activation_parameters():
 @pytest.mark.parametrize(
     "name,num_outputs,output_act,img_size",
     [
-        (CommonViT.B_16, 1, "sigmoid", (224, 224)),
-        (CommonViT.B_32, 2, None, (224, 224)),
-        (CommonViT.L_16, None, "sigmoid", (224, 224)),
-        (CommonViT.L_32, None, None, (224, 224)),
+        (SOTAViT.B_16, 1, "sigmoid", (224, 224)),
+        (SOTAViT.B_32, 2, None, (224, 224)),
+        (SOTAViT.L_16, None, "sigmoid", (224, 224)),
+        (SOTAViT.L_32, None, None, (224, 224)),
     ],
 )
 def test_get_vit(name, num_outputs, output_act, img_size):
@@ -273,7 +273,7 @@ def test_get_vit_output():
     gt.heads = torch.nn.Identity()
     x = torch.randn(1, 3, 224, 224)
 
-    vit = get_vit(CommonViT.B_16, num_outputs=1, pretrained=True)
+    vit = get_vit(SOTAViT.B_16, num_outputs=1, pretrained=True)
     vit.fc = torch.nn.Identity()
     with torch.no_grad():
         assert (vit(x) == gt(x)).all()

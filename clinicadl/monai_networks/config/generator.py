@@ -12,8 +12,8 @@ from .mlp import MLPOptions
 class GeneratorConfig(NetworkConfig):
     """Config class for Generator."""
 
-    in_shape: Sequence[PositiveInt]
-    num_outputs: PositiveInt
+    latent_size: PositiveInt
+    start_shape: Sequence[PositiveInt]
     conv_args: ConvDecoderOptions
     mlp_args: Union[Optional[MLPOptions], DefaultFromLibrary] = DefaultFromLibrary.YES
 

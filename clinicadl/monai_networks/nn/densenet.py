@@ -147,6 +147,16 @@ class DenseNet(nn.Sequential):
         dropout: Optional[float] = None,
     ) -> None:
         super().__init__()
+        self.spatial_dims = spatial_dims
+        self.in_channels = in_channels
+        self.num_outputs = num_outputs
+        self.n_dense_layers = n_dense_layers
+        self.init_features = init_features
+        self.growth_rate = growth_rate
+        self.bottleneck_factor = bottleneck_factor
+        self.act = act
+        self.dropout = dropout
+
         base_densenet = BaseDenseNet(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
@@ -172,10 +182,10 @@ class DenseNet(nn.Sequential):
         """
         for name, layer in list(module.named_children()):
             if "relu" in name:
-                module._modules = OrderedDict(
+                module._modules = OrderedDict(  # pylint: disable=protected-access
                     [
                         (key.replace("relu", "act"), sub_m)
-                        for key, sub_m in module._modules.items()
+                        for key, sub_m in module._modules.items()  # pylint: disable=protected-access
                     ]
                 )
             else:

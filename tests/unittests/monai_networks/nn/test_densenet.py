@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from clinicadl.monai_networks.nn import DenseNet, get_densenet
-from clinicadl.monai_networks.nn.densenet import CommonDenseNet
+from clinicadl.monai_networks.nn.densenet import SOTADenseNet
 from clinicadl.monai_networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(3, 1, 16)
@@ -105,10 +105,10 @@ def test_activation_parameters():
 @pytest.mark.parametrize(
     "name,num_outputs,output_act",
     [
-        (CommonDenseNet.DENSENET_121, 1, "sigmoid"),
-        (CommonDenseNet.DENSENET_161, 2, None),
-        (CommonDenseNet.DENSENET_169, None, "sigmoid"),
-        (CommonDenseNet.DENSENET_201, None, None),
+        (SOTADenseNet.DENSENET_121, 1, "sigmoid"),
+        (SOTADenseNet.DENSENET_161, 2, None),
+        (SOTADenseNet.DENSENET_169, None, "sigmoid"),
+        (SOTADenseNet.DENSENET_201, None, None),
     ],
 )
 def test_get_densenet(name, num_outputs, output_act):
@@ -131,7 +131,7 @@ def test_get_densenet_output():
     from torchvision.models import densenet121
 
     densenet = get_densenet(
-        CommonDenseNet.DENSENET_121, num_outputs=None, pretrained=True
+        SOTADenseNet.DENSENET_121, num_outputs=None, pretrained=True
     ).features
     gt = densenet121(weights="DEFAULT").features
     x = torch.randn(1, 3, 128, 128)

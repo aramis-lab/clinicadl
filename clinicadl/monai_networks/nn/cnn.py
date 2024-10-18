@@ -98,6 +98,8 @@ class CNN(nn.Sequential):
         super().__init__()
         check_conv_args(conv_args)
         check_mlp_args(mlp_args)
+        self.in_shape = in_shape
+        self.num_outputs = num_outputs
 
         in_channels, *input_size = in_shape
         spatial_dims = len(input_size)

@@ -102,6 +102,8 @@ class Generator(nn.Sequential):
         super().__init__()
         check_conv_args(conv_args)
         check_mlp_args(mlp_args)
+        self.latent_size = latent_size
+        self.start_shape = start_shape
 
         flatten_shape = int(np.prod(start_shape))
         if mlp_args is None:
