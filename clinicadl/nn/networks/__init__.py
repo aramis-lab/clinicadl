@@ -8,7 +8,6 @@ from .cnn import (
     resnet18,
 )
 from .random import RandomArchitecture
-from .ssda import Conv5_FC3_SSDA
 from .unet import UNet
 from .vae import (
     CVAE_3D,

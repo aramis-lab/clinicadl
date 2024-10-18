@@ -169,6 +169,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     json_data_ref["gpu"] = json_data_out["gpu"]
     json_data_ref["transfer_path"] = json_data_out["transfer_path"]
     json_data_ref["tsv_path"] = json_data_out["tsv_path"]
+    json_data_out["ssda_network"] = json_data_ref["ssda_network"]
     ###
     assert json_data_out == json_data_ref  # ["mode"] == mode
 

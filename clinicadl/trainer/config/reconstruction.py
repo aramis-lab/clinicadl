@@ -4,7 +4,7 @@ from typing import Tuple, Union
 from pydantic import PositiveFloat, PositiveInt, computed_field, field_validator
 
 from clinicadl.network.config import NetworkConfig as BaseNetworkConfig
-from clinicadl.splitter.validation import ValidationConfig as BaseValidationConfig
+from clinicadl.predictor.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils.enum import (
     Normalization,

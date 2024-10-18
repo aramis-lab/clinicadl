@@ -174,6 +174,8 @@ def modify_maps(
     base_dir: Path,
     no_gpu: bool = False,
     adapt_base_dir: bool = False,
+    modify_split: bool = False,
+    ssda: bool = False,
 ) -> Dict[str, Any]:
     """
     Modifies a MAPS dictionary if the user passed --no-gpu or --adapt-base-dir flags.
@@ -208,6 +210,12 @@ def modify_maps(
             )
         except KeyError:  # maps with only caps directory
             pass
+
+    if modify_split:
+        maps["split"] = (0,)
+
+    if ssda:
+        maps["ssda_network"] = False
     return maps
 
 

@@ -19,8 +19,7 @@ def create_parameters_dict(config):
         parameters["transfer_path"] = False
     if parameters["data_augmentation"] == ():
         parameters["data_augmentation"] = False
-    parameters["preprocessing_dict_target"] = parameters["preprocessing_json_target"]
-    del parameters["preprocessing_json_target"]
+
     del parameters["preprocessing_json"]
     # if "tsv_path" in parameters:
     #     parameters["tsv_path"] = parameters["tsv_path"]

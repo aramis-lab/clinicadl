@@ -7,7 +7,6 @@ from clinicadl.utils.enum import Task
 expected_classification = {
     "architecture": "default",
     "multi_network": False,
-    "ssda_network": False,
     "dropout": 0.0,
     "latent_space_size": 128,
     "feature_size": 1024,
@@ -65,7 +64,6 @@ expected_classification = {
 expected_regression = {
     "architecture": "default",
     "multi_network": False,
-    "ssda_network": False,
     "dropout": 0.0,
     "latent_space_size": 128,
     "feature_size": 1024,
@@ -121,7 +119,6 @@ expected_regression = {
 expected_reconstruction = {
     "architecture": "default",
     "multi_network": False,
-    "ssda_network": False,
     "dropout": 0.0,
     "latent_space_size": 128,
     "feature_size": 1024,

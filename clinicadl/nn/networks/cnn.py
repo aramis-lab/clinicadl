@@ -63,8 +63,6 @@ class CNN(nn.Module):
 
     def forward(self, x):
         inter = self.convolutions(x)
-        print(self.convolutions)
-        print(inter.shape)
         return self.fc(inter)
 
 

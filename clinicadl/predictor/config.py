@@ -1,26 +1,27 @@
 from logging import getLogger
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field
 
-from clinicadl.caps_dataset.data_config import DataConfig
+from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.maps_manager.config import MapsManagerConfig as MapsManagerConfigBase
+from clinicadl.maps_manager.config import (
+    MapsManagerConfig as MapsManagerBaseConfig,
+)
 from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
-from clinicadl.utils.enum import InterpretationMethod
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.enum import Task
+from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 
-logger = getLogger("clinicadl.interpret_config")
+logger = getLogger("clinicadl.predict_config")
 
 
-class MapsManagerConfig(MapsManagerConfigBase):
+class MapsManagerConfig(MapsManagerBaseConfig):
     save_tensor: bool = False
+    save_latent_tensor: bool = False
 
     def check_output_saving_tensor(self, network_task: str) -> None:
         # Check if task is reconstruction for "save_tensor" and "save_nifti"
@@ -30,31 +31,11 @@ class MapsManagerConfig(MapsManagerConfigBase):
             )
 
 
-class InterpretBaseConfig(BaseModel):
-    name: str
-    method: InterpretationMethod = InterpretationMethod.GRADIENTS
-    target_node: int = 0
-    save_individual: bool = False
-    overwrite_name: bool = False
-    level: Optional[int] = 1
-
-    @field_validator("level", mode="before")
-    def chek_level(cls, v):
-        if v < 1:
-            raise ValueError(
-                f"You must set the level to a number bigger than 1. ({v} < 1)"
-            )
-
-    def get_method(self) -> Gradients:
-        if self.method == InterpretationMethod.GRADIENTS:
-            return VanillaBackProp
-        elif self.method == InterpretationMethod.GRAD_CAM:
-            return GradCam
-        else:
-            raise ValueError(f"The method {self.method.value} is not implemented")
+class DataConfig(DataBaseConfig):
+    use_labels: bool = True
 
 
-class InterpretConfig(BaseModel):
+class PredictConfig(BaseModel):
     """Config class to perform Transfer Learning."""
 
     maps_manager: MapsManagerConfig
@@ -63,7 +44,9 @@ class InterpretConfig(BaseModel):
     computational: ComputationalConfig
     dataloader: DataLoaderConfig
     split: SplitConfig
-    interpret: InterpretBaseConfig
+    transforms: TransformsConfig
+
+    model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -73,7 +56,7 @@ class InterpretConfig(BaseModel):
             data=kwargs,
             split=kwargs,
             validation=kwargs,
-            interpret=kwargs,
+            transforms=kwargs,
         )
 
     def _update(self, config_dict: Dict[str, Any]) -> None:
@@ -85,7 +68,7 @@ class InterpretConfig(BaseModel):
         self.split.__dict__.update(config_dict)
         self.computational.__dict__.update(config_dict)
         self.dataloader.__dict__.update(config_dict)
-        self.interpret.__dict__.update(config_dict)
+        self.transforms.__dict__.update(config_dict)
 
     def adapt_with_maps_manager_info(self, maps_manager: MapsManager):
         self.maps_manager.check_output_saving_nifti(maps_manager.network_task)
@@ -108,3 +91,15 @@ class InterpretConfig(BaseModel):
 
         self.split.adapt_cross_val_with_maps_manager_info(maps_manager)
         self.maps_manager.check_output_saving_tensor(maps_manager.network_task)
+
+        self.transforms = TransformsConfig(
+            normalize=maps_manager.normalize,
+            data_augmentation=maps_manager.data_augmentation,
+            size_reduction=maps_manager.size_reduction,
+            size_reduction_factor=maps_manager.size_reduction_factor,
+        )
+
+        if self.split.split is None and self.split.n_splits == 0:
+            from clinicadl.splitter.split_utils import find_splits
+
+            self.split.split = find_splits(self.maps_manager.maps_dir)

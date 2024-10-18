@@ -2,12 +2,13 @@ import json
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 import torch
 import torch.distributed as dist
 from torch.amp import autocast
+from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -16,314 +17,123 @@ from clinicadl.caps_dataset.data import (
 )
 from clinicadl.interpret.config import InterpretConfig
 from clinicadl.maps_manager.maps_manager import MapsManager
+from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
-from clinicadl.predict.config import PredictConfig
-from clinicadl.trainer.tasks_utils import generate_label_code, get_criterion
+from clinicadl.network.network import Network
+from clinicadl.predictor.config import PredictConfig
+from clinicadl.trainer.tasks_utils import (
+    columns,
+    compute_metrics,
+    generate_label_code,
+    generate_test_row,
+    get_criterion,
+)
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.ddp import DDP, cluster
+from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.validator.validator import Validator
 
 logger = getLogger("clinicadl.predict_manager")
 level_list: List[str] = ["warning", "info", "debug"]
 
 
-class PredictManager:
+class Predictor:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
-        self.maps_manager = MapsManager(_config.maps_dir)
         self._config = _config
-        self.validator = Validator()
+
+        from clinicadl.splitter.config import SplitterConfig
+        from clinicadl.splitter.splitter import Splitter
+
+        self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
+        self._config.adapt_with_maps_manager_info(self.maps_manager)
+        tmp = self._config.data.model_dump(
+            exclude=set(["preprocessing_dict", "mode", "caps_dict"])
+        )
+        tmp.update(self._config.split.model_dump())
+        tmp.update(self._config.validation.model_dump())
+        self.splitter = Splitter(SplitterConfig(**tmp))
 
     def predict(
         self,
         label_code: Union[str, dict[str, int]] = "default",
     ):
-        """Performs the prediction task on a subset of caps_directory defined in a TSV file.
-        Parameters
-        ----------
-        data_group : str
-            name of the data group tested.
-        caps_directory : Path (optional, default=None)
-            path to the CAPS folder. For more information please refer to
-            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-            Default will load the value of an existing data group
-        tsv_path : Path (optional, default=None)
-            path to a TSV file containing the list of participants and sessions to test.
-            Default will load the DataFrame of an existing data group
-        split_list : List[int] (optional, default=None)
-            list of splits to test. Default perform prediction on all splits available.
-        selection_metrics : List[str] (optional, default=None)
-            list of selection metrics to test.
-                Default performs the prediction on all selection metrics available.
-        multi_cohort : bool (optional, default=False)
-            If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses : List[str] (optional, default=())
-            List of diagnoses to load if tsv_path is a split_directory.
-            Default uses the same as in training step.
-        use_labels : bool (optional, default=True)
-            If True, the labels must exist in test meta-data and metrics are computed.
-        batch_size : int (optional, default=None)
-            If given, sets the value of batch_size, else use the same as in training step.
-        n_proc : int (optional, default=None)
-            If given, sets the value of num_workers, else use the same as in training step.
-        gpu : bool (optional, default=None)
-            If given, a new value for the device of the model will be computed.
-        amp : bool (optional, default=False)
-            If enabled, uses Automatic Mixed Precision (requires GPU usage).
-        overwrite : bool (optional, default=False)
-            If True erase the occurrences of data_group.
-        label : str (optional, default=None)
-            Target label used for training (if network_task in [`regression`, `classification`]).
-        label_code : Optional[Dict[str, int]] (optional, default="default")
-            dictionary linking the target values to a node number.
-        save_tensor : bool (optional, default=False)
-            If true, save the tensor predicted for reconstruction task
-        save_nifti : bool (optional, default=False)
-            If true, save the nifti associated to the prediction for reconstruction task.
-        save_latent_tensor : bool (optional, default=False)
-            If true, save the tensor from the latent space for reconstruction task.
-        skip_leak_check : bool (optional, default=False)
-            If true, skip the leak check (not recommended).
-        Examples
-        --------
-        >>> _input_
-        _output_
-        """
+        """Performs the prediction task on a subset of caps_directory defined in a TSV file."""
 
-        assert isinstance(self._config, PredictConfig)
-
-        self._config.check_output_saving_nifti(self.maps_manager.network_task)
-        self._config.diagnoses = (
-            self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
-        )
-
-        self._config.batch_size = (
-            self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
-        )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
-        )
-
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
-        self._config.check_output_saving_tensor(self.maps_manager.network_task)
-
-        transforms = TransformsConfig(
-            normalize=self.maps_manager.normalize,
-            data_augmentation=self.maps_manager.data_augmentation,
-            size_reduction=self.maps_manager.size_reduction,
-            size_reduction_factor=self.maps_manager.size_reduction_factor,
-        )
-        group_df = self._config.create_groupe_df()
+        group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
         criterion = get_criterion(
             self.maps_manager.network_task, self.maps_manager.loss
         )
-        self._check_data_group(df=group_df)
 
-        assert self._config.split  # don't know if needed ? try to raise an exception ?
-        # assert self._config.label
-
-        for split in self._config.split:
+        for split in self.splitter.split_iterator():
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(
-                self._config.data_group, split
+                self._config.maps_manager.data_group, split
             )
             # Find label code if not given
-            if self._config.is_given_label_code(self.maps_manager.label, label_code):
+            if self._config.data.is_given_label_code(
+                self.maps_manager.label, label_code
+            ):
                 generate_label_code(
-                    self.maps_manager.network_task, group_df, self._config.label
+                    self.maps_manager.network_task, group_df, self._config.data.label
                 )
             # Erase previous TSV files on master process
-            if not self._config.selection_metrics:
+            if not self._config.validation.selection_metrics:
                 split_selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
                     split,
                 )
             else:
-                split_selection_metrics = self._config.selection_metrics
+                split_selection_metrics = self._config.validation.selection_metrics
             for selection in split_selection_metrics:
                 tsv_dir = (
                     self.maps_manager.maps_path
                     / f"split-{split}"
                     / f"best-{selection}"
-                    / self._config.data_group
+                    / self._config.maps_manager.data_group
                 )
-                tsv_pattern = f"{self._config.data_group}*.tsv"
+                tsv_pattern = f"{self._config.maps_manager.data_group}*.tsv"
                 for tsv_file in tsv_dir.glob(tsv_pattern):
                     tsv_file.unlink()
-            self._config.check_label(self.maps_manager.label)
+
+            self._config.data.check_label(self.maps_manager.label)
             if self.maps_manager.multi_network:
-                self._predict_multi(
-                    group_parameters,
-                    group_df,
-                    transforms,
-                    label_code,
-                    criterion,
-                    split,
-                    split_selection_metrics,
-                )
+                for network in range(self.maps_manager.num_networks):
+                    self._predict_single(
+                        group_parameters,
+                        group_df,
+                        self._config.transforms,
+                        label_code,
+                        criterion,
+                        split,
+                        split_selection_metrics,
+                        network,
+                    )
             else:
                 self._predict_single(
                     group_parameters,
                     group_df,
-                    transforms,
+                    self._config.transforms,
                     label_code,
                     criterion,
                     split,
                     split_selection_metrics,
                 )
             if cluster.master:
-                self.validator._ensemble_prediction(
+                self._ensemble_prediction(
                     self.maps_manager,
-                    self._config.data_group,
+                    self._config.maps_manager.data_group,
                     split,
-                    self._config.selection_metrics,
-                    self._config.use_labels,
-                    self._config.skip_leak_check,
-                )
-
-    def _predict_multi(
-        self,
-        group_parameters,
-        group_df,
-        transforms,
-        label_code,
-        criterion,
-        split,
-        split_selection_metrics,
-    ):
-        """_summary_
-        Parameters
-        ----------
-        group_parameters : _type_
-            _description_
-        group_df : _type_
-            _description_
-        all_transforms : _type_
-            _description_
-        use_labels : _type_
-            _description_
-        label : _type_
-            _description_
-        label_code : _type_
-            _description_
-        batch_size : _type_
-            _description_
-        n_proc : _type_
-            _description_
-        criterion : _type_
-            _description_
-        data_group : _type_
-            _description_
-        split : _type_
-            _description_
-        split_selection_metrics : _type_
-            _description_
-        gpu : _type_
-            _description_
-        amp : _type_
-            _description_
-        save_tensor : _type_
-            _description_
-        save_latent_tensor : _type_
-            _description_
-        save_nifti : _type_
-            _description_
-        selection_metrics : _type_
-            _description_
-        Examples
-        --------
-        >>> _input_
-        _output_
-        Notes
-        -----
-        _notes_
-        See Also
-        --------
-        - _related_
-        """
-        assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
-
-        for network in range(self.maps_manager.num_networks):
-            data_test = return_dataset(
-                group_parameters["caps_directory"],
-                group_df,
-                self.maps_manager.preprocessing_dict,
-                transforms_config=transforms,
-                multi_cohort=group_parameters["multi_cohort"],
-                label_presence=self._config.use_labels,
-                label=self._config.label,
-                label_code=(
-                    self.maps_manager.label_code
-                    if label_code == "default"
-                    else label_code
-                ),
-                cnn_index=network,
-            )
-            test_loader = DataLoader(
-                data_test,
-                batch_size=(
-                    self._config.batch_size
-                    if self._config.batch_size is not None
-                    else self.maps_manager.batch_size
-                ),
-                shuffle=False,
-                sampler=DistributedSampler(
-                    data_test,
-                    num_replicas=cluster.world_size,
-                    rank=cluster.rank,
-                    shuffle=False,
-                ),
-                num_workers=self._config.n_proc
-                if self._config.n_proc is not None
-                else self.maps_manager.n_proc,
-            )
-            self.validator._test_loader(
-                maps_manager=self.maps_manager,
-                dataloader=test_loader,
-                criterion=criterion,
-                data_group=self._config.data_group,
-                split=split,
-                selection_metrics=split_selection_metrics,
-                use_labels=self._config.use_labels,
-                gpu=self._config.gpu,
-                amp=self._config.amp,
-                network=network,
-            )
-            if self._config.save_tensor:
-                logger.debug("Saving tensors")
-                self.validator._compute_output_tensors(
-                    self.maps_manager,
-                    data_test,
-                    self._config.data_group,
-                    split,
-                    self._config.selection_metrics,
-                    gpu=self._config.gpu,
-                    network=network,
-                )
-            if self._config.save_nifti:
-                self._compute_output_nifti(
-                    data_test,
-                    split,
-                    network=network,
-                )
-            if self._config.save_latent_tensor:
-                self._compute_latent_tensors(
-                    dataset=data_test,
-                    split=split,
-                    network=network,
+                    self._config.validation.selection_metrics,
+                    self._config.data.use_labels,
+                    self._config.validation.skip_leak_check,
                 )
 
     def _predict_single(
@@ -335,78 +145,31 @@ class PredictManager:
         criterion,
         split,
         split_selection_metrics,
+        network: Optional[int] = None,
     ):
-        """_summary_
-        Parameters
-        ----------
-        group_parameters : _type_
-            _description_
-        group_df : _type_
-            _description_
-        all_transforms : _type_
-            _description_
-        use_labels : _type_
-            _description_
-        label : _type_
-            _description_
-        label_code : _type_
-            _description_
-        batch_size : _type_
-            _description_
-        n_proc : _type_
-            _description_
-        criterion : _type_
-            _description_
-        data_group : _type_
-            _description_
-        split : _type_
-            _description_
-        split_selection_metrics : _type_
-            _description_
-        gpu : _type_
-            _description_
-        amp : _type_
-            _description_
-        save_tensor : _type_
-            _description_
-        save_latent_tensor : _type_
-            _description_
-        save_nifti : _type_
-            _description_
-        selection_metrics : _type_
-            _description_
-        Examples
-        --------
-        >>> _input_
-        _output_
-        Notes
-        -----
-        _notes_
-        See Also
-        --------
-        - _related_
-        """
+        """_summary_"""
 
         assert isinstance(self._config, PredictConfig)
-        # assert self._config.label
+        # assert self._config.data.label
 
         data_test = return_dataset(
             group_parameters["caps_directory"],
             group_df,
             self.maps_manager.preprocessing_dict,
-            transforms_config=transforms,
+            transforms_config=self._config.transforms,
             multi_cohort=group_parameters["multi_cohort"],
-            label_presence=self._config.use_labels,
-            label=self._config.label,
+            label_presence=self._config.data.use_labels,
+            label=self._config.data.label,
             label_code=(
                 self.maps_manager.label_code if label_code == "default" else label_code
             ),
+            cnn_index=network,
         )
         test_loader = DataLoader(
             data_test,
             batch_size=(
-                self._config.batch_size
-                if self._config.batch_size is not None
+                self._config.dataloader.batch_size
+                if self._config.dataloader.batch_size is not None
                 else self.maps_manager.batch_size
             ),
             shuffle=False,
@@ -416,40 +179,44 @@ class PredictManager:
                 rank=cluster.rank,
                 shuffle=False,
             ),
-            num_workers=self._config.n_proc
-            if self._config.n_proc is not None
+            num_workers=self._config.dataloader.n_proc
+            if self._config.dataloader.n_proc is not None
             else self.maps_manager.n_proc,
         )
-        self.validator._test_loader(
-            self.maps_manager,
-            test_loader,
-            criterion,
-            self._config.data_group,
-            split,
-            split_selection_metrics,
-            use_labels=self._config.use_labels,
-            gpu=self._config.gpu,
-            amp=self._config.amp,
+        self._test_loader(
+            maps_manager=self.maps_manager,
+            dataloader=test_loader,
+            criterion=criterion,
+            data_group=self._config.maps_manager.data_group,
+            split=split,
+            selection_metrics=split_selection_metrics,
+            use_labels=self._config.data.use_labels,
+            gpu=self._config.computational.gpu,
+            amp=self._config.computational.amp,
+            network=network,
         )
-        if self._config.save_tensor:
+        if self._config.maps_manager.save_tensor:
             logger.debug("Saving tensors")
-            self.validator._compute_output_tensors(
-                self.maps_manager,
-                data_test,
-                self._config.data_group,
-                split,
-                self._config.selection_metrics,
-                gpu=self._config.gpu,
+            self._compute_output_tensors(
+                maps_manager=self.maps_manager,
+                dataset=data_test,
+                data_group=self._config.maps_manager.data_group,
+                split=split,
+                selection_metrics=self._config.validation.selection_metrics,
+                gpu=self._config.computational.gpu,
+                network=network,
             )
-        if self._config.save_nifti:
+        if self._config.maps_manager.save_nifti:
             self._compute_output_nifti(
-                data_test,
-                split,
+                dataset=data_test,
+                split=split,
+                network=network,
             )
-        if self._config.save_latent_tensor:
+        if self._config.maps_manager.save_latent_tensor:
             self._compute_latent_tensors(
                 dataset=data_test,
                 split=split,
+                network=network,
             )
 
     def _compute_latent_tensors(
@@ -478,13 +245,13 @@ class PredictManager:
         network : _type_ (optional, default=None)
             Index of the network tested (only used in multi-network setting).
         """
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self._config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self._config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -498,7 +265,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"split-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self._config.maps_manager.data_group
                 / "latent_tensors"
             )
             if cluster.master:
@@ -555,13 +322,13 @@ class PredictManager:
         import nibabel as nib
         from numpy import eye
 
-        for selection_metric in self._config.selection_metrics:
+        for selection_metric in self._config.validation.selection_metrics:
             # load the best trained model during the training
             model, _ = self.maps_manager._init_model(
                 transfer_path=self.maps_manager.maps_path,
                 split=split,
                 transfer_selection=selection_metric,
-                gpu=self._config.gpu,
+                gpu=self._config.computational.gpu,
                 network=network,
                 nb_unfrozen_layer=self.maps_manager.nb_unfrozen_layer,
             )
@@ -575,7 +342,7 @@ class PredictManager:
                 self.maps_manager.maps_path
                 / f"split-{split}"
                 / f"best-{selection_metric}"
-                / self._config.data_group
+                / self._config.maps_manager.data_group
                 / "nifti_images"
             )
             if cluster.master:
@@ -608,77 +375,10 @@ class PredictManager:
     def interpret(self):
         """Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-        Parameters
-        ----------
-        data_group : str
-            Name of the data group interpreted.
-        name : str
-            Name of the interpretation procedure.
-        method : str
-            Method used for extraction (ex: gradients, grad-cam...).
-        caps_directory : Path (optional, default=None)
-            Path to the CAPS folder. For more information please refer to
-            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-            Default will load the value of an existing data group.
-        tsv_path : Path (optional, default=None)
-            Path to a TSV file containing the list of participants and sessions to test.
-            Default will load the DataFrame of an existing data group.
-        split_list : list[int] (optional, default=None)
-            List of splits to interpret. Default perform interpretation on all splits available.
-        selection_metrics : list[str] (optional, default=None)
-            List of selection metrics to interpret.
-            Default performs the interpretation on all selection metrics available.
-        multi_cohort : bool (optional, default=False)
-            If True considers that tsv_path is the path to a multi-cohort TSV.
-        diagnoses : list[str] (optional, default=())
-            List of diagnoses to load if tsv_path is a split_directory.
-            Default uses the same as in training step.
-        target_node : int (optional, default=0)
-            Node from which the interpretation is computed.
-        save_individual : bool (optional, default=False)
-            If True saves the individual map of each participant / session couple.
-        batch_size : int (optional, default=None)
-            If given, sets the value of batch_size, else use the same as in training step.
-        n_proc : int (optional, default=None)
-            If given, sets the value of num_workers, else use the same as in training step.
-        gpu : bool (optional, default=None)
-            If given, a new value for the device of the model will be computed.
-        amp : bool (optional, default=False)
-            If enabled, uses Automatic Mixed Precision (requires GPU usage).
-        overwrite : bool (optional, default=False)
-            If True erase the occurrences of data_group.
-        overwrite_name : bool (optional, default=False)
-            If True erase the occurrences of name.
-        level : int (optional, default=None)
-            Layer number in the convolutional part after which the feature map is chosen.
-        save_nifti : bool (optional, default=False)
-            If True, save the interpretation map in nifti format.
-        Raises
-        ------
-        NotImplementedError
-            If the method is not implemented
-        NotImplementedError
-            If the interpretaion of multi network is asked
-        MAPSError
-            If the interpretation has already been determined.
         """
         assert isinstance(self._config, InterpretConfig)
 
-        self._config.diagnoses = (
-            self.maps_manager.diagnoses
-            if self._config.diagnoses is None or len(self._config.diagnoses) == 0
-            else self._config.diagnoses
-        )
-        self._config.batch_size = (
-            self.maps_manager.batch_size
-            if not self._config.batch_size
-            else self._config.batch_size
-        )
-        self._config.n_proc = (
-            self.maps_manager.n_proc if not self._config.n_proc else self._config.n_proc
-        )
-
-        self._config.adapt_cross_val_with_maps_manager_info(self.maps_manager)
+        self._config.adapt_with_maps_manager_info(self.maps_manager)
 
         if self.maps_manager.multi_network:
             raise NotImplementedError(
@@ -690,14 +390,13 @@ class PredictManager:
             size_reduction=self.maps_manager.size_reduction,
             size_reduction_factor=self.maps_manager.size_reduction_factor,
         )
-        group_df = self._config.create_groupe_df()
+        group_df = self._config.data.create_groupe_df()
         self._check_data_group(group_df)
 
-        assert self._config.split
-        for split in self._config.split:
+        for split in self.splitter.split_iterator():
             logger.info(f"Interpretation of split {split}")
             df_group, parameters_group = self.get_group_info(
-                self._config.data_group, split
+                self._config.maps_manager.data_group, split
             )
             data_test = return_dataset(
                 parameters_group["caps_directory"],
@@ -711,30 +410,30 @@ class PredictManager:
             )
             test_loader = DataLoader(
                 data_test,
-                batch_size=self._config.batch_size,
+                batch_size=self._config.dataloader.batch_size,
                 shuffle=False,
-                num_workers=self._config.n_proc,
+                num_workers=self._config.dataloader.n_proc,
             )
-            if not self._config.selection_metrics:
-                self._config.selection_metrics = find_selection_metrics(
+            if not self._config.validation.selection_metrics:
+                self._config.validation.selection_metrics = find_selection_metrics(
                     self.maps_manager.maps_path,
                     split,
                 )
-            for selection_metric in self._config.selection_metrics:
+            for selection_metric in self._config.validation.selection_metrics:
                 logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = (
                     self.maps_manager.maps_path
                     / f"split-{split}"
                     / f"best-{selection_metric}"
-                    / self._config.data_group
-                    / f"interpret-{self._config.name}"
+                    / self._config.maps_manager.data_group
+                    / f"interpret-{self._config.interpret.name}"
                 )
                 if (results_path).is_dir():
-                    if self._config.overwrite_name:
+                    if self._config.interpret.overwrite_name:
                         shutil.rmtree(results_path)
                     else:
                         raise MAPSError(
-                            f"Interpretation name {self._config.name} is already written. "
+                            f"Interpretation name {self._config.interpret.name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
                 results_path.mkdir(parents=True)
@@ -742,28 +441,28 @@ class PredictManager:
                     transfer_path=self.maps_manager.maps_path,
                     split=split,
                     transfer_selection=selection_metric,
-                    gpu=self._config.gpu,
+                    gpu=self._config.computational.gpu,
                 )
-                interpreter = self._config.get_method()(model)
+                interpreter = self._config.interpret.get_method()(model)
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
                     map_pt = interpreter.generate_gradients(
                         images,
-                        self._config.target_node,
-                        level=self._config.level,
-                        amp=self._config.amp,
+                        self._config.interpret.target_node,
+                        level=self._config.interpret.level,
+                        amp=self._config.computational.amp,
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.maps_manager.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
-                        if self._config.save_individual:
+                        if self._config.interpret.save_individual:
                             single_path = (
                                 results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.maps_manager.mode}-{data[f'{self.maps_manager.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
-                            if self._config.save_nifti:
+                            if self._config.maps_manager.save_nifti:
                                 import nibabel as nib
                                 from numpy import eye
 
@@ -781,7 +480,7 @@ class PredictManager:
                         mode_map,
                         results_path / f"mean_{self.maps_manager.mode}-{i}_map.pt",
                     )
-                    if self._config.save_nifti:
+                    if self._config.maps_manager.save_nifti:
                         import nibabel as nib
                         from numpy import eye
 
@@ -801,22 +500,6 @@ class PredictManager:
 
         Parameters
         ----------
-        data_group : str
-            name of the data group
-        caps_directory : str (optional, default=None)
-            input CAPS directory
-        df : pd.DataFrame (optional, default=None)
-            Table of participant_id / session_id of the data group
-        multi_cohort : bool (optional, default=False)
-            indicates if the input data comes from several CAPS
-        overwrite : bool (optional, default=False)
-            If True former definition of data group is erased
-        label : str (optional, default=None)
-            label name if applicable
-        split_list : list[int] (optional, default=None)
-            _description_
-        skip_leak_check : bool (optional, default=False)
-            _description_
 
         Raises
         ------
@@ -828,17 +511,21 @@ class PredictManager:
             when caps_directory or df are not given and data group does not exist
 
         """
-        group_dir = self.maps_manager.maps_path / "groups" / self._config.data_group
+        group_dir = (
+            self.maps_manager.maps_path
+            / "groups"
+            / self._config.maps_manager.data_group
+        )
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
-            if self._config.overwrite:
-                if self._config.data_group in ["train", "validation"]:
+            if self._config.maps_manager.overwrite:
+                if self._config.maps_manager.data_group in ["train", "validation"]:
                     raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
-                    # if not split_list:
-                    #     split_list = self.maps_manager.find_splits()
+                    if not self._config.split.split:
+                        self._config.split.split = self.maps_manager.find_splits()
                     assert self._config.split
-                    for split in self._config.split:
+                    for split in self._config.split.split:
                         selection_metrics = find_selection_metrics(
                             self.maps_manager.maps_path,
                             split,
@@ -848,40 +535,40 @@ class PredictManager:
                                 self.maps_manager.maps_path
                                 / f"split-{split}"
                                 / f"best-{selection}"
-                                / self._config.data_group
+                                / self._config.maps_manager.data_group
                             )
                             if results_path.is_dir():
                                 shutil.rmtree(results_path)
             elif df is not None or (
-                self._config.caps_directory is not None
-                and self._config.caps_directory != Path("")
+                self._config.data.caps_directory is not None
+                and self._config.data.caps_directory != Path("")
             ):
                 raise ClinicaDLArgumentError(
-                    f"Data group {self._config.data_group} is already defined. "
+                    f"Data group {self._config.maps_manager.data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
-                    f"To erase {self._config.data_group} please set overwrite to True."
+                    f"To erase {self._config.maps_manager.data_group} please set overwrite to True."
                 )
 
         elif not group_dir.is_dir() and (
-            self._config.caps_directory is None or df is None
+            self._config.data.caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
             raise ClinicaDLArgumentError(
-                f"The data group {self._config.data_group} does not already exist. "
+                f"The data group {self._config.maps_manager.data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
         elif (
             not group_dir.is_dir()
         ):  # Data group does not exist yet / was overwritten + all data is provided
-            if self._config.skip_leak_check:
+            if self._config.validation.skip_leak_check:
                 logger.info("Skipping data leakage check")
             else:
-                self._check_leakage(self._config.data_group, df)
+                self._check_leakage(self._config.maps_manager.data_group, df)
             self._write_data_group(
-                self._config.data_group,
+                self._config.maps_manager.data_group,
                 df,
-                self._config.caps_directory,
-                self._config.multi_cohort,
-                label=self._config.label,
+                self._config.data.caps_directory,
+                self._config.data.multi_cohort,
+                label=self._config.data.label,
             )
 
     def get_group_info(
@@ -997,8 +684,8 @@ class PredictManager:
         group_path.mkdir(parents=True)
 
         columns = ["participant_id", "session_id", "cohort"]
-        if self._config.label in df.columns.values:
-            columns += [self._config.label]
+        if self._config.data.label in df.columns.values:
+            columns += [self._config.data.label]
         if label is not None and label in df.columns.values:
             columns += [label]
 
@@ -1088,3 +775,379 @@ class PredictManager:
                 weights_only=True,
             )
         return map_pt
+
+    def test(
+        self,
+        mode: str,
+        metrics_module: MetricModule,
+        n_classes: int,
+        network_task,
+        model: Network,
+        dataloader: DataLoader,
+        criterion: _Loss,
+        use_labels: bool = True,
+        amp: bool = False,
+        report_ci=False,
+    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+        """
+        Computes the predictions and evaluation metrics.
+
+        Parameters
+        ----------
+        model: Network
+            The model trained.
+        dataloader: DataLoader
+            Wrapper of a CapsDataset.
+        criterion:  _Loss
+            Function to calculate the loss.
+        use_labels: bool
+            If True the true_label will be written in output DataFrame
+            and metrics dict will be created.
+        amp: bool
+            If True, enables Pytorch's automatic mixed precision.
+
+        Returns
+        -------
+            the results and metrics on the image level.
+        """
+        model.eval()
+        dataloader.dataset.eval()
+
+        results_df = pd.DataFrame(columns=columns(network_task, mode, n_classes))
+        total_loss = {}
+        with torch.no_grad():
+            for i, data in enumerate(dataloader):
+                # initialize the loss list to save the loss components
+                with autocast("cuda", enabled=amp):
+                    outputs, loss_dict = model(data, criterion, use_labels=use_labels)
+
+                if i == 0:
+                    for loss_component in loss_dict.keys():
+                        total_loss[loss_component] = 0
+                for loss_component in total_loss.keys():
+                    total_loss[loss_component] += loss_dict[loss_component].float()
+
+                # Generate detailed DataFrame
+                for idx in range(len(data["participant_id"])):
+                    row = generate_test_row(
+                        network_task,
+                        mode,
+                        metrics_module,
+                        n_classes,
+                        idx,
+                        data,
+                        outputs.float(),
+                    )
+                    row_df = pd.DataFrame(
+                        row, columns=columns(network_task, mode, n_classes)
+                    )
+                    results_df = pd.concat([results_df, row_df])
+
+                del outputs, loss_dict
+        dataframes = [None] * dist.get_world_size()
+        dist.gather_object(
+            results_df, dataframes if dist.get_rank() == 0 else None, dst=0
+        )
+        if dist.get_rank() == 0:
+            results_df = pd.concat(dataframes)
+        del dataframes
+        results_df.reset_index(inplace=True, drop=True)
+
+        if not use_labels:
+            metrics_dict = None
+        else:
+            metrics_dict = compute_metrics(
+                network_task, results_df, metrics_module, report_ci=report_ci
+            )
+            for loss_component in total_loss.keys():
+                dist.reduce(total_loss[loss_component], dst=0)
+                loss_value = total_loss[loss_component].item() / cluster.world_size
+
+                if report_ci:
+                    metrics_dict["Metric_names"].append(loss_component)
+                    metrics_dict["Metric_values"].append(loss_value)
+                    metrics_dict["Lower_CI"].append("N/A")
+                    metrics_dict["Upper_CI"].append("N/A")
+                    metrics_dict["SE"].append("N/A")
+
+                else:
+                    metrics_dict[loss_component] = loss_value
+
+        torch.cuda.empty_cache()
+
+        return results_df, metrics_dict
+
+    def test_da(
+        self,
+        mode: str,
+        metrics_module: MetricModule,
+        n_classes: int,
+        network_task: Union[str, Task],
+        model: Network,
+        dataloader: DataLoader,
+        criterion: _Loss,
+        alpha: float = 0,
+        use_labels: bool = True,
+        target: bool = True,
+        report_ci=False,
+    ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+        """
+        Computes the predictions and evaluation metrics.
+
+        Args:
+            model: the model trained.
+            dataloader: wrapper of a CapsDataset.
+            criterion: function to calculate the loss.
+            use_labels: If True the true_label will be written in output DataFrame
+                and metrics dict will be created.
+        Returns:
+            the results and metrics on the image level.
+        """
+        model.eval()
+        dataloader.dataset.eval()
+        results_df = pd.DataFrame(columns=columns(network_task, mode, n_classes))
+        total_loss = 0
+        with torch.no_grad():
+            for i, data in enumerate(dataloader):
+                outputs, loss_dict = model.compute_outputs_and_loss_test(
+                    data, criterion, alpha, target
+                )
+                total_loss += loss_dict["loss"].item()
+
+                # Generate detailed DataFrame
+                for idx in range(len(data["participant_id"])):
+                    row = generate_test_row(
+                        network_task,
+                        mode,
+                        metrics_module,
+                        n_classes,
+                        idx,
+                        data,
+                        outputs,
+                    )
+                    row_df = pd.DataFrame(
+                        row, columns=columns(network_task, mode, n_classes)
+                    )
+                    results_df = pd.concat([results_df, row_df])
+
+                del outputs, loss_dict
+            results_df.reset_index(inplace=True, drop=True)
+
+        if not use_labels:
+            metrics_dict = None
+        else:
+            metrics_dict = compute_metrics(
+                network_task, results_df, metrics_module, report_ci=report_ci
+            )
+            if report_ci:
+                metrics_dict["Metric_names"].append("loss")
+                metrics_dict["Metric_values"].append(total_loss)
+                metrics_dict["Lower_CI"].append("N/A")
+                metrics_dict["Upper_CI"].append("N/A")
+                metrics_dict["SE"].append("N/A")
+
+            else:
+                metrics_dict["loss"] = total_loss
+
+        torch.cuda.empty_cache()
+
+        return results_df, metrics_dict
+
+    def _test_loader(
+        self,
+        maps_manager: MapsManager,
+        dataloader,
+        criterion,
+        data_group: str,
+        split: int,
+        selection_metrics,
+        use_labels=True,
+        gpu=None,
+        amp=False,
+        network=None,
+        report_ci=True,
+    ):
+        """
+        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
+
+        Args:
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
+            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
+            data_group (str): name of the data group used for the testing task.
+            split (int): Index of the split used to train the model tested.
+            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            if cluster.master:
+                log_dir = (
+                    maps_manager.maps_path
+                    / f"split-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                )
+                maps_manager.write_description_log(
+                    log_dir,
+                    data_group,
+                    dataloader.dataset.config.data.caps_dict,
+                    dataloader.dataset.config.data.data_df,
+                )
+
+            # load the best trained model during the training
+            model, _ = maps_manager._init_model(
+                transfer_path=maps_manager.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+            model = DDP(
+                model,
+                fsdp=maps_manager.fully_sharded_data_parallel,
+                amp=maps_manager.amp,
+            )
+
+            prediction_df, metrics = self.test(
+                mode=maps_manager.mode,
+                metrics_module=maps_manager.metrics_module,
+                n_classes=maps_manager.n_classes,
+                network_task=maps_manager.network_task,
+                model=model,
+                dataloader=dataloader,
+                criterion=criterion,
+                use_labels=use_labels,
+                amp=amp,
+                report_ci=report_ci,
+            )
+            if use_labels:
+                if network is not None:
+                    metrics[f"{maps_manager.mode}_id"] = network
+
+                loss_to_log = (
+                    metrics["Metric_values"][-1] if report_ci else metrics["loss"]
+                )
+
+                logger.info(
+                    f"{maps_manager.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
+                )
+
+            if cluster.master:
+                # Replace here
+                maps_manager._mode_level_to_tsv(
+                    prediction_df,
+                    metrics,
+                    split,
+                    selection_metric,
+                    data_group=data_group,
+                )
+
+    @torch.no_grad()
+    def _compute_output_tensors(
+        self,
+        maps_manager: MapsManager,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        nb_images=None,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = maps_manager._init_model(
+                transfer_path=maps_manager.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+                nb_unfrozen_layer=maps_manager.nb_unfrozen_layer,
+            )
+            model = DDP(
+                model,
+                fsdp=maps_manager.fully_sharded_data_parallel,
+                amp=maps_manager.amp,
+            )
+            model.eval()
+
+            tensor_path = (
+                maps_manager.maps_path
+                / f"split-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+                / "tensors"
+            )
+            if cluster.master:
+                tensor_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in [
+                *range(cluster.rank, nb_modes, cluster.world_size),
+                *range(int(nb_modes % cluster.world_size <= cluster.rank)),
+            ]:
+                data = dataset[i]
+                image = data["image"]
+                x = image.unsqueeze(0).to(model.device)
+                with autocast("cuda", enabled=maps_manager.std_amp):
+                    output = model(x)
+                output = output.squeeze(0).cpu().float()
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{maps_manager.mode}_id"]
+                input_filename = f"{participant_id}_{session_id}_{maps_manager.mode}-{mode_id}_input.pt"
+                output_filename = f"{participant_id}_{session_id}_{maps_manager.mode}-{mode_id}_output.pt"
+                torch.save(image, tensor_path / input_filename)
+                torch.save(output, tensor_path / output_filename)
+                logger.debug(f"File saved at {[input_filename, output_filename]}")
+
+    def _ensemble_prediction(
+        self,
+        maps_manager: MapsManager,
+        data_group,
+        split,
+        selection_metrics,
+        use_labels=True,
+        skip_leak_check=False,
+    ):
+        """Computes the results on the image-level."""
+
+        if not selection_metrics:
+            selection_metrics = find_selection_metrics(maps_manager.maps_path, split)
+
+        for selection_metric in selection_metrics:
+            #####################
+            # Soft voting
+            if maps_manager.num_networks > 1 and not skip_leak_check:
+                maps_manager._ensemble_to_tsv(
+                    split,
+                    selection=selection_metric,
+                    data_group=data_group,
+                    use_labels=use_labels,
+                )
+            elif maps_manager.mode != "image" and not skip_leak_check:
+                maps_manager._mode_to_image_tsv(
+                    split,
+                    selection=selection_metric,
+                    data_group=data_group,
+                    use_labels=use_labels,
+                )
