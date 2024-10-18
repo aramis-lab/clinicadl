@@ -107,11 +107,11 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             no_gpu=cmdopt["no-gpu"],
             adapt_base_dir=cmdopt["adapt-base-dir"],
         )
-        json_data_out = modify_maps(
-            maps=json_data_out,
-            base_dir=base_dir,
-            ssda=True,
-        )
+    json_data_out = modify_maps(
+        maps=json_data_out,
+        base_dir=base_dir,
+        ssda=True,
+    )
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
