@@ -603,6 +603,7 @@ def generate_sampler(
     network_task: Union[str, Task],
     dataset: CapsDataset,
     sampler_option: str = "random",
+    label_code: Optional[dict] = None,
     n_bins: int = 5,
     dp_degree: Optional[int] = None,
     rank: Optional[int] = None,
@@ -622,7 +623,7 @@ def generate_sampler(
 
     def calculate_weights_classification(df):
         labels = df[dataset.config.data.label].unique()
-        codes = {dataset.config.data.label_code[label] for label in labels}
+        codes = {label_code[label] for label in labels}
         count = np.zeros(len(codes))
 
         for idx in df.index:

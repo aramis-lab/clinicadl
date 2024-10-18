@@ -74,6 +74,7 @@ def test_determinism(cmdopt, tmp_path):
 
     # Reproduce experiment (train from json)
     config_json = tmp_out_dir / "maps_roi_cnn/maps.json"
+
     flag_error = not system(
         f"clinicadl train from_json {str(config_json)} {str(reproduced_maps_dir)} -s 0"
     )

@@ -5,9 +5,8 @@ from pydantic import ValidationError
 
 from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.config.config.ssda import SSDAConfig
 from clinicadl.network.config import NetworkConfig
-from clinicadl.splitter.validation import ValidationConfig
+from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 
@@ -68,31 +67,6 @@ def test_model_config():
                 "dropout": 1.1,
             }
         )
-
-
-def test_ssda_config(caps_example):
-    preprocessing_json_target = (
-        caps_example / "tensor_extraction" / "preprocessing.json"
-    )
-    c = SSDAConfig(
-        ssda_network=True,
-        preprocessing_json_target=preprocessing_json_target,
-    )
-    expected_preprocessing_dict = {
-        "preprocessing": "t1-linear",
-        "mode": "image",
-        "use_uncropped_image": False,
-        "prepare_dl": False,
-        "extract_json": "t1-linear_mode-image.json",
-        "file_type": {
-            "pattern": "*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
-            "description": "T1W Image registered using t1-linear and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
-            "needed_pipeline": "t1-linear",
-        },
-    }
-    assert c.preprocessing_dict_target == expected_preprocessing_dict
-    c = SSDAConfig()
-    assert c.preprocessing_dict_target == {}
 
 
 def test_transferlearning_config():

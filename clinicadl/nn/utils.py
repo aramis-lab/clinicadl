@@ -64,7 +64,6 @@ def compute_output_size(
     input_ = torch.randn(input_size).unsqueeze(0)
     if isinstance(layer, nn.MaxUnpool3d) or isinstance(layer, nn.MaxUnpool2d):
         indices = torch.zeros_like(input_, dtype=int)
-        print(indices)
         output = layer(input_, indices)
     else:
         output = layer(input_)

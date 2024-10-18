@@ -198,3 +198,65 @@ def merge_cli_and_config_file_options(task: Task, **kwargs) -> Dict[str, Any]:
         pass
     ###
     return options
+
+
+def merge_cli_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, Any]:
+    """
+    Merges options from the CLI (passed by the user) and from the config file
+    (if it exists).
+
+    Priority is given to options passed by the user via the CLI. If it is not
+    provided, it will look for the option in the possible config file.
+    If an option is not passed by the user and not found in the config file, it will
+    not be in the output.
+
+    Parameters
+    ----------
+    task : Task
+        The task that is performed (e.g. classification).
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary with training options.
+    """
+    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+
+    options = read_json(maps_json)
+    for arg in kwargs:
+        if (
+            click.get_current_context().get_parameter_source(arg)
+            == ParameterSource.COMMANDLINE
+        ):
+            options[arg] = kwargs[arg]
+
+    return options
+
+
+def merge_options_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, Any]:
+    """
+    Merges options from the CLI (passed by the user) and from the config file
+    (if it exists).
+
+    Priority is given to options passed by the user via the CLI. If it is not
+    provided, it will look for the option in the possible config file.
+    If an option is not passed by the user and not found in the config file, it will
+    not be in the output.
+
+    Parameters
+    ----------
+    task : Task
+        The task that is performed (e.g. classification).
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary with training options.
+    """
+    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+
+    options = read_json(maps_json)
+    for arg in kwargs:
+        options[arg] = kwargs[arg]
+
+    return options

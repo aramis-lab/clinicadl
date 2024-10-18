@@ -10,8 +10,8 @@ from clinicadl.commandline.modules_options import (
     validation,
 )
 from clinicadl.commandline.pipelines.predict import options
-from clinicadl.predict.config import PredictConfig
-from clinicadl.predict.predict_manager import PredictManager
+from clinicadl.predictor.config import PredictConfig
+from clinicadl.predictor.predictor import Predictor
 
 
 @click.command(name="predict", no_args_is_help=True)
@@ -61,7 +61,7 @@ def cli(input_maps_directory, data_group, **kwargs):
     """
 
     predict_config = PredictConfig(**kwargs)
-    predict_manager = PredictManager(predict_config)
+    predict_manager = Predictor(predict_config)
     predict_manager.predict()
 
 
