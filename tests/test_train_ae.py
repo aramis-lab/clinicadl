@@ -106,6 +106,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             base_dir=base_dir,
             no_gpu=cmdopt["no-gpu"],
             adapt_base_dir=cmdopt["adapt-base-dir"],
+            ssda=True,
         )
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
