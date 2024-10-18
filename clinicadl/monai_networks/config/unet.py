@@ -1,64 +1,38 @@
-from __future__ import annotations
+from typing import Optional, Sequence, Union
 
-from typing import Union
+from pydantic import PositiveFloat, PositiveInt, computed_field
 
-from pydantic import (
-    PositiveInt,
-    computed_field,
-    model_validator,
-)
-
+from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import VaryingDepthNetworkConfig
-from .utils.enum import ImplementedNetworks
-
-__all__ = ["UNetConfig", "AttentionUnetConfig"]
+from .base import ImplementedNetworks, NetworkConfig
 
 
-class UNetConfig(VaryingDepthNetworkConfig):
+class UNetConfig(NetworkConfig):
     """Config class for UNet."""
 
     spatial_dims: PositiveInt
     in_channels: PositiveInt
     out_channels: PositiveInt
-    adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES
+    channels: Union[Sequence[PositiveInt], DefaultFromLibrary] = DefaultFromLibrary.YES
+    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
+    output_act: Union[
+        Optional[ActivationParameters], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.UNET
 
-    @computed_field
-    @property
-    def dim(self) -> int:
-        """Dimension of the images."""
-        return self.spatial_dims
 
-    @model_validator(mode="after")
-    def channels_strides_validator(self):
-        """Checks coherence between parameters."""
-        n_layers = len(self.channels)
-        assert (
-            n_layers >= 2
-        ), f"Channels must be at least of length 2. You passed {self.channels}."
-        assert (
-            len(self.strides) == n_layers - 1
-        ), f"Length of strides must be equal to len(channels)-1. You passed channels={self.channels} and strides={self.strides}."
-        for s in self.strides:
-            assert self._check_dimensions(
-                s
-            ), f"You must passed an int or a sequence of {self.dim} ints (the dimensionality of your images) for strides. You passed {s}."
-
-        return self
-
-
-class AttentionUnetConfig(UNetConfig):
-    """Config class for Attention UNet."""
+class AttentionUNetConfig(UNetConfig):
+    """Config class for AttentionUNet."""
 
     @computed_field
     @property
-    def network(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetworks:
         """The name of the network."""
         return ImplementedNetworks.ATT_UNET

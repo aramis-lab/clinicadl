@@ -1,3 +1,2 @@
-from .base import NetworkConfig
+from .base import ImplementedNetworks, NetworkConfig, NetworkType
 from .factory import create_network_config
-from .utils.enum import ImplementedNetworks
