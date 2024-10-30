@@ -21,7 +21,7 @@ from clinicadl.commandline.pipelines.transfer_learning import (
     options as transfer_learning,
 )
 from clinicadl.trainer.config.regression import RegressionConfig
-from clinicadl.trainer.trainer import Trainer
+from clinicadl.trainer.old_trainer import Trainer
 from clinicadl.utils.enum import Task
 from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_options
 
