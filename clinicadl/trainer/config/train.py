@@ -46,7 +46,6 @@ class TrainConfig(BaseModel, ABC):
     maps_manager: MapsManagerConfig
     model: NetworkConfig
     optimization: OptimizationConfig
-    optimizer: OptimizerConfig
     reproducibility: ReproducibilityConfig
     split: SplitConfig
     transfer_learning: TransferLearningConfig
@@ -72,7 +71,6 @@ class TrainConfig(BaseModel, ABC):
             maps_manager=kwargs,
             model=kwargs,
             optimization=kwargs,
-            optimizer=kwargs,
             reproducibility=kwargs,
             split=kwargs,
             transfer_learning=kwargs,
@@ -91,7 +89,6 @@ class TrainConfig(BaseModel, ABC):
         self.maps_manager.__dict__.update(config_dict)
         self.model.__dict__.update(config_dict)
         self.optimization.__dict__.update(config_dict)
-        self.optimizer.__dict__.update(config_dict)
         self.reproducibility.__dict__.update(config_dict)
         self.split.__dict__.update(config_dict)
         self.transfer_learning.__dict__.update(config_dict)
