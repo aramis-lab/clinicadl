@@ -27,7 +27,7 @@ def network():
 def test_get_params_in_groups(network):
     import torch
 
-    from clinicadl.optim.optimizer.utils import get_params_in_groups
+    from clinicadl.optimization.optimizer.utils import get_params_in_groups
 
     iterator, list_layers = get_params_in_groups(network, "dense1")
     assert next(iter(iterator)).shape == torch.Size((10, 10))
@@ -77,7 +77,7 @@ def test_get_params_in_groups(network):
 def test_find_params_not_in_group(network):
     import torch
 
-    from clinicadl.optim.optimizer.utils import get_params_not_in_groups
+    from clinicadl.optimization.optimizer.utils import get_params_not_in_groups
 
     iterator, list_layers = get_params_not_in_groups(
         network,

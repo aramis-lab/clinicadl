@@ -28,7 +28,7 @@ from clinicadl.trainer.tasks_utils import (
     get_default_network,
     output_size,
 )
-from clinicadl.transforms import transforms
+from clinicadl.transforms import factory
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
     Compensation,
@@ -484,16 +484,16 @@ class TmpConfig(BaseModel):
             transforms to apply in train and evaluation mode / transforms to apply in evaluation mode only.
         """
         augmentation_dict = {
-            "Noise": transforms.RandomNoising(sigma=0.1),
+            "Noise": factory.RandomNoising(sigma=0.1),
             "Erasing": torch_transforms.RandomErasing(),
-            "CropPad": transforms.RandomCropPad(10),
-            "Smoothing": transforms.RandomSmoothing(),
-            "Motion": transforms.RandomMotion((2, 4), (2, 4), 2),
-            "Ghosting": transforms.RandomGhosting((4, 10)),
-            "Spike": transforms.RandomSpike(1, (1, 3)),
-            "BiasField": transforms.RandomBiasField(0.5),
-            "RandomBlur": transforms.RandomBlur((0, 2)),
-            "RandomSwap": transforms.RandomSwap(15, 100),
+            "CropPad": factory.RandomCropPad(10),
+            "Smoothing": factory.RandomSmoothing(),
+            "Motion": factory.RandomMotion((2, 4), (2, 4), 2),
+            "Ghosting": factory.RandomGhosting((4, 10)),
+            "Spike": factory.RandomSpike(1, (1, 3)),
+            "BiasField": factory.RandomBiasField(0.5),
+            "RandomBlur": factory.RandomBlur((0, 2)),
+            "RandomSwap": factory.RandomSwap(15, 100),
             "None": None,
         }
 
@@ -508,12 +508,12 @@ class TmpConfig(BaseModel):
                 ]
             )
 
-        transformations_list.append(transforms.NanRemoval())
+        transformations_list.append(factory.NanRemoval())
         if self.normalize:
-            transformations_list.append(transforms.MinMaxNormalization())
+            transformations_list.append(factory.MinMaxNormalization())
         if self.size_reduction:
             transformations_list.append(
-                transforms.SizeReduction(self.size_reduction_factor)
+                factory.SizeReduction(self.size_reduction_factor)
             )
 
         all_transformations = torch_transforms.Compose(transformations_list)

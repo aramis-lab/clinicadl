@@ -15,14 +15,14 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.caps_dataset.data import (
     return_dataset,
 )
+from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
-from clinicadl.network.network import Network
+from clinicadl.old_network.network import Network
 from clinicadl.predictor.config import PredictConfig
 from clinicadl.trainer.tasks_utils import (
     columns,

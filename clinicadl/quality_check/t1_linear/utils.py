@@ -30,7 +30,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
-        from clinicadl.transforms.transforms import MinMaxNormalization
+        from clinicadl.transforms.factory import MinMaxNormalization
 
         self.img_dir = config.data.caps_directory
         self.df = config.data.data_df

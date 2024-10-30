@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from clinicadl.network.network import Network
+from clinicadl.old_network.network import Network
 
 
 class UNetDown(nn.Module):

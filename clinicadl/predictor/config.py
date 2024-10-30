@@ -5,10 +5,10 @@ from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.caps_dataset.data_config import DataConfig as DataBaseConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
-from clinicadl.maps_manager.config import (
+from clinicadl.experiment_manager.config import (
     MapsManagerConfig as MapsManagerBaseConfig,
 )
-from clinicadl.maps_manager.maps_manager import MapsManager
+from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.transforms.config import TransformsConfig

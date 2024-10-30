@@ -346,7 +346,7 @@ class MapsManager:
         """
         from datetime import datetime
 
-        import clinicadl.network as network_package
+        import clinicadl.old_network as network_package
 
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -589,7 +589,7 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network trained (used in multi-network setting only).
         """
-        import clinicadl.network as network_package
+        import clinicadl.old_network as network_package
 
         logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary

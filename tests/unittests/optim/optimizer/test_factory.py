@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 from torch.optim import Adagrad
 
-from clinicadl.optim.optimizer import (
+from clinicadl.optimization.optimizer import (
     ImplementedOptimizer,
     create_optimizer_config,
     get_optimizer,
 )
-from clinicadl.optim.optimizer.factory import (
+from clinicadl.optimization.optimizer.factory import (
     _get_params_in_group,
     _get_params_not_in_group,
     _regroup_args,

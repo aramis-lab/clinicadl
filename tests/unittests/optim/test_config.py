@@ -1,4 +1,4 @@
-from clinicadl.optim import OptimizationConfig
+from clinicadl.optimization import OptimizationConfig
 
 
 def test_OptimizationConfig():

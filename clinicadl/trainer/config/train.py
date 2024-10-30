@@ -14,10 +14,10 @@ from clinicadl.caps_dataset.data_config import DataConfig
 from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.maps_manager.config import MapsManagerConfig
-from clinicadl.network.config import NetworkConfig
-from clinicadl.optimizer.optimization import OptimizationConfig
-from clinicadl.optimizer.optimizer import OptimizerConfig
+from clinicadl.experiment_manager.config import MapsManagerConfig
+from clinicadl.old_network.config import NetworkConfig
+from clinicadl.optimization.optimization import OptimizationConfig
+from clinicadl.optimization.optimizer import OptimizerConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
