@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from clinicadl.dataset.caps_dataset import CapsDataset
 from clinicadl.dataset.config.extraction import (
@@ -33,28 +34,28 @@ class CapsReader:
         return PreprocessingConfig()
 
     def extract_slice(
-        self, preprocessing: PreprocessingConfig, arg_slice
+        self, preprocessing: PreprocessingConfig, arg_slice: Optional[int] = None
     ) -> ExtractionSliceConfig:
         """TO COMPLETE"""
 
         return ExtractionSliceConfig()
 
     def extract_patch(
-        self, preprocessing: PreprocessingConfig, arg_patch
+        self, preprocessing: PreprocessingConfig, arg_patch: Optional[int] = None
     ) -> ExtractionPatchConfig:
         """TO COMPLETE"""
 
         return ExtractionPatchConfig()
 
     def extract_roi(
-        self, preprocessing: PreprocessingConfig, arg_roi
+        self, preprocessing: PreprocessingConfig, arg_roi: Optional[int] = None
     ) -> ExtractionROIConfig:
         """TO COMPLETE"""
 
         return ExtractionROIConfig()
 
     def extract_image(
-        self, preprocessing: PreprocessingConfig, arg_image
+        self, preprocessing: PreprocessingConfig, arg_image: Optional[int] = None
     ) -> ExtractionImageConfig:
         """TO COMPLETE"""
 
