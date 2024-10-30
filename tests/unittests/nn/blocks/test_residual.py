@@ -1,6 +1,6 @@
 import torch
 
-from clinicadl.nn.blocks import ResBlock
+from clinicadl.networks.old_network.nn.blocks import ResBlock
 
 
 def test_resblock():

@@ -18,9 +18,9 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler, sampler
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data import CapsDataset
-from clinicadl.metrics.metric_module import MetricModule
-from clinicadl.network.network import Network
+from clinicadl.dataset.caps_dataset import CapsDataset
+from clinicadl.metrics.old_metrics.metric_module import MetricModule
+from clinicadl.networks.old_network.network import Network
 from clinicadl.trainer.config.train import TrainConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.enum import (
@@ -125,7 +125,7 @@ def get_criterion(
         }
 
         if criterion in reconstruction_losses:
-            from clinicadl.network.vae.vae_utils import (
+            from clinicadl.networks.old_network.vae.vae_utils import (
                 VAEBernoulliLoss,
                 VAEContinuousBernoulliLoss,
                 VAEGaussianLoss,

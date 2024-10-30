@@ -6,8 +6,8 @@ from torch.nn import MSELoss
 def test_get_metric():
     from monai.metrics import SSIMMetric
 
-    from clinicadl.monai_metrics import get_metric
-    from clinicadl.monai_metrics.config import ImplementedMetrics, create_metric_config
+    from clinicadl.metrics import get_metric
+    from clinicadl.metrics.config import ImplementedMetrics, create_metric_config
 
     for metric_name in [e.value for e in ImplementedMetrics if e != "Loss"]:
         if (
@@ -53,7 +53,7 @@ def loss_fn_bis(y_pred: Tensor) -> Tensor:
 def test_loss_to_metric():
     from torch import randn
 
-    from clinicadl.monai_metrics import loss_to_metric
+    from clinicadl.metrics import loss_to_metric
 
     y_pred = randn(10, 5, 5)
     y_true = randn(10, 5, 5)

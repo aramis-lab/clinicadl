@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import Flatten, Linear
 
-from clinicadl.monai_networks.nn import MLP, ConvDecoder, Generator
+from clinicadl.networks.nn import MLP, ConvDecoder, Generator
 
 
 @pytest.fixture

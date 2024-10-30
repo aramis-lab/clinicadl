@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.optim import SGD
 from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
 
-from clinicadl.optim.lr_scheduler import (
+from clinicadl.optimization.lr_scheduler import (
     ImplementedLRScheduler,
     create_lr_scheduler_config,
     get_lr_scheduler,

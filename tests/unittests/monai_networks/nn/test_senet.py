@@ -1,10 +1,10 @@
 import pytest
 import torch
 
-from clinicadl.monai_networks.nn import SEResNet, get_seresnet
-from clinicadl.monai_networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
-from clinicadl.monai_networks.nn.senet import SOTAResNet
+from clinicadl.networks.nn import SEResNet, get_seresnet
+from clinicadl.networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
+from clinicadl.networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn.senet import SOTAResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)

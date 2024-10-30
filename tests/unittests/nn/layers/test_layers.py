@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.nn.layers as layers
+import clinicadl.networks.old_network.nn.layers as layers
 
 
 @pytest.fixture

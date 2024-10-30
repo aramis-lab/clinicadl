@@ -1,9 +1,9 @@
 import pytest
 import torch
 
-from clinicadl.monai_networks.nn import DenseNet, get_densenet
-from clinicadl.monai_networks.nn.densenet import SOTADenseNet
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn import DenseNet, get_densenet
+from clinicadl.networks.nn.densenet import SOTADenseNet
+from clinicadl.networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)

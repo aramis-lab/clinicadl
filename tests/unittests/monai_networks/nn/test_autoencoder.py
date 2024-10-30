@@ -2,8 +2,8 @@ import pytest
 import torch
 from torch.nn import GELU, Sigmoid, Tanh
 
-from clinicadl.monai_networks.nn import AutoEncoder
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn import AutoEncoder
+from clinicadl.networks.nn.layers.utils import ActFunction
 
 
 @pytest.mark.parametrize(

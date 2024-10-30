@@ -1,13 +1,13 @@
 import pytest
 
-from clinicadl.monai_networks import (
+from clinicadl.networks import (
     ImplementedNetworks,
     get_network,
     get_network_from_config,
 )
-from clinicadl.monai_networks.config.autoencoder import AutoEncoderConfig
-from clinicadl.monai_networks.factory import _update_config_with_defaults
-from clinicadl.monai_networks.nn import AutoEncoder
+from clinicadl.networks.config.autoencoder import AutoEncoderConfig
+from clinicadl.networks.factory import _update_config_with_defaults
+from clinicadl.networks.nn import AutoEncoder
 
 tested = []
 

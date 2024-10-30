@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optim.early_stopping import EarlyStoppingConfig
+from clinicadl.optimization.early_stopping import EarlyStoppingConfig
 
 
 def test_EarlyStoppingConfig():

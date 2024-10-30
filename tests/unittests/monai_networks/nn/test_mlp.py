@@ -2,8 +2,8 @@ import pytest
 import torch
 from torch.nn import ELU, Dropout, InstanceNorm1d, Linear
 
-from clinicadl.monai_networks.nn import MLP
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn import MLP
+from clinicadl.networks.nn.layers.utils import ActFunction
 
 
 @pytest.fixture

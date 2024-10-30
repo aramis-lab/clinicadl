@@ -90,7 +90,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
     """
     from inspect import getmembers, isclass
 
-    import clinicadl.network as network_package
+    import clinicadl.networks.old_network as network_package
 
     if not architecture:
         print("The list of currently available models is:")
@@ -220,7 +220,7 @@ def merge_cli_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, Any]
     Dict[str, Any]
         A dictionary with training options.
     """
-    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+    from clinicadl.dataset.caps_dataset_utils import read_json
 
     options = read_json(maps_json)
     for arg in kwargs:
@@ -253,7 +253,7 @@ def merge_options_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, 
     Dict[str, Any]
         A dictionary with training options.
     """
-    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+    from clinicadl.dataset.caps_dataset_utils import read_json
 
     options = read_json(maps_json)
     for arg in kwargs:

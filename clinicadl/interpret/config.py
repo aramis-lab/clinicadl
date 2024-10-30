@@ -4,11 +4,13 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, field_validator
 
-from clinicadl.caps_dataset.data_config import DataConfig
-from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.data_config import DataConfig
+from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.experiment_manager.config import (
+    MapsManagerConfig as MapsManagerConfigBase,
+)
+from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.interpret.gradients import GradCam, Gradients, VanillaBackProp
-from clinicadl.maps_manager.config import MapsManagerConfig as MapsManagerConfigBase
-from clinicadl.maps_manager.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.transforms.config import TransformsConfig

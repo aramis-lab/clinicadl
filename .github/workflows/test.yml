@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: ["dev", "refactoring"]
+    branches: ["dev", "refactoring", "clinicadl_v2"]
   pull_request:
-    branches: ["dev", "refactoring"]
+    branches: ["dev", "refactoring", "clinicadl_v2"]
 
 permissions:
   contents: read

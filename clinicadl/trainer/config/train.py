@@ -10,14 +10,14 @@ from pydantic import (
 )
 
 from clinicadl.callbacks.config import CallbacksConfig
-from clinicadl.caps_dataset.data_config import DataConfig
-from clinicadl.caps_dataset.dataloader_config import DataLoaderConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.maps_manager.config import MapsManagerConfig
-from clinicadl.network.config import NetworkConfig
-from clinicadl.optimizer.optimization import OptimizationConfig
-from clinicadl.optimizer.optimizer import OptimizerConfig
+from clinicadl.dataset.data_config import DataConfig
+from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.experiment_manager.config import MapsManagerConfig
+from clinicadl.networks.old_network.config import NetworkConfig
+from clinicadl.optimization.config import OptimizationConfig
+from clinicadl.optimization.optimizer.config import OptimizerConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
@@ -46,7 +46,6 @@ class TrainConfig(BaseModel, ABC):
     maps_manager: MapsManagerConfig
     model: NetworkConfig
     optimization: OptimizationConfig
-    optimizer: OptimizerConfig
     reproducibility: ReproducibilityConfig
     split: SplitConfig
     transfer_learning: TransferLearningConfig
@@ -72,7 +71,6 @@ class TrainConfig(BaseModel, ABC):
             maps_manager=kwargs,
             model=kwargs,
             optimization=kwargs,
-            optimizer=kwargs,
             reproducibility=kwargs,
             split=kwargs,
             transfer_learning=kwargs,
@@ -91,7 +89,6 @@ class TrainConfig(BaseModel, ABC):
         self.maps_manager.__dict__.update(config_dict)
         self.model.__dict__.update(config_dict)
         self.optimization.__dict__.update(config_dict)
-        self.optimizer.__dict__.update(config_dict)
         self.reproducibility.__dict__.update(config_dict)
         self.split.__dict__.update(config_dict)
         self.transfer_learning.__dict__.update(config_dict)
