@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.preprocessing.utils import pet_linear_nii
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.dataset.preprocessing.utils import pet_linear_nii
 from clinicadl.utils.iotools.clinica_utils import (
     RemoteFileStructure,
     clinicadl_file_reader,

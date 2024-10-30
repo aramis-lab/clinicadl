@@ -19,7 +19,7 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from clinicadl.caps_dataset.data import return_dataset
+from clinicadl.dataset.data import return_dataset
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.splitter.split_utils import find_splits
 from clinicadl.trainer.tasks_utils import (
@@ -380,7 +380,7 @@ class TmpConfig(BaseModel):
         ValueError
             In case of multi-cohort dataset, if no preprocessing file is found in any CAPS.
         """
-        from clinicadl.caps_dataset.data import CapsDataset
+        from clinicadl.dataset.data import CapsDataset
 
         if self.preprocessing_dict is None:
             if self.preprocessing_json is not None:

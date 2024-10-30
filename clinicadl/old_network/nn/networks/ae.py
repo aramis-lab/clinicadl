@@ -1,17 +1,17 @@
 import numpy as np
 from torch import nn
 
-from clinicadl.nn.blocks import Decoder3D, Encoder3D
-from clinicadl.nn.layers import (
+from clinicadl.old_network.nn.blocks import Decoder3D, Encoder3D
+from clinicadl.old_network.nn.layers import (
     CropMaxUnpool2d,
     CropMaxUnpool3d,
     PadMaxPool2d,
     PadMaxPool3d,
     Unflatten3D,
 )
-from clinicadl.nn.networks.cnn import Conv4_FC3, Conv5_FC3
-from clinicadl.nn.networks.factory import autoencoder_from_cnn
-from clinicadl.nn.utils import compute_output_size
+from clinicadl.old_network.nn.networks.cnn import Conv4_FC3, Conv5_FC3
+from clinicadl.old_network.nn.networks.factory import autoencoder_from_cnn
+from clinicadl.old_network.nn.utils import compute_output_size
 from clinicadl.utils.enum import BaseEnum
 
 

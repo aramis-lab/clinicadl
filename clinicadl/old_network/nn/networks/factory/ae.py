@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 from torch import nn
 
-from clinicadl.nn.layers import (
+from clinicadl.old_network.nn.layers import (
     CropMaxUnpool2d,
     CropMaxUnpool3d,
     PadMaxPool2d,
@@ -13,7 +13,7 @@ from clinicadl.nn.layers import (
 )
 
 if TYPE_CHECKING:
-    from clinicadl.nn.networks.cnn import CNN
+    from clinicadl.old_network.nn.networks.cnn import CNN
 
 
 def autoencoder_from_cnn(model: CNN) -> Tuple[nn.Module, nn.Module]:

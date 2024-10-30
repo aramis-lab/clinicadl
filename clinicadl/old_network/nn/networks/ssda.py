@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from clinicadl.nn.layers import (
+from clinicadl.old_network.nn.layers import (
     GradientReversal,
     get_conv_layer,
     get_norm_layer,

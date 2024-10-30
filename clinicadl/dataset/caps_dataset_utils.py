@@ -2,15 +2,15 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.preprocessing.config import (
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.dataset.preprocessing.config import (
     CustomPreprocessingConfig,
     DTIPreprocessingConfig,
     FlairPreprocessingConfig,
     PETPreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.caps_dataset.preprocessing.utils import (
+from clinicadl.dataset.preprocessing.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,
@@ -179,7 +179,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     if "preprocessing" not in parameters:
         parameters["preprocessing"] = parameters["preprocessing_dict"]["preprocessing"]
 
-    from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
+    from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
 
     config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
         extraction=parameters["mode"],

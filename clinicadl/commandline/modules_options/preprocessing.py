@@ -1,13 +1,13 @@
 import click
 
-from clinicadl.caps_dataset.preprocessing.config import (
+from clinicadl.config.config_utils import get_default_from_config_class as get_default
+from clinicadl.config.config_utils import get_type_from_config_class as get_type
+from clinicadl.dataset.preprocessing.config import (
     CustomPreprocessingConfig,
     DTIPreprocessingConfig,
     PETPreprocessingConfig,
     PreprocessingConfig,
 )
-from clinicadl.config.config_utils import get_default_from_config_class as get_default
-from clinicadl.config.config_utils import get_type_from_config_class as get_type
 
 tracer = click.option(
     "--tracer",

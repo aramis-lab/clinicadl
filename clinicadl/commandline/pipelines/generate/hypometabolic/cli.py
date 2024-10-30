@@ -7,13 +7,13 @@ import pandas as pd
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import data, dataloader, preprocessing
 from clinicadl.commandline.pipelines.generate.hypometabolic import (
     options as hypometabolic,
 )
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.dataset.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,

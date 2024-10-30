@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.nn.networks.vae as vae
+import clinicadl.old_network.nn.networks.vae as vae
 
 
 @pytest.fixture

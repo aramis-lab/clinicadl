@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import torch
 
-from clinicadl.caps_dataset.caps_dataset_utils import read_json
-from clinicadl.caps_dataset.data import (
+from clinicadl.dataset.caps_dataset_utils import read_json
+from clinicadl.dataset.data import (
     return_dataset,
 )
 from clinicadl.metrics.metric_module import MetricModule

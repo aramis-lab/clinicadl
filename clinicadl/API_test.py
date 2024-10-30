@@ -195,8 +195,8 @@ for split in splitter.split_iterator(split_list=[0, 1]):
 maps_path = Path("/")
 manager = ExperimentManager(maps_path, overwrite=False)
 
-sub_ses_tsv = Path("")
-split_dir = split_tsv(sub_ses_tsv)  # -> creer un test.tsv et un train.tsv
+# sub_ses_tsv = Path("")
+# split_dir = split_tsv(sub_ses_tsv)  # -> creer un test.tsv et un train.tsv
 
 dataset_t1_image = CapsDatasetPatch.from_json(
     extraction=extract_json,

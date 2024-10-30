@@ -10,8 +10,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.extraction.config import (
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.dataset.extraction.config import (
     ExtractionImageConfig,
     ExtractionPatchConfig,
     ExtractionROIConfig,

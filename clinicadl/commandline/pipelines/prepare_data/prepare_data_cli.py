@@ -1,6 +1,5 @@
 import click
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -8,6 +7,7 @@ from clinicadl.commandline.modules_options import (
     extraction,
     preprocessing,
 )
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.utils.enum import ExtractionMethod
 

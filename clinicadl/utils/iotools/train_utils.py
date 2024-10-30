@@ -220,7 +220,7 @@ def merge_cli_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, Any]
     Dict[str, Any]
         A dictionary with training options.
     """
-    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+    from clinicadl.dataset.caps_dataset_utils import read_json
 
     options = read_json(maps_json)
     for arg in kwargs:
@@ -253,7 +253,7 @@ def merge_options_and_maps_json_options(maps_json: Path, **kwargs) -> Dict[str, 
     Dict[str, Any]
         A dictionary with training options.
     """
-    from clinicadl.caps_dataset.caps_dataset_utils import read_json
+    from clinicadl.dataset.caps_dataset_utils import read_json
 
     options = read_json(maps_json)
     for arg in kwargs:

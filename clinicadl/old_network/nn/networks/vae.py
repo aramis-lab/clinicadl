@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 
-from clinicadl.nn.blocks import (
+from clinicadl.old_network.nn.blocks import (
     Decoder3D,
     Encoder3D,
     VAE_Decoder2D,
     VAE_Encoder2D,
 )
-from clinicadl.nn.layers import Unflatten3D
-from clinicadl.nn.utils import multiply_list
+from clinicadl.old_network.nn.layers import Unflatten3D
+from clinicadl.old_network.nn.utils import multiply_list
 from clinicadl.utils.enum import BaseEnum
 
 

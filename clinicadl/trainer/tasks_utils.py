@@ -18,7 +18,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler, sampler
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data import CapsDataset
+from clinicadl.dataset.data import CapsDataset
 from clinicadl.metrics.metric_module import MetricModule
 from clinicadl.old_network.network import Network
 from clinicadl.trainer.config.train import TrainConfig

@@ -12,7 +12,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.caps_dataset.data import (
+from clinicadl.dataset.data import (
     return_dataset,
 )
 from clinicadl.experiment_manager.maps_manager import MapsManager
@@ -1060,7 +1060,7 @@ class Predictor:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
-            dataset (clinicadl.caps_dataset.data.CapsDataset): wrapper of the data set.
+            dataset (clinicadl.dataset.data.CapsDataset): wrapper of the data set.
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.

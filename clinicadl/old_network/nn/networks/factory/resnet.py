@@ -3,7 +3,7 @@ import math
 import torch
 from torch import nn
 
-from clinicadl.nn.blocks import ResBlock
+from clinicadl.old_network.nn.blocks import ResBlock
 
 model_urls = {"resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth"}
 

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from clinicadl.caps_dataset.preprocessing import config as preprocessing_config
+from clinicadl.dataset.preprocessing import config as preprocessing_config
 from clinicadl.utils.enum import (
     LinearModality,
     Preprocessing,

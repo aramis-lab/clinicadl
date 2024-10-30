@@ -4,7 +4,7 @@ import torch.utils.model_zoo as model_zoo
 from torch import nn
 from torchvision.models.resnet import BasicBlock
 
-from clinicadl.nn.layers.factory import (
+from clinicadl.old_network.nn.layers.factory import (
     get_conv_layer,
     get_norm_layer,
     get_pool_layer,

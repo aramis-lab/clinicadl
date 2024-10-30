@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from clinicadl.nn.layers import get_norm_layer
+from clinicadl.old_network.nn.layers import get_norm_layer
 
 __all__ = [
     "Encoder2D",

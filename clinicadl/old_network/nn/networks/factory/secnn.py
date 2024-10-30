@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from clinicadl.nn.blocks import ResBlock_SE
+from clinicadl.old_network.nn.blocks import ResBlock_SE
 
 
 class SECNNDesigner3D(nn.Module):

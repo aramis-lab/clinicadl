@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 def test_compute_output_size():
-    from clinicadl.nn.utils import compute_output_size
+    from clinicadl.old_network.nn.utils import compute_output_size
 
     input_2d = torch.randn(3, 2, 100, 100)
     input_3d = torch.randn(3, 1, 100, 100, 100)
