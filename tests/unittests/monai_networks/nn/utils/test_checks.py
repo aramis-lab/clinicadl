@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.monai_networks.nn.utils.checks import (
+from clinicadl.networks.nn.utils.checks import (
     _check_conv_parameter,
     check_adn_ordering,
     check_conv_args,

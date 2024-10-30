@@ -18,8 +18,8 @@ from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
 from clinicadl.model.clinicadl_model import ClinicaDLModel
-from clinicadl.monai_networks.config import ImplementedNetworks
-from clinicadl.monai_networks.factory import (
+from clinicadl.networks.config import ImplementedNetworks
+from clinicadl.networks.factory import (
     ConvEncoderOptions,
     create_network_config,
     get_network_from_config,

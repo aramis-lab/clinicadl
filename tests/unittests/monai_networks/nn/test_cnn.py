@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import Flatten, Linear, Softmax
 
-from clinicadl.monai_networks.nn import CNN, MLP, ConvEncoder
+from clinicadl.networks.nn import CNN, MLP, ConvEncoder
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 1, 15, 16)

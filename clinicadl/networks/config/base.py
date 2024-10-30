@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, computed_field
 
-from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
+from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
 

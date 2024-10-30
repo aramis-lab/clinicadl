@@ -2,8 +2,8 @@ from typing import Optional, Sequence, Union
 
 from pydantic import PositiveInt, computed_field
 
-from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
-from clinicadl.monai_networks.nn.resnet import ResNetBlockType
+from clinicadl.networks.nn.layers.utils import ActivationParameters
+from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig

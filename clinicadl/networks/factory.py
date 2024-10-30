@@ -4,7 +4,7 @@ from typing import Any, Callable, Tuple, Union
 import torch.nn as nn
 from pydantic import BaseModel
 
-import clinicadl.monai_networks.nn as nets
+import clinicadl.networks.nn as nets
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
 from .config import (

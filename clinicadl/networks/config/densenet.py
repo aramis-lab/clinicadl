@@ -2,7 +2,7 @@ from typing import Optional, Sequence, Union
 
 from pydantic import PositiveFloat, PositiveInt, computed_field
 
-from clinicadl.monai_networks.nn.layers.utils import ActivationParameters
+from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig

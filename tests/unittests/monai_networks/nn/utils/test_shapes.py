@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from clinicadl.monai_networks.nn.utils.shapes import (
+from clinicadl.networks.nn.utils.shapes import (
     _calculate_adaptivepool_out_shape,
     _calculate_avgpool_out_shape,
     _calculate_maxpool_out_shape,
