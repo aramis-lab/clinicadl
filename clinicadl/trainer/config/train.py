@@ -12,10 +12,10 @@ from pydantic import (
 from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.dataset.data_config import DataConfig
+from clinicadl.dataset.caps_dataset_config import DataConfig
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.experiment_manager.config import MapsManagerConfig
-from clinicadl.old_network.config import NetworkConfig
+from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.optimization.config import OptimizationConfig
 from clinicadl.optimization.optimizer.config import OptimizerConfig
 from clinicadl.predictor.validation import ValidationConfig

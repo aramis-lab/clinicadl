@@ -122,7 +122,7 @@ class DataConfig(BaseModel):  # TODO : put in data module
         ValueError
             In case of multi-cohort dataset, if no preprocessing file is found in any CAPS.
         """
-        from clinicadl.dataset.data import CapsDataset
+        from clinicadl.dataset.caps_dataset import CapsDataset
 
         if self.preprocessing_json is not None:
             if not self.multi_cohort:

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from clinicadl.old_network.network import Network
+from clinicadl.networks.old_network.network import Network
 from clinicadl.old_network.vae.vae_utils import multiply_list
 
 

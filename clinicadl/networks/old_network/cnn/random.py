@@ -1,6 +1,6 @@
 import numpy as np
 
-from clinicadl.old_network.network_utils import *
+from clinicadl.networks.old_network.network_utils import *
 from clinicadl.old_network.sub_network import CNN
 from clinicadl.utils.exceptions import ClinicaDLNetworksError
 

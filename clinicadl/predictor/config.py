@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
-from clinicadl.dataset.data_config import DataConfig as DataBaseConfig
+from clinicadl.dataset.caps_dataset_config import DataConfig as DataBaseConfig
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.experiment_manager.config import (
     MapsManagerConfig as MapsManagerBaseConfig,

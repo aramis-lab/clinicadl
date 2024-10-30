@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.monai_metrics.config.reconstruction import (
+from clinicadl.metrics.config.reconstruction import (
     MultiScaleSSIMConfig,
     PSNRConfig,
     SSIMConfig,

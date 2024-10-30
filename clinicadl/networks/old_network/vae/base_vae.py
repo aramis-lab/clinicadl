@@ -1,6 +1,6 @@
 import torch
 
-from clinicadl.old_network.network import Network
+from clinicadl.networks.old_network.network import Network
 
 
 class BaseVAE(Network):

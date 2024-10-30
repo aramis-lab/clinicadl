@@ -3,14 +3,14 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.preprocessing.config import (
+from clinicadl.dataset.config.preprocessing import (
     CustomPreprocessingConfig,
     DTIPreprocessingConfig,
     FlairPreprocessingConfig,
     PETPreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.dataset.preprocessing.utils import (
+from clinicadl.dataset.config.preprocessing.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,

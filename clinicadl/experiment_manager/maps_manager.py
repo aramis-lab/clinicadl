@@ -9,12 +9,12 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import torch
 
-from clinicadl.dataset.caps_dataset_utils import read_json
-from clinicadl.dataset.data import (
+from clinicadl.dataset.caps_dataset import (
     return_dataset,
 )
-from clinicadl.metrics.metric_module import MetricModule
-from clinicadl.metrics.utils import (
+from clinicadl.dataset.caps_dataset_utils import read_json
+from clinicadl.metrics.old_metrics.metric_module import MetricModule
+from clinicadl.metrics.old_metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predictor.utils import get_prediction

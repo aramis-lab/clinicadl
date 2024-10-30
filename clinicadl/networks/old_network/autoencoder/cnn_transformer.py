@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from torch import nn
 
-from clinicadl.old_network.network_utils import (
+from clinicadl.networks.old_network.network_utils import (
     CropMaxUnpool2d,
     CropMaxUnpool3d,
     PadMaxPool2d,

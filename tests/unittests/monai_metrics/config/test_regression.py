@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.monai_metrics.config.regression import (
+from clinicadl.metrics.config.regression import (
     MAEConfig,
     MSEConfig,
     RMSEConfig,

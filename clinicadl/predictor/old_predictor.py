@@ -12,17 +12,17 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.dataset.data import (
+from clinicadl.dataset.caps_dataset import (
     return_dataset,
 )
 from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.metrics.metric_module import MetricModule
-from clinicadl.metrics.utils import (
+from clinicadl.metrics.old_metrics.metric_module import MetricModule
+from clinicadl.metrics.old_metrics.utils import (
     check_selection_metric,
     find_selection_metrics,
 )
-from clinicadl.old_network.network import Network
+from clinicadl.networks.old_network.network import Network
 from clinicadl.predictor.config import PredictConfig
 from clinicadl.trainer.tasks_utils import (
     columns,
@@ -1060,7 +1060,7 @@ class Predictor:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
-            dataset (clinicadl.dataset.data.CapsDataset): wrapper of the data set.
+            dataset (clinicadl.dataset.caps_dataset.CapsDataset): wrapper of the data set.
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.

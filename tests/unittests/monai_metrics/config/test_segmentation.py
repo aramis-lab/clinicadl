@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.monai_metrics.config.segmentation import (
+from clinicadl.metrics.config.segmentation import (
     DiceConfig,
     GeneralizedDiceConfig,
     HausdorffDistanceConfig,

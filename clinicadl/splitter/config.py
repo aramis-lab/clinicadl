@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt
 
-from clinicadl.dataset.data_config import DataConfig
+from clinicadl.dataset.caps_dataset_config import DataConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.split_utils import find_splits
 

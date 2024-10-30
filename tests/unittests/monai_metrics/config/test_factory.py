@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.monai_metrics.config import ImplementedMetrics, create_metric_config
+from clinicadl.metrics.config import ImplementedMetrics, create_metric_config
 
 
 def test_create_training_config():
