@@ -11,13 +11,13 @@ import torch
 from torch.utils.data import Dataset
 
 from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.config.extraction.config import (
+from clinicadl.dataset.config.extraction import (
     ExtractionImageConfig,
     ExtractionPatchConfig,
     ExtractionROIConfig,
     ExtractionSliceConfig,
 )
-from clinicadl.prepare_data.prepare_data_utils import (
+from clinicadl.dataset.prepare_data.prepare_data_utils import (
     compute_discarded_slices,
     extract_patch_path,
     extract_patch_tensor,

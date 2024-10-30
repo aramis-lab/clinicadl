@@ -7,7 +7,7 @@ from torch import save as save_tensor
 
 from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
 from clinicadl.dataset.caps_dataset_utils import compute_folder_and_file_type
-from clinicadl.dataset.config.extraction.config import (
+from clinicadl.dataset.config.extraction import (
     ExtractionConfig,
     ExtractionImageConfig,
     ExtractionPatchConfig,

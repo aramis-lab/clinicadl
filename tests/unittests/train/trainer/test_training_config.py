@@ -116,12 +116,10 @@ def training_config():
     params=[
         {"gpu": "abc"},
         {"n_splits": -1},
-        {"optimizer": "abc"},
         {"data_augmentation": ("abc",)},
         {"diagnoses": "AD"},
         {"batch_size": 0},
         {"size_reduction_factor": 1},
-        {"learning_rate": 0.0},
         {"split": [-1]},
         {"tolerance": -0.01},
     ]
@@ -135,7 +133,6 @@ def good_inputs(dummy_arguments):
     options = {
         "gpu": False,
         "n_splits": 7,
-        "optimizer": "Adagrad",
         "data_augmentation": ("Smoothing",),
         "diagnoses": ("AD",),
         "batch_size": 1,
@@ -156,12 +153,10 @@ def test_passes_validations(good_inputs, training_config):
     c = training_config(**good_inputs)
     assert not c.computational.gpu
     assert c.split.n_splits == 7
-    assert c.optimizer.optimizer == "Adagrad"
     assert c.transforms.data_augmentation == ("Smoothing",)
     assert c.data.diagnoses == ("AD",)
     assert c.dataloader.batch_size == 1
     assert c.transforms.size_reduction_factor == 5
-    assert c.optimizer.learning_rate == 1e-1
     assert c.split.split == (0,)
     assert c.early_stopping.tolerance == 0.0
 

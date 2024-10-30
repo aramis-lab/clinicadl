@@ -1,6 +1,6 @@
 from typing import Optional
 
-from clinicadl.dataset.config.preprocessing import config as preprocessing_config
+from clinicadl.dataset.config import preprocessing
 from clinicadl.utils.enum import (
     LinearModality,
     Preprocessing,
@@ -11,7 +11,7 @@ from clinicadl.utils.iotools.clinica_utils import FileType
 
 
 def bids_nii(
-    config: preprocessing_config.PreprocessingConfig,
+    config: preprocessing.PreprocessingConfig,
     reconstruction: Optional[str] = None,
 ) -> FileType:
     """Return the query dict required to capture PET scans.
@@ -41,7 +41,7 @@ def bids_nii(
             f"ClinicaDL is Unable to read this modality ({config.preprocessing}) of images, please chose one from this list: {list[Preprocessing]}"
         )
 
-    if isinstance(config, preprocessing_config.PETPreprocessingConfig):
+    if isinstance(config, preprocessing.PETPreprocessingConfig):
         trc = "" if config.tracer is None else f"_trc-{Tracer(config.tracer).value}"
         rec = "" if reconstruction is None else f"_rec-{reconstruction}"
         description = "PET data"
@@ -56,13 +56,13 @@ def bids_nii(
         )
         return file_type
 
-    elif isinstance(config, preprocessing_config.T1PreprocessingConfig):
+    elif isinstance(config, preprocessing.T1PreprocessingConfig):
         return FileType(pattern="anat/sub-*_ses-*_T1w.nii*", description="T1w MRI")
 
-    elif isinstance(config, preprocessing_config.FlairPreprocessingConfig):
+    elif isinstance(config, preprocessing.FlairPreprocessingConfig):
         return FileType(pattern="sub-*_ses-*_flair.nii*", description="FLAIR T2w MRI")
 
-    elif isinstance(config, preprocessing_config.DTIPreprocessingConfig):
+    elif isinstance(config, preprocessing.DTIPreprocessingConfig):
         return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
 
     else:
@@ -70,15 +70,15 @@ def bids_nii(
 
 
 def linear_nii(
-    config: preprocessing_config.PreprocessingConfig,
+    config: preprocessing,
 ) -> FileType:
-    if isinstance(config, preprocessing_config.T1PreprocessingConfig):
+    if isinstance(config, preprocessing.T1PreprocessingConfig):
         needed_pipeline = Preprocessing.T1_LINEAR
         modality = LinearModality.T1W
-    elif isinstance(config, preprocessing_config.T2PreprocessingConfig):
+    elif isinstance(config, preprocessing.T2PreprocessingConfig):
         needed_pipeline = Preprocessing.T2_LINEAR
         modality = LinearModality.T2W
-    elif isinstance(config, preprocessing_config.FlairPreprocessingConfig):
+    elif isinstance(config, preprocessing.FlairPreprocessingConfig):
         needed_pipeline = Preprocessing.FLAIR_LINEAR
         modality = LinearModality.FLAIR
     else:
@@ -102,7 +102,7 @@ def linear_nii(
     return file_type
 
 
-def dwi_dti(config: preprocessing_config.DTIPreprocessingConfig) -> FileType:
+def dwi_dti(config: preprocessing.DTIPreprocessingConfig) -> FileType:
     """Return the query dict required to capture DWI DTI images.
 
     Parameters
@@ -113,12 +113,12 @@ def dwi_dti(config: preprocessing_config.DTIPreprocessingConfig) -> FileType:
     -------
     FileType :
     """
-    if isinstance(config, preprocessing_config.DTIPreprocessingConfig):
+    if isinstance(config, preprocessing.DTIPreprocessingConfig):
         measure = config.dti_measure
         space = config.dti_space
     else:
         raise ClinicaDLArgumentError(
-            f"PreprocessingConfig is of type {config} but should be of type{preprocessing_config.DTIPreprocessingConfig}"
+            f"preprocessing is of type {config} but should be of type{preprocessing.DTIPreprocessingConfig}"
         )
 
     return FileType(
@@ -128,10 +128,10 @@ def dwi_dti(config: preprocessing_config.DTIPreprocessingConfig) -> FileType:
     )
 
 
-def pet_linear_nii(config: preprocessing_config.PETPreprocessingConfig) -> FileType:
-    if not isinstance(config, preprocessing_config.PETPreprocessingConfig):
+def pet_linear_nii(config: preprocessing.PETPreprocessingConfig) -> FileType:
+    if not isinstance(config, preprocessing.PETPreprocessingConfig):
         raise ClinicaDLArgumentError(
-            f"PreprocessingConfig is of type {config} but should be of type{preprocessing_config.PETPreprocessingConfig}"
+            f"preprocessing is of type {config} but should be of type{preprocessing.PETPreprocessingConfig}"
         )
 
     if config.use_uncropped_image:
