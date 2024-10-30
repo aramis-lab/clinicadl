@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.nn.blocks.encoder as encoder
+import clinicadl.networks.old_network.nn.blocks.encoder as encoder
 
 
 @pytest.fixture

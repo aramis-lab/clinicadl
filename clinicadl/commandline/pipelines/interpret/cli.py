@@ -12,7 +12,7 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.interpret import options
 from clinicadl.interpret.config import InterpretConfig
-from clinicadl.predictor.predictor import Predictor
+from clinicadl.predictor.old_predictor import Predictor
 
 
 @click.command("interpret", no_args_is_help=True)

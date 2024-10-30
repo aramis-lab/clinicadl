@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.monai_metrics.config.generation import MMDMetricConfig
+from clinicadl.metrics.config.generation import MMDMetricConfig
 
 
 def test_fails_validation():

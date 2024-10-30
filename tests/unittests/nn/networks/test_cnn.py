@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.nn.networks.cnn as cnn
+import clinicadl.networks.old_network.nn.networks.cnn as cnn
 
 
 @pytest.fixture

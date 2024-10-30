@@ -11,8 +11,8 @@ from torch.nn import (
     MaxPool2d,
 )
 
-from clinicadl.monai_networks.nn import ConvEncoder
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn import ConvEncoder
+from clinicadl.networks.nn.layers.utils import ActFunction
 
 
 @pytest.fixture

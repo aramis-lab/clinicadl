@@ -1,24 +1,24 @@
 import pytest
 
-from clinicadl.monai_networks.config.densenet import (
+from clinicadl.networks.config.densenet import (
     DenseNet121Config,
     DenseNet161Config,
     DenseNet169Config,
     DenseNet201Config,
 )
-from clinicadl.monai_networks.config.resnet import (
+from clinicadl.networks.config.resnet import (
     ResNet18Config,
     ResNet34Config,
     ResNet50Config,
     ResNet101Config,
     ResNet152Config,
 )
-from clinicadl.monai_networks.config.senet import (
+from clinicadl.networks.config.senet import (
     SEResNet50Config,
     SEResNet101Config,
     SEResNet152Config,
 )
-from clinicadl.monai_networks.config.vit import (
+from clinicadl.networks.config.vit import (
     ViTB16Config,
     ViTB32Config,
     ViTL16Config,
@@ -77,7 +77,7 @@ def test_sota_vit_config(config_class):
 
 
 def test_autoencoder_config():
-    from clinicadl.monai_networks.config.autoencoder import AutoEncoderConfig
+    from clinicadl.networks.config.autoencoder import AutoEncoderConfig
 
     config = AutoEncoderConfig(
         in_shape=(1, 10, 10),
@@ -92,7 +92,7 @@ def test_autoencoder_config():
 
 
 def test_vae_config():
-    from clinicadl.monai_networks.config.autoencoder import VAEConfig
+    from clinicadl.networks.config.autoencoder import VAEConfig
 
     config = VAEConfig(
         in_shape=(1, 10),
@@ -107,7 +107,7 @@ def test_vae_config():
 
 
 def test_cnn_config():
-    from clinicadl.monai_networks.config.cnn import CNNConfig
+    from clinicadl.networks.config.cnn import CNNConfig
 
     config = CNNConfig(
         in_shape=(2, 10, 10, 10), num_outputs=1, conv_args={"channels": [1]}
@@ -118,7 +118,7 @@ def test_cnn_config():
 
 
 def test_generator_config():
-    from clinicadl.monai_networks.config.generator import GeneratorConfig
+    from clinicadl.networks.config.generator import GeneratorConfig
 
     config = GeneratorConfig(
         start_shape=(2, 10, 10), latent_size=2, conv_args={"channels": [1]}
@@ -129,7 +129,7 @@ def test_generator_config():
 
 
 def test_conv_decoder_config():
-    from clinicadl.monai_networks.config.conv_decoder import ConvDecoderConfig
+    from clinicadl.networks.config.conv_decoder import ConvDecoderConfig
 
     config = ConvDecoderConfig(
         in_channels=1, spatial_dims=2, channels=[1, 2], kernel_size=(3, 4)
@@ -140,7 +140,7 @@ def test_conv_decoder_config():
 
 
 def test_conv_encoder_config():
-    from clinicadl.monai_networks.config.conv_encoder import ConvEncoderConfig
+    from clinicadl.networks.config.conv_encoder import ConvEncoderConfig
 
     config = ConvEncoderConfig(
         in_channels=1, spatial_dims=2, channels=[1, 2], kernel_size=[(3, 4), (4, 5)]
@@ -151,7 +151,7 @@ def test_conv_encoder_config():
 
 
 def test_mlp_config():
-    from clinicadl.monai_networks.config.mlp import MLPConfig
+    from clinicadl.networks.config.mlp import MLPConfig
 
     config = MLPConfig(
         in_channels=1, out_channels=1, hidden_channels=[2, 3], dropout=0.1
@@ -162,7 +162,7 @@ def test_mlp_config():
 
 
 def test_resnet_config():
-    from clinicadl.monai_networks.config.resnet import ResNetConfig
+    from clinicadl.networks.config.resnet import ResNetConfig
 
     config = ResNetConfig(
         spatial_dims=1, in_channels=1, num_outputs=None, block_type="bottleneck"
@@ -173,7 +173,7 @@ def test_resnet_config():
 
 
 def test_seresnet_config():
-    from clinicadl.monai_networks.config.senet import SEResNetConfig
+    from clinicadl.networks.config.senet import SEResNetConfig
 
     config = SEResNetConfig(
         spatial_dims=1,
@@ -189,7 +189,7 @@ def test_seresnet_config():
 
 
 def test_densenet_config():
-    from clinicadl.monai_networks.config.densenet import DenseNetConfig
+    from clinicadl.networks.config.densenet import DenseNetConfig
 
     config = DenseNetConfig(
         spatial_dims=1, in_channels=1, num_outputs=2, n_dense_layers=(1, 2)
@@ -200,7 +200,7 @@ def test_densenet_config():
 
 
 def test_vit_config():
-    from clinicadl.monai_networks.config.vit import ViTConfig
+    from clinicadl.networks.config.vit import ViTConfig
 
     config = ViTConfig(in_shape=(1, 10), patch_size=2, num_outputs=1, embedding_dim=42)
     assert config.num_outputs == 1
@@ -209,7 +209,7 @@ def test_vit_config():
 
 
 def test_unet_config():
-    from clinicadl.monai_networks.config.unet import UNetConfig
+    from clinicadl.networks.config.unet import UNetConfig
 
     config = UNetConfig(spatial_dims=1, in_channels=1, out_channels=1, channels=(4, 8))
     assert config.out_channels == 1
@@ -218,7 +218,7 @@ def test_unet_config():
 
 
 def test_att_unet_config():
-    from clinicadl.monai_networks.config.unet import AttentionUNetConfig
+    from clinicadl.networks.config.unet import AttentionUNetConfig
 
     config = AttentionUNetConfig(
         spatial_dims=1,

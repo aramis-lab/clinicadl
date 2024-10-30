@@ -4,7 +4,7 @@ from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     split,
 )
-from clinicadl.trainer.trainer import Trainer
+from clinicadl.trainer.old_trainer import Trainer
 
 
 @click.command(name="resume", no_args_is_help=True)

@@ -6,8 +6,6 @@ import pandas as pd
 import torchio as tio
 from joblib import Parallel, delayed
 
-from clinicadl.caps_dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
     data,
@@ -15,6 +13,8 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.artifacts import options as artifacts
+from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.dataset.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateArtifactsConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,

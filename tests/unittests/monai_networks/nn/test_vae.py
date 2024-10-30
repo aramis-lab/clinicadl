@@ -3,7 +3,7 @@ import torch
 from numpy import isclose
 from torch.nn import ReLU
 
-from clinicadl.monai_networks.nn import VAE
+from clinicadl.networks.nn import VAE
 
 
 @pytest.mark.parametrize(

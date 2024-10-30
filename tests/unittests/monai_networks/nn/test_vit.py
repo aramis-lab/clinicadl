@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 import torch
 
-from clinicadl.monai_networks.nn import ViT, get_vit
-from clinicadl.monai_networks.nn.layers.utils import ActFunction
-from clinicadl.monai_networks.nn.vit import SOTAViT
+from clinicadl.networks.nn import ViT, get_vit
+from clinicadl.networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn.vit import SOTAViT
 
 INPUT_1D = torch.randn(2, 1, 16)
 INPUT_2D = torch.randn(2, 2, 15, 16)

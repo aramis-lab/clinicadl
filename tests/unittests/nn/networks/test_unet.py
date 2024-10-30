@@ -1,6 +1,6 @@
 import torch
 
-from clinicadl.nn.networks.unet import UNet
+from clinicadl.networks.old_network.nn.networks.unet import UNet
 
 
 def test_UNet():

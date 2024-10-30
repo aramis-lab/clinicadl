@@ -5,7 +5,7 @@ import torch.nn as nn
 def test_ResNetDesigner():
     from torchvision.models.resnet import BasicBlock
 
-    from clinicadl.nn.networks.factory import ResNetDesigner
+    from clinicadl.networks.old_network.nn.networks.factory import ResNetDesigner
 
     input_ = torch.randn(2, 3, 100, 100)
 
@@ -43,7 +43,7 @@ def test_ResNetDesigner():
 
 
 def test_ResNetDesigner3D():
-    from clinicadl.nn.networks.factory import ResNetDesigner3D
+    from clinicadl.networks.old_network.nn.networks.factory import ResNetDesigner3D
 
     input_ = torch.randn(2, 3, 100, 100, 100)
 

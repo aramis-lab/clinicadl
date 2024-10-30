@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optim.lr_scheduler.config import (
+from clinicadl.optimization.lr_scheduler.config import (
     ConstantLRConfig,
     LinearLRConfig,
     MultiStepLRConfig,

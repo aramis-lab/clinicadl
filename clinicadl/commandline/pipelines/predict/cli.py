@@ -11,7 +11,7 @@ from clinicadl.commandline.modules_options import (
 )
 from clinicadl.commandline.pipelines.predict import options
 from clinicadl.predictor.config import PredictConfig
-from clinicadl.predictor.predictor import Predictor
+from clinicadl.predictor.old_predictor import Predictor
 
 
 @click.command(name="predict", no_args_is_help=True)

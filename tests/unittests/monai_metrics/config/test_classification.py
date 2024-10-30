@@ -1,11 +1,11 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.monai_metrics.config.classification import (
+from clinicadl.metrics.config.classification import (
     ROCAUCConfig,
     create_confusion_matrix_config,
 )
-from clinicadl.monai_metrics.config.enum import ConfusionMatrixMetric
+from clinicadl.metrics.config.enum import ConfusionMatrixMetric
 
 
 # ROCAUC
