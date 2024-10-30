@@ -1,2 +1,8 @@
+import torch.nn as nn
+import torch.optim as optim
+
+
 class ClinicaDLModel:
-    pass
+    def __init__(self, network: nn.Module, loss: nn.Module, optimizer=optim.optimizer):
+        """TO COMPLETE"""
+        pass
