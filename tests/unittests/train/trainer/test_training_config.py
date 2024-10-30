@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.dataset.caps_dataset_config import DataConfig
+from clinicadl.dataset.data_config import DataConfig
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.predictor.validation import ValidationConfig

@@ -10,7 +10,7 @@ from clinicadl.dataset.config.preprocessing import (
     PETPreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.dataset.config.preprocessing.utils import (
+from clinicadl.dataset.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,

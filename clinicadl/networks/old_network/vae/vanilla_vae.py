@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 
-from clinicadl.old_network.vae.base_vae import BaseVAE
-from clinicadl.old_network.vae.vae_layers import (
+from clinicadl.networks.old_network.vae.base_vae import BaseVAE
+from clinicadl.networks.old_network.vae.vae_layers import (
     DecoderLayer3D,
     EncoderLayer3D,
     Flatten,

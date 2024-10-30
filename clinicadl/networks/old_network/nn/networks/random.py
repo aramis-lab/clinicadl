@@ -1,8 +1,8 @@
 import numpy as np
 import torch.nn as nn
 
-from clinicadl.old_network.nn.layers import PadMaxPool2d, PadMaxPool3d
-from clinicadl.old_network.nn.networks.cnn import CNN
+from clinicadl.networks.old_network.nn.layers import PadMaxPool2d, PadMaxPool3d
+from clinicadl.networks.old_network.nn.networks.cnn import CNN
 from clinicadl.utils.exceptions import ClinicaDLNetworksError
 
 

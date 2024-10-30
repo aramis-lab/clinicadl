@@ -1,9 +1,9 @@
 from torch import nn
 
-from clinicadl.old_network.autoencoder.cnn_transformer import CNN_Transformer
-from clinicadl.old_network.cnn.models import Conv4_FC3, Conv5_FC3
-from clinicadl.old_network.sub_network import AutoEncoder
-from clinicadl.old_network.vae.vae_layers import (
+from clinicadl.networks.old_network.autoencoder.cnn_transformer import CNN_Transformer
+from clinicadl.networks.old_network.cnn.models import Conv4_FC3, Conv5_FC3
+from clinicadl.networks.old_network.sub_network import AutoEncoder
+from clinicadl.networks.old_network.vae.vae_layers import (
     DecoderLayer3D,
     EncoderLayer3D,
     Flatten,

@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict
 
-from clinicadl.dataset.caps_dataset_config import DataConfig
+from clinicadl.dataset.config import extraction
 from clinicadl.dataset.config.preprocessing import (
     CustomPreprocessingConfig,
     DTIPreprocessingConfig,
@@ -12,14 +12,14 @@ from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.dataset.config.preprocessing.utils import (
+from clinicadl.dataset.data_config import DataConfig
+from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.utils import (
     bids_nii,
     dwi_dti,
     linear_nii,
     pet_linear_nii,
 )
-from clinicadl.dataset.dataloader_config import DataLoaderConfig
-from clinicadl.dataset.extraction import config as extraction
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.iotools.clinica_utils import FileType

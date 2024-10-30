@@ -8,7 +8,7 @@ def input_3d():
 
 
 def test_SE_Block(input_3d):
-    from clinicadl.old_network.nn.blocks import SE_Block
+    from clinicadl.networks.old_network.nn.blocks import SE_Block
 
     layer = SE_Block(num_channels=input_3d.shape[1], ratio_channel=4)
     out = layer(input_3d)
@@ -16,7 +16,7 @@ def test_SE_Block(input_3d):
 
 
 def test_ResBlock_SE(input_3d):
-    from clinicadl.old_network.nn.blocks import ResBlock_SE
+    from clinicadl.networks.old_network.nn.blocks import ResBlock_SE
 
     layer = ResBlock_SE(
         num_channels=input_3d.shape[1],

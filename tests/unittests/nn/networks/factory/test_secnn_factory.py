@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 def test_SECNNDesigner3D():
-    from clinicadl.old_network.nn.networks.factory import SECNNDesigner3D
+    from clinicadl.networks.old_network.nn.networks.factory import SECNNDesigner3D
 
     input_ = torch.randn(2, 3, 100, 100, 100)
 

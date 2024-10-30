@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 from torch import nn
 
-from clinicadl.old_network.vae.vae_utils import get_norm2d, get_norm3d
+from clinicadl.networks.old_network.vae.vae_utils import get_norm2d, get_norm3d
 
 
 class EncoderLayer2D(nn.Module):

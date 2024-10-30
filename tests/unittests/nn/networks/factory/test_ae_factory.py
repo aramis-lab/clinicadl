@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from clinicadl.old_network.nn.layers import (
+from clinicadl.networks.old_network.nn.layers import (
     PadMaxPool2d,
     PadMaxPool3d,
 )
@@ -58,8 +58,8 @@ def cnn2d():
 
 @pytest.mark.parametrize("input, cnn", [("input_3d", "cnn3d"), ("input_2d", "cnn2d")])
 def test_autoencoder_from_cnn(input, cnn, request):
-    from clinicadl.old_network.nn.networks.ae import AE
-    from clinicadl.old_network.nn.networks.factory import autoencoder_from_cnn
+    from clinicadl.networks.old_network.nn.networks.ae import AE
+    from clinicadl.networks.old_network.nn.networks.factory import autoencoder_from_cnn
 
     input_ = request.getfixturevalue(input)
     cnn = request.getfixturevalue(cnn)(input_size=input_.shape[1:])

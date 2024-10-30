@@ -1,6 +1,6 @@
 from torch import nn
 
-from clinicadl.old_network.nn.blocks import UNetDown, UNetFinalLayer, UNetUp
+from clinicadl.networks.old_network.nn.blocks import UNetDown, UNetFinalLayer, UNetUp
 
 
 class UNet(nn.Module):

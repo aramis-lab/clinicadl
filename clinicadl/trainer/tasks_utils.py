@@ -125,7 +125,7 @@ def get_criterion(
         }
 
         if criterion in reconstruction_losses:
-            from clinicadl.old_network.vae.vae_utils import (
+            from clinicadl.networks.old_network.vae.vae_utils import (
                 VAEBernoulliLoss,
                 VAEContinuousBernoulliLoss,
                 VAEGaussianLoss,

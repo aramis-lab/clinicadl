@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from clinicadl.networks.old_network.network import Network
-from clinicadl.old_network.vae.vae_utils import multiply_list
+from clinicadl.networks.old_network.vae.vae_utils import multiply_list
 
 
 class CVAE_3D_final_conv(Network):

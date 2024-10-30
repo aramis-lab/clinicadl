@@ -22,7 +22,7 @@ def test_pet_linear_nii(
     tracer, suvr_reference_region, uncropped_image, expected_pattern
 ):
     from clinicadl.dataset.config.preprocessing import PETPreprocessingConfig
-    from clinicadl.dataset.config.preprocessing.utils import pet_linear_nii
+    from clinicadl.dataset.utils import pet_linear_nii
     from clinicadl.utils.iotools.clinica_utils import FileType
 
     config = PETPreprocessingConfig(

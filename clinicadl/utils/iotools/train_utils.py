@@ -90,7 +90,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
     """
     from inspect import getmembers, isclass
 
-    import clinicadl.old_network as network_package
+    import clinicadl.networks.old_network as network_package
 
     if not architecture:
         print("The list of currently available models is:")

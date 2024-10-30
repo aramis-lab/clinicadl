@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import clinicadl.old_network.nn.networks.ae as ae
+import clinicadl.networks.old_network.nn.networks.ae as ae
 
 
 @pytest.mark.parametrize("network", [net.value for net in ae.AE2d])
