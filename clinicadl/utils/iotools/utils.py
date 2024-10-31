@@ -4,6 +4,9 @@ from copy import copy
 from pathlib import Path
 from typing import Any, Dict
 
+from clinicadl.dataset.config.extraction import ExtractionConfig
+from clinicadl.dataset.config.preprocessing import PreprocessingConfig
+
 
 def path_encoder(obj):
     if isinstance(obj, Path):
@@ -12,31 +15,10 @@ def path_encoder(obj):
         for key, value in obj.items():
             if isinstance(value, dict):
                 for key2, value2 in value.items():
-                    if (
-                        key2.endswith("tsv")
-                        or key2.endswith("dir")
-                        or key2.endswith("directory")
-                        or key2.endswith("path")
-                        or key2.endswith("json")
-                        or key2.endswith("location")
-                    ):
-                        if not value2:
-                            obj[value][key2] = ""
-                        elif isinstance(value2, Path):
-                            obj[value][key2] = value2.as_posix()
-            else:
-                if (
-                    key.endswith("tsv")
-                    or key.endswith("dir")
-                    or key.endswith("directory")
-                    or key.endswith("path")
-                    or key.endswith("json")
-                    or key.endswith("location")
-                ):
-                    if not value:
-                        obj[key] = ""
-                    elif isinstance(value, Path):
-                        obj[key] = value.as_posix()
+                    if isinstance(value2, Path):
+                        obj[value][key2] = value2.as_posix()
+            elif isinstance(value, Path):
+                obj[key] = value.as_posix()
     return obj
 
 
@@ -73,26 +55,26 @@ def path_decoder(obj):
     return obj
 
 
-def write_preprocessing(
-    preprocessing_dict: Dict[str, Any], caps_directory: Path
-) -> Path:
-    extract_dir = caps_directory / "tensor_extraction"
-    extract_dir.mkdir(parents=True, exist_ok=True)
+# def write_preprocessing(
+#     preprocessing: PreprocessingConfig, extraction: ExtractionConfig, caps_directory: Path
+# ) -> Path:
+#     extract_dir = caps_directory / "tensor_extraction"
+#     extract_dir.mkdir(parents=True, exist_ok=True)
 
-    json_path = extract_dir / preprocessing_dict["extract_json"]
+#     json_path = extract_dir / preprocessing_dict["extract_json"]
 
-    if json_path.is_file():
-        raise FileExistsError(
-            f"JSON file at {json_path} already exists. "
-            f"Please choose another name for your preprocessing file."
-        )
+#     if json_path.is_file():
+#         raise FileExistsError(
+#             f"JSON file at {json_path} already exists. "
+#             f"Please choose another name for your preprocessing file."
+#         )
 
-    with json_path.open(mode="w") as json_file:
-        json.dump(preprocessing_dict, json_file, default=path_encoder)
-    return json_path
+#     with json_path.open(mode="w") as json_file:
+#         json.dump(preprocessing_dict, json_file, default=path_encoder)
+#     return json_path
 
 
-def read_preprocessing(json_path: Path) -> Dict[str, Any]:
+def read_json(json_path: Path) -> Dict[str, Any]:
     if json_path.suffix != ".json":
         json_path = json_path.with_suffix(".json")
 
@@ -101,7 +83,7 @@ def read_preprocessing(json_path: Path) -> Dict[str, Any]:
 
     try:
         with json_path.open(mode="r") as f:
-            preprocessing_dict = json.load(f)
+            json_dict = json.load(f)
     except IOError as e:
         raise IOError(f"Error reading json preprocessing file {json_path}: {e}")
-    return preprocessing_dict
+    return json_dict

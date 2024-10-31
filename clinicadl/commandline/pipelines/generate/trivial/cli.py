@@ -13,8 +13,8 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.trivial import options as trivial
+from clinicadl.dataset.caps_dataset.caps_dataset_utils import find_file_type
 from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateTrivialConfig
 from clinicadl.generate.generate_utils import (
     im_loss_roi_gaussian_distribution,

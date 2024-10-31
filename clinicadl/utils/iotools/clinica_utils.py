@@ -180,8 +180,7 @@ def get_subject_session_list(
         output_dir = tsv_dir if tsv_dir else Path(tempfile.mkdtemp())
         timestamp = strftime("%Y%m%d_%H%M%S", localtime(time()))
         tsv_file = f"subjects_sessions_list_{timestamp}.tsv"
-        subject_session_file = output_dir / tsv_file
-        create_subs_sess_list(
+        subject_session_file = create_subs_sess_list(
             input_dir=input_dir,
             output_dir=output_dir,
             file_name=tsv_file,
@@ -198,7 +197,7 @@ def create_subs_sess_list(
     file_name: Optional[str] = None,
     is_bids_dir: bool = True,
     use_session_tsv: bool = False,
-):
+) -> Path:
     """Create the file subject_session_list.tsv that contains the list of the visits for each subject for a BIDS or CAPS compliant dataset.
 
     Args:
@@ -245,6 +244,8 @@ def create_subs_sess_list(
                 subjs_sess_tsv.write(subj_id + "\t" + session_name + "\n")
 
     subjs_sess_tsv.close()
+
+    return output_dir / file_name
 
 
 def insensitive_glob(pattern_glob: str, recursive: bool = False) -> List[str]:

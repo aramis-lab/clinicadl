@@ -36,3 +36,7 @@ class ClinicaDLBIDSError(ClinicaDLException):
 
 class ClinicaDLCAPSError(ClinicaDLException):
     """Base class for tsv files exceptions."""
+
+
+class ClinicaDLConcatError(ClinicaDLException):
+    """Base class for ConcatDataset exceptions."""

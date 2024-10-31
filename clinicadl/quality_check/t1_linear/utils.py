@@ -8,8 +8,10 @@ import nibabel as nib
 import torch
 from torch.utils.data import Dataset
 
+from clinicadl.dataset.caps_dataset.caps_dataset_utils import (
+    compute_folder_and_file_type,
+)
 from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.caps_dataset_utils import compute_folder_and_file_type
 from clinicadl.dataset.utils import linear_nii
 from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLException

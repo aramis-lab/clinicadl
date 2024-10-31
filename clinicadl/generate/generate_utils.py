@@ -64,12 +64,10 @@ def load_and_check_tsv(
     else:
         df = pd.DataFrame()
         for cohort, caps_path in caps_dict.items():
-            create_subs_sess_list(
+            tsv_path = create_subs_sess_list(
                 caps_path, output_path, is_bids_dir=False, use_session_tsv=False
             )
-            cohort_df = pd.read_csv(
-                output_path / "subjects_sessions_list.tsv", sep="\t"
-            )
+            cohort_df = pd.read_csv(tsv_path, sep="\t")
             cohort_df["cohort"] = cohort
             df = pd.concat([df, cohort_df])
 

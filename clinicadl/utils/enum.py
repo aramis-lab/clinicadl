@@ -23,6 +23,32 @@ class BaseEnum(Enum):
         )
 
 
+class SubFolder(Enum):
+    IMAGE = "image_based"
+    SLICE = "slice_based"
+    ROI = "roi_based"
+    PATCH = "patch_based"
+
+
+class STR(Enum):
+    PARTICIPANT_ID = "participant_id"
+    SESSION_ID = "session_id"
+    COHORT = "cohort"
+    SUBJECTS = "subjects"
+    DEEP_L_P_DATA = "deeplearning_prepare_data"
+    TENSOR_EXTRACTION = "tensor_extraction"
+
+
+class Suffix(Enum):
+    PT = ".pt"
+    NII_GZ = ".nii.gz"
+    NII = ".nii"
+    TSV = ".tsv"
+    CSV = ".csv"
+    JSON = ".json"
+    TIF = ".tif"
+
+
 class Task(str, Enum):
     """Tasks that can be performed in ClinicaDL."""
 

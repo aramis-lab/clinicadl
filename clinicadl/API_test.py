@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import torchio
+import torchio.transforms as transforms
 
 from clinicadl.dataset.caps_dataset import (
     CapsDatasetPatch,
@@ -30,26 +30,32 @@ from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split import get_single_split, split_tsv
 from clinicadl.trainer.trainer import Trainer
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms.config import TransformsConfig
 
 # Create the Maps Manager / Read/write manager /
 maps_path = Path("/")
-manager = ExperimentManager(maps_path, overwrite=False)
+manager = ExperimentManager(
+    maps_path, overwrite=False
+)  # a ajouter dans le manager: mlflow/ profiler/ etc ...
 
 caps_directory = Path("caps_directory")  # output of clinica pipelines
 caps_reader = CapsReader(caps_directory, manager=manager)
 
 preprocessing_1 = caps_reader.get_preprocessing("t1-linear")
-extraction_1 = caps_reader.extract_slice(preprocessing=preprocessing_1, arg_slice=2)
-transforms_1 = Transforms(
-    data_augmentation=[torchio.t1, torchio.t2],
-    image_transforms=[torchio.t1, torchio.t2],
-    object_transforms=[torchio.t1, torchio.t2],
+caps_reader.prepare_data(
+    preprocessing=preprocessing_1, data_tsv=Path(""), n_proc=2
+)  # don't return anything -> just extract the image tensor and compute some information for each images
+
+
+transforms_1 = TransformsConfig(
+    data_augmentation=[transforms.Crop, transforms.Transform],
+    image_transforms=[transforms.Blur, transforms.Ghosting],
+    object_transforms=[transforms.BiasField, transforms.Motion],
 )  # not mandatory
 
 preprocessing_2 = caps_reader.get_preprocessing("pet-linear")
 extraction_2 = caps_reader.extract_patch(preprocessing=preprocessing_2, arg_patch=2)
-transforms_2 = Transforms(
+transforms_2 = TransformsConfig(
     data_augmentation=[torchio.t2],
     image_transforms=[torchio.t1],
     object_transforms=[torchio.t1, torchio.t2],
@@ -151,16 +157,23 @@ manager = ExperimentManager(maps_path, overwrite=False)
 caps_directory = Path("caps_directory")  # output of clinica pipelines
 caps_reader = CapsReader(caps_directory, manager=manager)
 
-extraction_1 = caps_reader.extract_image(preprocessing=T1PreprocessingConfig())
-transforms_1 = Transforms(
-    data_augmentation=[torchio.transforms.RandomMotion]
+caps_reader.prepare_data(
+    preprocessing=T1PreprocessingConfig(),
+    data_tsv=Path(""),
+    n_proc=2,
+    use_uncropped_images=False,
+)
+transforms_1 = TransformsConfig(
+    data_augmentation=[transforms.RandomMotion],  # default = no transforms
+    image_transforms=[transforms.Noise],  # default = MiniMax
+    extraction=ExtractionMethod.PATCH,  # default = Image
+    objects_transforms=[transforms.BiasField],  # default = none
 )  # not mandatory
 
 sub_ses_tsv = Path("")
 split_dir = split_tsv(sub_ses_tsv)  # -> creer un test.tsv et un train.tsv
 
 dataset_t1_image = caps_reader.get_dataset(
-    extraction=extraction_1,
     preprocessing=T1PreprocessingConfig(),
     sub_ses_tsv=split_dir / "train.tsv",
     transforms=transforms_1,

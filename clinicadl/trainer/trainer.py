@@ -11,7 +11,7 @@ class Trainer:
         """TO COMPLETE"""
 
     @classmethod
-    def from_json(cls, config_file: Path, manager: ExperimentManager) -> Trainer:
+    def from_json(cls, config_file: Path, manager: ExperimentManager):
         """TO COMPLETE"""
         return cls()
 
