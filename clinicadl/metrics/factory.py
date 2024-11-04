@@ -85,9 +85,9 @@ def loss_to_metric(
     ----------
     loss_fn : Loss
         A callable function that takes y_pred and optionally y as input (in the “batch-first” format), returns a 1-item tensor.
-        loss_fn can also be a PyTorch loss object.
+        `loss_fn` can also be a PyTorch loss object.
     reduction : Optional[Union[str, Reduction]] (optional, default=None)
-        Defines mode of reduction. If not passed, the reduction method of the loss function will be used.
+        Defines mode of reduction. Either `mean` or `sum`. If not passed, the reduction method of the loss function will be used.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def loss_to_metric(
     Raises
     ------
     ValueError
-        If the user didn't pass a reduction method, and the loss function doesn't have an attribute 'reduction'.
+        If the user didn't pass a reduction method, and the loss function doesn't have an attribute `reduction`.
     """
     if reduction is None:
         try:
