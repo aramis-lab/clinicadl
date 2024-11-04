@@ -24,7 +24,7 @@ def get_loss_function(
     return_config : bool (optional, default=False)
         if the function should return the config class regrouping the parameters of the
         loss function. Useful to keep track of the hyperparameters.
-    kwargs : Any
+    **kwargs : Any
         the parameters of the loss function. Check our documentation on losses to
         know these parameters.
 
@@ -43,7 +43,7 @@ def get_loss_function(
 
 def get_loss_function_from_config(
     config: LossConfig,
-) -> Tuple[torch.nn.Module, LossConfig]:
+) -> Tuple[Loss, LossConfig]:
     """
     Factory function to get a loss function from a LossConfig instance.
 

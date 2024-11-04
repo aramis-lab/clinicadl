@@ -6,7 +6,7 @@ from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.vit import PosEmbedType
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
+from .base import ImplementedNetwork, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class ViTConfig(NetworkConfig):
@@ -29,9 +29,9 @@ class ViTConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.VIT
+        return ImplementedNetwork.VIT
 
 
 class PreTrainedViTConfig(PreTrainedConfig):
@@ -49,9 +49,9 @@ class ViTB16Config(PreTrainedViTConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.VIT_B_16
+        return ImplementedNetwork.VIT_B_16
 
 
 class ViTB32Config(PreTrainedViTConfig):
@@ -59,9 +59,9 @@ class ViTB32Config(PreTrainedViTConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.VIT_B_32
+        return ImplementedNetwork.VIT_B_32
 
 
 class ViTL16Config(PreTrainedViTConfig):
@@ -69,9 +69,9 @@ class ViTL16Config(PreTrainedViTConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.VIT_L_16
+        return ImplementedNetwork.VIT_L_16
 
 
 class ViTL32Config(PreTrainedViTConfig):
@@ -79,6 +79,6 @@ class ViTL32Config(PreTrainedViTConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.VIT_L_32
+        return ImplementedNetwork.VIT_L_32

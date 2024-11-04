@@ -6,7 +6,7 @@ from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
+from .base import ImplementedNetwork, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class ResNetConfig(NetworkConfig):
@@ -38,9 +38,9 @@ class ResNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET
+        return ImplementedNetwork.RESNET
 
 
 class PreTrainedResNetConfig(PreTrainedConfig):
@@ -58,9 +58,9 @@ class ResNet18Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET_18
+        return ImplementedNetwork.RESNET_18
 
 
 class ResNet34Config(PreTrainedResNetConfig):
@@ -68,9 +68,9 @@ class ResNet34Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET_34
+        return ImplementedNetwork.RESNET_34
 
 
 class ResNet50Config(PreTrainedResNetConfig):
@@ -78,9 +78,9 @@ class ResNet50Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET_50
+        return ImplementedNetwork.RESNET_50
 
 
 class ResNet101Config(PreTrainedResNetConfig):
@@ -88,9 +88,9 @@ class ResNet101Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET_101
+        return ImplementedNetwork.RESNET_101
 
 
 class ResNet152Config(PreTrainedResNetConfig):
@@ -98,6 +98,6 @@ class ResNet152Config(PreTrainedResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.RESNET_152
+        return ImplementedNetwork.RESNET_152

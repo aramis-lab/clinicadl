@@ -5,7 +5,7 @@ from pydantic import PositiveFloat, PositiveInt, computed_field
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetwork, NetworkConfig
 
 
 class UNetConfig(NetworkConfig):
@@ -23,9 +23,9 @@ class UNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.UNET
+        return ImplementedNetwork.UNET
 
 
 class AttentionUNetConfig(UNetConfig):
@@ -33,6 +33,6 @@ class AttentionUNetConfig(UNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.ATT_UNET
+        return ImplementedNetwork.ATT_UNET

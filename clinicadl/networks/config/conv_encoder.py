@@ -10,7 +10,7 @@ from clinicadl.networks.nn.layers.utils import (
 )
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetwork, NetworkConfig
 
 
 class ConvEncoderOptions(BaseModel):
@@ -59,6 +59,6 @@ class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.CONV_ENCODER
+        return ImplementedNetwork.CONV_ENCODER

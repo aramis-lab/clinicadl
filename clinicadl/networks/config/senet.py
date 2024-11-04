@@ -4,7 +4,7 @@ from pydantic import PositiveInt, computed_field
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkType, PreTrainedConfig
+from .base import ImplementedNetwork, NetworkType, PreTrainedConfig
 from .resnet import ResNetConfig
 
 
@@ -15,9 +15,9 @@ class SEResNetConfig(ResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.SE_RESNET
+        return ImplementedNetwork.SE_RESNET
 
 
 class PreTrainedSEResNetConfig(PreTrainedConfig):
@@ -35,9 +35,9 @@ class SEResNet50Config(PreTrainedSEResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.SE_RESNET_50
+        return ImplementedNetwork.SE_RESNET_50
 
 
 class SEResNet101Config(PreTrainedSEResNetConfig):
@@ -45,9 +45,9 @@ class SEResNet101Config(PreTrainedSEResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.SE_RESNET_101
+        return ImplementedNetwork.SE_RESNET_101
 
 
 class SEResNet152Config(PreTrainedSEResNetConfig):
@@ -55,6 +55,6 @@ class SEResNet152Config(PreTrainedSEResNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.SE_RESNET_152
+        return ImplementedNetwork.SE_RESNET_152

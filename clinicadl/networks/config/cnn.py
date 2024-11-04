@@ -4,7 +4,7 @@ from pydantic import PositiveInt, computed_field
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetwork, NetworkConfig
 from .conv_encoder import ConvEncoderOptions
 from .mlp import MLPOptions
 
@@ -19,6 +19,6 @@ class CNNConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.CNN
+        return ImplementedNetwork.CNN

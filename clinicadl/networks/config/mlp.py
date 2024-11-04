@@ -8,7 +8,7 @@ from clinicadl.networks.nn.layers.utils import (
 )
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetwork, NetworkConfig
 
 
 class MLPOptions(BaseModel):
@@ -47,6 +47,6 @@ class MLPConfig(NetworkConfig, MLPOptions):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.MLP
+        return ImplementedNetwork.MLP

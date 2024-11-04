@@ -8,7 +8,7 @@ from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
 
-class ImplementedNetworks(str, Enum):
+class ImplementedNetwork(str, Enum):
     """Implemented neural networks in ClinicaDL."""
 
     MLP = "MLP"
@@ -75,7 +75,7 @@ class NetworkConfig(BaseModel, ABC):
     @computed_field
     @property
     @abstractmethod
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
 
     @computed_field

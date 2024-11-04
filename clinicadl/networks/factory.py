@@ -8,7 +8,7 @@ import clinicadl.networks.nn as nets
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
 from .config import (
-    ImplementedNetworks,
+    ImplementedNetwork,
     NetworkConfig,
     NetworkType,
     create_network_config,
@@ -20,20 +20,20 @@ from .nn import MLP, ConvDecoder, ConvEncoder
 
 
 def get_network(
-    name: Union[str, ImplementedNetworks], return_config: bool = False, **kwargs: Any
+    name: Union[str, ImplementedNetwork], return_config: bool = False, **kwargs: Any
 ) -> Union[nn.Module, Tuple[nn.Module, NetworkConfig]]:
     """
     Factory function to get a neural network from its name and parameters.
 
     Parameters
     ----------
-    name : Union[str, ImplementedNetworks]
+    name : Union[str, ImplementedNetwork]
         the name of the neural network. Check our documentation to know
         available networks.
     return_config : bool (optional, default=False)
         if the function should return the config class regrouping the parameters of the
         neural network. Useful to keep track of the hyperparameters.
-    kwargs : Any
+    **kwargs : Any
         the parameters of the neural network. Check our documentation on networks to
         know these parameters.
 
@@ -73,13 +73,13 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
 
     if network_type == NetworkType.CUSTOM:
         network_class: type[nn.Module] = getattr(nets, config.name)
-        if config.name == ImplementedNetworks.SE_RESNET:
+        if config.name == ImplementedNetwork.SE_RESNET:
             _update_config_with_defaults(
-                config, getattr(nets, ImplementedNetworks.RESNET.value).__init__
+                config, getattr(nets, ImplementedNetwork.RESNET.value).__init__
             )  # SEResNet has some default values in ResNet
-        elif config.name == ImplementedNetworks.ATT_UNET:
+        elif config.name == ImplementedNetwork.ATT_UNET:
             _update_config_with_defaults(
-                config, getattr(nets, ImplementedNetworks.UNET.value).__init__
+                config, getattr(nets, ImplementedNetwork.UNET.value).__init__
             )
         _update_config_with_defaults(config, network_class.__init__)
 

@@ -4,7 +4,7 @@ from pydantic import PositiveInt, computed_field
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import ImplementedNetwork, NetworkConfig
 from .conv_decoder import ConvDecoderOptions
 from .mlp import MLPOptions
 
@@ -19,6 +19,6 @@ class GeneratorConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.GENERATOR
+        return ImplementedNetwork.GENERATOR

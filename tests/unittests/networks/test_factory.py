@@ -1,7 +1,7 @@
 import pytest
 
 from clinicadl.networks import (
-    ImplementedNetworks,
+    ImplementedNetwork,
     get_network,
     get_network_from_config,
 )
@@ -225,7 +225,7 @@ def test_get_network(network_name, params):
     _ = get_network(name=network_name, **params)
     if network_name == "ViT-L/32":  # the last one
         assert set(tested) == set(
-            net.value for net in ImplementedNetworks
+            net.value for net in ImplementedNetwork
         )  # check we haven't miss a network
 
 

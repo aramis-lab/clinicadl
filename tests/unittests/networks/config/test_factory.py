@@ -1,8 +1,8 @@
-from clinicadl.networks.config import ImplementedNetworks, create_network_config
+from clinicadl.networks.config import ImplementedNetwork, create_network_config
 
 
 def test_create_training_config():
-    for network in [e.value for e in ImplementedNetworks]:
+    for network in [e.value for e in ImplementedNetwork]:
         create_network_config(network)
 
     config_class = create_network_config("DenseNet")

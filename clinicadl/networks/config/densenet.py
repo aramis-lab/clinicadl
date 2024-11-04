@@ -5,7 +5,7 @@ from pydantic import PositiveFloat, PositiveInt, computed_field
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig, NetworkType, PreTrainedConfig
+from .base import ImplementedNetwork, NetworkConfig, NetworkType, PreTrainedConfig
 
 
 class DenseNetConfig(NetworkConfig):
@@ -28,9 +28,9 @@ class DenseNetConfig(NetworkConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.DENSENET
+        return ImplementedNetwork.DENSENET
 
 
 class PreTrainedDenseNetConfig(PreTrainedConfig):
@@ -48,9 +48,9 @@ class DenseNet121Config(PreTrainedDenseNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.DENSENET_121
+        return ImplementedNetwork.DENSENET_121
 
 
 class DenseNet161Config(PreTrainedDenseNetConfig):
@@ -58,9 +58,9 @@ class DenseNet161Config(PreTrainedDenseNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.DENSENET_161
+        return ImplementedNetwork.DENSENET_161
 
 
 class DenseNet169Config(PreTrainedDenseNetConfig):
@@ -68,9 +68,9 @@ class DenseNet169Config(PreTrainedDenseNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.DENSENET_169
+        return ImplementedNetwork.DENSENET_169
 
 
 class DenseNet201Config(PreTrainedDenseNetConfig):
@@ -78,6 +78,6 @@ class DenseNet201Config(PreTrainedDenseNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.DENSENET_201
+        return ImplementedNetwork.DENSENET_201
