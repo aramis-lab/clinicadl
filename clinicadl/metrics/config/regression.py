@@ -1,40 +1,41 @@
 from pydantic import computed_field
 
-from .base import MetricConfig
+from .base import MetricConfigWithNotNans, MetricConfigWithReduction
+from .enum import ImplementedMetric
 
 __all__ = [
-    "MSEConfig",
-    "MAEConfig",
-    "RMSEConfig",
+    "MSEMetricConfig",
+    "MAEMetricConfig",
+    "RMSEMetricConfig",
 ]
 
 
 # TODO : R2 missing
-class MSEConfig(MetricConfig):
+class MSEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
     "Config class for MSE."
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "MSEMetric"
+        return ImplementedMetric.MSE
 
 
-class MAEConfig(MetricConfig):
+class MAEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
     "Config class for MAE."
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "MAEMetric"
+        return ImplementedMetric.MAE
 
 
-class RMSEConfig(MetricConfig):
+class RMSEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
     "Config class for RMSE."
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "RMSEMetric"
+        return ImplementedMetric.RMSE

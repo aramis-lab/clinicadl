@@ -2,9 +2,9 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.metrics.config.reconstruction import (
-    MultiScaleSSIMConfig,
-    PSNRConfig,
-    SSIMConfig,
+    MultiScaleSSIMMetricConfig,
+    PSNRMetricConfig,
+    SSIMMetricConfig,
 )
 
 
@@ -19,7 +19,7 @@ from clinicadl.metrics.config.reconstruction import (
 )
 def test_fails_validation_psnr(bad_inputs):
     with pytest.raises(ValidationError):
-        PSNRConfig(**bad_inputs)
+        PSNRMetricConfig(**bad_inputs)
 
 
 @pytest.mark.parametrize(
@@ -31,15 +31,15 @@ def test_fails_validation_psnr(bad_inputs):
     ],
 )
 def test_passes_validations_psnr(good_inputs):
-    PSNRConfig(**good_inputs)
+    PSNRMetricConfig(**good_inputs)
 
 
-def test_PSNRConfig():
-    config = PSNRConfig(
+def test_PSNRMetricConfig():
+    config = PSNRMetricConfig(
         max_val=7,
         reduction="sum",
     )
-    assert config.metric == "PSNRMetric"
+    assert config.name == "PSNRMetric"
     assert config.max_val == 7
     assert config.reduction == "sum"
     assert not config.get_not_nans
@@ -52,8 +52,6 @@ def test_PSNRConfig():
         {"spatial_dims": 1},
         {"spatial_dims": 2, "data_range": 0},
         {"spatial_dims": 2, "kernel_type": "abc"},
-        {"spatial_dims": 2, "win_size": 0},
-        {"spatial_dims": 2, "win_size": (1, 2, 3)},
         {"spatial_dims": 2, "kernel_sigma": 0},
         {"spatial_dims": 2, "kernel_sigma": (1.0, 2.0, 3.0)},
         {"spatial_dims": 2, "k1": -1.0},
@@ -62,16 +60,35 @@ def test_PSNRConfig():
 )
 def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
-        SSIMConfig(**bad_inputs)
+        SSIMMetricConfig(**bad_inputs)
     with pytest.raises(ValidationError):
-        MultiScaleSSIMConfig(**bad_inputs)
+        MultiScaleSSIMMetricConfig(**bad_inputs)
 
 
-def test_fails_validation_msssim():
+@pytest.mark.parametrize(
+    "bad_inputs",
+    [
+        {"spatial_dims": 2, "win_size": 0},
+        {"spatial_dims": 2, "win_size": (1, 2, 3)},
+    ],
+)
+def test_fails_validations_ssim(bad_inputs):
     with pytest.raises(ValidationError):
-        MultiScaleSSIMConfig(spatial_dims=2, weights=(0.0, 1.0))
+        SSIMMetricConfig(**bad_inputs)
+
+
+@pytest.mark.parametrize(
+    "bad_inputs",
+    [
+        {"spatial_dims": 2, "kernel_size": 0},
+        {"spatial_dims": 2, "kernel_size": (1, 2, 3)},
+        {"spatial_dims": 2, "weights": (0.0, 1.0)},
+        {"spatial_dims": 2, "weights": 1.0},
+    ],
+)
+def test_fails_validation_msssim(bad_inputs):
     with pytest.raises(ValidationError):
-        MultiScaleSSIMConfig(spatial_dims=2, weights=1.0)
+        MultiScaleSSIMMetricConfig(**bad_inputs)
 
 
 @pytest.mark.parametrize(
@@ -91,17 +108,17 @@ def test_fails_validation_msssim():
     ],
 )
 def test_passes_validations(good_inputs):
-    MultiScaleSSIMConfig(**good_inputs)
-    SSIMConfig(**good_inputs)
+    MultiScaleSSIMMetricConfig(**good_inputs)
+    SSIMMetricConfig(**good_inputs)
 
 
-def test_SSIMConfig():
-    config = SSIMConfig(
+def test_SSIMMetricConfig():
+    config = SSIMMetricConfig(
         spatial_dims=2,
         reduction="sum",
         k1=1.0,
     )
-    assert config.metric == "SSIMMetric"
+    assert config.name == "SSIMMetric"
     assert config.reduction == "sum"
     assert config.spatial_dims == 2
     assert config.k1 == 1.0
@@ -109,13 +126,13 @@ def test_SSIMConfig():
 
 
 def test_MultiScaleSSIMMetric():
-    config = MultiScaleSSIMConfig(
-        spatial_dims=2, reduction="sum", k1=1.0, weights=[1.0], win_size=10
+    config = MultiScaleSSIMMetricConfig(
+        spatial_dims=2, reduction="sum", k1=1.0, weights=[1.0], kernel_size=10
     )
-    assert config.metric == "MultiScaleSSIMMetric"
+    assert config.name == "MultiScaleSSIMMetric"
     assert config.reduction == "sum"
     assert config.spatial_dims == 2
-    assert config.win_size == 10
+    assert config.kernel_size == 10
     assert config.k1 == 1.0
     assert config.k2 == "DefaultFromLibrary"
     assert config.weights == (1.0,)

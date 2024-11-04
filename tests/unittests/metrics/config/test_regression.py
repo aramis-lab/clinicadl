@@ -2,9 +2,9 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.metrics.config.regression import (
-    MAEConfig,
-    MSEConfig,
-    RMSEConfig,
+    MAEMetricConfig,
+    MSEMetricConfig,
+    RMSEMetricConfig,
 )
 
 
@@ -17,11 +17,11 @@ from clinicadl.metrics.config.regression import (
 )
 def test_fails_validations(bad_inputs):
     with pytest.raises(ValidationError):
-        MAEConfig(**bad_inputs)
+        MAEMetricConfig(**bad_inputs)
     with pytest.raises(ValidationError):
-        MSEConfig(**bad_inputs)
+        MSEMetricConfig(**bad_inputs)
     with pytest.raises(ValidationError):
-        RMSEConfig(**bad_inputs)
+        RMSEMetricConfig(**bad_inputs)
 
 
 @pytest.mark.parametrize(
@@ -33,33 +33,33 @@ def test_fails_validations(bad_inputs):
     ],
 )
 def test_passes_validations(good_inputs):
-    MAEConfig(**good_inputs)
-    MSEConfig(**good_inputs)
-    RMSEConfig(**good_inputs)
+    MAEMetricConfig(**good_inputs)
+    MSEMetricConfig(**good_inputs)
+    RMSEMetricConfig(**good_inputs)
 
 
-def test_MAEConfig():
-    config = MAEConfig(
+def test_MAEMetricConfig():
+    config = MAEMetricConfig(
         reduction="sum",
     )
-    assert config.metric == "MAEMetric"
+    assert config.name == "MAEMetric"
     assert config.reduction == "sum"
     assert not config.get_not_nans
 
 
-def test_MSEConfig():
-    config = MSEConfig(
+def test_MSEMetricConfig():
+    config = MSEMetricConfig(
         reduction="sum",
     )
-    assert config.metric == "MSEMetric"
+    assert config.name == "MSEMetric"
     assert config.reduction == "sum"
     assert not config.get_not_nans
 
 
-def test_RMSEConfig():
-    config = RMSEConfig(
+def test_RMSEMetricConfig():
+    config = RMSEMetricConfig(
         reduction="sum",
     )
-    assert config.metric == "RMSEMetric"
+    assert config.name == "RMSEMetric"
     assert config.reduction == "sum"
     assert not config.get_not_nans

@@ -1,2 +1,2 @@
-from .config import ImplementedMetrics, MetricConfig, create_metric_config
-from .factory import get_metric, loss_to_metric
+from .config import ImplementedMetric, MetricConfig
+from .factory import get_metric, get_metric_from_config, loss_to_metric

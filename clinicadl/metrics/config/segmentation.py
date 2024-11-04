@@ -4,26 +4,37 @@ from pydantic import NonNegativeFloat, PositiveInt, computed_field, field_valida
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import MetricConfig
-from .enum import DistanceMetric, GeneralizedDiceScoreReduction, WeightType
+from .base import (
+    MetricConfigWithBackground,
+    MetricConfigWithNotNans,
+    MetricConfigWithReduction,
+)
+from .enum import (
+    DistanceMetric,
+    GeneralizedDiceScoreReduction,
+    ImplementedMetric,
+    WeightType,
+)
 
 __all__ = [
-    "DiceConfig",
-    "IoUConfig",
-    "GeneralizedDiceConfig",
-    "SurfaceDistanceConfig",
-    "HausdorffDistanceConfig",
-    "SurfaceDiceConfig",
+    "DiceMetricConfig",
+    "MeanIoUConfig",
+    "GeneralizedDiceScoreConfig",
+    "SurfaceDistanceMetricConfig",
+    "HausdorffDistanceMetricConfig",
+    "SurfaceDiceMetricConfig",
 ]
 
 
-class SegmentationMetricConfig(MetricConfig):
+class BaseSegmentationMetricConfig(
+    MetricConfigWithBackground, MetricConfigWithNotNans, MetricConfigWithReduction
+):
     """Base config class for segmentation metrics."""
 
     ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class DiceConfig(SegmentationMetricConfig):
+class DiceMetricConfig(BaseSegmentationMetricConfig):
     """Config class for Dice score."""
 
     num_classes: Union[
@@ -33,9 +44,9 @@ class DiceConfig(SegmentationMetricConfig):
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "DiceMetric"
+        return ImplementedMetric.DICE
 
     @field_validator("return_with_label", mode="after")
     @classmethod
@@ -47,17 +58,17 @@ class DiceConfig(SegmentationMetricConfig):
         return v
 
 
-class IoUConfig(SegmentationMetricConfig):
+class MeanIoUConfig(BaseSegmentationMetricConfig):
     """Config class for IoU metric."""
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "MeanIoU"
+        return ImplementedMetric.IOU
 
 
-class GeneralizedDiceConfig(MetricConfig):
+class GeneralizedDiceScoreConfig(MetricConfigWithBackground):
     """Config class for generalized Dice score."""
 
     reduction: Union[
@@ -67,25 +78,32 @@ class GeneralizedDiceConfig(MetricConfig):
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "GeneralizedDiceScore"
+        return ImplementedMetric.GENERALIZED_DICE
 
 
-class SurfaceDistanceConfig(MetricConfig):
-    """Config class for Surface Distance metric."""
+class BaseSurfaceDistanceConfig(
+    MetricConfigWithBackground, MetricConfigWithNotNans, MetricConfigWithReduction
+):
+    """Base config class for surface-distance-based metrics."""
 
     distance_metric: Union[DistanceMetric, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class SurfaceDistanceMetricConfig(BaseSurfaceDistanceConfig):
+    """Config class for Surface Distance metric."""
+
     symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "SurfaceDistanceMetric"
+        return ImplementedMetric.SURF_DIST
 
 
-class HausdorffDistanceConfig(SurfaceDistanceConfig):
+class HausdorffDistanceMetricConfig(BaseSurfaceDistanceConfig):
     """Config class for Hausdorff distance."""
 
     percentile: Union[
@@ -95,9 +113,9 @@ class HausdorffDistanceConfig(SurfaceDistanceConfig):
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "HausdorffDistanceMetric"
+        return ImplementedMetric.HAUSDORFF
 
     @field_validator("percentile", mode="after")
     @classmethod
@@ -110,7 +128,7 @@ class HausdorffDistanceConfig(SurfaceDistanceConfig):
         return v
 
 
-class SurfaceDiceConfig(SurfaceDistanceConfig):
+class SurfaceDiceMetricConfig(BaseSurfaceDistanceConfig):
     """Config class for (normalized) surface Dice score."""
 
     class_thresholds: Tuple[NonNegativeFloat, ...]
@@ -118,6 +136,6 @@ class SurfaceDiceConfig(SurfaceDistanceConfig):
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "SurfaceDiceMetric"
+        return ImplementedMetric.SURF_DICE

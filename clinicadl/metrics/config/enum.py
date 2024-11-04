@@ -1,37 +1,29 @@
 from enum import Enum
 
 
-class ImplementedMetrics(str, Enum):
+class ImplementedMetric(str, Enum):
     """Implemented metrics in ClinicaDL."""
 
     LOSS = "Loss"
 
-    RECALL = "Recall"
-    SPECIFICITY = "Specificity"
-    PRECISION = "Precision"
-    NPV = "Negative Predictive Value"
-    F1 = "F1 score"
-    BALANCED_ACC = "Balanced Accuracy"
-    ACC = "Accuracy"
-    MARKEDNESS = "Markedness"
-    MCC = "Matthews Correlation Coefficient"
-    ROC_AUC = "ROCAUC"
+    CONF_MATRIX = "ConfusionMatrixMetric"
+    ROC_AUC = "ROCAUCMetric"
 
-    MSE = "MSE"
-    MAE = "MAE"
-    RMSE = "RMSE"
-    PSNR = "PSNR"
-    SSIM = "SSIM"
-    MS_SSIM = "Multi-scale SSIM"
+    MSE = "MSEMetric"
+    MAE = "MAEMetric"
+    RMSE = "RMSEMetric"
+    PSNR = "PSNRMetric"
+    SSIM = "SSIMMetric"
+    MS_SSIM = "MultiScaleSSIMMetric"
 
-    DICE = "Dice"
-    GENERALIZED_DICE = "Generalized Dice"
-    IOU = "IoU"
-    SURF_DIST = "Surface distance"
-    HAUSDORFF = "Hausdorff distance"
-    SURF_DICE = "Surface Dice"
+    DICE = "DiceMetric"
+    GENERALIZED_DICE = "GeneralizedDiceScore"
+    IOU = "MeanIoU"
+    SURF_DIST = "SurfaceDistanceMetric"
+    HAUSDORFF = "HausdorffDistanceMetric"
+    SURF_DICE = "SurfaceDiceMetric"
 
-    MMD = "MMD"
+    # MMD = "MMDMetric"
 
     @classmethod
     def _missing_(cls, value):
@@ -61,20 +53,6 @@ class Average(str, Enum):
     MACRO = "macro"
     WEIGHTED = "weighted"
     MICRO = "micro"
-
-
-class ConfusionMatrixMetric(str, Enum):
-    """Supported metrics related to confusion matrix (in the format accepted by MONAI)."""
-
-    RECALL = "recall"
-    SPECIFICITY = "specificity"
-    PRECISION = "precision"
-    NPV = "negative predictive value"
-    F1 = "f1 score"
-    BALANCED_ACC = "balanced accuracy"
-    ACC = "accuracy"
-    MARKEDNESS = "markedness"
-    MCC = "matthews correlation coefficient"
 
 
 class DistanceMetric(str, Enum):

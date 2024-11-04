@@ -14,7 +14,7 @@ def get_loss_function(
     name: Union[str, ImplementedLoss], return_config: bool = False, **kwargs: Any
 ) -> Union[Loss, Tuple[Loss, LossConfig]]:
     """
-    Factory function to get a loss function from its name and parameters.
+    Factory function to get a PyTorch loss function from its name and parameters.
 
     Parameters
     ----------
@@ -30,10 +30,10 @@ def get_loss_function(
 
     Returns
     -------
-    nnn.Module
+    Loss
         the loss function.
     LossConfig
-        the associated config class. Only returned if `return_config` is True.
+        the associated config object. Only returned if `return_config` is True.
     """
     config = create_loss_config(name)(**kwargs)
     loss, updated_config = get_loss_function_from_config(config)
@@ -45,7 +45,7 @@ def get_loss_function_from_config(
     config: LossConfig,
 ) -> Tuple[Loss, LossConfig]:
     """
-    Factory function to get a loss function from a LossConfig instance.
+    Factory function to get a PyTorch loss function from a LossConfig instance.
 
     Parameters
     ----------
@@ -54,10 +54,10 @@ def get_loss_function_from_config(
 
     Returns
     -------
-    nn.Module
+    Loss
         the loss function.
     LossConfig
-        the updated config class: the arguments set to default will be updated
+        the updated config object: the arguments set to default will be updated
         with their effective values (the default values from the library).
         Useful for reproducibility.
     """

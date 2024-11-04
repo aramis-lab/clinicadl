@@ -42,7 +42,7 @@ def get_network(
     nnn.Module
         the neural network.
     NetworkConfig
-        the associated config class. Only returned if `return_config` is True.
+        the associated config object. Only returned if `return_config` is True.
     """
     config = create_network_config(name)(**kwargs)
     network, updated_config = get_network_from_config(config)
@@ -64,7 +64,7 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
     nn.Module
         the neural network.
     NetworkConfig
-        the updated config class: the arguments set to default will be updated
+        the updated config object: the arguments set to default will be updated
         with their effective values (the default values from the network).
         Useful for reproducibility.
     """

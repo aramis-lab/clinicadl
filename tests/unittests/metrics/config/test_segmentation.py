@@ -2,12 +2,12 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.metrics.config.segmentation import (
-    DiceConfig,
-    GeneralizedDiceConfig,
-    HausdorffDistanceConfig,
-    IoUConfig,
-    SurfaceDiceConfig,
-    SurfaceDistanceConfig,
+    DiceMetricConfig,
+    GeneralizedDiceScoreConfig,
+    HausdorffDistanceMetricConfig,
+    MeanIoUConfig,
+    SurfaceDiceMetricConfig,
+    SurfaceDistanceMetricConfig,
 )
 
 
@@ -20,49 +20,49 @@ from clinicadl.metrics.config.segmentation import (
 )
 def test_fails_validation(bad_inputs):
     with pytest.raises(ValidationError):
-        DiceConfig(**bad_inputs)
+        DiceMetricConfig(**bad_inputs)
     with pytest.raises(ValidationError):
-        IoUConfig(**bad_inputs)
+        MeanIoUConfig(**bad_inputs)
     with pytest.raises(ValidationError):
-        SurfaceDistanceConfig(**bad_inputs)
+        SurfaceDistanceMetricConfig(**bad_inputs)
 
 
 def test_fails_validation_dice():
     with pytest.raises(ValidationError):
-        DiceConfig(return_with_label=True)
+        DiceMetricConfig(return_with_label=True)
     with pytest.raises(ValidationError):
-        DiceConfig(num_classes=0)
+        DiceMetricConfig(num_classes=0)
 
 
 def test_fails_validation_gen_dice():
     with pytest.raises(ValidationError):
-        GeneralizedDiceConfig(reduction="mean")
+        GeneralizedDiceScoreConfig(reduction="mean")
     with pytest.raises(ValidationError):
-        GeneralizedDiceConfig(weight_type="abc")
+        GeneralizedDiceScoreConfig(weight_type="abc")
 
 
 def test_fails_validation_surface_dist():
     with pytest.raises(ValidationError):
-        SurfaceDistanceConfig(distance_metric="abc")
+        SurfaceDistanceMetricConfig(distance_metric="abc")
 
 
 def test_fails_validation_haussdorf():
     with pytest.raises(ValidationError):
-        HausdorffDistanceConfig(percentile=-1)
+        HausdorffDistanceMetricConfig(percentile=-1)
 
 
 def test_fails_validation_surface_dice():
     with pytest.raises(ValidationError):
-        SurfaceDiceConfig(class_thresholds=0.1)
+        SurfaceDiceMetricConfig(class_thresholds=0.1)
 
 
-def test_DiceConfig():
-    config = DiceConfig(
+def test_DiceMetricConfig():
+    config = DiceMetricConfig(
         num_classes=3,
         include_background=False,
         reduction="mean",
     )
-    assert config.metric == "DiceMetric"
+    assert config.name == "DiceMetric"
     assert config.num_classes == 3
     assert not config.include_background
     assert config.reduction == "mean"
@@ -71,48 +71,48 @@ def test_DiceConfig():
     assert not config.return_with_label
 
 
-def test_IoUConfig():
-    config = IoUConfig(
+def test_MeanIoUConfig():
+    config = MeanIoUConfig(
         num_classes=3,
         include_background=False,
         reduction="mean",
     )
-    assert config.metric == "MeanIoU"
+    assert config.name == "MeanIoU"
     assert not config.include_background
     assert config.reduction == "mean"
     assert config.ignore_empty == "DefaultFromLibrary"
     assert not config.get_not_nans
 
 
-def test_GeneralizedDiceConfig():
-    config = GeneralizedDiceConfig(
+def test_GeneralizedDiceScoreConfig():
+    config = GeneralizedDiceScoreConfig(
         weight_type="square",
         reduction="mean_batch",
     )
-    assert config.metric == "GeneralizedDiceScore"
+    assert config.name == "GeneralizedDiceScore"
     assert config.weight_type == "square"
     assert config.include_background == "DefaultFromLibrary"
     assert config.reduction == "mean_batch"
 
 
-def test_SurfaceDistanceConfig():
-    config = SurfaceDistanceConfig(
+def test_SurfaceDistanceMetricConfig():
+    config = SurfaceDistanceMetricConfig(
         symmetric=True,
         distance_metric="taxicab",
     )
-    assert config.metric == "SurfaceDistanceMetric"
+    assert config.name == "SurfaceDistanceMetric"
     assert config.symmetric
     assert config.distance_metric == "taxicab"
     assert config.reduction == "DefaultFromLibrary"
     assert config.include_background == "DefaultFromLibrary"
 
 
-def test_HausdorffDistanceConfig():
-    config = HausdorffDistanceConfig(
+def test_HausdorffDistanceMetricConfig():
+    config = HausdorffDistanceMetricConfig(
         percentile=50,
         directed=True,
     )
-    assert config.metric == "HausdorffDistanceMetric"
+    assert config.name == "HausdorffDistanceMetric"
     assert config.percentile == 50
     assert config.directed
     assert config.distance_metric == "DefaultFromLibrary"
@@ -120,11 +120,11 @@ def test_HausdorffDistanceConfig():
     assert not config.get_not_nans
 
 
-def test_SurfaceDiceConfig():
-    config = SurfaceDiceConfig(
+def test_SurfaceDiceMetricConfig():
+    config = SurfaceDiceMetricConfig(
         use_subvoxels=True, class_thresholds=[0.1, 100], distance_metric="chessboard"
     )
-    assert config.metric == "SurfaceDiceMetric"
+    assert config.name == "SurfaceDiceMetric"
     assert config.class_thresholds == (0.1, 100)
     assert config.use_subvoxels
     assert config.distance_metric == "chessboard"

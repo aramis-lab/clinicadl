@@ -1,42 +1,77 @@
-from typing import Optional, Tuple, Union
+from copy import deepcopy
+from typing import Any, Optional, Tuple, Union
 
 import monai.metrics as metrics
+from monai.metrics.metric import CumulativeIterationMetric as Metric
 
 from clinicadl.losses.utils import Loss
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
-from .config.base import MetricConfig
+from .config import ImplementedMetric, MetricConfig, create_metric_config
 from .config.enum import Reduction
 
 
-def get_metric(config: MetricConfig) -> Tuple[metrics.Metric, MetricConfig]:
+def get_metric(
+    name: Union[str, ImplementedMetric], return_config: bool = False, **kwargs: Any
+) -> Union[Metric, Tuple[Metric, MetricConfig]]:
     """
-    Factory function to get a metric from MONAI.
+    Factory function to get a MONAI metric from its name and parameters.
+
+    Parameters
+    ----------
+    name : Union[str, ImplementedMetric]
+        the name of the metric. Check our documentation to know available metrics.
+    return_config : bool (optional, default=False)
+        if the function should return the config class regrouping the parameters of the
+        metric. Useful to keep track of the hyperparameters.
+    **kwargs : Any
+        the parameters of the metric. Check our documentation on metrics to
+        know these parameters.
+
+    Returns
+    -------
+    Metric
+        the metric.
+    MetricConfig
+        the associated config object. Only returned if `return_config` is True.
+    """
+    config = create_metric_config(name)(**kwargs)
+    metric, updated_config = get_metric_from_config(config)
+
+    return metric if not return_config else (metric, updated_config)
+
+
+def get_metric_from_config(config: MetricConfig) -> Tuple[Metric, MetricConfig]:
+    """
+    Factory function to get a MONAI metric from a MetricConfig instance.
 
     Parameters
     ----------
     config : MetricConfig
-        The config class with the parameters of the metric.
+        the configuration object.
 
     Returns
     -------
-    metrics.Metric
-        The Metric object.
+    Metric
+        the metric.
     MetricConfig
-        The updated config class: the arguments set to default will be updated
-        with their effective values (the default values from the library).
+        the updated config class: the arguments set to default will be updated
+        with their effective values (the default values from the metric).
         Useful for reproducibility.
     """
-    metric_class = getattr(metrics, config.metric)
-    expected_args, config_dict = get_args_and_defaults(metric_class.__init__)
-    for arg, value in config.model_dump().items():
-        if arg in expected_args and value != DefaultFromLibrary.YES:
-            config_dict[arg] = value
+    config = deepcopy(config)
+    metric_class = getattr(metrics, config.name)
 
+    # update config with defaults
+    _, defaults = get_args_and_defaults(metric_class.__init__)
+    for arg, value in config:
+        if value == DefaultFromLibrary.YES and arg in defaults:
+            setattr(config, arg, defaults[arg])
+
+    config_dict = config.model_dump(exclude={"name"})
     metric = metric_class(**config_dict)
-    updated_config = config.model_copy(update=config_dict)
 
-    return metric, updated_config
+    return metric, config
 
 
 def loss_to_metric(
@@ -52,7 +87,7 @@ def loss_to_metric(
         A callable function that takes y_pred and optionally y as input (in the “batch-first” format), returns a 1-item tensor.
         loss_fn can also be a PyTorch loss object.
     reduction : Optional[Union[str, Reduction]] (optional, default=None)
-        Defines mode of reduction. If not passed, the reduction method of the loss function will be used (if it exists).
+        Defines mode of reduction. If not passed, the reduction method of the loss function will be used.
 
     Returns
     -------
