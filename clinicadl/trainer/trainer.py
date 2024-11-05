@@ -7,7 +7,7 @@ from clinicadl.splitter.kfold import Split
 
 
 class Trainer:
-    def __init__(self) -> None:
+    def __init__(self, config, manager: ExperimentManager) -> None:
         """TO COMPLETE"""
 
     @classmethod

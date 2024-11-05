@@ -10,11 +10,11 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
+from clinicadl.dataset.data_utils import check_multi_cohort_tsv
 from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
-from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv
 
 
 def write_missing_mods(output_dir: Path, output_df: pd.DataFrame) -> None:

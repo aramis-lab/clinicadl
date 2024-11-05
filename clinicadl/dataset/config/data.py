@@ -5,11 +5,11 @@ from typing import Any, Dict, Optional, Union
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from clinicadl.dataset.data_utils import load_data_test
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
 )
-from clinicadl.utils.iotools.data_utils import load_data_test
 
 logger = getLogger("clinicadl.data_config")
 
@@ -41,7 +41,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
         if self.data_tsv is not None and self.data_tsv.is_file():
             group_df = load_data_test(
                 self.data_tsv,
-                self.diagnoses,
                 multi_cohort=self.multi_cohort,
             )
         return group_df

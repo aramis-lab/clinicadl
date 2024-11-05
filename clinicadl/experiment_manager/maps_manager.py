@@ -297,7 +297,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.utils.iotools.data_utils import load_data_test
+        from clinicadl.dataset.data_utils import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,

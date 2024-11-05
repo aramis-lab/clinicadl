@@ -69,7 +69,9 @@ def get_preprocessing_and_mode_from_json(json_path: Path):
     return get_preprocessing_and_mode_from_parameters(**dict_)
 
 
-def get_preprocessing_and_mode_from_parameters(**kwargs):
+def get_preprocessing_and_mode_from_parameters(
+    **kwargs,
+) -> Tuple[preprocessing.ALL_PREPROCESSING_TYPES, extraction.ALL_EXTRACTION_TYPES]:
     """
     Extracts the preprocessing and mode from a json file.
 

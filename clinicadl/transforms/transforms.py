@@ -1,30 +1,89 @@
-from typing import List, Optional
+from logging import getLogger
+from typing import Any, Callable, List, Optional, Self
 
+import torch
 import torchio.transforms as transforms
-from torchio.transforms.transform import Transform
+import torchvision.transforms as torch_transforms
+from pydantic import BaseModel, field_validator, model_validator
 
-from clinicadl.dataset.config.extraction import ExtractionConfig
+from clinicadl.dataset.config.extraction import (
+    ALL_EXTRACTION_TYPES,
+    ExtractionConfig,
+    ExtractionImageConfig,
+)
+from clinicadl.transforms.factory import MinMaxNormalization, NanRemoval, SizeReduction
 from clinicadl.utils.enum import ExtractionMethod
 
+logger = getLogger("clinicadl.transforms.transforms")
 
-class Transforms:
-    def __init__(
+
+class Transforms(BaseModel):
+    extraction: ALL_EXTRACTION_TYPES
+    normalize: bool = True
+    image_augmentation: list[Callable] = []
+    object_augmentation: list[Callable] = []
+    image_transforms: list[Callable] = []
+    object_transforms: list[Callable] = []
+
+    @model_validator(mode="after")
+    def check_transforms(self) -> Self:
+        if isinstance(self.extraction, ExtractionConfig):
+            raise ValueError(
+                "You need to provide a type of ExtractionConfig (Image, Patch, Roi or Slice). You can't just pass an ExtractionConfig."
+            )
+
+        elif isinstance(self.extraction, ExtractionImageConfig):
+            if self.object_transforms:
+                logger.warning(
+                    "You provided object_transforms but in the chosen configuration, image and object are the same."
+                )
+                self.image_transforms.append(self.object_transforms)
+                self.object_transforms = []
+
+            if self.object_augmentation:
+                logger.warning(
+                    "You provided object_augmentation but in the chosen configuration, image and object are the same."
+                )
+                self.image_augmentation.append(self.object_augmentation)
+                self.object_augmentation = []
+
+    def get_transforms(
         self,
-        data_augmentation: Optional[list[Transform]] = None,
-        image_transforms: Optional[list[Transform]] = None,
-        object_transforms: Optional[list[Transform]] = None,
-        extraction_method: Optional[ExtractionMethod] = ExtractionMethod.IMAGE,
-    ) -> None:
-        """TO COMPLETE"""
+        normalize: bool = True,
+        size_reduction: bool = False,
+        size_reduction_factor: int = 2,
+    ):
+        logger.info(
+            "transforms will be apply in this order: image transforms, object transforms and then data augmentation during training."
+        )
 
-        if data_augmentation:
-            self.data_augmentation = data_augmentation
+        self.image_transforms.append(NanRemoval())
+        if normalize:
+            self.image_transforms.append((MinMaxNormalization))
+        if size_reduction:
+            self.image_transforms.append(
+                SizeReduction(size_reduction_factor=size_reduction_factor)
+            )
+        image_transforms = torch_transforms.Compose(self.image_transforms)
 
-        if image_transforms:
-            self.image_transforms = image_transforms
+        if self.object_transforms:
+            object_transforms = torch_transforms.Compose(self.object_transforms)
+        else:
+            object_transforms = None
 
-        if object_transforms:
-            self.object_transforms = object_transforms
+        if self.image_augmentation:
+            image_augmentation = torch_transforms.Compose(self.image_augmentation)
+        else:
+            image_augmentation = None
 
-        if extraction_method not in ExtractionMethod:
-            raise ValueError(f"Invalid extraction method: {extraction_method}")
+        if self.object_augmentation:
+            object_augmentation = torch_transforms.Compose(self.object_augmentation)
+        else:
+            object_augmentation = None
+
+        return (
+            image_transforms,
+            object_transforms,
+            image_augmentation,
+            object_augmentation,
+        )

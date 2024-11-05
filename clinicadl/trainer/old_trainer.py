@@ -59,7 +59,7 @@ class Trainer:
     def __init__(
         self,
         config: TrainConfig,
-    ) -> None:
+    ):
         """
         Parameters
         ----------

@@ -15,7 +15,7 @@ logger = getLogger("clinicadl")
 ##################################
 
 
-class RandomNoising(object):
+class RandomNoising:
     """Applies a random zoom to a tensor"""
 
     def __init__(self, sigma=0.1):
@@ -29,7 +29,7 @@ class RandomNoising(object):
         return image + dist.sample(image.shape)
 
 
-class RandomSmoothing(object):
+class RandomSmoothing:
     """Applies a random zoom to a tensor"""
 
     def __init__(self, sigma=1):
@@ -46,7 +46,7 @@ class RandomSmoothing(object):
         return image
 
 
-class RandomCropPad(object):
+class RandomCropPad:
     def __init__(self, length):
         self.length = length
 
@@ -68,7 +68,7 @@ class RandomCropPad(object):
         return output
 
 
-class GaussianSmoothing(object):
+class GaussianSmoothing:
     def __init__(self, sigma):
         self.sigma = sigma
 
@@ -83,7 +83,7 @@ class GaussianSmoothing(object):
         return sample
 
 
-class RandomMotion(object):
+class RandomMotion:
     """Applies a Random Motion"""
 
     def __init__(self, translation, rotation, num_transforms):
@@ -102,7 +102,7 @@ class RandomMotion(object):
         return image
 
 
-class RandomGhosting(object):
+class RandomGhosting:
     """Applies a Random Ghosting"""
 
     def __init__(self, num_ghosts):
@@ -115,7 +115,7 @@ class RandomGhosting(object):
         return image
 
 
-class RandomSpike(object):
+class RandomSpike:
     """Applies a Random Spike"""
 
     def __init__(self, num_spikes, intensity):
@@ -132,7 +132,7 @@ class RandomSpike(object):
         return image
 
 
-class RandomBiasField(object):
+class RandomBiasField:
     """Applies a Random Bias Field"""
 
     def __init__(self, coefficients):
@@ -145,7 +145,7 @@ class RandomBiasField(object):
         return image
 
 
-class RandomBlur(object):
+class RandomBlur:
     """Applies a Random Blur"""
 
     def __init__(self, std):
@@ -158,7 +158,7 @@ class RandomBlur(object):
         return image
 
 
-class RandomSwap(object):
+class RandomSwap:
     """Applies a Random Swap"""
 
     def __init__(self, patch_size, num_iterations):
@@ -174,7 +174,7 @@ class RandomSwap(object):
         return image
 
 
-class ToTensor(object):
+class ToTensor:
     """Convert image type to Tensor and diagnosis to diagnosis code"""
 
     def __call__(self, image):
@@ -184,14 +184,14 @@ class ToTensor(object):
         return torch.from_numpy(image[np.newaxis, :]).float()
 
 
-class MinMaxNormalization(object):
+class MinMaxNormalization:
     """Normalizes a tensor between 0 and 1"""
 
     def __call__(self, image):
         return (image - image.min()) / (image.max() - image.min())
 
 
-class NanRemoval(object):
+class NanRemoval:
     def __init__(self):
         self.nan_detected = False  # Avoid warning each time new data is seen
 
@@ -207,7 +207,7 @@ class NanRemoval(object):
             return image
 
 
-class SizeReduction(object):
+class SizeReduction:
     """Reshape the input tensor to be of size [80, 96, 80]"""
 
     def __init__(self, size_reduction_factor=2) -> None:

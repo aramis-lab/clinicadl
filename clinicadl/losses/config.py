@@ -211,31 +211,3 @@ class MSELossConfig(LossConfig):
     def loss(self) -> ImplementedLoss:
         """The name of the loss."""
         return ImplementedLoss.MSE
-
-
-def create_loss_config(
-    loss: Union[str, ImplementedLoss],
-) -> Type[LossConfig]:
-    """
-    A factory function to create a config class suited for the loss.
-
-    Parameters
-    ----------
-    loss : Union[str, ImplementedLoss]
-        The name of the loss.
-
-    Returns
-    -------
-    Type[LossConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        If `loss` is not supported.
-    """
-    loss = ImplementedLoss(loss)
-    config_name = "".join([loss, "Config"])
-    config = globals()[config_name]
-
-    return config

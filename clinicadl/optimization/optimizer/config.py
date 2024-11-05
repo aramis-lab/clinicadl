@@ -200,31 +200,3 @@ class SGDConfig(OptimizerConfig):
     @field_validator("dampening")
     def validator_dampening(cls, v, ctx):
         return cls.validator_proba(v, ctx)
-
-
-def create_optimizer_config(
-    optimizer: Union[str, ImplementedOptimizer],
-) -> Type[OptimizerConfig]:
-    """
-    A factory function to create a config class suited for the optimizer.
-
-    Parameters
-    ----------
-    optimizer : Union[str, ImplementedOptimizer]
-        The name of the optimizer.
-
-    Returns
-    -------
-    Type[OptimizerConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        If `optimizer` is not supported.
-    """
-    optimizer = ImplementedOptimizer(optimizer)
-    config_name = "".join([optimizer, "Config"])
-    config = globals()[config_name]
-
-    return config

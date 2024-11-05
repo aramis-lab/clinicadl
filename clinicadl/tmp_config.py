@@ -20,6 +20,7 @@ from pydantic import (
 from typing_extensions import Self
 
 from clinicadl.dataset.caps_dataset import return_dataset
+from clinicadl.dataset.data_utils import check_multi_cohort_tsv, load_data_test
 from clinicadl.metrics.old_metrics.metric_module import MetricModule
 from clinicadl.splitter.split_utils import find_splits
 from clinicadl.trainer.tasks_utils import (
@@ -45,7 +46,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
-from clinicadl.utils.iotools.data_utils import check_multi_cohort_tsv, load_data_test
 from clinicadl.utils.iotools.utils import read_preprocessing
 
 logger = getLogger("clinicadl.tmp")

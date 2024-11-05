@@ -3,7 +3,7 @@ from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 
 
 class Predictor:
-    def __init__(self, manager: ExperimentManager):
+    def __init__(self, model, manager: ExperimentManager):
         """TO COMPLETE"""
         pass
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Iterator, List, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Tuple, Type, Union
 
 import torch
 import torch.nn as nn
@@ -7,6 +7,7 @@ import torch.optim as optim
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
 from .config import OptimizerConfig
+from .enum import ImplementedOptimizer
 from .utils import get_params_in_groups, get_params_not_in_groups
 
 
@@ -212,3 +213,31 @@ def _get_params_not_in_group(
         group.
     """
     return (param[1] for param in network.named_parameters() if param[0] not in group)
+
+
+def create_optimizer_config(
+    optimizer: Union[str, ImplementedOptimizer],
+) -> Type[OptimizerConfig]:
+    """
+    A factory function to create a config class suited for the optimizer.
+
+    Parameters
+    ----------
+    optimizer : Union[str, ImplementedOptimizer]
+        The name of the optimizer.
+
+    Returns
+    -------
+    Type[OptimizerConfig]
+        The config class.
+
+    Raises
+    ------
+    ValueError
+        If `optimizer` is not supported.
+    """
+    optimizer = ImplementedOptimizer(optimizer)
+    config_name = "".join([optimizer, "Config"])
+    config = globals()[config_name]
+
+    return config

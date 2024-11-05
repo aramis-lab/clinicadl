@@ -1,4 +1,8 @@
+from pathlib import Path
+
 import click
+import pandas as pd
+import torchio as tio
 
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import (
@@ -22,9 +26,27 @@ from clinicadl.commandline.pipelines.train.classification import (
 from clinicadl.commandline.pipelines.transfer_learning import (
     options as transfer_learning,
 )
+from clinicadl.dataset.caps_reader import CapsMultiReader, CapsReader
+from clinicadl.experiment_manager.experiment_manager import ExperimentManager
+from clinicadl.losses.enum import ClassificationLoss
+from clinicadl.losses.factory import create_loss_config, get_loss_function
+from clinicadl.model.clinicadl_model import ClinicaDLModelClassif
+from clinicadl.networks.config import ImplementedNetworks
+from clinicadl.networks.factory import (
+    ConvEncoderOptions,
+    create_network_config,
+    get_network_from_config,
+)
+from clinicadl.optimization.optimizer.config import AdamConfig, OptimizerConfig
+from clinicadl.optimization.optimizer.factory import (
+    create_optimizer_config,
+    get_optimizer,
+)
+from clinicadl.splitter.kfold import KFolder, Splitter
 from clinicadl.trainer.config.classification import ClassificationConfig
-from clinicadl.trainer.old_trainer import Trainer
-from clinicadl.utils.enum import Task
+from clinicadl.trainer.trainer import Trainer
+from clinicadl.transforms.transforms import Transforms
+from clinicadl.utils.enum import ClassificationLoss, ExtractionMethod, Task
 from clinicadl.utils.iotools.train_utils import merge_cli_and_config_file_options
 
 
@@ -104,9 +126,44 @@ def cli(**kwargs):
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
 
     """
-
     options = merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
-    config = ClassificationConfig(**options)
-    trainer = Trainer(config)
 
-    trainer.train(split_list=config.split.split, overwrite=True)
+    manager = ExperimentManager(
+        maps_path=options["output_maps_directory"], overwrite=False
+    )
+
+    if options["multi-cohort"]:
+        caps_reader = CapsMultiReader(caps_directory=options["caps_directory"])
+    else:
+        caps_reader = CapsReader(
+            caps_directory=options["caps_directory"]
+        )  # un peu bizarre de passer un maps_path a cet endroit via le manager pq on veut pas forcmeent faire un entrainement ??
+
+    preprocessing, extraction = caps_reader.get_preprocessing_and_extraction_from_json(
+        preprocessing_json=options["preprocessing_json"]
+    )
+    transforms = Transforms(extraction=extraction, **options)  # not mandatory
+    dataset = caps_reader.get_dataset(
+        preprocessing=preprocessing,
+        transforms=transforms,
+    )
+
+    # CAS CROSS-VALIDATION
+    splitter = Splitter(
+        n_splits=options["n_splits"], caps_dataset=dataset, manager=manager
+    )
+
+    config = ClassificationConfig(**options)
+    trainer = Trainer(config=config, manager=manager)
+
+    for split in splitter.split_iterator(split_list=options["split"]):
+        loss_config = create_loss_config(options["loss"])(**options)
+        network_config = create_network_config(options["architecture"])(**options)
+        optimizer_config = create_optimizer_config(options["optimizer"])(**options)
+        model = ClinicaDLModelClassif.from_config(
+            network_config=network_config,
+            loss_config=loss_config,
+            optimizer_config=optimizer_config,
+        )
+
+        trainer.train(model, split)

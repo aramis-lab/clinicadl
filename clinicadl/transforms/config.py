@@ -17,7 +17,7 @@ class TransformsConfig(BaseModel):  # TODO : put in data module?
     """Config class to handle the transformations applied to th data."""
 
     data_augmentation: Tuple[Transform, ...] = ()
-    train_transformations: Optional[Tuple[Transform, ...]] = None
+    train_transformations: Optional[Tuple[Transform, ...]] = None  # = data_augmentation
     normalize: bool = True
     size_reduction: bool = False
     size_reduction_factor: SizeReductionFactor = SizeReductionFactor.TWO

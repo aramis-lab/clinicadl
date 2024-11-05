@@ -1,11 +1,12 @@
 from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, Type, Union
 
 import torch
 
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
 
 from .config import LossConfig
+from .enum import ImplementedLoss, Order, Reduction
 
 
 def get_loss_function(config: LossConfig) -> Tuple[torch.nn.Module, LossConfig]:
@@ -42,3 +43,31 @@ def get_loss_function(config: LossConfig) -> Tuple[torch.nn.Module, LossConfig]:
     updated_config = config.model_copy(update=config_dict)
 
     return loss, updated_config
+
+
+def create_loss_config(
+    loss: Union[str, ImplementedLoss],
+) -> Type[LossConfig]:
+    """
+    A factory function to create a config class suited for the loss.
+
+    Parameters
+    ----------
+    loss : Union[str, ImplementedLoss]
+        The name of the loss.
+
+    Returns
+    -------
+    Type[LossConfig]
+        The config class.
+
+    Raises
+    ------
+    ValueError
+        If `loss` is not supported.
+    """
+    loss = ImplementedLoss(loss)
+    config_name = "".join([loss, "Config"])
+    config = globals()[config_name]
+
+    return config

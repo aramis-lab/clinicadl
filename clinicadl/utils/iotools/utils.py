@@ -10,7 +10,7 @@ from clinicadl.dataset.config.preprocessing import PreprocessingConfig
 
 def path_encoder(obj):
     if isinstance(obj, Path):
-        return str(obj)
+        return obj.as_posix()
     elif isinstance(obj, dict):
         for key, value in obj.items():
             if isinstance(value, dict):

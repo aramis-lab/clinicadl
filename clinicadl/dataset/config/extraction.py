@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from time import time
@@ -45,11 +46,37 @@ class ExtractionConfig(BaseModel):
             v = f"{v}.json"
         return v
 
+    def extract_image(self, input_img: Path) -> torch.Tensor:
+        image_array = nib.loadsave.load(input_img).get_fdata(dtype="float32")  # type: ignore
+        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+        return image_tensor
+
+    @abstractmethod
+    def extract_tensor(
+        self,
+        image_tensor: torch.Tensor,
+        index: int,
+        object_tensors: Optional[torch.Tensor] = None,
+    ):
+        pass
+
+    @abstractmethod
+    def extract_path(self, image_path, index):
+        pass
+
+    @abstractmethod
+    def extract(self, nii_path: Path):
+        pass
+
+    @abstractmethod
+    def num_elem_per_image(self, image: torch.Tensor, elem_index: Optional[int] = None):
+        pass
+
 
 class ExtractionImageConfig(ExtractionConfig):
     extract_method: ExtractionMethod = ExtractionMethod.IMAGE
 
-    def extract_images(self, input_img: Path) -> list[Tuple[Path, torch.Tensor]]:
+    def extract(self, nii_path: Path) -> list[Tuple[Path, torch.Tensor]]:
         """Extract the images
         This function convert nifti image to tensor (.pt) version of the image.
         Tensor version is saved at the same location than input_img.
@@ -59,15 +86,29 @@ class ExtractionImageConfig(ExtractionConfig):
             filename (str): single tensor file  saved on the disk. Same location than input file.
         """
 
-        image_array = nib.loadsave.load(input_img).get_fdata(dtype="float32")
-        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+        image_tensor = self.extract_image(nii_path)
+
         # make sure the tensor type is torch.float32
         output_file = (
-            Path(input_img.name.replace(Suffix.NII_GZ.value, Suffix.PT.value)),
+            Path(nii_path.name.replace(Suffix.NII_GZ.value, Suffix.PT.value)),
             image_tensor.clone(),
         )
 
         return [output_file]
+
+    def extract_tensor(
+        self,
+        image_tensor: torch.Tensor,
+        index: int,
+        object_tensors: Optional[torch.Tensor] = None,
+    ):
+        return image_tensor
+
+    def extract_path(self, image_path, index):
+        return image_path
+
+    def num_elem_per_image(self, image: torch.Tensor, elem_index: Optional[int] = None):
+        return 1
 
 
 class ExtractionPatchConfig(ExtractionConfig):
@@ -75,14 +116,15 @@ class ExtractionPatchConfig(ExtractionConfig):
     stride_size: int = 50
     extract_method: ExtractionMethod = ExtractionMethod.PATCH
 
-    def num_elem_per_image(self, image: torch.Tensor):
-        # if self.elem_index is not None:
-        #     return 1
-        patches_tensor = self.create_patches(image)
-        self.num_patches = patches_tensor.shape[0]
-        return self.num_patches
+    def num_elem_per_image(self, image: torch.Tensor, elem_index: Optional[int] = None):
+        if elem_index is not None:
+            return 1
 
-    def extract_patches(
+        patches_tensor = self.create_patches(image)
+        num_patches = patches_tensor.shape[0]
+        return num_patches
+
+    def extract(
         self,
         nii_path: Path,
     ) -> List[Tuple[Path, torch.Tensor]]:
@@ -101,17 +143,15 @@ class ExtractionPatchConfig(ExtractionConfig):
                 and the tensor of the corresponding patch.
         """
 
-        image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
-        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
-
+        image_tensor = self.extract_image(nii_path)
         patches_tensor = self.create_patches(image_tensor)
 
         patch_list = []
         for patch_index in range(patches_tensor.shape[0]):
-            patch_tensor = self.extract_patch_tensor(
+            patch_tensor = self.extract_tensor(
                 image_tensor, patch_index, patches_tensor
             )
-            patch_path = self.extract_patch_path(nii_path, patch_index)
+            patch_path = self.extract_path(nii_path, patch_index)
 
             patch_list.append((patch_path, patch_tensor))
 
@@ -129,7 +169,7 @@ class ExtractionPatchConfig(ExtractionConfig):
             -1, self.patch_size, self.patch_size, self.patch_size
         )
 
-    def extract_patch_tensor(
+    def extract_tensor(
         self,
         image_tensor: torch.Tensor,
         patch_index: int,
@@ -137,12 +177,11 @@ class ExtractionPatchConfig(ExtractionConfig):
     ) -> torch.Tensor:
         """Extracts a single patch from image_tensor"""
 
-        if patches_tensor is None:
-            patches_tensor = self.create_patches(image_tensor)
+        patches_tensor = self.create_patches(image_tensor)
 
         return patches_tensor[patch_index, ...].unsqueeze_(0).clone()
 
-    def extract_patch_path(self, img_path: Path, patch_index: int) -> Path:
+    def extract_path(self, img_path: Path, patch_index: int) -> Path:
         input_img_filename = img_path.name
         txt_idx = input_img_filename.rfind("_")
         it_filename_prefix = input_img_filename[0:txt_idx]
@@ -160,7 +199,7 @@ class ExtractionSliceConfig(ExtractionConfig):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     slice_mode: SliceMode = SliceMode.RGB
     # num_slices: Optional[NonNegativeInt] = None # not sure it is needed
-    discarded_slices: Union[int, Tuple] = (0,)
+    discarded_slices: Tuple = (0,)
     extract_method: ExtractionMethod = ExtractionMethod.SLICE
 
     @field_validator("slice_direction", mode="before")
@@ -168,10 +207,41 @@ class ExtractionSliceConfig(ExtractionConfig):
         if isinstance(v, int):
             return SliceDirection(str(v))
 
-    # @field_validator("discarded_slices", mode="before")
-    # def compute_discarded_slice(cls, v: Union[int, Tuple]) -> Tuple[int, int]:
-    #     return compute_discarded_slices(v)
+    @field_validator("discarded_slices", mode="before")
+    def compute_discarded_slice(cls, v: Union[int, Tuple]) -> Tuple[int, int]:
+        if isinstance(v, int):
+            begin_discard, end_discard = v, v
+        elif len(v) == 1:
+            begin_discard, end_discard = (
+                v[0],
+                v[0],
+            )
+        elif len(v) == 2:
+            begin_discard, end_discard = (
+                v[0],
+                v[1],
+            )
+        else:
+            raise IndexError(
+                f"Maximum two number of discarded slices can be defined. "
+                f"You gave discarded slices = {v}."
+            )
+        return (begin_discard, end_discard)
+
     # DONE in extraction
+
+    def num_elem_per_image(self, image: torch.Tensor, elem_index: Optional[int] = None):
+        if elem_index is not None:
+            return 1
+
+        # if self.num_slices is not None:
+        #     return self.num_slices
+
+        return (
+            image.size(int(self.slice_direction) + 1)
+            - self.discarded_slices[0]
+            - self.discarded_slices[1]
+        )
 
     def compute_discarded_slices(self) -> Tuple[int, int]:
         if isinstance(self.discarded_slices, int):
@@ -193,7 +263,7 @@ class ExtractionSliceConfig(ExtractionConfig):
             )
         return begin_discard, end_discard
 
-    def extract_slices(
+    def extract(
         self,
         nii_path: Path,
     ) -> List[Tuple[str, torch.Tensor]]:
@@ -218,8 +288,7 @@ class ExtractionSliceConfig(ExtractionConfig):
                 and the tensor of the corresponding slice.
         """
 
-        image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
-        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+        image_tensor = self.extract_image(nii_path)
 
         begin_discard, end_discard = self.compute_discarded_slices()
         index_list = range(
@@ -229,19 +298,21 @@ class ExtractionSliceConfig(ExtractionConfig):
 
         slice_list = []
         for slice_index in index_list:
-            slice_tensor = self.extract_slice_tensor(image_tensor, slice_index)
-            slice_path = self.extract_slice_path(nii_path, slice_index)
+            slice_tensor = self.extract_tensor(image_tensor, slice_index)
+            slice_path = self.extract_path(nii_path, slice_index)
 
             slice_list.append((slice_path, slice_tensor))
 
         return slice_list
 
-    def extract_slice_tensor(
+    def extract_tensor(
         self,
         image_tensor: torch.Tensor,
         slice_index: int,
     ) -> torch.Tensor:
         # Allow to select the slice `slice_index` in dimension `slice_direction`
+        slice_index = slice_index + self.discarded_slices[0]
+
         idx_tuple = tuple(
             [slice(None)] * (int(self.slice_direction.value) + 1)
             + [slice_index]
@@ -256,7 +327,7 @@ class ExtractionSliceConfig(ExtractionConfig):
 
         return slice_tensor.clone()
 
-    def extract_slice_path(
+    def extract_path(
         self,
         img_path: Path,
         slice_index: int,
@@ -280,13 +351,26 @@ class ExtractionROIConfig(ExtractionConfig):
     roi_crop_input: bool = True
     roi_crop_output: bool = True
     roi_template: str = ""
-    roi_pattern: str = ""
-    roi_background_value: int = 0
+    roi_mask_pattern: str = ""
+    roi_mask_location: Path
 
     roi_custom_template: str = ""
     roi_custom_mask_pattern: str = ""
-    roi_custom_suffix: str = ""
     extract_method: ExtractionMethod = ExtractionMethod.ROI
+
+    @field_validator("roi_list", mode="before")
+    def check_roi_list(self, v):
+        if v is None:
+            raise NotImplementedError(
+                "Default regions are not available anymore in ClinicaDL. "
+                "Please define appropriate masks and give a roi_list."
+            )
+
+    def num_elem_per_image(self, image: torch.Tensor, elem_index: Optional[int] = None):
+        if elem_index is not None:
+            return 1
+        else:
+            return len(self.roi_list)
 
     def check_with_preprocessing(self, preprocessing: Preprocessing):
         if preprocessing == Preprocessing.CUSTOM:
@@ -320,7 +404,7 @@ class ExtractionROIConfig(ExtractionConfig):
                 raise FileNotFoundError(
                     f"The ROI '{roi}' does not correspond to a mask in the CAPS directory. {desc}"
                 )
-            roi_mask = nib.loadsave.load(roi_path).get_fdata()
+            roi_mask = nib.loadsave.load(roi_path).get_fdata()  # type: ignore
             mask_values = set(np.unique(roi_mask))
             if mask_values != {0, 1}:
                 raise ValueError(
@@ -418,10 +502,9 @@ class ExtractionROIConfig(ExtractionConfig):
 
         return output_pattern
 
-    def extract_roi(
+    def extract(
         self,
         nii_path: Path,
-        masks_location: Path,
     ) -> List[Tuple[str, torch.Tensor]]:
         """Extracts regions of interest defined by masks
         This function extracts regions of interest from preprocessed nifti images.
@@ -449,27 +532,29 @@ class ExtractionROIConfig(ExtractionConfig):
             and the tensor of the corresponding ROI.
         """
 
-        image_array = nib.loadsave.load(nii_path).get_fdata(dtype="float32")
-        image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+        image_tensor = self.extract_image(nii_path)
 
         roi_list = []
         for roi_name in self.roi_list:
             # read mask
-            mask_path, _ = self.find_mask_path(masks_location, roi_name)
+            mask_path, _ = self.find_mask_path(self.roi_mask_location, roi_name)
             mask_np = nib.loadsave.load(mask_path).get_fdata()
 
-            roi_tensor = self.extract_roi_tensor(image_tensor, mask_np)
-            roi_path = self.extract_roi_path(nii_path, mask_path)
+            roi_tensor = self.extract_tensor(image_tensor, mask_np)
+            roi_path = self.extract_path(nii_path, mask_path)
 
             roi_list.append((roi_path, roi_tensor))
 
         return roi_list
 
-    def extract_roi_tensor(
+    def extract_tensor(
         self,
         image_tensor: torch.Tensor,
-        mask_np,
+        roi_idx: int,
     ) -> torch.Tensor:
+        _, mask_arrays = self._get_mask_paths_and_tensors()
+        mask_np = mask_arrays[roi_idx]
+
         if len(mask_np.shape) == 3:
             mask_np = np.expand_dims(mask_np, axis=0)
         elif len(mask_np.shape) == 4:
@@ -492,7 +577,7 @@ class ExtractionROIConfig(ExtractionConfig):
             ]
         return roi_tensor.float().clone()
 
-    def extract_roi_path(self, img_path: Path, mask_path: Path) -> str:
+    def extract_path(self, img_path: Path, mask_path: Path) -> str:
         input_img_filename = img_path.name
 
         sub_ses_prefix = "_".join(input_img_filename.split("_")[0:3:])
@@ -503,6 +588,28 @@ class ExtractionROIConfig(ExtractionConfig):
         output_pattern = self.compute_output_pattern(mask_path)
 
         return f"{sub_ses_prefix}_{output_pattern}_{input_suffix}.pt"
+
+    def _get_mask_paths_and_tensors(
+        self,
+    ) -> Tuple[List[str], List]:
+        """Loads the masks necessary to regions extraction"""
+
+        mask_location = (
+            self.roi_mask_location
+            / f"tpl-{self.roi_template}"  # caps_directory / "masks" = mask_location
+        )
+
+        mask_paths, mask_arrays = list(), list()
+        for roi in self.roi_list:
+            logger.info(f"Find mask for roi {roi}.")
+            mask_path, desc = self.find_mask_path(mask_location, roi)
+            if mask_path is None:
+                raise FileNotFoundError(desc)
+            mask_nii = nib.loadsave.load(mask_path)
+            mask_paths.append(Path(mask_path))
+            mask_arrays.append(mask_nii.get_fdata())  # type: ignore
+
+        return mask_paths, mask_arrays
 
 
 ALL_EXTRACTION_TYPES = Union[

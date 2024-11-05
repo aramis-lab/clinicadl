@@ -17,7 +17,7 @@ logger = getLogger("clinicadl")
 ################################
 # TSV files loaders
 ################################
-def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=False):
+def load_data_test(test_path: Path, baseline=True, multi_cohort=False):
     """
     Load data not managed by split_manager.
 
@@ -42,25 +42,25 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, "cohort"]
                 cohort_path = Path(tsv_df.loc[idx, "path"])
-                cohort_diagnoses = (
-                    tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
-                )
-                if bool(set(cohort_diagnoses) & set(diagnoses_list)):
-                    target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
-                    cohort_test_df = load_data_test_single(
-                        cohort_path, target_diagnoses, baseline=baseline
-                    )
-                    cohort_test_df["cohort"] = cohort_name
-                    test_df = pd.concat([test_df, cohort_test_df])
-                    found_diagnoses = found_diagnoses | (
-                        set(cohort_diagnoses) & set(diagnoses_list)
-                    )
+            #     cohort_diagnoses = (
+            #         tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
+            #     )
+            #     if bool(set(cohort_diagnoses) & set(diagnoses_list)):
+            #         target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
+            #         cohort_test_df = load_data_test_single(
+            #             cohort_path, target_diagnoses, baseline=baseline
+            #         )
+            #         cohort_test_df["cohort"] = cohort_name
+            #         test_df = pd.concat([test_df, cohort_test_df])
+            #         found_diagnoses = found_diagnoses | (
+            #             set(cohort_diagnoses) & set(diagnoses_list)
+            #         )
 
-            if found_diagnoses != set(diagnoses_list):
-                raise ValueError(
-                    f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
-                    f"do not correspond to the diagnoses wanted {set(diagnoses_list)}."
-                )
+            # if found_diagnoses != set(diagnoses_list):
+            #     raise ValueError(
+            #         f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
+            #         f"do not correspond to the diagnoses wanted {set(diagnoses_list)}."
+            # )
             test_df.reset_index(inplace=True, drop=True)
     else:
         if test_path.suffix == ".tsv":
@@ -70,7 +70,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
                 raise ClinicaDLConfigurationError(
                     "To use multi-cohort framework, please add 'multi_cohort=true' in your configuration file or '--multi_cohort' flag to the command line."
                 )
-        test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
+        test_df = load_data_test_single(test_path, baseline=baseline)
         test_df["cohort"] = "single"
 
     return test_df
@@ -97,23 +97,23 @@ def check_test_path(test_path: Path, baseline: bool = True) -> Path:
     return test_path
 
 
-def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
+def load_data_test_single(test_path: Path, baseline=True):
     if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
             raise ClinicaDLTSVError(
                 f"'diagnosis' column must be present in TSV file {test_path}."
             )
-        test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
-        if len(test_df) == 0:
-            raise ClinicaDLTSVError(
-                f"Diagnoses wanted {diagnoses_list} were not found in TSV file {test_path}."
-            )
-        return test_df
+        # test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
+        # if len(test_df) == 0:
+        #     raise ClinicaDLTSVError(
+        #         f"Diagnoses wanted {diagnoses_list} were not found in TSV file {test_path}."
+        #     )
+        # return test_df
 
     test_path = check_test_path(test_path=test_path, baseline=baseline)
     test_df = pd.read_csv(test_path, sep="\t")
-    test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
+    # test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df

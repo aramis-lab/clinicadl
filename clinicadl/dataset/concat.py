@@ -23,6 +23,7 @@ from clinicadl.dataset.config.preprocessing import PreprocessingConfig
 from clinicadl.dataset.config.utils import (
     get_preprocessing_and_mode_from_json,
 )
+from clinicadl.dataset.utils import CapsDatasetOutput
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.enum import (
     ExtractionMethod,
@@ -64,7 +65,7 @@ class ConcatDataset(CapsDataset):
 
         self.eval_mode = False
 
-    def __getitem__(self, index: int) -> Tuple[List[int], List[int]]:
+    def __getitem__(self, index: int) -> Optional[CapsDatasetOutput]:
         for start, stop, dataset_index in self._indexes:
             if start <= index < stop:
                 dataset = self._datasets[dataset_index]
