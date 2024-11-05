@@ -12,6 +12,8 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedMetric, Reduction
 
+__all__ = ["MetricConfig"]
+
 
 class MetricConfig(BaseModel, ABC):
     """Base config class to configure metrics."""
@@ -30,19 +32,19 @@ class MetricConfig(BaseModel, ABC):
         """The name of the metric."""
 
 
-class MetricConfigWithBackground(MetricConfig):
+class _MetricWithBackgroundConfig(MetricConfig):
     """Base config class to configure metrics with 'include_background' parameter."""
 
     include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class MetricConfigWithReduction(MetricConfig):
+class _MetricWithReductionConfig(MetricConfig):
     """Base config class to configure metrics with 'reduction' parameter."""
 
     reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class MetricConfigWithNotNans(MetricConfig):
+class _MetricWithNotNansConfig(MetricConfig):
     """Base config class to configure metrics with 'get_not_nans' parameter."""
 
     get_not_nans: bool = False

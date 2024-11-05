@@ -1,61 +1,89 @@
 from copy import deepcopy
-from typing import Tuple
+from typing import Any, Optional, Tuple, Union
 
 import torch.optim as optim
-import torch.optim.lr_scheduler as lr_scheduler
+import torch.optim.lr_scheduler as lr_schedulers
 
-from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
+from clinicadl.utils.factories import update_config_with_defaults
 
-from .config import LRSchedulerConfig
+from .config import (
+    ImplementedLRScheduler,
+    LRSchedulerConfig,
+    create_lr_scheduler_config,
+)
 
 
-def get_lr_scheduler(
-    optimizer: optim.Optimizer, config: LRSchedulerConfig
-) -> Tuple[lr_scheduler.LRScheduler, LRSchedulerConfig]:
+def get_lr_scheduler_config(
+    name: Union[str, ImplementedLRScheduler],
+    **kwargs: Any,
+) -> LRSchedulerConfig:
+    """
+    Factory function to get a lr scheduler configuration object from its name
+    and parameters.
+
+    Parameters
+    ----------
+    name : Union[str, ImplementedLRScheduler]
+        the name of the lr scheduler. Check our documentation to know
+        available schedulers.
+    **kwargs : Any
+        any parameter of the lr scheduler. Check our documentation on lr schedulers to
+        know these parameters.
+
+    Returns
+    -------
+    LRSchedulerConfig
+        the configuration object.
+    """
+    config = create_lr_scheduler_config(name)(**kwargs)
+    scheduler_class = getattr(lr_schedulers, config.name)
+
+    update_config_with_defaults(config, function=scheduler_class.__init__)
+
+    return config
+
+
+def get_lr_scheduler_from_config(
+    config: Optional[LRSchedulerConfig], optimizer: optim.Optimizer
+) -> Tuple[lr_schedulers.LRScheduler, LRSchedulerConfig]:
     """
     Factory function to get a LR scheduler from PyTorch.
 
     Parameters
     ----------
+    config : Optional[LRSchedulerConfig]
+        the config class with the parameters of the LR scheduler.
+        If None, no lr scheduler will be used.
     optimizer : optim.Optimizer
-        The optimizer to schedule.
-    config : LRSchedulerConfig
-        The config class with the parameters of the LR scheduler.
+        the optimizer to schedule.
 
     Returns
     -------
     lr_scheduler.LRScheduler
-        The LR scheduler.
+        the LR scheduler.
     LRSchedulerConfig
-        The updated config class: the arguments set to default will be updated
+        the updated config class: the arguments set to default will be updated
         with their effective values (the default values from the library).
         Useful for reproducibility.
     """
-    if config.scheduler is None:
-        return lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1), config
+    if config is None:
+        return lr_schedulers.LambdaLR(optimizer, lr_lambda=lambda epoch: 1), config
 
-    scheduler_class = getattr(lr_scheduler, config.scheduler)
-    expected_args, config_dict = get_args_and_defaults(scheduler_class.__init__)
-    for arg, value in config.model_dump().items():
-        if arg in expected_args and value != DefaultFromLibrary.YES:
-            config_dict[arg] = value
+    config = deepcopy(config)
+    scheduler_class = getattr(lr_schedulers, config.name)
 
-    config_dict_ = deepcopy(config_dict)
+    update_config_with_defaults(config, function=scheduler_class.__init__)
+    config_dict = config.model_dump(exclude={"name"})
+
+    # deal with parameter groups
     if "min_lr" in config_dict and isinstance(config_dict["min_lr"], dict):
-        config_dict_["min_lr"] = [
-            v for group, v in sorted(config_dict["min_lr"].items()) if group != "ELSE"
-        ]  # order in the list is important
-        if "ELSE" in config_dict["min_lr"]:
-            config_dict_["min_lr"].append(
-                config_dict["min_lr"]["ELSE"]
-            )  # ELSE must be the last group
-        else:
-            default_min_lr = get_args_and_defaults(scheduler_class.__init__)[1][
-                "min_lr"
-            ]
-            config_dict_["min_lr"].append(default_min_lr)
-    scheduler = scheduler_class(optimizer, **config_dict_)
+        min_lr_by_group = sorted(
+            filter(lambda x: x[0] != "ELSE", config_dict["min_lr"].items())
+        )  # order in the list is important
+        min_lrs = [value for _, value in min_lr_by_group]
+        min_lrs.append(config_dict["min_lr"]["ELSE"])  # ELSE must be the last group
+        config_dict["min_lr"] = min_lrs
 
-    updated_config = config.model_copy(update=config_dict)
+    scheduler = scheduler_class(optimizer, **config_dict)
 
-    return scheduler, updated_config
+    return scheduler, config

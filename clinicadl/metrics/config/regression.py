@@ -1,6 +1,6 @@
 from pydantic import computed_field
 
-from .base import MetricConfigWithNotNans, MetricConfigWithReduction
+from .base import _MetricWithNotNansConfig, _MetricWithReductionConfig
 from .enum import ImplementedMetric
 
 __all__ = [
@@ -11,7 +11,7 @@ __all__ = [
 
 
 # TODO : R2 missing
-class MSEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
+class MSEMetricConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig):
     "Config class for MSE."
 
     @computed_field
@@ -21,7 +21,7 @@ class MSEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
         return ImplementedMetric.MSE
 
 
-class MAEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
+class MAEMetricConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig):
     "Config class for MAE."
 
     @computed_field
@@ -31,7 +31,7 @@ class MAEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
         return ImplementedMetric.MAE
 
 
-class RMSEMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
+class RMSEMetricConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig):
     "Config class for RMSE."
 
     @computed_field

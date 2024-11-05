@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Type, Union
+from abc import ABC, abstractmethod
+from typing import Dict, List, Set, Type, Union
 
 from pydantic import (
     BaseModel,
@@ -26,13 +27,9 @@ __all__ = [
 ]
 
 
-class LRSchedulerConfig(BaseModel):
+class LRSchedulerConfig(BaseModel, ABC):
     """Base config class for the LR scheduler."""
 
-    gamma: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
-    factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
-    total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
@@ -40,9 +37,40 @@ class LRSchedulerConfig(BaseModel):
 
     @computed_field
     @property
-    def scheduler(self) -> Optional[ImplementedLRScheduler]:
+    @abstractmethod
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
-        return None
+
+    def get_all_groups(self) -> Set[str]:
+        """
+        Returns all  parameter groups mentioned by the user in the fields.
+        For most schedulers, no group can be mentioned.
+        """
+        return set()
+
+
+class _GammaConfig(LRSchedulerConfig):
+    """Base config class for LR schedulers with 'gamma' parameter."""
+
+    gamma: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class _FactorConfig(LRSchedulerConfig):
+    """Base config class for LR schedulers with 'factor' parameter."""
+
+    factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class _TotalItersConfig(LRSchedulerConfig):
+    """Base config class for LR schedulers with 'total_iters' parameter."""
+
+    total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class _LastEpochConfig(LRSchedulerConfig):
+    """Base config class for LR schedulers with 'last_epoch' parameter."""
+
+    last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @field_validator("last_epoch")
     @classmethod
@@ -54,17 +82,17 @@ class LRSchedulerConfig(BaseModel):
         return v
 
 
-class ConstantLRConfig(LRSchedulerConfig):
+class ConstantLRConfig(_FactorConfig, _TotalItersConfig, _LastEpochConfig):
     """Config class for ConstantLR scheduler."""
 
     @computed_field
     @property
-    def scheduler(self) -> ImplementedLRScheduler:
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
         return ImplementedLRScheduler.CONSTANT
 
 
-class LinearLRConfig(LRSchedulerConfig):
+class LinearLRConfig(_TotalItersConfig, _LastEpochConfig):
     """Config class for LinearLR scheduler."""
 
     start_factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -72,31 +100,31 @@ class LinearLRConfig(LRSchedulerConfig):
 
     @computed_field
     @property
-    def scheduler(self) -> ImplementedLRScheduler:
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
         return ImplementedLRScheduler.LINEAR
 
 
-class StepLRConfig(LRSchedulerConfig):
+class StepLRConfig(_GammaConfig, _LastEpochConfig):
     """Config class for StepLR scheduler."""
 
     step_size: PositiveInt
 
     @computed_field
     @property
-    def scheduler(self) -> ImplementedLRScheduler:
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
         return ImplementedLRScheduler.STEP
 
 
-class MultiStepLRConfig(LRSchedulerConfig):
+class MultiStepLRConfig(_GammaConfig, _LastEpochConfig):
     """Config class for MultiStepLR scheduler."""
 
     milestones: List[PositiveInt]
 
     @computed_field
     @property
-    def scheduler(self) -> ImplementedLRScheduler:
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
         return ImplementedLRScheduler.MULTI_STEP
 
@@ -105,11 +133,11 @@ class MultiStepLRConfig(LRSchedulerConfig):
     def validator_milestones(cls, v):
         import numpy as np
 
-        assert len(np.unique(v)) == len(v), "Epoch(s) in milestones should be unique."
+        assert len(np.unique(v)) == len(v), "Epoch(s) in 'milestones' should be unique."
         return sorted(v)
 
 
-class ReduceLROnPlateauConfig(LRSchedulerConfig):
+class ReduceLROnPlateauConfig(_FactorConfig):
     """Config class for ReduceLROnPlateau scheduler."""
 
     mode: Union[Mode, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -123,22 +151,46 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
     eps: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @property
-    def scheduler(self) -> ImplementedLRScheduler:
+    def name(self) -> ImplementedLRScheduler:
         """The name of the scheduler."""
         return ImplementedLRScheduler.PLATEAU
 
+    @field_validator("min_lr", mode="after")
+    @classmethod
+    def min_lr_validator(cls, v):
+        """Checks that 'ELSE' is always in 'min_lr' if it is a dict."""
+        if isinstance(v, dict) and "ELSE" not in v:
+            raise ValueError(
+                f"If you pass a dict to min_lr, it must contain the key 'ELSE', that corresponds "
+                f"to the value applied to the rest of the parameters. Got: {v}"
+            )
+        return v
+
+    def get_all_groups(self) -> Set[str]:
+        """
+        Returns all parameter groups mentioned by the user in the fields.
+
+        Returns
+        -------
+        Set[str]
+            the groups.
+        """
+        if isinstance(self.min_lr, dict):
+            return set(self.min_lr.keys())
+        else:
+            return set()
+
 
 def create_lr_scheduler_config(
-    scheduler: Optional[Union[str, ImplementedLRScheduler]],
+    scheduler: Union[str, ImplementedLRScheduler],
 ) -> Type[LRSchedulerConfig]:
     """
     A factory function to create a config class suited for the LR scheduler.
 
     Parameters
     ----------
-    scheduler : Optional[Union[str, ImplementedLRScheduler]]
+    scheduler : Union[str, ImplementedLRScheduler]
         The name of the LR scheduler.
-        Can be None if no LR scheduler will be used.
 
     Returns
     -------
@@ -150,9 +202,6 @@ def create_lr_scheduler_config(
     ValueError
         If `scheduler` is not supported.
     """
-    if scheduler is None:
-        return LRSchedulerConfig
-
     scheduler = ImplementedLRScheduler(scheduler)
     config_name = "".join([scheduler, "Config"])
     config = globals()[config_name]

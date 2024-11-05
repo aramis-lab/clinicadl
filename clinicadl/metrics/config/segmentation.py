@@ -5,9 +5,9 @@ from pydantic import NonNegativeFloat, PositiveInt, computed_field, field_valida
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
-    MetricConfigWithBackground,
-    MetricConfigWithNotNans,
-    MetricConfigWithReduction,
+    _MetricWithBackgroundConfig,
+    _MetricWithNotNansConfig,
+    _MetricWithReductionConfig,
 )
 from .enum import (
     DistanceMetric,
@@ -26,15 +26,15 @@ __all__ = [
 ]
 
 
-class BaseSegmentationMetricConfig(
-    MetricConfigWithBackground, MetricConfigWithNotNans, MetricConfigWithReduction
+class _BaseSegmentationMetricConfig(
+    _MetricWithBackgroundConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
 ):
     """Base config class for segmentation metrics."""
 
     ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class DiceMetricConfig(BaseSegmentationMetricConfig):
+class DiceMetricConfig(_BaseSegmentationMetricConfig):
     """Config class for Dice score."""
 
     num_classes: Union[
@@ -58,7 +58,7 @@ class DiceMetricConfig(BaseSegmentationMetricConfig):
         return v
 
 
-class MeanIoUConfig(BaseSegmentationMetricConfig):
+class MeanIoUConfig(_BaseSegmentationMetricConfig):
     """Config class for IoU metric."""
 
     @computed_field
@@ -68,7 +68,7 @@ class MeanIoUConfig(BaseSegmentationMetricConfig):
         return ImplementedMetric.IOU
 
 
-class GeneralizedDiceScoreConfig(MetricConfigWithBackground):
+class GeneralizedDiceScoreConfig(_MetricWithBackgroundConfig):
     """Config class for generalized Dice score."""
 
     reduction: Union[
@@ -83,15 +83,15 @@ class GeneralizedDiceScoreConfig(MetricConfigWithBackground):
         return ImplementedMetric.GENERALIZED_DICE
 
 
-class BaseSurfaceDistanceConfig(
-    MetricConfigWithBackground, MetricConfigWithNotNans, MetricConfigWithReduction
+class _BaseSurfaceDistanceConfig(
+    _MetricWithBackgroundConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
 ):
     """Base config class for surface-distance-based metrics."""
 
     distance_metric: Union[DistanceMetric, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class SurfaceDistanceMetricConfig(BaseSurfaceDistanceConfig):
+class SurfaceDistanceMetricConfig(_BaseSurfaceDistanceConfig):
     """Config class for Surface Distance metric."""
 
     symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -103,7 +103,7 @@ class SurfaceDistanceMetricConfig(BaseSurfaceDistanceConfig):
         return ImplementedMetric.SURF_DIST
 
 
-class HausdorffDistanceMetricConfig(BaseSurfaceDistanceConfig):
+class HausdorffDistanceMetricConfig(_BaseSurfaceDistanceConfig):
     """Config class for Hausdorff distance."""
 
     percentile: Union[
@@ -128,7 +128,7 @@ class HausdorffDistanceMetricConfig(BaseSurfaceDistanceConfig):
         return v
 
 
-class SurfaceDiceMetricConfig(BaseSurfaceDistanceConfig):
+class SurfaceDiceMetricConfig(_BaseSurfaceDistanceConfig):
     """Config class for (normalized) surface Dice score."""
 
     class_thresholds: Tuple[NonNegativeFloat, ...]

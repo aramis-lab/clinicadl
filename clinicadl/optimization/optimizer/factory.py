@@ -1,28 +1,58 @@
-from typing import Any, Dict, Iterable, Iterator, List, Tuple
+from copy import deepcopy
+from typing import Any, Dict, Tuple, Union
 
-import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
+from clinicadl.utils.factories import update_config_with_defaults
 
-from .config import OptimizerConfig
+from .config import ImplementedOptimizer, OptimizerConfig, create_optimizer_config
 from .utils import get_params_in_groups, get_params_not_in_groups
 
 
-def get_optimizer(
-    network: nn.Module,
-    config: OptimizerConfig,
-) -> Tuple[optim.Optimizer, OptimizerConfig]:
+def get_optimizer_config(
+    name: Union[str, ImplementedOptimizer],
+    **kwargs: Any,
+) -> OptimizerConfig:
     """
-    Factory function to get an optimizer from PyTorch.
+    Factory function to get an optimizer configuration object from its name
+    and parameters.
 
     Parameters
     ----------
-    network : nn.Module
-        The neural network to optimize.
+    name : Union[str, ImplementedOptimizer]
+        the name of the optimizer. Check our documentation to know
+        available optimizers.
+    **kwargs : Any
+        any parameter of the optimizer. Check our documentation on optimizers to
+        know these parameters.
+
+    Returns
+    -------
+    OptimizerConfig
+        the configuration object.
+    """
+    config = create_optimizer_config(name)(**kwargs)
+    optimizer_class = getattr(optim, config.name)
+
+    update_config_with_defaults(config, function=optimizer_class.__init__)
+
+    return config
+
+
+def get_optimizer_from_config(
+    config: OptimizerConfig,
+    network: nn.Module,
+) -> Tuple[optim.Optimizer, OptimizerConfig]:
+    """
+    Factory function to get a PyTorch optimizer from from an OptimizerConfig instance.
+
+    Parameters
+    ----------
     config : OptimizerConfig
-        The config class with the parameters of the optimizer.
+        the configuration object.
+    network : nn.Module
+        the neural network to optimize.
 
     Returns
     -------
@@ -38,38 +68,43 @@ def get_optimizer(
     AttributeError
         If a parameter group mentioned in the config class cannot be found in the network.
     """
-    optimizer_class = getattr(optim, config.optimizer)
-    expected_args, default_args = get_args_and_defaults(optimizer_class.__init__)
+    config = deepcopy(config)
+    optimizer_class = getattr(optim, config.name)
+    freeze = [] if config.freeze is None else config.freeze
 
-    for arg, value in config.model_dump().items():
-        if arg in expected_args and value != DefaultFromLibrary.YES:
-            default_args[arg] = value
+    to_freeze, _ = get_params_in_groups(network, groups=freeze)
+    for param in to_freeze:
+        param.requires_grad = False
 
-    args_groups, args_global = _regroup_args(default_args)
+    update_config_with_defaults(config, function=optimizer_class.__init__)
+    config_dict = config.model_dump(exclude={"name", "freeze"})
 
-    if len(args_groups) == 0:
-        list_args_groups = network.parameters()
+    # deal with parameter groups
+    args_by_group, args_global = _regroup_args_by_param_group(config_dict)
+    if len(args_by_group) == 0:  # no parameter groups
+        params = network.parameters()
     else:
-        list_args_groups = []
-        args_groups = sorted(args_groups.items())  # order in the list is important
-        for group, args in args_groups:
-            params, _ = get_params_in_groups(network, group)
-            args.update({"params": params})
-            list_args_groups.append(args)
+        params = []
+        args_by_group = sorted(
+            args_by_group.items()
+        )  # order in the list is important to match lr_scheduler
+        for group, args in args_by_group:
+            params_in_group, _ = get_params_in_groups(network, group)
+            args.update({"params": params_in_group})
+            params.append(args)
 
-        other_params, params_names = get_params_not_in_groups(
-            network, [group for group, _ in args_groups]
+        other_params, other_param_names = get_params_not_in_groups(
+            network, groups=[group for group, _ in args_by_group]
         )
-        if len(params_names) > 0:
-            list_args_groups.append({"params": other_params})
+        if len(other_param_names) > 0:
+            params.append({"params": other_params})
 
-    optimizer = optimizer_class(list_args_groups, **args_global)
-    updated_config = config.model_copy(update=default_args)
+    optimizer = optimizer_class(params, **args_global)
 
-    return optimizer, updated_config
+    return optimizer, config
 
 
-def _regroup_args(
+def _regroup_args_by_param_group(
     args: Dict[str, Any],
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
     """
@@ -78,14 +113,14 @@ def _regroup_args(
     Parameters
     ----------
     args : Dict[str, Any]
-        The arguments.
+        the arguments.
 
     Returns
     -------
     Dict[str, Dict[str, Any]]
-        The arguments for each group.
+        the arguments for each group.
     Dict[str, Any]
-        The arguments that are common to all groups.
+        the arguments that are common to all groups.
 
     Examples
     --------
@@ -94,7 +129,7 @@ def _regroup_args(
             "alpha": {"params_1": 0.5, "ELSE": 0.1},
             "betas": (0.1, 0.1),
         }
-    >>> args_groups, args_global = _regroup_args(args)
+    >>> args_groups, args_global = _regroup_args_by_param_group(args)
     >>> args_groups
     {
         "params_0": {"weight_decay": 0.0},
@@ -125,90 +160,3 @@ def _regroup_args(
             args_global[arg] = value
 
     return args_groups, args_global
-
-
-def _get_params_in_group(
-    network: nn.Module, group: str
-) -> Tuple[Iterator[torch.Tensor], List[str]]:
-    """
-    Gets the parameters of a specific group of a neural network.
-
-    Parameters
-    ----------
-    network : nn.Module
-        The neural network.
-    group : str
-        The name of the group, e.g. a layer or a block.
-        If it is a sub-block, the hierarchy should be
-        specified with "." (see examples).
-        Will work even if the group is reduced to a base layer
-        (e.g. group = "dense.weight" or "dense.bias").
-
-    Returns
-    -------
-    Iterator[torch.Tensor]
-        A generator that contains the parameters of the group.
-    List[str]
-        The name of all the parameters in the group.
-
-    Raises
-    ------
-    AttributeError
-        If `group` cannot be found in the network.
-
-    Examples
-    --------
-    >>> net = nn.Sequential(
-            OrderedDict(
-                [
-                    ("conv1", nn.Conv2d(1, 1, kernel_size=3)),
-                    ("final", nn.Sequential(OrderedDict([("dense1", nn.Linear(10, 10))]))),
-                ]
-            )
-        )
-    >>> generator, params_names = _get_params_in_group(network, "final.dense1")
-    >>> params_names
-    ["final.dense1.weight", "final.dense1.bias"]
-    """
-    group_hierarchy = group.split(".")
-    for name in group_hierarchy:
-        try:
-            network = getattr(network, name)
-        except AttributeError as exc:
-            raise AttributeError(
-                f"There is no such group as {group} in the network."
-            ) from exc
-
-    try:
-        params = network.parameters()
-        params_names = [
-            ".".join([group, name]) for name, _ in network.named_parameters()
-        ]
-    except AttributeError:  # we already reached params
-        params = (param for param in [network])
-        params_names = [group]
-
-    return params, params_names
-
-
-def _get_params_not_in_group(
-    network: nn.Module, group: Iterable[str]
-) -> Iterator[torch.Tensor]:
-    """
-    Finds the parameters of a neural networks that
-    are not in a group.
-
-    Parameters
-    ----------
-    network : nn.Module
-        The neural network.
-    group : List[str]
-        The group of parameters.
-
-    Returns
-    -------
-    Iterator[torch.Tensor]
-        A generator of all the parameters that are not in the input
-        group.
-    """
-    return (param[1] for param in network.named_parameters() if param[0] not in group)

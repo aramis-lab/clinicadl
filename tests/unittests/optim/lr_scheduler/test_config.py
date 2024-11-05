@@ -65,7 +65,7 @@ def test_validation_fail(config):
 
     # test dict inputs for min_lr
     if "min_lr" in inputs:
-        inputs["min_lr"] = {"group_1": inputs["min_lr"]}
+        inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
         with pytest.raises(ValidationError):
             config(**inputs)
 
@@ -76,25 +76,26 @@ def test_validation_fail_special():
 
 
 @pytest.mark.parametrize(
-    "config",
+    "config,name",
     [
-        ConstantLRConfig,
-        LinearLRConfig,
-        MultiStepLRConfig,
-        ReduceLROnPlateauConfig,
-        StepLRConfig,
+        (ConstantLRConfig, "ConstantLR"),
+        (LinearLRConfig, "LinearLR"),
+        (MultiStepLRConfig, "MultiStepLR"),
+        (ReduceLROnPlateauConfig, "ReduceLROnPlateau"),
+        (StepLRConfig, "StepLR"),
     ],
 )
-def test_validation_pass(config):
+def test_validation_pass(config, name):
     fields = config.model_fields
     inputs = {key: value for key, value in GOOD_INPUTS.items() if key in fields}
     c = config(**inputs)
     for arg, value in inputs.items():
         assert getattr(c, arg) == value
+    assert c.name == name
 
     # test dict inputs
     if "min_lr" in inputs:
-        inputs["min_lr"] = {"group_1": inputs["min_lr"]}
+        inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
         c = config(**inputs)
         assert getattr(c, "min_lr") == inputs["min_lr"]
 
@@ -112,3 +113,22 @@ def test_validation_pass(config):
 def test_create_optimizer_config(name, expected_class):
     config = create_lr_scheduler_config(name)
     assert config == expected_class
+
+
+def test_minr_lr_validator():
+    with pytest.raises(ValidationError):
+        ReduceLROnPlateauConfig(min_lr={"params1": 0.1})
+    ReduceLROnPlateauConfig(min_lr={"params1": 0.1, "ELSE": 0.2})
+
+
+def test_get_all_groups():
+    config = ReduceLROnPlateauConfig(
+        min_lr={"params1": 0.1, "params3": 0.7, "ELSE": 0.2},
+    )
+    assert config.get_all_groups() == {"params1", "params3", "ELSE"}
+
+    config.min_lr = 0.1
+    assert config.get_all_groups() == set()
+
+    config = ConstantLRConfig()
+    assert config.get_all_groups() == set()

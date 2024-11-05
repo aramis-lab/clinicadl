@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 import pytest
-import torch
 import torch.nn as nn
 
 

@@ -49,7 +49,7 @@ def get_loss_function_from_config(
 
     Parameters
     ----------
-    loss : LossConfig
+    config : LossConfig
         the configuration object.
 
     Returns

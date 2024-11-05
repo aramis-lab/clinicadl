@@ -23,7 +23,7 @@ def get_network(
     name: Union[str, ImplementedNetwork], return_config: bool = False, **kwargs: Any
 ) -> Union[nn.Module, Tuple[nn.Module, NetworkConfig]]:
     """
-    Factory function to get a neural network from its name and parameters.
+    Factory function to get a ClinicaDL neural network from its name and parameters.
 
     Parameters
     ----------
@@ -52,7 +52,7 @@ def get_network(
 
 def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkConfig]:
     """
-    Factory function to get a neural network from a NetworkConfig instance.
+    Factory function to get a ClinicaDL neural network from a NetworkConfig instance.
 
     Parameters
     ----------
@@ -103,7 +103,9 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
     return network, config
 
 
-def _update_config_with_defaults(config: BaseModel, function: Callable) -> BaseModel:
+def _update_config_with_defaults(
+    config: NetworkConfig, function: Callable
+) -> NetworkConfig:
     """
     Updates a config object by setting the parameters left to 'default' to their actual
     default values, extracted from 'function'.

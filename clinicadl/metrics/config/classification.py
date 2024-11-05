@@ -6,9 +6,9 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     MetricConfig,
-    MetricConfigWithBackground,
-    MetricConfigWithNotNans,
-    MetricConfigWithReduction,
+    _MetricWithBackgroundConfig,
+    _MetricWithNotNansConfig,
+    _MetricWithReductionConfig,
 )
 from .enum import Average, ImplementedMetric
 
@@ -32,7 +32,7 @@ class ROCAUCMetricConfig(MetricConfig):
 
 
 class ConfusionMatrixMetricConfig(
-    MetricConfigWithBackground, MetricConfigWithNotNans, MetricConfigWithReduction
+    _MetricWithBackgroundConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
 ):
     "Config class for metrics derived from the confusion matrix."
 

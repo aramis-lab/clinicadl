@@ -1,18 +1,23 @@
 from collections import OrderedDict
 
+import pytest
 import torch.nn as nn
 from torch.optim import SGD
-from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import LambdaLR, ReduceLROnPlateau, StepLR
 
-from clinicadl.optimization.lr_scheduler import (
+from clinicadl.optimization.lr_scheduler.config import (
     ImplementedLRScheduler,
     create_lr_scheduler_config,
-    get_lr_scheduler,
+)
+from clinicadl.optimization.lr_scheduler.factory import (
+    get_lr_scheduler_config,
+    get_lr_scheduler_from_config,
 )
 
 
-def test_get_lr_scheduler():
-    network = nn.Sequential(
+@pytest.fixture
+def network():
+    net = nn.Sequential(
         OrderedDict(
             [
                 ("linear1", nn.Linear(4, 3)),
@@ -21,7 +26,12 @@ def test_get_lr_scheduler():
             ]
         )
     )
-    optimizer = SGD(
+    return net
+
+
+@pytest.fixture
+def optimizer(network):
+    optim = SGD(
         [
             {
                 "params": network.linear1.parameters(),
@@ -36,20 +46,27 @@ def test_get_lr_scheduler():
         ],
         lr=10.0,
     )
+    return optim
 
+
+def test_get_lr_scheduler_from_config(optimizer):
+    # test all lr schedulers
     args = {"step_size": 1, "milestones": [1, 2]}
     for scheduler in ImplementedLRScheduler:
         config = create_lr_scheduler_config(scheduler=scheduler)(**args)
-        _ = get_lr_scheduler(optimizer, config)
+        scheduler, _ = get_lr_scheduler_from_config(config, optimizer=optimizer)
 
+    # test arguments
     config = create_lr_scheduler_config(scheduler="ReduceLROnPlateau")(
         mode="max",
         factor=0.123,
         threshold=1e-1,
         cooldown=3,
-        min_lr={"linear2": 0.01, "linear1": 0.1},
+        min_lr={"linear2": 0.01, "linear1": 0.1, "ELSE": 0},
     )
-    scheduler, updated_config = get_lr_scheduler(optimizer, config)
+    scheduler, updated_config = get_lr_scheduler_from_config(
+        config, optimizer=optimizer
+    )
     assert isinstance(scheduler, ReduceLROnPlateau)
     assert scheduler.mode == "max"
     assert scheduler.factor == 0.123
@@ -60,31 +77,40 @@ def test_get_lr_scheduler():
     assert scheduler.min_lrs == [0.1, 0.01, 0.0]
     assert scheduler.eps == 1e-8
 
-    assert updated_config.scheduler == "ReduceLROnPlateau"
+    assert updated_config.name == "ReduceLROnPlateau"
     assert updated_config.mode == "max"
     assert updated_config.factor == 0.123
     assert updated_config.patience == 10
     assert updated_config.threshold == 1e-1
     assert updated_config.threshold_mode == "rel"
     assert updated_config.cooldown == 3
-    assert updated_config.min_lr == {"linear2": 0.01, "linear1": 0.1}
+    assert updated_config.min_lr == {"linear2": 0.01, "linear1": 0.1, "ELSE": 0}
     assert updated_config.eps == 1e-8
 
-    config.min_lr = {"ELSE": 1, "linear2": 0.01, "linear1": 0.1}
-    scheduler, updated_config = get_lr_scheduler(optimizer, config)
-    assert scheduler.min_lrs == [0.1, 0.01, 1]
-
     config.min_lr = 1
-    scheduler, updated_config = get_lr_scheduler(optimizer, config)
+    scheduler, updated_config = get_lr_scheduler_from_config(
+        config, optimizer=optimizer
+    )
     assert scheduler.min_lrs == [1.0, 1.0, 1.0]
 
     # no lr scheduler
-    config = create_lr_scheduler_config(None)()
-    scheduler, updated_config = get_lr_scheduler(optimizer, config)
+    scheduler, updated_config = get_lr_scheduler_from_config(None, optimizer=optimizer)
     assert isinstance(scheduler, LambdaLR)
-    assert updated_config.scheduler is None
     optimizer.step()
     scheduler.step()
     optimizer.step()
     scheduler.step()
     assert scheduler.get_last_lr() == [1.0, 10.0, 10.0]
+
+
+def test_get_optimizer_config():
+    config = get_lr_scheduler_config(
+        "StepLR",
+        step_size=1,
+    )
+    assert config.name == "StepLR"
+    assert config.step_size == 1
+    assert config.gamma == 0.1
+
+    with pytest.raises(ValueError):
+        get_lr_scheduler_config("abc", step_size=1)

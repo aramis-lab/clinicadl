@@ -46,7 +46,7 @@ class LossConfig(BaseModel, ABC):
         """The name of the loss."""
 
 
-class LossConfigWithWeights(LossConfig):
+class _LossWithWeightsConfig(LossConfig):
     """Base config class for loss functions with a 'weight' argument."""
 
     weight: Union[
@@ -54,7 +54,7 @@ class LossConfigWithWeights(LossConfig):
     ] = DefaultFromLibrary.YES
 
 
-class NLLLossConfig(LossConfigWithWeights):
+class NLLLossConfig(_LossWithWeightsConfig):
     """Config class for Negative Log Likelihood loss."""
 
     ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -149,7 +149,7 @@ class BCEWithLogitsLossConfig(BCELossConfig):
             return (isinstance(item, float) or isinstance(item, int)) and item >= 0
 
 
-class MultiMarginLossConfig(LossConfigWithWeights):
+class MultiMarginLossConfig(_LossWithWeightsConfig):
     """Config class for Multi Margin loss."""
 
     p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES

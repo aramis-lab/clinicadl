@@ -12,7 +12,7 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import MetricConfigWithNotNans, MetricConfigWithReduction
+from .base import _MetricWithNotNansConfig, _MetricWithReductionConfig
 from .enum import ImplementedMetric, Kernel
 
 __all__ = [
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-class PSNRMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
+class PSNRMetricConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig):
     "Config class for PSNR."
 
     max_val: PositiveFloat
@@ -34,7 +34,7 @@ class PSNRMetricConfig(MetricConfigWithReduction, MetricConfigWithNotNans):
         return ImplementedMetric.PSNR
 
 
-class BaseSSIMConfig(MetricConfigWithReduction, MetricConfigWithNotNans, ABC):
+class _BaseSSIMConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig, ABC):
     "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt
@@ -69,7 +69,7 @@ class BaseSSIMConfig(MetricConfigWithReduction, MetricConfigWithNotNans, ABC):
             ), f"If you pass a sequence for {attribute}, it must be of size {self.spatial_dims}. You passed: {value}."
 
 
-class SSIMMetricConfig(BaseSSIMConfig):
+class SSIMMetricConfig(_BaseSSIMConfig):
     "Config class for SSIM."
 
     win_size: Union[
@@ -90,7 +90,7 @@ class SSIMMetricConfig(BaseSSIMConfig):
         return self
 
 
-class MultiScaleSSIMMetricConfig(BaseSSIMConfig):
+class MultiScaleSSIMMetricConfig(_BaseSSIMConfig):
     "Config class for multi-scale SSIM."
 
     kernel_size: Union[

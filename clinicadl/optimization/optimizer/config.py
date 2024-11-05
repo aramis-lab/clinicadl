@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
 from pydantic import (
     BaseModel,
@@ -8,6 +8,7 @@ from pydantic import (
     PositiveFloat,
     computed_field,
     field_validator,
+    model_validator,
 )
 
 from clinicadl.utils.factories import DefaultFromLibrary
@@ -31,10 +32,8 @@ class OptimizerConfig(BaseModel, ABC):
     lr: Union[
         PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
+    freeze: Optional[Union[str, List[str]]] = None
     weight_decay: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    eps: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     foreach: Union[
@@ -44,12 +43,6 @@ class OptimizerConfig(BaseModel, ABC):
     differentiable: Union[
         bool, Dict[str, bool], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    capturable: Union[
-        bool, Dict[str, bool], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    fused: Union[
-        Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
     # pydantic config
     model_config = ConfigDict(
         validate_assignment=True, use_enum_values=True, validate_default=True
@@ -58,11 +51,20 @@ class OptimizerConfig(BaseModel, ABC):
     @computed_field
     @property
     @abstractmethod
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
+
+    @field_validator("freeze", mode="after")
+    @classmethod
+    def validator_freeze(cls, v):
+        """To always have a list for 'freeze'."""
+        if isinstance(v, str):
+            return [v]
+        return v
 
     @classmethod
     def validator_proba(cls, v, ctx):
+        """To validate probabilities."""
         name = ctx.field_name
         if isinstance(v, dict):
             for _, value in v.items():
@@ -85,24 +87,82 @@ class OptimizerConfig(BaseModel, ABC):
                 0 <= v <= 1
             ), f"{name} must be between 0 and 1 but it has been set to {v}."
 
-    def get_all_groups(self) -> List[str]:
+    @field_validator("*", mode="after")
+    @classmethod
+    def check_else(cls, v, ctx):
+        """Checks that 'ELSE' is always in dicts."""
+        name = ctx.field_name
+        if isinstance(v, dict) and "ELSE" not in v:
+            raise ValueError(
+                f"If you pass a dict to {name}, it must contain the key 'ELSE', that corresponds "
+                f"to the value applied to the rest of the parameters. Got: {v}"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def check_param_groups(self):
+        """Check that a parameter group is not passed both in a field and in 'freeze'."""
+        if self.freeze is not None:
+            for field, value in self:
+                if isinstance(value, dict):
+                    for group in value:
+                        if group in self.freeze:
+                            raise ValueError(
+                                f"You mentioned the parameter group {group} in {field}, but this parameter "
+                                "group is also passed in 'freeze'."
+                            )
+        return self
+
+    def get_all_groups(self) -> Set[str]:
         """
         Returns all groups mentioned by the user in the fields.
 
         Returns
         -------
-        List[str]
-            The list of groups.
+        Set[str]
+            the groups.
         """
         groups = set()
-        for _, value in self.model_dump().items():
+        for _, value in self:
             if isinstance(value, dict):
                 groups.update(set(value.keys()))
 
-        return list(groups)
+        return groups
 
 
-class AdadeltaConfig(OptimizerConfig):
+class _CapturableConfig(OptimizerConfig):
+    """Base config class for optimizer with 'capturable' option."""
+
+    capturable: Union[
+        bool, Dict[str, bool], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+
+class _FusedConfig(OptimizerConfig):
+    """Base config class for optimizer with 'fused' option."""
+
+    fused: Union[
+        Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+
+class _EpsConfig(OptimizerConfig):
+    """Base config class for optimizer with 'eps' option."""
+
+    eps: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+
+class _MomentumConfig(OptimizerConfig):
+    """Base config class for optimizer with 'eps' option."""
+
+    momentum: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+
+class AdadeltaConfig(_EpsConfig, _CapturableConfig):
     """Config class for Adadelta optimizer."""
 
     rho: Union[
@@ -111,16 +171,17 @@ class AdadeltaConfig(OptimizerConfig):
 
     @computed_field
     @property
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
         return ImplementedOptimizer.ADADELTA
 
     @field_validator("rho")
+    @classmethod
     def validator_rho(cls, v, ctx):
         return cls.validator_proba(v, ctx)
 
 
-class AdagradConfig(OptimizerConfig):
+class AdagradConfig(_EpsConfig, _FusedConfig):
     """Config class for Adagrad optimizer."""
 
     lr_decay: Union[
@@ -132,12 +193,12 @@ class AdagradConfig(OptimizerConfig):
 
     @computed_field
     @property
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
         return ImplementedOptimizer.ADAGRAD
 
 
-class AdamConfig(OptimizerConfig):
+class AdamConfig(_EpsConfig, _CapturableConfig, _FusedConfig):
     """Config class for Adam optimizer."""
 
     betas: Union[
@@ -149,43 +210,39 @@ class AdamConfig(OptimizerConfig):
 
     @computed_field
     @property
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
         return ImplementedOptimizer.ADAM
 
     @field_validator("betas")
+    @classmethod
     def validator_betas(cls, v, ctx):
         return cls.validator_proba(v, ctx)
 
 
-class RMSpropConfig(OptimizerConfig):
+class RMSpropConfig(_EpsConfig, _CapturableConfig, _MomentumConfig):
     """Config class for RMSprop optimizer."""
 
     alpha: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    momentum: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     centered: Union[bool, Dict[str, bool], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
         return ImplementedOptimizer.RMS_PROP
 
     @field_validator("alpha")
+    @classmethod
     def validator_alpha(cls, v, ctx):
         return cls.validator_proba(v, ctx)
 
 
-class SGDConfig(OptimizerConfig):
+class SGDConfig(_FusedConfig, _MomentumConfig):
     """Config class for SGD optimizer."""
 
-    momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
     dampening: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
@@ -193,11 +250,12 @@ class SGDConfig(OptimizerConfig):
 
     @computed_field
     @property
-    def optimizer(self) -> ImplementedOptimizer:
+    def name(self) -> ImplementedOptimizer:
         """The name of the optimizer."""
         return ImplementedOptimizer.SGD
 
     @field_validator("dampening")
+    @classmethod
     def validator_dampening(cls, v, ctx):
         return cls.validator_proba(v, ctx)
 
