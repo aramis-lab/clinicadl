@@ -141,7 +141,7 @@ class ReduceLROnPlateauConfig(_FactorConfig):
     """Config class for ReduceLROnPlateau scheduler."""
 
     mode: Union[Mode, DefaultFromLibrary] = DefaultFromLibrary.YES
-    patience: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    patience: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     threshold: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
     threshold_mode: Union[ThresholdMode, DefaultFromLibrary] = DefaultFromLibrary.YES
     cooldown: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES

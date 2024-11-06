@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optimization.optimizer.config import (
+from clinicadl.optim.optimizer.config import (
     AdadeltaConfig,
     AdagradConfig,
     AdamConfig,

@@ -4,11 +4,11 @@ import pytest
 import torch.nn as nn
 from torch.optim import Adagrad
 
-from clinicadl.optimization.optimizer.config import (
+from clinicadl.optim.optimizer.config import (
     ImplementedOptimizer,
     create_optimizer_config,
 )
-from clinicadl.optimization.optimizer.factory import (
+from clinicadl.optim.optimizer.factory import (
     _regroup_args_by_param_group,
     get_optimizer_config,
     get_optimizer_from_config,
@@ -45,41 +45,51 @@ def test_get_optimizer_from_config(network):
     config = create_optimizer_config(optimizer="Adagrad")(
         lr=1e-5,
         weight_decay={"final.dense3.weight": 1.0, "dense1": 0.1, "ELSE": 0.2},
-        lr_decay={"dense1": 10, "ELSE": 100},
+        lr_decay={"final.dense3.bias": 1, "dense1": 10, "ELSE": 100},
         eps={"ELSE": 1.0},
     )
     optimizer, updated_config = get_optimizer_from_config(config, network)
     assert isinstance(optimizer, Adagrad)
-    assert len(optimizer.param_groups) == 3
+    assert len(optimizer.param_groups) == 4
 
     assert len(optimizer.param_groups[0]["params"]) == 2
     assert len(optimizer.param_groups[1]["params"]) == 1
-    assert len(optimizer.param_groups[2]["params"]) == 5
+    assert len(optimizer.param_groups[2]["params"]) == 1
+    assert len(optimizer.param_groups[3]["params"]) == 4
 
     assert optimizer.param_groups[0]["lr"] == 1e-5
     assert optimizer.param_groups[1]["lr"] == 1e-5
     assert optimizer.param_groups[2]["lr"] == 1e-5
+    assert optimizer.param_groups[3]["lr"] == 1e-5
 
     assert optimizer.param_groups[0]["lr_decay"] == 10
-    assert optimizer.param_groups[1]["lr_decay"] == 100
+    assert optimizer.param_groups[1]["lr_decay"] == 1
     assert optimizer.param_groups[2]["lr_decay"] == 100
+    assert optimizer.param_groups[3]["lr_decay"] == 100
 
     assert optimizer.param_groups[0]["weight_decay"] == 0.1
-    assert optimizer.param_groups[1]["weight_decay"] == 1.0
-    assert optimizer.param_groups[2]["weight_decay"] == 0.2
+    assert optimizer.param_groups[1]["weight_decay"] == 0.2
+    assert optimizer.param_groups[2]["weight_decay"] == 1.0
+    assert optimizer.param_groups[3]["weight_decay"] == 0.2
 
     assert optimizer.param_groups[0]["eps"] == 1.0
     assert optimizer.param_groups[1]["eps"] == 1.0
     assert optimizer.param_groups[2]["eps"] == 1.0
+    assert optimizer.param_groups[3]["eps"] == 1.0
 
     assert not optimizer.param_groups[0]["differentiable"]
     assert not optimizer.param_groups[1]["differentiable"]
     assert not optimizer.param_groups[2]["differentiable"]
+    assert not optimizer.param_groups[3]["differentiable"]
 
     # check that config is not modified
     assert updated_config.name == "Adagrad"
     assert updated_config.lr == 1e-5
-    assert updated_config.lr_decay == {"dense1": 10, "ELSE": 100}
+    assert updated_config.lr_decay == {
+        "final.dense3.bias": 1,
+        "dense1": 10,
+        "ELSE": 100,
+    }
     assert updated_config.weight_decay == {
         "final.dense3.weight": 1.0,
         "dense1": 0.1,

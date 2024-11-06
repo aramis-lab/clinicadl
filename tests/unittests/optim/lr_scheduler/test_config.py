@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optimization.lr_scheduler.config import (
+from clinicadl.optim.lr_scheduler.config import (
     ConstantLRConfig,
     LinearLRConfig,
     MultiStepLRConfig,
@@ -20,7 +20,7 @@ BAD_INPUTS = {
     "start_factor": 0,
     "end_factor": 0,
     "mode": "abc",
-    "patience": 0,
+    "patience": -1,
     "threshold": -1,
     "threshold_mode": "abc",
     "cooldown": -1,
@@ -38,7 +38,7 @@ GOOD_INPUTS = {
     "start_factor": 0.1,
     "end_factor": 0.2,
     "mode": "min",
-    "patience": 1,
+    "patience": 0,
     "threshold": 0,
     "threshold_mode": "abs",
     "cooldown": 0,

@@ -16,8 +16,8 @@ from clinicadl.dataset.data_config import DataConfig
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.experiment_manager.config import MapsManagerConfig
 from clinicadl.networks.old_network.config import NetworkConfig
-from clinicadl.optimization.config import OptimizationConfig
-from clinicadl.optimization.optimizer.config import OptimizerConfig
+from clinicadl.optim.config import OptimizationConfig
+from clinicadl.optim.optimizer.config import OptimizerConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
