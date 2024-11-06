@@ -140,7 +140,7 @@ class CapsDataset(Dataset):
                 [participant],
                 [session],
                 self.config.data.caps_dict[cohort],
-                file_type.model_dump(),
+                file_type,
             )
             logger.debug(f"clinicadl_file_reader output: {results}")
             filepath = Path(results[0][0])
@@ -164,7 +164,7 @@ class CapsDataset(Dataset):
                 [participant],
                 [session],
                 self.config.data.caps_dict[cohort],
-                file_type.model_dump(),
+                file_type,
             )
             filepath = results[0]
             image_path = Path(filepath[0])
@@ -220,9 +220,9 @@ class CapsDataset(Dataset):
 
         from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 
-        participant_id = self.df.loc[0, "participant_id"]
-        session_id = self.df.loc[0, "session_id"]
-        cohort = self.df.loc[0, "cohort"]
+        participant_id = self.df.at[0, "participant_id"]
+        session_id = self.df.at[0, "session_id"]
+        cohort = self.df.at[0, "cohort"]
 
         try:
             image_path = self._get_image_path(participant_id, session_id, cohort)
@@ -233,7 +233,7 @@ class CapsDataset(Dataset):
                 [participant_id],
                 [session_id],
                 self.config.data.caps_dict[cohort],
-                file_type.model_dump(),
+                file_type,
             )
             image_nii = nib.loadsave.load(results[0])
             image_np = image_nii.get_fdata()

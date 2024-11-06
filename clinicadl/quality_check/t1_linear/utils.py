@@ -67,7 +67,7 @@ class QCDataset(Dataset):
             file_type = self.config.extraction.file_type
             file_type.pattern = Path(str(file_type.pattern).replace(".nii.gz", ".pt"))
             image_output = clinicadl_file_reader(
-                [subject], [session], self.img_dir, file_type.model_dump()
+                [subject], [session], self.img_dir, file_type
             )[0]
             image_path = Path(image_output[0])
             image_filename = image_path.name
@@ -90,7 +90,7 @@ class QCDataset(Dataset):
                 [subject],
                 [session],
                 self.img_dir,
-                linear_nii(self.config.preprocessing).model_dump(),
+                linear_nii(self.config.preprocessing),
             )[0]
             image = nib.loadsave.load(image_path[0])
             image = self.nii_transform(image)
