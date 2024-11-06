@@ -1,7 +1,7 @@
 from typing import Type, Union
 
 # pylint: disable=unused-import
-from .base import MetricConfig
+from .base import LossMetricConfig, MetricConfig
 from .classification import ConfusionMatrixMetricConfig, ROCAUCMetricConfig
 from .enum import ImplementedMetric
 from .reconstruction import (
@@ -45,9 +45,7 @@ def create_metric_config(
     """
     metric = ImplementedMetric(metric)
     if metric == ImplementedMetric.LOSS:
-        raise ValueError(
-            "To use the loss as a metric, please use directly clinicadl.metrics.loss_to_metric."
-        )
+        return LossMetricConfig
 
     config_name = "".join([metric, "Config"])
     config = globals()[config_name]

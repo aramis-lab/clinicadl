@@ -218,7 +218,7 @@ class MSELossConfig(LossConfig):
         return ImplementedLoss.MSE
 
 
-def create_loss_config(
+def create_loss_function_config(
     loss: Union[str, ImplementedLoss],
 ) -> Type[LossConfig]:
     """

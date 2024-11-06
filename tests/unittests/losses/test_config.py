@@ -1,7 +1,6 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.losses import ImplementedLoss
 from clinicadl.losses.config import (
     BCELossConfig,
     BCEWithLogitsLossConfig,
@@ -13,7 +12,7 @@ from clinicadl.losses.config import (
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
-    create_loss_config,
+    create_loss_function_config,
 )
 
 
@@ -51,11 +50,12 @@ def test_validation_fail(config, args):
 
 
 @pytest.mark.parametrize(
-    "config,args",
+    "name,config,args",
     [
-        (L1LossConfig, {"reduction": "mean"}),
-        (MSELossConfig, {"reduction": "mean"}),
+        ("L1Loss", L1LossConfig, {"reduction": "mean"}),
+        ("MSELoss", MSELossConfig, {"reduction": "mean"}),
         (
+            "CrossEntropyLoss",
             CrossEntropyLossConfig,
             {
                 "reduction": "mean",
@@ -64,25 +64,32 @@ def test_validation_fail(config, args):
                 "label_smoothing": 0.5,
             },
         ),
-        (NLLLossConfig, {"reduction": "mean", "weight": [1, 0, 2], "ignore_index": 1}),
-        (KLDivLossConfig, {"reduction": "mean", "log_target": True}),
-        (BCELossConfig, {"reduction": "sum", "weight": None}),
         (
+            "NLLLoss",
+            NLLLossConfig,
+            {"reduction": "mean", "weight": [1, 0, 2], "ignore_index": 1},
+        ),
+        ("KLDivLoss", KLDivLossConfig, {"reduction": "mean", "log_target": True}),
+        ("BCELoss", BCELossConfig, {"reduction": "sum", "weight": None}),
+        (
+            "BCEWithLogitsLoss",
             BCEWithLogitsLossConfig,
             {"reduction": "sum", "weight": None, "pos_weight": [[1, 0, 2]]},
         ),
-        (HuberLossConfig, {"reduction": "sum", "delta": 0.1}),
-        (SmoothL1LossConfig, {"reduction": "sum", "beta": 0.0}),
+        ("HuberLoss", HuberLossConfig, {"reduction": "sum", "delta": 0.1}),
+        ("SmoothL1Loss", SmoothL1LossConfig, {"reduction": "sum", "beta": 0.0}),
         (
+            "MultiMarginLoss",
             MultiMarginLossConfig,
             {"reduction": "sum", "p": 1, "margin": -0.1, "weight": [1, 0, 2]},
         ),
     ],
 )
-def test_validation_pass(config, args):
+def test_validation_pass(name, config, args):
     c = config(**args)
     for arg, value in args.items():
         assert getattr(c, arg) == value
+    assert c.name == name
 
 
 @pytest.mark.parametrize(
@@ -100,5 +107,5 @@ def test_validation_pass(config, args):
         ("SmoothL1Loss", SmoothL1LossConfig),
     ],
 )
-def test_create_loss_config(name, config):
-    assert create_loss_config(name) == config
+def test_create_loss_function_config(name, config):
+    assert create_loss_function_config(name) == config
