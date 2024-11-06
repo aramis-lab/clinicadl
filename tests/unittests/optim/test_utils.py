@@ -102,6 +102,8 @@ def test_param_groups(network):
         patience=0,
         min_lr={"linear1": 0.01, "linear2": 0.1, "ELSE": 0},
     )
+    check_optimizer_scheduler_consistency(optimizer_config, scheduler_config)
+
     optimizer, _ = get_optimizer_from_config(optimizer_config, network)
     scheduler, _ = get_lr_scheduler_from_config(scheduler_config, optimizer)
     scheduler.step(1)
