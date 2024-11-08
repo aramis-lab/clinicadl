@@ -1,147 +1,27 @@
-from typing import Optional
+# coding: utf8
+# TODO: create a folder for generate/ prepare_data/ data to deal with capsDataset objects ?
+from logging import getLogger
+from pathlib import Path
+from typing import Optional, Tuple, Union
 
-from clinicadl.dataset.config import preprocessing
-from clinicadl.utils.enum import (
-    LinearModality,
-    Preprocessing,
-    Tracer,
-)
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.iotools.clinica_utils import FileType
+import torch
+from pydantic import BaseModel, ConfigDict
 
+from clinicadl.dataset.config import extraction as extraction
+from clinicadl.utils.enum import ExtractionMethod
 
-def bids_nii(
-    config: preprocessing.PreprocessingConfig,
-    reconstruction: Optional[str] = None,
-) -> FileType:
-    """Return the query dict required to capture PET scans.
-
-    Parameters
-    ----------
-    tracer : Tracer, optional
-        If specified, the query will only match PET scans acquired
-        with the requested tracer.
-        If None, the query will match all PET sans independently of
-        the tracer used.
-
-    reconstruction : ReconstructionMethod, optional
-        If specified, the query will only match PET scans reconstructed
-        with the specified method.
-        If None, the query will match all PET scans independently of the
-        reconstruction method used.
-
-    Returns
-    -------
-    dict :
-        The query dictionary to get PET scans.
-    """
-
-    if config.preprocessing not in Preprocessing:
-        raise ClinicaDLArgumentError(
-            f"ClinicaDL is Unable to read this modality ({config.preprocessing}) of images, please chose one from this list: {list[Preprocessing]}"
-        )
-
-    if isinstance(config, preprocessing.PETPreprocessingConfig):
-        trc = "" if config.tracer is None else f"_trc-{Tracer(config.tracer).value}"
-        rec = "" if reconstruction is None else f"_rec-{reconstruction}"
-        description = "PET data"
-
-        if config.tracer:
-            description += f" with {config.tracer.value} tracer"
-        if reconstruction:
-            description += f" and reconstruction method {reconstruction}"
-
-        file_type = FileType(
-            pattern=f"pet/*{trc}{rec}_pet.nii*", description=description
-        )
-        return file_type
-
-    elif isinstance(config, preprocessing.T1PreprocessingConfig):
-        return FileType(pattern="anat/sub-*_ses-*_T1w.nii*", description="T1w MRI")
-
-    elif isinstance(config, preprocessing.FlairPreprocessingConfig):
-        return FileType(pattern="sub-*_ses-*_flair.nii*", description="FLAIR T2w MRI")
-
-    elif isinstance(config, preprocessing.DTIPreprocessingConfig):
-        return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
-
-    else:
-        raise ClinicaDLArgumentError("Invalid preprocessing")
+logger = getLogger("clinicadl")
 
 
-def linear_nii(
-    config: preprocessing,
-) -> FileType:
-    if isinstance(config, preprocessing.T1PreprocessingConfig):
-        needed_pipeline = Preprocessing.T1_LINEAR
-        modality = LinearModality.T1W
-    elif isinstance(config, preprocessing.T2PreprocessingConfig):
-        needed_pipeline = Preprocessing.T2_LINEAR
-        modality = LinearModality.T2W
-    elif isinstance(config, preprocessing.FlairPreprocessingConfig):
-        needed_pipeline = Preprocessing.FLAIR_LINEAR
-        modality = LinearModality.FLAIR
-    else:
-        raise ClinicaDLArgumentError("Invalid configuration")
+class CapsDatasetOutput(BaseModel):
+    image: torch.Tensor
+    participant_id: Union[int, str]
+    session_id: Union[int, str]
+    label: Optional[Union[float, int]] = None
+    image_id: Optional[Union[float, str]] = None
+    image_path: Optional[Path] = None
+    # domain: Optional[int]=None
+    mode: ExtractionMethod
 
-    if config.use_uncropped_image:
-        desc_crop = ""
-    else:
-        desc_crop = "_desc-Crop"
-
-    file_type = FileType(
-        pattern=f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
-        description=f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
-        + (
-            ""
-            if config.use_uncropped_image
-            else "and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
-        ),
-        needed_pipeline=needed_pipeline,
-    )
-    return file_type
-
-
-def dwi_dti(config: preprocessing.DTIPreprocessingConfig) -> FileType:
-    """Return the query dict required to capture DWI DTI images.
-
-    Parameters
-    ----------
-    config: DTIPreprocessingConfig
-
-    Returns
-    -------
-    FileType :
-    """
-    if isinstance(config, preprocessing.DTIPreprocessingConfig):
-        measure = config.dti_measure
-        space = config.dti_space
-    else:
-        raise ClinicaDLArgumentError(
-            f"preprocessing is of type {config} but should be of type{preprocessing.DTIPreprocessingConfig}"
-        )
-
-    return FileType(
-        pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
-        description=f"DTI-based {measure.value} in space {space}.",
-        needed_pipeline="dwi_dti",
-    )
-
-
-def pet_linear_nii(config: preprocessing.PETPreprocessingConfig) -> FileType:
-    if not isinstance(config, preprocessing.PETPreprocessingConfig):
-        raise ClinicaDLArgumentError(
-            f"preprocessing is of type {config} but should be of type{preprocessing.PETPreprocessingConfig}"
-        )
-
-    if config.use_uncropped_image:
-        description = ""
-    else:
-        description = "_desc-Crop"
-
-    file_type = FileType(
-        pattern=f"pet_linear/*_trc-{config.tracer.value}_space-MNI152NLin2009cSym{description}_res-1x1x1_suvr-{config.suvr_reference_region.value}_pet.nii.gz",
-        description="",
-        needed_pipeline="pet-linear",
-    )
-    return file_type
+    # pydantic config
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
