@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from clinicadl.dataset.caps_dataset import CapsDataset
+from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.splitter.kfold import Split

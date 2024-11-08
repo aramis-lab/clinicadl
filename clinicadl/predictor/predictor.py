@@ -1,4 +1,4 @@
-from clinicadl.dataset.caps_dataset import CapsDataset
+from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 
 
