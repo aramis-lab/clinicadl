@@ -336,7 +336,12 @@ def test_other_dimensions(input_tensor):
         {"pooling_indices": [0, 1, 2, 3]},
         {"pooling": "avg", "pooling_indices": [0]},
         {"norm": "group"},
-        {"_input_size": (1, 10, 10), "stride": 2, "channels": [2, 4, 6, 8]},
+        {"norm": "layer"},
+        {"pooling": ("adaptiveavg", {"kernel_size": 2})},
+        {
+            "pooling": [("avg", {"kernel_size": 2}), ("max", {"kernel_size": 2})],
+            "pooling_indices": [0],
+        },
     ],
 )
 def test_checks(kwargs):
@@ -398,3 +403,32 @@ def test_check_pool_layers(input_tensor, pooling, error):
             pooling=pooling,
             pooling_indices=[0, 1],
         )
+
+
+def test_sizes():
+    with pytest.raises(ValueError):
+        ConvEncoder(
+            spatial_dims=2,
+            in_channels=1,
+            channels=[1, 1, 1],
+            stride=2,
+            _input_size=(5, 5),
+        )
+    with pytest.raises(ValueError):
+        ConvEncoder(
+            spatial_dims=2,
+            in_channels=1,
+            channels=[1, 1],
+            pooling=[("adaptiveavg", {"output_size": (6, 6)})],
+            pooling_indices=[0],
+            _input_size=(5, 5),
+        )
+    cnn = ConvEncoder(
+        spatial_dims=2,
+        in_channels=1,
+        channels=[1, 1, 1],
+        kernel_size=3,
+        padding=(0, 1),
+        _input_size=(11, 10),
+    )
+    assert cnn.size_details == [(11, 10), (9, 10), (7, 10), (5, 10)]

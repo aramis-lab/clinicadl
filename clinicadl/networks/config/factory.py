@@ -1,11 +1,9 @@
 from typing import Type, Union
 
-# pylint: disable=unused-import
-from .autoencoder import AutoEncoderConfig, VAEConfig
 from .base import ImplementedNetwork, NetworkConfig
-from .cnn import CNNConfig
-from .conv_decoder import ConvDecoderConfig
-from .conv_encoder import ConvEncoderConfig
+
+# pylint: disable=unused-import
+from .cnns import AutoEncoderConfig, CNNConfig, GeneratorConfig, VAEConfig
 from .densenet import (
     DenseNet121Config,
     DenseNet161Config,
@@ -13,8 +11,7 @@ from .densenet import (
     DenseNet201Config,
     DenseNetConfig,
 )
-from .generator import GeneratorConfig
-from .mlp import MLPConfig
+from .mlp_conv import ConvDecoderConfig, ConvEncoderConfig, MLPConfig
 from .resnet import (
     ResNet18Config,
     ResNet34Config,

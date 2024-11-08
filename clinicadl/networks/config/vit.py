@@ -1,31 +1,39 @@
 from typing import Optional, Sequence, Union
 
-from pydantic import PositiveFloat, PositiveInt, computed_field
+from pydantic import PositiveInt, computed_field, model_validator
 
-from clinicadl.networks.nn.layers.utils import ActivationParameters
-from clinicadl.networks.nn.vit import PosEmbedType
+from clinicadl.networks.nn.utils import ensure_tuple
+from clinicadl.networks.nn.vit import (
+    PosEmbedType,
+    check_embedding_dim,
+    check_patch_size,
+)
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, NetworkConfig, NetworkType, PreTrainedConfig
+from .base import (
+    ImplementedNetwork,
+    NetworkType,
+    _DropOutConfig,
+    _OptionalLastLinearLayersConfig,
+    _OutputActConfig,
+    _PreTrainedConfig,
+)
+from .cnns import _InShapeConfig
 
 
-class ViTConfig(NetworkConfig):
+class ViTConfig(
+    _InShapeConfig, _OptionalLastLinearLayersConfig, _OutputActConfig, _DropOutConfig
+):
     """Config class for ViT networks."""
 
-    in_shape: Sequence[PositiveInt]
     patch_size: Union[Sequence[PositiveInt], PositiveInt]
-    num_outputs: Optional[PositiveInt]
     embedding_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     num_layers: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     num_heads: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     mlp_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     pos_embed_type: Union[
-        Optional[Union[str, PosEmbedType]], DefaultFromLibrary
+        Optional[PosEmbedType], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    output_act: Union[
-        Optional[ActivationParameters], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
@@ -33,8 +41,21 @@ class ViTConfig(NetworkConfig):
         """The name of the network."""
         return ImplementedNetwork.VIT
 
+    @model_validator(mode="after")
+    def make_checks(self):
+        _, *img_size = self.in_shape
+        patch_size = ensure_tuple(self.patch_size, dim=len(img_size), name="patch_size")
+        check_patch_size(patch_size, img_size)
+        if (
+            self.embedding_dim != DefaultFromLibrary.YES
+            and self.num_heads != DefaultFromLibrary.YES
+        ):
+            check_embedding_dim(self.embedding_dim, self.num_heads)
 
-class PreTrainedViTConfig(PreTrainedConfig):
+        return self
+
+
+class _PreTrainedViTConfig(_PreTrainedConfig):
     """Base config class for SOTA ResNets."""
 
     @computed_field
@@ -44,7 +65,7 @@ class PreTrainedViTConfig(PreTrainedConfig):
         return NetworkType.VIT
 
 
-class ViTB16Config(PreTrainedViTConfig):
+class ViTB16Config(_PreTrainedViTConfig):
     """Config class for ViT-B/16."""
 
     @computed_field
@@ -54,7 +75,7 @@ class ViTB16Config(PreTrainedViTConfig):
         return ImplementedNetwork.VIT_B_16
 
 
-class ViTB32Config(PreTrainedViTConfig):
+class ViTB32Config(_PreTrainedViTConfig):
     """Config class for ViT-B/32."""
 
     @computed_field
@@ -64,7 +85,7 @@ class ViTB32Config(PreTrainedViTConfig):
         return ImplementedNetwork.VIT_B_32
 
 
-class ViTL16Config(PreTrainedViTConfig):
+class ViTL16Config(_PreTrainedViTConfig):
     """Config class for ViT-L/16."""
 
     @computed_field
@@ -74,7 +95,7 @@ class ViTL16Config(PreTrainedViTConfig):
         return ImplementedNetwork.VIT_L_16
 
 
-class ViTL32Config(PreTrainedViTConfig):
+class ViTL32Config(_PreTrainedViTConfig):
     """Config class for ViT-L/32."""
 
     @computed_field

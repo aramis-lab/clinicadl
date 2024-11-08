@@ -2,7 +2,6 @@ from copy import deepcopy
 from typing import Any, Callable, Tuple, Union
 
 import torch.nn as nn
-from pydantic import BaseModel
 
 import clinicadl.networks.nn as nets
 from clinicadl.utils.factories import DefaultFromLibrary, get_args_and_defaults
@@ -13,9 +12,7 @@ from .config import (
     NetworkType,
     create_network_config,
 )
-from .config.conv_decoder import ConvDecoderOptions
-from .config.conv_encoder import ConvEncoderOptions
-from .config.mlp import MLPOptions
+from .config.mlp_conv import ConvDecoderOptions, ConvEncoderOptions, MLPOptions
 from .nn import MLP, ConvDecoder, ConvEncoder
 
 

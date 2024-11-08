@@ -107,7 +107,7 @@ class SEResNet(GeneralResNet):
             if arg not in kwargs:
                 kwargs[arg] = value
 
-        self._check_se_channels(kwargs["n_features"], se_reduction)
+        check_se_channels(kwargs["n_features"], se_reduction)
 
         super().__init__(
             spatial_dims=spatial_dims,
@@ -117,20 +117,18 @@ class SEResNet(GeneralResNet):
             **kwargs,
         )
 
-    @classmethod
-    def _check_se_channels(cls, n_features: Sequence[int], se_reduction: int) -> None:
-        """
-        Checks that the output of residual blocks always have a number of channels greater
-        than squeeze-excitation bottleneck reduction factor.
-        """
-        if not isinstance(n_features, Sequence):
-            raise ValueError(f"n_features must be a sequence. Got {n_features}")
-        for n in n_features:
-            if n < se_reduction:
-                raise ValueError(
-                    f"elements of n_features must be greater or equal to se_reduction. Got {n} in n_features "
-                    f"and se_reduction={se_reduction}"
-                )
+
+def check_se_channels(n_features: Sequence[int], se_reduction: int) -> None:
+    """
+    Checks that the output of residual blocks always have a number of channels greater
+    than squeeze-excitation bottleneck reduction factor.
+    """
+    for n in n_features:
+        if n < se_reduction:
+            raise ValueError(
+                f"elements of n_features must be greater or equal to se_reduction. Got {n} in n_features "
+                f"and se_reduction={se_reduction}"
+            )
 
 
 class SOTAResNet(str, Enum):

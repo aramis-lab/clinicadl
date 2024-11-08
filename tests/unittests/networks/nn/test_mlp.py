@@ -13,9 +13,7 @@ def input_tensor():
 
 @pytest.mark.parametrize("act", [act for act in ActFunction])
 def test_activations(input_tensor, act):
-    net = MLP(
-        in_channels=10, out_channels=2, hidden_channels=[6, 4], act=act, output_act=act
-    )
+    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], act=act, output_act=act)
     assert net(input_tensor).shape == (8, 2)
 
 
@@ -33,9 +31,9 @@ def test_activations(input_tensor, act):
 )
 def test_params(input_tensor, dropout, norm, bias, adn_ordering):
     net = MLP(
-        in_channels=10,
-        out_channels=2,
-        hidden_channels=[6, 4],
+        num_inputs=10,
+        num_outputs=2,
+        hidden_dims=[6, 4],
         dropout=dropout,
         norm=norm,
         act=None,
@@ -62,9 +60,9 @@ def test_activation_parameters():
     act = ("ELU", {"alpha": 0.1})
     output_act = ("ELU", {"alpha": 0.2})
     net = MLP(
-        in_channels=10,
-        out_channels=2,
-        hidden_channels=[6, 4],
+        num_inputs=10,
+        num_outputs=2,
+        hidden_dims=[6, 4],
         act=act,
         output_act=output_act,
     )
@@ -75,7 +73,7 @@ def test_activation_parameters():
     assert isinstance(net.output.output_act, ELU)
     assert net.output.output_act.alpha == 0.2
 
-    net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], act=None)
+    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], act=None)
     with pytest.raises(AttributeError):
         net.hidden0.adn.A
     with pytest.raises(AttributeError):
@@ -85,13 +83,13 @@ def test_activation_parameters():
 
 def test_norm_parameters():
     norm = ("instance", {"momentum": 1.0})
-    net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], norm=norm)
+    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], norm=norm)
     assert isinstance(net.hidden0.adn.N, InstanceNorm1d)
     assert net.hidden0.adn.N.momentum == 1.0
     assert isinstance(net.hidden1.adn.N, InstanceNorm1d)
     assert net.hidden1.adn.N.momentum == 1.0
 
-    net = MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], act=None)
+    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], act=None)
     with pytest.raises(AttributeError):
         net.layer_0[1].N
     with pytest.raises(AttributeError):
@@ -101,9 +99,9 @@ def test_norm_parameters():
 @pytest.mark.parametrize("adn_ordering", ["DAN", "NA", "A"])
 def test_adn_ordering(adn_ordering):
     net = MLP(
-        in_channels=10,
-        out_channels=2,
-        hidden_channels=[6, 4],
+        num_inputs=10,
+        num_outputs=2,
+        hidden_dims=[6, 4],
         dropout=0.1,
         adn_ordering=adn_ordering,
         act="elu",
@@ -122,4 +120,4 @@ def test_adn_ordering(adn_ordering):
 
 def test_checks():
     with pytest.raises(ValueError):
-        MLP(in_channels=10, out_channels=2, hidden_channels=[6, 4], norm="group")
+        MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], norm="group")

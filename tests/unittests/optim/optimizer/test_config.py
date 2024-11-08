@@ -9,6 +9,7 @@ from clinicadl.optim.optimizer.config import (
     SGDConfig,
     create_optimizer_config,
 )
+from clinicadl.optim.optimizer.enum import ImplementedOptimizer
 
 BAD_INPUTS = {
     "lr": 0,
@@ -17,10 +18,10 @@ BAD_INPUTS = {
     "weight_decay": -0.1,
     "lr_decay": -0.1,
     "initial_accumulator_value": -0.1,
-    "betas": (0.9, 1.0),
+    "betas": (0.9, 1.1),
     "alpha": 1.1,
     "momentum": -0.1,
-    "dampening": 0.1,
+    "dampening": -0.1,
 }
 
 GOOD_INPUTS_1 = {
@@ -52,40 +53,26 @@ GOOD_INPUTS_2 = {
 }
 
 
-@pytest.mark.parametrize(
-    "config",
-    [
-        AdadeltaConfig,
-        AdagradConfig,
-        AdamConfig,
-        RMSpropConfig,
-        SGDConfig,
-    ],
-)
-def test_validation_fail(config):
-    fields = config.model_fields
-    inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
-    with pytest.raises(ValidationError):
-        config(**inputs)
+def test_validation_fail():
+    for optimizer in ImplementedOptimizer:
+        config = create_optimizer_config(optimizer)
+        fields = config.model_fields
+        inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
+        for input, value in inputs.items():
+            with pytest.raises(ValidationError):
+                config(**{input: value})
 
-    # test dict inputs
-    inputs = {
-        key: {"group_1": value} for key, value in inputs.items() if key != "freeze"
-    }
-    with pytest.raises(ValidationError):
-        config(**inputs)
+        # test dict inputs
+        inputs = {
+            key: {"group_1": value, "ELSE": value}
+            for key, value in inputs.items()
+            if key != "freeze"
+        }
+        for input, value in inputs.items():
+            with pytest.raises(ValidationError):
+                config(**{input: value})
 
 
-@pytest.mark.parametrize(
-    "config,name",
-    [
-        (AdadeltaConfig, "Adadelta"),
-        (AdagradConfig, "Adagrad"),
-        (AdamConfig, "Adam"),
-        (RMSpropConfig, "RMSprop"),
-        (SGDConfig, "SGD"),
-    ],
-)
 @pytest.mark.parametrize(
     "good_inputs",
     [
@@ -93,26 +80,29 @@ def test_validation_fail(config):
         GOOD_INPUTS_2,
     ],
 )
-def test_validation_pass(config, name, good_inputs):
-    fields = config.model_fields
-    inputs = {key: value for key, value in good_inputs.items() if key in fields}
-    c = config(**inputs)
-    for arg, value in inputs.items():
-        if arg == "freeze":
-            assert getattr(c, arg) == value if isinstance(value, list) else [value]
-        else:
-            assert getattr(c, arg) == value
-    assert c.name == name
+def test_validation_pass(good_inputs):
+    for optimizer in ImplementedOptimizer:
+        config = create_optimizer_config(optimizer)
 
-    # test dict inputs
-    inputs = {
-        key: {"group_1": value, "ELSE": value}
-        for key, value in inputs.items()
-        if key != "freeze"
-    }
-    c = config(**inputs)
-    for arg, value in inputs.items():
-        assert getattr(c, arg) == value
+        fields = config.model_fields
+        inputs = {key: value for key, value in good_inputs.items() if key in fields}
+        c = config(**inputs)
+        for arg, value in inputs.items():
+            if arg == "freeze":
+                assert getattr(c, arg) == value if isinstance(value, list) else [value]
+            else:
+                assert getattr(c, arg) == value
+        assert c.name == optimizer.value
+
+        # test dict inputs
+        inputs = {
+            key: {"group_1": value, "ELSE": value}
+            for key, value in inputs.items()
+            if key != "freeze"
+        }
+        c = config(**inputs)
+        for arg, value in inputs.items():
+            assert getattr(c, arg) == value
 
 
 @pytest.mark.parametrize(

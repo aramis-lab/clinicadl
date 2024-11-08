@@ -43,6 +43,7 @@ INPUT_3D = torch.randn(2, 3, 24, 24, 24)
         ),  # embedding not divisible by num heads
         (INPUT_1D, 4, 1, 24, 5, 4, 26, "sincos", "softmax", None, True),  # sincos
         (INPUT_2D, (3, 4), None, 24, 2, 4, 42, "learnable", "tanh", 0.1, False),
+        (INPUT_2D, (3, 4), 1, 24, 2, 4, 42, "learnable", "tanh", 0.1, False),
         (
             INPUT_2D,
             4,

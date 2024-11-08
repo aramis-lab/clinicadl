@@ -89,7 +89,7 @@ def test_activations(input_tensor, act):
             (2, 1),
             1,
             ("convtranspose", {"kernel_size": 2}),
-            [0, 1],
+            [-1, 1],
             None,
             None,
             True,

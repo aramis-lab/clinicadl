@@ -1,30 +1,44 @@
-from typing import Optional, Sequence, Union
+from typing import Sequence, Union
 
-from pydantic import PositiveFloat, PositiveInt, computed_field
+from pydantic import PositiveInt, computed_field
 
-from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, NetworkConfig, NetworkType, PreTrainedConfig
+from .base import (
+    ImplementedNetwork,
+    NetworkType,
+    _DropOutConfig,
+    _FullyConvConfig,
+    _MandatoryActConfig,
+    _OptionalLastLinearLayersConfig,
+    _OutputActConfig,
+    _PreTrainedConfig,
+)
+
+__all__ = [
+    "DenseNetConfig",
+    "DenseNet121Config",
+    "DenseNet161Config",
+    "DenseNet169Config",
+    "DenseNet201Config",
+]
 
 
-class DenseNetConfig(NetworkConfig):
+class DenseNetConfig(
+    _FullyConvConfig,
+    _OptionalLastLinearLayersConfig,
+    _MandatoryActConfig,
+    _OutputActConfig,
+    _DropOutConfig,
+):
     """Config class for DenseNet."""
 
-    spatial_dims: PositiveInt
-    in_channels: PositiveInt
-    num_outputs: Optional[PositiveInt]
     n_dense_layers: Union[
         Sequence[PositiveInt], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
     bottleneck_factor: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
-    output_act: Union[
-        Optional[ActivationParameters], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
@@ -33,7 +47,7 @@ class DenseNetConfig(NetworkConfig):
         return ImplementedNetwork.DENSENET
 
 
-class PreTrainedDenseNetConfig(PreTrainedConfig):
+class _PreTrainedDenseNetConfig(_PreTrainedConfig):
     """Base config class for SOTA DenseNets."""
 
     @computed_field
@@ -43,7 +57,7 @@ class PreTrainedDenseNetConfig(PreTrainedConfig):
         return NetworkType.DENSENET
 
 
-class DenseNet121Config(PreTrainedDenseNetConfig):
+class DenseNet121Config(_PreTrainedDenseNetConfig):
     """Config class for DenseNet-121."""
 
     @computed_field
@@ -53,7 +67,7 @@ class DenseNet121Config(PreTrainedDenseNetConfig):
         return ImplementedNetwork.DENSENET_121
 
 
-class DenseNet161Config(PreTrainedDenseNetConfig):
+class DenseNet161Config(_PreTrainedDenseNetConfig):
     """Config class for DenseNet-161."""
 
     @computed_field
@@ -63,7 +77,7 @@ class DenseNet161Config(PreTrainedDenseNetConfig):
         return ImplementedNetwork.DENSENET_161
 
 
-class DenseNet169Config(PreTrainedDenseNetConfig):
+class DenseNet169Config(_PreTrainedDenseNetConfig):
     """Config class for DenseNet-169."""
 
     @computed_field
@@ -73,7 +87,7 @@ class DenseNet169Config(PreTrainedDenseNetConfig):
         return ImplementedNetwork.DENSENET_169
 
 
-class DenseNet201Config(PreTrainedDenseNetConfig):
+class DenseNet201Config(_PreTrainedDenseNetConfig):
     """Config class for DenseNet-201."""
 
     @computed_field

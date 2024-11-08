@@ -1,19 +1,27 @@
+import numpy as np
 import pytest
 
 from clinicadl.networks.nn.utils.checks import (
-    _check_conv_parameter,
     check_adn_ordering,
     check_conv_args,
     check_mlp_args,
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
+    ensure_tuple,
 )
 
 
 @pytest.mark.parametrize(
     "adn,error",
-    [("ADN", False), ("ND", False), ("A", False), ("AAD", True), ("ADM", True)],
+    [
+        ("ADN", False),
+        ("ND", False),
+        ("A", False),
+        ("AAD", True),
+        ("ADM", True),
+        (None, True),
+    ],
 )
 def test_check_adn_ordering(adn, error):
     if error:
@@ -24,27 +32,16 @@ def test_check_adn_ordering(adn, error):
 
 
 @pytest.mark.parametrize(
-    "parameter,expected_output",
+    "parameter,dim,expected_output",
     [
-        (5, (5, 5, 5)),
-        ((5, 4, 4), (5, 4, 4)),
-        ([5, 4], [(5, 5, 5), (4, 4, 4)]),
-        ([5, (4, 3, 3)], [(5, 5, 5), (4, 3, 3)]),
-        ((5, 5), None),
-        ([5, 5, 5], None),
-        ([5, (4, 4)], None),
-        (5.0, None),
+        (5, 3, (5, 5, 5)),
+        ((5, 4, 4), 3, (5, 4, 4)),
+        (5, 1, (5,)),
+        (5, 2, (5, 5)),
     ],
 )
-def test_check_conv_parameter(parameter, expected_output):
-    if expected_output:
-        assert (
-            _check_conv_parameter(parameter, dim=3, n_layers=2, name="abc")
-            == expected_output
-        )
-    else:
-        with pytest.raises(ValueError):
-            _check_conv_parameter(parameter, dim=3, n_layers=2, name="abc")
+def test_ensure_tuple(parameter, dim, expected_output):
+    assert ensure_tuple(parameter, dim=dim, name="abc") == expected_output
 
 
 @pytest.mark.parametrize(
@@ -54,13 +51,22 @@ def test_check_conv_parameter(parameter, expected_output):
         ((5, 4, 4), [(5, 4, 4), (5, 4, 4)]),
         ([5, 4], [(5, 5, 5), (4, 4, 4)]),
         ([5, (4, 3, 3)], [(5, 5, 5), (4, 3, 3)]),
+        ((5, 5), None),
+        ([5, 5, 5], None),
+        ([5, (4, 4)], None),
+        (5.0, None),
+        ([5.0, 4], None),
     ],
 )
 def test_ensure_list_of_tuples(parameter, expected_output):
-    assert (
-        ensure_list_of_tuples(parameter, dim=3, n_layers=2, name="abc")
-        == expected_output
-    )
+    if expected_output is not None:
+        assert (
+            ensure_list_of_tuples(parameter, dim=3, n_layers=2, name="abc")
+            == expected_output
+        )
+    else:
+        with pytest.raises(ValueError):
+            ensure_list_of_tuples(parameter, dim=3, n_layers=2, name="abc")
 
 
 @pytest.mark.parametrize(
@@ -71,6 +77,9 @@ def test_ensure_list_of_tuples(parameter, expected_output):
         ([-1, 1, 2], 3, False),
         ([0, 1, 2], 2, True),
         ([-2, 1, 2], 3, True),
+        (None, 4, False),
+        (2, 3, True),
+        ([0, 1, 1], 3, True),
     ],
 )
 def test_check_pool_indices(indices, n_layers, error):
@@ -78,7 +87,9 @@ def test_check_pool_indices(indices, n_layers, error):
         with pytest.raises(ValueError):
             _ = check_pool_indices(indices, n_layers)
     else:
-        check_pool_indices(indices, n_layers)
+        sorted_indices = check_pool_indices(indices, n_layers)
+        if indices is None:
+            assert sorted_indices == []
 
 
 @pytest.mark.parametrize(
@@ -117,7 +128,11 @@ def test_check_conv_args(conv_args, error):
 
 @pytest.mark.parametrize(
     "mlp_args,error",
-    [({"act": "tanh"}, True), ({"hidden_channels": [2]}, False)],
+    [
+        ({"act": "tanh"}, True),
+        ({"hidden_dims": [2]}, False),
+        (("hidden_dims", [2]), True),
+    ],
 )
 def test_check_mlp_args(mlp_args, error):
     if error:

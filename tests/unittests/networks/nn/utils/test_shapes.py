@@ -97,6 +97,7 @@ def test_calculate_convtranspose_out_shape(
         (INPUT_2D, (5, 3), 1, 0, (2, 2), True),
         (INPUT_1D, 2, 1, 1, 1, False),
         (INPUT_1D, 2, 1, 1, 1, True),
+        (INPUT_1D, 2, None, 1, 1, True),
     ],
 )
 def test_calculate_maxpool_out_shape(
@@ -136,6 +137,7 @@ def test_calculate_maxpool_out_shape(
         (INPUT_2D, (5, 3), 1, 0, True),
         (INPUT_1D, 2, 1, 1, False),
         (INPUT_1D, 2, 1, 1, True),
+        (INPUT_1D, 2, None, 1, True),
         (
             INPUT_1D,
             2,
@@ -241,21 +243,27 @@ def test_calculate_pool_out_shape():
 
 
 @pytest.mark.parametrize(
-    "input_tensor,kwargs",
+    "input_tensor,kwargs,error",
     [
-        (INPUT_3D, {"scale_factor": 2}),
-        (INPUT_2D, {"size": (40, 41)}),
-        (INPUT_2D, {"size": 40}),
-        (INPUT_2D, {"scale_factor": (3, 2)}),
-        (INPUT_1D, {"scale_factor": 2}),
+        (INPUT_3D, {"scale_factor": 2}, False),
+        (INPUT_2D, {"size": (40, 41)}, False),
+        (INPUT_2D, {"size": 40}, False),
+        (INPUT_2D, {"scale_factor": (3, 2)}, False),
+        (INPUT_1D, {"scale_factor": 2}, False),
+        (INPUT_1D, {"scale_factor": 2, "size": 40}, True),
+        (INPUT_1D, {}, True),
     ],
 )
-def test_calculate_upsample_out_shape(input_tensor, kwargs):
+def test_calculate_upsample_out_shape(input_tensor, kwargs, error):
     in_shape = input_tensor.shape[2:]
-    unpool = torch.nn.Upsample(**kwargs)
+    if error:
+        with pytest.raises(ValueError):
+            _calculate_upsample_out_shape(in_shape, **kwargs)
+    else:
+        unpool = torch.nn.Upsample(**kwargs)
 
-    output_shape = unpool(input_tensor).shape[2:]
-    assert _calculate_upsample_out_shape(in_shape, **kwargs) == output_shape
+        output_shape = unpool(input_tensor).shape[2:]
+        assert _calculate_upsample_out_shape(in_shape, **kwargs) == output_shape
 
 
 def test_calculate_unpool_out_shape():

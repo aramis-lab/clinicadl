@@ -12,7 +12,7 @@ INPUT_3D = torch.randn(3, 3, 20, 21, 22)
 @pytest.mark.parametrize("input_tensor", [INPUT_1D, INPUT_2D, INPUT_3D])
 @pytest.mark.parametrize("channels", [(), (2, 4)])
 @pytest.mark.parametrize(
-    "mlp_args", [None, {"hidden_channels": []}, {"hidden_channels": (2, 4)}]
+    "mlp_args", [None, {"hidden_dims": []}, {"hidden_dims": (2, 4)}]
 )
 def test_cnn(input_tensor, channels, mlp_args):
     in_shape = input_tensor.shape[1:]
@@ -27,14 +27,14 @@ def test_cnn(input_tensor, channels, mlp_args):
     assert isinstance(net.convolutions, ConvEncoder)
     assert isinstance(net.mlp, MLP)
 
-    if mlp_args is None or mlp_args["hidden_channels"] == []:
+    if mlp_args is None or mlp_args["hidden_dims"] == []:
         children = net.mlp.children()
         assert isinstance(next(children), Flatten)
         assert isinstance(next(children).linear, Linear)
         with pytest.raises(StopIteration):
             next(children)
 
-    if channels == []:
+    if channels == ():
         with pytest.raises(StopIteration):
             next(net.convolutions.parameters())
 
@@ -42,7 +42,7 @@ def test_cnn(input_tensor, channels, mlp_args):
 @pytest.mark.parametrize(
     "conv_args,mlp_args",
     [
-        (None, {"hidden_channels": [2]}),
+        (None, {"hidden_dims": [2]}),
         ({"channels": [2]}, {}),
     ],
 )
@@ -53,7 +53,7 @@ def test_checks(conv_args, mlp_args):
 
 def test_params():
     conv_args = {"channels": [2], "act": "celu"}
-    mlp_args = {"hidden_channels": [2], "act": "relu", "output_act": "softmax"}
+    mlp_args = {"hidden_dims": [2], "act": "relu", "output_act": "softmax"}
     net = CNN(
         in_shape=(1, 10, 10), num_outputs=2, conv_args=conv_args, mlp_args=mlp_args
     )

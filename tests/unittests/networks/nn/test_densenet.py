@@ -112,19 +112,23 @@ def test_activation_parameters():
     ],
 )
 def test_get_densenet(name, num_outputs, output_act):
-    densenet = get_densenet(
+    pretrained_densenet = get_densenet(
         name, num_outputs=num_outputs, output_act=output_act, pretrained=True
     )
-    if num_outputs:
-        assert densenet.fc.out.out_features == num_outputs
-    else:
-        assert densenet.fc is None
+    densenet = get_densenet(
+        name, num_outputs=num_outputs, output_act=output_act, pretrained=False
+    )
+    for network in [pretrained_densenet, densenet]:
+        if num_outputs:
+            assert network.fc.out.out_features == num_outputs
+        else:
+            assert network.fc is None
 
-    if output_act and num_outputs:
-        assert densenet.fc.output_act is not None
-    elif output_act and num_outputs is None:
-        with pytest.raises(AttributeError):
-            densenet.fc.output_act
+        if output_act and num_outputs:
+            assert network.fc.output_act is not None
+        elif output_act and num_outputs is None:
+            with pytest.raises(AttributeError):
+                network.fc.output_act
 
 
 def test_get_densenet_output():

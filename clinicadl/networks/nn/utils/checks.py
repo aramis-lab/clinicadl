@@ -1,14 +1,16 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from ..layers.utils import (
     ConvParameters,
     NormalizationParameters,
     NormLayer,
     PoolingLayer,
+    SingleLayerConvParameter,
 )
 
 __all__ = [
     "ensure_list_of_tuples",
+    "ensure_tuple",
     "check_norm_layer",
     "check_conv_args",
     "check_mlp_args",
@@ -24,11 +26,41 @@ def ensure_list_of_tuples(
     Each element of the list corresponds to the parameters of one layer, and
     each element of the tuple corresponds to the parameters for one dimension.
     """
-    parameter = _check_conv_parameter(parameter, dim, n_layers, name)
-    if isinstance(parameter, tuple):
+    if isinstance(parameter, int) or isinstance(parameter, tuple):
+        parameter = ensure_tuple(parameter, dim, name)
         return [parameter] * n_layers
+
+    elif isinstance(parameter, list):
+        if len(parameter) != n_layers:
+            raise ValueError(
+                f"If a list is passed, {name} must contain as many elements as there are layers. "
+                f"There are {n_layers} layers, but got {parameter}"
+            )
+        checked_params = []
+        for param in parameter:
+            checked_params.append(ensure_tuple(param, dim, name))
+        return checked_params
+
     else:
+        raise ValueError(f"{name} must be an int, a tuple or a list. Got {name}")
+
+
+def ensure_tuple(
+    parameter: SingleLayerConvParameter, dim: int, name: str
+) -> Tuple[int, ...]:
+    """
+    Changes any spatial argument to a tuple of the right dimension.
+    """
+    if isinstance(parameter, int):
+        return (parameter,) * dim
+    elif isinstance(parameter, tuple):
+        if len(parameter) != dim:
+            raise ValueError(
+                f"If a tuple is passed for {name}, its dimension must be {dim}. Got {parameter}"
+            )
         return parameter
+    else:
+        raise ValueError(f"{name} must be an int or a tuple. Got {name}")
 
 
 def check_norm_layer(
@@ -104,16 +136,16 @@ def check_conv_args(conv_args: Dict[str, Any]) -> None:
 
 def check_mlp_args(mlp_args: Optional[Dict[str, Any]]) -> None:
     """
-    Checks that `mlp_args` is a dict with at least the mandatory argument `hidden_channels`.
+    Checks that `mlp_args` is a dict with at least the mandatory argument `hidden_dims`.
     """
     if mlp_args is not None:
         if not isinstance(mlp_args, dict):
             raise ValueError(
                 f"mlp_args must be a dict with the arguments for the MLP part. Got: {mlp_args}"
             )
-        if "hidden_channels" not in mlp_args:
+        if "hidden_dims" not in mlp_args:
             raise ValueError(
-                "hidden_channels is a mandatory argument for the MLP part and must therefore be "
+                "hidden_dims is a mandatory argument for the MLP part and must therefore be "
                 f"passed in mlp_args. Got mlp_args={mlp_args}"
             )
 
@@ -124,7 +156,11 @@ def check_pool_indices(
     """
     Checks that the (un)pooling indices are consistent with the number of layers.
     """
-    if pooling_indices is not None:
+    if isinstance(pooling_indices, Sequence):
+        if len(pooling_indices) != len(set(pooling_indices)):
+            raise ValueError(
+                f"(un)pooling_indices contains duplicated indices: {pooling_indices}"
+            )
         for idx in pooling_indices:
             if idx > n_layers - 1:
                 raise ValueError(
@@ -135,33 +171,9 @@ def check_pool_indices(
                     f"indices in (un)pooling_indices must be greater or equal to -1, got (un)pooling_indices={pooling_indices}"
                 )
         return sorted(pooling_indices)
-    else:
+    elif pooling_indices is None:
         return []
-
-
-def _check_conv_parameter(
-    parameter: ConvParameters, dim: int, n_layers: int, name: str
-) -> Union[Tuple[int, ...], List[Tuple[int, ...]]]:
-    """
-    Checks spatial parameters (e.g. kernel_size).
-    """
-    if isinstance(parameter, int):
-        return (parameter,) * dim
-    elif isinstance(parameter, tuple):
-        if len(parameter) != dim:
-            raise ValueError(
-                f"If a tuple is passed for {name}, its dimension must be {dim}. Got {parameter}"
-            )
-        return parameter
-    elif isinstance(parameter, list):
-        if len(parameter) != n_layers:
-            raise ValueError(
-                f"If a list is passed, {name} must contain as many elements as there are layers. "
-                f"There are {n_layers} layers, but got {parameter}"
-            )
-        checked_params = []
-        for param in parameter:
-            checked_params.append(_check_conv_parameter(param, dim, n_layers, name))
-        return checked_params
     else:
-        raise ValueError(f"{name} must be an int, a tuple or a list. Got {name}")
+        raise ValueError(
+            f"(un)pooling_indices can be either a sequence or None. Got {pooling_indices}"
+        )

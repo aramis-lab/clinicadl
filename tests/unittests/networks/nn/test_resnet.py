@@ -171,3 +171,30 @@ def test_get_resnet_output():
     gt.fc = torch.nn.Identity()
     x = torch.randn(1, 3, 128, 128)
     assert (torch.flatten(resnet(x), start_dim=1) == gt(x)).all()
+
+
+@pytest.mark.parametrize(
+    "args,error",
+    [
+        (
+            {
+                "bottleneck_reduction": 2,
+                "n_features": [3, 4, 4, 4],
+                "block_type": "bottleneck",
+            },
+            True,
+        ),
+        ({"bottleneck_reduction": 2, "n_features": [2, 4, 4, 4]}, False),
+        ({"n_features": [2], "n_res_blocks": 2}, True),
+        ({"n_features": 2, "n_res_blocks": [2]}, True),
+        ({"n_features": [2], "n_res_blocks": [2, 4]}, True),
+        ({"n_features": [2, 3], "n_res_blocks": [2, 4]}, False),
+    ],
+)
+def test_checks(args, error):
+    args.update({"spatial_dims": 2, "in_channels": 2, "num_outputs": 1})
+    if error:
+        with pytest.raises(ValueError):
+            ResNet(**args)
+    else:
+        _ = ResNet(**args)

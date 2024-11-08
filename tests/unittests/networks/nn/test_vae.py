@@ -55,6 +55,8 @@ def test_output_shape(
     input_tensor, kernel_size, stride, padding, dilation, pooling, pooling_indices
 ):
     latent_size = 3
+    print(pooling_indices)
+    print(type(pooling_indices))
     net = VAE(
         in_shape=input_tensor.shape[1:],
         latent_size=latent_size,
@@ -79,7 +81,7 @@ def test_mu_log_var():
         in_shape=(1, 5, 5),
         latent_size=4,
         conv_args={"channels": []},
-        mlp_args={"hidden_channels": [12], "output_act": "relu", "act": "celu"},
+        mlp_args={"hidden_dims": [12], "output_act": "relu", "act": "celu"},
     )
     assert net.mu.linear.in_features == 12
     assert net.log_var.linear.in_features == 12
@@ -93,7 +95,7 @@ def test_mu_log_var():
         in_shape=(1, 5, 5),
         latent_size=4,
         conv_args={"channels": []},
-        mlp_args={"hidden_channels": [12]},
+        mlp_args={"hidden_dims": [12], "act": None},
     )
     assert net.mu.linear.in_features == 12
     assert net.log_var.linear.in_features == 12

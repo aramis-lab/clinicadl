@@ -12,7 +12,7 @@ def input_tensor():
 
 @pytest.mark.parametrize("channels", [(), (2, 4)])
 @pytest.mark.parametrize(
-    "mlp_args", [None, {"hidden_channels": []}, {"hidden_channels": (2, 4)}]
+    "mlp_args", [None, {"hidden_dims": []}, {"hidden_dims": (2, 4)}]
 )
 @pytest.mark.parametrize("start_shape", [(1, 5), (1, 5, 5), (1, 5, 5)])
 def test_generator(input_tensor, start_shape, channels, mlp_args):
@@ -28,14 +28,14 @@ def test_generator(input_tensor, start_shape, channels, mlp_args):
     assert isinstance(net.convolutions, ConvDecoder)
     assert isinstance(net.mlp, MLP)
 
-    if mlp_args is None or mlp_args["hidden_channels"] == []:
+    if mlp_args is None or mlp_args["hidden_dims"] == []:
         children = net.mlp.children()
         assert isinstance(next(children), Flatten)
         assert isinstance(next(children).linear, Linear)
         with pytest.raises(StopIteration):
             next(children)
 
-    if channels == []:
+    if channels == ():
         with pytest.raises(StopIteration):
             next(net.convolutions.parameters())
 
@@ -43,7 +43,7 @@ def test_generator(input_tensor, start_shape, channels, mlp_args):
 @pytest.mark.parametrize(
     "conv_args,mlp_args",
     [
-        (None, {"hidden_channels": [2]}),
+        (None, {"hidden_dims": [2]}),
         ({"channels": [2]}, {}),
     ],
 )
@@ -59,7 +59,7 @@ def test_checks(conv_args, mlp_args):
 
 def test_params():
     conv_args = {"channels": [2], "act": "celu"}
-    mlp_args = {"hidden_channels": [2], "act": "relu"}
+    mlp_args = {"hidden_dims": [2], "act": "relu"}
     net = Generator(
         latent_size=2, start_shape=(1, 10, 10), conv_args=conv_args, mlp_args=mlp_args
     )

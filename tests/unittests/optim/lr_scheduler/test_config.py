@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from pydantic import ValidationError
 
@@ -9,9 +11,11 @@ from clinicadl.optim.lr_scheduler.config import (
     StepLRConfig,
     create_lr_scheduler_config,
 )
+from clinicadl.optim.lr_scheduler.enum import ImplementedLRScheduler
 
+MANDATORY_FIELDS = {"step_size": 1, "milestones": [1, 2]}
 BAD_INPUTS = {
-    "milestones": [3, 2, 4],
+    "milestones": [4, 2, 4],
     "gamma": 0,
     "last_epoch": -2,
     "step_size": 0,
@@ -47,27 +51,23 @@ GOOD_INPUTS = {
 }
 
 
-@pytest.mark.parametrize(
-    "config",
-    [
-        ConstantLRConfig,
-        LinearLRConfig,
-        MultiStepLRConfig,
-        ReduceLROnPlateauConfig,
-        StepLRConfig,
-    ],
-)
-def test_validation_fail(config):
-    fields = config.model_fields
-    inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
-    with pytest.raises(ValidationError):
-        config(**inputs)
+def test_validation_fail():
+    for scheduler in ImplementedLRScheduler:
+        config = create_lr_scheduler_config(scheduler)
+        fields = config.model_fields
+        inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
+        for input, value in inputs.items():
+            mandatory_inputs = deepcopy(MANDATORY_FIELDS)
+            if input in mandatory_inputs:
+                del mandatory_inputs[input]
+            with pytest.raises(ValidationError):
+                config(**{input: value}, **mandatory_inputs)
 
-    # test dict inputs for min_lr
-    if "min_lr" in inputs:
-        inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
-        with pytest.raises(ValidationError):
-            config(**inputs)
+        # test dict inputs for min_lr
+        if "min_lr" in inputs:
+            inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
+            with pytest.raises(ValidationError):
+                config(**{input: value})
 
 
 def test_validation_fail_special():
@@ -75,29 +75,22 @@ def test_validation_fail_special():
         MultiStepLRConfig(milestones=[0, 1])
 
 
-@pytest.mark.parametrize(
-    "config,name",
-    [
-        (ConstantLRConfig, "ConstantLR"),
-        (LinearLRConfig, "LinearLR"),
-        (MultiStepLRConfig, "MultiStepLR"),
-        (ReduceLROnPlateauConfig, "ReduceLROnPlateau"),
-        (StepLRConfig, "StepLR"),
-    ],
-)
-def test_validation_pass(config, name):
-    fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS.items() if key in fields}
-    c = config(**inputs)
-    for arg, value in inputs.items():
-        assert getattr(c, arg) == value
-    assert c.name == name
+def test_validation_pass():
+    for scheduler in ImplementedLRScheduler:
+        config = create_lr_scheduler_config(scheduler)
 
-    # test dict inputs
-    if "min_lr" in inputs:
-        inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
+        fields = config.model_fields
+        inputs = {key: value for key, value in GOOD_INPUTS.items() if key in fields}
         c = config(**inputs)
-        assert getattr(c, "min_lr") == inputs["min_lr"]
+        for arg, value in inputs.items():
+            assert getattr(c, arg) == value
+        assert c.name == scheduler.value
+
+        # test dict inputs
+        if "min_lr" in inputs:
+            inputs["min_lr"] = {"group_1": inputs["min_lr"], "ELSE": inputs["min_lr"]}
+            c = config(**inputs)
+            assert getattr(c, "min_lr") == inputs["min_lr"]
 
 
 @pytest.mark.parametrize(

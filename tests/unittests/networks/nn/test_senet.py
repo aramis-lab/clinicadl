@@ -170,3 +170,17 @@ def test_get_seresnet(name, num_outputs, output_act):
 def test_get_seresnet_error():
     with pytest.raises(ValueError):
         get_seresnet(SOTAResNet.SE_RESNET_50, num_outputs=1, pretrained=True)
+
+
+def test_checks():
+    args = {
+        "spatial_dims": 2,
+        "in_channels": 2,
+        "num_outputs": 1,
+        "se_reduction": 10,
+        "n_features": [10, 9, 10, 10],
+    }
+    with pytest.raises(ValueError):
+        SEResNet(**args)
+    args["n_features"] = [10, 11, 10, 10]
+    _ = SEResNet(**args)

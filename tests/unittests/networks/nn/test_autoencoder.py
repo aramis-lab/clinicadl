@@ -89,7 +89,7 @@ def test_out_channels():
         in_shape=input_tensor.shape[1:],
         latent_size=3,
         conv_args={"channels": [2, 4, 8]},
-        mlp_args={"hidden_channels": [8, 4]},
+        mlp_args={"hidden_dims": [8, 4]},
         out_channels=3,
     )
     assert net(input_tensor).shape == (2, 3, 64, 62, 61)
@@ -171,7 +171,7 @@ def test_params():
         in_shape=(1, 100, 100),
         latent_size=3,
         conv_args={"channels": [2], "act": "celu", "output_act": "sigmoid"},
-        mlp_args={"hidden_channels": [2], "act": "relu", "output_act": "gelu"},
+        mlp_args={"hidden_dims": [2], "act": "relu", "output_act": "gelu"},
         output_act="tanh",
         out_channels=2,
     )

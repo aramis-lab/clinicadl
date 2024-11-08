@@ -1,11 +1,20 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
-from pydantic import BaseModel, ConfigDict, PositiveInt, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    PositiveFloat,
+    PositiveInt,
+    computed_field,
+    field_validator,
+)
 
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
+
+__all__ = ["ImplementedNetwork", "NetworkConfig"]
 
 
 class ImplementedNetwork(str, Enum):
@@ -88,11 +97,58 @@ class NetworkConfig(BaseModel, ABC):
         return NetworkType.CUSTOM
 
 
-class PreTrainedConfig(NetworkConfig):
-    """Base config class for SOTA networks."""
+class _FullyConvConfig(NetworkConfig):
+    """
+    Base config class for fully convolutional networks.
+    """
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+
+
+class _InShapeConfig(NetworkConfig):
+    """Base config class for networks with 'in_shape' option."""
+
+    in_shape: Sequence[PositiveInt]
+
+
+class _OptionalLastLinearLayersConfig(NetworkConfig):
+    """Base config class for networks with 'num_outputs' option."""
 
     num_outputs: Optional[PositiveInt]
+
+
+class _MandatoryActConfig(NetworkConfig):
+    """Base config class for networks with 'output_act' option."""
+
+    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class _OutputActConfig(NetworkConfig):
+    """Base config class for networks with 'output_act' option."""
+
     output_act: Union[
         Optional[ActivationParameters], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
+
+
+class _DropOutConfig(NetworkConfig):
+    """Base config class for networks with 'dropout' option."""
+
+    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @field_validator("dropout")
+    @classmethod
+    def validator_dropout(cls, v):
+        """Checks that dropout is between 0 and 1."""
+        if isinstance(v, float):
+            assert (
+                0 <= v <= 1
+            ), f"dropout must be between 0 and 1 but it has been set to {v}."
+        return v
+
+
+class _PreTrainedConfig(_OptionalLastLinearLayersConfig, _OutputActConfig):
+    """Base config class for SOTA networks."""
+
     pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
