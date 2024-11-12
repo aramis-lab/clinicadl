@@ -20,7 +20,13 @@ from clinicadl.networks.nn.utils import (
 )
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, _DropOutConfig, _FullyConvConfig, _OutputActConfig
+from .base import (
+    ImplementedNetwork,
+    NetworkConfig,
+    _DropOutConfig,
+    _FullyConvConfig,
+    _OutputActConfig,
+)
 
 __all__ = [
     "MLPOptions",
@@ -42,12 +48,6 @@ class _BaseMLPConvConfig(_OutputActConfig, _DropOutConfig):
     ] = DefaultFromLibrary.YES
     bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
     adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES
-
-    @computed_field
-    @property
-    def name(self) -> None:
-        """The name of the network."""
-        return None
 
     @field_validator("adn_ordering")
     @classmethod
@@ -80,7 +80,7 @@ class MLPOptions(_BaseMLPConvConfig):
         return cls.base_norm_validator(v)
 
 
-class MLPConfig(MLPOptions):
+class MLPConfig(NetworkConfig, MLPOptions):
     """Config class for Multi Layer Perceptron."""
 
     num_inputs: PositiveInt
@@ -150,7 +150,7 @@ class ConvEncoderOptions(_ConvOptions):
         return self
 
 
-class ConvEncoderConfig(_FullyConvConfig, ConvEncoderOptions):
+class ConvEncoderConfig(NetworkConfig, _FullyConvConfig, ConvEncoderOptions):
     """Config class for ConvEncoder."""
 
     @computed_field
@@ -198,7 +198,7 @@ class ConvDecoderOptions(_ConvOptions):
             )
 
 
-class ConvDecoderConfig(_FullyConvConfig, ConvDecoderOptions):
+class ConvDecoderConfig(NetworkConfig, _FullyConvConfig, ConvDecoderOptions):
     """Config class for ConvDecoder."""
 
     @computed_field

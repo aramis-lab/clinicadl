@@ -16,35 +16,32 @@ from .config.mlp_conv import ConvDecoderOptions, ConvEncoderOptions, MLPOptions
 from .nn import MLP, ConvDecoder, ConvEncoder
 
 
-def get_network(
-    name: Union[str, ImplementedNetwork], return_config: bool = False, **kwargs: Any
-) -> Union[nn.Module, Tuple[nn.Module, NetworkConfig]]:
+def get_network_config(
+    name: Union[str, ImplementedNetwork], **kwargs: Any
+) -> NetworkConfig:
     """
-    Factory function to get a ClinicaDL neural network from its name and parameters.
+    Factory function to get a network configuration object from its name
+    and parameters.
 
     Parameters
     ----------
     name : Union[str, ImplementedNetwork]
-        the name of the neural network. Check our documentation to know
+        the name of the network. Check our documentation to know
         available networks.
-    return_config : bool (optional, default=False)
-        if the function should return the config class regrouping the parameters of the
-        neural network. Useful to keep track of the hyperparameters.
     **kwargs : Any
-        the parameters of the neural network. Check our documentation on networks to
+        any parameter of the network. Check our documentation on networks to
         know these parameters.
 
     Returns
     -------
-    nnn.Module
-        the neural network.
     NetworkConfig
-        the associated config object. Only returned if `return_config` is True.
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
     config = create_network_config(name)(**kwargs)
-    network, updated_config = get_network_from_config(config)
+    _ = _update_config_with_getter(config)
 
-    return network if not return_config else (network, updated_config)
+    return config
 
 
 def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkConfig]:
@@ -68,6 +65,26 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
     config = deepcopy(config)
     network_type = config._type  # pylint: disable=protected-access
 
+    getter = _update_config_with_getter(config)
+
+    if network_type == NetworkType.CUSTOM:
+        config_dict = config.model_dump(exclude={"name", "_type"})
+
+    else:  # sota networks
+        config_dict = config.model_dump(exclude={"_type"})
+
+    network = getter(**config_dict)
+
+    return network, config
+
+
+def _update_config_with_getter(config: NetworkConfig) -> Callable:
+    """
+    Does the logic of parameter updates on NetworkConfig and returns
+    the right getter object to instantiate the network.
+    """
+    network_type = config._type  # pylint: disable=protected-access
+
     if network_type == NetworkType.CUSTOM:
         network_class: type[nn.Module] = getattr(nets, config.name)
         if config.name == ImplementedNetwork.SE_RESNET:
@@ -80,8 +97,7 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
             )
         _update_config_with_defaults(config, network_class.__init__)
 
-        config_dict = config.model_dump(exclude={"name", "_type"})
-        network = network_class(**config_dict)
+        return network_class
 
     else:  # sota networks
         if network_type == NetworkType.RESNET:
@@ -94,10 +110,7 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
             getter: Callable[..., nn.Module] = nets.get_vit
         _update_config_with_defaults(config, getter)  # pylint: disable=possibly-used-before-assignment
 
-        config_dict = config.model_dump(exclude={"_type"})
-        network = getter(**config_dict)
-
-    return network, config
+        return getter
 
 
 def _update_config_with_defaults(

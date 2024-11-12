@@ -29,7 +29,8 @@ def get_loss_function_config(
     Returns
     -------
     LossConfig
-        the config object.
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
     config = create_loss_function_config(name)(**kwargs)
     loss_class = getattr(torch.nn, config.name)

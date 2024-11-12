@@ -42,6 +42,21 @@ from clinicadl.networks.config.vit import (
     ViTL32Config,
 )
 
+MANDATORY_ARGS = {
+    "spatial_dims": 2,
+    "in_channels": 1,
+    "out_channels": 1,
+    "in_shape": (1, 6, 6),
+    "latent_size": 1,
+    "conv_args": {"channels": [1]},
+    "num_outputs": 1,
+    "channels": [1, 1],
+    "start_shape": (1, 4, 4),
+    "num_inputs": 1,
+    "hidden_dims": [1],
+    "patch_size": 3,
+}
+
 
 @pytest.mark.parametrize(
     "name,expected_class",
@@ -80,3 +95,9 @@ from clinicadl.networks.config.vit import (
 def test_create_optimizer_config(name, expected_class):
     config = create_network_config(name)
     assert config == expected_class
+    c = config(**MANDATORY_ARGS)
+    assert c.name == name
+    if "-" in name:
+        assert "sota" in c._type
+    else:
+        assert c._type == "custom"

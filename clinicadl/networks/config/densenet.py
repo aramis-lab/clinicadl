@@ -6,6 +6,7 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     ImplementedNetwork,
+    NetworkConfig,
     NetworkType,
     _DropOutConfig,
     _FullyConvConfig,
@@ -25,6 +26,7 @@ __all__ = [
 
 
 class DenseNetConfig(
+    NetworkConfig,
     _FullyConvConfig,
     _OptionalLastLinearLayersConfig,
     _MandatoryActConfig,

@@ -1,6 +1,6 @@
 from typing import Union
 
-from pydantic import PositiveInt, computed_field, model_validator
+from pydantic import PositiveInt, computed_field, field_validator, model_validator
 
 from clinicadl.networks.nn.senet import check_se_channels
 from clinicadl.utils.factories import DefaultFromLibrary
@@ -41,11 +41,23 @@ class SEResNetConfig(ResNetConfig):
 class _PreTrainedSEResNetConfig(_PreTrainedConfig):
     """Base config class for SOTA SE-ResNets."""
 
+    pretrained: bool = False
+
     @computed_field
     @property
     def _type(self) -> NetworkType:
         """To know where to look for the network."""
         return NetworkType.SE_RESNET
+
+    @field_validator("pretrained")
+    @classmethod
+    def check_not_pretrained(cls, v):
+        assert (
+            not v
+        ), "Pretrained networks are not yet available for SE-ResNets. Please leave "
+        "'pretrained' to False."
+
+        return v
 
 
 class SEResNet50Config(_PreTrainedSEResNetConfig):

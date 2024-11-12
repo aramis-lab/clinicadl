@@ -4,6 +4,7 @@ from pydantic import PositiveInt, computed_field, model_validator
 
 from clinicadl.networks.nn.autoencoder import check_unpooling_mode
 from clinicadl.networks.nn.layers.utils import UnpoolingMode
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedNetwork, NetworkConfig, _InShapeConfig, _OutputActConfig
@@ -12,19 +13,19 @@ from .mlp_conv import ConvDecoderOptions, ConvEncoderOptions, MLPOptions
 __all__ = ["CNNConfig", "GeneratorConfig", "AutoEncoderConfig", "VAEConfig"]
 
 
-class _MLPArgsConfig(NetworkConfig):
-    """Base config class for networks with 'mlp_args' option."""
+class _MLPArgsConfig(ClinicaDLConfig):
+    """Base config class for 'mlp_args' option."""
 
     mlp_args: Union[Optional[MLPOptions], DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _LatentSizeConfig(NetworkConfig):
-    """Base config class for networks with 'latent_size' option."""
+class _LatentSizeConfig(ClinicaDLConfig):
+    """Base config class for 'latent_size' option."""
 
     latent_size: PositiveInt
 
 
-class CNNConfig(_InShapeConfig, _MLPArgsConfig):
+class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
     """Config class for CNN."""
 
     num_outputs: PositiveInt
@@ -45,7 +46,7 @@ class CNNConfig(_InShapeConfig, _MLPArgsConfig):
         return self
 
 
-class GeneratorConfig(_LatentSizeConfig, _MLPArgsConfig):
+class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
     """Config class for Generator."""
 
     start_shape: Sequence[PositiveInt]
@@ -67,7 +68,7 @@ class GeneratorConfig(_LatentSizeConfig, _MLPArgsConfig):
 
 
 class AutoEncoderConfig(
-    _InShapeConfig, _LatentSizeConfig, _MLPArgsConfig, _OutputActConfig
+    NetworkConfig, _InShapeConfig, _LatentSizeConfig, _MLPArgsConfig, _OutputActConfig
 ):
     """Config class for AutoEncoder."""
 

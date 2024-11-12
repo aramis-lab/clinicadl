@@ -6,6 +6,7 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     ImplementedNetwork,
+    NetworkConfig,
     _DropOutConfig,
     _FullyConvConfig,
     _MandatoryActConfig,
@@ -19,7 +20,11 @@ __all__ = [
 
 
 class UNetConfig(
-    _FullyConvConfig, _MandatoryActConfig, _OutputActConfig, _DropOutConfig
+    NetworkConfig,
+    _FullyConvConfig,
+    _MandatoryActConfig,
+    _OutputActConfig,
+    _DropOutConfig,
 ):
     """Config class for UNet."""
 

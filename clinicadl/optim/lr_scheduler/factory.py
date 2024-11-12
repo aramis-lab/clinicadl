@@ -33,7 +33,8 @@ def get_lr_scheduler_config(
     Returns
     -------
     LRSchedulerConfig
-        the configuration object.
+        the configuration object. Default values will be returned for the parameters
+        not passed by the user.
     """
     config = create_lr_scheduler_config(name)(**kwargs)
     scheduler_class = getattr(lr_schedulers, config.name)

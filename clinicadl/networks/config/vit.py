@@ -12,6 +12,7 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     ImplementedNetwork,
+    NetworkConfig,
     NetworkType,
     _DropOutConfig,
     _OptionalLastLinearLayersConfig,
@@ -22,7 +23,11 @@ from .cnns import _InShapeConfig
 
 
 class ViTConfig(
-    _InShapeConfig, _OptionalLastLinearLayersConfig, _OutputActConfig, _DropOutConfig
+    NetworkConfig,
+    _InShapeConfig,
+    _OptionalLastLinearLayersConfig,
+    _OutputActConfig,
+    _DropOutConfig,
 ):
     """Config class for ViT networks."""
 

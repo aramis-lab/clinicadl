@@ -30,7 +30,8 @@ def get_optimizer_config(
     Returns
     -------
     OptimizerConfig
-        the configuration object.
+        the configuration object. Default values will be returned for the parameters
+        not passed by the user.
     """
     config = create_optimizer_config(name)(**kwargs)
     optimizer_class = getattr(optim, config.name)

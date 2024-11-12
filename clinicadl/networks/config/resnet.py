@@ -12,6 +12,7 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     ImplementedNetwork,
+    NetworkConfig,
     NetworkType,
     _FullyConvConfig,
     _MandatoryActConfig,
@@ -31,6 +32,7 @@ __all__ = [
 
 
 class ResNetConfig(
+    NetworkConfig,
     _FullyConvConfig,
     _OptionalLastLinearLayersConfig,
     _MandatoryActConfig,

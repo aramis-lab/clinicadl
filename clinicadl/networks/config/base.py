@@ -3,8 +3,6 @@ from enum import Enum
 from typing import Optional, Sequence, Union
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     PositiveFloat,
     PositiveInt,
     computed_field,
@@ -12,6 +10,7 @@ from pydantic import (
 )
 
 from clinicadl.networks.nn.layers.utils import ActivationParameters
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 __all__ = ["ImplementedNetwork", "NetworkConfig"]
@@ -71,15 +70,8 @@ class NetworkType(str, Enum):
     VIT = "sota-ViT"
 
 
-class NetworkConfig(BaseModel, ABC):
+class NetworkConfig(ClinicaDLConfig, ABC):
     """Base config class to configure neural networks."""
-
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True,
-        use_enum_values=True,
-        validate_default=True,
-    )
 
     @computed_field
     @property
@@ -97,7 +89,7 @@ class NetworkConfig(BaseModel, ABC):
         return NetworkType.CUSTOM
 
 
-class _FullyConvConfig(NetworkConfig):
+class _FullyConvConfig(ClinicaDLConfig):
     """
     Base config class for fully convolutional networks.
     """
@@ -106,34 +98,34 @@ class _FullyConvConfig(NetworkConfig):
     in_channels: PositiveInt
 
 
-class _InShapeConfig(NetworkConfig):
-    """Base config class for networks with 'in_shape' option."""
+class _InShapeConfig(ClinicaDLConfig):
+    """Base config class for 'in_shape' option."""
 
     in_shape: Sequence[PositiveInt]
 
 
-class _OptionalLastLinearLayersConfig(NetworkConfig):
-    """Base config class for networks with 'num_outputs' option."""
+class _OptionalLastLinearLayersConfig(ClinicaDLConfig):
+    """Base config class for 'num_outputs' option."""
 
     num_outputs: Optional[PositiveInt]
 
 
-class _MandatoryActConfig(NetworkConfig):
-    """Base config class for networks with 'output_act' option."""
+class _MandatoryActConfig(ClinicaDLConfig):
+    """Base config class for 'output_act' option."""
 
     act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _OutputActConfig(NetworkConfig):
-    """Base config class for networks with 'output_act' option."""
+class _OutputActConfig(ClinicaDLConfig):
+    """Base config class for 'output_act' option."""
 
     output_act: Union[
         Optional[ActivationParameters], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class _DropOutConfig(NetworkConfig):
-    """Base config class for networks with 'dropout' option."""
+class _DropOutConfig(ClinicaDLConfig):
+    """Base config class for 'dropout' option."""
 
     dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 

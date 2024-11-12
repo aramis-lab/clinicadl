@@ -24,76 +24,89 @@ from clinicadl.networks.config.unet import AttentionUNetConfig, UNetConfig
 from clinicadl.networks.config.vit import ViTConfig
 from clinicadl.networks.nn.layers.utils import ActFunction
 
-BAD_INPUTS = {
-    "num_inputs": 0,
-    "num_outputs": 0,
-    "hidden_dims": [0, 2],
-    "dropout": 1.1,
-    "bias": None,
-    "spatial_dims": 0,
-    "in_channels": 0,
-    "channels": [0, 1],
-    "in_shape": 6,
-    "start_shape": 5,
-    "latent_size": 0,
-    "out_channels": 0,
-    "n_dense_layers": (0, 2),
-    "init_features": 0,
-    "growth_rate": 0,
-    "bottleneck_factor": 0,
-    "block_type": "abc",
-    "bottleneck_reduction": 0,
-    "se_reduction": 0,
-    "n_res_blocks": (2, 0, 2, 2),
-    "n_features": (2, 0, 2, 2),
-    "patch_size": 0,
-    "embedding_dim": 0,
-    "num_layers": 0,
-    "num_heads": 0,
-    "mlp_dim": 0,
-    "pos_embed_type": "abc",
-}
-GOOD_INPUTS_1 = {
-    "num_inputs": 1,
-    "num_outputs": 1,
-    "hidden_dims": [1, 2],
-    "dropout": 0.5,
-    "bias": True,
-    "spatial_dims": 1,
+MANDATORY_ARGS = {
+    "spatial_dims": 2,
     "in_channels": 1,
-    "channels": [1, 1],
-    "in_shape": (1, 6, 6),
-    "start_shape": (5, 5),
-    "latent_size": 1,
     "out_channels": 1,
-    "n_dense_layers": (1, 2),
-    "init_features": 1,
-    "growth_rate": 1,
-    "bottleneck_factor": 1,
-    "block_type": "basic",
-    "bottleneck_reduction": 1,
-    "se_reduction": 1,
-    "pos_embed_type": None,
+    "in_shape": (1, 6, 6),
+    "latent_size": 1,
+    "conv_args": {"channels": [1]},
+    "num_outputs": 1,
+    "channels": [1, 1],
+    "start_shape": (1, 4, 4),
+    "num_inputs": 1,
+    "hidden_dims": [1],
     "patch_size": 3,
-    "embedding_dim": 1,
-    "num_layers": 1,
-    "num_heads": 1,
-    "mlp_dim": 1,
-    "conv_args": {"channels": [1, 1]},
 }
-GOOD_INPUTS_2 = {
-    "dropout": None,
-    "bias": False,
-    "in_shape": (5,),
-    "start_shape": (5,),
-    "out_channels": None,
-    "block_type": "bottleneck",
-    "pos_embed_type": "sincos",
-}
-GOOD_INPUTS_3 = {"pos_embed_type": "learnable"}
+BAD_INPUTS = [
+    ("num_inputs", 0),
+    ("num_outputs", 0),
+    ("hidden_dims", [0, 2]),
+    ("dropout", 1.1),
+    ("bias", None),
+    ("spatial_dims", 0),
+    ("in_channels", 0),
+    ("channels", [0, 1]),
+    ("in_shape", 6),
+    ("start_shape", 5),
+    ("latent_size", 0),
+    ("out_channels", 0),
+    ("n_dense_layers", (0, 2)),
+    ("init_features", 0),
+    ("growth_rate", 0),
+    ("bottleneck_factor", 0),
+    ("block_type", "abc"),
+    ("bottleneck_reduction", 0),
+    ("se_reduction", 0),
+    ("n_res_blocks", (2, 0, 2, 2)),
+    ("n_features", (2, 0, 2, 2)),
+    ("patch_size", 0),
+    ("embedding_dim", 0),
+    ("num_layers", 0),
+    ("num_heads", 0),
+    ("mlp_dim", 0),
+    ("pos_embed_type", "abc"),
+]
+GOOD_INPUTS = [
+    ("num_inputs", 1),
+    ("num_outputs", 1),
+    ("hidden_dims", [1, 2]),
+    ("dropout", 0.5),
+    ("bias", True),
+    ("spatial_dims", 1),
+    ("in_channels", 1),
+    ("channels", [1, 1]),
+    ("in_shape", (1, 6, 6)),
+    ("start_shape", (5, 5)),
+    ("latent_size", 1),
+    ("out_channels", 1),
+    ("n_dense_layers", (1, 2)),
+    ("init_features", 1),
+    ("growth_rate", 1),
+    ("bottleneck_factor", 1),
+    ("block_type", "basic"),
+    ("bottleneck_reduction", 1),
+    ("se_reduction", 1),
+    ("pos_embed_type", None),
+    ("patch_size", 3),
+    ("embedding_dim", 1),
+    ("num_layers", 1),
+    ("num_heads", 1),
+    ("mlp_dim", 1),
+    ("conv_args", {"channels": [1, 1]}),
+    ("dropout", None),
+    ("bias", False),
+    ("in_shape", (5,)),
+    ("start_shape", (5,)),
+    ("out_channels", None),
+    ("block_type", "bottleneck"),
+    ("pos_embed_type", "sincos"),
+    ("pos_embed_type", "learnable"),
+]
 
 
-def test_validation_fail():
+@pytest.mark.parametrize("arg,value", BAD_INPUTS)
+def test_validation_fail(arg, value):
     configs = [create_network_config(network) for network in ImplementedNetwork] + [
         MLPOptions,
         ConvEncoderOptions,
@@ -101,24 +114,21 @@ def test_validation_fail():
     ]
     for config in configs:
         fields = config.model_fields
-        inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
 
-        for input, value in inputs.items():
-            mandatory_inputs = deepcopy(GOOD_INPUTS_1)
-            if input in mandatory_inputs:
-                del mandatory_inputs[input]
+        if arg in fields:
+            mandatory_inputs = deepcopy(MANDATORY_ARGS)
+            if arg in mandatory_inputs:
+                del mandatory_inputs[arg]
+
             with pytest.raises(ValidationError):
-                config(**{input: value}, **mandatory_inputs)
+                config(**{arg: value}, **mandatory_inputs)
 
 
 @pytest.mark.parametrize(
-    "good_inputs",
-    [
-        GOOD_INPUTS_1,
-        GOOD_INPUTS_2,
-    ],
+    "arg,value",
+    GOOD_INPUTS,
 )
-def test_validation_pass(good_inputs):
+def test_validation_pass(arg, value):
     configs = [create_network_config(network) for network in ImplementedNetwork] + [
         MLPOptions,
         ConvEncoderOptions,
@@ -126,21 +136,24 @@ def test_validation_pass(good_inputs):
     ]
     for config in configs:
         fields = config.model_fields
-        inputs = {key: value for key, value in good_inputs.items() if key in fields}
+        name = config.__name__.replace("Config", "")
 
-        if config.__name__.replace("Config", "") in ["UNet", "AttentionUNet"]:
-            inputs["out_channels"] = 1
+        if arg in fields:
+            mandatory_inputs = deepcopy(MANDATORY_ARGS)
+            if arg in mandatory_inputs:
+                del mandatory_inputs[arg]
 
-        mandatory_inputs = deepcopy(GOOD_INPUTS_1)
-        for input in inputs:
-            if input in mandatory_inputs:
-                del mandatory_inputs[input]
+            if (
+                name in ["UNet", "AttentionUNet"]
+                and arg == "out_channels"
+                and value is None
+            ):
+                value = 1
 
-        c = config(**inputs, **mandatory_inputs)
-        for arg, value in inputs.items():
-            if arg == "conv_args" and c.name in ["CNN", "AutoEncoder", "VAE"]:
+            c = config(**{arg: value}, **mandatory_inputs)
+            if arg == "conv_args" and name in ["CNN", "AutoEncoder", "VAE"]:
                 assert getattr(c, arg) == ConvEncoderOptions(**value)
-            elif arg == "conv_args" and c.name == "Generator":
+            elif arg == "conv_args" and name == "Generator":
                 assert getattr(c, arg) == ConvDecoderOptions(**value)
             else:
                 assert getattr(c, arg) == value
@@ -154,9 +167,10 @@ def test_act():
     ]
     for config in configs:
         fields = config.model_fields
+        name = config.__name__.replace("Config", "")
         if "act" in fields:
             inputs = {
-                key: value for key, value in GOOD_INPUTS_1.items() if key in fields
+                key: value for key, value in MANDATORY_ARGS.items() if key in fields
             }
 
             for act in ActFunction:
@@ -167,9 +181,14 @@ def test_act():
             c.act = ("elu", {"alpha": 1.0})
             assert c.act == ("elu", {"alpha": 1.0})
 
-            if (
-                c.name in ["MLP", "ConvEncoder", "ConvDecoder"] or c.name is None
-            ):  # None for MLPOptions, ConvEncoderOptions and ConvDecoderOptions
+            if name in [
+                "MLP",
+                "ConvEncoder",
+                "ConvDecoder",
+                "MLPOptions",
+                "ConvEncoderOptions",
+                "ConvDecoderOptions",
+            ]:
                 c.act = None
                 assert c.act is None
             else:
@@ -178,7 +197,7 @@ def test_act():
 
         if "output_act" in fields:
             inputs = {
-                key: value for key, value in GOOD_INPUTS_1.items() if key in fields
+                key: value for key, value in MANDATORY_ARGS.items() if key in fields
             }
 
             for act in ActFunction:
@@ -196,7 +215,7 @@ def test_act():
 @pytest.mark.parametrize("config", [MLPConfig, ConvEncoderConfig, ConvDecoderConfig])
 def test_norm(config):
     fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
 
     for norm in ["batch", "syncbatch", "instance"]:
         inputs["norm"] = norm
@@ -214,7 +233,7 @@ def test_norm(config):
 @pytest.mark.parametrize("config", [MLPConfig, ConvEncoderConfig, ConvDecoderConfig])
 def test_adn_ordering(config):
     fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
 
     for adn_ordering in ["ADN", "ND", "A", ""]:
         inputs["adn_ordering"] = adn_ordering
@@ -239,7 +258,7 @@ def test_adn_ordering(config):
 def test_ensure_list_of_tuples(config, fields_to_test):
     fields = config.model_fields
     for field in fields_to_test:
-        inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+        inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
         inputs["spatial_dims"] = 2
         inputs["channels"] = [1, 1]
 
@@ -264,7 +283,7 @@ def test_ensure_list_of_tuples(config, fields_to_test):
 def test_ensure_tuple(config, fields_to_test):
     fields = config.model_fields
     for field in fields_to_test:
-        inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+        inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
         inputs["spatial_dims"] = 2
 
         for value in [3, (3, 3)]:
@@ -280,7 +299,7 @@ def test_ensure_tuple(config, fields_to_test):
 
 def test_check_pooling():
     fields = ConvEncoderConfig.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
     inputs["channels"] == [1, 1]
 
     for value in [(0, 1), (-1, 0, 1), None]:
@@ -316,7 +335,7 @@ def test_check_pooling():
 
 def test_check_unpooling():
     fields = ConvDecoderConfig.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
     inputs["channels"] == [1, 1]
 
     for value in [(0, 1), (-1, 0, 1), None]:
@@ -355,7 +374,7 @@ def test_check_unpooling():
 )
 def test_mlp_args(config):
     fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
 
     c = config(
         **inputs,
@@ -383,7 +402,7 @@ def test_mlp_args(config):
 @pytest.mark.parametrize("config", [CNNConfig, AutoEncoderConfig, VAEConfig])
 def test_conv_args(config):
     fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
 
     inputs["conv_args"] = {
         "channels": [1, 1],
@@ -409,7 +428,7 @@ def test_conv_args(config):
 
 def test_unconv_args():
     fields = GeneratorConfig.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
 
     inputs["conv_args"] = {
         "channels": [1, 1],
@@ -436,10 +455,25 @@ def test_unconv_args():
         GeneratorConfig(**inputs)
 
 
+@pytest.mark.parametrize("config", [AutoEncoderConfig, VAEConfig])
+def test_unpooling_mode(config):
+    fields = GeneratorConfig.model_fields
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
+    inputs["in_shape"] = (1, 6, 6)
+
+    inputs["unpooling_mode"] = "linear"
+    with pytest.raises(ValidationError):
+        config(**inputs)
+
+    inputs["unpooling_mode"] = "nearest"
+    c = config(**inputs)
+    assert c.unpooling_mode == "nearest"
+
+
 @pytest.mark.parametrize("config", [ResNetConfig, SEResNetConfig])
 def test_res_blocks(config):
-    fields = ResNetConfig.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    fields = config.model_fields
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
     inputs["bottleneck_reduction"] = 2
     inputs["n_res_blocks"] = (3, 3)
 
@@ -470,7 +504,7 @@ def test_res_blocks(config):
 @pytest.mark.parametrize("config", [UNetConfig, AttentionUNetConfig])
 def test_unet_channels(config):
     fields = config.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
     inputs["channels"] = [4]
 
     with pytest.raises(ValidationError):
@@ -479,7 +513,7 @@ def test_unet_channels(config):
 
 def test_vit_checks():
     fields = ViTConfig.model_fields
-    inputs = {key: value for key, value in GOOD_INPUTS_1.items() if key in fields}
+    inputs = {key: value for key, value in MANDATORY_ARGS.items() if key in fields}
     inputs["in_shape"] = (1, 6, 6)
 
     inputs["patch_size"] = 4
@@ -501,10 +535,11 @@ def test_vit_checks():
 def test_pretrained():
     for network in ImplementedNetwork:
         config = create_network_config(network)
-        fields = ViTConfig.model_fields
+        fields = config.model_fields
+        name = config.__name__.replace("Config", "")
         if "pretrained" in fields:
             inputs = {
-                key: value for key, value in GOOD_INPUTS_1.items() if key in fields
+                key: value for key, value in MANDATORY_ARGS.items() if key in fields
             }
 
             inputs["pretrained"] = None
@@ -513,10 +548,10 @@ def test_pretrained():
 
             inputs["pretrained"] = False
             c = config(**inputs)
-            assert c.pretrained
+            assert not c.pretrained
 
             inputs["pretrained"] = True
-            if "SENet" in config.name:
+            if "SEResNet" in name:
                 with pytest.raises(ValidationError):
                     config(**inputs)
             else:

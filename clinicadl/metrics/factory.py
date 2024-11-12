@@ -28,7 +28,8 @@ def get_metric_config(
     Returns
     -------
     MetricConfig
-        the config object.
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
     config = create_metric_config(name)(**kwargs)
     metric_class = getattr(metrics, config.name)
