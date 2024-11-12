@@ -6,9 +6,9 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     MetricConfig,
-    _MetricWithBackgroundConfig,
-    _MetricWithNotNansConfig,
-    _MetricWithReductionConfig,
+    _GetNotNansConfig,
+    _IncludeBackgroundConfig,
+    _ReductionConfig,
 )
 from .enum import (
     DistanceMetric,
@@ -28,7 +28,7 @@ __all__ = [
 
 
 class _BaseSegmentationMetricConfig(
-    _MetricWithBackgroundConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
+    _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
 ):
     """Base config class for segmentation metrics."""
 
@@ -69,7 +69,7 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
         return ImplementedMetric.IOU
 
 
-class GeneralizedDiceScoreConfig(MetricConfig, _MetricWithBackgroundConfig):
+class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     """Config class for generalized Dice score."""
 
     reduction: Union[
@@ -85,7 +85,7 @@ class GeneralizedDiceScoreConfig(MetricConfig, _MetricWithBackgroundConfig):
 
 
 class _BaseSurfaceDistanceConfig(
-    _MetricWithBackgroundConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
+    _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
 ):
     """Base config class for surface-distance-based metrics."""
 

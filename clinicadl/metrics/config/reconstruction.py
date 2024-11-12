@@ -11,7 +11,7 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import MetricConfig, _MetricWithNotNansConfig, _MetricWithReductionConfig
+from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
 from .enum import ImplementedMetric, Kernel
 
 __all__ = [
@@ -21,9 +21,7 @@ __all__ = [
 ]
 
 
-class PSNRMetricConfig(
-    MetricConfig, _MetricWithReductionConfig, _MetricWithNotNansConfig
-):
+class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     "Config class for PSNR."
 
     max_val: PositiveFloat
@@ -35,7 +33,7 @@ class PSNRMetricConfig(
         return ImplementedMetric.PSNR
 
 
-class _BaseSSIMConfig(_MetricWithReductionConfig, _MetricWithNotNansConfig):
+class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
     "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt

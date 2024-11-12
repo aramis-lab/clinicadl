@@ -68,18 +68,8 @@ BAD_INPUTS = [
     ("pos_embed_type", "abc"),
 ]
 GOOD_INPUTS = [
-    ("num_inputs", 1),
-    ("num_outputs", 1),
-    ("hidden_dims", [1, 2]),
     ("dropout", 0.5),
     ("bias", True),
-    ("spatial_dims", 1),
-    ("in_channels", 1),
-    ("channels", [1, 1]),
-    ("in_shape", (1, 6, 6)),
-    ("start_shape", (5, 5)),
-    ("latent_size", 1),
-    ("out_channels", 1),
     ("n_dense_layers", (1, 2)),
     ("init_features", 1),
     ("growth_rate", 1),
@@ -88,20 +78,17 @@ GOOD_INPUTS = [
     ("bottleneck_reduction", 1),
     ("se_reduction", 1),
     ("pos_embed_type", None),
-    ("patch_size", 3),
     ("embedding_dim", 1),
     ("num_layers", 1),
     ("num_heads", 1),
     ("mlp_dim", 1),
-    ("conv_args", {"channels": [1, 1]}),
     ("dropout", None),
     ("bias", False),
-    ("in_shape", (5,)),
-    ("start_shape", (5,)),
     ("out_channels", None),
     ("block_type", "bottleneck"),
     ("pos_embed_type", "sincos"),
     ("pos_embed_type", "learnable"),
+    ("conv_args", {"channels": [1]}),
 ]
 
 
@@ -148,15 +135,17 @@ def test_validation_pass(arg, value):
                 and arg == "out_channels"
                 and value is None
             ):
-                value = 1
-
-            c = config(**{arg: value}, **mandatory_inputs)
-            if arg == "conv_args" and name in ["CNN", "AutoEncoder", "VAE"]:
-                assert getattr(c, arg) == ConvEncoderOptions(**value)
-            elif arg == "conv_args" and name == "Generator":
-                assert getattr(c, arg) == ConvDecoderOptions(**value)
+                value_ = 1
             else:
-                assert getattr(c, arg) == value
+                value_ = value
+
+            c = config(**{arg: value_}, **mandatory_inputs)
+            if arg == "conv_args" and name in ["CNN", "AutoEncoder", "VAE"]:
+                assert getattr(c, arg) == ConvEncoderOptions(**value_)
+            elif arg == "conv_args" and name == "Generator":
+                assert getattr(c, arg) == ConvDecoderOptions(**value_)
+            else:
+                assert getattr(c, arg) == value_
 
 
 def test_act():

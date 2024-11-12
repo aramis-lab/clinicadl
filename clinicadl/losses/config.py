@@ -2,14 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type, Union
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     NonNegativeFloat,
     PositiveFloat,
     computed_field,
     field_validator,
 )
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedLoss, Order, Reduction
@@ -26,18 +25,14 @@ __all__ = [
     "SmoothL1LossConfig",
     "L1LossConfig",
     "MSELossConfig",
-    "create_loss_config",
+    "create_loss_function_config",
 ]
 
 
-class LossConfig(BaseModel, ABC):
+class LossConfig(ClinicaDLConfig, ABC):
     """Base config class for the loss function."""
 
     reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True, use_enum_values=True, validate_default=True
-    )
 
     @computed_field
     @property
@@ -46,15 +41,15 @@ class LossConfig(BaseModel, ABC):
         """The name of the loss."""
 
 
-class _LossWithWeightsConfig(LossConfig):
-    """Base config class for loss functions with a 'weight' argument."""
+class _WeightConfig(ClinicaDLConfig):
+    """Base config class for 'weight' argument."""
 
     weight: Union[
         Optional[List[NonNegativeFloat]], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class NLLLossConfig(_LossWithWeightsConfig):
+class NLLLossConfig(LossConfig, _WeightConfig):
     """Config class for Negative Log Likelihood loss."""
 
     ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -149,7 +144,7 @@ class BCEWithLogitsLossConfig(BCELossConfig):
             return (isinstance(item, float) or isinstance(item, int)) and item >= 0
 
 
-class MultiMarginLossConfig(_LossWithWeightsConfig):
+class MultiMarginLossConfig(LossConfig, _WeightConfig):
     """Config class for Multi Margin loss."""
 
     p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES

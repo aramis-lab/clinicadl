@@ -7,9 +7,6 @@ from clinicadl.networks import (
     get_network_from_config,
 )
 from clinicadl.networks.config import ImplementedNetwork, create_network_config
-from clinicadl.networks.config.cnns import AutoEncoderConfig
-from clinicadl.networks.config.mlp_conv import ConvEncoderOptions, MLPOptions
-from clinicadl.networks.factory import _update_config_with_defaults
 from clinicadl.networks.nn import AutoEncoder
 
 MANDATORY_ARGS = {

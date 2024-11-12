@@ -26,19 +26,19 @@ class MetricConfig(ClinicaDLConfig, ABC):
         """The name of the metric."""
 
 
-class _MetricWithBackgroundConfig(ClinicaDLConfig):
+class _IncludeBackgroundConfig(ClinicaDLConfig):
     """Base config class for 'include_background' parameter."""
 
     include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _MetricWithReductionConfig(ClinicaDLConfig):
+class _ReductionConfig(ClinicaDLConfig):
     """Base config class for 'reduction' parameter."""
 
     reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _MetricWithNotNansConfig(ClinicaDLConfig):
+class _GetNotNansConfig(ClinicaDLConfig):
     """Base config class for 'get_not_nans' parameter."""
 
     get_not_nans: bool = False

@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Set, Type, Union
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     NonNegativeFloat,
     NonNegativeInt,
     PositiveFloat,
@@ -12,6 +10,7 @@ from pydantic import (
     field_validator,
 )
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedLRScheduler, Mode, ThresholdMode
@@ -27,13 +26,8 @@ __all__ = [
 ]
 
 
-class LRSchedulerConfig(BaseModel, ABC):
+class LRSchedulerConfig(ClinicaDLConfig, ABC):
     """Base config class for the LR scheduler."""
-
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True, use_enum_values=True, validate_default=True
-    )
 
     @computed_field
     @property
@@ -49,26 +43,26 @@ class LRSchedulerConfig(BaseModel, ABC):
         return set()
 
 
-class _GammaConfig(LRSchedulerConfig):
-    """Base config class for LR schedulers with 'gamma' parameter."""
+class _GammaConfig(ClinicaDLConfig):
+    """Base config class for 'gamma' parameter."""
 
     gamma: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _FactorConfig(LRSchedulerConfig):
-    """Base config class for LR schedulers with 'factor' parameter."""
+class _FactorConfig(ClinicaDLConfig):
+    """Base config class for 'factor' parameter."""
 
     factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _TotalItersConfig(LRSchedulerConfig):
-    """Base config class for LR schedulers with 'total_iters' parameter."""
+class _TotalItersConfig(ClinicaDLConfig):
+    """Base config class for 'total_iters' parameter."""
 
     total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class _LastEpochConfig(LRSchedulerConfig):
-    """Base config class for LR schedulers with 'last_epoch' parameter."""
+class _LastEpochConfig(ClinicaDLConfig):
+    """Base config class for 'last_epoch' parameter."""
 
     last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
 
@@ -82,7 +76,9 @@ class _LastEpochConfig(LRSchedulerConfig):
         return v
 
 
-class ConstantLRConfig(_FactorConfig, _TotalItersConfig, _LastEpochConfig):
+class ConstantLRConfig(
+    LRSchedulerConfig, _FactorConfig, _TotalItersConfig, _LastEpochConfig
+):
     """Config class for ConstantLR scheduler."""
 
     @computed_field
@@ -92,7 +88,7 @@ class ConstantLRConfig(_FactorConfig, _TotalItersConfig, _LastEpochConfig):
         return ImplementedLRScheduler.CONSTANT
 
 
-class LinearLRConfig(_TotalItersConfig, _LastEpochConfig):
+class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
     """Config class for LinearLR scheduler."""
 
     start_factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -105,7 +101,7 @@ class LinearLRConfig(_TotalItersConfig, _LastEpochConfig):
         return ImplementedLRScheduler.LINEAR
 
 
-class StepLRConfig(_GammaConfig, _LastEpochConfig):
+class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """Config class for StepLR scheduler."""
 
     step_size: PositiveInt
@@ -117,7 +113,7 @@ class StepLRConfig(_GammaConfig, _LastEpochConfig):
         return ImplementedLRScheduler.STEP
 
 
-class MultiStepLRConfig(_GammaConfig, _LastEpochConfig):
+class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """Config class for MultiStepLR scheduler."""
 
     milestones: List[PositiveInt]
@@ -137,7 +133,7 @@ class MultiStepLRConfig(_GammaConfig, _LastEpochConfig):
         return sorted(v)
 
 
-class ReduceLROnPlateauConfig(_FactorConfig):
+class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
     """Config class for ReduceLROnPlateau scheduler."""
 
     mode: Union[Mode, DefaultFromLibrary] = DefaultFromLibrary.YES

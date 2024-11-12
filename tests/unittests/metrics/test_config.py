@@ -67,6 +67,7 @@ BAD_INPUTS = [
 ]
 
 GOOD_INPUTS = [
+    ("class_thresholds", (0.1, 0)),
     ("average", "macro"),
     ("metric_name", "recall"),
     ("compute_sample", True),
@@ -116,16 +117,20 @@ def test_validation_fail(arg, value):
     for metric in ImplementedMetric:
         config = create_metric_config(metric)
         fields = config.model_fields
-        if arg in fields:
-            if arg == "generalized_dice_reduction":
-                arg = "reduction"
+        if arg == "generalized_dice_reduction" and metric == "GeneralizedDiceScore":
+            arg_ = "reduction"
+        elif arg == "reduction" and metric == "GeneralizedDiceScore":
+            continue
+        else:
+            arg_ = arg
 
+        if arg_ in fields:
             mandatory_inputs = deepcopy(MANDATORY_FIELDS)
-            if arg in mandatory_inputs:
-                del mandatory_inputs[arg]
+            if arg_ in mandatory_inputs:
+                del mandatory_inputs[arg_]
 
             with pytest.raises(ValidationError):
-                config(**{arg: value}, **mandatory_inputs)
+                config(**{arg_: value}, **mandatory_inputs)
 
 
 @pytest.mark.parametrize(
@@ -136,16 +141,20 @@ def test_validation_pass(arg, value):
     for metric in ImplementedMetric:
         config = create_metric_config(metric)
         fields = config.model_fields
-        if arg in fields:
-            if arg == "generalized_dice_reduction":
-                arg = "reduction"
+        if arg == "generalized_dice_reduction" and metric == "GeneralizedDiceScore":
+            arg_ = "reduction"
+        elif arg == "reduction" and metric == "GeneralizedDiceScore":
+            continue
+        else:
+            arg_ = arg
 
+        if arg_ in fields:
             mandatory_inputs = deepcopy(MANDATORY_FIELDS)
-            if arg in mandatory_inputs:
-                del mandatory_inputs[arg]
+            if arg_ in mandatory_inputs:
+                del mandatory_inputs[arg_]
 
-            c = config(**{arg: value}, **mandatory_inputs)
-            assert getattr(c, arg) == value
+            c = config(**{arg_: value}, **mandatory_inputs)
+            assert getattr(c, arg_) == value
 
 
 @pytest.mark.parametrize(

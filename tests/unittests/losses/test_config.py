@@ -16,74 +16,72 @@ from clinicadl.losses.config import (
 )
 from clinicadl.losses.enum import ImplementedLoss
 
-BAD_INPUTS = {
-    "reduction": "none",
-    "weight": [1, -1, 2],
-    "ignore_index": -1,
-    "label_smoothing": 1.1,
-    "pos_weight": [1, -1, 2],
-    "delta": 0.0,
-    "beta": -0.1,
-    "p": 3,
-    "margin": None,
-    "log_target": None,
-}
+BAD_INPUTS = [
+    ("reduction", "none"),
+    ("weight", [1, -1, 2]),
+    ("ignore_index", -1),
+    ("label_smoothing", 1.1),
+    ("pos_weight", [1, -1, 2]),
+    ("delta", 0.0),
+    ("beta", -0.1),
+    ("p", 3),
+    ("margin", None),
+    ("log_target", None),
+]
 
-GOOD_INPUTS_1 = {
-    "reduction": "mean",
-    "weight": [1, 1, 2],
-    "ignore_index": -100,
-    "label_smoothing": 0.5,
-    "pos_weight": [1, 1, 2],
-    "delta": 0.1,
-    "beta": 0,
-    "p": 1,
-    "margin": -0.5,
-    "log_target": True,
-}
-
-GOOD_INPUTS_2 = {
-    "reduction": "sum",
-    "ignore_index": 0,
-    "p": 2,
-    "log_target": False,
-}
-
-
-def test_validation_fail():
-    for loss in ImplementedLoss:
-        config = create_loss_function_config(loss)
-        fields = config.model_fields
-        inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
-        for input, value in inputs.items():
-            with pytest.raises(ValidationError):
-                config(**{input: value})
+GOOD_INPUTS = [
+    ("reduction", "mean"),
+    ("weight", [1, 1, 2]),
+    ("ignore_index", -100),
+    ("label_smoothing", 0.5),
+    ("pos_weight", [1, 1, 2]),
+    ("delta", 0.1),
+    ("beta", 0),
+    ("p", 1),
+    ("margin", -0.5),
+    ("log_target", True),
+    ("reduction", "sum"),
+    ("ignore_index", 0),
+    ("p", 2),
+    ("log_target", False),
+]
 
 
 @pytest.mark.parametrize(
-    "good_inputs",
-    [
-        GOOD_INPUTS_1,
-        GOOD_INPUTS_2,
-    ],
+    "arg,value",
+    BAD_INPUTS,
 )
-def test_validation_pass(good_inputs):
+def test_validation_fail(arg, value):
     for loss in ImplementedLoss:
         config = create_loss_function_config(loss)
         fields = config.model_fields
-        inputs = {key: value for key, value in good_inputs.items() if key in fields}
-
-        if (
-            loss == "BCELoss" or loss == "BCEWithLogitsLoss"
-        ) and "weight" in good_inputs:
+        if arg in fields:
             with pytest.raises(ValidationError):
-                config(**{"weight": good_inputs["weight"]})
-            inputs["weight"] = None
+                config(**{arg: value})
 
-        c = config(**inputs)
-        for arg, value in inputs.items():
-            assert getattr(c, arg) == value
-        assert c.name == loss.value
+
+@pytest.mark.parametrize(
+    "arg,value",
+    GOOD_INPUTS,
+)
+def test_validation_pass(arg, value):
+    for loss in ImplementedLoss:
+        config = create_loss_function_config(loss)
+        fields = config.model_fields
+
+        if arg in fields:
+            if (loss == "BCELoss" or loss == "BCEWithLogitsLoss") and arg == "weight":
+                value_ = None
+            else:
+                value_ = value
+
+            c = config(**{arg: value_})
+            assert getattr(c, arg) == value_
+
+
+def test_weight_validator():
+    with pytest.raises(ValidationError):
+        BCELossConfig(weight=[1, 2])
 
 
 @pytest.mark.parametrize(

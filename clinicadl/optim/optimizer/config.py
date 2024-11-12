@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     NonNegativeFloat,
     PositiveFloat,
     computed_field,
@@ -11,6 +9,7 @@ from pydantic import (
     model_validator,
 )
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedOptimizer
@@ -26,7 +25,7 @@ __all__ = [
 ]
 
 
-class OptimizerConfig(BaseModel, ABC):
+class OptimizerConfig(ClinicaDLConfig, ABC):
     """Base config class for the optimizer."""
 
     lr: Union[
@@ -43,10 +42,6 @@ class OptimizerConfig(BaseModel, ABC):
     differentiable: Union[
         bool, Dict[str, bool], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True, use_enum_values=True, validate_default=True
-    )
 
     @computed_field
     @property
@@ -130,39 +125,39 @@ class OptimizerConfig(BaseModel, ABC):
         return groups
 
 
-class _CapturableConfig(OptimizerConfig):
-    """Base config class for optimizer with 'capturable' option."""
+class _CapturableConfig(ClinicaDLConfig):
+    """Base config class 'capturable' option."""
 
     capturable: Union[
         bool, Dict[str, bool], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class _FusedConfig(OptimizerConfig):
-    """Base config class for optimizer with 'fused' option."""
+class _FusedConfig(ClinicaDLConfig):
+    """Base config class 'fused' option."""
 
     fused: Union[
         Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class _EpsConfig(OptimizerConfig):
-    """Base config class for optimizer with 'eps' option."""
+class _EpsConfig(ClinicaDLConfig):
+    """Base config class 'eps' option."""
 
     eps: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class _MomentumConfig(OptimizerConfig):
-    """Base config class for optimizer with 'eps' option."""
+class _MomentumConfig(ClinicaDLConfig):
+    """Base config class 'eps' option."""
 
     momentum: Union[
         NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
 
-class AdadeltaConfig(_EpsConfig, _CapturableConfig):
+class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
     """Config class for Adadelta optimizer."""
 
     rho: Union[
@@ -181,7 +176,7 @@ class AdadeltaConfig(_EpsConfig, _CapturableConfig):
         return cls.validator_proba(v, ctx)
 
 
-class AdagradConfig(_EpsConfig, _FusedConfig):
+class AdagradConfig(OptimizerConfig, _EpsConfig, _FusedConfig):
     """Config class for Adagrad optimizer."""
 
     lr_decay: Union[
@@ -198,7 +193,7 @@ class AdagradConfig(_EpsConfig, _FusedConfig):
         return ImplementedOptimizer.ADAGRAD
 
 
-class AdamConfig(_EpsConfig, _CapturableConfig, _FusedConfig):
+class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
     """Config class for Adam optimizer."""
 
     betas: Union[
@@ -220,7 +215,7 @@ class AdamConfig(_EpsConfig, _CapturableConfig, _FusedConfig):
         return cls.validator_proba(v, ctx)
 
 
-class RMSpropConfig(_EpsConfig, _CapturableConfig, _MomentumConfig):
+class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumConfig):
     """Config class for RMSprop optimizer."""
 
     alpha: Union[
@@ -240,7 +235,7 @@ class RMSpropConfig(_EpsConfig, _CapturableConfig, _MomentumConfig):
         return cls.validator_proba(v, ctx)
 
 
-class SGDConfig(_FusedConfig, _MomentumConfig):
+class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
     """Config class for SGD optimizer."""
 
     dampening: Union[

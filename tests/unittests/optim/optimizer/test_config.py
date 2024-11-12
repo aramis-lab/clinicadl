@@ -11,98 +11,83 @@ from clinicadl.optim.optimizer.config import (
 )
 from clinicadl.optim.optimizer.enum import ImplementedOptimizer
 
-BAD_INPUTS = {
-    "lr": 0,
-    "rho": 1.1,
-    "eps": -0.1,
-    "weight_decay": -0.1,
-    "lr_decay": -0.1,
-    "initial_accumulator_value": -0.1,
-    "betas": (0.9, 1.1),
-    "alpha": 1.1,
-    "momentum": -0.1,
-    "dampening": -0.1,
-}
+BAD_INPUTS = [
+    ("lr", 0),
+    ("rho", 1.1),
+    ("eps", -0.1),
+    ("weight_decay", -0.1),
+    ("lr_decay", -0.1),
+    ("initial_accumulator_value", -0.1),
+    ("betas", (0.9, 1.1)),
+    ("alpha", 1.1),
+    ("momentum", -0.1),
+    ("dampening", -0.1),
+]
 
-GOOD_INPUTS_1 = {
-    "lr": 0.1,
-    "rho": 0,
-    "eps": 0,
-    "weight_decay": 0,
-    "foreach": None,
-    "capturable": False,
-    "maximize": True,
-    "differentiable": False,
-    "fused": None,
-    "lr_decay": 0,
-    "initial_accumulator_value": 0,
-    "betas": (0.0, 0.0),
-    "amsgrad": True,
-    "alpha": 0.0,
-    "momentum": 0,
-    "centered": True,
-    "dampening": 0,
-    "nesterov": True,
-    "freeze": "params1",
-}
-
-GOOD_INPUTS_2 = {
-    "foreach": True,
-    "fused": False,
-    "freeze": ["params1", "params2"],
-}
+GOOD_INPUTS = [
+    ("lr", 0.1),
+    ("rho", 0),
+    ("eps", 0),
+    ("weight_decay", 0),
+    ("foreach", None),
+    ("capturable", False),
+    ("maximize", True),
+    ("differentiable", False),
+    ("fused", None),
+    ("lr_decay", 0),
+    ("initial_accumulator_value", 0),
+    ("betas", (0.0, 0.0)),
+    ("amsgrad", True),
+    ("alpha", 0.0),
+    ("momentum", 0),
+    ("centered", True),
+    ("dampening", 0),
+    ("nesterov", True),
+    ("freeze", "params1"),
+    ("foreach", True),
+    ("fused", False),
+    ("freeze", ["params1", "params2"]),
+]
 
 
-def test_validation_fail():
+@pytest.mark.parametrize("arg,value", BAD_INPUTS)
+def test_validation_fail(arg, value):
     for optimizer in ImplementedOptimizer:
         config = create_optimizer_config(optimizer)
         fields = config.model_fields
-        inputs = {key: value for key, value in BAD_INPUTS.items() if key in fields}
-        for input, value in inputs.items():
-            with pytest.raises(ValidationError):
-                config(**{input: value})
 
-        # test dict inputs
-        inputs = {
-            key: {"group_1": value, "ELSE": value}
-            for key, value in inputs.items()
-            if key != "freeze"
-        }
-        for input, value in inputs.items():
+        if arg in fields:
             with pytest.raises(ValidationError):
-                config(**{input: value})
+                config(**{arg: value})
+
+            # test dict inputs
+            if arg != "freeze":
+                dict_value = {"group_1": value, "ELSE": value}
+                with pytest.raises(ValidationError):
+                    config(**{arg: dict_value})
 
 
 @pytest.mark.parametrize(
-    "good_inputs",
-    [
-        GOOD_INPUTS_1,
-        GOOD_INPUTS_2,
-    ],
+    "arg,value",
+    GOOD_INPUTS,
 )
-def test_validation_pass(good_inputs):
+def test_validation_pass(arg, value):
     for optimizer in ImplementedOptimizer:
         config = create_optimizer_config(optimizer)
-
         fields = config.model_fields
-        inputs = {key: value for key, value in good_inputs.items() if key in fields}
-        c = config(**inputs)
-        for arg, value in inputs.items():
+
+        if arg in fields:
+            c = config(**{arg: value})
             if arg == "freeze":
                 assert getattr(c, arg) == value if isinstance(value, list) else [value]
             else:
                 assert getattr(c, arg) == value
-        assert c.name == optimizer.value
 
-        # test dict inputs
-        inputs = {
-            key: {"group_1": value, "ELSE": value}
-            for key, value in inputs.items()
-            if key != "freeze"
-        }
-        c = config(**inputs)
-        for arg, value in inputs.items():
-            assert getattr(c, arg) == value
+            # test dict inputs
+            if arg != "freeze":
+                dict_value = {"group_1": value, "ELSE": value}
+                c = config(**{arg: dict_value})
+                assert getattr(c, arg) == dict_value
 
 
 @pytest.mark.parametrize(

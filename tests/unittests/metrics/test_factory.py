@@ -1,5 +1,6 @@
 import pytest
 from monai.metrics import SSIMMetric
+from pydantic import ValidationError
 from torch.nn import MSELoss
 
 from clinicadl.metrics.config import ImplementedMetric, create_metric_config
@@ -51,4 +52,4 @@ def test_get_metric_config():
     assert config.spatial_dims == 3
 
     with pytest.raises(ValueError):
-        get_metric_config("abc", spatial_dims=3)
+        get_metric_config("abc", **MANDATORY_ARGS)
