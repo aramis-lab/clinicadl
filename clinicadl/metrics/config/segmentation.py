@@ -5,6 +5,7 @@ from pydantic import NonNegativeFloat, PositiveInt, computed_field, field_valida
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
+    MetricConfig,
     _MetricWithBackgroundConfig,
     _MetricWithNotNansConfig,
     _MetricWithReductionConfig,
@@ -34,7 +35,7 @@ class _BaseSegmentationMetricConfig(
     ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class DiceMetricConfig(_BaseSegmentationMetricConfig):
+class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
     """Config class for Dice score."""
 
     num_classes: Union[
@@ -58,7 +59,7 @@ class DiceMetricConfig(_BaseSegmentationMetricConfig):
         return v
 
 
-class MeanIoUConfig(_BaseSegmentationMetricConfig):
+class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
     """Config class for IoU metric."""
 
     @computed_field
@@ -68,7 +69,7 @@ class MeanIoUConfig(_BaseSegmentationMetricConfig):
         return ImplementedMetric.IOU
 
 
-class GeneralizedDiceScoreConfig(_MetricWithBackgroundConfig):
+class GeneralizedDiceScoreConfig(MetricConfig, _MetricWithBackgroundConfig):
     """Config class for generalized Dice score."""
 
     reduction: Union[
@@ -91,7 +92,7 @@ class _BaseSurfaceDistanceConfig(
     distance_metric: Union[DistanceMetric, DefaultFromLibrary] = DefaultFromLibrary.YES
 
 
-class SurfaceDistanceMetricConfig(_BaseSurfaceDistanceConfig):
+class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """Config class for Surface Distance metric."""
 
     symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -103,7 +104,7 @@ class SurfaceDistanceMetricConfig(_BaseSurfaceDistanceConfig):
         return ImplementedMetric.SURF_DIST
 
 
-class HausdorffDistanceMetricConfig(_BaseSurfaceDistanceConfig):
+class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """Config class for Hausdorff distance."""
 
     percentile: Union[
@@ -128,7 +129,7 @@ class HausdorffDistanceMetricConfig(_BaseSurfaceDistanceConfig):
         return v
 
 
-class SurfaceDiceMetricConfig(_BaseSurfaceDistanceConfig):
+class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """Config class for (normalized) surface Dice score."""
 
     class_thresholds: Tuple[NonNegativeFloat, ...]
