@@ -548,7 +548,7 @@ def test_pretrained():
 
             inputs["pretrained"] = False
             c = config(**inputs)
-            assert not c.pretrained
+            assert not c.pretrained and c.pretrained is not None
 
             inputs["pretrained"] = True
             if "SEResNet" in name:
