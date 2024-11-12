@@ -15,7 +15,7 @@ from clinicadl.transforms.config import TransformsConfig
 
 
 class CapsReader:
-    def __init__(self, caps_directory: Path, manager: ExperimentManager):
+    def __init__(self, caps_directory: Path):
         """TO COMPLETE"""
         pass
 
