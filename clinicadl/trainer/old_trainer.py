@@ -532,7 +532,7 @@ class Trainer:
 
         early_stopping = EarlyStopping(
             "min",
-            min_delta=self.config.early_stopping.tolerance,
+            min_delta=self.config.early_stopping.min_delta,
             patience=self.config.early_stopping.patience,
         )
         metrics_valid = {"loss": None}

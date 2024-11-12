@@ -14,8 +14,8 @@ patience = click.option(
 )
 tolerance = click.option(
     "--tolerance",
-    type=get_type("tolerance", EarlyStoppingConfig),
-    default=get_default("tolerance", EarlyStoppingConfig),
+    type=get_type("min_delta", EarlyStoppingConfig),
+    default=get_default("min_delta", EarlyStoppingConfig),
     help="Value for early stopping tolerance.",
     show_default=True,
 )
