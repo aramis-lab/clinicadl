@@ -17,13 +17,12 @@ from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.experiment_manager.config import MapsManagerConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
-from clinicadl.optim.optimizers.config import OptimizerConfig
+from clinicadl.optim.early_stopping import EarlyStoppingConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.config import SplitConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
-from clinicadl.utils.early_stopping.config import EarlyStoppingConfig
 from clinicadl.utils.enum import Task
 
 logger = getLogger("clinicadl.training_config")

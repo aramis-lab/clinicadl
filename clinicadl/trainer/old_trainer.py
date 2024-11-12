@@ -17,7 +17,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.splitter.split_utils import find_finished_splits, find_stopped_splits
 from clinicadl.dataset.caps_dataset import return_dataset
-from clinicadl.utils.early_stopping.early_stopping import EarlyStopping
+from clinicadl.optim.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils import cluster
@@ -27,7 +27,6 @@ from clinicadl.metrics.old_metrics.metric_module import RetainBest
 from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.utils.seed import get_seed
-from clinicadl.utils.enum import Task
 from clinicadl.utils.iotools.trainer_utils import (
     create_parameters_dict,
     patch_to_read_json,
@@ -37,7 +36,6 @@ from clinicadl.predictor.old_predictor import Predictor
 from clinicadl.predictor.config import PredictConfig
 from clinicadl.splitter.old_splitter import Splitter
 from clinicadl.splitter.config import SplitterConfig
-from clinicadl.transforms.config import TransformsConfig
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback
