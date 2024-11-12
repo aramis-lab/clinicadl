@@ -1,5 +1,4 @@
-from typing import List, Callable
-
+from typing import Callable, List
 import torchio
 
 
