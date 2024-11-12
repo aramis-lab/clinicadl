@@ -74,9 +74,9 @@ def DeepLearningPrepareData(
     mod_subfolder, file_type = compute_folder_and_file_type(config, from_bids)
 
     # Input file:
-    input_files = clinicadl_file_reader(
-        subjects, sessions, input_directory, file_type.model_dump()
-    )[0]
+    input_files = clinicadl_file_reader(subjects, sessions, input_directory, file_type)[
+        0
+    ]
     logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):

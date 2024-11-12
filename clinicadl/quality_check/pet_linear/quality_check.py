@@ -97,7 +97,7 @@ def quality_check(
     )
     file_type = pet_linear_nii(config.preprocessing)
     input_files = clinicadl_file_reader(
-        subjects, sessions, config.data.caps_directory, file_type.model_dump()
+        subjects, sessions, config.data.caps_directory, file_type
     )[0]
 
     def write_output_data(file):

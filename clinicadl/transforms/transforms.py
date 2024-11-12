@@ -1,4 +1,4 @@
-from typing import List
+from typing import Callable, List
 
 import torchio
 
@@ -6,9 +6,9 @@ import torchio
 class Transforms:
     def __init__(
         self,
-        data_augmentation=List[torchio],
-        image_transforms=List[torchio],
-        object_transforms=List[torchio],
+        data_augmentation=List[Callable],
+        image_transforms=List[Callable],
+        object_transforms=List[Callable],
     ) -> None:
         """TO COMPLETE"""
         self.data_augmentation = data_augmentation

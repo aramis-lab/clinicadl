@@ -1,23 +1,28 @@
 import hashlib
 import os
+import re
 import shutil
 import ssl
 import tempfile
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from functools import partial
 from glob import glob
+from multiprocessing import Manager
 from pathlib import Path, PurePath
 from time import localtime, strftime, time
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+import numpy as np
 import pandas as pd
-from pydantic import BaseModel
+from joblib import Parallel, delayed
+from pydantic import BaseModel, field_validator, model_validator
 
 from clinicadl.utils.exceptions import (
     ClinicaDLBIDSError,
     ClinicaDLCAPSError,
+    ClinicaDLException,
 )
 from clinicadl.utils.logger import cprint
 
@@ -28,6 +33,20 @@ class FileType(BaseModel):
     pattern: str
     description: str
     needed_pipeline: Optional[str] = None
+
+    @field_validator("pattern", mode="before")
+    def check_pattern(cls, v):
+        if v[0] == "/":
+            raise ValueError(
+                "pattern argument cannot start with char: / (does not work in os.path.join function). "
+                "If you want to indicate the exact name of the file, use the format "
+                "directory_name/filename.extension or filename.extension in the pattern argument."
+            )
+        return v
+
+
+class FileReader(BaseModel):
+    caps_directory: Path
 
 
 def container_from_filename(bids_or_caps_filename: Path) -> Path:
@@ -51,8 +70,6 @@ def container_from_filename(bids_or_caps_filename: Path) -> Path:
     >>> container_from_filename('caps/subjects/sub-CLNC01/ses-M000/dwi/preprocessing/sub-CLNC01_ses-M000_preproc.nii')
     'subjects/sub-CLNC01/ses-M000'
     """
-    import os
-    import re
 
     m = re.search(r"(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)", bids_or_caps_filename)
     if not m:
@@ -97,9 +114,6 @@ def read_participant_tsv(tsv_file: Path) -> Tuple[List[str], List[str]]:
     >>> read_participant_tsv("participant.tsv")
     (["sub-01", "sub-01", "sub-02"], ["ses-M000", "ses-M006", "ses-M000"])
     """
-    import pandas as pd
-
-    from clinicadl.utils.exceptions import ClinicaDLException
 
     try:
         df = pd.read_csv(tsv_file, sep="\t")
@@ -406,7 +420,6 @@ def check_caps_folder(caps_directory: Path) -> None:
     -----
     Keep in mind that a CAPS folder can be empty.
     """
-    from clinicadl.utils.exceptions import ClinicaDLCAPSError
 
     _common_checks(caps_directory, "CAPS")
 
@@ -598,8 +611,6 @@ def _get_entities(files: List[Path], common_suffix: str) -> dict:
         The entities dictionary.
     """
 
-    from collections import defaultdict
-
     found_entities = defaultdict(set)
     for f in files:
         entities = get_filename_no_ext(f.name).rstrip(common_suffix).split("_")
@@ -682,79 +693,26 @@ _check_common_suffix = partial(
 
 
 def _select_run(files: List[str]) -> str:
-    import numpy as np
-
     runs = [int(_get_run_number(f)) for f in files]
     return files[np.argmax(runs)]
 
 
 def _get_run_number(filename: str) -> str:
-    import re
-
     matches = re.match(r".*_run-(\d+).*", filename)
     if matches:
         return matches[1]
     raise ValueError(f"Filename {filename} should contain one and only one run entity.")
 
 
-def _check_information(information: Dict) -> None:
-    if not isinstance(information, (dict, list)):
-        raise TypeError(
-            "A dict or list of dicts must be provided for the argument 'information'"
-        )
-
-    if isinstance(information, list):
-        for item in information:
-            if not all(elem in item for elem in ["pattern", "description"]):
-                raise ValueError(
-                    "'information' must contain the keys 'pattern' and 'description'"
-                )
-
-            if not all(
-                elem in ["pattern", "description", "needed_pipeline"]
-                for elem in item.keys()
-            ):
-                raise ValueError(
-                    "'information' can only contain the keys 'pattern', 'description' and 'needed_pipeline'"
-                )
-
-            if item["pattern"][0] == "/":
-                raise ValueError(
-                    "pattern argument cannot start with char: / (does not work in os.path.join function). "
-                    "If you want to indicate the exact name of the file, use the format "
-                    "directory_name/filename.extension or filename.extension in the pattern argument."
-                )
-    else:
-        if not all(elem in information for elem in ["pattern", "description"]):
-            raise ValueError(
-                "'information' must contain the keys 'pattern' and 'description'"
-            )
-
-        if not all(
-            elem in ["pattern", "description", "needed_pipeline"]
-            for elem in information.keys()
-        ):
-            raise ValueError(
-                "'information' can only contain the keys 'pattern', 'description' and 'needed_pipeline'"
-            )
-
-        if information["pattern"][0] == "/":
-            raise ValueError(
-                "pattern argument cannot start with char: / (does not work in os.path.join function). "
-                "If you want to indicate the exact name of the file, use the format "
-                "directory_name/filename.extension or filename.extension in the pattern argument."
-            )
-
-
-def _format_errors(errors: List, information: Dict) -> str:
+def _format_errors(errors: List, file_type: FileType) -> str:
     error_message = (
         f"Clinica encountered {len(errors)} "
-        f"problem(s) while getting {information['description']}:\n"
+        f"problem(s) while getting {file_type.description}:\n"
     )
-    if "needed_pipeline" in information and information["needed_pipeline"]:
+    if file_type.needed_pipeline:
         error_message += (
             "Please note that the following clinica pipeline(s) must "
-            f"have run to obtain these files: {information['needed_pipeline']}\n"
+            f"have run to obtain these files: {file_type.needed_pipeline}\n"
         )
     error_message += "\n".join(errors)
 
@@ -765,7 +723,7 @@ def clinicadl_file_reader(
     subjects: List[str],
     sessions: List[str],
     input_directory: Path,
-    information: Dict,
+    file_type: Union[FileType, Dict],
     raise_exception: bool = True,
     n_procs: int = 1,
 ):
@@ -902,10 +860,9 @@ def clinicadl_file_reader(
     or even more precise: 't1/freesurfer_cross_sectional/sub-*_ses-*/surf/rh.white'
     It then gives: ['/caps/subjects/sub-ADNI011S4105/ses-M000/t1/freesurfer_cross_sectional/sub-ADNI011S4105_ses-M000/surf/rh.white']
     """
-    from clinicadl.utils.exceptions import ClinicaDLBIDSError, ClinicaDLCAPSError
+    if isinstance(file_type, Dict):
+        file_type = FileType(**file_type)
 
-    _check_information(information)
-    pattern = information["pattern"]
     is_bids = determine_caps_or_bids(input_directory)
     if is_bids:
         check_bids_folder(input_directory)
@@ -923,10 +880,10 @@ def clinicadl_file_reader(
         subjects,
         sessions,
         is_bids,
-        pattern,
+        file_type.pattern,
         n_procs=n_procs,
     )
-    error_message = _format_errors(errors_encountered, information)
+    error_message = _format_errors(errors_encountered, file_type)
     if len(errors_encountered) > 0 and raise_exception:
         if is_bids:
             raise ClinicaDLBIDSError(error_message)
@@ -944,10 +901,6 @@ def _read_files_parallel(
     pattern: str,
     n_procs: int,
 ) -> Tuple[List[str], List[str]]:
-    from multiprocessing import Manager
-
-    from joblib import Parallel, delayed
-
     manager = Manager()
     shared_results = manager.list()
     shared_errors_encountered = manager.list()

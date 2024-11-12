@@ -99,7 +99,7 @@ def cli(generated_caps_directory, n_proc, **kwargs):
         [participant_id],
         [session_id],
         caps_config.data.caps_dict[cohort],
-        file_type.model_dump(),
+        file_type,
     )
     image_nii = nib.loadsave.load(image_paths[0][0])
     # assert isinstance(image_nii, nib.nifti1.Nifti1Image)
