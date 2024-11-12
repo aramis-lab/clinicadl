@@ -24,8 +24,8 @@ from clinicadl.networks.factory import (
     create_network_config,
     get_network_from_config,
 )
-from clinicadl.optim.optimizer.config import AdamConfig, OptimizerConfig
-from clinicadl.optim.optimizer.factory import get_optimizer
+from clinicadl.optim.optimizers.config import AdamConfig, OptimizerConfig
+from clinicadl.optim.optimizers.factory import get_optimizer
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split import get_single_split, split_tsv

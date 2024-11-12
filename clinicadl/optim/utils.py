@@ -1,5 +1,5 @@
-from .lr_scheduler import LRSchedulerConfig
-from .optimizer import OptimizerConfig
+from .lr_schedulers import LRSchedulerConfig
+from .optimizers import OptimizerConfig
 
 
 def check_optimizer_scheduler_consistency(

@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optim.lr_scheduler.config import (
+from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
     LinearLRConfig,
     MultiStepLRConfig,
@@ -11,7 +11,7 @@ from clinicadl.optim.lr_scheduler.config import (
     StepLRConfig,
     create_lr_scheduler_config,
 )
-from clinicadl.optim.lr_scheduler.enum import ImplementedLRScheduler
+from clinicadl.optim.lr_schedulers.enum import ImplementedLRScheduler
 
 MANDATORY_FIELDS = {"step_size": 1, "milestones": [1, 2]}
 BAD_INPUTS = [

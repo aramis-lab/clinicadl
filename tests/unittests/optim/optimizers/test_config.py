@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.optim.optimizer.config import (
+from clinicadl.optim.optimizers.config import (
     AdadeltaConfig,
     AdagradConfig,
     AdamConfig,
@@ -9,7 +9,7 @@ from clinicadl.optim.optimizer.config import (
     SGDConfig,
     create_optimizer_config,
 )
-from clinicadl.optim.optimizer.enum import ImplementedOptimizer
+from clinicadl.optim.optimizers.enum import ImplementedOptimizer
 
 BAD_INPUTS = [
     ("lr", 0),
