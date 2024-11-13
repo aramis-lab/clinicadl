@@ -1,31 +1,48 @@
-from typing import Optional, Sequence, Union
+from typing import Sequence, Union
 
-from pydantic import PositiveFloat, PositiveInt, computed_field
+from pydantic import PositiveInt, computed_field, field_validator
 
-from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetworks, NetworkConfig
+from .base import (
+    ImplementedNetwork,
+    NetworkConfig,
+    _DropOutConfig,
+    _FullyConvConfig,
+    _MandatoryActConfig,
+    _OutputActConfig,
+)
+
+__all__ = [
+    "UNetConfig",
+    "AttentionUNetConfig",
+]
 
 
-class UNetConfig(NetworkConfig):
+class UNetConfig(
+    NetworkConfig,
+    _FullyConvConfig,
+    _MandatoryActConfig,
+    _OutputActConfig,
+    _DropOutConfig,
+):
     """Config class for UNet."""
 
-    spatial_dims: PositiveInt
-    in_channels: PositiveInt
     out_channels: PositiveInt
     channels: Union[Sequence[PositiveInt], DefaultFromLibrary] = DefaultFromLibrary.YES
-    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
-    output_act: Union[
-        Optional[ActivationParameters], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.UNET
+        return ImplementedNetwork.UNET
+
+    @field_validator("channels")
+    @classmethod
+    def channels_validator(cls, v):
+        if v != DefaultFromLibrary.YES and isinstance(v, Sequence) and len(v) < 2:
+            raise ValueError(f"length of channels must be no less than 2. Got {v}")
+        return v
 
 
 class AttentionUNetConfig(UNetConfig):
@@ -33,6 +50,6 @@ class AttentionUNetConfig(UNetConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
-        return ImplementedNetworks.ATT_UNET
+        return ImplementedNetwork.ATT_UNET

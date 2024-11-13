@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from monai.networks.layers.factories import Conv, Norm, Pool
 from monai.networks.layers.utils import get_act_layer
-from monai.utils import ensure_tuple_rep
 from torch.hub import load_state_dict_from_url
 from torchvision.models.resnet import (
     ResNet18_Weights,
@@ -17,6 +16,8 @@ from torchvision.models.resnet import (
     ResNet101_Weights,
     ResNet152_Weights,
 )
+
+from clinicadl.networks.nn.utils import ensure_tuple
 
 from .layers.resnet import ResNetBlock, ResNetBottleneck
 from .layers.senet import SEResNetBlock, SEResNetBottleneck
@@ -54,7 +55,7 @@ class GeneralResNet(nn.Module):
         self.in_channels = in_channels
         self.num_outputs = num_outputs
         self.block_type = block_type
-        self._check_args_consistency(n_res_blocks, n_features)
+        check_res_blocks(n_res_blocks, n_features)
         self.n_res_blocks = n_res_blocks
         self.n_features = n_features
         self.bottleneck_reduction = bottleneck_reduction
@@ -62,8 +63,12 @@ class GeneralResNet(nn.Module):
         self.act = act
         self.squeeze_excitation = True if se_reduction else False
 
-        self.init_conv_size = ensure_tuple_rep(init_conv_size, spatial_dims)
-        self.init_conv_stride = ensure_tuple_rep(init_conv_stride, spatial_dims)
+        self.init_conv_size = ensure_tuple(
+            init_conv_size, spatial_dims, "init_conv_size"
+        )
+        self.init_conv_stride = ensure_tuple(
+            init_conv_stride, spatial_dims, "init_conv_stride"
+        )
 
         block, in_planes = self._get_block(block_type)
 
@@ -149,9 +154,7 @@ class GeneralResNet(nn.Module):
             else:
                 block = ResNetBlock
         elif block_type == ResNetBlockType.BOTTLENECK:
-            in_planes = self._bottleneck_reduce(
-                self.n_features, self.bottleneck_reduction
-            )
+            in_planes = bottleneck_reduce(self.n_features, self.bottleneck_reduction)
             if self.squeeze_excitation:
                 block = SEResNetBottleneck
                 block.reduction = self.se_reduction
@@ -159,7 +162,7 @@ class GeneralResNet(nn.Module):
                 block = ResNetBottleneck
             block.expansion = self.bottleneck_reduction
 
-        return block, in_planes
+        return block, in_planes  # pylint: disable=possibly-used-before-assignment
 
     def _get_layers(self):
         """
@@ -244,40 +247,38 @@ class GeneralResNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(torch.as_tensor(m.bias), 0)
 
-    @classmethod
-    def _bottleneck_reduce(
-        cls, n_features: Sequence[int], bottleneck_reduction: int
-    ) -> Sequence[int]:
-        """
-        Finds number of feature maps for the bottleneck layers.
-        """
-        reduced_features = []
-        for n in n_features:
-            if n % bottleneck_reduction != 0:
-                raise ValueError(
-                    "All elements of n_features must be divisible by bottleneck_reduction. "
-                    f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
-                )
-            reduced_features.append(n // bottleneck_reduction)
 
-        return reduced_features
-
-    @classmethod
-    def _check_args_consistency(
-        cls, n_res_blocks: Sequence[int], n_features: Sequence[int]
-    ) -> None:
-        """
-        Checks consistency between `n_res_blocks` and `n_features`.
-        """
-        if not isinstance(n_res_blocks, Sequence):
-            raise ValueError(f"n_res_blocks must be a sequence, got {n_res_blocks}")
-        if not isinstance(n_features, Sequence):
-            raise ValueError(f"n_features must be a sequence, got {n_features}")
-        if len(n_features) != len(n_res_blocks):
+def bottleneck_reduce(
+    n_features: Sequence[int], bottleneck_reduction: int
+) -> Sequence[int]:
+    """
+    Finds number of feature maps for the bottleneck layers.
+    """
+    reduced_features = []
+    for n in n_features:
+        if n % bottleneck_reduction != 0:
             raise ValueError(
-                f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
-                f"and n_res_blocks={n_res_blocks}"
+                "All elements of n_features must be divisible by bottleneck_reduction. "
+                f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
             )
+        reduced_features.append(n // bottleneck_reduction)
+
+    return reduced_features
+
+
+def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> None:
+    """
+    Checks consistency between `n_res_blocks` and `n_features`.
+    """
+    if not isinstance(n_res_blocks, Sequence):
+        raise ValueError(f"n_res_blocks must be a sequence, got {n_res_blocks}")
+    if not isinstance(n_features, Sequence):
+        raise ValueError(f"n_features must be a sequence, got {n_features}")
+    if len(n_features) != len(n_res_blocks):
+        raise ValueError(
+            f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
+            f"and n_res_blocks={n_res_blocks}"
+        )
 
 
 class ResNet(GeneralResNet):

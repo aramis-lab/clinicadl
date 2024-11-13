@@ -1,7 +1,6 @@
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.losses import ImplementedLoss
 from clinicadl.losses.config import (
     BCELossConfig,
     BCEWithLogitsLossConfig,
@@ -13,76 +12,76 @@ from clinicadl.losses.config import (
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
-    create_loss_config,
+    create_loss_function_config,
 )
+from clinicadl.losses.enum import ImplementedLoss
+
+BAD_INPUTS = [
+    ("reduction", "none"),
+    ("weight", [1, -1, 2]),
+    ("ignore_index", -1),
+    ("label_smoothing", 1.1),
+    ("pos_weight", [1, -1, 2]),
+    ("delta", 0.0),
+    ("beta", -0.1),
+    ("p", 3),
+    ("margin", None),
+    ("log_target", None),
+]
+
+GOOD_INPUTS = [
+    ("reduction", "mean"),
+    ("weight", [1, 1, 2]),
+    ("ignore_index", -100),
+    ("label_smoothing", 0.5),
+    ("pos_weight", [1, 1, 2]),
+    ("delta", 0.1),
+    ("beta", 0),
+    ("p", 1),
+    ("margin", -0.5),
+    ("log_target", True),
+    ("reduction", "sum"),
+    ("ignore_index", 0),
+    ("p", 2),
+    ("log_target", False),
+]
 
 
 @pytest.mark.parametrize(
-    "config,args",
-    [
-        (L1LossConfig, {"reduction": "none"}),
-        (MSELossConfig, {"reduction": "none"}),
-        (CrossEntropyLossConfig, {"reduction": "none"}),
-        (CrossEntropyLossConfig, {"weight": [1, -1, 2]}),
-        (CrossEntropyLossConfig, {"ignore_index": -1}),
-        (CrossEntropyLossConfig, {"label_smoothing": 1.1}),
-        (NLLLossConfig, {"reduction": "none"}),
-        (NLLLossConfig, {"weight": [1, -1, 2]}),
-        (NLLLossConfig, {"ignore_index": -1}),
-        (KLDivLossConfig, {"reduction": "none"}),
-        (BCELossConfig, {"reduction": "none"}),
-        (BCELossConfig, {"weight": [0, 1]}),
-        (BCEWithLogitsLossConfig, {"reduction": "none"}),
-        (BCEWithLogitsLossConfig, {"weight": [0, 1]}),
-        (BCEWithLogitsLossConfig, {"pos_weight": [[1, -1, 2]]}),
-        (BCEWithLogitsLossConfig, {"pos_weight": [["a", "b"]]}),
-        (HuberLossConfig, {"reduction": "none"}),
-        (HuberLossConfig, {"delta": 0.0}),
-        (SmoothL1LossConfig, {"reduction": "none"}),
-        (SmoothL1LossConfig, {"beta": -1.0}),
-        (MultiMarginLossConfig, {"reduction": "none"}),
-        (MultiMarginLossConfig, {"p": 3}),
-        (MultiMarginLossConfig, {"weight": [1, -1, 2]}),
-    ],
+    "arg,value",
+    BAD_INPUTS,
 )
-def test_validation_fail(config, args):
+def test_validation_fail(arg, value):
+    for loss in ImplementedLoss:
+        config = create_loss_function_config(loss)
+        fields = config.model_fields
+        if arg in fields:
+            with pytest.raises(ValidationError):
+                config(**{arg: value})
+
+
+@pytest.mark.parametrize(
+    "arg,value",
+    GOOD_INPUTS,
+)
+def test_validation_pass(arg, value):
+    for loss in ImplementedLoss:
+        config = create_loss_function_config(loss)
+        fields = config.model_fields
+
+        if arg in fields:
+            if (loss == "BCELoss" or loss == "BCEWithLogitsLoss") and arg == "weight":
+                value_ = None
+            else:
+                value_ = value
+
+            c = config(**{arg: value_})
+            assert getattr(c, arg) == value_
+
+
+def test_weight_validator():
     with pytest.raises(ValidationError):
-        config(**args)
-
-
-@pytest.mark.parametrize(
-    "config,args",
-    [
-        (L1LossConfig, {"reduction": "mean"}),
-        (MSELossConfig, {"reduction": "mean"}),
-        (
-            CrossEntropyLossConfig,
-            {
-                "reduction": "mean",
-                "weight": [1, 0, 2],
-                "ignore_index": 1,
-                "label_smoothing": 0.5,
-            },
-        ),
-        (NLLLossConfig, {"reduction": "mean", "weight": [1, 0, 2], "ignore_index": 1}),
-        (KLDivLossConfig, {"reduction": "mean", "log_target": True}),
-        (BCELossConfig, {"reduction": "sum", "weight": None}),
-        (
-            BCEWithLogitsLossConfig,
-            {"reduction": "sum", "weight": None, "pos_weight": [[1, 0, 2]]},
-        ),
-        (HuberLossConfig, {"reduction": "sum", "delta": 0.1}),
-        (SmoothL1LossConfig, {"reduction": "sum", "beta": 0.0}),
-        (
-            MultiMarginLossConfig,
-            {"reduction": "sum", "p": 1, "margin": -0.1, "weight": [1, 0, 2]},
-        ),
-    ],
-)
-def test_validation_pass(config, args):
-    c = config(**args)
-    for arg, value in args.items():
-        assert getattr(c, arg) == value
+        BCELossConfig(weight=[1, 2])
 
 
 @pytest.mark.parametrize(
@@ -100,5 +99,5 @@ def test_validation_pass(config, args):
         ("SmoothL1Loss", SmoothL1LossConfig),
     ],
 )
-def test_create_loss_config(name, config):
-    assert create_loss_config(name) == config
+def test_create_loss_function_config(name, config):
+    assert create_loss_function_config(name) == config

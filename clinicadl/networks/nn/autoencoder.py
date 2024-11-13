@@ -51,9 +51,9 @@ class AutoEncoder(nn.Sequential):
         is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part of the encoder . The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `in_channels` that is inferred
-        from the output of the convolutional part, and `out_channels` that is set to `latent_size`.
-        So, the only mandatory argument is `hidden_channels`.\n
+        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is inferred
+        from the output of the convolutional part, and `num_outputs` that is set to `latent_size`.
+        So, the only mandatory argument is `hidden_dims`.\n
         If None, the MLP part will be reduced to a single linear layer.
     out_channels : Optional[int] (optional, default=None)
         number of output channels. If None, the output will have the same number of channels as the
@@ -88,7 +88,7 @@ class AutoEncoder(nn.Sequential):
                 "pooling_indices": [0],
                 "pooling": ("avg", {"kernel_size": 2}),
             },
-            mlp_args={"hidden_channels": [32], "output_act": "relu"},
+            mlp_args={"hidden_dims": [32], "output_act": "relu"},
             out_channels=2,
             output_act="sigmoid",
             unpooling_mode="bilinear",
@@ -173,8 +173,8 @@ class AutoEncoder(nn.Sequential):
         self.latent_size = latent_size
         self.out_channels = out_channels if out_channels else self.in_shape[0]
         self._output_act = output_act
-        self.unpooling_mode = self._check_unpooling_mode(unpooling_mode)
         self.spatial_dims = len(in_shape[1:])
+        self.unpooling_mode = check_unpooling_mode(unpooling_mode, self.spatial_dims)
 
         self.encoder = CNN(
             in_shape=self.in_shape,
@@ -201,7 +201,7 @@ class AutoEncoder(nn.Sequential):
         """
         if args is None:
             args = {}
-        args["hidden_channels"] = cls._invert_list_arg(mlp.hidden_channels)
+        args["hidden_dims"] = cls._invert_list_arg(mlp.hidden_dims)
 
         return args
 
@@ -223,9 +223,9 @@ class AutoEncoder(nn.Sequential):
         args["dilation"] = self._invert_list_arg(conv.dilation)
         args["padding"], args["output_padding"] = self._get_paddings_list(conv)
 
-        args["unpooling_indices"] = (
-            conv.n_layers - np.array(conv.pooling_indices) - 2
-        ).astype(int)
+        args["unpooling_indices"] = list(
+            (conv.n_layers - np.array(conv.pooling_indices) - 2).astype(int)
+        )
         args["unpooling"] = []
         sizes_before_pooling = [
             size
@@ -385,32 +385,33 @@ class AutoEncoder(nn.Sequential):
 
         return padding, tuple(int(s) for s in output_padding)
 
-    def _check_unpooling_mode(
-        self, unpooling_mode: Union[str, UnpoolingMode]
-    ) -> UnpoolingMode:
-        """
-        Checks consistency between data shape and unpooling mode.
-        """
-        unpooling_mode = UnpoolingMode(unpooling_mode)
-        if unpooling_mode == UnpoolingMode.LINEAR and len(self.in_shape) != 2:
-            raise ValueError(
-                f"unpooling mode `linear` only works with 2D data (counting the channel dimension). "
-                f"Got in_shape={self.in_shape}, which is understood as {len(self.in_shape)}D data."
-            )
-        elif unpooling_mode == UnpoolingMode.BILINEAR and len(self.in_shape) != 3:
-            raise ValueError(
-                f"unpooling mode `bilinear` only works with 3D data (counting the channel dimension). "
-                f"Got in_shape={self.in_shape}, which is understood as {len(self.in_shape)}D data."
-            )
-        elif unpooling_mode == UnpoolingMode.BICUBIC and len(self.in_shape) != 3:
-            raise ValueError(
-                f"unpooling mode `bicubic` only works with 3D data (counting the channel dimension). "
-                f"Got in_shape={self.in_shape}, which is understood as {len(self.in_shape)}D data."
-            )
-        elif unpooling_mode == UnpoolingMode.TRILINEAR and len(self.in_shape) != 4:
-            raise ValueError(
-                f"unpooling mode `trilinear` only works with 4D data (counting the channel dimension). "
-                f"Got in_shape={self.in_shape}, which is understood as {len(self.in_shape)}D data."
-            )
 
-        return unpooling_mode
+def check_unpooling_mode(
+    unpooling_mode: Union[str, UnpoolingMode], dim: int
+) -> UnpoolingMode:
+    """
+    Checks consistency between data shape and unpooling mode.
+    """
+    unpooling_mode = UnpoolingMode(unpooling_mode)
+    if unpooling_mode == UnpoolingMode.LINEAR and dim != 1:
+        raise ValueError(
+            f"unpooling mode `linear` only works with 1D data (spatial dimensions). "
+            f"Got {dim}D data."
+        )
+    elif unpooling_mode == UnpoolingMode.BILINEAR and dim != 2:
+        raise ValueError(
+            f"unpooling mode `bilinear` only works with 2D data (spatial dimensions). "
+            f"Got {dim}D data."
+        )
+    elif unpooling_mode == UnpoolingMode.BICUBIC and dim != 2:
+        raise ValueError(
+            f"unpooling mode `bicubic` only works with 2D data (spatial dimensions). "
+            f"Got {dim}D data."
+        )
+    elif unpooling_mode == UnpoolingMode.TRILINEAR and dim != 3:
+        raise ValueError(
+            f"unpooling mode `trilinear` only works with 3D data (spatial dimensions). "
+            f"Got {dim}D data."
+        )
+
+    return unpooling_mode

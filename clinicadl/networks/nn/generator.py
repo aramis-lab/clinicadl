@@ -34,9 +34,9 @@ class Generator(nn.Sequential):
         is specified here via `start_shape`. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `in_channels` that is specified
-        here via `latent_size`, and `out_channels` that is inferred from `start_shape`.
-        So, the only mandatory argument is `hidden_channels`.\n
+        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is specified
+        here via `latent_size`, and `hidden_dims` that is inferred from `start_shape`.
+        So, the only mandatory argument is `hidden_dims`.\n
         If None, the MLP part will be reduced to a single linear layer.
 
     Examples
@@ -45,7 +45,7 @@ class Generator(nn.Sequential):
             latent_size=8,
             start_shape=(8, 2, 2),
             conv_args={"channels": [4, 2], "norm": None, "act": None},
-            mlp_args={"hidden_channels": [16], "act": "elu", "norm": None},
+            mlp_args={"hidden_dims": [16], "act": "elu", "norm": None},
         )
     Generator(
         (mlp): MLP(
@@ -107,10 +107,10 @@ class Generator(nn.Sequential):
 
         flatten_shape = int(np.prod(start_shape))
         if mlp_args is None:
-            mlp_args = {"hidden_channels": []}
+            mlp_args = {"hidden_dims": []}
         self.mlp = MLP(
-            in_channels=latent_size,
-            out_channels=flatten_shape,
+            num_inputs=latent_size,
+            num_outputs=flatten_shape,
             **mlp_args,
         )
 

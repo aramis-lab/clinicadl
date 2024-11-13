@@ -2,7 +2,7 @@ import click
 
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
-from clinicadl.utils.early_stopping.config import EarlyStoppingConfig
+from clinicadl.optim.early_stopping import EarlyStoppingConfig
 
 # Early Stopping
 patience = click.option(
@@ -14,8 +14,8 @@ patience = click.option(
 )
 tolerance = click.option(
     "--tolerance",
-    type=get_type("tolerance", EarlyStoppingConfig),
-    default=get_default("tolerance", EarlyStoppingConfig),
+    type=get_type("min_delta", EarlyStoppingConfig),
+    default=get_default("min_delta", EarlyStoppingConfig),
     help="Value for early stopping tolerance.",
     show_default=True,
 )

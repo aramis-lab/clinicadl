@@ -28,9 +28,10 @@ class CNN(nn.Sequential):
         that is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `in_channels` that is inferred
-        from the output of the convolutional part, and `out_channels` that is set to `num_outputs`.
-        So, the only mandatory argument is `hidden_channels`.\n
+        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is inferred
+        from the output of the convolutional part, and `num_outputs` that is set to the `num_outputs`
+        defined here.
+        So, the only mandatory argument is `hidden_dims`.\n
         If None, the MLP part will be reduced to a single linear layer.
 
     Examples
@@ -40,7 +41,7 @@ class CNN(nn.Sequential):
             in_shape=(1, 10, 10),
             num_outputs=2,
             conv_args={"channels": [2, 4], "norm": None, "act": None},
-            mlp_args={"hidden_channels": [5], "act": "elu", "norm": None, "output_act": "softmax"},
+            mlp_args={"hidden_dims": [5], "act": "elu", "norm": None, "output_act": "softmax"},
         )
     CNN(
         (convolutions): ConvEncoder(
@@ -116,9 +117,9 @@ class CNN(nn.Sequential):
         )
         flatten_shape = int(np.prod(self.convolutions.final_size) * n_channels)
         if mlp_args is None:
-            mlp_args = {"hidden_channels": []}
+            mlp_args = {"hidden_dims": []}
         self.mlp = MLP(
-            in_channels=flatten_shape,
-            out_channels=num_outputs,
+            num_inputs=flatten_shape,
+            num_outputs=num_outputs,
             **mlp_args,
         )

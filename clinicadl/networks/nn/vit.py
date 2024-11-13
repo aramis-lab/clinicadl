@@ -11,7 +11,6 @@ import torch.nn as nn
 from monai.networks.blocks.pos_embed_utils import build_sincos_position_embedding
 from monai.networks.layers import Conv
 from monai.networks.layers.utils import get_act_layer
-from monai.utils import ensure_tuple_rep
 from torch.hub import load_state_dict_from_url
 from torchvision.models.vision_transformer import (
     ViT_B_16_Weights,
@@ -22,6 +21,7 @@ from torchvision.models.vision_transformer import (
 
 from .layers.utils import ActFunction, ActivationParameters
 from .layers.vit import Encoder
+from .utils import ensure_tuple
 
 
 class PosEmbedType(str, Enum):
@@ -142,10 +142,10 @@ class ViT(nn.Module):
 
         self.in_channels, *self.img_size = in_shape
         self.spatial_dims = len(self.img_size)
-        self.patch_size = ensure_tuple_rep(patch_size, self.spatial_dims)
+        self.patch_size = ensure_tuple(patch_size, self.spatial_dims, "patch_size")
 
-        self._check_embedding_dim(embedding_dim, num_heads)
-        self._check_patch_size(self.img_size, self.patch_size)
+        check_embedding_dim(embedding_dim, num_heads)
+        check_patch_size(self.patch_size, self.img_size)
         self.embedding_dim = embedding_dim
         self.classification = True if num_outputs else False
         dropout = dropout if dropout else 0.0
@@ -262,30 +262,28 @@ class ViT(nn.Module):
         nn.init.trunc_normal_(self.conv_proj.weight, std=math.sqrt(1 / fan_in))
         nn.init.zeros_(self.conv_proj.bias)
 
-    @classmethod
-    def _check_embedding_dim(cls, embedding_dim: int, num_heads: int) -> None:
-        """
-        Checks consistency between embedding dimension and number of heads.
-        """
-        if embedding_dim % num_heads != 0:
-            raise ValueError(
-                f"embedding_dim should be divisible by num_heads. Got embedding_dim={embedding_dim} "
-                f" and num_heads={num_heads}"
-            )
 
-    @classmethod
-    def _check_patch_size(
-        cls, img_size: Tuple[int, ...], patch_size: Tuple[int, ...]
-    ) -> None:
-        """
-        Checks consistency between image size and patch size.
-        """
-        for i, p in zip(img_size, patch_size):
-            if i % p != 0:
-                raise ValueError(
-                    f"img_size should be divisible by patch_size. Got img_size={img_size} "
-                    f" and patch_size={patch_size}"
-                )
+def check_embedding_dim(embedding_dim: int, num_heads: int) -> None:
+    """
+    Checks consistency between embedding dimension and number of heads.
+    """
+    if embedding_dim % num_heads != 0:
+        raise ValueError(
+            f"embedding_dim should be divisible by num_heads. Got embedding_dim={embedding_dim} "
+            f" and num_heads={num_heads}"
+        )
+
+
+def check_patch_size(patch_size: Tuple[int, ...], img_size: Tuple[int, ...]) -> None:
+    """
+    Checks consistency between image size and patch size.
+    """
+    for i, p in zip(img_size, patch_size):
+        if i % p != 0:
+            raise ValueError(
+                f"img_size should be divisible by patch_size. Got img_size={img_size} "
+                f" and patch_size={patch_size}"
+            )
 
 
 class SOTAViT(str, Enum):

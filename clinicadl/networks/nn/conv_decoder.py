@@ -1,9 +1,8 @@
-from typing import Callable, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 import torch.nn as nn
 from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer
-from monai.utils.misc import ensure_tuple
 
 from .layers.unpool import get_unpool_layer
 from .layers.utils import (
@@ -200,7 +199,7 @@ class ConvDecoder(nn.Sequential):
 
         self.spatial_dims = spatial_dims
         self.in_channels = in_channels
-        self.channels = ensure_tuple(channels)
+        self.channels = channels
         self.n_layers = len(self.channels)
 
         self.kernel_size = ensure_list_of_tuples(
@@ -220,7 +219,9 @@ class ConvDecoder(nn.Sequential):
         )
 
         self.unpooling_indices = check_pool_indices(unpooling_indices, self.n_layers)
-        self.unpooling = self._check_unpool_layers(unpooling)
+        self.unpooling = check_unpool_layers(
+            unpooling, unpooling_indices=self.unpooling_indices
+        )
         self.act = act
         self.norm = check_norm_layer(norm)
         if self.norm == NormLayer.LAYER:
@@ -339,50 +340,47 @@ class ConvDecoder(nn.Sequential):
         )
         return unpool_layer
 
-    @classmethod
-    def _check_single_unpool_layer(
-        cls, unpooling: SingleLayerUnpoolingParameters
-    ) -> SingleLayerUnpoolingParameters:
-        """
-        Checks unpooling arguments for a single pooling layer.
-        """
-        if not isinstance(unpooling, tuple) or len(unpooling) != 2:
-            raise ValueError(
-                "unpooling must be double (or a list of doubles) with first the type of unpooling and then the parameters of "
-                f"the unpooling layer in a dict. Got {unpooling}"
-            )
-        _ = UnpoolingLayer(unpooling[0])  # check unpooling mode
-        args = unpooling[1]
-        if not isinstance(args, dict):
-            raise ValueError(
-                f"The arguments of the unpooling layer must be passed in a dict. Got {args}"
-            )
 
+def check_unpool_layers(
+    unpooling: UnpoolingParameters, unpooling_indices: Sequence[int]
+) -> List[SingleLayerUnpoolingParameters]:
+    """
+    Checks argument unpooling.
+    """
+    if unpooling is None:
         return unpooling
-
-    def _check_unpool_layers(
-        self, unpooling: UnpoolingParameters
-    ) -> UnpoolingParameters:
-        """
-        Checks argument unpooling.
-        """
-        if unpooling is None:
-            return unpooling
-        if isinstance(unpooling, list):
-            for unpool_layer in unpooling:
-                self._check_single_unpool_layer(unpool_layer)
-            if len(unpooling) != len(self.unpooling_indices):
-                raise ValueError(
-                    "If you pass a list for unpooling, the size of that list must match "
-                    f"the size of unpooling_indices. Got: unpooling={unpooling} and "
-                    f"unpooling_indices={self.unpooling_indices}"
-                )
-        elif isinstance(unpooling, tuple):
-            self._check_single_unpool_layer(unpooling)
-            unpooling = (unpooling,) * len(self.unpooling_indices)
-        else:
+    if isinstance(unpooling, list):
+        for unpool_layer in unpooling:
+            _check_single_unpool_layer(unpool_layer)
+        if len(unpooling) != len(unpooling_indices):
             raise ValueError(
-                f"unpooling can be either None, a double (string, dictionary) or a list of such doubles. Got {unpooling}"
+                "If you pass a list for unpooling, the size of that list must match "
+                f"the size of unpooling_indices. Got: unpooling={unpooling} and "
+                f"unpooling_indices={unpooling_indices}"
             )
+    elif isinstance(unpooling, tuple):
+        _check_single_unpool_layer(unpooling)
+        unpooling = [unpooling] * len(unpooling_indices)
+    else:
+        raise ValueError(
+            f"unpooling can be either None, a double (string, dictionary) or a list of such doubles. Got {unpooling}"
+        )
 
-        return unpooling
+    return unpooling
+
+
+def _check_single_unpool_layer(unpooling: SingleLayerUnpoolingParameters) -> None:
+    """
+    Checks unpooling arguments for a single pooling layer.
+    """
+    if not isinstance(unpooling, tuple) or len(unpooling) != 2:
+        raise ValueError(
+            "unpooling must be double (or a list of doubles) with first the type of unpooling and then the parameters of "
+            f"the unpooling layer in a dict. Got {unpooling}"
+        )
+    _ = UnpoolingLayer(unpooling[0])  # check unpooling mode
+    args = unpooling[1]
+    if not isinstance(args, dict):
+        raise ValueError(
+            f"The arguments of the unpooling layer must be passed in a dict. Got {args}"
+        )

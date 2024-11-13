@@ -1,6 +1,6 @@
 import numpy as np
 
-from clinicadl.optimization.early_stopping import EarlyStopping, EarlyStoppingConfig
+from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 
 
 def test_EarlyStopping():

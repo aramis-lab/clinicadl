@@ -1,11 +1,9 @@
 from typing import Type, Union
 
+from .base import ImplementedNetwork, NetworkConfig
+
 # pylint: disable=unused-import
-from .autoencoder import AutoEncoderConfig, VAEConfig
-from .base import ImplementedNetworks, NetworkConfig
-from .cnn import CNNConfig
-from .conv_decoder import ConvDecoderConfig
-from .conv_encoder import ConvEncoderConfig
+from .cnns import AutoEncoderConfig, CNNConfig, GeneratorConfig, VAEConfig
 from .densenet import (
     DenseNet121Config,
     DenseNet161Config,
@@ -13,8 +11,7 @@ from .densenet import (
     DenseNet201Config,
     DenseNetConfig,
 )
-from .generator import GeneratorConfig
-from .mlp import MLPConfig
+from .mlp_conv import ConvDecoderConfig, ConvEncoderConfig, MLPConfig
 from .resnet import (
     ResNet18Config,
     ResNet34Config,
@@ -34,22 +31,27 @@ from .vit import ViTB16Config, ViTB32Config, ViTConfig, ViTL16Config, ViTL32Conf
 
 
 def create_network_config(
-    network: Union[str, ImplementedNetworks],
+    network: Union[str, ImplementedNetwork],
 ) -> Type[NetworkConfig]:
     """
     A factory function to create a config class suited for the network.
 
     Parameters
     ----------
-    network : Union[str, ImplementedNetworks]
+    network : Union[str, ImplementedNetwork]
         The name of the neural network.
 
     Returns
     -------
     Type[NetworkConfig]
         The config class.
+
+    Raises
+    ------
+    ValueError
+        If `network` is not supported.
     """
-    network = ImplementedNetworks(network).value.replace("-", "").replace("/", "")
+    network = ImplementedNetwork(network).value.replace("-", "").replace("/", "")
     config_name = "".join([network, "Config"])
     config = globals()[config_name]
 
