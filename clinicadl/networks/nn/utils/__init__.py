@@ -5,6 +5,7 @@ from .checks import (
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
+    ensure_tuple,
 )
 from .shapes import (
     calculate_conv_out_shape,

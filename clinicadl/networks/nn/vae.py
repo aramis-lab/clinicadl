@@ -38,9 +38,9 @@ class VAE(nn.Module):
         is specified here. So, the only mandatory argument is `channels`.
     mlp_args : Optional[Dict[str, Any]] (optional, default=None)
         the arguments for the MLP part of the encoder . The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `in_channels` that is inferred
-        from the output of the convolutional part, and `out_channels` that is set to `latent_size`.
-        So, the only mandatory argument is `hidden_channels`.\n
+        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is inferred
+        from the output of the convolutional part, and `num_outputs` that is set to `latent_size`.
+        So, the only mandatory argument is `hidden_dims`.\n
         If None, the MLP part will be reduced to a single linear layer.\n
         The last linear layer will be duplicated to infer both the mean and the log variance.
     out_channels : Optional[int] (optional, default=None)
@@ -72,7 +72,7 @@ class VAE(nn.Module):
             in_shape=(1, 16, 16),
             latent_size=4,
             conv_args={"channels": [2]},
-            mlp_args={"hidden_channels": [16], "output_act": "relu"},
+            mlp_args={"hidden_dims": [16], "output_act": "relu"},
             out_channels=2,
             output_act="sigmoid",
             unpooling_mode="bilinear",
@@ -190,11 +190,8 @@ class VAE(nn.Module):
         return std.add_(mu)
 
     @classmethod
-    def _reset_weights(cls, layer: Union[nn.Sequential, nn.Linear]) -> None:
+    def _reset_weights(cls, layer: nn.Sequential) -> None:
         """
         Resets the output layer(s) of an MLP.
         """
-        if isinstance(layer, nn.Linear):
-            layer.reset_parameters()
-        else:
-            layer.linear.reset_parameters()
+        layer.linear.reset_parameters()

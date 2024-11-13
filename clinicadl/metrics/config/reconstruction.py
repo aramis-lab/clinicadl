@@ -11,48 +11,39 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import MetricConfig
-from .enum import Kernel
+from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
+from .enum import ImplementedMetric, Kernel
 
 __all__ = [
-    "PSNRConfig",
-    "SSIMConfig",
-    "MultiScaleSSIMConfig",
+    "PSNRMetricConfig",
+    "SSIMMetricConfig",
+    "MultiScaleSSIMMetricConfig",
 ]
 
 
-class PSNRConfig(MetricConfig):
+class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     "Config class for PSNR."
 
     max_val: PositiveFloat
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "PSNRMetric"
+        return ImplementedMetric.PSNR
 
 
-class SSIMConfig(MetricConfig):
-    "Config class for SSIM."
+class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
+    "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt
     data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
     kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES
-    win_size: Union[
-        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
     kernel_sigma: Union[
         PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
     k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
-
-    @computed_field
-    @property
-    def metric(self) -> str:
-        """The name of the metric."""
-        return "SSIMMetric"
 
     @field_validator("spatial_dims", mode="after")
     @classmethod
@@ -62,9 +53,8 @@ class SSIMConfig(MetricConfig):
         return v
 
     @model_validator(mode="after")
-    def dimension_validator(self):
+    def validator_kernel_sigma(self):
         """Checks coherence between fields."""
-        self._check_spatial_dim("win_size")
         self._check_spatial_dim("kernel_sigma")
 
         return self
@@ -78,15 +68,46 @@ class SSIMConfig(MetricConfig):
             ), f"If you pass a sequence for {attribute}, it must be of size {self.spatial_dims}. You passed: {value}."
 
 
-class MultiScaleSSIMConfig(SSIMConfig):
+class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
+    "Config class for SSIM."
+
+    win_size: Union[
+        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedMetric:
+        """The name of the metric."""
+        return ImplementedMetric.SSIM
+
+    @model_validator(mode="after")
+    def validator_win_size(self):
+        """Checks coherence between fields."""
+        self._check_spatial_dim("win_size")
+
+        return self
+
+
+class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     "Config class for multi-scale SSIM."
 
+    kernel_size: Union[
+        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
     weights: Union[
         Tuple[PositiveFloat, ...], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "MultiScaleSSIMMetric"
+        return ImplementedMetric.MS_SSIM
+
+    @model_validator(mode="after")
+    def validator_kernel_size(self):
+        """Checks coherence between fields."""
+        self._check_spatial_dim("kernel_size")
+
+        return self

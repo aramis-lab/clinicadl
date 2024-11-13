@@ -1,23 +1,34 @@
 from typing import Type, Union
 
-from .base import MetricConfig
-from .classification import *
-from .enum import ConfusionMatrixMetric, ImplementedMetrics
-from .generation import *
-from .reconstruction import *
-from .regression import *
-from .segmentation import *
+# pylint: disable=unused-import
+from .base import LossMetricConfig, MetricConfig
+from .classification import ConfusionMatrixMetricConfig, ROCAUCMetricConfig
+from .enum import ImplementedMetric
+from .reconstruction import (
+    MultiScaleSSIMMetricConfig,
+    PSNRMetricConfig,
+    SSIMMetricConfig,
+)
+from .regression import MAEMetricConfig, MSEMetricConfig, RMSEMetricConfig
+from .segmentation import (
+    DiceMetricConfig,
+    GeneralizedDiceScoreConfig,
+    HausdorffDistanceMetricConfig,
+    MeanIoUConfig,
+    SurfaceDiceMetricConfig,
+    SurfaceDistanceMetricConfig,
+)
 
 
 def create_metric_config(
-    metric: Union[str, ImplementedMetrics],
+    metric: Union[str, ImplementedMetric],
 ) -> Type[MetricConfig]:
     """
     A factory function to create a config class suited for the metric.
 
     Parameters
     ----------
-    metric : Union[str, ImplementedMetrics]
+    metric : Union[str, ImplementedMetric]
         The name of the metric.
 
     Returns
@@ -32,46 +43,11 @@ def create_metric_config(
     ValueError
         When `metric` is `Loss`.
     """
-    metric = ImplementedMetrics(metric)
-    if metric == ImplementedMetrics.LOSS:
-        raise ValueError(
-            "To use the loss as a metric, please use directly clinicadl.metrics.loss_to_metric."
-        )
+    metric = ImplementedMetric(metric)
+    if metric == ImplementedMetric.LOSS:
+        return LossMetricConfig
 
-    # special cases
-    if metric == ImplementedMetrics.MS_SSIM:
-        return MultiScaleSSIMConfig
-    if metric == ImplementedMetrics.MMD:
-        return MMDMetricConfig
-
-    try:
-        metric = ConfusionMatrixMetric(metric.lower())
-        return create_confusion_matrix_config(metric)
-    except ValueError:
-        pass
-
-    # "normal" cases:
-    try:
-        config = _get_config(metric)
-    except KeyError:
-        config = _get_config(metric.title().replace(" ", ""))
+    config_name = "".join([metric, "Config"])
+    config = globals()[config_name]
 
     return config
-
-
-def _get_config(name: str) -> Type[MetricConfig]:
-    """
-    Tries to get a config class associated to the name.
-
-    Parameters
-    ----------
-    name : str
-        The name of the metric.
-
-    Returns
-    -------
-    Type[MetricConfig]
-        The config class.
-    """
-    config_name = "".join([name, "Config"])
-    return globals()[config_name]

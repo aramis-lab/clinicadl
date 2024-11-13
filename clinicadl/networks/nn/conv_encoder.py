@@ -4,7 +4,6 @@ import numpy as np
 import torch.nn as nn
 from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer, get_pool_layer
-from monai.utils.misc import ensure_tuple
 
 from .layers.utils import (
     ActFunction,
@@ -183,7 +182,7 @@ class ConvEncoder(nn.Sequential):
 
         self.spatial_dims = spatial_dims
         self.in_channels = in_channels
-        self.channels = ensure_tuple(channels)
+        self.channels = channels
         self.n_layers = len(self.channels)
 
         self.kernel_size = ensure_list_of_tuples(
@@ -198,9 +197,8 @@ class ConvEncoder(nn.Sequential):
         self.dilation = ensure_list_of_tuples(
             dilation, self.spatial_dims, self.n_layers, "dilation"
         )
-
         self.pooling_indices = check_pool_indices(pooling_indices, self.n_layers)
-        self.pooling = self._check_pool_layers(pooling)
+        self.pooling = check_pool_layers(pooling, pooling_indices=self.pooling_indices)
         self.act = act
         self.norm = check_norm_layer(norm)
         if self.norm == NormLayer.LAYER:
@@ -330,63 +328,61 @@ class ConvEncoder(nn.Sequential):
                 f"Failed to build the network. An image of size 0 or less has been reached. Stopped at:\n {self}"
             )
 
-    @classmethod
-    def _check_single_pool_layer(
-        cls, pooling: SingleLayerPoolingParameters
-    ) -> SingleLayerPoolingParameters:
-        """
-        Checks pooling arguments for a single pooling layer.
-        """
-        if not isinstance(pooling, tuple) or len(pooling) != 2:
-            raise ValueError(
-                "pooling must be a double (or a list of doubles) with first the type of pooling and then the parameters "
-                f"of the pooling layer in a dict. Got {pooling}"
-            )
-        pooling_type = PoolingLayer(pooling[0])
-        args = pooling[1]
-        if not isinstance(args, dict):
-            raise ValueError(
-                f"The arguments of the pooling layer must be passed in a dict. Got {args}"
-            )
-        if (
-            pooling_type == PoolingLayer.MAX or pooling_type == PoolingLayer.AVG
-        ) and "kernel_size" not in args:
-            raise ValueError(
-                f"For {pooling_type} pooling mode, `kernel_size` argument must be passed. "
-                f"Got {args}"
-            )
-        elif (
-            pooling_type == PoolingLayer.ADAPT_AVG
-            or pooling_type == PoolingLayer.ADAPT_MAX
-        ) and "output_size" not in args:
-            raise ValueError(
-                f"For {pooling_type} pooling mode, `output_size` argument must be passed. "
-                f"Got {args}"
-            )
 
-    def _check_pool_layers(
-        self, pooling: PoolingParameters
-    ) -> List[SingleLayerPoolingParameters]:
-        """
-        Check argument pooling.
-        """
-        if pooling is None:
-            return pooling
-        if isinstance(pooling, list):
-            for pool_layer in pooling:
-                self._check_single_pool_layer(pool_layer)
-            if len(pooling) != len(self.pooling_indices):
-                raise ValueError(
-                    "If you pass a list for pooling, the size of that list must match "
-                    f"the size of pooling_indices. Got: pooling={pooling} and "
-                    f"pooling_indices={self.pooling_indices}"
-                )
-        elif isinstance(pooling, tuple):
-            self._check_single_pool_layer(pooling)
-            pooling = [pooling] * len(self.pooling_indices)
-        else:
-            raise ValueError(
-                f"pooling can be either None, a double (string, dictionary) or a list of such doubles. Got {pooling}"
-            )
-
+def check_pool_layers(
+    pooling: PoolingParameters, pooling_indices: Sequence[int]
+) -> List[SingleLayerPoolingParameters]:
+    """
+    Checks pooling arguments.
+    """
+    if pooling is None:
         return pooling
+    if isinstance(pooling, list):
+        for pool_layer in pooling:
+            _check_single_pool_layer(pool_layer)
+        if len(pooling) != len(pooling_indices):
+            raise ValueError(
+                "If you pass a list for pooling, the size of that list must match "
+                f"the size of pooling_indices. Got: pooling={pooling} and "
+                f"pooling_indices={pooling_indices}"
+            )
+    elif isinstance(pooling, tuple):
+        _check_single_pool_layer(pooling)
+        pooling = [pooling] * len(pooling_indices)
+    else:
+        raise ValueError(
+            f"pooling can be either None, a double (string, dictionary) or a list of such doubles. Got {pooling}"
+        )
+
+    return pooling
+
+
+def _check_single_pool_layer(pooling: SingleLayerPoolingParameters) -> None:
+    """
+    Checks pooling arguments for a single pooling layer.
+    """
+    if not isinstance(pooling, tuple) or len(pooling) != 2:
+        raise ValueError(
+            "pooling must be a double (or a list of doubles) with first the type of pooling and then the parameters "
+            f"of the pooling layer in a dict. Got {pooling}"
+        )
+    pooling_type = PoolingLayer(pooling[0])
+    args = pooling[1]
+    if not isinstance(args, dict):
+        raise ValueError(
+            f"The arguments of the pooling layer must be passed in a dict. Got {args}"
+        )
+    if (
+        pooling_type == PoolingLayer.MAX or pooling_type == PoolingLayer.AVG
+    ) and "kernel_size" not in args:
+        raise ValueError(
+            f"For {pooling_type} pooling mode, `kernel_size` argument must be passed. "
+            f"Got {args}"
+        )
+    elif (
+        pooling_type == PoolingLayer.ADAPT_AVG or pooling_type == PoolingLayer.ADAPT_MAX
+    ) and "output_size" not in args:
+        raise ValueError(
+            f"For {pooling_type} pooling mode, `output_size` argument must be passed. "
+            f"Got {args}"
+        )

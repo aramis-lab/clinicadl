@@ -21,12 +21,12 @@ class MLP(BaseMLP):
 
     Parameters
     ----------
-    in_channels : int
-        number of input channels (i.e. number of features).
-    out_channels : int
-        number of output channels.
-    hidden_channels : Sequence[int]
-        number of output channels for each hidden layer. Thus, this parameter also controls the number of hidden layers.
+    num_inputs : int
+        number of input features.
+    num_outputs : int
+        number of outputs.
+    hidden_dims : Sequence[int]
+        number of outputs for each hidden layer. Thus, this parameter also controls the number of hidden layers.
     act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
         the activation function used after a linear layer, and optionally its arguments.
         Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
@@ -58,7 +58,7 @@ class MLP(BaseMLP):
 
     Examples
     --------
-    >>> MLP(in_channels=12, out_channels=2, hidden_channels=[8, 4], dropout=0.1, act=("elu", {"alpha": 0.5}),
+    >>> MLP(num_inputs=12, num_outputs=2, hidden_dims=[8, 4], dropout=0.1, act=("elu", {"alpha": 0.5}),
         norm=("group", {"num_groups": 2}), bias=True, adn_ordering="ADN", output_act="softmax")
     MLP(
         (flatten): Flatten(start_dim=1, end_dim=-1)
@@ -87,9 +87,9 @@ class MLP(BaseMLP):
 
     def __init__(
         self,
-        in_channels: int,
-        out_channels: int,
-        hidden_channels: Sequence[int],
+        num_inputs: int,
+        num_outputs: int,
+        hidden_dims: Sequence[int],
         act: Optional[ActivationParameters] = ActFunction.PRELU,
         output_act: Optional[ActivationParameters] = None,
         norm: Optional[NormalizationParameters] = NormLayer.BATCH,
@@ -99,14 +99,17 @@ class MLP(BaseMLP):
     ) -> None:
         self.norm = check_norm_layer(norm)
         super().__init__(
-            in_channels,
-            out_channels,
-            hidden_channels,
-            dropout,
-            act,
-            bias,
-            check_adn_ordering(adn_ordering),
+            in_channels=num_inputs,
+            out_channels=num_outputs,
+            hidden_channels=hidden_dims,
+            dropout=dropout,
+            act=act,
+            bias=bias,
+            adn_ordering=check_adn_ordering(adn_ordering),
         )
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
+        self.hidden_dims = hidden_dims
         self.output = nn.Sequential(OrderedDict([("linear", self.output)]))
         self.output.output_act = get_act_layer(output_act) if output_act else None
         # renaming
@@ -117,18 +120,18 @@ class MLP(BaseMLP):
             ]
         )
 
-    def _get_layer(self, in_channels: int, out_channels: int, bias: bool) -> nn.Module:
+    def _get_layer(self, num_inputs: int, num_outputs: int, bias: bool) -> nn.Module:
         """
         Gets the parametrized Linear layer + ADN block.
         """
         if self.norm == NormLayer.LAYER:
-            norm = ("layer", {"normalized_shape": out_channels})
+            norm = ("layer", {"normalized_shape": num_outputs})
         else:
             norm = self.norm
         seq = nn.Sequential(
             OrderedDict(
                 [
-                    ("linear", nn.Linear(in_channels, out_channels, bias)),
+                    ("linear", nn.Linear(num_inputs, num_outputs, bias)),
                     (
                         "adn",
                         ADN(
@@ -137,7 +140,7 @@ class MLP(BaseMLP):
                             norm=norm,
                             dropout=self.dropout,
                             dropout_dim=1,
-                            in_channels=out_channels,
+                            in_channels=num_outputs,
                         ),
                     ),
                 ]

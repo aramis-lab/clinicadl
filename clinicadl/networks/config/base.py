@@ -1,14 +1,22 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
-from pydantic import BaseModel, ConfigDict, PositiveInt, computed_field
+from pydantic import (
+    PositiveFloat,
+    PositiveInt,
+    computed_field,
+    field_validator,
+)
 
 from clinicadl.networks.nn.layers.utils import ActivationParameters
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
+__all__ = ["ImplementedNetwork", "NetworkConfig"]
 
-class ImplementedNetworks(str, Enum):
+
+class ImplementedNetwork(str, Enum):
     """Implemented neural networks in ClinicaDL."""
 
     MLP = "MLP"
@@ -62,20 +70,13 @@ class NetworkType(str, Enum):
     VIT = "sota-ViT"
 
 
-class NetworkConfig(BaseModel, ABC):
+class NetworkConfig(ClinicaDLConfig, ABC):
     """Base config class to configure neural networks."""
-
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True,
-        use_enum_values=True,
-        validate_default=True,
-    )
 
     @computed_field
     @property
     @abstractmethod
-    def name(self) -> ImplementedNetworks:
+    def name(self) -> ImplementedNetwork:
         """The name of the network."""
 
     @computed_field
@@ -88,11 +89,58 @@ class NetworkConfig(BaseModel, ABC):
         return NetworkType.CUSTOM
 
 
-class PreTrainedConfig(NetworkConfig):
-    """Base config class for SOTA networks."""
+class _FullyConvConfig(ClinicaDLConfig):
+    """
+    Base config class for fully convolutional networks.
+    """
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+
+
+class _InShapeConfig(ClinicaDLConfig):
+    """Base config class for 'in_shape' option."""
+
+    in_shape: Sequence[PositiveInt]
+
+
+class _OptionalLastLinearLayersConfig(ClinicaDLConfig):
+    """Base config class for 'num_outputs' option."""
 
     num_outputs: Optional[PositiveInt]
+
+
+class _MandatoryActConfig(ClinicaDLConfig):
+    """Base config class for 'output_act' option."""
+
+    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+
+class _OutputActConfig(ClinicaDLConfig):
+    """Base config class for 'output_act' option."""
+
     output_act: Union[
         Optional[ActivationParameters], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
+
+
+class _DropOutConfig(ClinicaDLConfig):
+    """Base config class for 'dropout' option."""
+
+    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @field_validator("dropout")
+    @classmethod
+    def validator_dropout(cls, v):
+        """Checks that dropout is between 0 and 1."""
+        if isinstance(v, float):
+            assert (
+                0 <= v <= 1
+            ), f"dropout must be between 0 and 1 but it has been set to {v}."
+        return v
+
+
+class _PreTrainedConfig(_OptionalLastLinearLayersConfig, _OutputActConfig):
+    """Base config class for SOTA networks."""
+
     pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES

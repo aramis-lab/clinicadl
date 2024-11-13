@@ -121,7 +121,7 @@ def training_config():
         {"batch_size": 0},
         {"size_reduction_factor": 1},
         {"split": [-1]},
-        {"tolerance": -0.01},
+        {"min_delta": -0.01},
     ]
 )
 def bad_inputs(request, dummy_arguments):
@@ -139,7 +139,7 @@ def good_inputs(dummy_arguments):
         "size_reduction_factor": 5,
         "learning_rate": 1e-1,
         "split": [0],
-        "tolerance": 0.0,
+        "min_delta": 0.0,
     }
     return {**dummy_arguments, **options}
 
@@ -158,7 +158,7 @@ def test_passes_validations(good_inputs, training_config):
     assert c.dataloader.batch_size == 1
     assert c.transforms.size_reduction_factor == 5
     assert c.split.split == (0,)
-    assert c.early_stopping.tolerance == 0.0
+    assert c.early_stopping.min_delta == 0.0
 
 
 # Test config manipulation #

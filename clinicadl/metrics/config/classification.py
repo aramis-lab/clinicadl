@@ -1,74 +1,46 @@
-from abc import ABC, abstractmethod
-from typing import Type, Union
+from typing import Union
 
 from pydantic import computed_field
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import MetricConfig
-from .enum import Average, ConfusionMatrixMetric
+from .base import (
+    MetricConfig,
+    _GetNotNansConfig,
+    _IncludeBackgroundConfig,
+    _ReductionConfig,
+)
+from .enum import Average, ImplementedMetric
 
 __all__ = [
-    "ROCAUCConfig",
-    "create_confusion_matrix_config",
+    "ROCAUCMetricConfig",
+    "ConfusionMatrixMetricConfig",
 ]
 
 
 # TODO : AP is missing
-class ROCAUCConfig(MetricConfig):
+class ROCAUCMetricConfig(MetricConfig):
     "Config class for ROC AUC."
 
     average: Union[Average, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "ROCAUCMetric"
+        return ImplementedMetric.ROC_AUC
 
 
-class ConfusionMatrixMetricConfig(MetricConfig, ABC):
+class ConfusionMatrixMetricConfig(
+    MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
+):
     "Config class for metrics derived from the confusion matrix."
 
+    metric_name: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES
     compute_sample: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
-    def metric(self) -> str:
+    def name(self) -> ImplementedMetric:
         """The name of the metric."""
-        return "ConfusionMatrixMetric"
-
-    @computed_field
-    @property
-    @abstractmethod
-    def metric_name(self) -> str:
-        """The name of the metric computed from the confusion matrix."""
-
-
-def create_confusion_matrix_config(
-    metric_name: ConfusionMatrixMetric,
-) -> Type[ConfusionMatrixMetricConfig]:
-    """
-    Builds a config class for a specific metric computed from the confusion matrix."
-
-    Parameters
-    ----------
-    metric_name : ConfusionMatrixMetric
-        The metric name (e.g. 'f1 score', 'accuracy', etc.).
-
-    Returns
-    -------
-    Type[ConfusionMatrixMetricConfig]
-        The config class.
-    """
-
-    class ConfusionMatrixMetricSubConfig(ConfusionMatrixMetricConfig):
-        "A sub config class for a specific metric computed from the confusion matrix."
-
-        @computed_field
-        @property
-        def metric_name(self) -> str:
-            """The name of the metric computed from the confusion matrix."""
-            return metric_name
-
-    return ConfusionMatrixMetricSubConfig
+        return ImplementedMetric.CONF_MATRIX
