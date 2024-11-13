@@ -1,5 +1,5 @@
-from typing import Callable, Tuple
+from typing import Callable
 
 from torch import Tensor
 
-Loss = Callable[[*Tuple[Tensor, ...]], Tensor]
+Loss = Callable[[Tensor, Tensor], Tensor]
