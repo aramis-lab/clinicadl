@@ -2,6 +2,11 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
+from clinicadl.dataset.caps_dataset import (
+    CapsDatasetPatch,
+    CapsDatasetRoi,
+    CapsDatasetSlice,
+)
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.concat import ConcatDataset
 from clinicadl.dataset.config.extraction import ExtractionConfig
@@ -9,11 +14,7 @@ from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
     T1PreprocessingConfig,
 )
-from clinicadl.dataset.old_caps_dataset import (
-    CapsDatasetPatch,
-    CapsDatasetRoi,
-    CapsDatasetSlice,
-)
+from clinicadl.dataset.dataloader_config import DataLoaderConfig
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
@@ -42,23 +43,38 @@ dataset_t1_image = CapsDatasetPatch.from_json(
     sub_ses_tsv=Path("split_dir") / "train.tsv",
 )
 config_file = Path("config_file")
-trainer = Trainer.from_json(config_file=config_file, manager=manager)
+trainer = Trainer.from_json(
+    config_file=config_file, manager=manager
+)  # gpu, amp, fsdp, seed
 
 # CAS CROSS-VALIDATION
-splitter = KFolder(n_splits=3, caps_dataset=dataset_t1_image, manager=manager)
+splitter = KFolder(caps_dataset=dataset_t1_image, manager=manager)
+split_dir = splitter.make_splits(
+    n_splits=3,
+    output_dir=Path(""),
+    data_tsv=Path("labels.tsv"),
+    subset_name="validation",
+    stratification="",
+)  # Optional data tsv and output_dir
+# n_splits must be >1
+# for the single split case, this method output a path to the directory containing the train and test tsv files so we should have the same output here
 
-for split in splitter.split_iterator(split_list=[0, 1]):
+# CAS EXISTING CROSS-VALIDATION
+splitter = KFolder.from_split_dir(caps_dataset=dataset_t1_image, manager=manager)
+
+# define the needed parameters for the dataloader
+dataloader_config = DataLoaderConfig(n_procs=3, batch_size=10)
+
+for split in splitter.get_splits(splits=(0, 3, 4), dataloader_config=dataloader_config):
     # bien définir ce qu'il y a dans l'objet split
 
-    loss, loss_config = get_loss_function(CrossEntropyLossConfig())
     network_config = create_network_config(ImplementedNetworks.CNN)(
         in_shape=[2, 2, 2],
         num_outputs=1,
         conv_args=ConvEncoderOptions(channels=[3, 2, 2]),
     )
-    network, _ = get_network_from_config(network_config)
     optimizer, _ = get_optimizer(network, AdamConfig())
-    model = ClinicaDLModel(network=network, loss=loss, optimizer=optimizer)
+    model = ClinicaDLModel(network=network_config, loss=nn.MSE(), optimizer=optimizer)
 
     trainer.train(model, split)
     # le trainer va instancier un predictor/valdiator dans le train ou dans le init
