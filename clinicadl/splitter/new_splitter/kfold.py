@@ -117,7 +117,7 @@ class KFold:
 
     def make_splits(self, n_splits: int, split_name: str, p_values, etc) -> None:
         """
-        Does the job of clinicadl split/k_fold.
+        Does the job of clinicadl k_fold.
         Puts the splits in SubjectsSessionsSplit objects (one for each split).
         """
         # TODO
