@@ -21,7 +21,7 @@ class Split:
     train_loader: Optional[DataLoader] = None
     val_loader: Optional[DataLoader] = None
 
-    def create_train_loader(
+    def build_train_loader(
         self,
         batch_size: int,
         sampling_weights: Optional[str] = None,
@@ -44,7 +44,7 @@ class Split:
             rank=rank,
         )
 
-    def create_val_loader(
+    def build_val_loader(
         self,
         batch_size: int,
         sampling_weights: Optional[str] = None,
