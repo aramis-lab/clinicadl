@@ -19,6 +19,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from pydantic import BaseModel, field_validator, model_validator
 
+from clinicadl.dataset.config.file_type import FileType
 from clinicadl.utils.exceptions import (
     ClinicaDLBIDSError,
     ClinicaDLCAPSError,
@@ -27,22 +28,6 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.logger import cprint
 
 RemoteFileStructure = namedtuple("RemoteFileStructure", ["filename", "url", "checksum"])
-
-
-class FileType(BaseModel):
-    pattern: str
-    description: str
-    needed_pipeline: Optional[str] = None
-
-    @field_validator("pattern", mode="before")
-    def check_pattern(cls, v):
-        if v[0] == "/":
-            raise ValueError(
-                "pattern argument cannot start with char: / (does not work in os.path.join function). "
-                "If you want to indicate the exact name of the file, use the format "
-                "directory_name/filename.extension or filename.extension in the pattern argument."
-            )
-        return v
 
 
 class FileReader(BaseModel):
@@ -259,6 +244,7 @@ def create_subs_sess_list(
                 subjs_sess_tsv.write(subj_id + "\t" + session_name + "\n")
 
     subjs_sess_tsv.close()
+    return output_dir / file_name
 
 
 def insensitive_glob(pattern_glob: str, recursive: bool = False) -> List[str]:
@@ -491,6 +477,7 @@ def find_sub_ses_pattern_path(
         origin_pattern = input_directory / "subjects" / subject / session
 
     current_pattern = origin_pattern / "**" / pattern
+
     current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
     if len(current_glob_found) > 1:
         # If we have more than one file at this point, there are two possibilities:

@@ -9,11 +9,11 @@ from clinicadl.dataset.caps_dataset import (
 )
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.concat import ConcatDataset
-from clinicadl.dataset.config.extraction import ExtractionConfig
 from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
-    T1PreprocessingConfig,
+    PreprocessingT1,
 )
+from clinicadl.dataset.transforms.extraction import BaseExtraction
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
@@ -122,7 +122,7 @@ trainer.train(model, split)
 # TEST
 
 preprocessing_test: PreprocessingConfig = caps_reader.get_preprocessing("pet-linear")
-extraction_test: ExtractionConfig = caps_reader.extract_patch(
+extraction_test: BaseExtraction = caps_reader.extract_patch(
     preprocessing=preprocessing_2, arg_patch=2
 )
 transforms_test = Transforms(
@@ -151,7 +151,7 @@ manager = ExperimentManager(maps_path, overwrite=False)
 caps_directory = Path("caps_directory")  # output of clinica pipelines
 caps_reader = CapsReader(caps_directory, manager=manager)
 
-extraction_1 = caps_reader.extract_image(preprocessing=T1PreprocessingConfig())
+extraction_1 = caps_reader.extract_image(preprocessing=PreprocessingT1())
 transforms_1 = Transforms(
     data_augmentation=[torchio.transforms.RandomMotion]
 )  # not mandatory
@@ -161,7 +161,7 @@ split_dir = split_tsv(sub_ses_tsv)  # -> creer un test.tsv et un train.tsv
 
 dataset_t1_image = caps_reader.get_dataset(
     extraction=extraction_1,
-    preprocessing=T1PreprocessingConfig(),
+    preprocessing=PreprocessingT1(),
     sub_ses_tsv=split_dir / "train.tsv",
     transforms=transforms_1,
 )  # do we give config or ob

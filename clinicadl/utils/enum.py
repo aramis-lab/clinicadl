@@ -75,6 +75,7 @@ class ImageModality(str, Enum):
     FLAIR = "flair"
     DTI = "dti"
     CUSTOM = "custom"
+    T2 = "t2"
 
 
 class LinearModality(str, Enum):

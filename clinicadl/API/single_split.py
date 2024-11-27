@@ -4,11 +4,11 @@ import torchio.transforms as transforms
 
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.concat import ConcatDataset
-from clinicadl.dataset.config.extraction import ExtractionConfig, ExtractionPatchConfig
 from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
-    T1PreprocessingConfig,
+    PreprocessingT1,
 )
+from clinicadl.dataset.transforms.extraction import BaseExtraction, Patch
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
@@ -48,7 +48,7 @@ transforms_1 = Transforms(
     image_augmentation=[transforms.RandomMotion()],  # default = no transforms
     object_transforms=[transforms.Blur((0.4, 0.5, 0.6))],  # default = none
     image_transforms=[transforms.Noise(0.2, 0.5, 3)],  # default = MiniMax
-    extraction=ExtractionPatchConfig(patch_size=30, stride_size=20),  # default = Image
+    extraction=Patch(patch_size=30, stride_size=20),  # default = Image
 )  # not mandatory
 
 sub_ses_tsv = Path("")

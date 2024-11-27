@@ -8,14 +8,12 @@ from typing import Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from clinicadl.dataset.caps_reader import CapsReader
-from clinicadl.dataset.config.extraction import ExtractionConfig
 from clinicadl.dataset.config.preprocessing import PreprocessingConfig
+from clinicadl.dataset.readers.caps_reader import CapsReader
+from clinicadl.dataset.transforms.extraction import BaseExtraction
 from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
-from clinicadl.networks.factory import get_network_from_config
-from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split_utils import print_description_log
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.iotools.data_utils import load_data_test
@@ -71,7 +69,7 @@ class ExperimentManager:
 
     def get_info_from_json(
         self,
-    ) -> tuple[PreprocessingConfig, ExtractionConfig, CapsReader, ClinicaDLModel]:
+    ) -> tuple[PreprocessingConfig, BaseExtraction, CapsReader, ClinicaDLModel]:
         """Reads the maps.json file and returns its content."""  # I don't know if this is a useful function
 
         if self.maps_json.is_file():
@@ -121,7 +119,7 @@ class ExperimentManager:
         data_group: str,
         split: int = 0,
         selection_metric: str = "loss",
-        mode: str = "image",  # TODO : need to change this to an ExtractionConfig
+        mode: str = "image",  # TODO : need to change this to an BaseExtraction
         verbose: bool = False,  # TODO: do we remove verbose argument everywhere ?
     ):
         """

@@ -9,12 +9,12 @@ from clinicadl.dataset.caps_dataset import (
 )
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.concat import ConcatDataset
-from clinicadl.dataset.config.extraction import ExtractionConfig
 from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
-    T1PreprocessingConfig,
+    PreprocessingT1,
 )
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.transforms.extraction import BaseExtraction
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
@@ -50,7 +50,7 @@ caps_reader.prepare_data(
 transforms_1 = Transforms(
     object_augmentation=[transforms.Crop, transforms.Transform],
     image_augmentation=[transforms.Crop, transforms.Transform],
-    extraction=ExtractionPatchConfig(patch_size=3),
+    extraction=Patch(patch_size=3),
     image_transforms=[transforms.Blur, transforms.Ghosting],
     object_transforms=[transforms.BiasField, transforms.Motion],
 )  # not mandatory
@@ -62,7 +62,7 @@ caps_reader.prepare_data(
 transforms_2 = Transforms(
     object_augmentation=[transforms.Crop, transforms.Transform],
     image_augmentation=[transforms.Crop, transforms.Transform],
-    extraction=ExtractionSliceConfig(),
+    extraction=Slice(),
     image_transforms=[transforms.Blur, transforms.Ghosting],
     object_transforms=[transforms.BiasField, transforms.Motion],
 )

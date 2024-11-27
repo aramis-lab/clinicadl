@@ -3,16 +3,16 @@ import click
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.dataset.config.preprocessing import (
-    CustomPreprocessingConfig,
-    DTIPreprocessingConfig,
-    PETPreprocessingConfig,
     PreprocessingConfig,
+    PreprocessingCustom,
+    PreprocessingDTI,
+    PreprocessingPET,
 )
 
 tracer = click.option(
     "--tracer",
-    default=get_default("tracer", PETPreprocessingConfig),
-    type=get_type("tracer", PETPreprocessingConfig),
+    default=get_default("tracer", PreprocessingPET),
+    type=get_type("tracer", PreprocessingPET),
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
         "Name of the tracer used for the PET acquisition (trc-<tracer>). "
@@ -22,8 +22,8 @@ tracer = click.option(
 suvr_reference_region = click.option(
     "-suvr",
     "--suvr_reference_region",
-    default=get_default("suvr_reference_region", PETPreprocessingConfig),
-    type=get_type("suvr_reference_region", PETPreprocessingConfig),
+    default=get_default("suvr_reference_region", PreprocessingPET),
+    type=get_type("suvr_reference_region", PreprocessingPET),
     help=(
         "Regions used for normalization if MODALITY is `pet-linear`. "
         "Intensity normalization using the average PET uptake in reference regions resulting in a standardized uptake "
@@ -34,8 +34,8 @@ suvr_reference_region = click.option(
 custom_suffix = click.option(
     "-cn",
     "--custom_suffix",
-    default=get_default("custom_suffix", CustomPreprocessingConfig),
-    type=get_type("custom_suffix", CustomPreprocessingConfig),
+    default=get_default("custom_suffix", PreprocessingCustom),
+    type=get_type("custom_suffix", PreprocessingCustom),
     help=(
         "Suffix of output files if MODALITY is `custom`. "
         "Suffix to append to filenames, for instance "
@@ -46,16 +46,16 @@ custom_suffix = click.option(
 dti_measure = click.option(
     "--dti_measure",
     "-dm",
-    type=get_type("dti_measure", DTIPreprocessingConfig),
+    type=get_type("dti_measure", PreprocessingDTI),
     help="Possible DTI measures.",
-    default=get_default("dti_measure", DTIPreprocessingConfig),
+    default=get_default("dti_measure", PreprocessingDTI),
 )
 dti_space = click.option(
     "--dti_space",
     "-ds",
-    type=get_type("dti_space", DTIPreprocessingConfig),
+    type=get_type("dti_space", PreprocessingDTI),
     help="Possible DTI space.",
-    default=get_default("dti_space", DTIPreprocessingConfig),
+    default=get_default("dti_space", PreprocessingDTI),
 )
 preprocessing = click.option(
     "--preprocessing",

@@ -1,45 +1,11 @@
 # coding: utf8
-# TODO: create a folder for generate/ prepare_data/ data to deal with capsDataset objects ?
 import abc
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
-import torch
-from pydantic import BaseModel
-from torch.utils.data import Dataset
-
-from clinicadl.dataset.config.extraction import (
-    ExtractionConfig,
-    ExtractionImageConfig,
-    ExtractionPatchConfig,
-    ExtractionROIConfig,
-    ExtractionSliceConfig,
-)
-from clinicadl.dataset.config.preprocessing import PreprocessingConfig
-from clinicadl.dataset.config.utils import (
-    get_infos_from_json,
-)
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.transforms.transforms import Transforms
 from clinicadl.dataset.utils import CapsDatasetOutput
-from clinicadl.utils.enum import (
-    ExtractionMethod,
-    Pattern,
-    Preprocessing,
-    SliceDirection,
-    SliceMode,
-    Template,
-)
-from clinicadl.utils.exceptions import (
-    ClinicaDLCAPSError,
-    ClinicaDLConcatError,
-    ClinicaDLTSVError,
-)
-from clinicadl.utils.iotools.clinica_utils import check_caps_folder
-from clinicadl.utils.iotools.utils import path_decoder, read_preprocessing
 
 logger = getLogger("clinicadl")
 
@@ -60,8 +26,7 @@ class ConcatDataset(CapsDataset):
         logger.debug(f"Datasets summary length: {self._len}")
         logger.debug(f"Datasets indexes: {self._indexes}")
 
-        self.caps_dict = self.compute_caps_dict()
-        self.check_configs()
+        self.check_extraction()
 
         self.eval_mode = False
 
@@ -74,59 +39,13 @@ class ConcatDataset(CapsDataset):
     def __len__(self) -> int:
         return self._len
 
-    def check_configs(self):
-        extraction = self._datasets[len(self._datasets) - 1].extraction
-        preprocessing = self._datasets[len(self._datasets) - 1].preprocessing
-        transforms = self._datasets[len(self._datasets) - 1].transforms
-        size = self._datasets[len(self._datasets) - 1].size
-        elem_per_image = self._datasets[len(self._datasets) - 1].elem_per_image
-
-        for idx in range(len(self._datasets) - 1):
-            if self._datasets[idx].extraction != extraction:
-                raise ClinicaDLConcatError(
-                    f"Different extraction modes found in datasets. "
-                    f"Dataset {idx+1}: {self._datasets[idx].extraction}, "
-                    f"Dataset {len(self._datasets)}: {extraction}"
-                )
-
-            if self._datasets[idx].preprocessing != preprocessing:
-                raise ClinicaDLConcatError(
-                    f"Different preprocessing modes found in datasets. "
-                    f"Dataset {idx+1}: {self._datasets[idx].preprocessing}, "
-                    f"Dataset {len(self._datasets)}: {preprocessing}"
-                )
-
-            if self._datasets[idx].transforms != transforms:
-                raise ClinicaDLConcatError(
-                    f"Different transforms modes found in datasets. "
-                    f"Dataset {idx+1}: {self._datasets[idx].transforms}, "
-                    f"Dataset {len(self._datasets)}: {transforms}"
-                )
-            if self._datasets[idx].size != size:
-                raise ClinicaDLConcatError(
-                    f"Different size modes found in datasets. "
-                    f"Dataset {idx+1}: {self._datasets[idx].size}, "
-                    f"Dataset {len(self._datasets)}: {size}"
-                )
-            if self._datasets[idx].elem_per_image != elem_per_image:
-                raise ClinicaDLConcatError(
-                    f"Different elem_per_image modes found in datasets. "
-                    f"Dataset {idx+1}: {self._datasets[idx].elem_per_image}, "
-                    f"Dataset {len(self._datasets)}: {elem_per_image}"
-                )
-
-        self.extraction = extraction
-        self.preprocessing = preprocessing
-        self.transforms = transforms
-        self.size = size
-        self.elem_per_image = elem_per_image
-
-    def compute_caps_dict(self) -> Dict[str, Path]:
-        caps_dict = dict()
-        for idx in range(len(self._datasets)):
-            cohort = idx
-            caps_path = self._datasets[idx].caps_directory
-            check_caps_folder(caps_path)
-            caps_dict[cohort] = caps_path
-
-        return caps_dict
+    def check_extraction(self):
+        extractions = [d.extraction for d in self._datasets]
+        if all(
+            i == extractions[0] for i in extractions
+        ):  # check that all the CaspDataset have the same mode
+            self.extraction = extractions[0]
+        else:
+            raise AttributeError(
+                "All the CapsDataset must have the same extraction method: 'image','patch','roi','slice', etc."
+            )

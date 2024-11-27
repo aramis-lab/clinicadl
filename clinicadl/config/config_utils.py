@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Any, get_args
 
 import click
-from pydantic import BaseModel
+
+from clinicadl.utils.config import ClinicaDLConfig
 
 
 def get_default_from_config_class(arg: str, config: BaseModel) -> Any:

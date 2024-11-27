@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from pydantic import BaseModel, ConfigDict
+from clinicadl.utils.config import ClinicaDLConfig
 
 logger = getLogger("clinicadl.lr_config")
 

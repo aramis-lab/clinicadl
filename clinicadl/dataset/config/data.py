@@ -3,9 +3,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import field_validator
 
-from clinicadl.dataset.data_utils import load_data_test
+from clinicadl.utils.config import ClinicaDLConfig
+
+# from clinicadl.dataset.utils import load_data_test
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
@@ -14,7 +16,10 @@ from clinicadl.utils.exceptions import (
 logger = getLogger("clinicadl.data_config")
 
 
-class DataConfig(BaseModel):  # TODO : put in data module
+# TODO: check if this file is still useful
+
+
+class DataConfig(ClinicaDLConfig):  # TODO : put in data module
     """Config class to specify the data.
 
     caps_directory and preprocessing_json are arguments
@@ -26,8 +31,6 @@ class DataConfig(BaseModel):  # TODO : put in data module
     mask_path: Optional[Path] = None
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
-    # pydantic config
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @field_validator("diagnoses", mode="before")
     def validator_diagnoses(cls, v):
@@ -38,11 +41,11 @@ class DataConfig(BaseModel):  # TODO : put in data module
 
     def create_groupe_df(self):
         group_df = None
-        if self.data_tsv is not None and self.data_tsv.is_file():
-            group_df = load_data_test(
-                self.data_tsv,
-                multi_cohort=False,
-            )
+        # if self.data_tsv is not None and self.data_tsv.is_file():
+        # group_df = load_data_test(
+        #     self.data_tsv,
+        #     multi_cohort=False,
+        # )
         return group_df
 
     def is_given_label_code(self, _label: str, _label_code: Union[str, Dict[str, int]]):

@@ -4,47 +4,51 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
+import pandas as pd
 import torch
 from pydantic import BaseModel, ConfigDict
 
-from clinicadl.dataset.config import extraction, preprocessing
+from clinicadl.dataset.config import preprocessing
+from clinicadl.dataset.transforms import extraction
 from clinicadl.dataset.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.iotools.utils import read_preprocessing
 
 logger = getLogger("clinicadl")
+PARTICIPANT_ID = "participant_id"
+SESSION_ID = "session_id"
 
 
 def get_extraction(
     extract_method: Union[str, ExtractionMethod],
-) -> type[extraction.ALL_EXTRACTION_TYPES]:
+) -> type[extraction.BaseExtraction]:
     extract_method = ExtractionMethod(extract_method)
     if extract_method == ExtractionMethod.ROI:
-        return extraction.ExtractionROIConfig
+        return extraction.ROI
     elif extract_method == ExtractionMethod.SLICE:
-        return extraction.ExtractionSliceConfig
+        return extraction.Slice
     elif extract_method == ExtractionMethod.IMAGE:
-        return extraction.ExtractionImageConfig
+        return extraction.Image
     elif extract_method == ExtractionMethod.PATCH:
-        return extraction.ExtractionPatchConfig
+        return extraction.Patch
     else:
         raise ValueError(f"Preprocessing {extract_method.value} is not implemented.")
 
 
 def get_preprocessing(
     preprocessing_type: Union[str, Preprocessing],
-) -> type[preprocessing.ALL_PREPROCESSING_TYPES]:
+) -> type[preprocessing.PreprocessingConfig]:
     preprocessing_type = Preprocessing(preprocessing_type)
     if preprocessing_type == Preprocessing.T1_LINEAR:
-        return preprocessing.T1PreprocessingConfig
+        return preprocessing.PreprocessingT1
     elif preprocessing_type == Preprocessing.PET_LINEAR:
-        return preprocessing.PETPreprocessingConfig
+        return preprocessing.PreprocessingPET
     elif preprocessing_type == Preprocessing.FLAIR_LINEAR:
-        return preprocessing.FlairPreprocessingConfig
+        return preprocessing.PreprocessingFlair
     elif preprocessing_type == Preprocessing.CUSTOM:
-        return preprocessing.CustomPreprocessingConfig
+        return preprocessing.PreprocessingCustom
     elif preprocessing_type == Preprocessing.DWI_DTI:
-        return preprocessing.DTIPreprocessingConfig
+        return preprocessing.PreprocessingDTI
     else:
         raise ValueError(
             f"Preprocessing {preprocessing_type.value} is not implemented."
@@ -53,9 +57,7 @@ def get_preprocessing(
 
 def get_infos_from_json(
     json_path: Path,
-) -> Tuple[
-    preprocessing.ALL_PREPROCESSING_TYPES, extraction.ALL_EXTRACTION_TYPES, Transforms
-]:
+) -> Tuple[preprocessing.PreprocessingConfig, extraction.BaseExtraction, Transforms]:
     """
     Extracts the preprocessing and mode from a json file.
 
@@ -76,9 +78,7 @@ def get_infos_from_json(
 
 def get_infos_from_parameters(
     **kwargs,
-) -> Tuple[
-    preprocessing.ALL_PREPROCESSING_TYPES, extraction.ALL_EXTRACTION_TYPES, Transforms
-]:
+) -> Tuple[preprocessing.PreprocessingConfig, extraction.BaseExtraction, Transforms]:
     """
     Extracts the preprocessing and mode from a json file.
 

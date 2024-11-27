@@ -2,8 +2,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
-
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import Compensation
 
 logger = getLogger("clinicadl.reproducibility_config")

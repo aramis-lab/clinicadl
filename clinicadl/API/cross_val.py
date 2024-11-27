@@ -9,12 +9,12 @@ from clinicadl.dataset.caps_dataset import (
 )
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.concat import ConcatDataset
-from clinicadl.dataset.config.extraction import ExtractionConfig
 from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
-    T1PreprocessingConfig,
+    PreprocessingT1,
 )
 from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.transforms.extraction import BaseExtraction
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.losses.factory import get_loss_function
@@ -75,6 +75,9 @@ for split in splitter.get_splits(splits=(0, 3, 4), dataloader_config=dataloader_
     )
     optimizer, _ = get_optimizer(network, AdamConfig())
     model = ClinicaDLModel(network=network_config, loss=nn.MSE(), optimizer=optimizer)
+
+    split._init_dataloader(train, dataloadeR_config, sampler)
+    split._init_dataloader(val, dataloadeR_config_2, sampler_2)
 
     trainer.train(model, split)
     # le trainer va instancier un predictor/valdiator dans le train ou dans le init

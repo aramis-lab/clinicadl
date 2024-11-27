@@ -1,33 +1,15 @@
 import json
+import re
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import nibabel as nib
 import pandas as pd
-import torch
-from joblib import Parallel, delayed
-from torch import save as save_tensor
 
-from clinicadl.dataset.config.extraction import (
-    ALL_EXTRACTION_TYPES,
-    ExtractionConfig,
-    ExtractionImageConfig,
-)
-from clinicadl.dataset.config.preprocessing import (
-    ALL_PREPROCESSING_TYPES,
-    CustomPreprocessingConfig,
-    DTIPreprocessingConfig,
-    PETPreprocessingConfig,
-    PreprocessingConfig,
-)
-from clinicadl.dataset.config.utils import (
-    get_infos_from_json,
-    get_preprocessing,
-)
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.datasets.concat import ConcatDataset
+from clinicadl.dataset.config.preprocessing import PreprocessingConfig
 from clinicadl.dataset.transforms.transforms import Transforms
+from clinicadl.dataset.utils import insensitive_glob
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -37,16 +19,9 @@ from clinicadl.utils.enum import (
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
-)
-from clinicadl.utils.iotools.clinica_utils import (
-    check_caps_folder,
-    clinicadl_file_reader,
-    container_from_filename,
-    create_subs_sess_list,
-    determine_caps_or_bids,
-    get_subject_session_list,
 )
 from clinicadl.utils.iotools.utils import path_encoder
 
@@ -59,8 +34,6 @@ class CapsReader(Reader):
     def __init__(
         self,
         caps_directory: Path,
-        # manager: Optional[ExperimentManager], # I don't think we can give the manager as arg of the class constructor
-        from_bids: Optional[Path] = None,
     ):
         """CAPS reader class for handling single-cohort CAPS directories.
 
@@ -68,204 +41,146 @@ class CapsReader(Reader):
             caps_directory (Path): Path to the CAPS directory.
             from_bids (Optional[Path], optional): Path to BIDS directory, if applicable. Defaults to None.
         """
+        super().__init__(caps_directory)
+        self._check_caps_folder()
+        self.subject_directory = self.input_directory / "subjects"
 
-        self._get_input_directory(caps_directory, from_bids)
+    def _check_caps_folder(self):
+        """Check if provided `caps_directory`is a CAPS folder.
 
-    def tensor_dir(self, file, preprocessing: PreprocessingConfig) -> Path:
+        Raises
+        ------
+        ValueError :
+            If `caps_directory` is not a string.
+
+        ClinicaCAPSError :
+            If the provided path does not exist, or is not a directory.
+            If the provided path is a BIDS folder (BIDS and CAPS could be
+            swapped by user). We simply check that there is not a folder
+            whose name starts with 'sub-' in the provided path (that exists
+            in BIDS hierarchy).
+
+        Notes
+        -----
+        Keep in mind that a CAPS folder can be empty.
+        """
+        sub_folders = [
+            f for f in self.input_directory.iterdir() if f.name.startswith("sub-")
+        ]
+        if len(sub_folders) > 0:
+            error_string = (
+                "Your CAPS directory contains at least one folder whose name "
+                "starts with 'sub-'. Check that you did not swap BIDS and CAPS folders.\n"
+                "Folder(s) found that match(es) BIDS architecture:\n"
+            )
+            for directory in sub_folders:
+                error_string += f"\t{directory}\n"
+            error_string += (
+                "A CAPS directory has a folder 'subjects' at its root, in which "
+                "are stored the output of the pipeline for each participant."
+            )
+            raise ClinicaDLCAPSError(error_string)
+
+    def __str__(self) -> str:
+        return f"CAPS Reader for {self.input_directory}"
+
+    def get_preprocessing_folder(
+        self, participant: str, session: str, preprocessing: Preprocessing
+    ) -> Path:
+        return self.get_session_path(participant=participant, session=session) / (
+            preprocessing.value
+        ).replace("-", "_")
+
+    def get_participant_path(self, participant: str) -> Path:
+        return self.subject_directory / participant
+
+    def get_tensor_dir(
+        self, participant: str, session: str, preprocessing: PreprocessingConfig
+    ) -> Path:
         return (
-            self.input_directory
-            / container_from_filename(file)
+            self.get_session_path(participant, session)
             / "deeplearning_prepare_data"
             / "image_based"
-            / preprocessing.compute_folder(self.bids)
+            / preprocessing.preprocessing.value.replace("-", "_")
         )
 
-    def create_caps_json(self):
-        """TODO: COMPLETE this method so that it writes all the info needed in a caps.json file"""
-        caps_json = self.input_directory / "caps.json"
-        if caps_json.is_file:
-            with open(caps_json, "a") as f:
-                caps_data = json.load(f)
-                return caps_data
-
-        else:
-            with open(caps_json, "w") as f:
-                f.write("tests")
-                caps_data = json.load(f)
-                return caps_data
-
-    def _get_input_directory(
-        self, caps_directory: Path, from_bids: Optional[Path] = None
-    ):
-        """Set the input directory as either BIDS or CAPS.
+    def get_tensor_path(
+        self, participant: str, session: str, preprocessing: PreprocessingConfig
+    ) -> Path:
+        """
+        Gets the path to the tensor image (*.pt)
 
         Args:
-            caps_directory (Path): CAPS directory path.
-            from_bids (Optional[Path]): BIDS directory path.
+            participant: ID of the participant.
+            session: ID of the session.
+        Returns:
+            image_path: path to the tensor containing the whole image.
         """
-        if from_bids is not None:
-            if from_bids.exists():
-                self.input_directory = from_bids
-                self.bids = True
-            else:
-                raise ClinicaDLArgumentError("Specified BIDS directory does not exist.")
-        else:
-            self.input_directory = caps_directory
-            check_caps_folder(caps_directory)
-            self.bids = False
 
-    def get_input_files(
-        self, preprocessing: PreprocessingConfig, data_tsv: Optional[Path] = None
-    ):
-        subjects, sessions = get_subject_session_list(
-            self.input_directory, data_tsv, self.bids, False, None
-        )
-        logger.debug(f"List of subjects: \n{subjects}.")
-        logger.debug(f"List of sessions: \n{sessions}.")
-
-        file_type = preprocessing.get_filetype()
-
-        input_files = clinicadl_file_reader(
-            subjects, sessions, self.input_directory, file_type.model_dump()
-        )[0]
-        logger.debug(f"Selected image file name list: {input_files}.")
-
-        return input_files
-
-    def prepare_data(
-        self,
-        preprocessing: PreprocessingConfig,
-        data_tsv: Optional[Path] = None,
-        n_proc: int = 2,
-        use_uncropped_images: bool = False,
-    ):
-        """TO COMPLETE"""
-
-        input_files = self.get_input_files(preprocessing, data_tsv=data_tsv)
-
-        def prepare_image(file: Path):
-            output_file_dir = self.tensor_dir(file, preprocessing=preprocessing)
-
-            output_file_dir.mkdir(parents=True, exist_ok=True)
-            output_file = output_file_dir / file.name.replace(".nii.gz", ".pt")
-
-            logger.debug(f"Processing of {file}.")
-            image_array = nib.loadsave.load(file).get_fdata(dtype="float32")  # type: ignore
-
-            # get some important infos about the image
-            info_df = pd.DataFrame(
-                [
-                    {
-                        "mean": image_array.mean(),
-                        "std": image_array.std(),
-                        "max": image_array.max(),
-                        "min": image_array.min(),
-                    }
-                ]
+        try:
+            filepath = self.get_image_path(participant, session, preprocessing)
+            image_filename = filepath.name.replace(".nii.gz", ".pt")
+            image_path = (
+                self.get_tensor_dir(participant, session, preprocessing)
+                / image_filename
             )
-            info_df.to_csv(
-                container_from_filename(file) / "image_info.tsv", sep="\t", index=False
+            return image_path
+
+        except ClinicaDLCAPSError:
+            raise ClinicaDLCAPSError(
+                f"Could not find the pt path for participant {participant} and session {session}"
             )
 
-            # extract and save the image tensor
-            image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
-            save_tensor(image_tensor.clone(), output_file)
-            logger.debug(f"Output tensor saved at {output_file}")
-
-        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
-
-    def write_output_imgs(
-        self,
-        output_mode: list,
-        file: Path,
-        preprocessing: PreprocessingConfig,
-    ):
-        # Write the extracted tensor on a .pt file
-        container = container_from_filename(file)
-        mod_subfolder = preprocessing.compute_folder(self.bids)
-
-        for filename, tensor in output_mode:
-            output_file_dir = (
-                self.input_directory
-                / container
-                / "deeplearning_prepare_data"
-                / "image_based"  # always image as we remove save features option for ROI, SLice and Patch ?
-                / mod_subfolder
-            )
-            output_file_dir.mkdir(parents=True, exist_ok=True)
-            output_file = output_file_dir / filename
-            save_tensor(tensor, output_file)
-            logger.debug(f"Output tensor saved at {output_file}")
-
-    def write_preprocessing(
-        self,
-        preprocessing: PreprocessingConfig,
-        extraction: ExtractionConfig,  # I think we need to add transforms and now extraction is inside Transforms ?
+    def get_image_path(
+        self, participant: str, session: str, preprocessing: PreprocessingConfig
     ) -> Path:
-        extract_dir = self.input_directory / "tensor_extraction"
-        extract_dir.mkdir(parents=True, exist_ok=True)
+        """Get the path"""
 
-        json_path = extract_dir / extraction.extract_json
-
-        if json_path.is_file():
-            raise FileExistsError(
-                f"JSON file at {json_path} already exists. "
-                f"Please choose another name for your preprocessing file."
-            )
-
-        preprocessing_dict = preprocessing.model_dump()
-        preprocessing_dict.update(extraction.model_dump())
-
-        with json_path.open(mode="w") as json_file:
-            json.dump(preprocessing_dict, json_file, default=path_encoder)
-        return json_path
-
-    def get_dataset_from_json(
-        self, json_path: Path, sub_ses_tsv: Optional[Path] = None
-    ):
-        preprocessing, _, transforms = self.get_infos_from_json(
-            json_path
-        )  # we need to add the transforms infos in the caps.json
-
-        return self.get_dataset(
-            preprocessing=preprocessing, transforms=transforms, sub_ses_tsv=sub_ses_tsv
+        current_pattern = (
+            self.get_session_path(participant, session)
+            / "**"
+            / preprocessing.file_type.pattern
         )
+        current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+        if len(current_glob_found) > 1:
+            error_str = f"\t*  ({participant} | {session}): More than 1 file found:\n"
+            for found_file in current_glob_found:
+                error_str += f"\t\t{found_file}\n"
+            raise ClinicaDLCAPSError(error_str)
+        elif len(current_glob_found) == 0:
+            raise ClinicaDLCAPSError(
+                f"\t* ({participant} | {session}): No file found\n"
+            )
+        else:
+            return Path(current_glob_found[0])
 
-    def get_dataset(
+    def _write_caps_json(
         self,
+        transforms: Transforms,
         preprocessing: PreprocessingConfig,
-        sub_ses_tsv: Optional[Path] = None,
-        transforms: Optional[Transforms] = None,
-    ) -> CapsDataset:
-        """TO COMPLETE"""
+        data_tsv: Path,
+        name: Optional[str] = None,
+    ) -> None:
+        """TODO: COMPLETE this method so that it writes all the info needed in a caps.json file"""
+        if name:
+            if not name.endswith(".json"):
+                name += ".json"
+            caps_json = self.input_directory / name
+        else:
+            caps_json = self.input_directory / "caps.json"
 
-        if sub_ses_tsv is None:
-            sub_ses_tsv = create_subs_sess_list(
-                self.input_directory, output_dir=self.input_directory
+        if caps_json.is_file():
+            raise ClinicaDLCAPSError(
+                f"The JSON file {caps_json} already exists, please give another name."
             )
-        elif not sub_ses_tsv.is_file():
-            raise FileNotFoundError(
-                f"The provided sub_ses_tsv file {sub_ses_tsv} does not exist."
-            )
+        else:
+            # dict_ = transforms.model_dump()
+            # dict_.update(preprocessing.model_dump())
+            # dict_["data_tsv"] = str(data_tsv)
 
-        data_df = pd.read_csv(
-            sub_ses_tsv, sep="\t"
-        )  # create function to check if we have the part and sess columns and to read the csv
-
-        if transforms is None:
-            logger.info(
-                "No transforms was provided. We will use the default transforms. Check the documentation for more information"
-            )
-            transforms = Transforms(
-                extraction=ExtractionImageConfig()
-            )  # means no transforms and image (default)
-
-        return CapsDataset(
-            caps_directory=self.input_directory,
-            preprocessing=preprocessing,
-            data_df=data_df,
-            transforms=transforms,
-        )
+            # with open(caps_json, "w") as f:
+            #     json.dump(dict_, f)
+            print("yes")
 
     def load_data_test(self, test_path: Path, baseline=True):
         """

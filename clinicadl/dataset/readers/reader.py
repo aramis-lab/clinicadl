@@ -1,54 +1,24 @@
 import json
+import re
+from abc import abstractmethod
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-import nibabel as nib
-import pandas as pd
-import torch
-from joblib import Parallel, delayed
-from torch import save as save_tensor
-
-from clinicadl.dataset.config.extraction import (
-    ALL_EXTRACTION_TYPES,
-    ExtractionConfig,
-    ExtractionImageConfig,
-)
-from clinicadl.dataset.config.preprocessing import (
-    ALL_PREPROCESSING_TYPES,
-    CustomPreprocessingConfig,
-    DTIPreprocessingConfig,
-    PETPreprocessingConfig,
-    PreprocessingConfig,
-)
+from clinicadl.dataset.config.preprocessing import PreprocessingConfig
 from clinicadl.dataset.config.utils import (
     get_infos_from_json,
-    get_preprocessing,
 )
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.datasets.concat import ConcatDataset
+from clinicadl.dataset.transforms.extraction import (
+    BaseExtraction,
+    Image,
+)
 from clinicadl.dataset.transforms.transforms import Transforms
-from clinicadl.utils.enum import (
-    DTIMeasure,
-    DTISpace,
-    Preprocessing,
-    SUVRReferenceRegions,
-    Tracer,
-)
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
-from clinicadl.utils.iotools.clinica_utils import (
-    check_caps_folder,
-    clinicadl_file_reader,
-    container_from_filename,
-    create_subs_sess_list,
-    determine_caps_or_bids,
-    get_subject_session_list,
-)
-from clinicadl.utils.iotools.utils import path_encoder
 
 logger = getLogger("clinicadl.caps_reader")
 
@@ -58,77 +28,68 @@ class Reader:
 
     Args:
         input_dir (Path): Path to the BIDS or CAPS directory.
-        bids (bool): Flag indicating if the input is a BIDS directory.
     """
 
-    def __init__(self, input_dir: Path, bids: bool) -> None:
+    def __init__(self, input_dir: Path) -> None:
         self.input_directory = input_dir
-        self.bids = bids
+        self._check_folder()
 
-    def preprocessing_folder(
-        self, subject: str, session: str, preprocessing: Preprocessing
-    ) -> Path:
-        return (
-            self.input_directory
-            / "subjects"
-            / subject
-            / session
-            / (preprocessing.value).replace("-", "_")
-        )
+    def _check_folder(self) -> None:
+        """Utility function which performs checks common to BIDS and CAPS folder structures."""
 
-    def get_preprocessing(
-        self, preprocessing: Union[str, Preprocessing]
-    ) -> PreprocessingConfig:
-        """Get preprocessing configuration for the input directory.
+        if not isinstance(self.input_directory, (Path, str)):
+            raise ValueError(
+                "Argument you provided to check__folder() is not a string."
+            )
+        if not self.input_directory.is_dir():
+            raise ClinicaDLArgumentError(
+                f"The directory you gave is not a folder.\n"
+                "Error explanations:\n"
+                f"\t- Clinica expected the following path to be a folder: {self.input_directory}\n"
+                "\t- If you gave relative path, did you run Clinica on the good folder?"
+            )
 
-        Args:
-            preprocessing (Union[str, PreprocessingConfig]): Preprocessing type as a string or PreprocessingConfig.
+    @abstractmethod
+    def get_participant_path(self, participant: str) -> Path:
+        pass
 
-        Returns:
-            PreprocessingConfig: The configuration for preprocessing.
+    def get_session_path(self, participant: str, session: str) -> Path:
+        return self.get_participant_path(participant) / session
+
+    def get_participant_session_from_filename(self, filename: Path) -> Tuple[str, str]:
+        """Extract container from BIDS or CAPS file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to BIDS or CAPS filename.
+
+        Returns
+        -------
+        str :
+            Container path of the form "<participant_id>/<session_id>".
+
+        Examples
+        --------
+        >>> container_from_filename('/path/to/bids/sub-CLNC01/ses-M000/anat/sub-CLNC01_ses-M000_T1w.nii.gz')
+        'sub-CLNC01/ses-M000'
+        >>> container_from_filename('caps/subjects/sub-CLNC01/ses-M000/dwi/preprocessing/sub-CLNC01_ses-M000_preproc.nii')
+        'sub-CLNC01/ses-M000'
         """
 
-        preprocessing_ = Preprocessing(preprocessing)
-        subjects, sessions = get_subject_session_list(
-            input_dir=self.input_directory, is_bids_dir=self.bids
-        )
-        if self.preprocessing_folder(
-            subject=subjects[0], session=sessions[0], preprocessing=preprocessing_
-        ).is_dir():
-            preprocessing_config = get_preprocessing(preprocessing_)()
-            preprocessing_config.from_bids = self.bids
-            pattern = preprocessing_config.file_type.pattern
-
-            def get_value(enum, pattern: str):
-                for value in enum:
-                    if value.value in pattern:
-                        return value
-                raise ValueError(
-                    f"Could not match pattern '{pattern}' in {[e.value for e in enum]}"
-                )
-
-            if isinstance(preprocessing_config, PETPreprocessingConfig):
-                preprocessing_config.tracer = get_value(Tracer, pattern)
-                preprocessing_config.suvr_reference_region = get_value(
-                    SUVRReferenceRegions, pattern
-                )
-
-            elif isinstance(preprocessing_config, DTIPreprocessingConfig):
-                preprocessing_config.dti_measure = get_value(DTIMeasure, pattern)
-                preprocessing_config.dti_space = get_value(DTISpace, pattern)
-
-            elif isinstance(preprocessing_config, CustomPreprocessingConfig):
-                # TODO: add something to find the custom pattern
-                pass
-        else:
-            raise FileNotFoundError(
-                f"The preprocessing folder {preprocessing} does not exist."
+        m = re.search(r"(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)", str(filename))
+        if not m:
+            raise ValueError(
+                f"Input filename {filename} is not in a BIDS or CAPS compliant format."
+                "It does not contain the participant and session ID."
             )
-        return preprocessing_config
+        participant = m.group(1)
+        session = m.group(2)
+        return participant, session
 
     def get_infos_from_json(
         self, preprocessing_json: Path
-    ) -> Tuple[ALL_PREPROCESSING_TYPES, ALL_EXTRACTION_TYPES, Transforms]:
+    ) -> Tuple[PreprocessingConfig, BaseExtraction, Transforms]:
         """Load preprocessing and extraction configuration from JSON file."""
         if not preprocessing_json.is_file():
             raise FileNotFoundError(

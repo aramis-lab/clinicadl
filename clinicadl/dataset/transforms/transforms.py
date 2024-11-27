@@ -1,21 +1,19 @@
 from logging import getLogger
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
-import torch
-import torchio.transforms as transforms
 import torchvision.transforms as torch_transforms
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import field_validator, model_validator
 
-from clinicadl.dataset.config.extraction import (
-    ALL_EXTRACTION_TYPES,
-    ExtractionConfig,
-    ExtractionImageConfig,
+from clinicadl.dataset.transforms.extraction import (
+    BaseExtraction,
+    Image,
 )
 from clinicadl.dataset.transforms.factory import (
     MinMaxNormalization,
     NanRemoval,
     SizeReduction,
 )
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SizeReductionFactor,
@@ -25,8 +23,8 @@ from clinicadl.utils.enum import (
 logger = getLogger("clinicadl.transforms.transforms")
 
 
-class Transforms(BaseModel):
-    extraction: ALL_EXTRACTION_TYPES
+class Transforms(ClinicaDLConfig):
+    extraction: BaseExtraction
     image_augmentation: list[Callable] = []
     object_augmentation: list[Callable] = []
     image_transforms: list[Callable] = []
@@ -37,25 +35,27 @@ class Transforms(BaseModel):
 
     @model_validator(mode="after")
     def check_transforms(self):
-        if isinstance(self.extraction, ExtractionConfig):
-            raise ValueError(
-                "You need to provide a type of ExtractionConfig (Image, Patch, Roi or Slice). You can't just pass an ExtractionConfig."
-            )
-
-        elif isinstance(self.extraction, ExtractionImageConfig):
+        if isinstance(self.extraction, Image):
             if self.object_transforms:
                 logger.warning(
                     "You provided object_transforms but in the chosen configuration, image and object are the same."
                 )
-                self.image_transforms.append(self.object_transforms)
+                for trans in self.object_transforms:
+                    self.image_transforms.append(trans)
                 self.object_transforms = []
 
             if self.object_augmentation:
                 logger.warning(
                     "You provided object_augmentation but in the chosen configuration, image and object are the same."
                 )
-                self.image_augmentation.append(self.object_augmentation)
+                for aug in self.object_augmentation:
+                    self.image_augmentation.append(aug)
                 self.object_augmentation = []
+
+        return self
+
+    def __str__(self):
+        return "transforms"
 
     def get_transforms(
         self,
@@ -69,7 +69,7 @@ class Transforms(BaseModel):
 
         self.image_transforms.append(NanRemoval())
         if normalize:
-            self.image_transforms.append((MinMaxNormalization))
+            self.image_transforms.append((MinMaxNormalization()))
         if size_reduction:
             self.image_transforms.append(
                 SizeReduction(size_reduction_factor=size_reduction_factor)

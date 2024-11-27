@@ -11,10 +11,6 @@ from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 logger = getLogger("clinicadl")
 
-##################################
-# Transformations
-##################################
-
 
 class RandomNoising(object):
     """Applies a random zoom to a tensor"""

@@ -1,14 +1,13 @@
 from logging import getLogger
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
-
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExperimentTracking
 
 logger = getLogger("clinicadl.callbacks_config")
 
 
-class CallbacksConfig(BaseModel):
+class CallbacksConfig(ClinicaDLConfig):
     """Config class to add callbacks to the training."""
 
     emissions_calculator: bool = False

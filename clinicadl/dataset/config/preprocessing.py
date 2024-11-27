@@ -3,8 +3,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -19,7 +20,7 @@ from clinicadl.utils.iotools.clinica_utils import FileType
 logger = getLogger("clinicadl.modality_config")
 
 
-class PreprocessingConfig(BaseModel):
+class PreprocessingConfig(BaseModel, abc.ABC):
     """
     Abstract config class for the preprocessing procedure.
     """
@@ -28,52 +29,44 @@ class PreprocessingConfig(BaseModel):
     preprocessing: Preprocessing
     use_uncropped_image: bool = False
 
-    # pydantic config
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
+    def get_filetype(self) -> FileType:
+        return self.get_bids_filetype() if self.from_bids else self.get_caps_filetype()
+
     @abc.abstractmethod
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         """Abstract method to get the BIDS filetype."""
         pass
 
     @abc.abstractmethod
-    def caps_nii(self) -> tuple:
-        """Abstract method to retrieve CAPS file information."""
-        pass
-
-    @abc.abstractmethod
-    def get_filetype(self) -> FileType:
+    def get_caps_filetype(self) -> FileType:
         """Abstract method to obtain FileType details."""
         pass
 
-    def compute_folder(self, from_bids: bool = False) -> str:
-        return (
-            self.preprocessing.value
-            if from_bids
-            else self.preprocessing.value.replace("-", "_")
-        )
+    def compute_folder(self) -> str:
+        return self.preprocessing.value.replace("-", "_")
 
     @computed_field
     @property
     def file_type(self) -> FileType:
-        if self.from_bids:
-            return self.bids_nii()
-        elif self.preprocessing not in Preprocessing:
+        if self.preprocessing not in Preprocessing:
             raise NotImplementedError(
                 f"Extraction of preprocessing {self.preprocessing.value} is not implemented from CAPS directory."
             )
         else:
             return self.get_filetype()
 
-    def linear_nii(self) -> FileType:
+    def linear_nii(
+        self, modality: LinearModality, needed_pipeline: Preprocessing
+    ) -> FileType:
         """
         Constructs the file type for linear caps image data
         """
-        needed_pipeline, modality = self.caps_nii()
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
 
         file_type = FileType(
-            pattern=f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
+            pattern=f"{self.compute_folder()}/*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
             description=f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
             + (
                 ""
@@ -85,7 +78,7 @@ class PreprocessingConfig(BaseModel):
         return file_type
 
 
-class PETPreprocessingConfig(PreprocessingConfig):
+class PreprocessingPET(PreprocessingConfig):
     """
     Configuration for PET image preprocessing
     """
@@ -94,7 +87,15 @@ class PETPreprocessingConfig(PreprocessingConfig):
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.CEREBELLUMPONS2
     preprocessing: Preprocessing = Preprocessing.PET_LINEAR
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    @field_validator("tracer", mode="before")
+    def check_tracer(cls, v: Union[str, Tracer]):
+        return Tracer(v)
+
+    @field_validator("suvr_reference_region", mode="before")
+    def check_suvr_reference_region(cls, v: Union[str, SUVRReferenceRegions]):
+        return SUVRReferenceRegions(v)
+
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         trc, rec, description = "", "", "PET data"
         if self.tracer:
             description += f" with {self.tracer.value} tracer"
@@ -105,10 +106,7 @@ class PETPreprocessingConfig(PreprocessingConfig):
 
         return FileType(pattern=f"pet/*{trc}{rec}_pet.nii*", description=description)
 
-    def caps_nii(self) -> Tuple[Preprocessing, ImageModality]:
-        return (self.preprocessing, ImageModality.PET)
-
-    def get_filetype(self) -> FileType:
+    def get_caps_filetype(self) -> FileType:
         des_crop = "" if self.use_uncropped_image else "_desc-Crop"
 
         return FileType(
@@ -117,8 +115,11 @@ class PETPreprocessingConfig(PreprocessingConfig):
             needed_pipeline="pet-linear",
         )
 
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} PET images with tracer {self.tracer.value} and suvr reference region {self.suvr_reference_region.value}. "
 
-class CustomPreprocessingConfig(PreprocessingConfig):
+
+class PreprocessingCustom(PreprocessingConfig):
     """
     Configuration for custom preprocessing with a user-defined suffix.
     """
@@ -126,20 +127,23 @@ class CustomPreprocessingConfig(PreprocessingConfig):
     custom_suffix: str = ""
     preprocessing: Preprocessing = Preprocessing.CUSTOM
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(
             pattern=f"*{self.custom_suffix}",
             description="Custom suffix",
         )
 
-    def caps_nii(self) -> tuple:
-        return (self.preprocessing, ImageModality.CUSTOM)
+    def get_caps_filetype(self) -> FileType:
+        return FileType(
+            pattern=f"custom/*{self.custom_suffix}",
+            description="Custom suffix",
+        )
 
-    def get_filetype(self) -> FileType:
-        return self.bids_nii()
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} custom images with suffix {self.custom_suffix} "
 
 
-class DTIPreprocessingConfig(PreprocessingConfig):
+class PreprocessingDTI(PreprocessingConfig):
     """
     Configuration for DTI-based preprocessing
     """
@@ -148,18 +152,15 @@ class DTIPreprocessingConfig(PreprocessingConfig):
     dti_space: DTISpace = DTISpace.ALL
     preprocessing: Preprocessing = Preprocessing.DWI_DTI
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filerype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
 
-    def caps_nii(self) -> tuple:
-        return (self.preprocessing, ImageModality.DWI)
-
-    def get_filetype(self) -> FileType:
+    def get_caps_filetype(self) -> FileType:
         """Return the query dict required to capture DWI DTI images.
 
         Parameters
         ----------
-        config: DTIPreprocessingConfig
+        config: PreprocessingDTI
 
         Returns
         -------
@@ -174,53 +175,52 @@ class DTIPreprocessingConfig(PreprocessingConfig):
             needed_pipeline="dwi_dti",
         )
 
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} DTI images with measure {self.dti_measure.value} and space {self.dti_space.value}. "
 
-class T1PreprocessingConfig(PreprocessingConfig):
+
+class PreprocessingT1(PreprocessingConfig):
     preprocessing: Preprocessing = Preprocessing.T1_LINEAR
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(pattern="anat/sub-*_ses-*_T1w.nii*", description="T1w MRI")
 
-    def caps_nii(self) -> tuple:
-        return (self.preprocessing, LinearModality.T1W)
+    def get_caps_filetype(self) -> FileType:
+        return self.linear_nii(
+            modality=LinearModality.T1W, needed_pipeline=Preprocessing.T1_LINEAR
+        )
 
-    def get_filetype(self) -> FileType:
-        return self.linear_nii()
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} T1 images with t1-linear pipeline"
 
 
-class FlairPreprocessingConfig(PreprocessingConfig):
+class PreprocessingFlair(PreprocessingConfig):
     preprocessing: Preprocessing = Preprocessing.FLAIR_LINEAR
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(pattern="sub-*_ses-*_flair.nii*", description="FLAIR T2w MRI")
 
-    def caps_nii(self) -> tuple:
-        return (self.preprocessing, LinearModality.T2W)
+    def get_caps_filetype(self) -> FileType:
+        return self.linear_nii(
+            modality=LinearModality.FLAIR, needed_pipeline=Preprocessing.FLAIR_LINEAR
+        )
 
-    def get_filetype(self) -> FileType:
-        return self.linear_nii()
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} Flair images with flair-linear pipeline"
 
 
-class T2PreprocessingConfig(PreprocessingConfig):
+class PreprocessingT2(PreprocessingConfig):
     preprocessing: Preprocessing = Preprocessing.T2_LINEAR
 
-    def bids_nii(self, reconstruction: Optional[str] = None) -> FileType:
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         raise NotImplementedError(
             f"Extraction of preprocessing {self.preprocessing.value} is not implemented from BIDS directory."
         )
 
-    def caps_nii(self) -> tuple:
-        return (self.preprocessing, LinearModality.FLAIR)
+    def get_caps_filetype(self) -> FileType:
+        return self.linear_nii(
+            modality=LinearModality.T2W, needed_pipeline=Preprocessing.T2_LINEAR
+        )
 
-    def get_filetype(self) -> FileType:
-        return self.linear_nii()
-
-
-ALL_PREPROCESSING_TYPES = Union[
-    T1PreprocessingConfig,
-    T2PreprocessingConfig,
-    FlairPreprocessingConfig,
-    PETPreprocessingConfig,
-    CustomPreprocessingConfig,
-    DTIPreprocessingConfig,
-]
+    def __str__(self):
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} T2 images with t2-linear pipeline"
