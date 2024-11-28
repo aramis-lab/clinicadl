@@ -14,13 +14,13 @@ from tqdm import tqdm
 
 from clinicadl.dataset.config.preprocessing import PreprocessingConfig
 from clinicadl.dataset.readers.caps_reader import CapsReader
-from clinicadl.dataset.transforms.extraction import Image
 from clinicadl.dataset.utils import (
     CapsDatasetSample,
     check_df,
     get_infos_from_json,
     tsv_to_df,
 )
+from clinicadl.transforms.extraction import Image
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,

@@ -5,7 +5,7 @@ from typing import List, Tuple, Union
 import torch
 from pydantic import field_validator
 
-from clinicadl.dataset.transforms.extraction.base import BaseExtraction
+from clinicadl.transforms.extraction.base import BaseExtraction
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,

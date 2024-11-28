@@ -10,8 +10,6 @@ from clinicadl.dataset.config.preprocessing import (
 )
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.dataset.datasets.concat import ConcatDataset
-from clinicadl.dataset.transforms.extraction import ROI, Image, Patch, Slice
-from clinicadl.dataset.transforms.transforms import Transforms
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
@@ -22,6 +20,8 @@ from clinicadl.networks.factory import (
 )
 from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split import get_single_split, split_tsv
+from clinicadl.transforms.extraction import ROI, Image, Patch, Slice
+from clinicadl.transforms.transforms import Transforms
 
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
 sub_ses_pet_45 = Path(

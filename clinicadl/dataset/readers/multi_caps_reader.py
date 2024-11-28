@@ -12,7 +12,7 @@ from torch import save as save_tensor
 from clinicadl.dataset.config.preprocessing import (
     PreprocessingConfig,
 )
-from clinicadl.dataset.transforms.transforms import Transforms
+from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 from .caps_reader import CapsReader

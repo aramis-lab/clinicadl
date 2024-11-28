@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.utils import CapsDatasetOutput
+from clinicadl.dataset.utils import CapsDatasetSample
 
 logger = getLogger("clinicadl")
 
@@ -30,7 +30,7 @@ class ConcatDataset(CapsDataset):
 
         self.eval_mode = False
 
-    def __getitem__(self, index: int) -> Optional[CapsDatasetOutput]:
+    def __getitem__(self, index: int) -> Optional[CapsDatasetSample]:
         for start, stop, dataset_index in self._indexes:
             if start <= index < stop:
                 dataset = self._datasets[dataset_index]

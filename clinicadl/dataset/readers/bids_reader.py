@@ -5,7 +5,6 @@ from pathlib import Path
 from clinicadl.dataset.config import FileType
 from clinicadl.dataset.utils import insensitive_glob
 from clinicadl.utils.exceptions import ClinicaDLBIDSError
-from clinicadl.utils.iotools.utils import path_encoder
 
 from .reader import Reader
 

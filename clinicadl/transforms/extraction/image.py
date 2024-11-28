@@ -5,7 +5,7 @@ from typing import Tuple
 import torch
 from pydantic import PositiveInt
 
-from clinicadl.dataset.transforms.extraction.base import BaseExtraction
+from clinicadl.transforms.extraction.base import BaseExtraction
 from clinicadl.utils.enum import ExtractionMethod
 
 logger = getLogger("clinicadl.extraction.image")

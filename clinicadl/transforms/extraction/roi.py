@@ -8,7 +8,7 @@ import torch
 from pydantic import field_validator, model_validator
 from typing_extensions import Self
 
-from clinicadl.dataset.transforms.extraction.base import BaseExtraction
+from clinicadl.transforms.extraction.base import BaseExtraction
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 

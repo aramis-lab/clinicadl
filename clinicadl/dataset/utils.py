@@ -9,8 +9,8 @@ import torch
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.dataset.config import preprocessing
-from clinicadl.dataset.transforms import extraction
-from clinicadl.dataset.transforms.transforms import Transforms
+from clinicadl.transforms import extraction
+from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import read_preprocessing
