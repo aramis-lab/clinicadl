@@ -175,7 +175,6 @@ class CapsReader(Reader):
                 self.get_tensor_dir(participant, session, preprocessing)
                 / image_filename
             )
-
             return image_path
 
         except ClinicaDLCAPSError:
