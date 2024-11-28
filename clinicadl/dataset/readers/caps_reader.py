@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-from clinicadl.dataset.config.preprocessing import PreprocessingConfig
+from clinicadl.dataset.preprocessing import BasePreprocessing
 from clinicadl.dataset.readers.reader import Reader
 from clinicadl.dataset.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms
@@ -120,7 +120,7 @@ class CapsReader(Reader):
         return self.subject_directory / participant
 
     def get_tensor_dir(
-        self, participant: str, session: str, preprocessing: PreprocessingConfig
+        self, participant: str, session: str, preprocessing: BasePreprocessing
     ) -> Path:
         """
         Retrieves the directory for storing tensor data for a given participant, session, and preprocessing.
@@ -128,7 +128,7 @@ class CapsReader(Reader):
         Args:
             participant (str): ID of the participant.
             session (str): ID of the session.
-            preprocessing (PreprocessingConfig): Configuration of the preprocessing steps.
+            preprocessing (BasePreprocessing): Configuration of the preprocessing steps.
 
         Returns
         -------
@@ -143,7 +143,7 @@ class CapsReader(Reader):
         )
 
     def get_tensor_path(
-        self, participant: str, session: str, preprocessing: PreprocessingConfig
+        self, participant: str, session: str, preprocessing: BasePreprocessing
     ) -> Path:
         """
         Retrieves the path to the tensor image (*.pt) for a given participant, session, and preprocessing.
@@ -154,7 +154,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: PreprocessingConfig
+            preprocessing: BasePreprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -183,7 +183,7 @@ class CapsReader(Reader):
             )
 
     def get_image_path(
-        self, participant: str, session: str, preprocessing: PreprocessingConfig
+        self, participant: str, session: str, preprocessing: BasePreprocessing
     ) -> Path:
         """
         Retrieves the path to the image file for a given participant, session, and preprocessing.
@@ -194,7 +194,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: PreprocessingConfig
+            preprocessing: BasePreprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -229,7 +229,7 @@ class CapsReader(Reader):
     def _write_caps_json(
         self,
         transforms: Transforms,
-        preprocessing: PreprocessingConfig,
+        preprocessing: BasePreprocessing,
         data_tsv: Path,
         name: Optional[str] = None,
     ) -> None:
@@ -239,7 +239,7 @@ class CapsReader(Reader):
         Args:
             transforms: Transforms
                 The transformations applied to the data.
-            preprocessing: PreprocessingConfig
+            preprocessing: BasePreprocessing
                 Preprocessing configuration.
             data_tsv: Path
                 Path to the data TSV file.

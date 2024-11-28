@@ -1,19 +1,8 @@
-import json
-from logging import getLogger
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
-import nibabel as nib
 import pandas as pd
-import torch
-from joblib import Parallel, delayed
-from torch import save as save_tensor
 
-from clinicadl.dataset.config.preprocessing import (
-    PreprocessingConfig,
-)
-from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 from .caps_reader import CapsReader
 from .reader import Reader

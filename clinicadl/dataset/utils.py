@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from pydantic import BaseModel, ConfigDict
 
-from clinicadl.dataset.config import preprocessing
+from clinicadl.dataset import preprocessing
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
@@ -156,7 +156,7 @@ def get_extraction(
 
 def get_preprocessing(
     preprocessing_type: Union[str, Preprocessing],
-) -> type[preprocessing.PreprocessingConfig]:
+) -> type[preprocessing.BasePreprocessing]:
     """
     Retrieves the preprocessing class based on the specified preprocessing type.
 
@@ -164,7 +164,7 @@ def get_preprocessing(
         preprocessing_type (Union[str, Preprocessing]): The preprocessing type as either a string or a `Preprocessing` enum.
 
     Returns:
-        type[preprocessing.PreprocessingConfig]: The corresponding preprocessing configuration class.
+        type[preprocessing.BasePreprocessing]: The corresponding preprocessing configuration class.
 
     Raises:
         ValueError: If the provided `preprocessing_type` is not supported or is invalid.
@@ -188,7 +188,7 @@ def get_preprocessing(
 
 def get_infos_from_json(
     json_path: Path,
-) -> Tuple[preprocessing.PreprocessingConfig, Transforms, Path, Path]:
+) -> Tuple[preprocessing.BasePreprocessing, Transforms, Path, Path]:
     """
     Extracts the preprocessing configuration and transformation settings from a JSON file.
 
@@ -209,7 +209,7 @@ def get_infos_from_json(
 
 def get_infos_from_parameters(
     **kwargs,
-) -> Tuple[preprocessing.PreprocessingConfig, Transforms, Path, Path]:
+) -> Tuple[preprocessing.BasePreprocessing, Transforms, Path, Path]:
     """
     Extracts the preprocessing configuration, transformations, and paths from provided parameters.
 

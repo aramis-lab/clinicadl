@@ -2,14 +2,14 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.dataset.config.preprocessing import (
-    PreprocessingConfig,
+from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.dataset.datasets.concat import ConcatDataset
+from clinicadl.dataset.preprocessing import (
+    BasePreprocessing,
     PreprocessingFlair,
     PreprocessingPET,
     PreprocessingT1,
 )
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.datasets.concat import ConcatDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
