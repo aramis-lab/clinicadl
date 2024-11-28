@@ -5,7 +5,6 @@ from typing import Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
@@ -25,14 +24,13 @@ class PreprocessingConfig(BaseModel, abc.ABC):
     Abstract config class for the preprocessing procedure.
     """
 
-    from_bids: bool = False
     preprocessing: Preprocessing
     use_uncropped_image: bool = False
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    def get_filetype(self) -> FileType:
-        return self.get_bids_filetype() if self.from_bids else self.get_caps_filetype()
+    def get_filetype(self, bids: bool = False) -> FileType:
+        return self.get_bids_filetype() if bids else self.get_caps_filetype()
 
     @abc.abstractmethod
     def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
@@ -43,9 +41,6 @@ class PreprocessingConfig(BaseModel, abc.ABC):
     def get_caps_filetype(self) -> FileType:
         """Abstract method to obtain FileType details."""
         pass
-
-    def compute_folder(self) -> str:
-        return self.preprocessing.value.replace("-", "_")
 
     @computed_field
     @property
@@ -66,7 +61,7 @@ class PreprocessingConfig(BaseModel, abc.ABC):
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
 
         file_type = FileType(
-            pattern=f"{self.compute_folder()}/*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
+            pattern=f"{self.preprocessing.value.replace('-', '_')}/*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz",
             description=f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline "
             + (
                 ""
@@ -87,13 +82,13 @@ class PreprocessingPET(PreprocessingConfig):
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.CEREBELLUMPONS2
     preprocessing: Preprocessing = Preprocessing.PET_LINEAR
 
-    @field_validator("tracer", mode="before")
-    def check_tracer(cls, v: Union[str, Tracer]):
-        return Tracer(v)
+    # @field_validator("tracer", mode="before")
+    # def check_tracer(cls, v: Union[str, Tracer]):
+    #     return Tracer(v)
 
-    @field_validator("suvr_reference_region", mode="before")
-    def check_suvr_reference_region(cls, v: Union[str, SUVRReferenceRegions]):
-        return SUVRReferenceRegions(v)
+    # @field_validator("suvr_reference_region", mode="before")
+    # def check_suvr_reference_region(cls, v: Union[str, SUVRReferenceRegions]):
+    #     return SUVRReferenceRegions(v)
 
     def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         trc, rec, description = "", "", "PET data"
