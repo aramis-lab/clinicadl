@@ -21,9 +21,9 @@ class DataConfig(BaseDataConfig):  # TODO : put in data module
     def validator_label(cls, v):
         return v  # TODO : check if label in columns
 
-    @field_validator("label_code")
-    def validator_label_code(cls, v):
-        return v  # TODO : check label_code
+    # @field_validator("label_code")
+    # def validator_label_code(cls, v):
+    #     return v  # TODO : check label_code
 
 
 class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module
