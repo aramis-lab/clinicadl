@@ -1,4 +1,5 @@
 # coding: utf8
+
 from logging import getLogger
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -313,6 +314,7 @@ class CapsDataset(Dataset):
         str
             Session ID.
         """
+
         return self.df.at[idx, SESSION_ID]
 
     def _get_participants_sessions_couple(self) -> List[Tuple[str, str]]:
