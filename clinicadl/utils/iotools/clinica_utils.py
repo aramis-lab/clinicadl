@@ -234,7 +234,8 @@ def create_subs_sess_list(
         path_to_search = input_dir
     else:
         path_to_search = input_dir / "subjects"
-    subjects_paths = list(path_to_search.glob("*sub-*"))
+
+    subjects_paths = list(path_to_search.rglob("*sub-*"))
     # Sort the subjects list
     subjects_paths.sort()
 
@@ -253,12 +254,12 @@ def create_subs_sess_list(
 
         else:
             sess_list = list(sub_path.glob("*ses-*"))
-
             for ses_path in sorted(sess_list):
                 session_name = ses_path.name
                 subjs_sess_tsv.write(subj_id + "\t" + session_name + "\n")
 
     subjs_sess_tsv.close()
+    return output_dir / file_name
 
 
 def insensitive_glob(pattern_glob: str, recursive: bool = False) -> List[str]:

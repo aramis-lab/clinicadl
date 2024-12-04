@@ -12,8 +12,7 @@ from pydantic import (
 from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.dataset.data_config import DataConfig
-from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.config.data import DataConfig
 from clinicadl.experiment_manager.config import MapsManagerConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
@@ -39,7 +38,6 @@ class TrainConfig(BaseModel, ABC):
     callbacks: CallbacksConfig
     computational: ComputationalConfig
     data: DataConfig
-    dataloader: DataLoaderConfig
     early_stopping: EarlyStoppingConfig
     lr_scheduler: LRschedulerConfig
     maps_manager: MapsManagerConfig
@@ -82,7 +80,6 @@ class TrainConfig(BaseModel, ABC):
         self.callbacks.__dict__.update(config_dict)
         self.computational.__dict__.update(config_dict)
         self.data.__dict__.update(config_dict)
-        self.dataloader.__dict__.update(config_dict)
         self.early_stopping.__dict__.update(config_dict)
         self.lr_scheduler.__dict__.update(config_dict)
         self.maps_manager.__dict__.update(config_dict)
