@@ -34,7 +34,7 @@ class Reader:
         ClinicaDLArgumentError
             If the input directory is not valid or is not a directory.
         """
-        self.input_directory = input_dir
+        self.input_directory = Path(input_dir)
         self._check_folder()
 
     def _check_folder(self) -> None:

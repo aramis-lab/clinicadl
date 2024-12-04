@@ -55,7 +55,7 @@ class Transforms(ClinicaDLConfig):
         Returns a tuple of composed transformations for images, objects, and augmentations.
     """
 
-    extraction: BaseExtraction
+    extraction: BaseExtraction = Image()
     image_augmentation: list[Callable] = []
     object_augmentation: list[Callable] = []
     image_transforms: list[Callable] = []

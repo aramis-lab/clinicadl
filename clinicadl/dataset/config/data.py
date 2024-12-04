@@ -6,8 +6,6 @@ import pandas as pd
 from pydantic import field_validator
 
 from clinicadl.utils.config import ClinicaDLConfig
-
-# from clinicadl.dataset.utils import load_data_test
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTSVError,
@@ -32,12 +30,12 @@ class DataConfig(ClinicaDLConfig):  # TODO : put in data module
     data_tsv: Optional[Path] = None
     n_subjects: int = 300
 
-    @field_validator("diagnoses", mode="before")
-    def validator_diagnoses(cls, v):
-        """Transforms a list to a tuple."""
-        if isinstance(v, list):
-            return tuple(v)
-        return v  # TODO : check if columns are in tsv
+    # @field_validator("diagnoses", mode="before")
+    # def validator_diagnoses(cls, v):
+    #     """Transforms a list to a tuple."""
+    #     if isinstance(v, list):
+    #         return tuple(v)
+    #     return v  # TODO : check if columns are in tsv
 
     def create_groupe_df(self):
         group_df = None

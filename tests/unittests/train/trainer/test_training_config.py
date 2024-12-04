@@ -3,8 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.dataset.data_config import DataConfig
-from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.config.data import DataConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
@@ -165,12 +164,4 @@ def test_passes_validations(good_inputs, training_config):
 def test_assignment(dummy_arguments, training_config):
     c = training_config(**dummy_arguments)
     c.computational = {"gpu": False}
-    c.dataloader = DataLoaderConfig(**{"batch_size": 1})
-    c.dataloader.n_proc = 10
-    with pytest.raises(ValidationError):
-        c.computational = DataLoaderConfig()
-    with pytest.raises(ValidationError):
-        c.dataloader = {"sampler": "abc"}
     assert not c.computational.gpu
-    assert c.dataloader.batch_size == 1
-    assert c.dataloader.n_proc == 10

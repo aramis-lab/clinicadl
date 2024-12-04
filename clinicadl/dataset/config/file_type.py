@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import field_validator
 
@@ -14,7 +14,7 @@ class FileType(ClinicaDLConfig):
 
     pattern: str
     description: str
-    needed_pipeline: Optional[str] = None
+    needed_pipeline: Optional[Preprocessing] = None
 
     @field_validator("pattern", mode="before")
     def check_pattern(cls, v):
@@ -32,11 +32,11 @@ class FileType(ClinicaDLConfig):
     @field_validator("description", mode="before")
     def check_description(cls, v):
         if not v:
-            raise ValueError("A pattern must be specified")
+            raise ValueError("A description must be specified")
         return v
 
-    @field_validator("needed_pipeline", mode="before")
-    def check_needed_pipeline(cls, v):
+    @field_validator("needed_pipeline", mode="after")
+    def check_needed_pipeline(cls, v: Optional[Union[str, Preprocessing]]):
         if v:
             try:
                 v = Preprocessing(v)
@@ -44,4 +44,4 @@ class FileType(ClinicaDLConfig):
                 raise ValueError(
                     f"Invalid pipeline: {v}. Choose from {[e.value for e in Preprocessing]}"
                 )
-        return v
+            return v

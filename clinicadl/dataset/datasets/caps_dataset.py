@@ -1,4 +1,5 @@
 # coding: utf8
+
 from logging import getLogger
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -183,9 +184,14 @@ class CapsDataset(Dataset):
 
         if data is None:
             data = create_subs_sess_list(
-                self.caps_reader.input_directory, self.caps_reader.input_directory
+                self.caps_reader.input_directory,
+                self.caps_reader.input_directory,
+                is_bids_dir=False,
             )
             logger.info(f"Creating a subject session TSV file at {data}")
+
+        elif isinstance(data, str):
+            data = Path(data)
 
         if isinstance(data, Path):
             if not data.is_file():
@@ -273,8 +279,8 @@ class CapsDataset(Dataset):
         img_idx = idx // self.elem_per_image
         elem_idx = idx % self.elem_per_image
 
-        participant = self._get_participant(img_idx)
-        session = self._get_session(img_idx)
+        participant = self._get_participant(idx)
+        session = self._get_session(idx)
 
         return participant, session, img_idx, elem_idx
 
@@ -308,6 +314,7 @@ class CapsDataset(Dataset):
         str
             Session ID.
         """
+
         return self.df.at[idx, SESSION_ID]
 
     def _get_participants_sessions_couple(self) -> List[Tuple[str, str]]:
