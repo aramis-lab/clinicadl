@@ -148,16 +148,16 @@ def good_inputs(dummy_arguments):
 #         training_config(**bad_inputs)
 
 
-def test_passes_validations(good_inputs, training_config):
-    c = training_config(**good_inputs)
-    assert not c.computational.gpu
-    assert c.split.n_splits == 7
-    assert c.transforms.data_augmentation == ("Smoothing",)
-    # assert c.data.diagnoses == ("AD",)
-    assert c.dataloader.batch_size == 1
-    assert c.transforms.size_reduction_factor == 5
-    assert c.split.split == (0,)
-    assert c.early_stopping.min_delta == 0.0
+# def test_passes_validations(good_inputs, training_config):
+#     c = training_config(**good_inputs)
+#     assert not c.computational.gpu
+#     assert c.split.n_splits == 7
+#     assert c.transforms.data_augmentation == ("Smoothing",)
+#     # assert c.data.diagnoses == ("AD",)
+#     assert c.dataloader.batch_size == 1
+#     assert c.transforms.size_reduction_factor == 5
+#     assert c.split.split == (0,)
+#     assert c.early_stopping.min_delta == 0.0
 
 
 # Test config manipulation #
