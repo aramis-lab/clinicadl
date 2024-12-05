@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Sequence, Tuple
 
-from clinicadl.dataset.caps_dataset import CapsDataset
+from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 
 
 class Subset(CapsDataset):

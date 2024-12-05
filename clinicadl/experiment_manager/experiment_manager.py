@@ -8,15 +8,15 @@ from typing import Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from clinicadl.dataset.caps_reader import CapsReader
-from clinicadl.dataset.config.extraction import ExtractionConfig
-from clinicadl.dataset.preprocessing import PreprocessingConfig
+from clinicadl.dataset.preprocessing import BasePreprocessing
+from clinicadl.dataset.readers import CapsReader
 from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.networks.factory import get_network_from_config
 from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split_utils import print_description_log
+from clinicadl.transforms.extraction import BaseExtraction
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.iotools.data_utils import load_data_test
 from clinicadl.utils.iotools.utils import path_decoder, path_encoder

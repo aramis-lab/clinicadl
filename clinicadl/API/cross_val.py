@@ -33,48 +33,60 @@ from clinicadl.splitter.split import get_single_split, split_tsv
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms.config import TransformsConfig
 
-# SIMPLE EXPERIMENT WITH A CAPS ALREADY EXISTING
+# # SIMPLE EXPERIMENT WITH A CAPS ALREADY EXISTING
 
-maps_path = Path("/")
-manager = ExperimentManager(maps_path, overwrite=False)
+# maps_path = Path("/")
+# manager = ExperimentManager(maps_path, overwrite=False)
 
-dataset_t1_image = CapsDatasetPatch.from_json(
-    extraction=Path("test.json"),
-    sub_ses_tsv=Path("split_dir") / "train.tsv",
-)
-config_file = Path("config_file")
-trainer = Trainer.from_json(
-    config_file=config_file, manager=manager
-)  # gpu, amp, fsdp, seed
+# dataset_t1_image = CapsDatasetPatch.from_json(
+#     extraction=Path("test.json"),
+#     sub_ses_tsv=Path("split_dir") / "train.tsv",
+# )
+# config_file = Path("config_file")
+# trainer = Trainer.from_json(
+#     config_file=config_file, manager=manager
+# )  # gpu, amp, fsdp, seed
 
-# CAS CROSS-VALIDATION
-splitter = KFolder(caps_dataset=dataset_t1_image, manager=manager)
-split_dir = splitter.make_splits(
-    n_splits=3,
-    output_dir=Path(""),
-    data_tsv=Path("labels.tsv"),
-    subset_name="validation",
-    stratification="",
-)  # Optional data tsv and output_dir
-# n_splits must be >1
-# for the single split case, this method output a path to the directory containing the train and test tsv files so we should have the same output here
+# # CAS CROSS-VALIDATION
+# splitter = KFolder.from_dir(manager=manager)
+# split_dir = splitter.make_splits(
+#     n_splits=3,
+#     output_dir=Path(""),
+#     data_tsv=Path("labels.tsv"),
+#     subset_name="validation",
+#     stratification="",
+# )  # Optional data tsv and output_dir
+# # n_splits must be >1
+# # for the single split case, this method output a path to the directory containing the train and test tsv files so we should have the same output here
 
-# CAS EXISTING CROSS-VALIDATION
-splitter = KFolder.from_split_dir(caps_dataset=dataset_t1_image, manager=manager)
+# # Prérequis : déjà avoir des fichiers avec les listes train et validation
+# split_dir = make_kfold("dataset.tsv") # lit dataset.tsv => fait le kfold => ecrit la sortie dans split_dir
+# split_dir_2 = make_kfold("dataset.tsv", output_dr)
+# split_dir_3 = make_kfold("dataset.tsv",)
+# split_dir_4 = make_kfold("dataset.tsv")
 
-# define the needed parameters for the dataloader
-dataloader_config = DataLoaderConfig(n_procs=3, batch_size=10)
+# splitter = KFolder(dataset, split_dir) # c'est plutôt un iterable de dataloader
 
-for split in splitter.get_splits(splits=(0, 3, 4), dataloader_config=dataloader_config):
-    # bien définir ce qu'il y a dans l'objet split
+# # CAS EXISTING CROSS-VALIDATION
+# splitter = KFolder(caps_dataset=dataset_t1_image)
+# splitter.make_folds(n_splits = 3)
+# splitter.write(split_dir)
 
-    network_config = create_network_config(ImplementedNetworks.CNN)(
-        in_shape=[2, 2, 2],
-        num_outputs=1,
-        conv_args=ConvEncoderOptions(channels=[3, 2, 2]),
-    )
-    optimizer, _ = get_optimizer(network, AdamConfig())
-    model = ClinicaDLModel(network=network_config, loss=nn.MSE(), optimizer=optimizer)
+# splitter.make_folds(n_splits = 5)
+# # define the needed parameters for the dataloader
+# dataloader_config = DataLoaderConfig(n_procs=3, batch_size=10)
 
-    trainer.train(model, split)
-    # le trainer va instancier un predictor/valdiator dans le train ou dans le init
+
+# for split in splitter.get_splits(splits=(0, 3, 4), dataloader_config):
+#     # bien définir ce qu'il y a dans l'objet split
+
+#     network_config = create_network_config(ImplementedNetworks.CNN)(
+#         in_shape=[2, 2, 2],
+#         num_outputs=1,
+#         conv_args=ConvEncoderOptions(channels=[3, 2, 2]),
+#     )
+#     optimizer, _ = get_optimizer(network, AdamConfig())
+#     model = ClinicaDLModel(network=network_config, loss=nn.MSE(), optimizer=optimizer)
+
+#     trainer.train(model, split)
+#     # le trainer va instancier un predictor/valdiator dans le train ou dans le init

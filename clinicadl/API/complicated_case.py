@@ -52,7 +52,10 @@ transforms_1 = Transforms(
     image_augmentation=[transforms.Crop, transforms.Transform],
     extraction=ExtractionPatchConfig(patch_size=3),
     image_transforms=[transforms.Blur, transforms.Ghosting],
-    object_transforms=[transforms.BiasField, transforms.Motion],
+    object_transforms=[
+        transforms.BiasField(param, masking_method="brain"),
+        transforms.Motion,
+    ],
 )  # not mandatory
 
 preprocessing_2 = caps_reader.get_preprocessing("pet-linear")

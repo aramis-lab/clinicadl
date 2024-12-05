@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+import torchio as tio
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.dataset import preprocessing
@@ -94,7 +95,32 @@ def check_df(df: pd.DataFrame) -> pd.DataFrame:
             f"The data file is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
-    df.reset_index(inplace=True)
+
+    return df
+
+
+def reset_index(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Resets the index of a DataFrame to the default index, dropping any existing index.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to be reset.
+
+    Returns:
+        pd.DataFrame: The DataFrame with the default index.
+
+    Note:
+        This function only resets the index if the DataFrame has a MultiIndex with the 'participant_id' and'session_id' names.
+        If the DataFrame does not have this MultiIndex, the 'drop' parameter is set to True, which results in dropping the index.
+    """
+
+    drop = False
+    if isinstance(df.index, pd.MultiIndex):
+        if set(df.index.names) != {PARTICIPANT_ID, SESSION_ID}:
+            drop = True
+
+    df.reset_index(inplace=True, drop=drop)
+
     return df
 
 
