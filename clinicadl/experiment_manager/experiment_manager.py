@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from clinicadl.dataset.caps_reader import CapsReader
 from clinicadl.dataset.config.extraction import ExtractionConfig
-from clinicadl.dataset.config.preprocessing import PreprocessingConfig
+from clinicadl.dataset.preprocessing import PreprocessingConfig
 from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig

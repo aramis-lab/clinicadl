@@ -3,7 +3,7 @@ from typing import Tuple, Union
 
 from pydantic import computed_field, field_validator
 
-from clinicadl.dataset.data_config import DataConfig as BaseDataConfig
+from clinicadl.dataset.config.data import DataConfig as BaseDataConfig
 from clinicadl.networks.old_network.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.predictor.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.trainer.config.train import TrainConfig
@@ -21,9 +21,9 @@ class DataConfig(BaseDataConfig):  # TODO : put in data module
     def validator_label(cls, v):
         return v  # TODO : check if label in columns
 
-    @field_validator("label_code")
-    def validator_label_code(cls, v):
-        return v  # TODO : check label_code
+    # @field_validator("label_code")
+    # def validator_label_code(cls, v):
+    #     return v  # TODO : check label_code
 
 
 class NetworkConfig(BaseNetworkConfig):  # TODO : put in model module

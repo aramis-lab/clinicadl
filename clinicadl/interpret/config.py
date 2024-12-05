@@ -4,8 +4,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, field_validator
 
-from clinicadl.dataset.data_config import DataConfig
-from clinicadl.dataset.dataloader_config import DataLoaderConfig
+from clinicadl.dataset.config.data import DataConfig
 from clinicadl.experiment_manager.config import (
     MapsManagerConfig as MapsManagerConfigBase,
 )
@@ -63,7 +62,6 @@ class InterpretConfig(BaseModel):
     data: DataConfig
     validation: ValidationConfig
     computational: ComputationalConfig
-    dataloader: DataLoaderConfig
     split: SplitConfig
     interpret: InterpretBaseConfig
 
