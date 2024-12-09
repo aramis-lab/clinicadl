@@ -1,38 +1,36 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Tuple
+from typing import List, Tuple
 
 import torch
-from pydantic import PositiveInt
+from pydantic import PositiveInt, computed_field
 
-from clinicadl.transforms.extraction.base import BaseExtraction
+from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import ExtractionMethod
 
 logger = getLogger("clinicadl.extraction.image")
 
-NII_GZ = ".nii.gz"
 PT = ".pt"
 
 
-class Image(BaseExtraction):
+class Image(Extraction):
     """
-    Configuration class for full image extraction as a single tensor.
+    Transform class for full image extraction as a single tensor.
 
-    This class implements the extraction process for a full image, where the entire
-    image is loaded and returned as a single tensor. It handles extraction using
-    the `ExtractionMethod.IMAGE` and saves the output as a tensor file.
-
-    Attributes
-    ----------
-    extract_method : ExtractionMethod
-        The method used for the extraction. For this class, it's set to IMAGE.
+    This class implements the extraction process to get the full image, where the entire
+    image is loaded and returned as a single tensor.
     """
 
-    extract_method: ExtractionMethod = ExtractionMethod.IMAGE
+    @computed_field
+    @property
+    def extract_method(self) -> ExtractionMethod:
+        """The method to be used for the extraction process (ROI, Image, Patch, Slice)."""
+        return ExtractionMethod.IMAGE
 
-    def extract(self, nii_path: Path) -> list[Tuple[Path, torch.Tensor]]:
+    def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:
         """
-        Extracts the full image as a single tensor file and saves it.
+        Extracts the full image as a single tensor file and returns the path
+        where to save it.
 
         Parameters
         ----------
@@ -41,21 +39,21 @@ class Image(BaseExtraction):
 
         Returns
         -------
-        list of Tuple[Path, torch.Tensor]
-            A list containing a tuple with the output file path and the extracted image tensor.
+        List[Tuple[Path, torch.Tensor]]
+            A list containing a single tuple with the output file path and the extracted image tensor.
 
         Notes
         -----
-        The image is loaded, converted into a tensor, and saved with the same name as the original image but with a `.pt` extension.
+        The image is loaded and returned into a tensor along with the input path with the `.pt` extension.
         """
-        image_tensor = self.extract_image(nii_path)
-        output_file = nii_path.with_suffix("").with_suffix(PT), image_tensor.clone()
-        return [output_file]
+        image_tensor = self.load_image(nii_path)
 
-    def extract_tensor(
+        return [(self.sample_path(nii_path), self.extract_sample(image_tensor))]
+
+    def extract_sample(
         self,
         image_tensor: torch.Tensor,
-        index: int,
+        sample_index: int = 0,  # pylint:disable=unused-argument
     ) -> torch.Tensor:
         """
         Returns the entire image tensor as no further extraction is needed.
@@ -64,7 +62,7 @@ class Image(BaseExtraction):
         ----------
         image_tensor : torch.Tensor
             The image tensor to extract data from.
-        index : int
+        sample_index : int
             The index to identify the extracted data (though this is not used in this method).
 
         Returns
@@ -78,7 +76,7 @@ class Image(BaseExtraction):
         """
         return image_tensor
 
-    def extract_path(self, image_path, index):
+    def sample_path(self, image_path: Path, sample_index: int = 0) -> Path:  # pylint:disable=unused-argument
         """
         Returns the input image path as the path to save the extracted data.
 
@@ -96,11 +94,11 @@ class Image(BaseExtraction):
 
         Notes
         -----
-        This method does not alter the path, returning the same path as the input.
+        This method only changes the extension of the path.
         """
-        return image_path
+        return image_path.with_suffix("").with_suffix(PT)
 
-    def num_elem_per_image(self, image: torch.Tensor) -> PositiveInt:
+    def num_sample_per_image(self, image: torch.Tensor) -> PositiveInt:
         """
         Returns the number of elements per image. Since the entire image is extracted, this method always returns 1.
 

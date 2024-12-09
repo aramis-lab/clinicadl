@@ -1,40 +1,33 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from typing import List, Tuple
 
 import nibabel as nib
 import torch
-from pydantic import PositiveInt
+from pydantic import computed_field
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 
 logger = getLogger("clinicadl.base_extraction")
 
-NII_GZ = ".nii.gz"
-PT = ".pt"
 
-
-class BaseExtraction(ClinicaDLConfig):
+class Extraction(ClinicaDLConfig, ABC):
     """
     Abstract base class for image extraction procedures.
 
     This class defines the common structure and methods for extracting data from
     neuroimaging files (such as NIfTI) into a tensor representation for further processing.
-
-    Parameters
-    ----------
-    extract_method : ExtractionMethod
-        The method to be used for the extraction process (ROI, Image, Patch, Slice).
-    use_uncropped_image : bool, optional
-        A flag to specify whether to use the uncropped image, by default True.
     """
 
-    extract_method: ExtractionMethod
-    use_uncropped_image: bool = True
+    @computed_field
+    @property
+    @abstractmethod
+    def extract_method(self) -> ExtractionMethod:
+        """The method to be used for the extraction process (ROI, Image, Patch, Slice)."""
 
-    def extract_image(self, input_img: Path) -> torch.Tensor:
+    def load_image(self, input_img: Path) -> torch.Tensor:
         """
         Loads a NIfTI image and converts it to a float32 tensor.
 
@@ -62,88 +55,92 @@ class BaseExtraction(ClinicaDLConfig):
         return torch.from_numpy(image_array).unsqueeze(0).float()
 
     @abstractmethod
-    def extract_tensor(
+    def extract_sample(
         self,
         image_tensor: torch.Tensor,
-        index: int,
+        sample_index: int,
     ) -> torch.Tensor:
         """
-        Abstract method for extracting specific data from a given image tensor.
+        Abstract method for extracting a sample from a given image.
 
         Parameters
         ----------
         image_tensor : torch.Tensor
-            The image tensor to extract data from.
-        index : int
-            Index indicating the element to extract.
+            The image tensor to extract a sample from.
+        sample_index : int
+            Index indicating the sample to extract.
 
         Returns
         -------
         torch.Tensor
-            A tensor containing the extracted data.
+            A tensor containing the extracted sample.
 
         Notes
         -----
         This method needs to be implemented in the subclasses.
         """
-        pass
 
+    # TODO : remove?
     @abstractmethod
-    def extract_path(self, image_path, index):
+    def sample_path(self, image_path: Path, sample_index: int) -> Path:
         """
-        Abstract method for defining the path where extracted elements will be saved.
+        Abstract method for defining the path where extracted sample will be saved.
 
         Parameters
         ----------
         image_path : Path
             Path to the original image.
-        index : int
-            Index of the element being extracted.
+        sample_index : int
+            Index of the sample being extracted.
 
         Returns
         -------
         Path
-            Path where the extracted data will be saved.
+            Path where the extracted sample will be saved.
 
         Notes
         -----
         This method needs to be implemented in the subclasses.
         """
-        pass
 
+    # TODO : remove?
     @abstractmethod
     def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:
         """
-        Abstract method for performing the extraction based on the configured method.
+        Abstract method to extract all the samples.
 
         Parameters
         ----------
         nii_path : Path
             Path to the NIfTI file to process.
 
+        Returns
+        -------
+        List[Tuple[Path, torch.Tensor]]
+            A list of tuples, where each tuple contains an extracted sample,
+            and the path where to store it.
+
         Notes
         -----
         This method needs to be implemented in the subclasses.
         """
-        pass
 
     @abstractmethod
-    def num_elem_per_image(self, image: torch.Tensor) -> PositiveInt:
+    def num_sample_per_image(self, image: torch.Tensor) -> int:
         """
-        Abstract method to return the number of extracted elements per image.
+        Abstract method to return the number of extracted samples per image.
 
         Parameters
         ----------
         image : torch.Tensor
-            The image tensor from which the number of elements will be determined.
+            The image tensor from which the number of samples will be determined.
 
         Returns
         -------
-        PositiveInt
-            The number of extracted elements from the image.
+        int
+            The number of samples in the image.
 
         Notes
         -----
         This method needs to be implemented in the subclasses.
         """
-        pass
