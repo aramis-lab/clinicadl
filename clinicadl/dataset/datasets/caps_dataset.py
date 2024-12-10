@@ -104,7 +104,7 @@ class CapsDataset(Dataset):
             Number of elements per image.
         """
         if not hasattr(self, "_elem_per_image"):
-            self._elem_per_image = self.extraction.num_elem_per_image(
+            self._elem_per_image = self.extraction.num_samples_per_image(
                 image=self._get_full_image()[0]
             )
         return self._elem_per_image
