@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, NonNegativeInt, PositiveInt
+from pydantic import BaseModel, ConfigDict, NonNegativeInt, PositiveInt
 from torch.utils.data import DataLoader, DistributedSampler, Sampler
 from torch.utils.data import WeightedRandomSampler as BaseWeightedRandomSampler
 
@@ -19,17 +19,20 @@ class WeightedRandomSampler(BaseWeightedRandomSampler):
 
 class DataLoaderConfig(BaseModel):
     batch_size: PositiveInt = 10
-    sampling_weights: Optional[str] = None
+    # sampling_weights: Optional[str] = None
     shuffle: bool = False
     num_workers: int = 0
     drop_last: bool = False
     prefetch_factor: Optional[NonNegativeInt] = None
-    dp_degree: PositiveInt = 1
-    rank: int = 1
+
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     def _generate_sampler(
         self,
         dataset: CapsDataset,
+        sampling_weights: Optional[str] = None,
+        dp_degree: PositiveInt = 1,
+        rank: int = 0,
     ) -> Sampler:
         """
         Returns sampler according to the wanted options.
@@ -44,21 +47,20 @@ class DataLoaderConfig(BaseModel):
         Returns:
             callable given to the training data loader.
         """
-        distributed = self.rank is not None and self.dp_degree is not None
+        distributed = rank == 0 or dp_degree == 1
 
-        if self.sampling_weights:
-            weights = dataset.df[self.sampling_weights].values.astype(float)
+        if sampling_weights:
+            weights = dataset.df[sampling_weights].values.astype(float)
             length = (
-                len(weights) // self.dp_degree
-                + int(self.rank < len(weights) % self.dp_degree)
+                len(weights) // dp_degree + int(rank < len(weights) % dp_degree)
                 if distributed
                 else len(weights)
             )
             sampler = WeightedRandomSampler(weights, num_samples=length)  # type: ignore
         else:
-            if not distributed:
-                dp_degree = 1
+            if distributed:
                 rank = 0
+                dp_degree = 1
             sampler = DistributedSampler(
                 dataset,
                 num_replicas=dp_degree,
@@ -72,10 +74,13 @@ class DataLoaderConfig(BaseModel):
     def get_dataloader(
         self,
         dataset: CapsDataset,
+        sampling_weights: Optional[str] = None,
+        dp_degree: PositiveInt = 1,
+        rank: int = 0,
     ):
         loader = DataLoader(
             dataset=dataset,
-            sampler=self._generate_sampler(dataset),
+            sampler=self._generate_sampler(dataset, sampling_weights, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
             **self.model_dump(),
         )
