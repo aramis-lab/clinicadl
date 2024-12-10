@@ -52,6 +52,34 @@ class CapsDatasetSample(BaseModel):
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
+def df_to_tsv(name: str, results_path: Path, df, baseline: bool = False) -> None:
+    """
+    Write Dataframe into a TSV file and drop duplicates
+
+    Parameters
+    ----------
+    name: str
+        Name of the tsv file
+    results_path: str (path)
+        Path to the folder
+    df: DataFrame
+        DataFrame you want to write in a TSV file.
+        Columns must include ["participant_id", "session_id"].
+    baseline: bool
+        If True, there is only baseline session for each subject.
+    """
+
+    df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    if baseline:
+        df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
+    else:
+        df.drop_duplicates(
+            subset=["participant_id", "session_id"], keep="first", inplace=True
+        )
+    # df = df[["participant_id", "session_id"]]
+    df.to_csv(results_path / name, sep="\t", index=False)
+
+
 def tsv_to_df(tsv_path: Path) -> pd.DataFrame:
     """
     Converts a TSV file to a Pandas DataFrame.

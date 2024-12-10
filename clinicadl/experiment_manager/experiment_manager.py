@@ -14,7 +14,6 @@ from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.networks.factory import get_network_from_config
-from clinicadl.splitter.kfold import KFolder
 from clinicadl.splitter.split_utils import print_description_log
 from clinicadl.transforms.extraction import BaseExtraction
 from clinicadl.utils.exceptions import MAPSError
