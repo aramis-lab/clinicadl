@@ -28,7 +28,7 @@ class Transforms(ClinicaDLConfig):
 
     Attributes
     ----------
-    extraction : BaseExtraction
+    extraction : Extraction
         The extraction method used for preprocessing the data.
     image_augmentation : list[Callable]
         A list of augmentation functions for images.

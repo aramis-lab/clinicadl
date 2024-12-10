@@ -128,7 +128,7 @@ def insensitive_glob(pattern_glob: str, recursive: bool = False) -> List[str]:
 
 def get_extraction(
     extract_method: Union[str, ExtractionMethod],
-) -> type[extraction.BaseExtraction]:
+) -> type[extraction.Extraction]:
     """
     Retrieves the extraction method based on the specified extraction method.
 
@@ -136,7 +136,7 @@ def get_extraction(
         extract_method (Union[str, ExtractionMethod]): The extraction method as either a string or an `ExtractionMethod` enum.
 
     Returns:
-        type[extraction.BaseExtraction]: The corresponding extraction class (e.g., `ROI`, `Slice`, etc.).
+        type[extraction.Extraction]: The corresponding extraction class (e.g., `ROI`, `Slice`, etc.).
 
     Raises:
         ValueError: If the provided `extract_method` is not supported or is invalid.
