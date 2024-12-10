@@ -81,29 +81,20 @@ class ROI(Extraction):
 
         self._mask_tensors = []
         for path in self.masks:
-            if not Path(path).is_dir():
-                raise FileNotFoundError(f"The path '{path}' does not match any file.")
+            roi_mask = self.load_image(path).int()
 
-            try:
-                roi_mask: np.ndarray = nib.loadsave.load(path).get_fdata()
-            except nib.filebasedimages.ImageFileError as exc:
-                raise ValueError(
-                    f"Unable to read the mask in {path}. Consider using a nifti file format "
-                    "('.nii' or '.nii.gz')."
-                ) from exc
-
-            mask_values = set(np.unique(roi_mask))
+            mask_values = set(roi_mask.unique().tolist())
             if mask_values != {0, 1}:
                 raise ValueError(
                     f"The ROI masks should be binary (composed of 0 and 1 only). Got other values in {path}."
                 )
 
-            if len(roi_mask.shape) != 3:
+            if len(roi_mask.shape) != 4:
                 raise ValueError(
-                    f"Expected 3D mask, but got {len(roi_mask.shape)} dimensions in {path}."
+                    f"Expected 3D mask, but got {len(roi_mask.shape)-1} dimensions in {path}."
                 )
 
-            self._mask_tensors.append([torch.from_numpy(roi_mask).unsqueeze(0).int()])
+            self._mask_tensors.append(roi_mask)
 
         self._mask_size = self._mask_tensors[0].shape[1:]
         for mask, path in zip(self._mask_tensors[1:], self.masks[1:]):
@@ -115,12 +106,14 @@ class ROI(Extraction):
                 )
 
         if self.crop:
-            merged_mask = torch.cat(self._mask_tensors).sum(0)
+            merged_mask = torch.stack(
+                self._mask_tensors,
+            ).sum(0)
             self._crop_indices = self._crop_mask(merged_mask)
             self._output_size = (
-                self._crop_indices[1] - self._crop_indices[0],
-                self._crop_indices[3] - self._crop_indices[2],
-                self._crop_indices[5] - self._crop_indices[4],
+                self._crop_indices[1] - self._crop_indices[0] + 1,
+                self._crop_indices[3] - self._crop_indices[2] + 1,
+                self._crop_indices[5] - self._crop_indices[4] + 1,
             )
         else:
             self._output_size = tuple(self._mask_tensors[0].shape[1:])
@@ -144,9 +137,16 @@ class ROI(Extraction):
         y_min, y_max = y.min(), y.max()
         z_min, z_max = z.min(), z.max()
 
-        return x_min, x_max, y_min, y_max, z_min, z_max
+        return (
+            x_min.item(),
+            x_max.item(),
+            y_min.item(),
+            y_max.item(),
+            z_min.item(),
+            z_max.item(),
+        )
 
-    def num_sample_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
         Returns the number of ROIs in an image.
 
@@ -166,7 +166,7 @@ class ROI(Extraction):
         """
         return len(self.masks)
 
-    def extract(self, nii_path: Path) -> List[Tuple[str, torch.Tensor]]:
+    def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:
         """
         Extracts all the regions of interest (ROIs) from a given NIfTI image.
 
@@ -183,8 +183,8 @@ class ROI(Extraction):
         """
         image_tensor = self.load_image(nii_path)
         roi_list = [
-            (self.extract_sample(image_tensor, idx), self.sample_path(nii_path, idx))
-            for idx in range(self.num_sample_per_image(image_tensor))
+            (self.sample_path(nii_path, idx), self.extract_sample(image_tensor, idx))
+            for idx in range(self.num_samples_per_image(image_tensor))
         ]
         return roi_list
 
@@ -213,16 +213,25 @@ class ROI(Extraction):
         ------
         ValueError
             If the image is not the same size as the mask.
+        IndexError
+            If 'sample_index' is greater or equal to the number of ROIs.
         """
         if tuple(image_tensor.shape) != (1, *self._mask_size):
             raise ValueError(
                 f"The image must be the same size as the mask (i.e. {self._mask_size}). Got {tuple(image_tensor.shape)}"
             )
+        if sample_index >= len(self.masks):
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there are only "
+                f"{len(self.masks)} ROIs."
+            )
 
         roi_tensor = image_tensor * self._mask_tensors[sample_index]
         if self.crop:
             x_min, x_max, y_min, y_max, z_min, z_max = self._crop_indices
-            roi_tensor = roi_tensor[:, x_min:x_max, y_min:y_max, z_min:z_max]
+            roi_tensor = roi_tensor[
+                :, x_min : x_max + 1, y_min : y_max + 1, z_min : z_max + 1
+            ]
 
         return roi_tensor.float().clone()
 
@@ -243,10 +252,11 @@ class ROI(Extraction):
         Path
             The path where the ROI will be saved, including ROI information in the filename.
         """
+        parent = image_path.parent
         prefix_suffix = image_path.name.rsplit("_", 1)
         roi_name = self.masks[sample_index].with_suffix("").with_suffix("").name
         return (
-            Path(f"{prefix_suffix[0]}_roi-{roi_name}_{prefix_suffix[1]}")
+            (parent / f"{prefix_suffix[0]}_roi-{roi_name}_{prefix_suffix[1]}")
             .with_suffix("")
             .with_suffix(PT)
         )

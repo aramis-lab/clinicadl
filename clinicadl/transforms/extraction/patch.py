@@ -52,7 +52,7 @@ class Patch(Extraction):
         else:
             return v
 
-    def num_sample_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
         Returns the total number of patches extracted from an image.
 
@@ -96,7 +96,7 @@ class Patch(Extraction):
         image_tensor = self.load_image(nii_path)
         patches_tensor = self.get_patches(image_tensor)
         patch_list = [
-            (self.sample_path(nii_path, idx), patches_tensor[i])
+            (self.sample_path(nii_path, idx), patches_tensor[idx])
             for idx in range(patches_tensor.size(0))
         ]
         return patch_list
@@ -120,12 +120,24 @@ class Patch(Extraction):
         torch.Tensor
             The extracted patch as a 4D tensor (with a channel dimension).
 
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is greater or equal to the number of patches in the image.
+
         Notes
         -----
         This method allows for the extraction of individual patches based on the provided index.
         """
         patches_tensor = self.get_patches(image_tensor)
-        return patches_tensor[sample_index, ...].unsqueeze_(0).clone()
+        print(patches_tensor[1])
+        try:
+            return patches_tensor[sample_index, ...].unsqueeze_(0).clone()
+        except IndexError as exc:
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there are only "
+                f"{len(patches_tensor)} patches in the image."
+            ) from exc
 
     def sample_path(self, image_path: Path, sample_index: int) -> Path:
         """
@@ -149,12 +161,14 @@ class Patch(Extraction):
         The filename is generated using the original image name, appending patch size, stride,
         and the patch index to ensure each patch is saved with a unique name.
         """
+        parent = image_path.parent
         prefix_suffix = image_path.name.rsplit("_", 1)
         patch_size_str = "x".join([str(s) for s in self.patch_size])
-        stride_str = "x".join([str(s) for s in self.patch_size])
+        stride_str = "x".join([str(s) for s in self.stride])
         return (
-            Path(
-                f"{prefix_suffix[0]}_patchsize-{patch_size_str}_stride-{stride_str}_patch-{sample_index}_{prefix_suffix[1]}"
+            (
+                parent
+                / f"{prefix_suffix[0]}_patchsize-{patch_size_str}_stride-{stride_str}_patch-{sample_index}_{prefix_suffix[1]}"
             )
             .with_suffix("")
             .with_suffix(PT)
@@ -187,6 +201,7 @@ class Patch(Extraction):
             .unfold(3, self.patch_size[2], self.stride[2])
             .contiguous()
         )
+
         return patches_tensor.view(
-            -1, self.patch_size, self.patch_size, self.patch_size
+            -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
         )

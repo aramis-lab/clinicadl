@@ -48,10 +48,17 @@ class Extraction(ClinicaDLConfig, ABC):
         nib.loadsave.ImageFileError
             If the image file cannot be read as a NIfTI file.
         """
+        if not Path(input_img).exists():
+            raise FileNotFoundError(f"The path '{input_img}' does not match any file.")
+
         try:
             image_array = nib.load(input_img).get_fdata(dtype="float32")  # type: ignore
         except Exception as e:
-            raise FileNotFoundError(f"Failed to load the image: {input_img}") from e
+            raise Exception(
+                f"Unable to read the image in {input_img}. Consider using a nifti file format "
+                "('.nii' or '.nii.gz')."
+            ) from e
+
         return torch.from_numpy(image_array).unsqueeze(0).float()
 
     @abstractmethod
@@ -74,6 +81,11 @@ class Extraction(ClinicaDLConfig, ABC):
         -------
         torch.Tensor
             A tensor containing the extracted sample.
+
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is greater or equal to the number of samples in the image.
 
         Notes
         -----
@@ -126,7 +138,7 @@ class Extraction(ClinicaDLConfig, ABC):
         """
 
     @abstractmethod
-    def num_sample_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
         Abstract method to return the number of extracted samples per image.
 

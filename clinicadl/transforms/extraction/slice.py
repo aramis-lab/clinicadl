@@ -92,7 +92,7 @@ class Slice(Extraction):
             )
         return self
 
-    def num_sample_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
         Returns the number of slices that can be extracted from the input image tensor.
 
@@ -130,7 +130,7 @@ class Slice(Extraction):
         """
         image_tensor = self.load_image(nii_path)
         slices = []
-        for i in range(self.num_elem_per_image(image_tensor)):
+        for i in range(self.num_samples_per_image(image_tensor)):
             slice_tensor = self.extract_sample(image_tensor, i)
             slices.append((self.sample_path(nii_path, i), slice_tensor))
 
@@ -155,6 +155,11 @@ class Slice(Extraction):
         torch.Tensor
             A 3D tensor representing the extracted slice, with dimensions (3, height, width) if in RGB mode,
             or (1, height, width) otherwise.
+
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is greater or equal to the number of slices in the image.
         """
         slice_position = self._get_slice_position(image_tensor, sample_index)
         slice_tensor = self._get_slice(
@@ -183,13 +188,14 @@ class Slice(Extraction):
         Path
             The constructed file path for the slice.
         """
+        parent = image_path.parent
         prefix_suffix = image_path.name.rsplit("_", 1)
         slice_dict = {0: "sag", 1: "cor", 2: "axi"}
 
         return (
-            Path(
-                f"{prefix_suffix[0]}_axis-{slice_dict[self.slice_direction.value]}"
-                f"_channel-{self.slice_mode.value}_slice-{sample_index}_{prefix_suffix[1]}"
+            (
+                parent / f"{prefix_suffix[0]}_axis-{slice_dict[self.slice_direction]}"
+                f"_channel-{self.slice_mode}_slice-{sample_index}_{prefix_suffix[1]}"
             )
             .with_suffix("")
             .with_suffix(PT)
@@ -205,14 +211,21 @@ class Slice(Extraction):
 
         if self.slices:
             selection = ~selection
-            selection[self.slices] = True
+            try:
+                selection[self.slices] = True
+            except IndexError as exc:
+                raise IndexError(
+                    "Invalid slices in 'slices': "
+                    f"slices in the image are indexed from 0 to {n_slices-1}, but got "
+                    f"slices={self.slices}."
+                ) from exc
         else:
             if self.discarded_slices:
                 try:
                     selection[self.discarded_slices] = False
                 except IndexError as exc:
                     raise IndexError(
-                        "Please only mention valid slices in 'discarded_slices': "
+                        "Invalid slices in 'discarded_slices': "
                         f"slices in the image are indexed from 0 to {n_slices-1}, but got "
                         f"discarded_slices={self.discarded_slices}."
                     ) from exc
@@ -231,7 +244,13 @@ class Slice(Extraction):
         selection = self._get_slice_selection(image)
         slice_positions = np.arange(len(selection))[selection]
 
-        return slice_positions[slice_index]
+        try:
+            return slice_positions[slice_index]
+        except IndexError as exc:
+            raise IndexError(
+                f"'sample_index' {slice_index} is out of range as there are only "
+                f"{len(slice_positions)} slices in the image."
+            ) from exc
 
     def _get_slice(self, image: torch.Tensor, slice_position: int) -> torch.Tensor:
         """

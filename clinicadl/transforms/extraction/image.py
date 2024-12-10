@@ -70,10 +70,21 @@ class Image(Extraction):
         torch.Tensor
             The same image tensor as no further extraction is applied.
 
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is not 0.
+
         Notes
         -----
         This method is a placeholder in this class as the full image is returned without modification.
         """
+        if sample_index != 0:
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there is only "
+                "1 sample in the image."
+            )
+
         return image_tensor
 
     def sample_path(self, image_path: Path, sample_index: int = 0) -> Path:  # pylint:disable=unused-argument
@@ -98,7 +109,7 @@ class Image(Extraction):
         """
         return image_path.with_suffix("").with_suffix(PT)
 
-    def num_sample_per_image(self, image: torch.Tensor) -> PositiveInt:
+    def num_samples_per_image(self, image: torch.Tensor) -> PositiveInt:
         """
         Returns the number of elements per image. Since the entire image is extracted, this method always returns 1.
 
