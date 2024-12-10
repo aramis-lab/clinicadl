@@ -1,9 +1,7 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional, Self, Tuple
+from typing import List, Optional, Tuple
 
-import nibabel as nib
-import numpy as np
 import torch
 from pydantic import (
     NonNegativeInt,
@@ -11,6 +9,7 @@ from pydantic import (
     computed_field,
     model_validator,
 )
+from typing_extensions import Self
 
 from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import ExtractionMethod
