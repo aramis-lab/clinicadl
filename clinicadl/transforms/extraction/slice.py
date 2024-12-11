@@ -61,7 +61,7 @@ class Slice(Extraction):
     """
     Transform class to extract slices from an image in a specified direction.
 
-    This class allows users to define extraction configurations for obtaining slices from a 3D image tensor.
+    This class allows users to define extraction configurations for obtaining slices from a 4D image tensor.
     The extracted slices can be processed in different directions (e.g., sagittal, coronal, axial) and can
     be adjusted for RGB mode.
 
