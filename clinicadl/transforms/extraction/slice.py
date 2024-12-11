@@ -79,15 +79,12 @@ class Slice(Extraction):
         `a` slices and the last `b` slices will be filtered out.
     slice_direction : SliceDirection (optional, default=SliceDirection.SAGITTAL)
         the slicing direction. Can be 0 (sagittal direction), 1 (coronal) or 2 (axial).
-    slice_mode : SliceMode (optional, default=SliceMode.RGB)
-        _description_
     """
 
     slices: Optional[List[NonNegativeInt]] = None
     discarded_slices: Optional[List[NonNegativeInt]] = None
     borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
-    slice_mode: SliceMode = SliceMode.RGB  # TODO: useful?,
 
     @computed_field
     @property
@@ -199,8 +196,6 @@ class Slice(Extraction):
         slice_position = self._get_slice_position(image_tensor, sample_index)
         slice_tensor = self._get_slice(image_tensor, slice_position)
 
-        if self.slice_mode == SliceMode.RGB:
-            slice_tensor = torch.cat([slice_tensor] * 3)
         return slice_tensor.clone()
 
     # TODO : remove?
@@ -228,7 +223,7 @@ class Slice(Extraction):
         return (
             (
                 parent / f"{prefix_suffix[0]}_axis-{slice_dict[self.slice_direction]}"
-                f"_channel-{self.slice_mode}_slice-{sample_index}_{prefix_suffix[1]}"
+                f"_slice-{sample_index}_{prefix_suffix[1]}"
             )
             .with_suffix("")
             .with_suffix(PT)
