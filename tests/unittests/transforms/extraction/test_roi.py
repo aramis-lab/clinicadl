@@ -6,6 +6,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 import torch
+import torchio as tio
 
 from clinicadl.transforms.extraction import ROI
 
@@ -104,7 +105,7 @@ def test_extract_sample():
     tmp_dir = Path(__file__).parents[2] / "ressources" / "tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    image_tensor = torch.randn(1, 9, 10, 9).float()
+    image_tensor = torch.randn(1, 9, 10, 9)
 
     mask_1 = np.zeros((9, 10, 9))
     mask_1[3:6, 3:5, 4:6] = 1
@@ -181,3 +182,109 @@ def test_extract():
     assert output[1][1].shape == (1, 6, 4, 5)
 
     shutil.rmtree(tmp_dir)
+
+
+def test_extract_tio_sample():
+    tmp_dir = Path(__file__).parents[2] / "ressources" / "tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    image_tensor = torch.randn(1, 9, 10, 9)
+    label = torch.ones(1, 9, 10, 9)
+    mask_1 = torch.zeros(1, 9, 10, 9)
+
+    mask_roi = np.zeros((9, 10, 9))
+    mask_roi[3:6, 3:5, 4:6] = 1
+    mask_roi_tensor = torch.from_numpy(mask_roi).unsqueeze(0).int()
+    _mask_from_numpy(mask_roi, path=tmp_dir / "mask_1.nii.gz")
+
+    roi = ROI(masks=[tmp_dir / "mask_1.nii.gz"])
+
+    tio_image = tio.Subject(
+        image=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+    )
+    tio_sample = roi.extract_tio_sample(tio_image, sample_index=0)
+    assert isinstance(tio_sample.sample, tio.ScalarImage)
+    assert torch.isclose(
+        tio_sample.sample.tensor.sum(), (image_tensor * mask_roi_tensor).sum()
+    )
+    assert isinstance(tio_sample.label, tio.LabelMap)
+    assert torch.isclose(tio_sample.label.tensor.sum(), (label * mask_roi_tensor).sum())
+    assert isinstance(tio_sample.mask_1, tio.LabelMap)
+    assert torch.isclose(
+        tio_sample.mask_1.tensor.sum(), (mask_1 * mask_roi_tensor).sum()
+    )
+    assert tio_sample.description == str(tmp_dir / "mask_1.nii.gz")
+    with pytest.raises(AttributeError):
+        tio_sample.image
+
+    tio_image = tio.Subject(image=tio.ScalarImage(tensor=image_tensor), label=1)
+    tio_sample = roi.extract_tio_sample(tio_image, sample_index=0)
+    assert tio_sample.label == 1
+
+    with pytest.raises(IndexError):
+        roi.extract_tio_sample(tio_image, sample_index=1)
+    with pytest.raises(AttributeError):
+        roi.extract_tio_sample(
+            tio.Subject(label=tio.LabelMap(tensor=label)), sample_index=0
+        )
+
+
+def test_format_output():
+    tmp_dir = Path(__file__).parents[2] / "ressources" / "tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    _generate_random_mask(size=(4, 7, 6), path=tmp_dir / "mask_1.nii.gz")
+    roi = ROI(masks=[tmp_dir / "mask_1.nii.gz"])
+
+    image_tensor = torch.randn(1, 4, 7, 6)
+    mask_1 = torch.ones(1, 4, 7, 6)
+    label = torch.ones(1, 4, 7, 6)
+
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+        description=str(tmp_dir / "mask_1.nii.gz"),
+    )
+    output = roi.format_output(
+        tio_sample,
+        participant_id="sub-001",
+        session_id="ses-M001",
+        image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+    )
+    assert (output.sample == image_tensor).all()
+    assert (output.label == label).all()
+    assert output.session_id == "ses-M001"
+    assert output.participant_id == "sub-001"
+    assert output.extraction == "roi"
+    assert output.image_path == "sub-001_ses-M001_T1w.nii.gz"
+    assert output.roi == str(tmp_dir / "mask_1.nii.gz")
+    assert not output.cropped
+
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=0.5,
+        description=str(tmp_dir / "mask_1.nii.gz"),
+    )
+    output = roi.format_output(
+        tio_sample,
+        participant_id="sub-001",
+        session_id="ses-M001",
+        image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+    )
+    assert output.label == 0.5
+
+    # check that checks on sample are performed
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+    )
+    with pytest.raises(AttributeError):
+        roi.format_output(
+            tio_sample,
+            participant_id="sub-001",
+            session_id="ses-M001",
+            image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+        )

@@ -164,7 +164,9 @@ class Slice(Extraction):
         image_tensor = self.load_image(nii_path)
         slices = []
         for i in range(self.num_samples_per_image(image_tensor)):
-            slice_tensor = self.extract_sample(image_tensor, i)
+            slice_tensor = self.extract_sample(image_tensor, i).squeeze(
+                self.slice_direction + 1
+            )
             slices.append((self.sample_path(nii_path, i), slice_tensor))
 
         return slices
@@ -186,8 +188,8 @@ class Slice(Extraction):
         Returns
         -------
         torch.Tensor
-            A 3D tensor representing the extracted slice, with dimensions (3, height, width) if in RGB mode,
-            or (1, height, width) otherwise.
+            The extracted slice as a tensor. The tensor is still 4D (with the dimension in
+            the slice direction equal to 1).
 
         Raises
         ------
@@ -195,12 +197,10 @@ class Slice(Extraction):
             If 'sample_index' is greater or equal to the number of slices in the image.
         """
         slice_position = self._get_slice_position(image_tensor, sample_index)
-        slice_tensor = self._get_slice(
-            image_tensor, slice_position
-        )  # shape is 1 * H * W
+        slice_tensor = self._get_slice(image_tensor, slice_position)
 
         if self.slice_mode == SliceMode.RGB:
-            slice_tensor = torch.cat([slice_tensor] * 3)  # shape is 3 * H * W
+            slice_tensor = torch.cat([slice_tensor] * 3)
         return slice_tensor.clone()
 
     # TODO : remove?
@@ -296,7 +296,7 @@ class Slice(Extraction):
         elif self.slice_direction == 2:
             slice_tensor = image[:, :, :, slice_position]
 
-        return slice_tensor  # pylint: disable=possibly-used-before-assignment
+        return slice_tensor.unsqueeze(self.slice_direction + 1)  # pylint: disable=possibly-used-before-assignment
 
     def _get_sample_description(
         self, image_tensor: torch.Tensor, sample_index: int
@@ -342,9 +342,9 @@ class Slice(Extraction):
         """
         self._check_tio_sample(tio_sample)
 
-        sample = tio_sample.sample.tensor
+        sample = tio_sample.sample.tensor.squeeze(self.slice_direction + 1)
         if isinstance(tio_sample.label, tio.Image):
-            label = tio_sample.label.tensor
+            label = tio_sample.label.tensor.squeeze(self.slice_direction + 1)
         else:
             label = tio_sample.label
 

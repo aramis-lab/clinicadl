@@ -279,6 +279,8 @@ class Extraction(ClinicaDLConfig, ABC):
         ------
         AttributeError
             If 'tio_image' doesn't have a TorchIO ScalarImage named 'image'.
+        IndexError
+            If 'sample_index' is greater or equal to the number of samples in the image.
         """
         if not hasattr(tio_image, "image") or not isinstance(
             tio_image.image, tio.ScalarImage
@@ -291,8 +293,9 @@ class Extraction(ClinicaDLConfig, ABC):
         tio_sample = deepcopy(tio_image)
 
         image: tio.Image
-        for name, image in tio_image.get_images_dict(intensity_only=False):
+        for name, image in tio_image.get_images_dict(intensity_only=False).items():
             sample = self.extract_sample(image.tensor, sample_index)
+
             if isinstance(image, tio.ScalarImage):
                 setattr(tio_sample, name, tio.ScalarImage(tensor=sample))
             elif isinstance(image, tio.LabelMap):

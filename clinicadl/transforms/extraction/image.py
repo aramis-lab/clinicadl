@@ -80,7 +80,7 @@ class Image(Extraction):
     def extract_sample(
         self,
         image_tensor: torch.Tensor,
-        sample_index: int = 0,  # pylint:disable=unused-argument
+        sample_index: int = 0,
     ) -> torch.Tensor:
         """
         Returns the entire image tensor as no further extraction is needed.
@@ -89,7 +89,7 @@ class Image(Extraction):
         ----------
         image_tensor : torch.Tensor
             The image tensor to extract data from.
-        sample_index : int
+        sample_index : int (optional, default=0)
             The index to identify the extracted data (though this is not used in this method).
 
         Returns
@@ -210,3 +210,38 @@ class Image(Extraction):
             image_path=str(image_path),
             label=label,
         )
+
+    def extract_tio_sample(
+        self, tio_image: tio.Subject, sample_index: int = 0
+    ) -> tio.Subject:
+        """
+        Converts a TorchIO Subject representing the image to a TorchIO Subject
+        representing the sample (which is here the image).
+
+        Parameters
+        ----------
+        tio_image : tio.Subject
+            The image as a TorchIO Subject. Can contain masks associated
+            to the image as well.
+        sample_index : int (optional, default=0)
+            For consistency with other extraction methods. Always 0 here.
+
+        Returns
+        -------
+        tio.Subject
+            A new TorchIO Subject representing the sample (the full image here), accessible via the
+            attribute 'sample', and the potential masks, extracted in the same way as the sample.
+
+        Raises
+        ------
+        AttributeError
+            If 'tio_image' doesn't have a TorchIO ScalarImage named 'image'.
+        IndexError
+            If 'sample_index' is not 0.
+
+        Notes
+        -----
+        This method is trivial here as no extraction is performed. The TorchIO Subject is just converted
+        to another format.
+        """
+        return super().extract_tio_sample(tio_image, sample_index)

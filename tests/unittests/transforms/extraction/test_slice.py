@@ -5,6 +5,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 import torch
+import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.transforms.extraction import Slice
@@ -75,17 +76,17 @@ def test_extract_sample():
 
     slice = Slice(slices=[2, 3])
     assert (
-        slice.extract_sample(image_tensor, sample_index=1) == image_tensor[:, 3]
+        slice.extract_sample(image_tensor, sample_index=1) == image_tensor[:, 3:4]
     ).all()
 
     slice = Slice(discarded_slices=[0], slice_direction=1)
     assert (
-        slice.extract_sample(image_tensor, sample_index=0) == image_tensor[:, :, 1]
+        slice.extract_sample(image_tensor, sample_index=0) == image_tensor[:, :, 1:2]
     ).all()
 
     slice = Slice(discarded_slices=[4], borders=1, slice_direction=2)
     assert (
-        slice.extract_sample(image_tensor, sample_index=3) == image_tensor[:, :, :, 5]
+        slice.extract_sample(image_tensor, sample_index=3) == image_tensor[:, :, :, 5:6]
     ).all()
 
     slice = Slice(discarded_slices=[4], borders=1, slice_direction=2)
@@ -117,3 +118,92 @@ def test_extract():
     assert (output[2][1] == image_tensor[:, :, :, 5]).all()
 
     shutil.rmtree(tmp_dir)
+
+
+def test_extract_tio_sample():
+    slice = Slice(slices=[2, 3])
+    image_tensor = torch.randn(1, 5, 7, 3)
+    mask_1 = torch.ones(1, 5, 7, 3)
+    label = torch.ones(1, 5, 7, 3)
+
+    tio_image = tio.Subject(
+        image=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+    )
+    tio_sample = slice.extract_tio_sample(tio_image, sample_index=1)
+    assert isinstance(tio_sample.sample, tio.ScalarImage)
+    assert (tio_sample.sample.tensor == image_tensor[:, 3:4]).all()
+    assert isinstance(tio_sample.label, tio.LabelMap)
+    assert (tio_sample.label.tensor == label[:, 3:4]).all()
+    assert isinstance(tio_sample.mask_1, tio.LabelMap)
+    assert (tio_sample.mask_1.tensor == mask_1[:, 3:4]).all()
+    assert tio_sample.description == 3
+    with pytest.raises(AttributeError):
+        tio_sample.image
+
+    tio_image = tio.Subject(image=tio.ScalarImage(tensor=image_tensor), label=1)
+    tio_sample = slice.extract_tio_sample(tio_image, sample_index=1)
+    assert tio_sample.label == 1
+
+    with pytest.raises(IndexError):
+        slice.extract_tio_sample(tio_image, sample_index=42)
+    with pytest.raises(AttributeError):
+        slice.extract_tio_sample(
+            tio.Subject(label=tio.LabelMap(tensor=label)), sample_index=1
+        )
+
+
+def test_format_output():
+    slice = Slice(slice_direction=2)
+    image_tensor = torch.randn(1, 3, 4, 1)
+    mask_1 = torch.ones(1, 3, 4, 1)
+    label = torch.ones(1, 3, 4, 1)
+
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+        description=1,
+    )
+    output = slice.format_output(
+        tio_sample,
+        participant_id="sub-001",
+        session_id="ses-M001",
+        image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+    )
+    assert (output.sample == image_tensor.squeeze(3)).all()
+    assert (output.label == label.squeeze(3)).all()
+    assert output.session_id == "ses-M001"
+    assert output.participant_id == "sub-001"
+    assert output.extraction == "slice"
+    assert output.image_path == "sub-001_ses-M001_T1w.nii.gz"
+    assert output.slice_direction == 2
+    assert output.slice_position == 1
+
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=0.5,
+        description=1,
+    )
+    output = slice.format_output(
+        tio_sample,
+        participant_id="sub-001",
+        session_id="ses-M001",
+        image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+    )
+    assert output.label == 0.5
+
+    # check that checks on sample are performed
+    tio_sample = tio.Subject(
+        sample=tio.ScalarImage(tensor=image_tensor),
+        label=tio.LabelMap(tensor=label),
+        mask_1=tio.LabelMap(tensor=mask_1),
+    )
+    with pytest.raises(AttributeError):
+        slice.format_output(
+            tio_sample,
+            participant_id="sub-001",
+            session_id="ses-M001",
+            image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+        )
