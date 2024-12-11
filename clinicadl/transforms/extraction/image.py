@@ -1,16 +1,43 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
+import torchio as tio
 from pydantic import PositiveInt, computed_field
 
-from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import ExtractionMethod
+
+from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.image")
 
 PT = ".pt"
+
+
+class ImageSample(Sample):
+    """
+    Output of a CapsDataset when image extraction is performed (i.e. no extraction).
+
+    Attributes
+    ----------
+    sample : torch.Tensor
+        the image as 4D PyTorch tensor (with one channel dimension).
+    participant_id : str
+        the subject concerned.
+    session_id : str
+        the session concerned.
+    image_path : str
+        the path to the image.
+    label : Optional[Union[float, int, torch.Tensor]]
+        the potential label associated to the image.
+    """
+
+    @computed_field
+    @property
+    def extraction(self) -> ExtractionMethod:
+        """The extraction method."""
+        return ExtractionMethod.IMAGE
 
 
 class Image(Extraction):
@@ -128,3 +155,58 @@ class Image(Extraction):
         This method is specific to the full image extraction, where only one element (the image) is returned.
         """
         return 1
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> None:
+        """No need for description in the case of image extraction."""
+        return None
+
+    def format_output(
+        self,
+        tio_sample: tio.Subject,
+        participant_id: str,
+        session_id: str,
+        image_path: Union[str, Path],
+    ) -> ImageSample:
+        """
+        Puts all the output information in an ImageSample object.
+
+        Parameters
+        ----------
+        tio_sample : tio.Subject
+            a TorchIO Subject corresponding to the image, with at least a ScalarImage named 'sample',
+            an attribute named 'label' and an attribute named 'description'.
+        participant_id : str
+            the subject concerned.
+        session_id : str
+            the session concerned.
+        image_path : Union[str, Path]
+            the path of the image.
+
+        Returns
+        -------
+        ImageSample
+            an ImageSample object with all the relevant information on the image.
+
+        Raises
+        ------
+        AttributeError
+            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
+            'label' and 'description'.
+        """
+        self._check_tio_sample(tio_sample)
+
+        sample = tio_sample.sample.tensor
+        if isinstance(tio_sample.label, tio.Image):
+            label = tio_sample.label.tensor
+        else:
+            label = tio_sample.label
+
+        return ImageSample(
+            sample=sample,
+            participant_id=participant_id,
+            session_id=session_id,
+            image_path=str(image_path),
+            label=label,
+        )

@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+import torchio as tio
 from pydantic import (
     NonNegativeInt,
     PositiveInt,
@@ -13,16 +14,47 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,
     SliceMode,
 )
 
+from .base import Extraction, Sample
+
 logger = getLogger("clinicadl.extraction.slice")
 
 PT = ".pt"
+
+
+class SliceSample(Sample):
+    """
+    Output of a CapsDataset when slice extraction is performed.
+
+    Attributes
+    ----------
+    sample : torch.Tensor
+       the 2D slice as 3D PyTorch tensor (with one channel dimension).
+    participant_id : str
+        the subject concerned.
+    session_id : str
+        the session concerned.
+    image_path : str
+        the path to the image from which the slice has been extracted.
+    slice_position : int
+        position of the slice in the original image.
+    slice_direction : SliceDirection
+        the slicing direction. Can be 0 (sagittal direction), 1 (coronal) or 2 (axial).
+    """
+
+    slice_position: NonNegativeInt
+    slice_direction: SliceDirection
+
+    @computed_field
+    @property
+    def extraction(self) -> ExtractionMethod:
+        """The extraction method."""
+        return ExtractionMethod.SLICE
 
 
 class Slice(Extraction):
@@ -46,7 +78,7 @@ class Slice(Extraction):
         `a` slices and the last `a` slices will be filtered out. If a tuple `(a, b)` is passed, the first
         `a` slices and the last `b` slices will be filtered out.
     slice_direction : SliceDirection (optional, default=SliceDirection.SAGITTAL)
-        the slicing direction. Can be `0` (sagittal direction), `1` (coronal) or `2` (axial).
+        the slicing direction. Can be 0 (sagittal direction), 1 (coronal) or 2 (axial).
     slice_mode : SliceMode (optional, default=SliceMode.RGB)
         _description_
     """
@@ -265,3 +297,63 @@ class Slice(Extraction):
             slice_tensor = image[:, :, :, slice_position]
 
         return slice_tensor  # pylint: disable=possibly-used-before-assignment
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> int:
+        """
+        The sample description for slice extraction is the position of the slice
+        in the original image.
+        """
+        return self._get_slice_position(image_tensor, sample_index)
+
+    def format_output(
+        self,
+        tio_sample: tio.Subject,
+        participant_id: str,
+        session_id: str,
+        image_path: Union[str, Path],
+    ) -> SliceSample:
+        """
+        Puts all the output information in an SliceSample object.
+
+        Parameters
+        ----------
+        tio_sample : tio.Subject
+            a TorchIO Subject corresponding to the slice, with at least a ScalarImage named 'sample',
+            an attribute named 'label' and an attribute named 'description'.
+        participant_id : str
+            the subject concerned.
+        session_id : str
+            the session concerned.
+        image_path : Union[str, Path]
+            the path of the image from which the slice is extracted.
+
+        Returns
+        -------
+        SliceSample
+            a SliceSample object with all the relevant information on the slice.
+
+        Raises
+        ------
+        AttributeError
+            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
+            'label' and 'description'.
+        """
+        self._check_tio_sample(tio_sample)
+
+        sample = tio_sample.sample.tensor
+        if isinstance(tio_sample.label, tio.Image):
+            label = tio_sample.label.tensor
+        else:
+            label = tio_sample.label
+
+        return SliceSample(
+            sample=sample,
+            participant_id=participant_id,
+            session_id=session_id,
+            image_path=str(image_path),
+            label=label,
+            slice_position=tio_sample.description,
+            slice_direction=self.slice_direction,
+        )

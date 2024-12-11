@@ -1,16 +1,34 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import nibabel as nib
 import torch
+import torchio as tio
 from pydantic import computed_field
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 
 logger = getLogger("clinicadl.base_extraction")
+
+
+class Sample(ClinicaDLConfig, ABC):
+    """Abstract class for outputs of CapsDataset."""
+
+    sample: torch.Tensor
+    participant_id: str
+    session_id: str
+    image_path: str
+    label: Optional[Union[float, int, torch.Tensor]]
+
+    @computed_field
+    @property
+    @abstractmethod
+    def extraction(self) -> ExtractionMethod:
+        """The extraction method."""
 
 
 class Extraction(ClinicaDLConfig, ABC):
@@ -27,7 +45,8 @@ class Extraction(ClinicaDLConfig, ABC):
     def extract_method(self) -> ExtractionMethod:
         """The method to be used for the extraction process (ROI, Image, Patch, Slice)."""
 
-    def load_image(self, input_img: Path) -> torch.Tensor:
+    @staticmethod
+    def load_image(input_img: Path) -> torch.Tensor:
         """
         Loads a NIfTI image and converts it to a float32 tensor.
 
@@ -156,3 +175,156 @@ class Extraction(ClinicaDLConfig, ABC):
         -----
         This method needs to be implemented in the subclasses.
         """
+
+    @abstractmethod
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> Any:
+        """A description of the sample, e.g. slice position or ROI mask path."""
+
+    @abstractmethod
+    def format_output(
+        self,
+        tio_sample: tio.Subject,
+        participant_id: str,
+        session_id: str,
+        image_path: Union[str, Path],
+    ) -> Sample:
+        """
+        Puts all the output information in a Sample object.
+
+        Parameters
+        ----------
+        tio_sample : tio.Subject
+            a TorchIO Subject corresponding to the sample, with at least a ScalarImage named 'sample',
+            an attribute named 'label' and an attribute named 'description'.
+        participant_id : str
+            the subject concerned.
+        session_id : str
+            the session concerned.
+        image_path : Union[str, Path]
+            the path of the base image, from which the sample was extracted.
+
+        Returns
+        -------
+        Sample
+            a Sample object with all the relevant information on the sample.
+
+        Raises
+        ------
+        AttributeError
+            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
+            'label' and 'description'.
+        """
+
+    @staticmethod
+    def get_tio_image(
+        image: torch.Tensor,
+        label: Optional[Union[float, int, torch.Tensor]],
+        **masks: torch.Tensor,
+    ) -> tio.Subject:
+        """
+        Creates a TorchIO Subject from the image, the label and possibly
+        masks related to the image.
+
+        Parameters
+        ----------
+        image : torch.Tensor
+            the image, as a Pytorch tensor.
+        label : Optional[Union[float, int, torch.Tensor]]
+            the label related to the image. Can be None if no label.
+        **masks : torch.Tensor
+            any mask related to the image and useful to compute transforms.
+
+        Returns
+        -------
+        tio.Subject
+            the TorchIO subject with the image and the label, accessible via
+            the attributes 'image' and 'label', as well as the masks, accessible
+            via their names.
+        """
+        tio_image = tio.Subject(image=tio.ScalarImage(tensor=image))
+
+        if isinstance(label, torch.Tensor):
+            tio_image.add_image(tio.LabelMap(tensor=label), "label")
+        else:
+            setattr(tio_image, "label", label)
+
+        for name, mask in masks.items():
+            tio_image.add_image(tio.LabelMap(tensor=mask), name)
+
+        return tio_image
+
+    def extract_tio_sample(
+        self, tio_image: tio.Subject, sample_index: int
+    ) -> tio.Subject:
+        """
+        Extracts a sample from a TorchIO Subject.
+
+        Parameters
+        ----------
+        tio_image : tio.Subject
+            The image as a TorchIO Subject. Can contain masks associated
+            to the image as well.
+        sample_index : int
+            Index indicating the sample to extract.
+
+        Returns
+        -------
+        tio.Subject
+            A new TorchIO Subject with the extracted sample, accessible via the attribute
+            'sample', and the potential masks, extracted in the same way as the sample.
+
+        Raises
+        ------
+        AttributeError
+            If 'tio_image' doesn't have a TorchIO ScalarImage named 'image'.
+        """
+        if not hasattr(tio_image, "image") or not isinstance(
+            tio_image.image, tio.ScalarImage
+        ):
+            raise AttributeError(
+                "'tio_image' must contain ScalarImage named 'image'. Got only the following images: "
+                f"{tio_image.get_images_names()}"
+            )
+
+        tio_sample = deepcopy(tio_image)
+
+        image: tio.Image
+        for name, image in tio_image.get_images_dict(intensity_only=False):
+            sample = self.extract_sample(image.tensor, sample_index)
+            if isinstance(image, tio.ScalarImage):
+                setattr(tio_sample, name, tio.ScalarImage(tensor=sample))
+            elif isinstance(image, tio.LabelMap):
+                setattr(tio_sample, name, tio.LabelMap(tensor=sample))
+
+            tio_sample.description = self._get_sample_description(
+                image.tensor, sample_index
+            )  # e.g. roi or slice position
+
+        tio_sample.sample = tio_sample.image
+        delattr(tio_sample, "image")
+
+        return tio_sample
+
+    @staticmethod
+    def _check_tio_sample(tio_sample: tio.Subject):
+        """
+        Checks that a TorchIO Subject is a valid sample, i.e. a sample with a TorchIO ScalarImage
+        named 'sample', a label named 'label' and a description named 'description'.
+        """
+        if not hasattr(tio_sample, "sample") or not isinstance(
+            tio_sample.sample, tio.ScalarImage
+        ):
+            raise AttributeError(
+                "'tio_sample' must contain ScalarImage named 'image'. Got only the following images: "
+                f"{tio_sample.get_images_names()}"
+            )
+        if not hasattr(tio_sample, "label"):
+            raise AttributeError(
+                "'tio_sample' must contain an attribute named 'label'."
+            )
+        if not hasattr(tio_sample, "description"):
+            raise AttributeError(
+                "'tio_sample' must contain an attribute named 'description'."
+            )

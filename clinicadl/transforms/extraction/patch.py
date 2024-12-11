@@ -3,14 +3,51 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import torch
-from pydantic import PositiveInt, computed_field, field_validator
+import torchio as tio
+from pydantic import NonNegativeInt, PositiveInt, computed_field, field_validator
 
-from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import ExtractionMethod
+
+from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.patch")
 
 PT = ".pt"
+
+
+class PatchSample(Sample):
+    """
+    Output of a CapsDataset when patch extraction is performed.
+
+    Attributes
+    ----------
+    sample : torch.Tensor
+        the patch as 4D PyTorch tensor (with one channel dimension).
+    participant_id : str
+        the subject concerned.
+    session_id : str
+        the session concerned.
+    image_path : str
+        the path to the image from which the patch has been extracted.
+    label : Optional[Union[float, int, torch.Tensor]]
+        the potential label associated to the image.
+    patch_index : NonNegativeInt
+        the index of the patch among all patches extracted from the image.
+    patch_size : Tuple[PositiveInt, PositiveInt, PositiveInt]
+        the size of the patch.
+    patch_stride : Tuple[PositiveInt, PositiveInt, PositiveInt]
+        the stride used for patch extraction.
+    """
+
+    patch_index: NonNegativeInt
+    patch_size: Tuple[PositiveInt, PositiveInt, PositiveInt]
+    patch_stride: Tuple[PositiveInt, PositiveInt, PositiveInt]
+
+    @computed_field
+    @property
+    def extraction(self) -> ExtractionMethod:
+        """The extraction method."""
+        return ExtractionMethod.PATCH
 
 
 class Patch(Extraction):
@@ -204,4 +241,62 @@ class Patch(Extraction):
 
         return patches_tensor.view(
             -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
+        )
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> int:
+        """The sample description for patch extraction is the index of the patch."""
+        return sample_index
+
+    def format_output(
+        self,
+        tio_sample: tio.Subject,
+        participant_id: str,
+        session_id: str,
+        image_path: Union[str, Path],
+    ) -> PatchSample:
+        """
+        Puts all the output information in an PatchSample object.
+
+        Parameters
+        ----------
+        tio_sample : tio.Subject
+            a TorchIO Subject corresponding to the patch, with at least a ScalarImage named 'sample',
+            an attribute named 'label' and an attribute named 'description'.
+        participant_id : str
+            the subject concerned.
+        session_id : str
+            the session concerned.
+        image_path : Union[str, Path]
+            the path of the image from which the patch is extracted.
+
+        Returns
+        -------
+        PatchSample
+            a PatchSample object with all the relevant information on the patch.
+
+        Raises
+        ------
+        AttributeError
+            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
+            'label' and 'description'.
+        """
+        self._check_tio_sample(tio_sample)
+
+        sample = tio_sample.sample.tensor
+        if isinstance(tio_sample.label, tio.Image):
+            label = tio_sample.label.tensor
+        else:
+            label = tio_sample.label
+
+        return PatchSample(
+            sample=sample,
+            participant_id=participant_id,
+            session_id=session_id,
+            image_path=str(image_path),
+            label=label,
+            patch_index=tio_sample.description,
+            patch_size=self.patch_size,
+            patch_stride=self.stride,
         )

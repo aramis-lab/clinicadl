@@ -1,8 +1,9 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
+import torchio as tio
 from pydantic import (
     NonNegativeInt,
     PositiveInt,
@@ -11,12 +12,43 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from clinicadl.transforms.extraction.base import Extraction
 from clinicadl.utils.enum import ExtractionMethod
+
+from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.roi")
 
 PT = ".pt"
+
+
+class ROISample(Sample):
+    """
+    Output of a CapsDataset when Regions of Interest (ROI) extraction is performed.
+
+    Attributes
+    ----------
+    sample : torch.Tensor
+       the ROI as 4D PyTorch tensor (with one channel dimension).
+    participant_id : str
+        the subject concerned.
+    session_id : str
+        the session concerned.
+    image_path : str
+        the path to the image from which the ROI has been extracted.
+    roi : str
+        the path to the ROI mask used to perform extraction.
+    cropped : bool
+        whether cropping has been performed.
+    """
+
+    roi: str
+    cropped: bool
+
+    @computed_field
+    @property
+    def extraction(self) -> ExtractionMethod:
+        """The extraction method."""
+        return ExtractionMethod.ROI
 
 
 class ROI(Extraction):
@@ -204,7 +236,7 @@ class ROI(Extraction):
         Returns
         -------
         torch.Tensor
-            The extracted patch as a 4D tensor (with a channel dimension). If 'crop' is False, the output
+            The extracted ROI as a 4D tensor (with a channel dimension). If 'crop' is False, the output
             is the same size as the input image. Otherwise, the output size is computed with the masks
             and can be accessed via the attribute 'output_size'.
 
@@ -258,4 +290,61 @@ class ROI(Extraction):
             (parent / f"{prefix_suffix[0]}_roi-{roi_name}_{prefix_suffix[1]}")
             .with_suffix("")
             .with_suffix(PT)
+        )
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> str:
+        """The sample description for ROI extraction is the path of the ROI mask."""
+        return str(self.masks[sample_index])
+
+    def format_output(
+        self,
+        tio_sample: tio.Subject,
+        participant_id: str,
+        session_id: str,
+        image_path: Union[str, Path],
+    ) -> ROISample:
+        """
+        Puts all the output information in a ROISample object.
+
+        Parameters
+        ----------
+        tio_sample : tio.Subject
+            a TorchIO Subject corresponding to the ROI, with at least a ScalarImage named 'sample',
+            an attribute named 'label' and an attribute named 'description'.
+        participant_id : str
+            the subject concerned.
+        session_id : str
+            the session concerned.
+        image_path : Union[str, Path]
+            the path of the image from which the ROI is extracted.
+
+        Returns
+        -------
+        ROISample
+            a ROISample object with all the relevant information on the image.
+
+        Raises
+        ------
+        AttributeError
+            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
+            'label' and 'description'.
+        """
+        self._check_tio_sample(tio_sample)
+
+        sample = tio_sample.sample.tensor
+        if isinstance(tio_sample.label, tio.Image):
+            label = tio_sample.label.tensor
+        else:
+            label = tio_sample.label
+
+        return ROISample(
+            sample=sample,
+            participant_id=participant_id,
+            session_id=session_id,
+            image_path=str(image_path),
+            label=label,
+            roi=tio_sample.description,
+            cropped=self.crop,
         )
