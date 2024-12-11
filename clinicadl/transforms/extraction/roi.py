@@ -264,7 +264,7 @@ class ROI(Extraction):
                 :, x_min : x_max + 1, y_min : y_max + 1, z_min : z_max + 1
             ]
 
-        return roi_tensor.float().clone()
+        return roi_tensor.clone()
 
     # TODO : to revise -> roi filename is not unique
     def sample_path(self, image_path: Path, sample_index: int) -> Path:

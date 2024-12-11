@@ -167,9 +167,8 @@ class Patch(Extraction):
         This method allows for the extraction of individual patches based on the provided index.
         """
         patches_tensor = self.get_patches(image_tensor)
-        print(patches_tensor[1])
         try:
-            return patches_tensor[sample_index, ...].unsqueeze_(0).clone()
+            return patches_tensor[sample_index].unsqueeze(0).clone()
         except IndexError as exc:
             raise IndexError(
                 f"'sample_index' {sample_index} is out of range as there are only "

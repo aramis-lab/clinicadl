@@ -112,7 +112,7 @@ class Image(Extraction):
                 "1 sample in the image."
             )
 
-        return image_tensor
+        return image_tensor.clone()
 
     def sample_path(self, image_path: Path, sample_index: int = 0) -> Path:  # pylint:disable=unused-argument
         """
