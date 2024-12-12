@@ -447,28 +447,16 @@ class CapsDataset(Dataset):
         Sets the dataset to evaluation mode.
 
         This disables data augmentation in the transformation pipeline.
-
-        Returns
-        -------
-        CapsDataset
-            The dataset instance with evaluation mode enabled.
         """
         self.eval_mode = True
-        return self
 
     def train(self):
         """
         Sets the dataset to training mode.
 
         This enables data augmentation in the transformation pipeline.
-
-        Returns
-        -------
-        CapsDataset
-            The dataset instance with training mode enabled.
         """
         self.eval_mode = False
-        return self
 
     def prepare_data(
         self,
