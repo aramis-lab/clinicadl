@@ -53,8 +53,8 @@ class CapsDataset(Dataset):
             Transformation pipeline to apply to the data.
         df: pd.DataFrame
             DataFrame containing participant/session information.
-        elem_per_image: int
-            Number of elements per image, determined by the extraction mode.
+        sample_per_image: int
+            Number of samples per image, determined by the extraction mode.
         eval_mode: bool
             Flag indicating whether the dataset is in evaluation mode.
     """
@@ -87,27 +87,26 @@ class CapsDataset(Dataset):
         self.transforms = transforms
         self.extraction = transforms.extraction
         self.df = self._get_df_from_input(data)
-
-        # self.size = self[0].elem.size()
+        self._samples_per_image = None
 
     @property
-    def elem_per_image(self):
+    def samples_per_image(self):
         """
-        Returns the number of elements per image based on the extraction mode.
+        Returns the number of samples per image based on the extraction mode.
 
         The value is determined by extracting the first image in the dataset and checking how many
-        elements are present in that image according to the extraction method.
+        samples are present in that image according to the extraction method.
 
         Returns
         -------
         int
-            Number of elements per image.
+            Number of samples per image.
         """
-        if not hasattr(self, "_elem_per_image"):
-            self._elem_per_image = self.extraction.num_samples_per_image(
+        if self._samples_per_image is None:
+            self._samples_per_image = self.extraction.num_samples_per_image(
                 image=self._get_full_image()[0]
             )
-        return self._elem_per_image
+        return self._samples_per_image
 
     @classmethod
     def from_json(cls, json_path: Path):
@@ -151,7 +150,7 @@ class CapsDataset(Dataset):
         """To complete/merge later with the dataset_description from clinica"""
         return {
             "total_samples": self.__len__(),
-            "elem_per_image": self._elem_per_image,
+            "samples_per_image": self._samples_per_image,
             "participants": self.df[PARTICIPANT_ID].nunique(),
             "sessions": self.df[SESSION_ID].nunique(),
             "preprocessing": self.preprocessing.model_dump(),
@@ -243,9 +242,9 @@ class CapsDataset(Dataset):
         Returns
         -------
         int
-            Total number of elements in the dataset.
+            Total number of samples in the dataset.
         """
-        return len(self.df) * self.elem_per_image
+        return len(self.df) * self.samples_per_image
 
     def _get_meta_data(
         self, idx: NonNegativeInt
@@ -264,25 +263,25 @@ class CapsDataset(Dataset):
             - participant (str): ID of the participant.
             - session (str): ID of the session.
             - img_index (NonNegativeInt): Index of the image.
-            - elem_index (NonNegativeInt): Index of the extracted element.
+            - sample_index (NonNegativeInt): Index of the extracted sample.
 
         Raises
         ------
         IndexError
             If the index is out of range.
         """
-        if idx >= self.__len__():
+        if idx >= len(self):
             raise IndexError(
-                f"Index out of range, there are only {self.__len__()} elements in your dataset."
+                f"Index out of range, there are only {len(self)} samples in your dataset."
             )
 
-        img_idx = idx // self.elem_per_image
-        elem_idx = idx % self.elem_per_image
+        img_idx = idx // self.samples_per_image
+        sample_idx = idx % self.samples_per_image
 
         participant = self._get_participant(idx)
         session = self._get_session(idx)
 
-        return participant, session, img_idx, elem_idx
+        return participant, session, img_idx, sample_idx
 
     def _get_participant(self, idx: NonNegativeInt) -> str:
         """
@@ -387,12 +386,19 @@ class CapsDataset(Dataset):
         -------
         CapsDatasetSample
             A structured output containing the processed data and metadata.
+
+        Raises
+        ------
+        ValueError
+            If 'idx' is not an integer.
+        IndexError
+            If 'idx' is greater or equal to the length of the dataset.
         """
 
         if not isinstance(idx, int) or idx < 0:
             raise ValueError(f"Index must be a non-negative integer, got {idx}.")
 
-        participant, session, img_index, elem_index = self._get_meta_data(idx)
+        participant, session, img_index, sample_index = self._get_meta_data(idx)
         image, image_path = self._get_full_image(img_index, True)
 
         (
@@ -410,7 +416,7 @@ class CapsDataset(Dataset):
         if not isinstance(self.extraction, Image):
             tensor = self.transforms.extraction.extract_tensor(
                 image,
-                elem_index,
+                sample_index,
             )
             if object_trf:
                 tensor = object_trf(tensor)
@@ -429,7 +435,7 @@ class CapsDataset(Dataset):
             participant_id=participant,
             session_id=session,
             img_idx=img_index,
-            elem_idx=elem_index,
+            elem_idx=sample_index,
             image_path=image_path,
             mode=self.extraction.extract_method,
         )
