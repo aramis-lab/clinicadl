@@ -1,77 +1,59 @@
 from logging import getLogger
-from typing import Callable, Optional, Tuple
+from typing import Callable, Tuple
 
-import torchvision.transforms as torch_transforms
+import torchio as tio
 from pydantic import model_validator
 
 from clinicadl.transforms.extraction import Extraction, Image
-from clinicadl.transforms.factory import (
-    MinMaxNormalization,
-    NanRemoval,
-    SizeReduction,
-)
+from clinicadl.transforms.factory import NanRemoval
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.enum import SizeReductionFactor
 
 logger = getLogger("clinicadl.transforms.transforms")
 
 
-type_ = Optional[torch_transforms.Compose]
-
-
 class Transforms(ClinicaDLConfig):
     """
-    A configuration class for applying transformations and augmentations to dataset images and objects.
+    A configuration class for applying transformations and augmentations to dataset images and
+    samples (slices, patches or ROIs).
 
-    This class manages the various transformations applied to images and their corresponding objects,
-    including image preprocessing, object transformation, data augmentation, and size reduction.
+    This class manages the various transformations applied to images and their corresponding samples,
+    including image preprocessing, sample transformation and data augmentation.
 
     Attributes
     ----------
     extraction : Extraction
         The extraction method used for preprocessing the data.
-    image_augmentation : list[Callable]
-        A list of augmentation functions for images.
-    object_augmentation : list[Callable]
-        A list of augmentation functions for objects (e.g., masks or labels).
     image_transforms : list[Callable]
         A list of transformation functions for images.
-    object_transforms : list[Callable]
-        A list of transformation functions for objects.
-    size_reduction : bool
-        Flag indicating whether to apply size reduction to the images.
-    size_reduction_factor : SizeReductionFactor
-        Factor by which to reduce the size of the images (e.g., 2x, 4x).
-    normalize : bool
-        Flag indicating whether to apply normalization to the images.
+    sample_transforms : list[Callable]
+        A list of transformation functions for samples.
+    image_augmentations : list[Callable]
+        A list of augmentation functions for images.
+    sample_augmentations : list[Callable]
+        A list of augmentation functions for samples (e.g., masks or labels).
 
     Methods
     -------
     check_transforms()
-        Validates and adjusts the configuration for transformations when images and objects are the same.
+        Validates and adjusts the configuration for transformations when images and samples are the same.
     __str__()
         Returns a string representation of the `Transforms` object.
-    get_transforms(normalize: bool, size_reduction: bool, size_reduction_factor: int)
-        Returns a tuple of composed transformations for images, objects, and augmentations.
+    get_transforms()
+        Returns a tuple of composed transformations for images, samples, and augmentations.
     """
 
     extraction: Extraction = Image()
-    image_augmentation: list[Callable] = []
-    object_augmentation: list[Callable] = []
-    image_transforms: list[Callable] = []
-    object_transforms: list[Callable] = []
-
-    # don't know if we keep these 3 values
-    size_reduction: bool = False
-    size_reduction_factor: SizeReductionFactor = SizeReductionFactor.TWO
-    normalize: bool = True
+    image_transforms: list[Callable] = [NanRemoval()]
+    sample_transforms: list[Callable] = []
+    image_augmentations: list[Callable] = []
+    sample_augmentations: list[Callable] = []
 
     @model_validator(mode="after")
     def check_transforms(self):
         """
-        Validates and adjusts the transformation configuration when image and object transformations overlap.
+        Validates and adjusts the transformation configuration when image and sample transformations overlap.
 
-        If the `extraction` is of type `Image` and object transformations or augmentations are provided,
+        If the `extraction` is of type `Image` and sample transformations or augmentations are provided,
         they will be merged into the image transformations and augmentations. A warning is logged for
         potential configuration conflicts.
 
@@ -81,28 +63,28 @@ class Transforms(ClinicaDLConfig):
             The updated `Transforms` object after ensuring the consistency of transformations.
         """
         if isinstance(self.extraction, Image):
-            if self.object_transforms:
+            if self.sample_transforms != []:
                 logger.warning(
-                    "You provided object_transforms but in the chosen configuration, image and object are the same."
+                    "You provided sample_transforms but in the chosen configuration, image and sample are the same."
                 )
-                for trans in self.object_transforms:
+                for trans in self.sample_transforms:
                     self.image_transforms.append(trans)
-                self.object_transforms = []
+                self.sample_transforms = []
 
-            if self.object_augmentation:
+            if self.sample_augmentations:
                 logger.warning(
-                    "You provided object_augmentation but in the chosen configuration, image and object are the same."
+                    "You provided sample_augmentations but in the chosen configuration, image and sample are the same."
                 )
-                for aug in self.object_augmentation:
-                    self.image_augmentation.append(aug)
-                self.object_augmentation = []
+                for aug in self.sample_augmentations:
+                    self.image_augmentations.append(aug)
+                self.sample_augmentations = []
 
         return self
 
     def __str__(self) -> str:
         """
         Returns a detailed string representation of the `Transforms` object,
-        showing the current configuration of image and object transformations,
+        showing the current configuration of image and sample transformations,
         augmentations, and other settings.
 
         Returns
@@ -115,7 +97,7 @@ class Transforms(ClinicaDLConfig):
 
         def _to_str(
             list_: list[Callable] = [],
-            object_: str = "object",
+            object_: str = "sample",
             transfo_: str = "transformation",
         ):
             str_ = ""
@@ -129,90 +111,44 @@ class Transforms(ClinicaDLConfig):
             return str_
 
         transform_str += _to_str(self.image_transforms, object_="image")
-        transform_str += _to_str(self.object_transforms, object_="object")
+        transform_str += _to_str(self.sample_transforms, object_="sample")
         transform_str += _to_str(
-            self.image_augmentation, object_="image", transfo_="augmentation"
+            self.image_augmentations, object_="image", transfo_="augmentation"
         )
         transform_str += _to_str(
-            self.object_augmentation, object_="object", transfo_="augmentation"
+            self.sample_augmentations, object_="sample", transfo_="augmentation"
         )
 
         return transform_str
 
     def get_transforms(
         self,
-        normalize: bool = True,
-        size_reduction: bool = False,
-        size_reduction_factor: int = 2,
-    ) -> Tuple[torch_transforms.Compose, type_, type_, type_]:
+    ) -> Tuple[tio.Compose, tio.Compose, tio.Compose, tio.Compose]:
         """
-        Composes and returns the transformations and augmentations for images and objects.
-
-        This method applies the following transformations in order:
-        1. Image transformations (e.g., Nan removal, normalization, size reduction).
-        2. Object transformations (if applicable).
-        3. Data augmentation for both images and objects (if applicable).
-
-        Parameters
-        ----------
-        normalize : bool, optional
-            Whether to normalize the images (default is True).
-        size_reduction : bool, optional
-            Whether to apply size reduction (default is False).
-        size_reduction_factor : int, optional
-            The factor by which to reduce the image size (default is 2).
+        Composes and returns the transformations and augmentations for images and samples.
 
         Returns
         -------
-        Tuple[torch_transforms.Compose, torch_transforms.Compose, torch_transforms.Compose, torch_transforms.Compose]
+        Tuple[tio.Compose, tio.Compose, tio.Compose, tio.Compose]
             A tuple containing:
             - The composed image transformations.
-            - The composed object transformations (or None if not applicable).
-            - The composed image augmentations (or None if not provided).
-            - The composed object augmentations (or None if not provided).
+            - The composed sample transformations.
+            - The composed image augmentations.
+            - The composed sample augmentations.
         """
         logger.info(
-            "Transforms will be applied in this order: image transforms, object transforms, and then data augmentation during training."
+            "Transforms will be applied in this order: image transforms, image augmentations (during training only), sample transforms, "
+            " and sample augmentations (during training only)."
         )
 
-        # Apply Nan removal and optional normalization
-        self.image_transforms.append(NanRemoval())
-        if normalize:
-            self.image_transforms.append(MinMaxNormalization())
-
-        # Apply size reduction if requested
-        if size_reduction:
-            self.image_transforms.append(
-                SizeReduction(size_reduction_factor=size_reduction_factor)
-            )
-
-        # Compose image transformations
-        image_transforms = torch_transforms.Compose(self.image_transforms)
-
-        # Compose object transformations (if any)
-        object_transforms = (
-            torch_transforms.Compose(self.object_transforms)
-            if self.object_transforms
-            else None
-        )
-
-        # Compose image augmentations (if any)
-        image_augmentation = (
-            torch_transforms.Compose(self.image_augmentation)
-            if self.image_augmentation
-            else None
-        )
-
-        # Compose object augmentations (if any)
-        object_augmentation = (
-            torch_transforms.Compose(self.object_augmentation)
-            if self.object_augmentation
-            else None
-        )
+        image_transforms = tio.Compose(self.image_transforms)
+        sample_transforms = tio.Compose(self.sample_transforms)
+        image_augmentations = tio.Compose(self.image_augmentations)
+        sample_augmentations = tio.Compose(self.sample_augmentations)
 
         return (
             image_transforms,
-            object_transforms,
-            image_augmentation,
-            object_augmentation,
+            sample_transforms,
+            image_augmentations,
+            sample_augmentations,
         )
