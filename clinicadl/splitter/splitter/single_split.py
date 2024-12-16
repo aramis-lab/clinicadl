@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Union
 
-from pydantic import BaseModel, NonNegativeInt, PositiveFloat
+from pydantic import PositiveInt, field_validator
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
@@ -15,18 +15,22 @@ from clinicadl.splitter.splitter.splitter import (
 class SingleSplitConfig(SplitterConfig):
     json_name: str = "single_split_config.json"
     subset_name: str = "test"
-    n_test: PositiveFloat = 100
-    p_sex_threshold: float = 0.80
-    p_age_threshold: float = 0.80
+    n_test: PositiveInt = 100
+    p_categorical_threshold: float = 0.80
+    p_continuous_threshold: float = 0.80
 
     @property
     def pattern(self) -> str:
         return "split"
 
+    @field_validator("p_categorical_threshold", "p_continuous_threshold", mode="before")
+    def validate_thresholds(cls, value: Union[float, int]) -> float:
+        if not (0 <= value <= 1):
+            raise ValueError(f"Threshold must be between 0 and 1, got {value}")
+        return value
+
 
 class SingleSplit(Splitter):
-    json_name = "single_split_config.json"
-
     def __init__(self, split_dir: Path):
         """
         Initialize Split with a dataset.
@@ -38,8 +42,8 @@ class SingleSplit(Splitter):
         """
         super().__init__(split_dir=split_dir)
 
-    def _config(self, **args) -> SingleSplitConfig:
-        return SingleSplitConfig(**args)
+    def _init_config(self, **args):
+        self.config = SingleSplitConfig(**args)
 
     def _read_splits(self) -> List[SubjectsSessionsSplit]:
         """

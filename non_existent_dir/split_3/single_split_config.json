@@ -1,0 +1,11 @@
+{
+    "json_name": "single_split_config.json",
+    "split_dir": "non_existent_dir/split_3",
+    "subset_name": "test",
+    "stratification": null,
+    "ignore_demographics": false,
+    "valid_longitudinal": false,
+    "n_test": 5.0,
+    "p_categorical_threshold": 0.8,
+    "p_continuous_threshold": 0.8
+}

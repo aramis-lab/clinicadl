@@ -1,13 +1,11 @@
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterator, Optional, Sequence, Tuple, Union
+from typing import Optional
 
 from pydantic import ConfigDict, NonNegativeInt
 from torch.utils.data import DataLoader
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-
-from .dataloader import DataLoaderConfig
+from clinicadl.splitter.dataloader import DataLoaderConfig
 
 
 @dataclass
@@ -76,7 +74,12 @@ class Split:
                 drop_last=drop_last,
                 prefetch_factor=prefetch_factor,
             )
-            self.train_loader = dataloader.get_dataloader(dataset=self.train_dataset)
+            self.train_loader = dataloader.get_dataloader(
+                dataset=self.train_dataset,
+                sampling_weights=sampling_weights,
+                dp_degree=dp_degree,
+                rank=rank,
+            )
         else:
             raise ValueError(
                 "Either a DataLoaderConfig or batch_size must be provided."
@@ -125,9 +128,7 @@ class Split:
             If neither a configuration object nor batch_size is provided.
         """
         if dataloader_config:
-            self.train_loader = dataloader_config.get_dataloader(
-                dataset=self.val_dataset
-            )
+            self.val_loader = dataloader_config.get_dataloader(dataset=self.val_dataset)
         elif batch_size is not None:
             dataloader = DataLoaderConfig(
                 batch_size=batch_size,
@@ -136,7 +137,7 @@ class Split:
                 drop_last=drop_last,
                 prefetch_factor=prefetch_factor,
             )
-            self.train_loader = dataloader.get_dataloader(
+            self.val_loader = dataloader.get_dataloader(
                 dataset=self.val_dataset,
                 sampling_weights=sampling_weights,
                 dp_degree=dp_degree,

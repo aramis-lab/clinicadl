@@ -1,123 +1,78 @@
-import json
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Tuple, Union
+from typing import Optional
 
 import pandas as pd
-from pydantic import NonNegativeInt, PositiveInt
-from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.utils import tsv_to_df
-from clinicadl.splitter.split import Split
-from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
-from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline, retrieve_longitudinal
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.tsvtools.tsvtools_utils import retrieve_longitudinal
 
 
 def _write_to_csv(df: pd.DataFrame, file_path: Path) -> None:
     """
-    Save DataFrame to a TSV file.
+    Save a DataFrame to a TSV file, ensuring the file does not already exist.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Data to save.
+        DataFrame to save.
     file_path : Path
-        Destination file path.
+        Path to the destination TSV file.
 
+    Raises
+    ------
+    FileExistsError
+        If the file already exists at the specified path.
     """
-    if file_path.is_file():
-        raise FileExistsError(f"File {file_path} already exists.")
+    if file_path.exists():
+        raise FileExistsError(
+            f"File {file_path} already exists. Operation aborted to prevent overwriting."
+        )
+
+    # Reset index for consistency and save as a TSV file
     df.reset_index(drop=True, inplace=True)
     df.to_csv(file_path, sep="\t", index=False)
 
 
-def _check_stratification(
+def write_to_csv(
     df: pd.DataFrame,
-    ignore_demographics: bool,
-    stratification: Optional[List[str]] = None,
-) -> Optional[List[str]]:
+    split_dir: Path,
+    all_df: Optional[pd.DataFrame] = None,
+    subset_name: str = "train",
+    longitudinal: bool = True,
+) -> None:
     """
-    Checks and validates the specified stratification columns.
+    Save baseline and longitudinal splits of a DataFrame to TSV files.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Input dataset.
-    ignore_demographics : bool
-        If True, ignore demographic columns for balancing.
-    stratification : List[str], optional
-        List of columns to stratify on.
-
-    Returns
-    -------
-    List[str], optional
-        Validated list of stratification columns or None if no stratification is applied.
+        DataFrame containing the subset (e.g., train/test/validation) to save.
+    split_dir : Path
+        Directory where the TSV files will be saved.
+    all_df : Optional[pd.DataFrame], optional
+        Full dataset including all sessions, used to retrieve longitudinal data.
+    subset_name : str, default="train"
+        Name of the subset (e.g., "train", "test", etc.) used in the output filenames.
+    longitudinal : bool, default=True
+        Whether to generate and save the longitudinal data subset.
 
     Raises
     ------
+    FileExistsError
+        If any of the output files already exist in the specified directory.
     ValueError
-        If specified stratification columns are missing or if stratification conflicts with demographic handling.
-    ClinicaDLTSVError
-        If required demographic columns ('age', 'sex') are missing when not ignored.
+        If `longitudinal` is True but `all_df` is None, as longitudinal data cannot be generated.
     """
+    # Save the baseline data
+    baseline_file = split_dir / f"{subset_name}_baseline.tsv"
+    _write_to_csv(df, baseline_file)
 
-    if stratification:
-        missing_columns = set(stratification) - set(df.columns)
-        if missing_columns:
+    if longitudinal:
+        if all_df is None:
             raise ValueError(
-                f"Stratification variables {missing_columns} not found in dataset."
+                "The full dataset (`all_df`) must be provided to generate longitudinal data."
             )
-        if ignore_demographics:
-            raise ValueError("Cannot stratify while ignoring demographics.")
 
-        if not {"age", "sex"}.issubset(df.columns):
-            raise ClinicaDLTSVError(
-                "Dataset missing 'age' or 'sex' columns for demographic balancing."
-            )
-        # TODO: check if we want to always stratify on age and sex
-
-    elif not ignore_demographics:
-        stratification = ["age", "sex"]
-    return stratification
-
-
-def preprocess_stratification(
-    df: pd.DataFrame,
-    columns: Optional[List[str]] = None,
-    ignore_demographics: bool = False,
-) -> List[str]:
-    """
-    Preprocess stratification columns by creating labels for each subject.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input dataset.
-    columns : Optional[List[str]]
-        Columns to stratify on.
-    ignore_demographics : bool
-        If True, ignore demographic columns.
-
-    Returns
-    -------
-    List[str]
-        List of stratification labels for the dataset.
-    """
-    columns = _check_stratification(df, ignore_demographics, columns)
-    if not columns:
-        return ["0"] * len(df)
-
-    labels = []
-    for col in columns:
-        if pd.api.types.is_numeric_dtype(df[col]):
-            # Numerical column: bin into 5 equal groups or fewer if unique values < 5
-            labels.append(
-                pd.cut(df[col], bins=min(5, df[col].nunique()), labels=False).astype(
-                    str
-                )
-            )
-        else:
-            labels.append(df[col].astype(str))
-    return ["_".join(label) for label in zip(*labels)]
+        # Retrieve longitudinal data and save it
+        longitudinal_file = split_dir / f"{subset_name}.tsv"
+        long_df = retrieve_longitudinal(df, all_df)
+        _write_to_csv(long_df, longitudinal_file)

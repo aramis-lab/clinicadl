@@ -1,11 +1,15 @@
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Tuple, Union
+from typing import Generator, List, Optional, Sequence
 
 from pydantic import PositiveInt
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
-from clinicadl.splitter.splitter import Splitter, SplitterConfig, SubjectsSessionsSplit
+from clinicadl.splitter.splitter.splitter import (
+    Splitter,
+    SplitterConfig,
+    SubjectsSessionsSplit,
+)
 
 
 class KFoldConfig(SplitterConfig):
@@ -28,8 +32,6 @@ class KFold(Splitter):
     Allows saving, reading, and iterating over splits for reproducibility.
     """
 
-    json_name = "kfold_config.json"
-
     def __init__(self, split_dir: Path):
         """
         Initialize KFold with a dataset.
@@ -42,8 +44,8 @@ class KFold(Splitter):
 
         super().__init__(split_dir=split_dir)
 
-    def _config(self, **args) -> KFoldConfig:
-        return KFoldConfig(**args)
+    def _init_config(self, **args):
+        self.config = KFoldConfig(**args)
 
     def _read_splits(self) -> List[SubjectsSessionsSplit]:
         """

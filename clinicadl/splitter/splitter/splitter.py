@@ -7,16 +7,11 @@ import pandas as pd
 from pydantic import (
     BaseModel,
     ConfigDict,
-    NonNegativeInt,
-    PositiveInt,
     field_validator,
-    model_validator,
 )
-from sklearn.model_selection import StratifiedKFold
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline, retrieve_longitudinal
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import path_encoder
 
@@ -37,8 +32,8 @@ class SubjectsSessionsSplit(BaseModel):
 
 
 class SplitterConfig(BaseModel):
-    split_dir: Path
     json_name: str
+    split_dir: Path
     subset_name: str
     stratification: Optional[List[str]] = None
     ignore_demographics: bool = False
@@ -62,8 +57,6 @@ class SplitterConfig(BaseModel):
             folder_name = f"{self.pattern}_{split_numero}"
 
         self.split_dir = self.split_dir / folder_name
-
-        return self
 
     @property
     @abstractmethod
@@ -96,8 +89,6 @@ class SplitterConfig(BaseModel):
 
 
 class Splitter(ABC):
-    json_name: str
-
     def __init__(self, split_dir: Path):
         """
         Initialize Split with a dataset.
@@ -108,12 +99,12 @@ class Splitter(ABC):
             Dataset to split for cross-validation.
         """
         self.split_dir = split_dir
-        self.config = self._config(**self._read_json())
+        self._init_config(**self._read_json())
         self.subjects_sessions_split = self._read_splits()
 
     @abstractmethod
-    def _config(self, **args) -> SplitterConfig:
-        pass
+    def _init_config(self, **args):
+        self.config = ...
 
     def _read_json(self):
         """
@@ -132,12 +123,20 @@ class Splitter(ABC):
         if not self.split_dir.is_dir():
             raise FileNotFoundError(f"No such directory: {self.split_dir}")
 
-        json_file = self.split_dir / self.json_name
+        json_file = [json for json in self.split_dir.glob("*.json")]
+        print(json_file)
+        if len(json_file) > 1:
+            raise ValueError(
+                f"Multiple JSON files found in {self.split_dir}, please remove or rename them."
+            )
 
-        if not json_file.is_file():
+        elif len(json_file) == 0:
+            raise FileNotFoundError(f"No JSON file found in {self.split_dir}")
+
+        if not json_file[0].is_file():
             raise FileNotFoundError(f"No such file: {json_file}")
 
-        with json_file.open(mode="r") as file:
+        with json_file[0].open(mode="r") as file:
             dict_ = json.load(file)
 
             return dict_
