@@ -51,7 +51,7 @@ class Image(Extraction):
     @computed_field
     @property
     def extract_method(self) -> ExtractionMethod:
-        """The method to be used for the extraction process (ROI, Image, Patch, Slice)."""
+        """The method to be used for the extraction process (Image, Patch, Slice)."""
         return ExtractionMethod.IMAGE
 
     def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:

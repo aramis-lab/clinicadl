@@ -43,7 +43,7 @@ class Extraction(ClinicaDLConfig, ABC):
     @property
     @abstractmethod
     def extract_method(self) -> ExtractionMethod:
-        """The method to be used for the extraction process (ROI, Image, Patch, Slice)."""
+        """The method to be used for the extraction process (Image, Patch, Slice)."""
 
     @staticmethod
     def load_image(input_img: Path) -> torch.Tensor:
@@ -180,7 +180,7 @@ class Extraction(ClinicaDLConfig, ABC):
     def _get_sample_description(
         self, image_tensor: torch.Tensor, sample_index: int
     ) -> Any:
-        """A description of the sample, e.g. slice position or ROI mask path."""
+        """A description of the sample, e.g. slice position or patch index."""
 
     @abstractmethod
     def format_output(
@@ -216,44 +216,6 @@ class Extraction(ClinicaDLConfig, ABC):
             if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
             'label' and 'description'.
         """
-
-    @staticmethod
-    def get_tio_image(
-        image: torch.Tensor,
-        label: Optional[Union[float, int, torch.Tensor]],
-        **masks: torch.Tensor,
-    ) -> tio.Subject:
-        """
-        Creates a TorchIO Subject from the image, the label and possibly
-        masks related to the image.
-
-        Parameters
-        ----------
-        image : torch.Tensor
-            the image, as a Pytorch tensor.
-        label : Optional[Union[float, int, torch.Tensor]]
-            the label related to the image. Can be None if no label.
-        **masks : torch.Tensor
-            any mask related to the image and useful to compute transforms.
-
-        Returns
-        -------
-        tio.Subject
-            the TorchIO subject with the image and the label, accessible via
-            the attributes 'image' and 'label', as well as the masks, accessible
-            via their names.
-        """
-        tio_image = tio.Subject(image=tio.ScalarImage(tensor=image))
-
-        if isinstance(label, torch.Tensor):
-            tio_image.add_image(tio.LabelMap(tensor=label), "label")
-        else:
-            setattr(tio_image, "label", label)
-
-        for name, mask in masks.items():
-            tio_image.add_image(tio.LabelMap(tensor=mask), name)
-
-        return tio_image
 
     def extract_tio_sample(
         self, tio_image: tio.Subject, sample_index: int
@@ -303,7 +265,7 @@ class Extraction(ClinicaDLConfig, ABC):
 
             tio_sample.description = self._get_sample_description(
                 image.tensor, sample_index
-            )  # e.g. roi or slice position
+            )
 
         tio_sample.sample = tio_sample.image
         delattr(tio_sample, "image")
