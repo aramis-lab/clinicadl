@@ -22,11 +22,7 @@ from clinicadl.dataset.utils import (
 )
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.exceptions import (
-    ClinicaDLCAPSError,
-    ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
-)
+from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
 
@@ -73,7 +69,7 @@ class CapsDataset(Dataset):
 
     def __init__(
         self,
-        caps_directory: Path,
+        caps_directory: Union[str, Path],
         preprocessing: BasePreprocessing,
         transforms: Transforms,
         data: Optional[Union[pd.DataFrame, str, Path]] = None,
@@ -255,37 +251,11 @@ class CapsDataset(Dataset):
             )
 
         self.df = df
-        if not self._check_preprocessing_config():
-            raise ClinicaDLCAPSError(
-                f"The DataFrame does not match the preprocessing configuration: {self.preprocessing.preprocessing.value}"
-            )
+        self.caps_reader.check_preprocessing(
+            self._get_participant_session_couples(), self.preprocessing
+        )
 
         return df
-
-    def _check_preprocessing_config(self) -> bool:
-        """
-        Validates that the preprocessing configuration matches the data.
-
-        Returns
-        -------
-        bool
-            True if the configuration is valid, otherwise raises an error.
-
-        Raises
-        ------
-        ClinicaDLConfigurationError
-            If the preprocessing configuration does not match the data.
-        """
-        pattern = self.preprocessing.file_type.pattern
-        for participant, session in self._get_participants_sessions_couple():
-            folder = self.caps_reader.get_session_path(
-                participant=participant, session=session
-            )
-            if not list(folder.glob(pattern)):
-                raise ClinicaDLConfigurationError(
-                    f"Could not find preprocessing {self.preprocessing.preprocessing.value} for participant {participant} and session {session} with pattern: {pattern}"
-                )
-        return True
 
     def __len__(self) -> int:
         """
@@ -368,7 +338,7 @@ class CapsDataset(Dataset):
 
         return self.df.at[idx, SESSION_ID]
 
-    def _get_participants_sessions_couple(self) -> List[Tuple[str, str]]:
+    def _get_participant_session_couples(self) -> List[Tuple[str, str]]:
         """
         Retrieves all participant-session pairs in the dataset.
 

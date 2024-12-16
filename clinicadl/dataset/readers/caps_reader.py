@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
@@ -337,3 +337,32 @@ class CapsReader(Reader):
         suffix = "_" + str(path).rsplit("_", maxsplit=1)[-1].split(".")[0] + "."
 
         return Path(str(path).replace(suffix, mask_suffix))
+
+    def check_preprocessing(
+        self,
+        subjects_sessions: Sequence[Tuple[str, str]],
+        preprocessing: BasePreprocessing,
+    ):
+        """
+        Validates that all subject/session pairs have a specific preprocessing.
+
+        Returns
+        -------
+        subjects_sessions : Sequence[Tuple[str, str]]
+            The list of (subject, session) that should be checked.
+        preprocessing: BasePreprocessing
+            The preprocessing.
+
+        Raises
+        ------
+        ClinicaDLConfigurationError
+            If the preprocessing is not found for a subject/session pair.
+        """
+        pattern = preprocessing.file_type.pattern
+        for participant, session in subjects_sessions:
+            folder = self.get_session_path(participant=participant, session=session)
+            if not list(folder.glob(pattern)):
+                raise ClinicaDLConfigurationError(
+                    f"Could not find preprocessing {preprocessing.preprocessing.value} for "
+                    f"participant {participant} and session {session} with pattern: {pattern}"
+                )
