@@ -4,11 +4,11 @@ from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.dataset.preprocessing import BasePreprocessing
+from clinicadl.dataset.preprocessing import Preprocessing
 from clinicadl.dataset.readers.reader import Reader
 from clinicadl.dataset.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
@@ -86,7 +86,7 @@ class CapsReader(Reader):
         return f"CAPS reader for {self.input_directory}"
 
     def get_preprocessing_folder(
-        self, participant: str, session: str, preprocessing: Preprocessing
+        self, participant: str, session: str, preprocessing: PreprocessingMethod
     ) -> Path:
         """
         Retrieves the folder path for a specific preprocessing step.
@@ -94,7 +94,7 @@ class CapsReader(Reader):
         Args:
             participant (str): ID of the participant.
             session (str): ID of the session.
-            preprocessing (Preprocessing): Preprocessing step for which the folder path is needed.
+            preprocessing (PreprocessingMethod): Preprocessing step for which the folder path is needed.
 
         Returns
         -------
@@ -120,7 +120,7 @@ class CapsReader(Reader):
         return self.subject_directory / participant
 
     def get_tensor_dir(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the directory for storing tensor data for a given participant, session, and preprocessing.
@@ -128,7 +128,7 @@ class CapsReader(Reader):
         Args:
             participant (str): ID of the participant.
             session (str): ID of the session.
-            preprocessing (BasePreprocessing): Configuration of the preprocessing steps.
+            preprocessing (Preprocessing): Configuration of the preprocessing steps.
 
         Returns
         -------
@@ -143,7 +143,7 @@ class CapsReader(Reader):
         )
 
     def get_tensor_path(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the path to the tensor image (*.pt) for a given participant, session, and preprocessing.
@@ -154,7 +154,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -184,7 +184,7 @@ class CapsReader(Reader):
             )
 
     def get_image_path(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the path to the image file for a given participant, session, and preprocessing.
@@ -195,7 +195,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -230,7 +230,7 @@ class CapsReader(Reader):
     def _write_caps_json(
         self,
         transforms: Transforms,
-        preprocessing: BasePreprocessing,
+        preprocessing: Preprocessing,
         data_tsv: Path,
         name: Optional[str] = None,
     ) -> None:
@@ -240,7 +240,7 @@ class CapsReader(Reader):
         Args:
             transforms: Transforms
                 The transformations applied to the data.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Preprocessing configuration.
             data_tsv: Path
                 Path to the data TSV file.
@@ -341,7 +341,7 @@ class CapsReader(Reader):
     def check_preprocessing(
         self,
         subjects_sessions: Sequence[Tuple[str, str]],
-        preprocessing: BasePreprocessing,
+        preprocessing: Preprocessing,
     ):
         """
         Validates that all subject/session pairs have a specific preprocessing.
@@ -350,7 +350,7 @@ class CapsReader(Reader):
         -------
         subjects_sessions : Sequence[Tuple[str, str]]
             The list of (subject, session) that should be checked.
-        preprocessing: BasePreprocessing
+        preprocessing: Preprocessing
             The preprocessing.
 
         Raises

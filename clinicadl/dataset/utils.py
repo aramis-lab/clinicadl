@@ -2,16 +2,14 @@
 from glob import glob
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import pandas as pd
-import torch
-from pydantic import BaseModel, ConfigDict
 
 from clinicadl.dataset import preprocessing
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.enum import ExtractionMethod, Preprocessing
+from clinicadl.utils.enum import ExtractionMethod, PreprocessingMethod
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import read_preprocessing
 
@@ -19,36 +17,6 @@ logger = getLogger("clinicadl.dataset.utils")
 
 PARTICIPANT_ID = "participant_id"
 SESSION_ID = "session_id"
-
-
-class CapsDatasetSample(BaseModel):
-    """
-    A data model representing the output from a CapsDataset.
-
-    Args:
-        elem (torch.Tensor): The image tensor (processed data).
-        participant_id (Union[int, str]): The participant's identifier.
-        session_id (Union[int, str]): The session identifier.
-        label (Optional[Union[float, int]], optional): The label associated with the data (default is None).
-        img_idx (Optional[Union[int, str]], optional): An optional image index (default is None).
-        elem_idx (Optional[Union[int, str]], optional): An optional element index (default is None).
-        image_path (Optional[Path], optional): The file path to the image (default is None).
-        mode (ExtractionMethod): The extraction method used to process the data.
-
-    Attributes:
-        model_config (ConfigDict): Configuration options for the model.
-    """
-
-    elem: torch.Tensor
-    participant_id: Union[int, str]
-    session_id: Union[int, str]
-    label: Optional[Union[float, int]] = None
-    img_idx: Optional[Union[int, str]] = None
-    elem_idx: Optional[Union[int, str]] = None
-    image_path: Optional[Path] = None
-    mode: ExtractionMethod
-
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
 def tsv_to_df(tsv_path: Path) -> pd.DataFrame:
@@ -155,30 +123,30 @@ def get_extraction(
 
 
 def get_preprocessing(
-    preprocessing_type: Union[str, Preprocessing],
-) -> type[preprocessing.BasePreprocessing]:
+    preprocessing_type: Union[str, PreprocessingMethod],
+) -> type[preprocessing.Preprocessing]:
     """
     Retrieves the preprocessing class based on the specified preprocessing type.
 
     Args:
-        preprocessing_type (Union[str, Preprocessing]): The preprocessing type as either a string or a `Preprocessing` enum.
+        preprocessing_type (Union[str, PreprocessingMethod]): The preprocessing type as either a string or a `Preprocessing` enum.
 
     Returns:
-        type[preprocessing.BasePreprocessing]: The corresponding preprocessing configuration class.
+        type[preprocessing.Preprocessing]: The corresponding preprocessing configuration class.
 
     Raises:
         ValueError: If the provided `preprocessing_type` is not supported or is invalid.
     """
-    preprocessing_type = Preprocessing(preprocessing_type)
-    if preprocessing_type == Preprocessing.T1_LINEAR:
+    preprocessing_type = PreprocessingMethod(preprocessing_type)
+    if preprocessing_type == PreprocessingMethod.T1_LINEAR:
         return preprocessing.PreprocessingT1
-    elif preprocessing_type == Preprocessing.PET_LINEAR:
+    elif preprocessing_type == PreprocessingMethod.PET_LINEAR:
         return preprocessing.PreprocessingPET
-    elif preprocessing_type == Preprocessing.FLAIR_LINEAR:
+    elif preprocessing_type == PreprocessingMethod.FLAIR_LINEAR:
         return preprocessing.PreprocessingFlair
-    elif preprocessing_type == Preprocessing.CUSTOM:
+    elif preprocessing_type == PreprocessingMethod.CUSTOM:
         return preprocessing.PreprocessingCustom
-    elif preprocessing_type == Preprocessing.DWI_DTI:
+    elif preprocessing_type == PreprocessingMethod.DWI_DTI:
         return preprocessing.PreprocessingDTI
     else:
         raise ValueError(
@@ -188,7 +156,7 @@ def get_preprocessing(
 
 def get_infos_from_json(
     json_path: Path,
-) -> Tuple[preprocessing.BasePreprocessing, Transforms, Path, Path]:
+) -> Tuple[preprocessing.Preprocessing, Transforms, Path, Path]:
     """
     Extracts the preprocessing configuration and transformation settings from a JSON file.
 
@@ -209,7 +177,7 @@ def get_infos_from_json(
 
 def get_infos_from_parameters(
     **kwargs,
-) -> Tuple[preprocessing.BasePreprocessing, Transforms, Path, Path]:
+) -> Tuple[preprocessing.Preprocessing, Transforms, Path, Path]:
     """
     Extracts the preprocessing configuration, transformations, and paths from provided parameters.
 
@@ -228,7 +196,7 @@ def get_infos_from_parameters(
     if "preprocessing_dict" in kwargs:
         kwargs = kwargs["preprocessing_dict"]
 
-    preprocessing = Preprocessing(kwargs["preprocessing"])
+    preprocessing = PreprocessingMethod(kwargs["preprocessing"])
     mode = ExtractionMethod(kwargs["extract_method"])
     extraction = get_extraction(mode)(**kwargs)
     transforms = Transforms(extraction=extraction, **kwargs)

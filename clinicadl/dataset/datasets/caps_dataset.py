@@ -13,7 +13,7 @@ from torch import save as save_tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from clinicadl.dataset.preprocessing import BasePreprocessing
+from clinicadl.dataset.preprocessing import Preprocessing
 from clinicadl.dataset.readers.caps_reader import CapsReader
 from clinicadl.dataset.utils import (
     check_df,
@@ -55,7 +55,7 @@ class CapsDataset(Dataset):
     ----------
         caps_reader: CapsReader
             Reader object for handling CAPS directories.
-        preprocessing: BasePreprocessing
+        preprocessing: Preprocessing
             Configuration of preprocessing applied to the data.
         transforms: Transforms
             Transformation pipeline to apply to the data.
@@ -70,7 +70,7 @@ class CapsDataset(Dataset):
     def __init__(
         self,
         caps_directory: Union[str, Path],
-        preprocessing: BasePreprocessing,
+        preprocessing: Preprocessing,
         transforms: Transforms,
         data: Optional[Union[pd.DataFrame, str, Path]] = None,
         label: Optional[str] = None,
@@ -83,7 +83,7 @@ class CapsDataset(Dataset):
         ----------
         caps_directory : Path
             Path to the CAPS directory containing the neuroimaging data.
-        preprocessing : BasePreprocessing
+        preprocessing : Preprocessing
             Configuration for the preprocessing steps applied to the data.
         transforms : Transforms
             Transformation pipeline to apply to the data during loading.

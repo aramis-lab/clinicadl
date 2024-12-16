@@ -3,7 +3,7 @@ import click
 from clinicadl.config.config_utils import get_default_from_config_class as get_default
 from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.dataset.preprocessing import (
-    BasePreprocessing,
+    Preprocessing,
     PreprocessingCustom,
     PreprocessingDTI,
     PreprocessingPET,
@@ -59,8 +59,8 @@ dti_space = click.option(
 )
 preprocessing = click.option(
     "--preprocessing",
-    type=get_type("preprocessing", BasePreprocessing),
-    default=get_default("preprocessing", BasePreprocessing),
+    type=get_type("preprocessing", Preprocessing),
+    default=get_default("preprocessing", Preprocessing),
     required=True,
     help="Extraction used to generate synthetic data.",
     show_default=True,
