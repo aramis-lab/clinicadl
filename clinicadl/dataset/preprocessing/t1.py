@@ -3,17 +3,16 @@ from typing import Optional
 
 from pydantic import computed_field
 
-from clinicadl.dataset.preprocessing.base import Preprocessing
 from clinicadl.utils.enum import LinearModality, PreprocessingMethod
 from clinicadl.utils.iotools.clinica_utils import FileType
+
+from .base import _PreprocessingWithCrop
 
 logger = getLogger("clinicadl.preprocessing.t1")
 
 
-class PreprocessingT1(Preprocessing):
+class PreprocessingT1(_PreprocessingWithCrop):
     """Config class for Clinica's 't1-linear' preprocessing."""
-
-    use_uncropped_image: bool = True
 
     @computed_field
     @property

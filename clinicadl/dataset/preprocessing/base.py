@@ -22,8 +22,10 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
     def preprocessing(self) -> PreprocessingMethod:
         """The preprocessing method."""
 
-    def get_filetype(self, bids: bool = False) -> FileType:
-        return self.get_bids_filetype() if bids else self.get_caps_filetype()
+    @computed_field
+    @property
+    def file_type(self) -> FileType:
+        return self.get_caps_filetype()
 
     @abc.abstractmethod
     def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
@@ -33,18 +35,16 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
     def get_caps_filetype(self) -> FileType:
         """Abstract method to obtain FileType details."""
 
-    @computed_field
-    @property
-    def file_type(self) -> FileType:
-        if self.preprocessing not in Preprocessing:
-            raise NotImplementedError(
-                f"Extraction of preprocessing {self.preprocessing.value} is not implemented from CAPS directory."
-            )
-        else:
-            return self.get_filetype()
+
+class _PreprocessingWithCrop(Preprocessing):
+    """
+    Base class for the preprocessings with the option 'use_uncropped_image.
+    """
+
+    use_uncropped_image: bool = True
 
     def linear_nii(
-        self, modality: LinearModality, needed_pipeline: Preprocessing
+        self, modality: LinearModality, needed_pipeline: PreprocessingMethod
     ) -> FileType:
         """
         Constructs the file type for linear caps image data

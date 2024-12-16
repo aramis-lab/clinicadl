@@ -3,21 +3,20 @@ from typing import Optional
 
 from pydantic import computed_field
 
-from clinicadl.dataset.preprocessing.base import Preprocessing
 from clinicadl.utils.enum import LinearModality, PreprocessingMethod
 from clinicadl.utils.iotools.clinica_utils import FileType
+
+from .base import _PreprocessingWithCrop
 
 logger = getLogger("clinicadl.preprocessing.flair")
 
 
-class PreprocessingFlair(Preprocessing):
+class PreprocessingFlair(_PreprocessingWithCrop):
     """Config class for Clinica's 'flair-linear' preprocessing."""
-
-    use_uncropped_image: bool = True
 
     @computed_field
     @property
-    def preprocessing(self) -> Preprocessing:
+    def preprocessing(self) -> PreprocessingMethod:
         """The preprocessing method."""
         return PreprocessingMethod.FLAIR_LINEAR
 

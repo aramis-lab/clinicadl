@@ -1,13 +1,11 @@
 from pathlib import Path
 
-import nibabel as nib
-import numpy as np
 import pytest
+import torchio as tio
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.preprocessing import PreprocessingT1, PreprocessingT2
+from clinicadl.dataset.preprocessing import PreprocessingPET, PreprocessingT1
 from clinicadl.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
@@ -23,7 +21,7 @@ bids_dir = Path(__file__).parents[1] / "ressources" / "bids_example"
 
 def test_good_caps_dataset():
     preprocessing = PreprocessingT1()
-    transforms = Transforms()
+    transforms = Transforms(image_transforms=[tio.RescaleIntensity()])
 
     caps_dataset = CapsDataset(
         caps_directory=caps_dir, preprocessing=preprocessing, transforms=transforms
@@ -33,9 +31,12 @@ def test_good_caps_dataset():
 
     assert caps_dataset.eval_mode is False
     assert caps_dataset.preprocessing == preprocessing
-    assert caps_dataset.transforms == transforms
     assert caps_dataset.extraction == transforms.extraction
-    assert caps_dataset.elem_per_image == 1
+    assert caps_dataset.image_transform == tio.Compose([tio.RescaleIntensity()])
+    assert caps_dataset.sample_transform == tio.Compose([])
+    assert caps_dataset.image_augmentation == tio.Compose([])
+    assert caps_dataset.sample_augmentation == tio.Compose([])
+    assert caps_dataset.samples_per_image == 1
     assert {PARTICIPANT_ID, SESSION_ID}.issubset(set(caps_dataset.df.columns.values))
     assert len(caps_dataset.df) == 4
     assert len(caps_dataset) == 4
@@ -44,13 +45,13 @@ def test_good_caps_dataset():
     assert caps_dataset._get_participant(1) == "sub-000"
     assert caps_dataset._get_session(2) == "ses-M000"
 
-    sample = caps_dataset[0]
+    image_sample = caps_dataset[0]
 
-    assert sample.participant_id == caps_dataset._get_participant(0)
-    assert sample.session_id == caps_dataset._get_session(0)
-    assert sample.elem.shape == caps_dataset._get_full_image(0)[0].shape
-    assert sample.img_idx == caps_dataset._get_meta_data(0)[2]
-    assert sample.elem_idx == caps_dataset._get_meta_data(0)[3]
+    assert image_sample.participant_id == caps_dataset._get_participant(0)
+    assert image_sample.session_id == caps_dataset._get_session(0)
+    assert image_sample.sample.shape == caps_dataset._get_full_image(0)[0].shape
+    assert image_sample.image_path == caps_dataset._get_meta_data(0)[2]
+    assert image_sample.label is None
 
     caps_dataset.eval()
     assert caps_dataset.eval_mode is True
@@ -79,10 +80,10 @@ def test_bad_caps_dataset():
         )
 
     with pytest.raises(ClinicaDLConfigurationError):
-        preprocessing_T2 = PreprocessingT2()
+        preprocessing_pet = PreprocessingPET()
         CapsDataset(
             caps_directory=caps_dir,
-            preprocessing=preprocessing_T2,
+            preprocessing=PreprocessingPET(),
             transforms=transforms,
         )
 
