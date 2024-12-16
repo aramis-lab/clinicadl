@@ -1,11 +1,11 @@
 from logging import getLogger
 from typing import Optional, Union
 
-from pydantic import field_validator
+from pydantic import computed_field, field_validator
 
-from clinicadl.dataset.preprocessing.base import BasePreprocessing
+from clinicadl.dataset.preprocessing.base import Preprocessing
 from clinicadl.utils.enum import (
-    Preprocessing,
+    PreprocessingMethod,
     SUVRReferenceRegions,
     Tracer,
 )
@@ -14,14 +14,18 @@ from clinicadl.utils.iotools.clinica_utils import FileType
 logger = getLogger("clinicadl.preprocessing.pet")
 
 
-class PreprocessingPET(BasePreprocessing):
-    """
-    Configuration for PET image preprocessing
-    """
+class PreprocessingPET(Preprocessing):
+    """Config class for Clinica's 'pet-linear' preprocessing."""
 
     tracer: Tracer = Tracer.FFDG
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.CEREBELLUMPONS2
-    preprocessing: Preprocessing = Preprocessing.PET_LINEAR
+    use_uncropped_image: bool = True
+
+    @computed_field
+    @property
+    def preprocessing(self) -> PreprocessingMethod:
+        """The preprocessing method."""
+        return PreprocessingMethod.PET_LINEAR
 
     @field_validator("tracer", mode="before")
     def check_tracer(cls, v: Union[str, Tracer]):

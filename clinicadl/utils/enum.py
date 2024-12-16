@@ -83,16 +83,14 @@ class LinearModality(str, Enum):
     FLAIR = "flair"
 
 
-class Preprocessing(str, Enum):
+class PreprocessingMethod(str, Enum):
     """Possible preprocessing method in clinicaDL."""
 
     T1_LINEAR = "t1-linear"
-    T1_EXTENSIVE = "t1-extensive"
     PET_LINEAR = "pet-linear"
     FLAIR_LINEAR = "flair-linear"
     CUSTOM = "custom"
     DWI_DTI = "dwi-dti"
-    T2_LINEAR = "t2-linear"
 
 
 class DTIMeasure(str, Enum):

@@ -1,25 +1,31 @@
 from logging import getLogger
 from typing import Optional
 
-from clinicadl.dataset.preprocessing.base import BasePreprocessing
+from pydantic import computed_field
+
+from clinicadl.dataset.preprocessing.base import Preprocessing
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,
-    Preprocessing,
+    PreprocessingMethod,
 )
 from clinicadl.utils.iotools.clinica_utils import FileType
 
 logger = getLogger("clinicadl.preprocessing.dti")
 
 
-class PreprocessingDTI(BasePreprocessing):
-    """
-    Configuration for DTI-based preprocessing
-    """
+class PreprocessingDTI(Preprocessing):
+    """Config class for Clinica's 't1-linear' preprocessing."""
 
     dti_measure: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
     dti_space: DTISpace = DTISpace.ALL
-    preprocessing: Preprocessing = Preprocessing.DWI_DTI
+    use_uncropped_image: bool = True
+
+    @computed_field
+    @property
+    def preprocessing(self) -> PreprocessingMethod:
+        """The preprocessing method."""
+        return PreprocessingMethod.DWI_DTI
 
     def get_bids_filerype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
