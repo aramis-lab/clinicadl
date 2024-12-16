@@ -1,15 +1,22 @@
 from logging import getLogger
-from typing import Union
+from pathlib import Path
 
+import nibabel as nib
+import pandas as pd
+import torch
+from joblib import Parallel, delayed
 from pydantic import PositiveInt
+from torch import save as save_tensor
+from tqdm import tqdm
+
+from .datasets import CapsDataset
 
 logger = getLogger("clinicadl.prepare_data")
 
 
 def prepare_data(
-    caps_directory: Union[str, Path],
+    caps_dataset: CapsDataset,
     n_proc: PositiveInt = 2,
-    use_uncropped_images: bool = False,
 ):
     """
     Prepares tensor files from the neuroimaging data.
@@ -19,10 +26,10 @@ def prepare_data(
 
     Parameters
     ----------
+    caps_dataset : CapsDataset
+        The CapsDataset to prepare for experiment.
     n_proc : PositiveInt, optional
         Number of processes to use for parallelization (default is 2).
-    use_uncropped_images : bool, optional
-        Whether to use uncropped images during preprocessing (default is False).
 
     Notes
     -----
@@ -31,11 +38,11 @@ def prepare_data(
     """
 
     def prepare_image(participant, session):
-        image_path = self.caps_reader.get_image_path(
-            participant, session, self.preprocessing
+        image_path = caps_dataset.caps_reader.get_image_path(
+            participant, session, caps_dataset.preprocessing
         )
-        output_file_dir = self.caps_reader.get_tensor_dir(
-            participant, session, preprocessing=self.preprocessing
+        output_file_dir = caps_dataset.caps_reader.get_tensor_dir(
+            participant, session, preprocessing=caps_dataset.preprocessing
         )
 
         output_file_dir.mkdir(parents=True, exist_ok=True)
@@ -70,6 +77,6 @@ def prepare_data(
     Parallel(n_jobs=n_proc)(
         delayed(prepare_image)(participant, session)
         for participant, session in tqdm(
-            self._get_participants_sessions_couple(), desc="Preparing data"
+            caps_dataset._get_participant_session_couples(), desc="Preparing data"
         )
     )
