@@ -121,12 +121,12 @@ class ExtractionMethod(str, Enum):
     ROI = "roi"
 
 
-class SliceDirection(str, Enum):
+class SliceDirection(int, Enum):
     """Possible directions for a slice."""
 
-    SAGITTAL = "0"
-    CORONAL = "1"
-    AXIAL = "2"
+    SAGITTAL = 0
+    CORONAL = 1
+    AXIAL = 2
 
 
 class SliceMode(str, Enum):

@@ -4,7 +4,7 @@ from typing import Callable, Optional, Tuple
 import torchvision.transforms as torch_transforms
 from pydantic import model_validator
 
-from clinicadl.transforms.extraction import BaseExtraction, Image
+from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.transforms.factory import (
     MinMaxNormalization,
     NanRemoval,
@@ -28,7 +28,7 @@ class Transforms(ClinicaDLConfig):
 
     Attributes
     ----------
-    extraction : BaseExtraction
+    extraction : Extraction
         The extraction method used for preprocessing the data.
     image_augmentation : list[Callable]
         A list of augmentation functions for images.
@@ -55,7 +55,7 @@ class Transforms(ClinicaDLConfig):
         Returns a tuple of composed transformations for images, objects, and augmentations.
     """
 
-    extraction: BaseExtraction = Image()
+    extraction: Extraction = Image()
     image_augmentation: list[Callable] = []
     object_augmentation: list[Callable] = []
     image_transforms: list[Callable] = []
