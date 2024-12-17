@@ -19,7 +19,6 @@ class PreprocessingDTI(Preprocessing):
 
     dti_measure: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
     dti_space: DTISpace = DTISpace.ALL
-    use_uncropped_image: bool = True
 
     @computed_field
     @property
@@ -51,4 +50,4 @@ class PreprocessingDTI(Preprocessing):
         )
 
     def __str__(self):
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} DTI images with measure {self.dti_measure.value} and space {self.dti_space.value}. "
+        return f"Preprocessing of DTI images with measure {self.dti_measure.value} and space {self.dti_space.value}. "
