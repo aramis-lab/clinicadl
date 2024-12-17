@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -32,10 +33,10 @@ def test_good_caps_dataset():
     assert caps_dataset.eval_mode is False
     assert caps_dataset.preprocessing == preprocessing
     assert caps_dataset.extraction == transforms.extraction
-    assert caps_dataset.image_transform == tio.Compose([tio.RescaleIntensity()])
-    assert caps_dataset.sample_transform == tio.Compose([])
-    assert caps_dataset.image_augmentation == tio.Compose([])
-    assert caps_dataset.sample_augmentation == tio.Compose([])
+    assert isinstance(caps_dataset.image_transform.transforms[0], tio.RescaleIntensity)
+    assert caps_dataset.image_transform.transforms == []
+    assert caps_dataset.image_transform.transforms == []
+    assert caps_dataset.image_transform.transforms == []
     assert caps_dataset.samples_per_image == 1
     assert {PARTICIPANT_ID, SESSION_ID}.issubset(set(caps_dataset.df.columns.values))
     assert len(caps_dataset.df) == 4
@@ -80,7 +81,6 @@ def test_bad_caps_dataset():
         )
 
     with pytest.raises(ClinicaDLConfigurationError):
-        preprocessing_pet = PreprocessingPET()
         CapsDataset(
             caps_directory=caps_dir,
             preprocessing=PreprocessingPET(),
@@ -95,3 +95,5 @@ def test_bad_caps_dataset():
 
     with pytest.raises(IndexError):
         caps_dataset[10]
+
+    os.remove(caps_dir / "subjects_sessions_list.tsv")

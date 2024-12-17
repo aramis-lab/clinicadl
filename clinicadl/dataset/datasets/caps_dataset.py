@@ -222,11 +222,19 @@ class CapsDataset(Dataset):
         """
 
         if data is None:
-            data = create_subs_sess_list(
-                self.caps_reader.input_directory,
-                self.caps_reader.input_directory,
-                is_bids_dir=False,
-            )
+            try:
+                data = create_subs_sess_list(
+                    self.caps_reader.input_directory,
+                    self.caps_reader.input_directory,
+                    is_bids_dir=False,
+                )
+            except FileExistsError as exc:
+                raise FileExistsError(
+                    "When 'data' is None, CapsDataset tries to write "
+                    "the subject/session list in a file named 'subjects_sessions_list.tsv', "
+                    "but a file already exists in "
+                    f"{self.caps_reader.input_directory / 'subjects_sessions_list.tsv'}"
+                ) from exc
             logger.info(f"Creating a subject session TSV file at {data}")
 
         elif isinstance(data, str):
