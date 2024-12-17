@@ -1,6 +1,6 @@
 {
     "json_name": "single_split_config.json",
-    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split/split",
+    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split_test/split",
     "subset_name": "test",
     "stratification": [
         "age",

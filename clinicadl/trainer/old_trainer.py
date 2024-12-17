@@ -34,8 +34,9 @@ from clinicadl.utils.iotools.trainer_utils import (
 from clinicadl.trainer.tasks_utils import create_training_config
 from clinicadl.predictor.old_predictor import Predictor
 from clinicadl.predictor.config import PredictConfig
-from clinicadl.splitter.old_splitter import Splitter
-from clinicadl.splitter.config import SplitterConfig
+from clinicadl.splitter.splitter.splitter import Splitter
+from clinicadl.splitter.splitter.splitter import SplitterConfig
+
 
 if TYPE_CHECKING:
     from clinicadl.callbacks.callbacks import Callback

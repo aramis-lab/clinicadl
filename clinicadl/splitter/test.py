@@ -24,7 +24,7 @@ sub_ses_all = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects.tsv"
 splir_dir = make_split(
     sub_ses_t1,
     output_dir=Path(
-        "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split"
+        "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split_test"
     ),
     subset_name="test",
     stratification=["age", "sex", "test", "diagnosis"],

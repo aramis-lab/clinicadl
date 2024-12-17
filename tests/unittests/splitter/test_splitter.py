@@ -27,7 +27,7 @@ from clinicadl.utils.exceptions import (
 )
 
 caps_dir = Path(__file__).parents[1] / "ressources" / "caps_example"
-split_dir = caps_dir / "split" / "split"
+split_dir = caps_dir / "split_test" / "split"
 fold_path = split_dir / "2_fold"
 
 

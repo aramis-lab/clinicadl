@@ -9,7 +9,7 @@ from clinicadl.experiment_manager.config import (
 )
 from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
-from clinicadl.splitter.config import SplitConfig
+from clinicadl.splitter.splitter.splitter import SplitterConfig as SplitConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import Task
