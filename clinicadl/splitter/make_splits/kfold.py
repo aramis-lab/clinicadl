@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -15,8 +15,7 @@ from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 def _validate_stratification(
     df: pd.DataFrame,
-    stratification: Optional[List[str]],
-    ignore_demographics: bool,
+    stratification: Union[str, bool],
 ) -> Optional[str]:
     """
     Validates and checks the stratification columns.
@@ -25,10 +24,8 @@ def _validate_stratification(
     ----------
     df : pd.DataFrame
         Input dataset.
-    stratification : Optional[List[str]]
-        Columns to use for stratification.
-    ignore_demographics : bool
-        If True, demographic columns are ignored.
+    stratification : Union[str, bool]
+        Column to use for stratification. If True, column is 'sex', if False, there is no stratification.
 
     Returns
     -------
@@ -40,32 +37,42 @@ def _validate_stratification(
     ClinicaDLConfigurationError
         If invalid or conflicting stratification options are provided.
     """
-    if stratification and ignore_demographics:
-        raise ClinicaDLConfigurationError(
-            "Cannot specify stratification columns while ignoring demographics."
-        )
-    if stratification:
+    if isinstance(stratification, bool):
+        if stratification:
+            stratification = "sex"
+        else:
+            return None
+
+    if isinstance(stratification, List):
         if len(stratification) > 1:
             raise ClinicaDLConfigurationError(
                 "Stratification can only be performed on a single column for K-Fold splitting."
             )
-        column = stratification[0]
-        if column not in df.columns:
+        else:
+            stratification = stratification[0]
+
+    if isinstance(stratification, str):
+        if stratification not in df.columns:
             raise ClinicaDLConfigurationError(
-                f"Stratification column '{column}' not found in the dataset."
+                f"Stratification column '{stratification}' not found in the dataset."
             )
-        return column
-    if not stratification and not ignore_demographics:
-        raise ClinicaDLConfigurationError(
-            "No stratification column specified. Provide a column or enable `ignore_demographics`."
-        )
-    return None
+
+        if pd.api.types.is_numeric_dtype(df[stratification]) and df[
+            stratification
+        ].nunique() >= (len(df) / 2):
+            raise ValueError(
+                "Continuous variables cannot be used for stratification in K-Fold splitting."
+            )
+        return stratification
+
+    raise ClinicaDLConfigurationError(
+        "Invalid or conflicting stratification options provided. Stratification must be a single column name or boolean."
+    )
 
 
 def preprocess_stratification(
     df: pd.DataFrame,
-    stratification: Optional[List[str]] = None,
-    ignore_demographics: bool = False,
+    stratification: Union[str, bool],
     n_test: int = 100,
 ) -> pd.DataFrame:
     """
@@ -75,17 +82,15 @@ def preprocess_stratification(
     ----------
     df : pd.DataFrame
         Input dataset.
-    columns : Optional[List[str]]
-        Columns to stratify on.
-    ignore_demographics : bool
-        If True, ignore demographic columns.
+    stratification : Union[str, bool]
+        Column to use for stratification. If True, column is 'sex', if False, there is no stratification.
 
     Returns
     -------
     List[str]
         List of stratification labels for the dataset.
     """
-    column = _validate_stratification(df, stratification, ignore_demographics)
+    column = _validate_stratification(df, stratification)
 
     if column is None:
         return df
@@ -105,8 +110,7 @@ def make_kfold(
     subset_name: str = "validation",
     valid_longitudinal: bool = False,
     n_splits: PositiveInt = 5,
-    stratification: Optional[str] = None,
-    ignore_demographics: bool = True,
+    stratification: Union[str, bool] = False,
 ) -> Path:
     """
     Perform K-Fold splitting with optional stratification.
@@ -123,10 +127,8 @@ def make_kfold(
         Whether to include longitudinal sessions in the split.
     n_splits : PositiveInt, default=5
         Number of splits for K-Fold.
-    stratification : Optional[List[str]], default=None
-        Columns to use for stratification.
-    ignore_demographics : bool, default=False
-        Whether to ignore demographic balancing.
+    stratification : Union[str, bool], default=False
+        Column to use for stratification. If True, column is 'sex', if False, there is no stratification.
 
     Returns
     -------
@@ -149,8 +151,7 @@ def make_kfold(
         subset_name=subset_name,
         valid_longitudinal=valid_longitudinal,
         n_splits=n_splits,
-        stratification=[stratification] if stratification else None,
-        ignore_demographics=ignore_demographics,
+        stratification=stratification,
     )
 
     config._check_split_dir()
@@ -163,7 +164,6 @@ def make_kfold(
     stratify_labels = preprocess_stratification(
         df=baseline_df,
         stratification=config.stratification,
-        ignore_demographics=config.ignore_demographics,
     )
 
     # Create K-Fold splits

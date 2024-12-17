@@ -35,8 +35,7 @@ class SplitterConfig(BaseModel):
     json_name: str
     split_dir: Path
     subset_name: str
-    stratification: Optional[List[str]] = None
-    ignore_demographics: bool = False
+    stratification: Union[str, List[str], bool] = False
     valid_longitudinal: bool = False
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
@@ -257,6 +256,7 @@ class Splitter(ABC):
         subjects_sessions = self.subjects_sessions_split[split_id]
         return Split(
             index=split_id,
+            split_dir=self.split_dir,
             train_dataset=dataset.subset(subjects_sessions.train),
             val_dataset=dataset.subset(subjects_sessions.validation),
         )

@@ -15,6 +15,7 @@ from clinicadl.splitter.splitter.splitter import (
 class SingleSplitConfig(SplitterConfig):
     json_name: str = "single_split_config.json"
     subset_name: str = "test"
+    stratification: Union[List[str], bool] = False
     n_test: PositiveInt = 100
     p_categorical_threshold: float = 0.80
     p_continuous_threshold: float = 0.80

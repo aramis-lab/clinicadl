@@ -35,9 +35,8 @@ def test_single_splitter():
     config = SingleSplitConfig(split_dir=split_dir)
 
     assert config.subset_name == "test"
-    assert config.stratification is None
+    assert config.stratification is False
     assert config.valid_longitudinal is False
-    assert config.ignore_demographics is False
     assert np.isclose(config.p_categorical_threshold, 0.8, rtol=1e-09, atol=1e-09)
     assert np.isclose(config.p_categorical_threshold, 0.8, rtol=1e-09, atol=1e-09)
     assert config.json_name == "single_split_config.json"
@@ -69,9 +68,8 @@ def test_kfold_splitter():
     config = KFoldConfig(split_dir=fold_path)
 
     assert config.subset_name == "validation"
-    assert config.stratification is None
+    assert config.stratification is False
     assert config.valid_longitudinal is False
-    assert config.ignore_demographics is False
     assert config.json_name == "kfold_config.json"
     assert config.n_splits == 5
 
@@ -80,9 +78,8 @@ def test_kfold():
     kfold = KFold(split_dir=fold_path)
     config = kfold.config
     assert config.subset_name == "validation"
-    assert config.stratification == ["sex"]
+    assert config.stratification == "sex"
     assert config.valid_longitudinal is False
-    assert config.ignore_demographics is False
     assert config.json_name == "kfold_config.json"
     assert config.n_splits == 2
 

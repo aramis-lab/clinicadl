@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence
+from typing import Generator, List, Optional, Sequence, Union
 
 from pydantic import PositiveInt
 
@@ -20,6 +20,7 @@ class KFoldConfig(SplitterConfig):
     json_name: str = "kfold_config.json"
     subset_name: str = "validation"
     n_splits: PositiveInt = 5
+    stratification: Union[str, bool] = False
 
     @property
     def pattern(self):

@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -19,8 +19,7 @@ logger = getLogger("clinicadl.splitter.single_split")
 
 def _validate_stratification(
     df: pd.DataFrame,
-    ignore_demographics: bool,
-    stratification: Optional[List[str]] = None,
+    stratification: Union[List[str], bool],
 ) -> List[str]:
     """
     Checks and validates the specified stratification columns.
@@ -29,10 +28,8 @@ def _validate_stratification(
     ----------
     df : pd.DataFrame
         Input dataset.
-    ignore_demographics : bool
-        If True, ignore demographic columns for balancing.
-    stratification : List[str], optional
-        List of columns to stratify on.
+    stratification : Union[List[str], bool]
+        Columns to use for stratification. If True, columns are 'age' and 'sex', if False, there is no stratification.
 
     Returns
     -------
@@ -46,30 +43,28 @@ def _validate_stratification(
     ClinicaDLTSVError
         If required demographic columns ('age', 'sex') are missing when not ignored.
     """
-    if stratification and ignore_demographics:
-        raise ValueError(
-            "Stratification cannot be applied while ignoring demographics."
-        )
 
-    if not stratification:
-        stratification = ["age", "sex"]
+    if isinstance(stratification, bool):
+        if stratification:
+            stratification = ["age", "sex"]
+        else:
+            return []
 
-    missing_columns = set(stratification) - set(df.columns)
-    if missing_columns:
-        raise ValueError(f"Missing stratification columns: {missing_columns}")
+    if isinstance(stratification, list):
+        if not set(stratification).issubset(df.columns):
+            raise ValueError(
+                f"Invalid stratification columns: {set(stratification) - set(df.columns)}"
+            )
+        return stratification
 
-    if "age" not in df.columns or "sex" not in df.columns:
-        raise ClinicaDLTSVError(
-            "Missing required demographic columns: 'age' and 'sex'."
-        )
-
-    return stratification
+    raise ValueError(
+        "Invalid stratification option. Stratification must be a list of column names or a boolean."
+    )
 
 
 def _categorize_labels(
     df: pd.DataFrame,
-    stratification: Optional[List[str]] = None,
-    ignore_demographics: bool = False,
+    stratification: Union[List[str], bool],
     n_test: int = 100,
 ) -> Tuple[List[str], List[str]]:
     """
@@ -79,8 +74,8 @@ def _categorize_labels(
     ----------
     df : pd.DataFrame
         Input dataset.
-    stratification : List[str]
-        Columns to stratify on.
+    stratification : Union[List[str], bool]
+        Columns to use for stratification. If True, columns are 'age' and 'sex', if False, there is no stratification.
     n_test : int
         Number of test samples.
 
@@ -89,7 +84,7 @@ def _categorize_labels(
     Tuple[List[str], List[str]]
         Continuous and categorical labels.
     """
-    columns = _validate_stratification(df, ignore_demographics, stratification)
+    columns = _validate_stratification(df, stratification)
 
     continuous_labels, categorical_labels = [], []
     for col in columns:
@@ -139,8 +134,7 @@ def make_split(
     subset_name: str = "test",
     p_categorical_threshold: float = 0.50,
     p_continuous_threshold: float = 0.50,
-    stratification: Optional[List[str]] = None,
-    ignore_demographics: bool = False,
+    stratification: Union[List[str], bool] = False,
     valid_longitudinal=False,
     n_try_max: int = 1000,
 ):
@@ -161,10 +155,8 @@ def make_split(
         Threshold for acceptable categorical stratification.
     p_continuous_threshold : float
         Threshold for acceptable continuous stratification.
-    stratification : Optional[List[str]]
-        Columns used for stratification.
-    ignore_demographics : bool
-        Ignore demographic constraints if True.
+    stratification : Union[List[str], bool], default=False
+        Columns to use for stratification. If True, columns are 'age' and 'sex', if False, there is no stratification.
     valid_longitudinal : bool
         Include longitudinal sessions if True.
     n_try_max : int
@@ -188,7 +180,6 @@ def make_split(
     continuous_labels, categorical_labels = _categorize_labels(
         df=baseline_df,
         stratification=stratification,
-        ignore_demographics=ignore_demographics,
         n_test=n_test,
     )
 
@@ -201,7 +192,6 @@ def make_split(
         p_continuous_threshold=p_continuous_threshold,
         p_categorical_threshold=p_categorical_threshold,
         stratification=stratification,
-        ignore_demographics=ignore_demographics,
     )
 
     config._check_split_dir()
@@ -213,12 +203,18 @@ def make_split(
             splits.split(baseline_df, baseline_df)
         ):
             p_continuous = compute_continuous_p_value(
-                continuous_labels, baseline_df, train_index, test_index
+                continuous_labels,
+                baseline_df,
+                train_index.tolist(),
+                test_index.tolist(),
             )
 
             if p_continuous >= p_continuous_threshold:
                 p_categorical = compute_categorical_p_value(
-                    categorical_labels, baseline_df, train_index, test_index
+                    categorical_labels,
+                    baseline_df,
+                    train_index.tolist(),
+                    test_index.tolist(),
                 )
 
                 if p_categorical >= p_categorical_threshold:

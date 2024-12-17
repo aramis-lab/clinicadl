@@ -70,7 +70,6 @@ def test_good_split():
     assert dict_["subset_name"] == subset_name
     assert dict_["stratification"] == stratification
     assert dict_["valid_longitudinal"] is False
-    assert dict_["ignore_demographics"] is False
     assert dict_["n_test"] == n_test
     assert np.isclose(dict_["p_categorical_threshold"], 0.5, rtol=1e-09, atol=1e-09)
     assert np.isclose(dict_["p_continuous_threshold"], 0.5, rtol=1e-09, atol=1e-09)
@@ -88,7 +87,7 @@ def test_good_split():
 
     assert split_dir_bis == sub_ses_t1.parent / "split"
 
-    split_dir_bis_bis = make_split(sub_ses_t1, n_test=n_test, ignore_demographics=True)
+    split_dir_bis_bis = make_split(sub_ses_t1, n_test=n_test, stratification=False)
 
     assert split_dir_bis_bis == sub_ses_t1.parent / "split_2"
 
@@ -140,9 +139,8 @@ def test_good_kfold():
     assert dict_["json_name"] == "kfold_config.json"
     assert dict_["split_dir"] == str(split_dir)
     assert dict_["subset_name"] == subset_name
-    assert dict_["stratification"] == [stratification]
+    assert dict_["stratification"] == stratification
     assert dict_["valid_longitudinal"] is False
-    assert dict_["ignore_demographics"] is False
     assert dict_["n_splits"] == n_split
 
     test_df = pd.read_csv(test_path, sep="\t")
@@ -155,9 +153,7 @@ def test_good_kfold():
     )
 
     assert split_dir_bis == sub_ses_t1.parent / "2_fold"
-    split_dir_bis_bis = make_kfold(
-        sub_ses_t1, n_splits=n_split, ignore_demographics=True
-    )
+    split_dir_bis_bis = make_kfold(sub_ses_t1, n_splits=n_split, stratification=False)
 
     assert split_dir_bis_bis == sub_ses_t1.parent / "2_fold_2"
 
@@ -177,11 +173,10 @@ def test_bad_kfold():
             output_dir=caps_dir / "test_kfold",
         )
 
-    with pytest.raises(ClinicaDLConfigurationError):
+    with pytest.raises(ValueError):
         make_kfold(
             sub_ses_t1,
-            stratification="sex",
-            ignore_demographics=True,
+            stratification="age",
             output_dir=caps_dir / "test_kfold",
         )
 
@@ -196,11 +191,5 @@ def test_bad_kfold():
         make_kfold(
             sub_ses_t1, stratification="column", output_dir=caps_dir / "test_kfold"
         )
-
-    with pytest.raises(ClinicaDLConfigurationError):
-        make_kfold(sub_ses_t1, output_dir=caps_dir / "test_kfold")
-
-    with pytest.raises(ValueError):
-        make_kfold(sub_ses_t1, stratification="age", output_dir=caps_dir / "test_kfold")
 
     remove_non_empty_dir(caps_dir / "test_kfold")
