@@ -41,7 +41,7 @@ class _PreprocessingWithCrop(Preprocessing):
     Base class for the preprocessings with the option 'use_uncropped_image.
     """
 
-    use_uncropped_image: bool = True
+    use_uncropped_image: bool = False
 
     def linear_nii(
         self, modality: LinearModality, needed_pipeline: PreprocessingMethod
