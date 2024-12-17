@@ -4,7 +4,7 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 from pydantic import PositiveInt
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 from clinicadl.dataset.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
@@ -105,7 +105,7 @@ def make_kfold(
     subset_name: str = "validation",
     valid_longitudinal: bool = False,
     n_splits: PositiveInt = 5,
-    stratification: Optional[List[str]] = None,
+    stratification: Optional[str] = None,
     ignore_demographics: bool = False,
 ) -> Path:
     """
@@ -149,7 +149,7 @@ def make_kfold(
         subset_name=subset_name,
         valid_longitudinal=valid_longitudinal,
         n_splits=n_splits,
-        stratification=stratification,
+        stratification=[stratification] if stratification else None,
         ignore_demographics=ignore_demographics,
     )
 
@@ -167,7 +167,10 @@ def make_kfold(
     )
 
     # Create K-Fold splits
-    skf = StratifiedKFold(n_splits=config.n_splits, shuffle=True, random_state=2)
+    if config.stratification:
+        skf = StratifiedKFold(n_splits=config.n_splits, shuffle=True, random_state=2)
+    else:
+        skf = KFold(n_splits=config.n_splits, shuffle=True, random_state=2)
 
     for i, (train_idx, test_idx) in enumerate(skf.split(baseline_df, stratify_labels)):
         train = baseline_df.iloc[train_idx]

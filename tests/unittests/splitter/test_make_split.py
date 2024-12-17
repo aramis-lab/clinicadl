@@ -1,19 +1,13 @@
 import json
 from pathlib import Path
 
-import nibabel as nib
 import numpy as np
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.preprocessing import PreprocessingT1, PreprocessingT2
 from clinicadl.splitter.make_splits import make_kfold, make_split
-from clinicadl.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
 )
@@ -87,16 +81,20 @@ def test_good_split():
     assert len(test_df) == 15
     assert set(stratification).issubset(set(test_df.columns))
 
+    assert (split_dir / "split_continuous_stats.tsv").is_file()
+    assert (split_dir / "split_categorical_stats.tsv").is_file()
+
     split_dir_bis = make_split(sub_ses_t1, n_test=n_test)
 
     assert split_dir_bis == sub_ses_t1.parent / "split"
 
-    split_dir_bis = make_split(sub_ses_t1, n_test=n_test, ignore_demographics=True)
+    split_dir_bis_bis = make_split(sub_ses_t1, n_test=n_test, ignore_demographics=True)
 
-    assert split_dir_bis == sub_ses_t1.parent / "split_2"
+    assert split_dir_bis_bis == sub_ses_t1.parent / "split_2"
 
     remove_non_empty_dir(split_dir)
     remove_non_empty_dir(split_dir_bis)
+    remove_non_empty_dir(split_dir_bis_bis)
 
 
 def test_bad_split():
@@ -112,11 +110,97 @@ def test_bad_split():
     with pytest.raises(ValueError):
         make_split(sub_ses_t1, n_test=100)
 
+    split_dir = sub_ses_t1.parent / "split"
+    remove_non_empty_dir(split_dir)
+
 
 def test_good_kfold():
-    # fold_dir = make_kfold(train_path, stratification=["sex"], n_splits=2)
-    assert True
+    n_split = 2
+    stratification = "sex"
+    subset_name = "test_test"
+
+    split_dir = make_kfold(
+        sub_ses_t1,
+        output_dir=caps_dir / "test",
+        subset_name=subset_name,
+        stratification=stratification,
+        n_splits=n_split,
+    )
+
+    train_path = split_dir / "split-0" / "train_baseline.tsv"
+    test_path = split_dir / "split-0" / f"{subset_name}_baseline.tsv"
+
+    assert train_path.exists()
+    assert test_path.exists()
+
+    assert (split_dir / "kfold_config.json").is_file
+    with (split_dir / "kfold_config.json").open(mode="r") as file:
+        dict_ = json.load(file)
+
+    assert dict_["json_name"] == "kfold_config.json"
+    assert dict_["split_dir"] == str(split_dir)
+    assert dict_["subset_name"] == subset_name
+    assert dict_["stratification"] == [stratification]
+    assert dict_["valid_longitudinal"] is False
+    assert dict_["ignore_demographics"] is False
+    assert dict_["n_splits"] == n_split
+
+    test_df = pd.read_csv(test_path, sep="\t")
+
+    assert len(test_df) == 20
+    assert set([stratification]).issubset(set(test_df.columns))
+
+    split_dir_bis = make_kfold(
+        sub_ses_t1, n_splits=n_split, stratification=stratification
+    )
+
+    assert split_dir_bis == sub_ses_t1.parent / "2_fold"
+    split_dir_bis_bis = make_kfold(
+        sub_ses_t1, n_splits=n_split, ignore_demographics=True
+    )
+
+    assert split_dir_bis_bis == sub_ses_t1.parent / "2_fold_2"
+
+    remove_non_empty_dir(split_dir)
+    remove_non_empty_dir(split_dir_bis)
+    remove_non_empty_dir(split_dir_bis_bis)
 
 
 def test_bad_kfold():
-    assert True
+    with pytest.raises(ClinicaDLTSVError):
+        make_kfold(caps_dir / "test.tsv", output_dir=caps_dir / "test_kfold")
+
+    with pytest.raises(ClinicaDLTSVError):
+        make_kfold(
+            caps_dir / "subject_false.tsv",
+            n_splits=1,
+            output_dir=caps_dir / "test_kfold",
+        )
+
+    with pytest.raises(ClinicaDLConfigurationError):
+        make_kfold(
+            sub_ses_t1,
+            stratification="sex",
+            ignore_demographics=True,
+            output_dir=caps_dir / "test_kfold",
+        )
+
+    with pytest.raises(ValidationError):
+        make_kfold(
+            sub_ses_t1,
+            stratification=["sex", "age"],
+            output_dir=caps_dir / "test_kfold",
+        )  # type: ignore
+
+    with pytest.raises(ClinicaDLConfigurationError):
+        make_kfold(
+            sub_ses_t1, stratification="column", output_dir=caps_dir / "test_kfold"
+        )
+
+    with pytest.raises(ClinicaDLConfigurationError):
+        make_kfold(sub_ses_t1, output_dir=caps_dir / "test_kfold")
+
+    with pytest.raises(ValueError):
+        make_kfold(sub_ses_t1, stratification="age", output_dir=caps_dir / "test_kfold")
+
+    remove_non_empty_dir(caps_dir / "test_kfold")

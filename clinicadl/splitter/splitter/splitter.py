@@ -98,6 +98,12 @@ class Splitter(ABC):
         dataset : CapsDataset
             Dataset to split for cross-validation.
         """
+        if isinstance(split_dir, str):
+            split_dir = Path(split_dir)
+
+        if not split_dir.is_dir():
+            raise FileNotFoundError(f"No such directory: {split_dir}")
+
         self.split_dir = split_dir
         self._init_config(**self._read_json())
         self.subjects_sessions_split = self._read_splits()
@@ -120,8 +126,6 @@ class Splitter(ABC):
         KFoldConfig
             The configuration object loaded from the JSON file.
         """
-        if not self.split_dir.is_dir():
-            raise FileNotFoundError(f"No such directory: {self.split_dir}")
 
         json_file = [json for json in self.split_dir.glob("*.json")]
         print(json_file)

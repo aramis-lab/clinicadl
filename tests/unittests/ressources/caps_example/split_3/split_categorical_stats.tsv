@@ -1,5 +1,0 @@
-label	value	statistic	train	test
-sex	M	proportion	0.6	0.6
-sex	M	count	15.0	9.0
-sex	F	proportion	0.4	0.4
-sex	F	count	10.0	6.0

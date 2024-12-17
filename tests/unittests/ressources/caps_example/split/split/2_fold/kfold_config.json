@@ -1,0 +1,11 @@
+{
+    "json_name": "kfold_config.json",
+    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split/split/2_fold",
+    "subset_name": "validation",
+    "stratification": [
+        "sex"
+    ],
+    "ignore_demographics": false,
+    "valid_longitudinal": false,
+    "n_splits": 2
+}

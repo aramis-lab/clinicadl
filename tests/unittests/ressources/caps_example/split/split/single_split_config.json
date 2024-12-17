@@ -1,7 +1,7 @@
 {
     "json_name": "single_split_config.json",
-    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/test/split_3",
-    "subset_name": "test_test",
+    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/clinicadl/tests/unittests/ressources/caps_example/split/split",
+    "subset_name": "test",
     "stratification": [
         "age",
         "sex",
@@ -10,7 +10,7 @@
     ],
     "ignore_demographics": false,
     "valid_longitudinal": false,
-    "n_test": 15,
+    "n_test": 24,
     "p_categorical_threshold": 0.5,
     "p_continuous_threshold": 0.5
 }
