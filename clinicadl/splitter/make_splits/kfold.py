@@ -106,7 +106,7 @@ def make_kfold(
     valid_longitudinal: bool = False,
     n_splits: PositiveInt = 5,
     stratification: Optional[str] = None,
-    ignore_demographics: bool = False,
+    ignore_demographics: bool = True,
 ) -> Path:
     """
     Perform K-Fold splitting with optional stratification.
