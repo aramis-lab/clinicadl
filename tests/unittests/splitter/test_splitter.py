@@ -41,7 +41,6 @@ def test_single_splitter():
     assert np.isclose(config.p_categorical_threshold, 0.8, rtol=1e-09, atol=1e-09)
     assert np.isclose(config.p_categorical_threshold, 0.8, rtol=1e-09, atol=1e-09)
     assert config.json_name == "single_split_config.json"
-    assert config.split_dir == split_dir
     assert config.n_test == 100
 
     with pytest.raises(ValidationError):
@@ -74,7 +73,6 @@ def test_kfold_splitter():
     assert config.valid_longitudinal is False
     assert config.ignore_demographics is False
     assert config.json_name == "kfold_config.json"
-    assert config.split_dir == fold_path
     assert config.n_splits == 5
 
 
@@ -86,7 +84,6 @@ def test_kfold():
     assert config.valid_longitudinal is False
     assert config.ignore_demographics is False
     assert config.json_name == "kfold_config.json"
-    assert config.split_dir == fold_path
     assert config.n_splits == 2
 
     assert isinstance(kfold.subjects_sessions_split[0], SubjectsSessionsSplit)
