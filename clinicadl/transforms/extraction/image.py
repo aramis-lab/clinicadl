@@ -6,13 +6,12 @@ import torch
 import torchio as tio
 from pydantic import PositiveInt, computed_field
 
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
 
 from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.image")
-
-PT = ".pt"
 
 
 class ImageSample(Sample):

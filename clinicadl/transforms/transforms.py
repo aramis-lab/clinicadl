@@ -4,6 +4,7 @@ from typing import Callable, Optional, Tuple
 import torchvision.transforms as torch_transforms
 from pydantic import model_validator
 
+from clinicadl.dictionary.words import AUGMENTATION, IMAGE, OBJECT, TRANSFORMATION
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.transforms.factory import (
     MinMaxNormalization,
@@ -115,8 +116,8 @@ class Transforms(ClinicaDLConfig):
 
         def _to_str(
             list_: list[Callable] = [],
-            object_: str = "object",
-            transfo_: str = "transformation",
+            object_: str = OBJECT,
+            transfo_: str = TRANSFORMATION,
         ):
             str_ = ""
             if list_:
@@ -128,13 +129,13 @@ class Transforms(ClinicaDLConfig):
 
             return str_
 
-        transform_str += _to_str(self.image_transforms, object_="image")
-        transform_str += _to_str(self.object_transforms, object_="object")
+        transform_str += _to_str(self.image_transforms, object_=IMAGE)
+        transform_str += _to_str(self.object_transforms, object_=OBJECT)
         transform_str += _to_str(
-            self.image_augmentation, object_="image", transfo_="augmentation"
+            self.image_augmentation, object_=IMAGE, transfo_=AUGMENTATION
         )
         transform_str += _to_str(
-            self.object_augmentation, object_="object", transfo_="augmentation"
+            self.object_augmentation, object_=OBJECT, transfo_=AUGMENTATION
         )
 
         return transform_str
