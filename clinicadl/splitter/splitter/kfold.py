@@ -46,7 +46,7 @@ class KFold(Splitter):
         super().__init__(split_dir=split_dir)
 
     def _init_config(self, **args):
-        self.config = KFoldConfig(**args)
+        self.config: KFoldConfig = KFoldConfig(**args)
 
     def _read_splits(self) -> List[SubjectsSessionsSplit]:
         """

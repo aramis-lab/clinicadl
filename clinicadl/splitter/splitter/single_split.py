@@ -25,6 +25,7 @@ class SingleSplitConfig(SplitterConfig):
         return "split"
 
     @field_validator("p_categorical_threshold", "p_continuous_threshold", mode="before")
+    @classmethod
     def validate_thresholds(cls, value: Union[float, int]) -> float:
         if not (0 <= value <= 1):
             raise ValueError(f"Threshold must be between 0 and 1, got {value}")

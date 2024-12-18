@@ -5,18 +5,18 @@ from typing import Generator, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from pydantic import (
-    BaseModel,
-    ConfigDict,
+    computed_field,
     field_validator,
 )
 
 from clinicadl.dataset.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import path_encoder
 
 
-class SubjectsSessionsSplit(BaseModel):
+class SubjectsSessionsSplit(ClinicaDLConfig):
     """
     Dataclass to store train and validation splits for subjects and sessions.
     """
@@ -24,23 +24,21 @@ class SubjectsSessionsSplit(BaseModel):
     train: pd.DataFrame
     validation: pd.DataFrame
 
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
+    @computed_field
     @property
     def train_val_df(self):
         return pd.concat([self.train, self.validation], ignore_index=True)
 
 
-class SplitterConfig(BaseModel):
+class SplitterConfig(ClinicaDLConfig):
     json_name: str
     split_dir: Path
     subset_name: str
     stratification: Union[str, List[str], bool] = False
     valid_longitudinal: bool = False
 
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
     @field_validator("split_dir", mode="after")
+    @classmethod
     def validate_split_dir(cls, v):
         if not isinstance(v, Path):
             v = Path(v)
@@ -109,7 +107,7 @@ class Splitter(ABC):
 
     @abstractmethod
     def _init_config(self, **args):
-        self.config = ...
+        self.config: SplitterConfig
 
     def _read_json(self):
         """
@@ -170,10 +168,10 @@ class Splitter(ABC):
                 split_path / f"{self.config.subset_name}_baseline.tsv", sep="\t"
             )  # type: ignore
 
-        except FileNotFoundError:
+        except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"One or more of the required files are missing: 'train_baseline.tsv', '{self.config.subset_name}_baseline.tsv'"
-            )  # type: ignore
+            ) from exc  # type: ignore
 
         return SubjectsSessionsSplit(
             train=train,
@@ -195,7 +193,6 @@ class Splitter(ABC):
         None
             Populates `subjects_sessions_split` and `config` attributes.
         """
-        pass
 
     def check_dataset_and_tsv_consistency(self, dataset: CapsDataset):
         df1 = self.subjects_sessions_split[0].train_val_df
@@ -232,8 +229,6 @@ class Splitter(ABC):
         ValueError
             If the requested split indices are out of range or no splits are available.
         """
-
-        pass
 
     def _get_split(
         self,
