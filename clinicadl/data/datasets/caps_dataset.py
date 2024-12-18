@@ -242,10 +242,9 @@ class CapsDataset(Dataset):
         df = self._check_data_instance(data)
         self.df = df
 
-        if not self._check_preprocessing_config():
-            raise ClinicaDLCAPSError(
-                f"The DataFrame does not match the preprocessing configuration: {self.preprocessing.preprocessing.value}"
-            )
+        self.caps_reader.check_preprocessing(
+            self._get_participant_session_couples(), self.preprocessing
+        )
 
         return df
 
@@ -260,11 +259,11 @@ class CapsDataset(Dataset):
                     "Please ensure the file path is correct and accessible."
                 )
             df = tsv_to_df(data)
-        if isinstance(data, pd.DataFrame):
+        elif isinstance(data, pd.DataFrame):
             df = check_df(data)
         else:
             raise ValueError(
-                f"'data' must be a Pandas DataFrame, a path to a TSV file or None. Got{data}"
+                f"'data' must be a Pandas DataFrame, a path to a TSV file or None. Got {data}"
             )
 
         return df

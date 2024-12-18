@@ -71,22 +71,22 @@ def test_get_transforms():
     assert (tio_image.label.tensor == old_tio_image.label.tensor).all()
     assert (tio_image.mask_1.tensor == old_tio_image.mask_1.tensor).all()
 
-    tio_sample = transforms.extraction.extract_tio_sample(tio_image, 0)
+    tio_sample, _ = transforms.extraction.extract_tio_sample(tio_image, 0)
     patch_mask = np.zeros((1, 4, 4, 4))
     patch_mask[:, 1:, 1:, 1:] = 1
     patch_mask = torch.from_numpy(patch_mask)
-    assert (tio_sample.sample.tensor == tio_image.image.tensor[:, :4, :4, :4]).all()
+    assert (tio_sample.image.tensor == tio_image.image.tensor[:, :4, :4, :4]).all()
     assert (tio_sample.label.tensor == tio_image.label.tensor[:, :4, :4, :4]).all()
     assert (tio_sample.mask_1.tensor == patch_mask).all()
 
     tio_sample = sample_transforms(tio_sample)
-    assert tio_sample.sample.tensor.shape == (1, 6, 6, 6)
+    assert tio_sample.image.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.label.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.mask_1.tensor.shape == (1, 6, 6, 6)
 
     tio_sample = sample_augmentations(tio_sample)
-    assert (tio_sample.sample.tensor[:, :2, :2, :2] == 0.0).all()
-    assert (tio_sample.sample.tensor[:, 5:, 5:, 5:] == 0.0).all()
+    assert (tio_sample.image.tensor[:, :2, :2, :2] == 0.0).all()
+    assert (tio_sample.image.tensor[:, 5:, 5:, 5:] == 0.0).all()
 
 
 def test_str():

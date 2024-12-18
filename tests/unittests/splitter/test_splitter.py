@@ -1,30 +1,16 @@
-import json
 from pathlib import Path
 
-import nibabel as nib
 import numpy as np
-import pandas as pd
 import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.preprocessing import PreprocessingT1, PreprocessingT2
-from clinicadl.splitter.split import Split
+from clinicadl.data.preprocessing import PreprocessingT1
 from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
 from clinicadl.splitter.splitter.single_split import SingleSplit, SingleSplitConfig
-from clinicadl.splitter.splitter.splitter import (
-    Splitter,
-    SplitterConfig,
-    SubjectsSessionsSplit,
-)
+from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit
 from clinicadl.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLCAPSError,
-    ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
-)
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 caps_dir = Path(__file__).parents[1] / "ressources" / "caps_example"
 split_dir = caps_dir / "split_test" / "split"

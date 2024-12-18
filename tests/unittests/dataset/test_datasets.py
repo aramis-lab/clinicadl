@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 import torchio as tio
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.preprocessing import PreprocessingPET, PreprocessingT1
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.preprocessing import PreprocessingPET, PreprocessingT1
 from clinicadl.transforms import Transforms
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
