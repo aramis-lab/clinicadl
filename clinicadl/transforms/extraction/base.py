@@ -4,12 +4,11 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
-import nibabel as nib
 import torch
 import torchio as tio
 from pydantic import computed_field
 
-from clinicadl.dictionary.words import IMAGE, LABEL, SAMPLE
+from clinicadl.dictionary.words import IMAGE, LABEL
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 
@@ -246,14 +245,14 @@ class Extraction(ClinicaDLConfig, ABC):
         Checks that a TorchIO Subject is valid, i.e. a Subject with a TorchIO ScalarImage
         named 'image' and a label named 'label'.
         """
-        if not hasattr(tio_subject, "image") or not isinstance(
+        if not hasattr(tio_subject, IMAGE) or not isinstance(
             tio_subject.image, tio.ScalarImage
         ):
             raise AttributeError(
                 "The TorchIO Subject must contain a ScalarImage named 'image'. Got only the following images: "
                 f"{tio_subject.get_images_names()}"
             )
-        if not hasattr(tio_subject, "label"):
+        if not hasattr(tio_subject, LABEL):
             raise AttributeError(
                 "The TorchIO Subject must contain an attribute named 'label'."
             )
