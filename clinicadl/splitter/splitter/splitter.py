@@ -95,8 +95,7 @@ class Splitter(ABC):
         dataset : CapsDataset
             Dataset to split for cross-validation.
         """
-        if isinstance(split_dir, str):
-            split_dir = Path(split_dir)
+        split_dir = Path(split_dir)
 
         if not split_dir.is_dir():
             raise FileNotFoundError(f"No such directory: {split_dir}")
@@ -125,7 +124,7 @@ class Splitter(ABC):
         """
 
         json_file = [json for json in self.split_dir.glob("*.json")]
-        print(json_file)
+
         if len(json_file) > 1:
             raise ValueError(
                 f"Multiple JSON files found in {self.split_dir}, please remove or rename them."

@@ -1,7 +1,7 @@
 # coding: utf8
 from __future__ import annotations
 
-from copy import copy
+from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -551,9 +551,9 @@ class CapsDataset(Dataset):
         all_included = len(common_rows) == len(df)
 
         if not all_included:
-            missing_rows = pd.concat([df, self.df], ignore_index=True).drop_duplicates(
-                keep=False
-            )
+            missing_rows = pd.concat(
+                [df, common_rows], ignore_index=True
+            ).drop_duplicates(keep=False)
 
             err_message = "Missing rows: \n"
             for row in missing_rows:
@@ -564,7 +564,7 @@ class CapsDataset(Dataset):
                 err_message,
             )
 
-        dataset = copy(self)
+        dataset = deepcopy(self)
         dataset.df = df
 
         return dataset

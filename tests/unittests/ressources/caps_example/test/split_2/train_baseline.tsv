@@ -1,0 +1,16 @@
+participant_id	session_id	age	sex	test	diagnosis
+sub-063	ses-M000	83	M	16	MCI
+sub-066	ses-M006	63	M	11	MCI
+sub-043	ses-M000	71	M	32	CN
+sub-057	ses-M006	77	F	18	AD
+sub-044	ses-M000	64	M	31	AD
+sub-077	ses-M006	23	F	2	CN
+sub-073	ses-M000	85	M	8	AD
+sub-025	ses-M006	57	F	20	MCI
+sub-045	ses-M006	92	F	29	MCI
+sub-035	ses-M006	85	F	28	MCI
+sub-074	ses-M000	34	M	7	CN
+sub-014	ses-M000	56	M	10	CN
+sub-023	ses-M000	69	M	17	AD
+sub-065	ses-M006	58	F	13	AD
+sub-013	ses-M000	40	M	9	CN

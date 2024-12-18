@@ -15,7 +15,7 @@ from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.networks.factory import get_network_from_config
 from clinicadl.splitter.split_utils import print_description_log
-from clinicadl.transforms.extraction import BaseExtraction
+from clinicadl.transforms.extraction import Extraction
 from clinicadl.utils.exceptions import MAPSError
 from clinicadl.utils.iotools.data_utils import load_data_test
 from clinicadl.utils.iotools.utils import path_decoder, path_encoder
@@ -70,7 +70,7 @@ class ExperimentManager:
 
     def get_info_from_json(
         self,
-    ) -> tuple[PreprocessingConfig, ExtractionConfig, CapsReader, ClinicaDLModel]:
+    ) -> tuple[PreprocessingConfig, Extraction, CapsReader, ClinicaDLModel]:
         """Reads the maps.json file and returns its content."""  # I don't know if this is a useful function
 
         if self.maps_json.is_file():

@@ -129,7 +129,7 @@ def _chi2_test(x_test: List[int], x_train: List[int]) -> float:
 
 def make_split(
     tsv_path: Path,
-    output_dir: Optional[Path] = None,
+    output_dir: Optional[Union[Path, str]] = None,
     n_test: PositiveFloat = 100,
     subset_name: str = "test",
     p_categorical_threshold: float = 0.50,
@@ -170,6 +170,7 @@ def make_split(
 
     # Set default output directory
     output_dir = output_dir or tsv_path.parent
+    output_dir = Path(output_dir)
 
     # Load dataset and preprocess
     df = tsv_to_df(tsv_path)
@@ -198,8 +199,10 @@ def make_split(
     config._write_json()
 
     if config.n_test > 0:
-        splits = ShuffleSplit(n_splits=n_try_max, test_size=config.n_test)
-        for n_try, (test_index, train_index) in enumerate(
+        splits = ShuffleSplit(
+            n_splits=n_try_max, test_size=config.n_test, random_state=2
+        )
+        for n_try, (train_index, test_index) in enumerate(
             splits.split(baseline_df, baseline_df)
         ):
             p_continuous = compute_continuous_p_value(
@@ -220,8 +223,8 @@ def make_split(
                 if p_categorical >= p_categorical_threshold:
                     logger.info(f"Valid split found after {n_try} attempts.")
 
-                    test_df = baseline_df.loc[train_index]
-                    train_df = baseline_df.loc[test_index]
+                    test_df = baseline_df.loc[test_index]
+                    train_df = baseline_df.loc[train_index]
 
                     write_continuous_stats(
                         config.split_dir / "split_continuous_stats.tsv",
@@ -240,11 +243,11 @@ def make_split(
                     )
                     break
 
-        if n_try >= n_try_max - 1:
-            raise ClinicaDLConfigurationError(
-                f"Unable to find a valid split after {n_try} attempts. "
-                f"Consider lowering thresholds or reducing stratification variables."
-            )
+            if n_try >= n_try_max - 1:
+                raise ClinicaDLConfigurationError(
+                    f"Unable to find a valid split after {n_try} attempts. "
+                    f"Consider lowering thresholds or reducing stratification variables."
+                )
 
         write_to_csv(test_df, config.split_dir, df, subset_name, valid_longitudinal)
     else:

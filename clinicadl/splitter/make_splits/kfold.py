@@ -73,7 +73,6 @@ def _validate_stratification(
 def preprocess_stratification(
     df: pd.DataFrame,
     stratification: Union[str, bool],
-    n_test: int = 100,
 ) -> pd.DataFrame:
     """
     Preprocess stratification columns by creating labels for each subject.
@@ -95,18 +94,12 @@ def preprocess_stratification(
     if column is None:
         return df
 
-    if pd.api.types.is_numeric_dtype(df[column]):
-        if len(np.unique(df[column])) >= n_test:
-            raise ValueError(
-                "Continuous variables cannot be used for stratification in K-Fold splitting."
-            )
-
     return df[[column]]
 
 
 def make_kfold(
     tsv_path: Path,
-    output_dir: Optional[Path] = None,
+    output_dir: Optional[Union[Path, str]] = None,
     subset_name: str = "validation",
     valid_longitudinal: bool = False,
     n_splits: PositiveInt = 5,
@@ -142,8 +135,8 @@ def make_kfold(
     """
 
     # Set default output directory
-    if not output_dir:
-        output_dir = tsv_path.parent
+    output_dir = output_dir or tsv_path.parent
+    output_dir = Path(output_dir)
 
     # Initialize KFold configuration
     config = KFoldConfig(
