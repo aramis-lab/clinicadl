@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -34,9 +33,9 @@ def test_good_caps_dataset():
     assert caps_dataset.preprocessing == preprocessing
     assert caps_dataset.extraction == transforms.extraction
     assert isinstance(caps_dataset.image_transform.transforms[0], tio.RescaleIntensity)
-    assert caps_dataset.image_transform.transforms == []
-    assert caps_dataset.image_transform.transforms == []
-    assert caps_dataset.image_transform.transforms == []
+    assert caps_dataset.image_augmentation.transforms == []
+    assert caps_dataset.sample_transform.transforms == []
+    assert caps_dataset.sample_augmentation.transforms == []
     assert caps_dataset.samples_per_image == 1
     assert {PARTICIPANT_ID, SESSION_ID}.issubset(set(caps_dataset.df.columns.values))
     assert len(caps_dataset.df) == 4
@@ -48,10 +47,17 @@ def test_good_caps_dataset():
 
     image_sample = caps_dataset[0]
 
-    assert image_sample.participant_id == caps_dataset._get_participant(0)
-    assert image_sample.session_id == caps_dataset._get_session(0)
-    assert image_sample.sample.shape == caps_dataset._get_full_image(0)[0].shape
-    assert image_sample.image_path == caps_dataset._get_meta_data(0)[2]
+    assert image_sample.participant_id == "sub-000"
+    assert image_sample.session_id == "ses-M000"
+    assert image_sample.sample.shape == (1, 169, 208, 179)
+    assert str(image_sample.image_path) == str(
+        caps_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "sub-000_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz"
+    )
     assert image_sample.label is None
 
     caps_dataset.eval()
@@ -95,5 +101,3 @@ def test_bad_caps_dataset():
 
     with pytest.raises(IndexError):
         caps_dataset[10]
-
-    os.remove(caps_dir / "subjects_sessions_list.tsv")

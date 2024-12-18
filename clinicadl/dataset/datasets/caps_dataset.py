@@ -18,6 +18,7 @@ from clinicadl.dataset.utils import (
 )
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms.utils import get_tio_image
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
@@ -85,6 +86,13 @@ class CapsDataset(Dataset):
             Transformation pipeline to apply to the data during loading.
         data : Union[pd.DataFrame, Path], (optional, default=None)
             Data source, either a TSV file or a pre-loaded DataFrame with participant/session information.
+            Only subject/session pairs in this TSV file will be in the CapsDataset.\n
+            If None, all subject/session pairs in `caps_directory` will be used. Besides, a TSV file
+            named `subjects_sessions_list.tsv` will be created in `caps_directory`, with the list of all subject/session
+            pairs in the directory.
+            .. warning::
+                If a `subjects_sessions_list.tsv` already exists in `caps_directory`, it will be overwritten when `data`
+                is None.
         label : Optional[str] (optional, default=None)
             A potential label related to the image.\n
             If 'label' is not None, CapsDataset will look for a column with that name in 'data'.
@@ -222,19 +230,11 @@ class CapsDataset(Dataset):
         """
 
         if data is None:
-            try:
-                data = create_subs_sess_list(
-                    self.caps_reader.input_directory,
-                    self.caps_reader.input_directory,
-                    is_bids_dir=False,
-                )
-            except FileExistsError as exc:
-                raise FileExistsError(
-                    "When 'data' is None, CapsDataset tries to write "
-                    "the subject/session list in a file named 'subjects_sessions_list.tsv', "
-                    "but a file already exists in "
-                    f"{self.caps_reader.input_directory / 'subjects_sessions_list.tsv'}"
-                ) from exc
+            data = create_subs_sess_list(
+                self.caps_reader.input_directory,
+                self.caps_reader.input_directory,
+                is_bids_dir=False,
+            )
             logger.info(f"Creating a subject session TSV file at {data}")
 
         elif isinstance(data, str):
@@ -505,13 +505,15 @@ class CapsDataset(Dataset):
         label = self._get_label(img_index)
         masks = self._get_masks(img_index)
 
-        tio_image = self.extraction.get_tio_image(image, label, **masks)
+        tio_image = get_tio_image(image, label, **masks)
 
         tio_image = self.image_transform(tio_image)
         if not self.eval_mode:
             tio_image = self.image_augmentation(tio_image)
 
-        tio_sample = self.extraction.extract_tio_sample(tio_image, sample_index)
+        tio_sample, sample_description = self.extraction.extract_tio_sample(
+            tio_image, sample_index
+        )
 
         tio_sample = self.sample_transform(tio_sample)
         if not self.eval_mode:
@@ -522,6 +524,7 @@ class CapsDataset(Dataset):
             participant_id=participant,
             session_id=session,
             image_path=image_path,
+            description=sample_description,
         )
 
     def eval(self):

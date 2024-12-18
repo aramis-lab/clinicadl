@@ -29,12 +29,12 @@ def get_tio_image(
         the attributes 'image' and 'label', as well as the masks, accessible
         via their names.
     """
-    tio_image = tio.Subject(image=tio.ScalarImage(tensor=image))
-
     if isinstance(label, torch.Tensor):
-        tio_image.add_image(tio.LabelMap(tensor=label), "label")
+        tio_image = tio.Subject(
+            image=tio.ScalarImage(tensor=image), label=tio.LabelMap(tensor=label)
+        )
     else:
-        setattr(tio_image, "label", label)
+        tio_image = tio.Subject(image=tio.ScalarImage(tensor=image), label=label)
 
     for name, mask in masks.items():
         tio_image.add_image(tio.LabelMap(tensor=mask), name)
