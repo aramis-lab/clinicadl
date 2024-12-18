@@ -416,7 +416,7 @@ class CapsDataset(Dataset):
             image = image_augmentation(image)
 
         if not isinstance(self.extraction, Image):
-            tensor = self.transforms.extraction.extract_tensor(
+            tensor = self.transforms.extraction.extract_sample(
                 image,
                 elem_index,
             )
