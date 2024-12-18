@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from clinicadl.dataset.datasets import CapsDataset
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets import CapsDataset
 from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.splitter import KFold, make_kfold, make_split
-from clinicadl.dataset.dataloader import DataLoaderConfig
 from clinicadl.trainer import Trainer
 
 # SIMPLE EXPERIMENT WITH A CAPS ALREADY EXISTING

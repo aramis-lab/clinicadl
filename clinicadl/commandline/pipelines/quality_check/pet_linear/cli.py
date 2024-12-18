@@ -44,7 +44,7 @@ def cli(
 
     SUVR_REFERENCE_REGION is the reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
     """
-    from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+    from clinicadl.data.caps_dataset_config import CapsDatasetConfig
 
     from .....quality_check.pet_linear.quality_check import (
         quality_check as pet_linear_qc,

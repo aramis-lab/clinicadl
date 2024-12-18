@@ -4,8 +4,8 @@ from typing import Optional
 from pydantic import NonNegativeInt
 from torch.utils.data import DataLoader
 
-from clinicadl.dataset.dataloader import DataLoaderConfig
-from clinicadl.dataset.dataloader.defaults import (
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.defaults import (
     BATCH_SIZE,
     DP_DEGREE,
     DROP_LAST,
@@ -16,7 +16,7 @@ from clinicadl.dataset.dataloader.defaults import (
     SAMPLING_WEIGHTS,
     SHUFFLE,
 )
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 
 

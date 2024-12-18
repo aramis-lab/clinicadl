@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 from pydantic import field_validator
 
-from clinicadl.dataset.preprocessing.base import BasePreprocessing
+from clinicadl.data.preprocessing.base import BasePreprocessing
 from clinicadl.utils.enum import (
     Preprocessing,
     SUVRReferenceRegions,

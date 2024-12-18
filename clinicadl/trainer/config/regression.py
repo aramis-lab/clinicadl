@@ -3,7 +3,7 @@ from typing import Tuple, Union
 
 from pydantic import computed_field, field_validator
 
-from clinicadl.dataset.config.data import DataConfig as BaseDataConfig
+from clinicadl.data.config.data import DataConfig as BaseDataConfig
 from clinicadl.networks.old_network.config import NetworkConfig as BaseNetworkConfig
 from clinicadl.predictor.validation import ValidationConfig as BaseValidationConfig
 from clinicadl.trainer.config.train import TrainConfig

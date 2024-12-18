@@ -4,7 +4,7 @@ from pydantic import NonNegativeInt, PositiveInt
 from torch.utils.data import DataLoader, DistributedSampler, Sampler
 from torch.utils.data import WeightedRandomSampler as BaseWeightedRandomSampler
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 

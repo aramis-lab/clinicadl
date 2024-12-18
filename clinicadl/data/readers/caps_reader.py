@@ -4,9 +4,9 @@ from typing import Optional
 
 import pandas as pd
 
-from clinicadl.dataset.preprocessing import BasePreprocessing
-from clinicadl.dataset.readers.reader import Reader
-from clinicadl.dataset.utils import insensitive_glob
+from clinicadl.data.preprocessing import BasePreprocessing
+from clinicadl.data.readers.reader import Reader
+from clinicadl.data.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import (

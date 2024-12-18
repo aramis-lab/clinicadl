@@ -2,19 +2,19 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.dataset.dataloader import DataLoaderConfig
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.datasets.concat import ConcatDataset
-from clinicadl.dataset.preprocessing import (
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.concat import ConcatDataset
+from clinicadl.data.preprocessing import (
     PreprocessingPET,
     PreprocessingT1,
 )
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
+from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
 from clinicadl.optim.optimizers.config import AdamConfig
-from clinicadl.model.clinicadl_model import ClinicaDLModel
-from clinicadl.splitter import KFold, make_kfold,  make_split
+from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms.extraction import Extraction, Image, Patch, Slice
 from clinicadl.transforms.transforms import Transforms

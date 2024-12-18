@@ -3,7 +3,7 @@ from typing import List, Optional, Sequence, Union
 
 from pydantic import PositiveInt, field_validator
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter.splitter import (
     Splitter,

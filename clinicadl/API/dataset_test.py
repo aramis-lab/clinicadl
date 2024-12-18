@@ -4,7 +4,7 @@ import torchio.transforms as transforms
 
 from clinicadl.data.datasets import CapsDataset, ConcatDataset
 from clinicadl.data.preprocessing import (
-    Preprocessing,
+    BasePreprocessing,
     PreprocessingFlair,
     PreprocessingPET,
     PreprocessingT1,
@@ -19,7 +19,8 @@ from clinicadl.networks.factory import (
     get_network_from_config,
 )
 from clinicadl.splitter import KFold, make_kfold, make_split
-from clinicadl.transforms import Image, Patch, Slice, Transforms
+from clinicadl.transforms import Transforms
+from clinicadl.transforms.extraction import Image, Patch, Slice
 
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
 sub_ses_pet_45 = Path(

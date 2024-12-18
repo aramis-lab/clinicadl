@@ -7,8 +7,8 @@ from clinicadl.commandline.modules_options import (
     extraction,
     preprocessing,
 )
-from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.prepare_data.prepare_data import DeepLearningPrepareData
+from clinicadl.data.caps_dataset_config import CapsDatasetConfig
+from clinicadl.data.prepare_data.prepare_data import DeepLearningPrepareData
 from clinicadl.utils.enum import ExtractionMethod
 
 

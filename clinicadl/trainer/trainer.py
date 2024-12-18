@@ -12,7 +12,7 @@ from torch.amp.grad_scaler import GradScaler
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.metrics.old_metrics.metric_module import RetainBest
 from clinicadl.model.clinicadl_model import ClinicaDLModel

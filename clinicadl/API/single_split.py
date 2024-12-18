@@ -2,6 +2,7 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
+from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
 from clinicadl.data.preprocessing import (
@@ -14,7 +15,6 @@ from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.predictor.predictor import Predictor
-from clinicadl.splitter.dataloader import DataLoaderConfig
 from clinicadl.splitter.make_splits import make_kfold, make_split
 from clinicadl.splitter.splitter import KFold, SingleSplit
 from clinicadl.trainer.trainer import Trainer

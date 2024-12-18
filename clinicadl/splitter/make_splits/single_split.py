@@ -8,7 +8,7 @@ from pydantic import PositiveFloat
 from scipy.stats import chisquare, ks_2samp, ttest_ind
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 
-from clinicadl.dataset.utils import tsv_to_df
+from clinicadl.data.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline

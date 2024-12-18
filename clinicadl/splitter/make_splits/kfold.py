@@ -6,7 +6,7 @@ import pandas as pd
 from pydantic import PositiveInt
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from clinicadl.dataset.utils import tsv_to_df
+from clinicadl.data.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.kfold import KFoldConfig
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline

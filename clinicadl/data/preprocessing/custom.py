@@ -2,7 +2,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-from clinicadl.dataset.preprocessing.base import BasePreprocessing
+from clinicadl.data.preprocessing.base import BasePreprocessing
 from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.iotools.clinica_utils import FileType
 

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, field_validator
 
-from clinicadl.dataset.config.data import DataConfig
+from clinicadl.data.config.data import DataConfig
 from clinicadl.experiment_manager.config import (
     MapsManagerConfig as MapsManagerConfigBase,
 )

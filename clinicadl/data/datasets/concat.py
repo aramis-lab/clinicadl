@@ -4,8 +4,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.utils import CapsDatasetSample
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.utils import CapsDatasetSample
 
 logger = getLogger("clinicadl")
 

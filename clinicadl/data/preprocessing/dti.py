@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Optional
 
-from clinicadl.dataset.preprocessing.base import BasePreprocessing
+from clinicadl.data.preprocessing.base import BasePreprocessing
 from clinicadl.utils.enum import (
     DTIMeasure,
     DTISpace,

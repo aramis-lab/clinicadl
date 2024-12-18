@@ -4,8 +4,8 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from clinicadl.dataset.preprocessing import PreprocessingT1, PreprocessingT2
-from clinicadl.dataset.readers import CapsReader
+from clinicadl.data.preprocessing import PreprocessingT1, PreprocessingT2
+from clinicadl.data.readers import CapsReader
 from clinicadl.transforms import Transforms
 from clinicadl.utils.enum import Preprocessing
 from clinicadl.utils.exceptions import (

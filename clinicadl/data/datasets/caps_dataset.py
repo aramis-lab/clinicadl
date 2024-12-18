@@ -16,9 +16,9 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 from typing_extensions import Self
 
-from clinicadl.dataset.preprocessing import BasePreprocessing
-from clinicadl.dataset.readers.caps_reader import CapsReader
-from clinicadl.dataset.utils import (
+from clinicadl.data.preprocessing import BasePreprocessing
+from clinicadl.data.readers import CapsReader
+from clinicadl.data.utils import (
     CapsDatasetSample,
     check_df,
     get_infos_from_json,

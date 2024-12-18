@@ -9,14 +9,14 @@ import torch
 import torchio as tio
 from pydantic import BaseModel, ConfigDict
 
-from clinicadl.dataset import preprocessing
+from clinicadl.data import preprocessing
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import read_preprocessing
 
-logger = getLogger("clinicadl.dataset.utils")
+logger = getLogger("clinicadl.data.utils")
 
 PARTICIPANT_ID = "participant_id"
 SESSION_ID = "session_id"
