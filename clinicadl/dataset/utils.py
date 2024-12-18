@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+import torchio as tio
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.dataset import preprocessing
@@ -51,6 +52,34 @@ class CapsDatasetSample(BaseModel):
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
+def df_to_tsv(name: str, results_path: Path, df, baseline: bool = False) -> None:
+    """
+    Write Dataframe into a TSV file and drop duplicates
+
+    Parameters
+    ----------
+    name: str
+        Name of the tsv file
+    results_path: str (path)
+        Path to the folder
+    df: DataFrame
+        DataFrame you want to write in a TSV file.
+        Columns must include ["participant_id", "session_id"].
+    baseline: bool
+        If True, there is only baseline session for each subject.
+    """
+
+    df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    if baseline:
+        df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
+    else:
+        df.drop_duplicates(
+            subset=["participant_id", "session_id"], keep="first", inplace=True
+        )
+    # df = df[["participant_id", "session_id"]]
+    df.to_csv(results_path / name, sep="\t", index=False)
+
+
 def tsv_to_df(tsv_path: Path) -> pd.DataFrame:
     """
     Converts a TSV file to a Pandas DataFrame.
@@ -94,7 +123,32 @@ def check_df(df: pd.DataFrame) -> pd.DataFrame:
             f"The data file is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
-    df.reset_index(inplace=True)
+
+    return df
+
+
+def reset_index(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Resets the index of a DataFrame to the default index, dropping any existing index.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to be reset.
+
+    Returns:
+        pd.DataFrame: The DataFrame with the default index.
+
+    Note:
+        This function only resets the index if the DataFrame has a MultiIndex with the 'participant_id' and'session_id' names.
+        If the DataFrame does not have this MultiIndex, the 'drop' parameter is set to True, which results in dropping the index.
+    """
+
+    drop = False
+    if isinstance(df.index, pd.MultiIndex):
+        if set(df.index.names) != {PARTICIPANT_ID, SESSION_ID}:
+            drop = True
+
+    df.reset_index(inplace=True, drop=drop)
+
     return df
 
 

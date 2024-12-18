@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.dataset.config import DataConfig, FileType
+from clinicadl.dataset.config import FileType
 from clinicadl.utils.enum import Preprocessing
 
 

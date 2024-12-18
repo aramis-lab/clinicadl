@@ -48,8 +48,7 @@ class Predictor:
     def __init__(self, _config: Union[PredictConfig, InterpretConfig]) -> None:
         self._config = _config
 
-        from clinicadl.splitter.config import SplitterConfig
-        from clinicadl.splitter.old_splitter import Splitter
+        from clinicadl.splitter.splitter.splitter import Splitter, SplitterConfig
 
         self.maps_manager = MapsManager(_config.maps_manager.maps_dir)
         self._config.adapt_with_maps_manager_info(self.maps_manager)

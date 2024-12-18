@@ -158,8 +158,6 @@ def good_inputs(dummy_arguments):
 #     assert c.transforms.size_reduction_factor == 5
 #     assert c.split.split == (0,)
 #     assert c.early_stopping.min_delta == 0.0
-
-
 # Test config manipulation #
 def test_assignment(dummy_arguments, training_config):
     c = training_config(**dummy_arguments)

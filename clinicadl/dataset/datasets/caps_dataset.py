@@ -1,5 +1,7 @@
 # coding: utf8
+from __future__ import annotations
 
+from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -12,6 +14,7 @@ from pydantic import NonNegativeInt, PositiveInt
 from torch import save as save_tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
+from typing_extensions import Self
 
 from clinicadl.dataset.preprocessing import BasePreprocessing
 from clinicadl.dataset.readers.caps_reader import CapsReader
@@ -190,7 +193,18 @@ class CapsDataset(Dataset):
             )
             logger.info(f"Creating a subject session TSV file at {data}")
 
-        elif isinstance(data, str):
+        df = self._check_data_instance(data)
+        self.df = df
+
+        if not self._check_preprocessing_config():
+            raise ClinicaDLCAPSError(
+                f"The DataFrame does not match the preprocessing configuration: {self.preprocessing.preprocessing.value}"
+            )
+
+        return df
+
+    def _check_data_instance(self, data: Optional[Union[pd.DataFrame, Path]] = None):
+        if isinstance(data, str):
             data = Path(data)
 
         if isinstance(data, Path):
@@ -200,14 +214,8 @@ class CapsDataset(Dataset):
                     "Please ensure the file path is correct and accessible."
                 )
             df = tsv_to_df(data)
-        elif isinstance(data, pd.DataFrame):
+        if isinstance(data, pd.DataFrame):
             df = check_df(data)
-
-        self.df = df
-        if not self._check_preprocessing_config():
-            raise ClinicaDLCAPSError(
-                f"The DataFrame does not match the preprocessing configuration: {self.preprocessing.preprocessing.value}"
-            )
 
         return df
 
@@ -535,3 +543,28 @@ class CapsDataset(Dataset):
                 self._get_participants_sessions_couple(), desc="Preparing data"
             )
         )
+
+    def subset(self, data: Optional[Union[pd.DataFrame, Path]] = None) -> CapsDataset:
+        df = self._check_data_instance(data)
+
+        common_rows = pd.merge(df, self.df, how="inner")
+        all_included = len(common_rows) == len(df)
+
+        if not all_included:
+            missing_rows = pd.concat(
+                [df, common_rows], ignore_index=True
+            ).drop_duplicates(keep=False)
+
+            err_message = "Missing rows: \n"
+            for row in missing_rows:
+                err_message += f" - {row} \n"
+
+            raise ClinicaDLTSVError(
+                "Some couples (participanst_id, session_id) are not in the dataset,",
+                err_message,
+            )
+
+        dataset = deepcopy(self)
+        dataset.df = df
+
+        return dataset
