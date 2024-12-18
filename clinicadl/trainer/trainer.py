@@ -18,17 +18,12 @@ from clinicadl.metrics.old_metrics.metric_module import RetainBest
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.early_stopping import EarlyStopping
 from clinicadl.predictor.predictor import Predictor
+from clinicadl.splitter.split import Split
 from clinicadl.trainer.tasks_utils import get_criterion
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
 
 logger = getLogger("clinicadl.trainer")
-
-
-class Split:
-    index: int
-    train_loader: DataLoader
-    val_loader: DataLoader
 
 
 class MapsReader:
