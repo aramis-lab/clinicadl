@@ -9,17 +9,11 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import torch
 
-from clinicadl.dataset.caps_dataset import (
-    return_dataset,
-)
-from clinicadl.dataset.caps_dataset.caps_dataset_utils import read_json
 from clinicadl.metrics.old_metrics.metric_module import MetricModule
 from clinicadl.metrics.old_metrics.utils import (
     check_selection_metric,
 )
 from clinicadl.predictor.utils import get_prediction
-from clinicadl.splitter.config import SplitterConfig
-from clinicadl.splitter.old_splitter import Splitter
 from clinicadl.trainer.tasks_utils import (
     ensemble_prediction,
     evaluation_metrics,
@@ -297,7 +291,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.dataset.data_utils import load_data_test
+        from clinicadl.data.data_utils import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,

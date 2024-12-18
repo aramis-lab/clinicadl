@@ -116,7 +116,6 @@ class ExtractionMethod(str, Enum):
     IMAGE = "image"
     SLICE = "slice"
     PATCH = "patch"
-    ROI = "roi"
 
 
 class SliceDirection(int, Enum):

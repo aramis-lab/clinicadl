@@ -4,6 +4,7 @@ from typing import Callable, Tuple
 import torchio as tio
 from pydantic import model_validator
 
+from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.transforms.factory import NanRemoval
 from clinicadl.utils.config import ClinicaDLConfig
@@ -97,8 +98,8 @@ class Transforms(ClinicaDLConfig):
 
         def _to_str(
             list_: list[Callable] = [],
-            object_: str = "sample",
-            transfo_: str = "transformation",
+            object_: str = SAMPLE,
+            transfo_: str = TRANSFORMATION,
         ):
             str_ = ""
             if list_:
@@ -110,13 +111,13 @@ class Transforms(ClinicaDLConfig):
 
             return str_
 
-        transform_str += _to_str(self.image_transforms, object_="image")
-        transform_str += _to_str(self.sample_transforms, object_="sample")
+        transform_str += _to_str(self.image_transforms, object_=IMAGE)
+        transform_str += _to_str(self.sample_transforms, object_=SAMPLE)
         transform_str += _to_str(
-            self.image_augmentations, object_="image", transfo_="augmentation"
+            self.image_augmentations, object_=IMAGE, transfo_=AUGMENTATION
         )
         transform_str += _to_str(
-            self.sample_augmentations, object_="sample", transfo_="augmentation"
+            self.sample_augmentations, object_=SAMPLE, transfo_=AUGMENTATION
         )
 
         return transform_str

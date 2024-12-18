@@ -9,10 +9,13 @@ def nifti_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     To load nifti files with nibabel and convert them
     to PyTorch tensors.
 
+    The nifti image is expected to be 3D, and a channel dimension will
+    be added so that the output tensor is 4D.
+
     Parameters
     ----------
     path : Path
-        The path to the image.
+        The path to the 3D image.
     int_values : bool (optional, default=False)
         Whether to have integer values in the output tensor.
 
@@ -41,7 +44,7 @@ def nifti_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
             "('.nii' or '.nii.gz')."
         ) from e
 
-    image_tensor = torch.from_numpy(nifti_image.get_fdata())
+    image_tensor = torch.from_numpy(nifti_image.get_fdata()).unsqueeze(0)
 
     if int_values:
         return image_tensor.int()

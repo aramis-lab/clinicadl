@@ -121,26 +121,28 @@ def test_extract_tio_sample():
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
     )
-    tio_sample = slice.extract_tio_sample(tio_image, sample_index=1)
-    assert isinstance(tio_sample.sample, tio.ScalarImage)
-    assert (tio_sample.sample.tensor == image_tensor[:, 3:4]).all()
+    tio_sample, description = slice.extract_tio_sample(tio_image, sample_index=1)
+    assert description == 3
+    assert isinstance(tio_sample.image, tio.ScalarImage)
+    assert (tio_sample.image.tensor == image_tensor[:, 3:4]).all()
     assert isinstance(tio_sample.label, tio.LabelMap)
     assert (tio_sample.label.tensor == label[:, 3:4]).all()
     assert isinstance(tio_sample.mask_1, tio.LabelMap)
     assert (tio_sample.mask_1.tensor == mask_1[:, 3:4]).all()
-    assert tio_sample.description == 3
-    with pytest.raises(AttributeError):
-        tio_sample.image
 
     tio_image = tio.Subject(image=tio.ScalarImage(tensor=image_tensor), label=1)
-    tio_sample = slice.extract_tio_sample(tio_image, sample_index=1)
+    tio_sample, _ = slice.extract_tio_sample(tio_image, sample_index=1)
     assert tio_sample.label == 1
 
     with pytest.raises(IndexError):
         slice.extract_tio_sample(tio_image, sample_index=42)
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError):
         slice.extract_tio_sample(
-            tio.Subject(label=tio.LabelMap(tensor=label)), sample_index=1
+            tio.Subject(
+                label=tio.LabelMap(tensor=label),
+                image=tio.ScalarImage(tensor=torch.randn(1, 5, 7, 4)),
+            ),
+            sample_index=1,
         )
 
 
@@ -151,16 +153,16 @@ def test_format_output():
     label = torch.ones(1, 3, 4, 1)
 
     tio_sample = tio.Subject(
-        sample=tio.ScalarImage(tensor=image_tensor),
+        image=tio.ScalarImage(tensor=image_tensor),
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
-        description=1,
     )
     output = slice.format_output(
         tio_sample,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+        description=1,
     )
     assert (output.sample == image_tensor.squeeze(3)).all()
     assert (output.label == label.squeeze(3)).all()
@@ -172,28 +174,14 @@ def test_format_output():
     assert output.slice_position == 1
 
     tio_sample = tio.Subject(
-        sample=tio.ScalarImage(tensor=image_tensor),
+        image=tio.ScalarImage(tensor=image_tensor),
         label=0.5,
-        description=1,
     )
     output = slice.format_output(
         tio_sample,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
+        description=1,
     )
     assert output.label == 0.5
-
-    # check that checks on sample are performed
-    tio_sample = tio.Subject(
-        sample=tio.ScalarImage(tensor=image_tensor),
-        label=tio.LabelMap(tensor=label),
-        mask_1=tio.LabelMap(tensor=mask_1),
-    )
-    with pytest.raises(AttributeError):
-        slice.format_output(
-            tio_sample,
-            participant_id="sub-001",
-            session_id="ses-M001",
-            image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
-        )
