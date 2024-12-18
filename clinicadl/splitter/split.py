@@ -4,11 +4,8 @@ from typing import Optional
 from pydantic import NonNegativeInt
 from torch.utils.data import DataLoader
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.splitter.dataloader import DataLoaderConfig
-from clinicadl.utils.config import ClinicaDLConfig
-
-from .defaults import (
+from clinicadl.dataset.dataloader import DataLoaderConfig
+from clinicadl.dataset.dataloader.defaults import (
     BATCH_SIZE,
     DP_DEGREE,
     DROP_LAST,
@@ -19,6 +16,8 @@ from .defaults import (
     SAMPLING_WEIGHTS,
     SHUFFLE,
 )
+from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.utils.config import ClinicaDLConfig
 
 
 class Split(ClinicaDLConfig):
