@@ -26,7 +26,7 @@ class SubjectsSessionsSplit(ClinicaDLConfig):
 
     @computed_field
     @property
-    def train_val_df(self):
+    def train_val_df(self) -> pd.DataFrame:
         return pd.concat([self.train, self.validation], ignore_index=True)
 
 
