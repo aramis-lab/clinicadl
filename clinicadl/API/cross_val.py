@@ -1,11 +1,10 @@
 from pathlib import Path
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
-from clinicadl.predictor.predictor import Predictor
-from clinicadl.splitter.new_splitter.dataloader import DataLoaderConfig
-from clinicadl.splitter.new_splitter.splitter.kfold import KFold
-from clinicadl.trainer.trainer import Trainer
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.experiment_manager import ExperimentManager
+from clinicadl.splitter import KFold, make_kfold, make_split
+from clinicadl.trainer import Trainer
 
 # SIMPLE EXPERIMENT WITH A CAPS ALREADY EXISTING
 
@@ -19,20 +18,18 @@ trainer = Trainer.from_json(
     config_file=config_file, manager=manager
 )  # gpu, amp, fsdp, seed
 
-splitter = KFold(dataset=dataset_t1_image)
-splitter.make_splits(n_splits=3)
-split_dir = Path("")
-splitter.write(split_dir)
+split_dir = make_split(
+    dataset_t1_image.df, n_test=0.2, subset_name="validation", output_dir="test"
+)  # Optional data tsv and output_dir
+fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 
-splitter.read(split_dir)
+splitter = KFold(fold_dir)
+
 
 # define the needed parameters for the dataloader
 dataloader_config = DataLoaderConfig(num_workers=3, batch_size=10)
 
 
-for split in splitter.get_splits(splits=(0, 3, 4)):
-    print(split)
+for split in splitter.get_splits(dataset=dataset_t1_image):
     split.build_train_loader(dataloader_config)
     split.build_val_loader(num_workers=3, batch_size=10)
-
-    print(split)

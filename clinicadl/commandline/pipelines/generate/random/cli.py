@@ -14,8 +14,8 @@ from clinicadl.commandline.modules_options import (
     preprocessing,
 )
 from clinicadl.commandline.pipelines.generate.random import options as random
-from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
-from clinicadl.dataset.caps_dataset_utils import find_file_type
+from clinicadl.data.caps_dataset_config import CapsDatasetConfig
+from clinicadl.data.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateRandomConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,

@@ -2,15 +2,15 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.datasets.concat import ConcatDataset
-from clinicadl.dataset.preprocessing import (
+from clinicadl.data.datasets import CapsDataset, ConcatDataset
+from clinicadl.data.preprocessing import (
     BasePreprocessing,
     PreprocessingFlair,
     PreprocessingPET,
     PreprocessingT1,
 )
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
+from clinicadl.data.preprocessing.pet import SUVRReferenceRegions, Tracer
+from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.factory import (
@@ -18,10 +18,9 @@ from clinicadl.networks.factory import (
     create_network_config,
     get_network_from_config,
 )
-from clinicadl.splitter.kfold import KFolder
-from clinicadl.splitter.split import get_single_split, split_tsv
-from clinicadl.transforms.extraction import ROI, Image, Patch, Slice
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.splitter import KFold, make_kfold, make_split
+from clinicadl.transforms import Transforms
+from clinicadl.transforms.extraction import Image, Patch, Slice
 
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
 sub_ses_pet_45 = Path(
@@ -38,8 +37,12 @@ caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
 )  # output of clinica pipelines
 
-preprocessing_pet_45 = PreprocessingPET(tracer="18FAV45", suvr_reference_region="pons2")
-preprocessing_pet_11 = PreprocessingPET(tracer="11CPIB", suvr_reference_region="pons2")
+preprocessing_pet_45 = PreprocessingPET(
+    tracer=Tracer.FAV45, suvr_reference_region=SUVRReferenceRegions.PONS2
+)
+preprocessing_pet_11 = PreprocessingPET(
+    tracer=Tracer.CPIB, suvr_reference_region=SUVRReferenceRegions.PONS2
+)
 
 preprocessing_t1 = PreprocessingT1()
 preprocessing_flair = PreprocessingFlair()
@@ -54,18 +57,6 @@ transforms_patch = Transforms(
 )  # not mandatory
 
 transforms_slice = Transforms(extraction=Slice())
-
-transforms_roi = Transforms(
-    object_augmentation=[transforms.Ghosting(2, 1, 0.1, 0.1)],
-    object_transforms=[transforms.RandomMotion()],
-    extraction=ROI(
-        roi_list=["leftHippocampusBox", "rightHippocampusBox"],
-        roi_mask_location=Path(
-            "/Users/camille.brianceau/aramis/CLINICADL/caps/masks/tpl-MNI152NLin2009cSym"
-        ),
-        roi_crop_input=True,
-    ),
-)
 
 transforms_image = Transforms(
     image_augmentation=[transforms.RandomMotion()],
@@ -96,25 +87,25 @@ dataset_pet_45_patch.caps_reader._write_caps_json(
 )
 
 
-print("Pet 11 and ROI ")
+print("Pet 11 and Image ")
 
-dataset_pet_11_roi = CapsDataset(
+dataset_pet_11_image = CapsDataset(
     caps_directory=caps_directory,
     data=sub_ses_pet_11,
     preprocessing=preprocessing_pet_11,
-    transforms=transforms_roi,
+    transforms=transforms_image,
 )
-dataset_pet_11_roi.prepare_data(
+dataset_pet_11_image.prepare_data(
     n_proc=2
 )  # to extract the tensor of the PET file this time
 
-print(dataset_pet_11_roi)
-print(dataset_pet_11_roi.__len__())
-print(dataset_pet_11_roi._get_meta_data(0))
-print(dataset_pet_11_roi._get_meta_data(1))
-# print(dataset_pet_11_roi._get_full_image())
-print(dataset_pet_11_roi.__getitem__(1).elem_idx)
-print(dataset_pet_11_roi.elem_per_image)
+print(dataset_pet_11_image)
+print(dataset_pet_11_image.__len__())
+print(dataset_pet_11_image._get_meta_data(0))
+print(dataset_pet_11_image._get_meta_data(1))
+# print(dataset_pet_11_image._get_full_image())
+print(dataset_pet_11_image.__getitem__(1).elem_idx)
+print(dataset_pet_11_image.elem_per_image)
 
 
 print("T1 and image ")
@@ -161,7 +152,7 @@ print(dataset_flair_slice.elem_per_image)
 
 lity_multi_extract = ConcatDataset(
     [
-        dataset_t1,
-        dataset_pet,
+        dataset_t1_image,
+        dataset_pet_11_image,
     ]
 )  # 3 train.tsv en entrée qu'il faut concat et pareil pour les transforms à faire attention

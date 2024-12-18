@@ -6,11 +6,11 @@ import pandas as pd
 from pydantic import PositiveInt
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from clinicadl.dataset.utils import tsv_to_df
+from clinicadl.data.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.kfold import KFoldConfig
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
 
 
 def _validate_stratification(
@@ -98,7 +98,7 @@ def preprocess_stratification(
 
 
 def make_kfold(
-    tsv_path: Path,
+    data: Union[pd.DataFrame, Path, str],
     output_dir: Optional[Union[Path, str]] = None,
     subset_name: str = "validation",
     valid_longitudinal: bool = False,
@@ -110,10 +110,10 @@ def make_kfold(
 
     Parameters
     ----------
-    tsv_path : Path
-        Path to the input TSV file.
-    output_dir : Optional[Path]
-        Directory to save the split files. Defaults to the parent directory of `tsv_path`.
+    data: Union[pd.DataFrame, Path, str],
+        Path to the TSV file or a DataFrame containing participant/session pairs.
+    output_dir : Optional[Path, str]
+        Directory to save the split files.
     subset_name : str, default="validation"
         Name of the subset used for output files.
     valid_longitudinal : bool, default=False
@@ -134,9 +134,25 @@ def make_kfold(
         If invalid configuration options are provided.
     """
 
-    # Set default output directory
-    output_dir = output_dir or tsv_path.parent
+    if isinstance(data, str) or isinstance(data, Path):
+        data = Path(data)
+
+        # Set default output directory
+        output_dir = output_dir or data.parent
+        # Load dataset and preprocess
+        df = tsv_to_df(data)
+
+    elif isinstance(data, pd.DataFrame):
+        if not output_dir:
+            raise ValueError("You must specify the output directory.")
+
+        if data.empty:
+            raise ClinicaDLTSVError(f"The input data is empty: {data}")
+        else:
+            df = data
+
     output_dir = Path(output_dir)
+    baseline_df = extract_baseline(df)
 
     # Initialize KFold configuration
     config = KFoldConfig(
@@ -149,10 +165,6 @@ def make_kfold(
 
     config._check_split_dir()
     config._write_json()
-
-    # Load and process dataset
-    df = tsv_to_df(tsv_path)
-    baseline_df = extract_baseline(df)
 
     stratify_labels = preprocess_stratification(
         df=baseline_df,

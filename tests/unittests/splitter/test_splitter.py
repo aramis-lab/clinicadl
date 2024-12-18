@@ -7,8 +7,8 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.preprocessing import PreprocessingT1, PreprocessingT2
+from clinicadl.data.datasets.caps_dataset import CapsDataset
+from clinicadl.data.preprocessing import PreprocessingT1, PreprocessingT2
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
 from clinicadl.splitter.splitter.single_split import SingleSplit, SingleSplitConfig

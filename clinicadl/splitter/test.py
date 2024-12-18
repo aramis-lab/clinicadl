@@ -3,8 +3,8 @@ from pathlib import Path
 import pandas as pd
 import torchio.transforms as transforms
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
-from clinicadl.dataset.preprocessing import PreprocessingT1
+from clinicadl.data.datasets.caps_dataset import CapsDataset
+from clinicadl.data.preprocessing import PreprocessingT1
 from clinicadl.splitter import make_kfold, make_split
 from clinicadl.splitter.dataloader import DataLoaderConfig
 from clinicadl.splitter.splitter import KFold, SingleSplit

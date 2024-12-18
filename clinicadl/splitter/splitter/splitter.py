@@ -9,7 +9,7 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.dataset.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLTSVError

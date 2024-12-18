@@ -8,8 +8,8 @@ from typing import Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from clinicadl.dataset.preprocessing import BasePreprocessing
-from clinicadl.dataset.readers import CapsReader
+from clinicadl.data.preprocessing import BasePreprocessing
+from clinicadl.data.readers import CapsReader
 from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig

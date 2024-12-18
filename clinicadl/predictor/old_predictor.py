@@ -12,7 +12,7 @@ from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.dataset.caps_dataset import (
+from clinicadl.data.caps_dataset import (
     return_dataset,
 )
 from clinicadl.experiment_manager.maps_manager import MapsManager
