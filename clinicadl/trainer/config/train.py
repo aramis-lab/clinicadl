@@ -12,13 +12,13 @@ from pydantic import (
 from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
-from clinicadl.dataset.config.data import DataConfig
+from clinicadl.data.config.data import DataConfig
 from clinicadl.experiment_manager.config import MapsManagerConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStoppingConfig
 from clinicadl.predictor.validation import ValidationConfig
-from clinicadl.splitter.config import SplitConfig
+from clinicadl.splitter.splitter.splitter import SplitterConfig as SplitConfig
 from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
@@ -44,7 +44,6 @@ class TrainConfig(BaseModel, ABC):
     model: NetworkConfig
     optimization: OptimizationConfig
     reproducibility: ReproducibilityConfig
-    split: SplitConfig
     transfer_learning: TransferLearningConfig
     transforms: TransformsConfig
     validation: ValidationConfig
@@ -86,7 +85,6 @@ class TrainConfig(BaseModel, ABC):
         self.model.__dict__.update(config_dict)
         self.optimization.__dict__.update(config_dict)
         self.reproducibility.__dict__.update(config_dict)
-        self.split.__dict__.update(config_dict)
         self.transfer_learning.__dict__.update(config_dict)
         self.transforms.__dict__.update(config_dict)
         self.validation.__dict__.update(config_dict)

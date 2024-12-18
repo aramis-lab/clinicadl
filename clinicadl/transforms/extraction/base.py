@@ -9,6 +9,7 @@ import torch
 import torchio as tio
 from pydantic import computed_field
 
+from clinicadl.dictionary.words import IMAGE, LABEL, SAMPLE
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 

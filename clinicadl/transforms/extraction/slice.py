@@ -14,6 +14,7 @@ from pydantic import (
 )
 from typing_extensions import Self
 
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,
@@ -23,8 +24,6 @@ from clinicadl.utils.loading import nifti_to_tensor
 from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.slice")
-
-PT = ".pt"
 
 
 class SliceSample(Sample):

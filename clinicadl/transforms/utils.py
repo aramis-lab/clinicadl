@@ -3,6 +3,8 @@ from typing import Optional, Union
 import torch
 import torchio as tio
 
+from clinicadl.dictionary.words import LABEL
+
 
 def get_tio_image(
     image: torch.Tensor,
