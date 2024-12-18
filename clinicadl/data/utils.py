@@ -19,8 +19,7 @@ PARTICIPANT_ID = "participant_id"
 SESSION_ID = "session_id"
 
 
-def df_to_tsv(
-    name: str, results_path: Path, df: pd.DataFrame, baseline: bool = False
+def df_to_tsv(tsv_path: Path, df: pd.DataFrame, baseline: bool = False
 ) -> None:
     """
     Write Dataframe into a TSV file and drop duplicates
@@ -46,7 +45,7 @@ def df_to_tsv(
             subset=["participant_id", "session_id"], keep="first", inplace=True
         )
     # df = df[["participant_id", "session_id"]]
-    df.to_csv(results_path / name, sep="\t", index=False)
+    df.to_csv(tsv_path, sep="\t", index=False)
 
 
 def tsv_to_df(tsv_path: Path) -> pd.DataFrame:
