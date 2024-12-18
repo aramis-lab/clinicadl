@@ -9,6 +9,7 @@ import torch
 import torchio as tio
 from pydantic import computed_field
 
+from clinicadl.dictionary.words import IMAGE, LABEL, SAMPLE
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 
@@ -244,7 +245,7 @@ class Extraction(ClinicaDLConfig, ABC):
         IndexError
             If 'sample_index' is greater or equal to the number of samples in the image.
         """
-        if not hasattr(tio_image, "image") or not isinstance(
+        if not hasattr(tio_image, IMAGE) or not isinstance(
             tio_image.image, tio.ScalarImage
         ):
             raise AttributeError(
@@ -268,7 +269,7 @@ class Extraction(ClinicaDLConfig, ABC):
             )
 
         tio_sample.sample = tio_sample.image
-        delattr(tio_sample, "image")
+        delattr(tio_sample, IMAGE)
 
         return tio_sample
 
@@ -278,14 +279,14 @@ class Extraction(ClinicaDLConfig, ABC):
         Checks that a TorchIO Subject is a valid sample, i.e. a sample with a TorchIO ScalarImage
         named 'sample', a label named 'label' and a description named 'description'.
         """
-        if not hasattr(tio_sample, "sample") or not isinstance(
+        if not hasattr(tio_sample, SAMPLE) or not isinstance(
             tio_sample.sample, tio.ScalarImage
         ):
             raise AttributeError(
                 "'tio_sample' must contain ScalarImage named 'image'. Got only the following images: "
                 f"{tio_sample.get_images_names()}"
             )
-        if not hasattr(tio_sample, "label"):
+        if not hasattr(tio_sample, LABEL):
             raise AttributeError(
                 "'tio_sample' must contain an attribute named 'label'."
             )
