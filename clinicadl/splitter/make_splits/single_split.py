@@ -128,7 +128,7 @@ def _chi2_test(x_test: List[int], x_train: List[int]) -> float:
 
 
 def make_split(
-    tsv_path: Path,
+    data: Union[pd.DataFrame, Path, str],
     output_dir: Optional[Union[Path, str]] = None,
     n_test: PositiveFloat = 100,
     subset_name: str = "test",
@@ -143,9 +143,9 @@ def make_split(
 
     Parameters
     ----------
-    tsv_path : Path
-        Path to the input TSV file.
-    output_dir : Optional[Path]
+    data: Union[pd.DataFrame, Path, str],
+        Path to the TSV file or a DataFrame containing participant/session pairs.
+    output_dir : Optional[Path, str]
         Directory to save the split files.
     n_test : PositiveFloat
         If >= 1, specifies the absolute number of test samples. If < 1, treated as a proportion of the dataset.
@@ -167,13 +167,24 @@ def make_split(
     Path
         Directory containing the split files.
     """
+    if isinstance(data, str) or isinstance(data, Path):
+        data = Path(data)
 
-    # Set default output directory
-    output_dir = output_dir or tsv_path.parent
+        # Set default output directory
+        output_dir = output_dir or data.parent
+        # Load dataset and preprocess
+        df = tsv_to_df(data)
+
+    elif isinstance(data, pd.DataFrame):
+        if not output_dir:
+            raise ValueError("You must specify the output directory.")
+
+        if data.empty:
+            raise ClinicaDLTSVError(f"The input data is empty: {data}")
+        else:
+            df = data
+
     output_dir = Path(output_dir)
-
-    # Load dataset and preprocess
-    df = tsv_to_df(tsv_path)
     baseline_df = extract_baseline(df)
 
     n_test = int(n_test) if n_test >= 1 else int(n_test * len(baseline_df))

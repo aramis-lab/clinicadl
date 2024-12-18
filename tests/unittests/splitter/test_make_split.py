@@ -6,7 +6,11 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.preprocessing import PreprocessingT1
 from clinicadl.splitter.make_splits import make_kfold, make_split
+from clinicadl.transforms import Transforms
+from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,
@@ -94,6 +98,23 @@ def test_good_split():
     remove_non_empty_dir(split_dir)
     remove_non_empty_dir(split_dir_bis)
     remove_non_empty_dir(split_dir_bis_bis)
+
+
+def test_make_split_and_kfold_from_df():
+    dataset = CapsDataset(caps_dir, PreprocessingT1(), Transforms())
+    with pytest.raises(ValueError):
+        _ = make_split(dataset.df, n_test=0.2)
+
+    split_dir = make_split(dataset.df, output_dir=Path("from_df"), n_test=1)
+    train_path = split_dir / "train_baseline.tsv"
+    test_path = split_dir / "test_baseline.tsv"
+    assert train_path.exists()
+    assert test_path.exists()
+
+    train_df = pd.read_csv(train_path, sep="\t")
+    test_df = pd.read_csv(test_path, sep="\t")
+    assert len(test_df) + len(train_df) == len(extract_baseline(dataset.df))
+    remove_non_empty_dir(split_dir)
 
 
 def test_bad_split():
