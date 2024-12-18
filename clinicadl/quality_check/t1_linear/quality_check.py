@@ -11,7 +11,7 @@ import torch
 from torch.amp import autocast
 from torch.utils.data import DataLoader
 
-from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.data.caps_dataset_config import CapsDatasetConfig
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError

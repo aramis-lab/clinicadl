@@ -6,13 +6,12 @@ import torch
 import torchio as tio
 from pydantic import NonNegativeInt, PositiveInt, computed_field, field_validator
 
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
 
 from .base import Extraction, Sample
 
 logger = getLogger("clinicadl.extraction.patch")
-
-PT = ".pt"
 
 
 class PatchSample(Sample):

@@ -67,3 +67,5 @@ def get_metadata(
     result_df.to_csv(data_tsv, sep="\t")
 
     logger.info(f"metadata were added in: {data_tsv}")
+
+    return result_df

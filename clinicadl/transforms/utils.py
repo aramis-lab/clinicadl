@@ -3,6 +3,8 @@ from typing import Optional, Union
 import torch
 import torchio as tio
 
+from clinicadl.dictionary.words import LABEL
+
 
 def get_tio_image(
     image: torch.Tensor,
@@ -32,9 +34,9 @@ def get_tio_image(
     tio_image = tio.Subject(image=tio.ScalarImage(tensor=image))
 
     if isinstance(label, torch.Tensor):
-        tio_image.add_image(tio.LabelMap(tensor=label), "label")
+        tio_image.add_image(tio.LabelMap(tensor=label), LABEL)
     else:
-        setattr(tio_image, "label", label)
+        setattr(tio_image, LABEL, label)
 
     for name, mask in masks.items():
         tio_image.add_image(tio.LabelMap(tensor=mask), name)

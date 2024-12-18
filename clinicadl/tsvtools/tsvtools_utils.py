@@ -3,6 +3,7 @@
 from copy import copy
 from logging import getLogger
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -153,7 +154,7 @@ def remove_unicity(values_list):
     return values_list
 
 
-def category_conversion(values_list):
+def category_conversion(values_list) -> List[int]:
     values_np = np.array(values_list)
     unique_classes = np.unique(values_np)
     for index, unique_class in enumerate(unique_classes):

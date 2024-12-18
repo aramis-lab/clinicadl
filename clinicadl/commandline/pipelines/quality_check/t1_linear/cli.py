@@ -2,7 +2,7 @@ import click
 
 from clinicadl.commandline import arguments
 from clinicadl.commandline.modules_options import computational, data, dataloader
-from clinicadl.dataset.caps_dataset_config import CapsDatasetConfig
+from clinicadl.data.caps_dataset_config import CapsDatasetConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import ExtractionMethod, Preprocessing
 
