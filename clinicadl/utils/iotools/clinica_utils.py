@@ -227,7 +227,7 @@ def create_subs_sess_list(
 
     if not file_name:
         file_name = "subjects_sessions_list.tsv"
-    subjs_sess_tsv = open(subjs_sess_tsv_path, "w")
+    subjs_sess_tsv = open(output_dir / file_name, "w")
     subjs_sess_tsv.write("participant_id" + "\t" + "session_id" + "\n")
 
     if is_bids_dir:
