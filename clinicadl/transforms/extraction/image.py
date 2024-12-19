@@ -9,6 +9,7 @@ from pydantic import PositiveInt, computed_field
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.loading import nifti_to_tensor
+from clinicadl.utils.typing import PathLike
 
 from .base import Extraction, Sample
 
@@ -167,7 +168,7 @@ class Image(Extraction):
         tio_sample: tio.Subject,
         participant_id: str,
         session_id: str,
-        image_path: Union[str, Path],
+        image_path: PathLike,
         description: Any = None,
     ) -> ImageSample:
         """
@@ -182,7 +183,7 @@ class Image(Extraction):
             the subject concerned.
         session_id : str
             the session concerned.
-        image_path : Union[str, Path]
+        image_path : PathLike
             the path of the image.
         description : Any (optional, default=None)
             a description of the sample. For compatibility, not necessary in the case of Image.

@@ -1,12 +1,13 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import pandas as pd
 import torch
 
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.utils import tsv_to_df
-from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
+from clinicadl.dictionary.suffixes import PTH, TAR
+from clinicadl.dictionary.words import BEST, GROUPS, PARTICIPANT_ID, SPLIT, TMP
 from clinicadl.experiment_manager.data_group import DataGroup
 from clinicadl.model import ClinicaDLModel
 from clinicadl.splitter.split import Split
@@ -14,10 +15,12 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
 )
+from clinicadl.utils.typing import PathLike
 
 
 class MapsReader:
-    maps_path: Path
+    def __init__(self, maps_path: PathLike) -> None:
+        self.maps_path = Path(maps_path)
 
     def _create_data_group(
         self, name: str, caps_dataset: CapsDataset, split: Optional[int] = None
@@ -51,7 +54,7 @@ class MapsReader:
         return tsv_to_df(path)
 
     def get_model(self) -> ClinicaDLModel:
-        return ClinicaDLModel()
+        return ClinicaDLModel()  # type: ignore
 
     def _write_network_weights(self):
         """TO COMPLETE"""
@@ -65,16 +68,16 @@ class MapsReader:
         """TO COMPLETE"""
         pass
 
+    def split_path(self, split: int):
+        return self.maps_path / (SPLIT + "-" + str(split))
+
     def optimizer_path(self, split: int, resume: bool = False) -> Path:
         """TO COMPLETE"""
 
-        checkpoint_path = (
-            self.maps_path / f"split-{split}" / "tmp" / "optimizer.pth.tar"
-        )
-        return checkpoint_path
+        return self.split_path(split) / TMP / ("optimizer" + PTH + TAR)
 
     def checkpoint_path(self, split: int, resume: bool = False):
-        checkpoint_path = (
-            self.maps_path / f"split-{split}" / "tmp" / "checkpoint.pth.tar"
-        )
-        return checkpoint_path
+        return self.split_path(split) / TMP / ("checkpoint" + PTH + TAR)
+
+    def model_path(self, split: int, metric: str):
+        return self.split_path(split) / (BEST + "-" + metric) / ("model" + PTH + TAR)

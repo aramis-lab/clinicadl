@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 import torch.distributed as dist
@@ -14,6 +14,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
+from clinicadl.experiment_manager.maps_reader import MapsReader
 from clinicadl.metrics.old_metrics.metric_module import RetainBest
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.early_stopping import EarlyStopping
@@ -22,25 +23,26 @@ from clinicadl.splitter.split import Split
 from clinicadl.trainer.tasks_utils import get_criterion
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
+from clinicadl.utils.typing import PathLike
 
 logger = getLogger("clinicadl.trainer")
 
 
 class Trainer:
-    def __init__(self, maps_path: Path) -> None:
+    def __init__(self, maps_path: PathLike) -> None:
         """TO COMPLETE"""
         self.reader = MapsReader(maps_path)
         self.maps_path = maps_path
 
     @classmethod
-    def from_json(cls, config_file: Path, manager: ExperimentManager) -> Trainer:
+    def from_json(cls, config_file: Path) -> Trainer:
         """TO COMPLETE"""
         return Trainer()
 
     @classmethod
     def from_maps(cls, maps_path: str | Path) -> Trainer:
         """TO COMPLETE"""
-        return Trainer()
+        return Trainer(maps_path)
 
     def _init_profiler(self):
         pass
