@@ -11,7 +11,7 @@ import torch
 from pydantic import NonNegativeInt
 from torch.utils.data import Dataset
 
-from clinicadl.data.preprocessing import Preprocessing
+from clinicadl.data.preprocessing import Preprocessing, PreprocessingT1
 from clinicadl.data.readers.caps_reader import CapsReader
 from clinicadl.data.utils import (
     check_df,
@@ -69,7 +69,7 @@ class CapsDataset(Dataset):
     def __init__(
         self,
         caps_directory: Union[str, Path],
-        preprocessing: Preprocessing,
+        preprocessing: Preprocessing = PreprocessingT1(),
         transforms: Transforms = Transforms(),
         data: Optional[Union[pd.DataFrame, str, Path]] = None,
         label: Optional[str] = None,
@@ -208,7 +208,7 @@ class CapsDataset(Dataset):
         }
 
     def _get_df_from_input(
-        self, data: Optional[Union[pd.DataFrame, Path]]
+        self, data: Optional[Union[pd.DataFrame, Path, str]]
     ) -> pd.DataFrame:
         """
         Generates or validates the DataFrame from the input data.
@@ -248,7 +248,7 @@ class CapsDataset(Dataset):
 
         return df
 
-    def _check_data_instance(self, data: Optional[Union[pd.DataFrame, Path]] = None):
+    def _check_data_instance(self, data: Optional[Union[pd.DataFrame, Path, str]]):
         if isinstance(data, str):
             data = Path(data)
 
