@@ -1059,7 +1059,7 @@ class Predictor:
         Compute the output tensors and saves them in the MAPS.
 
         Args:
-            dataset (clinicadl.dataset.caps_dataset.CapsDataset): wrapper of the data set.
+            dataset (clinicadl.data.datasets.CapsDataset): wrapper of the data set.
             data_group (str): name of the data group used for the task.
             split (int): split number.
             selection_metrics (list[str]): metrics used for model selection.
