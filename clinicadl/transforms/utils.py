@@ -1,7 +1,9 @@
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 import torch
 import torchio as tio
+
+Transform = Callable[[tio.Subject], tio.Subject]
 
 
 def get_tio_image(

@@ -6,7 +6,7 @@ from pydantic import NonNegativeInt, computed_field, field_validator
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .enum import AnatomicalLabel, ImplementedTransform, NumericalAxis
+from .enum import AnatomicalLabel, ImplementedTransform, NumericalAxis, TransformType
 
 
 class TransformConfig(ClinicaDLConfig, ABC):
@@ -17,6 +17,12 @@ class TransformConfig(ClinicaDLConfig, ABC):
     @abstractmethod
     def name(self) -> ImplementedTransform:
         """The name of the transform."""
+
+    @computed_field
+    @property
+    def _type(self) -> TransformType:
+        """The source where the transform can be found."""
+        return TransformType.TORCHIO
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:

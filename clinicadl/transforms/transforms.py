@@ -1,13 +1,17 @@
 from logging import getLogger
-from typing import Callable, Tuple
+from typing import Tuple, Union
 
 import torchio as tio
 from pydantic import model_validator
 
 from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
+from clinicadl.transforms.config.intensity import NanRemovalConfig
 from clinicadl.transforms.extraction import Extraction, Image
-from clinicadl.transforms.factory import NanRemoval
 from clinicadl.utils.config import ClinicaDLConfig
+
+from .config import TransformConfig
+from .factory import get_transform_from_config
+from .utils import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
 
@@ -24,13 +28,13 @@ class Transforms(ClinicaDLConfig):
     ----------
     extraction : Extraction
         The extraction method used for preprocessing the data.
-    image_transforms : list[Callable]
+    image_transforms : list[Union[Transform, TransformConfig]]
         A list of transformation functions for images.
-    sample_transforms : list[Callable]
+    sample_transforms : list[Union[Transform, TransformConfig]]
         A list of transformation functions for samples.
-    image_augmentations : list[Callable]
+    image_augmentations : list[Union[Transform, TransformConfig]]
         A list of augmentation functions for images.
-    sample_augmentations : list[Callable]
+    sample_augmentations : list[Union[Transform, TransformConfig]]
         A list of augmentation functions for samples (e.g., masks or labels).
 
     Methods
@@ -44,10 +48,14 @@ class Transforms(ClinicaDLConfig):
     """
 
     extraction: Extraction = Image()
-    image_transforms: list[Callable] = [NanRemoval()]
-    sample_transforms: list[Callable] = []
-    image_augmentations: list[Callable] = []
-    sample_augmentations: list[Callable] = []
+    image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
+    sample_transforms: list[Union[Transform, TransformConfig]] = []
+    image_augmentations: list[Union[Transform, TransformConfig]] = []
+    sample_augmentations: list[Union[Transform, TransformConfig]] = []
+    _image_transforms_processed: list[Transform] = []
+    _sample_transforms_processed: list[Transform] = []
+    _image_augmentations_processed: list[Transform] = []
+    _sample_augmentations_processed: list[Transform] = []
 
     @model_validator(mode="after")
     def check_transforms(self):
@@ -80,7 +88,36 @@ class Transforms(ClinicaDLConfig):
                     self.image_augmentations.append(aug)
                 self.sample_augmentations = []
 
+        self._image_transforms_processed = self._config_to_transform(
+            self.image_transforms
+        )
+        self._sample_transforms_processed = self._config_to_transform(
+            self.sample_transforms
+        )
+        self._image_augmentations_processed = self._config_to_transform(
+            self.image_augmentations
+        )
+        self._sample_augmentations_processed = self._config_to_transform(
+            self.sample_augmentations
+        )
+
         return self
+
+    @staticmethod
+    def _config_to_transform(
+        list_transforms: list[Union[Transform, TransformConfig]],
+    ) -> list[Transform]:
+        """
+        Converts TransformConfig objects to transforms.
+        """
+        only_transforms = []
+        for transform in list_transforms:
+            if isinstance(transform, TransformConfig):
+                only_transforms.append(get_transform_from_config(transform))
+            else:
+                only_transforms.append(transform)
+
+        return only_transforms
 
     def __str__(self) -> str:
         """
@@ -97,34 +134,38 @@ class Transforms(ClinicaDLConfig):
         transform_str = f"Transforms Configuration for {self.extraction} extraction:\n"
 
         def _to_str(
-            list_: list[Callable] = [],
-            object_: str = SAMPLE,
-            transfo_: str = TRANSFORMATION,
+            list_: list[Transform],
+            object_: str,
+            transfo_: str,
         ):
             str_ = ""
             if list_:
                 str_ += f"{object_} {transfo_}:\n"
-                for transform in self.image_transforms:
+                for transform in list_:
                     str_ += f"  - {transform.__class__.__name__}\n"
             else:
                 str_ += f"No {object_} {transfo_} applied.\n"
 
             return str_
 
-        transform_str += _to_str(self.image_transforms, object_=IMAGE)
-        transform_str += _to_str(self.sample_transforms, object_=SAMPLE)
         transform_str += _to_str(
-            self.image_augmentations, object_=IMAGE, transfo_=AUGMENTATION
+            self._image_transforms_processed, object_=IMAGE, transfo_=TRANSFORMATION
         )
         transform_str += _to_str(
-            self.sample_augmentations, object_=SAMPLE, transfo_=AUGMENTATION
+            self._sample_transforms_processed, object_=SAMPLE, transfo_=TRANSFORMATION
+        )
+        transform_str += _to_str(
+            self._image_augmentations_processed, object_=IMAGE, transfo_=AUGMENTATION
+        )
+        transform_str += _to_str(
+            self._sample_augmentations_processed, object_=SAMPLE, transfo_=AUGMENTATION
         )
 
         return transform_str
 
     def get_transforms(
         self,
-    ) -> Tuple[tio.Compose, tio.Compose, tio.Compose, tio.Compose]:
+    ) -> Tuple[Transform, Transform, Transform, Transform]:
         """
         Composes and returns the transformations and augmentations for images and samples.
 
@@ -142,10 +183,16 @@ class Transforms(ClinicaDLConfig):
             " and sample augmentations (during training only)."
         )
 
-        image_transforms = tio.Compose(self.image_transforms)
-        sample_transforms = tio.Compose(self.sample_transforms)
-        image_augmentations = tio.Compose(self.image_augmentations)
-        sample_augmentations = tio.Compose(self.sample_augmentations)
+        image_transforms = tio.Compose(self._image_transforms_processed)
+        sample_transforms = tio.Compose(
+            self._config_to_transform(self._sample_transforms_processed)
+        )
+        image_augmentations = tio.Compose(
+            self._config_to_transform(self._image_augmentations_processed)
+        )
+        sample_augmentations = tio.Compose(
+            self._config_to_transform(self._sample_augmentations_processed)
+        )
 
         return (
             image_transforms,

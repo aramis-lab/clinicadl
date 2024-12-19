@@ -10,6 +10,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedTransform, TransformConfig, _MaskingMethodConfig
+from .enum import TransformType
 
 __all__ = ["RescaleIntensityConfig", "ZNormalizationConfig", "ClampConfig"]
 
@@ -89,3 +90,23 @@ class ClampConfig(TransformConfig):
             )
 
         return self
+
+
+class NanRemovalConfig(TransformConfig):
+    """Config class for NanRemoval transform."""
+
+    nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
+    posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
+    posneg: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedTransform:
+        """The name of the transform."""
+        return ImplementedTransform.NAN_REMOVAL
+
+    @computed_field
+    @property
+    def _type(self) -> TransformType:
+        """The source where the transform can be found."""
+        return TransformType.HOMEMADE
