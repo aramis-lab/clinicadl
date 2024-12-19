@@ -11,6 +11,7 @@ from pydantic import computed_field
 from clinicadl.dictionary.words import IMAGE, LABEL
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.base_extraction")
 
@@ -153,7 +154,7 @@ class Extraction(ClinicaDLConfig, ABC):
         tio_sample: tio.Subject,
         participant_id: str,
         session_id: str,
-        image_path: Union[str, Path],
+        image_path: PathType,
         description: Any,
     ) -> Sample:
         """
@@ -168,7 +169,7 @@ class Extraction(ClinicaDLConfig, ABC):
             the subject concerned.
         session_id : str
             the session concerned.
-        image_path : Union[str, Path]
+        image_path : PathType
             the path of the base image, from which the sample was extracted.
         description : Any
             a description of the sample (e.g. slice position or patch index).

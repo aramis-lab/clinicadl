@@ -24,6 +24,7 @@ from clinicadl.transforms.utils import get_tio_image
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
+from clinicadl.utils.typing import DataType, PathType
 
 logger = getLogger("clinicadl.caps_dataset")
 
@@ -68,10 +69,10 @@ class CapsDataset(Dataset):
 
     def __init__(
         self,
-        caps_directory: Union[str, Path],
+        caps_directory: PathType,
         preprocessing: Preprocessing = PreprocessingT1(),
         transforms: Transforms = Transforms(),
-        data: Optional[Union[pd.DataFrame, str, Path]] = None,
+        data: Optional[DataType] = None,
         label: Optional[str] = None,
         masks: Optional[list[str]] = None,
     ):
@@ -207,9 +208,7 @@ class CapsDataset(Dataset):
             "extraction": self.extraction.model_dump(),
         }
 
-    def _get_df_from_input(
-        self, data: Optional[Union[pd.DataFrame, Path, str]]
-    ) -> pd.DataFrame:
+    def _get_df_from_input(self, data: Optional[DataType]) -> pd.DataFrame:
         """
         Generates or validates the DataFrame from the input data.
 
@@ -248,7 +247,7 @@ class CapsDataset(Dataset):
 
         return df
 
-    def _check_data_instance(self, data: Optional[Union[pd.DataFrame, Path, str]]):
+    def _check_data_instance(self, data: Optional[DataType]):
         if isinstance(data, str):
             data = Path(data)
 
@@ -550,7 +549,7 @@ class CapsDataset(Dataset):
         """
         self.eval_mode = False
 
-    def subset(self, data: Optional[Union[pd.DataFrame, Path]] = None) -> CapsDataset:
+    def subset(self, data: Optional[DataType] = None) -> CapsDataset:
         df = self._check_data_instance(data)
 
         common_rows = pd.merge(df, self.df, how="inner")

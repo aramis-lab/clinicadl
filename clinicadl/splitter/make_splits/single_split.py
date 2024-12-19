@@ -13,6 +13,7 @@ from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
+from clinicadl.utils.typing import DataType, PathType
 
 logger = getLogger("clinicadl.splitter.single_split")
 
@@ -128,8 +129,8 @@ def _chi2_test(x_test: List[int], x_train: List[int]) -> float:
 
 
 def make_split(
-    data: Union[pd.DataFrame, Path, str],
-    output_dir: Optional[Union[Path, str]] = None,
+    data: DataType,
+    output_dir: Optional[PathType] = None,
     n_test: PositiveFloat = 100,
     subset_name: str = "test",
     p_categorical_threshold: float = 0.50,
