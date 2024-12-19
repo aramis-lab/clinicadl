@@ -151,10 +151,10 @@ def get_subject_session_list(
 
     Parameters
     ----------
-    input_dir : PathLike
+    input_dir : PathType
         A BIDS or CAPS directory path.
 
-    subject_session_file : PathLike, optional
+    subject_session_file : PathType, optional
         A subjects-sessions file in TSV format.
 
     is_bids_dir : bool, optional
@@ -165,7 +165,7 @@ def get_subject_session_list(
         Specify if the list uses the sessions listed in the sessions.tsv files.
         Default=False.
 
-    tsv_dir : PathLike, optional
+    tsv_dir : PathType, optional
         If TSV file does not exist, it will be created in output_dir.
         If not specified, output_dir will be in <tmp> folder
 
@@ -330,7 +330,7 @@ def _common_checks(directory: Path, folder_type: str) -> None:
 
     Parameters
     ----------
-    directory : PathLike
+    directory : PathType
         Directory to check.
 
     folder_type : {"BIDS", "CAPS"}
@@ -358,7 +358,7 @@ def check_bids_folder(bids_directory: Path) -> None:
 
     Parameters
     ----------
-    bids_directory : PathLike
+    bids_directory : PathType
         The input folder to check.
 
     Raises
@@ -740,7 +740,7 @@ def clinicadl_file_reader(
     sessions : List[str]
         List of sessions. Must be same size as `subjects` and must correspond.
 
-    input_directory : PathLike
+    input_directory : PathType
         Path to the BIDS or CAPS directory to read from.
 
     information : Dict

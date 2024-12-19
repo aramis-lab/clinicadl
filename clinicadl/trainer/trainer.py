@@ -23,13 +23,13 @@ from clinicadl.splitter.split import Split
 from clinicadl.trainer.tasks_utils import get_criterion
 from clinicadl.utils import cluster
 from clinicadl.utils.logwriter import LogWriter
-from clinicadl.utils.typing import PathLike
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.trainer")
 
 
 class Trainer:
-    def __init__(self, maps_path: PathLike) -> None:
+    def __init__(self, maps_path: PathType) -> None:
         """TO COMPLETE"""
         self.reader = MapsReader(maps_path)
         self.maps_path = maps_path

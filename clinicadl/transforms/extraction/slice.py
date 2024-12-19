@@ -20,7 +20,7 @@ from clinicadl.utils.enum import (
     SliceDirection,
 )
 from clinicadl.utils.loading import nifti_to_tensor
-from clinicadl.utils.typing import PathLike
+from clinicadl.utils.typing import PathType
 
 from .base import Extraction, Sample
 
@@ -307,7 +307,7 @@ class Slice(Extraction):
         tio_sample: tio.Subject,
         participant_id: str,
         session_id: str,
-        image_path: PathLike,
+        image_path: PathType,
         description: int,
     ) -> SliceSample:
         """
@@ -322,7 +322,7 @@ class Slice(Extraction):
             the subject concerned.
         session_id : str
             the session concerned.
-        image_path : PathLike
+        image_path : PathType
             the path of the image from which the slice is extracted.
         description : int
             the position of the slice in the original image.

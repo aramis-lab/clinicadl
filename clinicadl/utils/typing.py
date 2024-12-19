@@ -3,6 +3,6 @@ from typing import Optional, Union
 
 import pandas as pd
 
-PathLike = Union[Path, str]
+PathType = Union[Path, str]
 
-DataType = Union[PathLike, pd.DataFrame]
+DataType = Union[PathType, pd.DataFrame]

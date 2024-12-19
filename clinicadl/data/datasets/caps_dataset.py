@@ -24,7 +24,7 @@ from clinicadl.transforms.utils import get_tio_image
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
-from clinicadl.utils.typing import DataType, PathLike
+from clinicadl.utils.typing import DataType, PathType
 
 logger = getLogger("clinicadl.caps_dataset")
 
@@ -69,7 +69,7 @@ class CapsDataset(Dataset):
 
     def __init__(
         self,
-        caps_directory: PathLike,
+        caps_directory: PathType,
         preprocessing: Preprocessing = PreprocessingT1(),
         transforms: Transforms = Transforms(),
         data: Optional[DataType] = None,

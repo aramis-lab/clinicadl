@@ -11,7 +11,7 @@ from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.kfold import KFoldConfig
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
-from clinicadl.utils.typing import DataType, PathLike
+from clinicadl.utils.typing import DataType, PathType
 
 
 def _validate_stratification(
@@ -100,7 +100,7 @@ def preprocess_stratification(
 
 def make_kfold(
     data: DataType,
-    output_dir: Optional[PathLike] = None,
+    output_dir: Optional[PathType] = None,
     subset_name: str = "validation",
     valid_longitudinal: bool = False,
     n_splits: PositiveInt = 5,

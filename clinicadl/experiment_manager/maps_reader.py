@@ -15,11 +15,11 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
 )
-from clinicadl.utils.typing import PathLike
+from clinicadl.utils.typing import PathType
 
 
 class MapsReader:
-    def __init__(self, maps_path: PathLike) -> None:
+    def __init__(self, maps_path: PathType) -> None:
         self.maps_path = Path(maps_path)
 
     def _create_data_group(
