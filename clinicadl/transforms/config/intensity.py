@@ -10,6 +10,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedTransform, TransformConfig, _MaskingMethodConfig
+from .utils import is_sorted
 
 __all__ = ["RescaleIntensityConfig", "ZNormalizationConfig", "ClampConfig"]
 
@@ -42,7 +43,7 @@ class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
         elif isinstance(v, tuple):
             cls._check_percentile(v[0])
             cls._check_percentile(v[1])
-            if v[0] > v[1]:
+            if not is_sorted(v):
                 raise ValueError(
                     f"In 'percentiles', the first percentile should be smaller than the second one. Got{v}"
                 )

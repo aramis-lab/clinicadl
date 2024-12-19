@@ -18,6 +18,12 @@ class ImplementedTransform(str, BaseEnum):
     PAD = "pad"
     REMAP_LABELS = "RemapLabels"
     ONE_HOT = "OneHot"
+    RANDOM_FLIP = "RandomFlip"
+    RANDOM_AFFINE = "RandomAffine"
+    RANDOM_DEFORMATION = "RandomElasticDeformation"
+    RANDOM_ANISOTROPY = "RandomAnisotropy"
+    RANDOM_MOTION = "RandomMotion"
+    RANDOM_GHOSTING = "RandomGhosting"
 
 
 class AnatomicalLabel(str, Enum):
@@ -110,3 +116,24 @@ class AnatomicalAxis(str, Enum):
     LEFT_RIGHT = "LR"
     ANTERIOR_POSTERIOR = "AP"
     INFERIOR_SUPERIOR = "IS"
+
+
+class NumericalAxis(str, Enum):
+    """
+    Indexation of spatial axes in 3D.
+    """
+
+    ZERO = 0
+    ONE = 1
+    TWO = 2
+
+
+class LockedBordersMode(int, Enum):
+    """
+    Modes for 'locked_borders' argument in RandomElasticDeformation.
+    see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomElasticDeformation
+    """
+
+    ZERO = 0
+    ONE = 1
+    TWO = 2
