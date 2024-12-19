@@ -208,7 +208,7 @@ class CapsDataset(Dataset):
         }
 
     def _get_df_from_input(
-        self, data: Optional[Union[pd.DataFrame, Path]]
+        self, data: Optional[Union[pd.DataFrame, Path, str]]
     ) -> pd.DataFrame:
         """
         Generates or validates the DataFrame from the input data.
