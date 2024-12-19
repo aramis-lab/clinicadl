@@ -8,6 +8,7 @@ from pydantic import NonNegativeInt, PositiveInt, computed_field, field_validato
 
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
+from clinicadl.utils.loading import nifti_to_tensor
 
 from .base import Extraction, Sample
 
@@ -129,7 +130,7 @@ class Patch(Extraction):
         Each patch tensor is returned along with its associated file path.
         """
 
-        image_tensor = self.load_image(nii_path)
+        image_tensor = nifti_to_tensor(nii_path)
         patches_tensor = self.get_patches(image_tensor)
         patch_list = [
             (self.sample_path(nii_path, idx), patches_tensor[idx])
@@ -253,6 +254,7 @@ class Patch(Extraction):
         participant_id: str,
         session_id: str,
         image_path: Union[str, Path],
+        description: int,
     ) -> PatchSample:
         """
         Puts all the output information in an PatchSample object.
@@ -260,41 +262,76 @@ class Patch(Extraction):
         Parameters
         ----------
         tio_sample : tio.Subject
-            a TorchIO Subject corresponding to the patch, with at least a ScalarImage named 'sample',
-            an attribute named 'label' and an attribute named 'description'.
+            a TorchIO Subject corresponding to the patch, with at least a ScalarImage named 'image'
+            and an attribute named 'label'.
         participant_id : str
             the subject concerned.
         session_id : str
             the session concerned.
         image_path : Union[str, Path]
             the path of the image from which the patch is extracted.
+        description : int
+            the patch index.
 
         Returns
         -------
         PatchSample
-            a PatchSample object with all the relevant information on the patch.
+            a PatchSample object with the patch and all the relevant information on the patch.
 
         Raises
         ------
         AttributeError
-            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
-            'label' and 'description'.
+            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
+            'label'.
         """
-        self._check_tio_sample(tio_sample)
+        self._check_tio_subject(tio_sample)
 
-        sample = tio_sample.sample.tensor
+        patch = tio_sample.image.tensor
         if isinstance(tio_sample.label, tio.Image):
             label = tio_sample.label.tensor
         else:
             label = tio_sample.label
 
         return PatchSample(
-            sample=sample,
+            sample=patch,
             participant_id=participant_id,
             session_id=session_id,
             image_path=str(image_path),
             label=label,
-            patch_index=tio_sample.description,
+            patch_index=description,
             patch_size=self.patch_size,
             patch_stride=self.stride,
         )
+
+    def extract_tio_sample(
+        self, tio_image: tio.Subject, sample_index: int
+    ) -> Tuple[tio.Subject, int]:
+        """
+        Extracts a patch from a TorchIO Subject.
+
+        Parameters
+        ----------
+        tio_image : tio.Subject
+            The TorchIO Subject to perform extraction on.
+        sample_index : int
+            Index indicating the patch to extract.
+
+        Returns
+        -------
+        tio.Subject
+            A new TorchIO Subject with the extracted patches for each image
+            present in the original `tio_image`. The patch extracted from an
+            image is accessible via the same name as was the image in the original
+            `tio_image`.
+        int
+            The patch index. For compatibility, as the patch index is always equal
+            to `sample_index` here.
+
+        Raises
+        ------
+        ValueError
+            If all the images in `tio_image` don't have the same shape.
+        IndexError
+            If 'sample_index' is greater or equal to the number of patches in the images.
+        """
+        return super().extract_tio_sample(tio_image, sample_index)

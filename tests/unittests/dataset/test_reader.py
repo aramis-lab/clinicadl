@@ -1,18 +1,13 @@
 from pathlib import Path
 
-import nibabel as nib
-import numpy as np
 import pytest
 
-from clinicadl.data.preprocessing import PreprocessingT1, PreprocessingT2
+from clinicadl.data.preprocessing import PreprocessingT1
 from clinicadl.data.readers import CapsReader
-from clinicadl.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
-    ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
 )
 
 PARTICIPANT_ID = "participant_id"
@@ -29,7 +24,7 @@ def test_good_caps_reader():
     assert str(caps_reader) == f"CAPS reader for {caps_dir}"
     assert (
         caps_reader.get_preprocessing_folder(
-            "sub-000", "ses-M000", Preprocessing.T1_LINEAR
+            "sub-000", "ses-M000", PreprocessingMethod.T1_LINEAR
         )
         == caps_dir / "subjects" / "sub-000" / "ses-M000" / "t1_linear"
     )

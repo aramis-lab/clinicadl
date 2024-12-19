@@ -1,7 +1,7 @@
 import pytest
 
 from clinicadl.data.config import FileType
-from clinicadl.utils.enum import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 
 
 def test_good_filetype():
@@ -13,8 +13,8 @@ def test_good_filetype():
 
     assert config.pattern == "test"
     assert config.description == "file type configurztion for unittests"
-    assert isinstance(config.needed_pipeline, Preprocessing)
-    assert config.needed_pipeline == Preprocessing.T1_LINEAR
+    assert isinstance(config.needed_pipeline, PreprocessingMethod)
+    assert config.needed_pipeline == PreprocessingMethod.T1_LINEAR
 
 
 def test_bad_filetype():

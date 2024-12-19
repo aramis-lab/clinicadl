@@ -1,35 +1,31 @@
 from logging import getLogger
-from typing import Optional, Union
+from typing import Optional
 
-from pydantic import field_validator
+from pydantic import computed_field
 
-from clinicadl.data.preprocessing.base import BasePreprocessing
 from clinicadl.utils.enum import (
-    Preprocessing,
+    PreprocessingMethod,
     SUVRReferenceRegions,
     Tracer,
 )
 from clinicadl.utils.iotools.clinica_utils import FileType
 
+from .base import _PreprocessingWithCrop
+
 logger = getLogger("clinicadl.preprocessing.pet")
 
 
-class PreprocessingPET(BasePreprocessing):
-    """
-    Configuration for PET image preprocessing
-    """
+class PreprocessingPET(_PreprocessingWithCrop):
+    """Config class for Clinica's 'pet-linear' preprocessing."""
 
     tracer: Tracer = Tracer.FFDG
     suvr_reference_region: SUVRReferenceRegions = SUVRReferenceRegions.CEREBELLUMPONS2
-    preprocessing: Preprocessing = Preprocessing.PET_LINEAR
 
-    @field_validator("tracer", mode="before")
-    def check_tracer(cls, v: Union[str, Tracer]):
-        return Tracer(v)
-
-    @field_validator("suvr_reference_region", mode="before")
-    def check_suvr_reference_region(cls, v: Union[str, SUVRReferenceRegions]):
-        return SUVRReferenceRegions(v)
+    @computed_field
+    @property
+    def preprocessing(self) -> PreprocessingMethod:
+        """The preprocessing method."""
+        return PreprocessingMethod.PET_LINEAR
 
     def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         trc, rec, description = "", "", "PET data"
@@ -46,10 +42,10 @@ class PreprocessingPET(BasePreprocessing):
         des_crop = "" if self.use_uncropped_image else "_desc-Crop"
 
         return FileType(
-            pattern=f"pet_linear/*_trc-{self.tracer.value}_space-MNI152NLin2009cSym{des_crop}_res-1x1x1_suvr-{self.suvr_reference_region.value}_pet.nii.gz",
+            pattern=f"pet_linear/*_trc-{self.tracer}_space-MNI152NLin2009cSym{des_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_pet.nii.gz",
             description="",
             needed_pipeline="pet-linear",
         )
 
     def __str__(self):
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} PET images with tracer {self.tracer.value} and suvr reference region {self.suvr_reference_region.value}. "
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} PET images with tracer {self.tracer} and suvr reference region {self.suvr_reference_region}. "

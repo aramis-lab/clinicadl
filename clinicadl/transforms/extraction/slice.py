@@ -18,8 +18,8 @@ from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,
-    SliceMode,
 )
+from clinicadl.utils.loading import nifti_to_tensor
 
 from .base import Extraction, Sample
 
@@ -157,7 +157,7 @@ class Slice(Extraction):
             A list of tuples, where each tuple contains an extracted slice,
             and the path where to store it.
         """
-        image_tensor = self.load_image(nii_path)
+        image_tensor = nifti_to_tensor(nii_path)
         slices = []
         for i in range(self.num_samples_per_image(image_tensor)):
             slice_tensor = self.extract_sample(image_tensor, i).squeeze(
@@ -307,6 +307,7 @@ class Slice(Extraction):
         participant_id: str,
         session_id: str,
         image_path: Union[str, Path],
+        description: int,
     ) -> SliceSample:
         """
         Puts all the output information in an SliceSample object.
@@ -314,40 +315,75 @@ class Slice(Extraction):
         Parameters
         ----------
         tio_sample : tio.Subject
-            a TorchIO Subject corresponding to the slice, with at least a ScalarImage named 'sample',
-            an attribute named 'label' and an attribute named 'description'.
+            a TorchIO Subject corresponding to the slice, with at least a ScalarImage named 'image',
+            an attribute named 'label'. Slices inside should be in 4D (including a channel dimension).
         participant_id : str
             the subject concerned.
         session_id : str
             the session concerned.
         image_path : Union[str, Path]
             the path of the image from which the slice is extracted.
+        description : int
+            the position of the slice in the original image.
 
         Returns
         -------
         SliceSample
-            a SliceSample object with all the relevant information on the slice.
+            a SliceSample object with the slice (a 3D tensor with a channel dimension)
+            and all the relevant information on the slice.
 
         Raises
         ------
         AttributeError
-            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
-            'label' and 'description'.
+            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
+            'label'.
         """
-        self._check_tio_sample(tio_sample)
+        self._check_tio_subject(tio_sample)
 
-        sample = tio_sample.sample.tensor.squeeze(self.slice_direction + 1)
+        slice_ = tio_sample.image.tensor.squeeze(self.slice_direction + 1)
         if isinstance(tio_sample.label, tio.Image):
             label = tio_sample.label.tensor.squeeze(self.slice_direction + 1)
         else:
             label = tio_sample.label
 
         return SliceSample(
-            sample=sample,
+            sample=slice_,
             participant_id=participant_id,
             session_id=session_id,
             image_path=str(image_path),
             label=label,
-            slice_position=tio_sample.description,
+            slice_position=description,
             slice_direction=self.slice_direction,
         )
+
+    def extract_tio_sample(
+        self, tio_image: tio.Subject, sample_index: int
+    ) -> Tuple[tio.Subject, int]:
+        """
+        Extracts a slice from a TorchIO Subject.
+
+        Parameters
+        ----------
+        tio_image : tio.Subject
+            The TorchIO Subject to perform extraction on.
+        sample_index : int
+            Index indicating the slice to extract.
+
+        Returns
+        -------
+        tio.Subject
+            A new TorchIO Subject with the extracted slices for each image
+            present in the original `tio_image`. The slice extracted from an
+            image is accessible via the same name as was the image in the original
+            `tio_image`.
+        int
+            The slice position in the original image.
+
+        Raises
+        ------
+        ValueError
+            If all the images in `tio_image` don't have the same shape.
+        IndexError
+            If 'sample_index' is greater or equal to the number of slices in the images.
+        """
+        return super().extract_tio_sample(tio_image, sample_index)

@@ -1,21 +1,27 @@
 from logging import getLogger
-from pathlib import Path
 from typing import Optional
 
-from clinicadl.data.preprocessing.base import BasePreprocessing
-from clinicadl.utils.enum import Preprocessing
+from pydantic import computed_field
+
+from clinicadl.data.preprocessing import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.iotools.clinica_utils import FileType
 
 logger = getLogger("clinicadl.preprocessing.custom")
 
 
-class PreprocessingCustom(BasePreprocessing):
+class PreprocessingCustom(Preprocessing):
     """
     Configuration for custom preprocessing with a user-defined suffix.
     """
 
     custom_suffix: str = ""
-    preprocessing: Preprocessing = Preprocessing.CUSTOM
+
+    @computed_field
+    @property
+    def preprocessing(self) -> PreprocessingMethod:
+        """The preprocessing method."""
+        return PreprocessingMethod.CUSTOM
 
     def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         return FileType(
@@ -30,4 +36,4 @@ class PreprocessingCustom(BasePreprocessing):
         )
 
     def __str__(self):
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} custom images with suffix {self.custom_suffix} "
+        return f"Preprocessing of custom images with suffix {self.custom_suffix} "

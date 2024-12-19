@@ -17,7 +17,7 @@ from urllib.request import Request, urlopen
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator
 
 from clinicadl.utils.exceptions import (
     ClinicaDLBIDSError,
