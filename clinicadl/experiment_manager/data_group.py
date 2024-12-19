@@ -8,7 +8,6 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.utils import df_to_tsv, tsv_to_df
 from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.dictionary.words import DATA, GROUPS, MAPS, SPLIT, TRAIN, VALIDATION
-from clinicadl.splitter.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 
 TRAIN_VAL = [TRAIN, VALIDATION]

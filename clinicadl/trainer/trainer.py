@@ -26,36 +26,6 @@ from clinicadl.utils.logwriter import LogWriter
 logger = getLogger("clinicadl.trainer")
 
 
-class MapsReader:
-    maps_path: Path
-
-    def get_model(self) -> ClinicaDLModel:
-        return ClinicaDLModel()
-
-    def _write_network_weights(self):
-        pass
-
-    def _write_optim_weights(self):
-        pass
-
-    def write_tensor(self):
-        pass
-
-    def optimizer_path(self, split: int, resume: bool = False) -> Path:
-        """TO COMPLETE"""
-
-        checkpoint_path = (
-            self.maps_path / f"split-{split}" / "tmp" / "optimizer.pth.tar"
-        )
-        return checkpoint_path
-
-    def checkpoint_path(self, split: int, resume: bool = False):
-        checkpoint_path = (
-            self.maps_path / f"split-{split}" / "tmp" / "checkpoint.pth.tar"
-        )
-        return checkpoint_path
-
-
 class Trainer:
     def __init__(self, maps_path: Path) -> None:
         """TO COMPLETE"""
