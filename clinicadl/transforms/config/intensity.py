@@ -10,7 +10,6 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedTransform, TransformConfig, _MaskingMethodConfig
-from .utils import is_sorted
 
 __all__ = ["RescaleIntensityConfig", "ZNormalizationConfig", "ClampConfig"]
 
@@ -37,16 +36,13 @@ class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
     @field_validator("percentiles", mode="after")
     @classmethod
     def validator_percentiles(cls, v):
-        """Checks that percentiles are between 0 and 100."""
+        """Checks that percentiles are between 0 and 100, and are sorted if a couple."""
         if isinstance(v, float):
             cls._check_percentile(v)
         elif isinstance(v, tuple):
             cls._check_percentile(v[0])
             cls._check_percentile(v[1])
-            if not is_sorted(v):
-                raise ValueError(
-                    f"In 'percentiles', the first percentile should be smaller than the second one. Got{v}"
-                )
+            cls._check_spatial_tuple(v, "percentiles")
         return v
 
     @staticmethod

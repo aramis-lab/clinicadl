@@ -4,9 +4,8 @@ from pydantic import PositiveInt, computed_field, field_validator
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedTransform, TransformConfig
+from .base import Bounds, ImplementedTransform, TransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
-from .utils import Bounds
 
 __all__ = ["ResizeConfig", "EnsureShapeMultipleConfig", "CropConfig", "PadConfig"]
 

@@ -15,15 +15,22 @@ class ImplementedTransform(str, BaseEnum):
     RESIZE = "Resize"
     ENSURE_MULTIPLE = "EnsureShapeMultiple"
     CROP = "Crop"
-    PAD = "pad"
+    PAD = "Pad"
     REMAP_LABELS = "RemapLabels"
     ONE_HOT = "OneHot"
+
     RANDOM_FLIP = "RandomFlip"
     RANDOM_AFFINE = "RandomAffine"
     RANDOM_DEFORMATION = "RandomElasticDeformation"
     RANDOM_ANISOTROPY = "RandomAnisotropy"
     RANDOM_MOTION = "RandomMotion"
     RANDOM_GHOSTING = "RandomGhosting"
+    RANDOM_SPIKE = "RandomSpike"
+    RANDOM_BIAS_FIELD = "RandomBiasField"
+    RANDOM_BLUR = "RandomBlurConfig"
+    RANDOM_NOISE = "RandomNoise"
+    RANDOM_SWAP = "RandomSwap"
+    RANDOM_GAMMA = "RandomGamma"
 
 
 class AnatomicalLabel(str, Enum):
