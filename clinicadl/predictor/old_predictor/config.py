@@ -41,7 +41,6 @@ class PredictConfig(BaseModel):
     data: DataConfig
     validation: ValidationConfig
     computational: ComputationalConfig
-    dataloader: DataLoaderConfig
     split: SplitConfig
     transforms: TransformsConfig
 

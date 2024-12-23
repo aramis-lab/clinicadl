@@ -23,6 +23,7 @@ from clinicadl.trainer.transfer_learning import TransferLearningConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.enum import Task
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.training_config")
 
@@ -89,13 +90,13 @@ class TrainConfig(BaseModel, ABC):
         self.transforms.__dict__.update(config_dict)
         self.validation.__dict__.update(config_dict)
 
-    def update_with_toml(self, path: Union[str, Path]) -> None:
+    def update_with_toml(self, path: PathType) -> None:
         """
         Updates the configs with a TOML configuration file.
 
         Parameters
         ----------
-        path : Union[str, Path]
+        path : PathType
             Path to the TOML configuration file.
         """
         from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file

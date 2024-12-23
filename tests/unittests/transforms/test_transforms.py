@@ -24,7 +24,6 @@ def test_check_transforms():
         image_augmentations=[get_transform_config("RandomBlur")],
         sample_augmentations=[tio.RandomAffine()],
     )
-    print(transforms)
     assert [type(t) for t in transforms._image_transforms_processed] == [
         tio.ZNormalization,
         tio.Resize,
