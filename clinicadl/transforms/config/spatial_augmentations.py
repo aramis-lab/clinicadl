@@ -2,7 +2,6 @@ from typing import Tuple, Union
 
 from pydantic import (
     NonNegativeFloat,
-    NonNegativeInt,
     PositiveFloat,
     PositiveInt,
     computed_field,
@@ -13,7 +12,6 @@ from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import TransformConfig, _AnatomicalAxesConfig
 from .enum import (
-    AnatomicalAxis,
     CenterMode,
     ImplementedTransform,
     InterpolationMode,
@@ -31,7 +29,7 @@ __all__ = [
 
 
 class RandomFlipConfig(TransformConfig, _AnatomicalAxesConfig):
-    """Config class for RandomFlip transform."""
+    """Config class for RandomFlip augmentation."""
 
     flip_probability: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
 
@@ -59,7 +57,7 @@ SpatialRange = Union[
 
 
 class RandomAffineConfig(TransformConfig):
-    """Config class for RandomAffine transform."""
+    """Config class for RandomAffine augmentation."""
 
     scales: Union[SpatialRange, DefaultFromLibrary] = DefaultFromLibrary.YES
     degrees: Union[SpatialRange, DefaultFromLibrary] = DefaultFromLibrary.YES
@@ -94,7 +92,7 @@ class RandomAffineConfig(TransformConfig):
 
 
 class RandomElasticDeformationConfig(TransformConfig):
-    """Config class for RandomElasticDeformation transform."""
+    """Config class for RandomElasticDeformation augmentation."""
 
     num_control_points: Union[
         PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt], DefaultFromLibrary
@@ -136,7 +134,7 @@ class RandomElasticDeformationConfig(TransformConfig):
 
 
 class RandomAnisotropyConfig(TransformConfig):
-    """Config class for RandomAnisotropy transform."""
+    """Config class for RandomAnisotropy augmentation."""
 
     axes: Union[
         NumericalAxis, Tuple[NumericalAxis, ...], DefaultFromLibrary

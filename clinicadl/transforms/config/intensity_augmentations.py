@@ -26,7 +26,7 @@ __all__ = [
 
 
 class RandomMotionConfig(TransformConfig):
-    """Config class for RandomMotion transform."""
+    """Config class for RandomMotion augmentation."""
 
     degrees: Union[
         NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
@@ -55,7 +55,7 @@ class RandomMotionConfig(TransformConfig):
 
 
 class RandomGhostingConfig(TransformConfig, _AnatomicalAxesConfig):
-    """Config class for RandomGhosting transform."""
+    """Config class for RandomGhosting augmentation."""
 
     num_ghosts: Union[
         NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt], DefaultFromLibrary
@@ -89,13 +89,13 @@ class RandomGhostingConfig(TransformConfig, _AnatomicalAxesConfig):
 
 
 class RandomSpikeConfig(TransformConfig):
-    """Config class for RandomSpike transform."""
+    """Config class for RandomSpike augmentation."""
 
     num_spikes: Union[
         NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     intensity: Union[
-        NonNegativeInt, Tuple[float, float], DefaultFromLibrary
+        NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
 
     @computed_field
@@ -114,7 +114,7 @@ class RandomSpikeConfig(TransformConfig):
 
 
 class RandomBiasFieldConfig(TransformConfig):
-    """Config class for RandomBiasField transform."""
+    """Config class for RandomBiasField augmentation."""
 
     coefficients: Union[
         NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
@@ -152,7 +152,7 @@ Std = Union[
 
 
 class RandomBlurConfig(TransformConfig):
-    """Config class for RandomBlur transform."""
+    """Config class for RandomBlur augmentation."""
 
     std: Union[Std, DefaultFromLibrary] = DefaultFromLibrary.YES
 
@@ -172,7 +172,7 @@ class RandomBlurConfig(TransformConfig):
 
 
 class RandomNoiseConfig(TransformConfig):
-    """Config class for RandomNoise transform."""
+    """Config class for RandomNoise augmentation."""
 
     mean: Union[
         NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
@@ -197,7 +197,7 @@ class RandomNoiseConfig(TransformConfig):
 
 
 class RandomSwapConfig(TransformConfig):
-    """Config class for RandomSwap transform."""
+    """Config class for RandomSwap augmentation."""
 
     patch_size: Union[
         PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt], DefaultFromLibrary
@@ -212,7 +212,7 @@ class RandomSwapConfig(TransformConfig):
 
 
 class RandomGammaConfig(TransformConfig):
-    """Config class for RandomGamma transform."""
+    """Config class for RandomGamma augmentation."""
 
     log_gamma: Union[
         NonNegativeFloat, Tuple[float, float], DefaultFromLibrary

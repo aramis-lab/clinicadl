@@ -1,7 +1,6 @@
 from copy import deepcopy
 from typing import Any, Tuple, Union
 
-import torch
 import torchio.transforms as tio_transforms
 
 import clinicadl.transforms.homemade_transforms as homemade_transforms
