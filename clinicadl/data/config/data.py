@@ -1,15 +1,11 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Dict, Optional, Union
 
-import pandas as pd
 from pydantic import field_validator
 
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLTSVError,
-)
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl.data_config")
 

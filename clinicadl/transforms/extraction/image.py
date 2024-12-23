@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Any, List, Tuple, Union
 
 import torch
 import torchio as tio
@@ -8,6 +8,8 @@ from pydantic import PositiveInt, computed_field
 
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
+from clinicadl.utils.loading import nifti_to_tensor
+from clinicadl.utils.typing import PathType
 
 from .base import Extraction, Sample
 
@@ -72,7 +74,7 @@ class Image(Extraction):
         -----
         The image is loaded and returned into a tensor along with the input path with the `.pt` extension.
         """
-        image_tensor = self.load_image(nii_path)
+        image_tensor = nifti_to_tensor(nii_path)
 
         return [(self.sample_path(nii_path), self.extract_sample(image_tensor))]
 
@@ -166,7 +168,8 @@ class Image(Extraction):
         tio_sample: tio.Subject,
         participant_id: str,
         session_id: str,
-        image_path: Union[str, Path],
+        image_path: PathType,
+        description: Any = None,
     ) -> ImageSample:
         """
         Puts all the output information in an ImageSample object.
@@ -174,14 +177,16 @@ class Image(Extraction):
         Parameters
         ----------
         tio_sample : tio.Subject
-            a TorchIO Subject corresponding to the image, with at least a ScalarImage named 'sample',
-            an attribute named 'label' and an attribute named 'description'.
+            a TorchIO Subject corresponding to the image, with at least a ScalarImage named 'image'
+            and an attribute named 'label'.
         participant_id : str
             the subject concerned.
         session_id : str
             the session concerned.
-        image_path : Union[str, Path]
+        image_path : PathType
             the path of the image.
+        description : Any (optional, default=None)
+            a description of the sample. For compatibility, not necessary in the case of Image.
 
         Returns
         -------
@@ -191,19 +196,19 @@ class Image(Extraction):
         Raises
         ------
         AttributeError
-            if `tio_sample` doesn't have a TorchIO ScalarImage named 'sample', and attributes
-            'label' and 'description'.
+            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
+            'label'.
         """
-        self._check_tio_sample(tio_sample)
+        self._check_tio_subject(tio_sample)
 
-        sample = tio_sample.sample.tensor
+        image = tio_sample.image.tensor
         if isinstance(tio_sample.label, tio.Image):
             label = tio_sample.label.tensor
         else:
             label = tio_sample.label
 
         return ImageSample(
-            sample=sample,
+            sample=image,
             participant_id=participant_id,
             session_id=session_id,
             image_path=str(image_path),
@@ -212,35 +217,32 @@ class Image(Extraction):
 
     def extract_tio_sample(
         self, tio_image: tio.Subject, sample_index: int = 0
-    ) -> tio.Subject:
+    ) -> Tuple[tio.Subject, None]:
         """
-        Converts a TorchIO Subject representing the image to a TorchIO Subject
-        representing the sample (which is here the image).
+        Extracts a sample from a TorchIO Subject. For compatibility,
+        as no extraction is performed with Image.
 
         Parameters
         ----------
         tio_image : tio.Subject
-            The image as a TorchIO Subject. Can contain masks associated
-            to the image as well.
+            The TorchIO Subject to perform extraction on.
         sample_index : int (optional, default=0)
-            For consistency with other extraction methods. Always 0 here.
+            Index indicating the sample to extract. For compatibility,
+            must be left to 0 here.
 
         Returns
         -------
         tio.Subject
-            A new TorchIO Subject representing the sample (the full image here), accessible via the
-            attribute 'sample', and the potential masks, extracted in the same way as the sample.
+            A copy of the input `tio_image`, as no extraction is performed.
+        None
+            Sample description. Always None here, as no description of the
+            sample is needed.
 
         Raises
         ------
-        AttributeError
-            If 'tio_image' doesn't have a TorchIO ScalarImage named 'image'.
+        ValueError
+            If all the images in `tio_image` don't have the same shape.
         IndexError
             If 'sample_index' is not 0.
-
-        Notes
-        -----
-        This method is trivial here as no extraction is performed. The TorchIO Subject is just converted
-        to another format.
         """
         return super().extract_tio_sample(tio_image, sample_index)

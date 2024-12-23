@@ -1,14 +1,14 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.data.preprocessing import BasePreprocessing
+from clinicadl.data.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
 from clinicadl.data.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.enum import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
@@ -86,7 +86,7 @@ class CapsReader(Reader):
         return f"CAPS reader for {self.input_directory}"
 
     def get_preprocessing_folder(
-        self, participant: str, session: str, preprocessing: Preprocessing
+        self, participant: str, session: str, preprocessing: PreprocessingMethod
     ) -> Path:
         """
         Retrieves the folder path for a specific preprocessing step.
@@ -94,7 +94,7 @@ class CapsReader(Reader):
         Args:
             participant (str): ID of the participant.
             session (str): ID of the session.
-            preprocessing (Preprocessing): Preprocessing step for which the folder path is needed.
+            preprocessing (PreprocessingMethod): Preprocessing step for which the folder path is needed.
 
         Returns
         -------
@@ -120,7 +120,7 @@ class CapsReader(Reader):
         return self.subject_directory / participant
 
     def get_tensor_dir(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the directory for storing tensor data for a given participant, session, and preprocessing.
@@ -128,7 +128,7 @@ class CapsReader(Reader):
         Args:
             participant (str): ID of the participant.
             session (str): ID of the session.
-            preprocessing (BasePreprocessing): Configuration of the preprocessing steps.
+            preprocessing (Preprocessing): Configuration of the preprocessing steps.
 
         Returns
         -------
@@ -143,7 +143,7 @@ class CapsReader(Reader):
         )
 
     def get_tensor_path(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the path to the tensor image (*.pt) for a given participant, session, and preprocessing.
@@ -154,7 +154,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -184,7 +184,7 @@ class CapsReader(Reader):
             )
 
     def get_image_path(
-        self, participant: str, session: str, preprocessing: BasePreprocessing
+        self, participant: str, session: str, preprocessing: Preprocessing
     ) -> Path:
         """
         Retrieves the path to the image file for a given participant, session, and preprocessing.
@@ -195,7 +195,7 @@ class CapsReader(Reader):
                 ID of the participant.
             session: str
                 ID of the session.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Configuration of the preprocessing steps.
 
         Returns
@@ -230,7 +230,7 @@ class CapsReader(Reader):
     def _write_caps_json(
         self,
         transforms: Transforms,
-        preprocessing: BasePreprocessing,
+        preprocessing: Preprocessing,
         data_tsv: Path,
         name: Optional[str] = None,
     ) -> None:
@@ -240,7 +240,7 @@ class CapsReader(Reader):
         Args:
             transforms: Transforms
                 The transformations applied to the data.
-            preprocessing: BasePreprocessing
+            preprocessing: Preprocessing
                 Preprocessing configuration.
             data_tsv: Path
                 Path to the data TSV file.
@@ -310,3 +310,59 @@ class CapsReader(Reader):
         test_df["cohort"] = "single"
 
         return test_df
+
+    @staticmethod
+    def replace_suffix(path: Path, new_suffix: str) -> Path:
+        """
+        Replaces the suffix of a CAPS file.
+
+        Parameters
+        ----------
+        path : Path
+            Path to the file.
+        new_suffix : str
+            The new suffix.
+
+        Returns
+        -------
+        Path
+            The modified path.
+
+        Examples
+        --------
+        >>> caps_reader.replace_suffix(Path("sub-001_ses-M000_T1w.nii.gz"), "mask")
+        Path("sub-001_ses-M000_mask.nii.gz")
+        """
+        mask_suffix = "_" + new_suffix + "."
+        suffix = "_" + str(path).rsplit("_", maxsplit=1)[-1].split(".")[0] + "."
+
+        return Path(str(path).replace(suffix, mask_suffix))
+
+    def check_preprocessing(
+        self,
+        subjects_sessions: Sequence[Tuple[str, str]],
+        preprocessing: Preprocessing,
+    ):
+        """
+        Validates that all subject/session pairs have a specific preprocessing.
+
+        Returns
+        -------
+        subjects_sessions : Sequence[Tuple[str, str]]
+            The list of (subject, session) that should be checked.
+        preprocessing: Preprocessing
+            The preprocessing.
+
+        Raises
+        ------
+        ClinicaDLConfigurationError
+            If the preprocessing is not found for a subject/session pair.
+        """
+        pattern = preprocessing.file_type.pattern
+        for participant, session in subjects_sessions:
+            folder = self.get_session_path(participant=participant, session=session)
+            if not list(folder.glob(pattern)):
+                raise ClinicaDLConfigurationError(
+                    f"Could not find preprocessing {preprocessing.preprocessing.value} for "
+                    f"participant {participant} and session {session} with pattern: {pattern}"
+                )

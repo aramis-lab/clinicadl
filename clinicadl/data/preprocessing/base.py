@@ -2,49 +2,49 @@ import abc
 from logging import getLogger
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import computed_field
 
-from clinicadl.utils.enum import LinearModality, Preprocessing
+from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.enum import LinearModality, PreprocessingMethod
 from clinicadl.utils.iotools.clinica_utils import FileType
 
 logger = getLogger("clinicadl.preprocessing.base")
 
 
-class BasePreprocessing(BaseModel, abc.ABC):
+class Preprocessing(ClinicaDLConfig, abc.ABC):
     """
     Abstract config class for the preprocessing procedure.
     """
 
-    preprocessing: Preprocessing
-    use_uncropped_image: bool = False
-
-    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
-    def get_filetype(self, bids: bool = False) -> FileType:
-        return self.get_bids_filetype() if bids else self.get_caps_filetype()
-
+    @computed_field
+    @property
     @abc.abstractmethod
-    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
-        """Abstract method to get the BIDS filetype."""
-        pass
-
-    @abc.abstractmethod
-    def get_caps_filetype(self) -> FileType:
-        """Abstract method to obtain FileType details."""
-        pass
+    def preprocessing(self) -> PreprocessingMethod:
+        """The preprocessing method."""
 
     @computed_field
     @property
     def file_type(self) -> FileType:
-        if self.preprocessing not in Preprocessing:
-            raise NotImplementedError(
-                f"Extraction of preprocessing {self.preprocessing.value} is not implemented from CAPS directory."
-            )
-        else:
-            return self.get_filetype()
+        return self.get_caps_filetype()
+
+    @abc.abstractmethod
+    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
+        """Abstract method to get the BIDS filetype."""
+
+    @abc.abstractmethod
+    def get_caps_filetype(self) -> FileType:
+        """Abstract method to obtain FileType details."""
+
+
+class _PreprocessingWithCrop(Preprocessing):
+    """
+    Base class for the preprocessings with the option 'use_uncropped_image.
+    """
+
+    use_uncropped_image: bool = False
 
     def linear_nii(
-        self, modality: LinearModality, needed_pipeline: Preprocessing
+        self, modality: LinearModality, needed_pipeline: PreprocessingMethod
     ) -> FileType:
         """
         Constructs the file type for linear caps image data

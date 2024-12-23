@@ -1,11 +1,9 @@
 # coding: utf8
-import abc
 from logging import getLogger
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List, Optional
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.utils import CapsDatasetSample
+from clinicadl.transforms.extraction import Sample
 
 logger = getLogger("clinicadl")
 
@@ -30,7 +28,7 @@ class ConcatDataset(CapsDataset):
 
         self.eval_mode = False
 
-    def __getitem__(self, index: int) -> Optional[CapsDatasetSample]:
+    def __getitem__(self, index: int) -> Optional[Sample]:
         for start, stop, dataset_index in self._indexes:
             if start <= index < stop:
                 dataset = self._datasets[dataset_index]

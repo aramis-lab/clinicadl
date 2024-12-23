@@ -1,10 +1,9 @@
-from enum import Enum
 from typing import Optional, Union
 
 from pydantic import field_validator
 
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.enum import Preprocessing
+from clinicadl.utils.enum import PreprocessingMethod
 
 
 class FileType(ClinicaDLConfig):
@@ -14,9 +13,10 @@ class FileType(ClinicaDLConfig):
 
     pattern: str
     description: str
-    needed_pipeline: Optional[Preprocessing] = None
+    needed_pipeline: Optional[PreprocessingMethod] = None
 
     @field_validator("pattern", mode="before")
+    @classmethod
     def check_pattern(cls, v):
         if not v:
             raise ValueError("A pattern must be specified")
@@ -30,18 +30,20 @@ class FileType(ClinicaDLConfig):
         return v
 
     @field_validator("description", mode="before")
+    @classmethod
     def check_description(cls, v):
         if not v:
             raise ValueError("A description must be specified")
         return v
 
     @field_validator("needed_pipeline", mode="after")
-    def check_needed_pipeline(cls, v: Optional[Union[str, Preprocessing]]):
+    @classmethod
+    def check_needed_pipeline(cls, v: Optional[Union[str, PreprocessingMethod]]):
         if v:
             try:
-                v = Preprocessing(v)
+                v = PreprocessingMethod(v)
             except ValueError:
                 raise ValueError(
-                    f"Invalid pipeline: {v}. Choose from {[e.value for e in Preprocessing]}"
+                    f"Invalid pipeline: {v}. Choose from {[e.value for e in PreprocessingMethod]}"
                 )
             return v
