@@ -5,13 +5,17 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import pandas as pd
+import torch
 
 from clinicadl.data import preprocessing
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod, PreprocessingMethod
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import read_preprocessing
+from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.data.utils")
 
@@ -265,90 +269,150 @@ class Mask:
     """To handle masks in ClinicaDL. More precisely, it makes the difference
     between a mask passed as a file name, that corresponds to a common mask,
     and a mask passed as a suffix (a simple string), that corresponds to a mask
-    specific to each subject.
+    specific to each image.
 
     For example, `Mask("masks/mask.nii.gz")` will be understood has a common
-    mask, where as `Mask("mask")` will be understood has a specific mask.
+    mask, whereas `Mask("mask")` will be understood has an image-specific mask.
 
-    In the latter case, it is expected that all the (subject, session) studied
-    have the associated mask in their CAPS folders. It will look for files with
-    the suffix `mask` in these folders.
+    In the latter case, it is expected that all the images studied
+    have the associated mask in the CAPS directory.
+
+    The associated mask(s) is expected to be a 3D NIfTI image or a 4D tensor in
+    a `.pt` file.
 
     Parameters
     ----------
-    filename : Union[str, Path]
+    mask : mask
         the mask, passed as a path or a suffix.
+
+    Raises
+    ------
+    FileNotFoundError
+        if `mask` is passed as a path that does not match any file.
     """
 
-    def __init__(self, mask: Union[str, Path]) -> None:
+    def __init__(self, mask: Union[str, PathType]) -> None:
         if isinstance(mask, Path):
             if not self._check_path(mask):
-                raise ValueError(
+                raise FileNotFoundError(
                     f"The mask has been passed as a Path object (got {mask}), but no such file exists."
                 )
-            self.common_mask = True
+            self._common_mask = True
             self.mask = Path(mask)
 
         elif isinstance(mask, str):
             if self._check_path(mask):
-                self.common_mask = True
+                self._common_mask = True
                 self.mask = Path(mask)
             else:
-                self.common_mask = False
+                self._common_mask = False
                 self.mask = mask
 
+        self._mask_img = None  # lazy loading
+
     @staticmethod
-    def _check_path(mask_path: Union[str, Path]) -> bool:
+    def _check_path(mask_path: PathType) -> bool:
         """Checks if the mask file exists."""
         mask_path = Path(mask_path)
         return mask_path.is_file()
 
-    def get_associated_mask(self, filename: Union[str, Path]) -> Path:
+    @staticmethod
+    def _load_mask(path: Path) -> torch.Tensor:
+        """Loads a mask and returns it as a tensor."""
+        if path.suffix == PT:
+            return pt_to_tensor(path, int_values=True)
+        else:
+            return nifti_to_tensor(path, int_values=True)
+
+    def get_associated_mask(self, filename: PathType) -> torch.Tensor:
         """
         Returns the mask associated to an image.
 
         If the mask is common to all subjects and sessions, the method will
         simply return it. On the other hand, if the mask is specific to each
-        (subject, session), the method will use the input `filename` to get
+        image, the method will use the input `filename` to get
         the associated mask.
+
+        If the mask is in a `.pt` file, it is expected to be 4D tensor. If the
+        mask is in a NIfTI file, it is expected to be a 3D image.
+
+        For image-specific mask, the mask is expected to be in the same format
+        as the input image, e.g. if the input image is in a `.pt` file, the mask
+        will be expected in a `.pt` file.
 
         Parameters
         ----------
-        filename : Union[str, Path]
+        filename : PathType
             the image whose associated mask is to be found.
 
         Returns
         -------
-        Path :
-            the path to the mask associated to the image.
+        torch.Tensor :
+            the mask, in a 4D PyTorch tensor (including channel dimension).
 
         Raises
         ------
-        ValueError
+        FileNotFoundError
             if the associated mask doesn't exist.
 
         Examples
         --------
         >>> mask=Mask("seg")
+        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.pt")
+        # will get the image in 'sub-001_ses-M000_seg.pt'
+
+        >>> mask=Mask("masks/leftHippocampus.nii.gz")
         >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
-        PosixPath('sub-001_ses-M000_seg.nii.gz')
+        # will get the image in 'masks/leftHippocampus.nii.gz'
+        """
+
+        if self._common_mask:
+            if self._mask_img is None:
+                self._mask_img = self._load_mask(self.mask)
+            return self._mask_img
+        else:
+            filename = Path(filename)
+            without_extension = str(filename).rstrip("".join(filename.suffixes))
+            suffix = without_extension.rsplit("_", maxsplit=1)[-1]
+            mask_file = str(filename).replace(f"_{suffix}.", f"_{self.mask}.")
+            try:
+                return self._load_mask(Path(mask_file))
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(
+                    f"A mask associated to {str(filename)} was expected "
+                    f"to be found in {mask_file}, but there is no such file."
+                ) from exc
+
+    def get_associated_mask_path(self, filename: PathType) -> Path:
+        """
+        Returns the path of the mask associated to an image.
+
+        Parameters
+        ----------
+        filename : PathType
+            the image whose associated mask is to be found.
+
+        Returns
+        -------
+        Path :
+            the mask path.
+
+        Examples
+        --------
+        >>> mask=Mask("seg")
+        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.pt")
+        PosixPath('sub-001_ses-M000_seg.nii.pt')
 
         >>> mask=Mask("masks/leftHippocampus.nii.gz")
         >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
         PosixPath('masks/leftHippocampus.nii.gz')
         """
 
-        if self.common_mask:
+        if self._common_mask:
             return self.mask
         else:
             filename = Path(filename)
             without_extension = str(filename).rstrip("".join(filename.suffixes))
             suffix = without_extension.rsplit("_", maxsplit=1)[-1]
             mask_file = str(filename).replace(f"_{suffix}.", f"_{self.mask}.")
-            if not self._check_path(mask_file):
-                raise ValueError(
-                    f"A mask associated to {str(filename)} was expected "
-                    f"to be found in {mask_file}, but there is no such file."
-                )
-
             return Path(mask_file)

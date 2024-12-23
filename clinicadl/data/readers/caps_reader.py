@@ -170,7 +170,9 @@ class CapsReader(Reader):
 
         try:
             filepath = self.get_image_path(participant, session, preprocessing)
-            image_filename = filepath.name.replace(".nii.gz", ".pt")
+            image_filename = (
+                filepath.with_suffix("").with_suffix("").with_suffix(".pt").name
+            )  # two times to handle double extensions
             image_path = (
                 self.get_tensor_dir(participant, session, preprocessing)
                 / image_filename
@@ -310,33 +312,6 @@ class CapsReader(Reader):
         test_df["cohort"] = "single"
 
         return test_df
-
-    @staticmethod
-    def replace_suffix(path: Path, new_suffix: str) -> Path:
-        """
-        Replaces the suffix of a CAPS file.
-
-        Parameters
-        ----------
-        path : Path
-            Path to the file.
-        new_suffix : str
-            The new suffix.
-
-        Returns
-        -------
-        Path
-            The modified path.
-
-        Examples
-        --------
-        >>> caps_reader.replace_suffix(Path("sub-001_ses-M000_T1w.nii.gz"), "mask")
-        Path("sub-001_ses-M000_mask.nii.gz")
-        """
-        mask_suffix = "_" + new_suffix + "."
-        suffix = "_" + str(path).rsplit("_", maxsplit=1)[-1].split(".")[0] + "."
-
-        return Path(str(path).replace(suffix, mask_suffix))
 
     def check_preprocessing(
         self,
