@@ -354,7 +354,7 @@ class CapsDataset(Dataset):
         ------
         IndexError
             If 'idx' is greater or equal to the length of the dataset.
-        ValueError
+        KeyError
             If `column` is not in the metadata DataFrame.
         """
         if idx >= len(self):
@@ -362,7 +362,7 @@ class CapsDataset(Dataset):
                 f"Index out of range, there are only {len(self)} samples in the dataset."
             )
         if column not in self.df.columns:
-            raise ValueError(
+            raise KeyError(
                 f"No column named {column} in the metadata DataFrame. Present columns are: "
                 f"{list(self.df.columns)}"
             )
@@ -550,6 +550,18 @@ class CapsDataset(Dataset):
         sample_idx = idx % self.samples_per_image
 
         return participant, session, img_idx, sample_idx
+
+    def _get_participant(self, img_idx: NonNegativeInt) -> str:
+        """
+        Retrieves the participant ID for a given image index.
+        """
+        return self.df.at[img_idx, PARTICIPANT_ID]
+
+    def _get_session(self, img_idx: NonNegativeInt) -> str:
+        """
+        Retrieves the session ID for a given image index.
+        """
+        return self.df.at[img_idx, SESSION_ID]
 
     def _get_participant_session_couples(self) -> List[Tuple[str, str]]:
         """
