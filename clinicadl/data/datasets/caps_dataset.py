@@ -49,6 +49,8 @@ class CapsDataset(Dataset):
     eval : to switch the dataset to evaluation mode (i.e. data augmentation is deactivated).
     subset : to get a subset of the CapsDataset (i.e. filtering on (subject, session)
         pairs).
+    get_sample_info : to get information on a sample (e.g. the sex or the age of the corresponding
+        subject).
 
     Public attributes
     -----------------
@@ -327,6 +329,47 @@ class CapsDataset(Dataset):
 
         return dataset
 
+    def get_sample_info(self, idx: NonNegativeInt, column: str) -> Any:
+        """
+        Retrieves information on a given sample. The information will
+        correspond to the information on the base image the sample was extracted
+        from.
+
+        Parameters
+        ----------
+        idx : NonNegativeInt
+            The index of the sample in the dataset.
+        column : str
+            The information to look for, i.e. a column of the DataFrame containing
+            the metadata, which is equal to `data` if `data` was passed when instantiating the
+            CapsDataset. If `data` was not passed, the only accessible columns are
+            `"participant_id"` and `"session_id"`.
+
+        Returns
+        -------
+        Any
+            the information (e.g. the age, the sex, etc.)
+
+        Raises
+        ------
+        IndexError
+            If 'idx' is greater or equal to the length of the dataset.
+        ValueError
+            If `column` is not in the metadata DataFrame.
+        """
+        if idx >= len(self):
+            raise IndexError(
+                f"Index out of range, there are only {len(self)} samples in the dataset."
+            )
+        if column not in self.df.columns:
+            raise ValueError(
+                f"No column named {column} in the metadata DataFrame. Present columns are: "
+                f"{list(self.df.columns)}"
+            )
+
+        img_idx = idx // self.samples_per_image
+        return self.df.at[img_idx, column]
+
     def __len__(self) -> NonNegativeInt:
         """
         Computes the total number of samples in the dataset.
@@ -501,31 +544,12 @@ class CapsDataset(Dataset):
         IndexError
             If the index is out of range.
         """
-        if idx >= len(self):
-            raise IndexError(
-                f"Index out of range, there are only {len(self)} samples in the dataset."
-            )
-
+        participant = self.get_sample_info(idx, PARTICIPANT_ID)
+        session = self.get_sample_info(idx, SESSION_ID)
         img_idx = idx // self.samples_per_image
         sample_idx = idx % self.samples_per_image
 
-        participant = self._get_participant(idx)
-        session = self._get_session(idx)
-
         return participant, session, img_idx, sample_idx
-
-    def _get_participant(self, idx: NonNegativeInt) -> str:
-        """
-        Retrieves the participant ID for a given image index.
-        """
-        return self.df.at[idx, PARTICIPANT_ID]
-
-    def _get_session(self, idx: NonNegativeInt) -> str:
-        """
-        Retrieves the session ID for a given image index.
-        """
-
-        return self.df.at[idx, SESSION_ID]
 
     def _get_participant_session_couples(self) -> List[Tuple[str, str]]:
         """
@@ -533,7 +557,7 @@ class CapsDataset(Dataset):
         """
         return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
-    def _get_full_image(self, idx: NonNegativeInt) -> tuple[torch.Tensor, Path]:
+    def _get_full_image(self, img_idx: NonNegativeInt) -> tuple[torch.Tensor, Path]:
         """
         Retrieves the full image tensor and its path for a given image index.
         Will first look for a `.pt` file. If not found, will look for a NIfTI file.
@@ -552,8 +576,8 @@ class CapsDataset(Dataset):
             CAPS directory.
         """
 
-        participant_id = self._get_participant(idx)
-        session_id = self._get_session(idx)
+        participant_id = self._get_participant(img_idx)
+        session_id = self._get_session(img_idx)
 
         pt_image_path = self.caps_reader.get_tensor_path(
             participant_id, session_id, self.preprocessing
@@ -566,7 +590,7 @@ class CapsDataset(Dataset):
         )
         return nifti_to_tensor(nifti_image_path), nifti_image_path
 
-    def _get_single_mask(self, idx: NonNegativeInt, mask: Mask) -> torch.Tensor:
+    def _get_single_mask(self, img_idx: NonNegativeInt, mask: Mask) -> torch.Tensor:
         """
         Retrieves a mask associated to an image, from the index of that image
         and from the Mask object.
@@ -581,8 +605,8 @@ class CapsDataset(Dataset):
         ClinicaDLCAPSError
             If associated mask cannot be found, neither in `.pt` nor in a NIfTI file.
         """
-        participant_id = self._get_participant(idx)
-        session_id = self._get_session(idx)
+        participant_id = self._get_participant(img_idx)
+        session_id = self._get_session(img_idx)
 
         pt_image_path = self.caps_reader.get_tensor_path(
             participant_id, session_id, self.preprocessing
@@ -623,7 +647,7 @@ class CapsDataset(Dataset):
             return {}
 
     def _get_label(
-        self, idx: NonNegativeInt
+        self, img_idx: NonNegativeInt
     ) -> Optional[Union[int, float, torch.Tensor]]:
         """
         Retrieves the label associated to an image from the index of that image.
@@ -635,15 +659,15 @@ class CapsDataset(Dataset):
             nor in a NIfTI file.
         """
         if isinstance(self.label, Column):
-            return self.df.at[idx, self.label]
+            return self.df.at[img_idx, self.label]
         elif isinstance(self.label, Mask):
             try:
-                return self._get_single_mask(idx, self.label)
+                return self._get_single_mask(img_idx, self.label)
             except ClinicaDLCAPSError as exc:
                 raise ClinicaDLCAPSError(
                     f"No column named {self.label} in 'data', so label={self.label} is "
-                    f"understood as a file suffix. But no file found for subject={self._get_participant(idx)} "
-                    f"and session={self._get_session(idx)}."
+                    f"understood as a file suffix. But no file found for subject={self._get_participant(img_idx)} "
+                    f"and session={self._get_session(img_idx)}."
                 ) from exc
         else:
             return None
