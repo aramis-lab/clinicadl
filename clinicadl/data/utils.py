@@ -371,12 +371,9 @@ class Mask:
                 self._mask_img = self._load_mask(self.mask)
             return self._mask_img
         else:
-            filename = Path(filename)
-            without_extension = str(filename).rstrip("".join(filename.suffixes))
-            suffix = without_extension.rsplit("_", maxsplit=1)[-1]
-            mask_file = str(filename).replace(f"_{suffix}.", f"_{self.mask}.")
+            mask_file = self.get_associated_mask_path(filename)
             try:
-                return self._load_mask(Path(mask_file))
+                return self._load_mask(mask_file)
             except FileNotFoundError as exc:
                 raise FileNotFoundError(
                     f"A mask associated to {str(filename)} was expected "
@@ -386,6 +383,8 @@ class Mask:
     def get_associated_mask_path(self, filename: PathType) -> Path:
         """
         Returns the path of the mask associated to an image.
+
+        See `get_associated_mask` for more details.
 
         Parameters
         ----------
