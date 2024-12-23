@@ -13,6 +13,7 @@ from .config import (
     TransformType,
     create_transform_config,
 )
+from .config.base import OneOfConfig
 from .utils import Transform
 
 
@@ -39,9 +40,12 @@ def get_transform_config(
         not passed by the user.
     """
     config = create_transform_config(name)(**kwargs)
-    transform_class = getattr(torch.nn, config.name)
+    if config._type == TransformType.TORCHIO:  # pylint: disable=protected-access
+        transform_class = getattr(tio_transforms, config.name)
+    elif config._type == TransformType.HOMEMADE:  # pylint: disable=protected-access
+        transform_class = getattr(homemade_transforms, config.name)
 
-    update_config_with_defaults(config, function=transform_class.__init__)
+    update_config_with_defaults(config, function=transform_class.__init__)  # pylint: disable=possibly-used-before-assignment
 
     return config
 
@@ -74,7 +78,15 @@ def get_transform_from_config(
 
     update_config_with_defaults(config, function=transform_class.__init__)  # pylint: disable=possibly-used-before-assignment
 
-    config_dict = config.model_dump(exclude={"name"})
-    transform = transform_class(**config_dict)
+    if config.name == ImplementedTransform.ONE_OF:
+        config: OneOfConfig
+        config_dict = {
+            get_transform_from_config(transform)[0]: proba
+            for transform, proba in zip(config.transforms, config.probabilities)
+        }
+        transform = transform_class(config_dict)
+    else:
+        config_dict = config.model_dump(exclude={"name", "_type"})
+        transform = transform_class(**config_dict)
 
     return transform, config

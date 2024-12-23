@@ -10,8 +10,8 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import TransformConfig, _NumericalAxesConfig
-from .enum import ImplementedTransform
+from .base import TransformConfig, _AnatomicalAxesConfig
+from .enum import ImplementedTransform, InterpolationMode
 
 __all__ = [
     "RandomMotionConfig",
@@ -35,7 +35,9 @@ class RandomMotionConfig(TransformConfig):
         NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     num_transforms: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    image_interpolation: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    image_interpolation: Union[
+        InterpolationMode, DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
 
     @computed_field
     @property
@@ -52,7 +54,7 @@ class RandomMotionConfig(TransformConfig):
         return v
 
 
-class RandomGhostingConfig(TransformConfig, _NumericalAxesConfig):
+class RandomGhostingConfig(TransformConfig, _AnatomicalAxesConfig):
     """Config class for RandomGhosting transform."""
 
     num_ghosts: Union[
@@ -61,9 +63,7 @@ class RandomGhostingConfig(TransformConfig, _NumericalAxesConfig):
     intensity: Union[
         NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    restore: Union[
-        NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    restore: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
     @property
@@ -85,8 +85,6 @@ class RandomGhostingConfig(TransformConfig, _NumericalAxesConfig):
         """Checks that 'restore' is a probability."""
         if isinstance(v, float) and v > 1:
             raise ValueError(f"'restore' must be between 0 and 1. Got {v}")
-        elif isinstance(v, tuple) and v[1] > 1:
-            raise ValueError(f"'restore' must contain values between 0 and 1. Got {v}")
         return v
 
 

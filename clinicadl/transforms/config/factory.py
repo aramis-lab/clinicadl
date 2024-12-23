@@ -1,11 +1,11 @@
 from typing import Type, Union
 
-from .base import TransformConfig
-from .enum import ImplementedTransform
-
 # pylint: disable=unused-import
+from .base import OneOfConfig, TransformConfig
+from .enum import ImplementedTransform
 from .intensity import (
     ClampConfig,
+    MaskConfig,
     NanRemovalConfig,
     RescaleIntensityConfig,
     ZNormalizationConfig,
@@ -23,6 +23,7 @@ from .intensity_augmentations import (
 from .label import OneHotConfig, RemapLabelsConfig
 from .spatial import (
     CropConfig,
+    CropOrPadConfig,
     EnsureShapeMultipleConfig,
     PadConfig,
     ResizeConfig,

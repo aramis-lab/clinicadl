@@ -17,11 +17,11 @@ class NanRemoval(tio.IntensityTransform):
     posinf : Optional[float] (optional, default=None)
         the value to replace positive infinity values with. If None,
         positive infinity values are replaced with the greatest finite
-        value of the image.
+        value representable by image’s dtype.
     neginf : Optional[float] (optional, default=None)
         the value to replace negative infinity values with. If None,
         negative infinity values are replaced with the lowest finite
-        value of the image.
+        value representable by image’s dtype.
     """
 
     def __init__(

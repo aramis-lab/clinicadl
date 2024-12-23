@@ -11,7 +11,7 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import TransformConfig, _NumericalAxesConfig
+from .base import TransformConfig, _AnatomicalAxesConfig
 from .enum import (
     AnatomicalAxis,
     CenterMode,
@@ -30,16 +30,9 @@ __all__ = [
 ]
 
 
-class RandomFlipConfig(TransformConfig):
+class RandomFlipConfig(TransformConfig, _AnatomicalAxesConfig):
     """Config class for RandomFlip transform."""
 
-    axes: Union[
-        NumericalAxis,
-        Tuple[NumericalAxis, ...],
-        AnatomicalAxis,
-        Tuple[AnatomicalAxis, ...],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES
     flip_probability: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field
@@ -107,8 +100,8 @@ class RandomElasticDeformationConfig(TransformConfig):
         PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     max_displacement: Union[
-        NonNegativeInt,
-        Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt],
+        NonNegativeFloat,
+        Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
         DefaultFromLibrary,
     ] = DefaultFromLibrary.YES
     locked_borders: Union[
@@ -132,17 +125,28 @@ class RandomElasticDeformationConfig(TransformConfig):
     def validator_num_control_points(cls, v):
         """Checks that 'num_control_points' is more than 4."""
         if isinstance(v, int) and v < 4:
-            raise ValueError("'num_control_points' must be at least 4.")
+            raise ValueError(f"'num_control_points' must be at least 4. Got {v}")
+        if isinstance(v, tuple):
+            for v_ in v:
+                if v_ < 4:
+                    raise ValueError(
+                        f"'num_control_points' must be at least 4. Got {v_}"
+                    )
         return v
 
 
-class RandomAnisotropyConfig(TransformConfig, _NumericalAxesConfig):
+class RandomAnisotropyConfig(TransformConfig):
     """Config class for RandomAnisotropy transform."""
 
+    axes: Union[
+        NumericalAxis, Tuple[NumericalAxis, ...], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
     downsampling: Union[
         PositiveFloat, Tuple[PositiveFloat, PositiveFloat], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
-    image_interpolation: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    image_interpolation: Union[
+        InterpolationMode, DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
 
     @computed_field
     @property

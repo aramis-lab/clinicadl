@@ -6,8 +6,7 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
-from clinicadl.transforms.extraction import Patch
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms import Patch, Transforms, get_transform_config
 from clinicadl.transforms.utils import get_tio_image
 
 
@@ -20,16 +19,17 @@ def test_args():
 
 def test_check_transforms():
     transforms = Transforms(
-        image_transforms=[tio.ZNormalization()],
+        image_transforms=[get_transform_config("ZNormalization")],
         sample_transforms=[tio.Resize((16, 16, 16))],
-        image_augmentations=[tio.RandomBlur()],
+        image_augmentations=[get_transform_config("RandomBlur")],
         sample_augmentations=[tio.RandomAffine()],
     )
-    assert [type(t) for t in transforms.image_transforms] == [
+    print(transforms)
+    assert [type(t) for t in transforms._image_transforms_processed] == [
         tio.ZNormalization,
         tio.Resize,
     ]
-    assert [type(t) for t in transforms.image_augmentations] == [
+    assert [type(t) for t in transforms._image_augmentations_processed] == [
         tio.RandomBlur,
         tio.RandomAffine,
     ]
@@ -45,8 +45,11 @@ def test_get_transforms():
     tio_image = get_tio_image(image, label, mask_1=mask_1)
     transforms = Transforms(
         extraction=Patch(patch_size=4, stride=4),
-        image_transforms=[tio.Crop(1), tio.RescaleIntensity()],
-        sample_transforms=[tio.Pad(1)],
+        image_transforms=[
+            tio.Crop(1),
+            get_transform_config("RescaleIntensity", padding=1),
+        ],
+        sample_transforms=[get_transform_config("Pad", padding=1)],
         image_augmentations=[],
         sample_augmentations=[tio.Mask(masking_method="mask_1")],
     )
@@ -93,7 +96,7 @@ def test_str():
     transforms = Transforms(
         extraction=Patch(patch_size=4, stride=4),
         image_transforms=[tio.Resize(12), tio.RescaleIntensity()],
-        sample_transforms=[tio.Resize(3)],
+        sample_transforms=[get_transform_config("Resize", target_shape=3)],
         image_augmentations=[],
         sample_augmentations=[tio.Mask(masking_method=1)],
     )

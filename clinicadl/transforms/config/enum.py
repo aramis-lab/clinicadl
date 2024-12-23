@@ -22,6 +22,8 @@ class ImplementedTransform(str, BaseEnum):
 
     RESCALE_INTENSITY = "RescaleIntensity"
     Z_NORMALIZATION = "ZNormalization"
+    MASK = "Mask"
+    CROP_OR_PAD = "CropOrPad"
     CLAMP = "Clamp"
     RESIZE = "Resize"
     ENSURE_MULTIPLE = "EnsureShapeMultiple"
@@ -29,6 +31,8 @@ class ImplementedTransform(str, BaseEnum):
     PAD = "Pad"
     REMAP_LABELS = "RemapLabels"
     ONE_HOT = "OneHot"
+
+    ONE_OF = "OneOf"
 
     RANDOM_FLIP = "RandomFlip"
     RANDOM_AFFINE = "RandomAffine"
@@ -38,7 +42,7 @@ class ImplementedTransform(str, BaseEnum):
     RANDOM_GHOSTING = "RandomGhosting"
     RANDOM_SPIKE = "RandomSpike"
     RANDOM_BIAS_FIELD = "RandomBiasField"
-    RANDOM_BLUR = "RandomBlurConfig"
+    RANDOM_BLUR = "RandomBlur"
     RANDOM_NOISE = "RandomNoise"
     RANDOM_SWAP = "RandomSwap"
     RANDOM_GAMMA = "RandomGamma"
@@ -136,7 +140,7 @@ class AnatomicalAxis(str, Enum):
     INFERIOR_SUPERIOR = "IS"
 
 
-class NumericalAxis(str, Enum):
+class NumericalAxis(int, Enum):
     """
     Indexation of spatial axes in 3D.
     """

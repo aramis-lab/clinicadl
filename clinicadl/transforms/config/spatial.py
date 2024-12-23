@@ -1,13 +1,59 @@
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
-from pydantic import PositiveInt, computed_field, field_validator
+from pydantic import PositiveInt, computed_field, field_validator, model_validator
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import Bounds, ImplementedTransform, TransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 
-__all__ = ["ResizeConfig", "EnsureShapeMultipleConfig", "CropConfig", "PadConfig"]
+__all__ = [
+    "CropOrPadConfig",
+    "ResizeConfig",
+    "EnsureShapeMultipleConfig",
+    "CropConfig",
+    "PadConfig",
+]
+
+
+class CropOrPadConfig(TransformConfig):
+    """Config class for CropOrPad transform."""
+
+    target_shape: Optional[
+        Union[
+            PositiveInt,
+            Tuple[PositiveInt, PositiveInt, PositiveInt],
+            DefaultFromLibrary,
+        ]
+    ] = DefaultFromLibrary.YES
+    padding_mode: Union[float, PaddingMode, DefaultFromLibrary] = DefaultFromLibrary.YES
+    mask_name: Optional[Union[str, DefaultFromLibrary]] = DefaultFromLibrary.YES
+    labels: Union[
+        Optional[Tuple[int, ...]], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedTransform:
+        """The name of the transform."""
+        return ImplementedTransform.CROP_OR_PAD
+
+    @model_validator(mode="after")
+    def check_shape(self):
+        """Checks consistency between 'target_shape', 'mask_name' and 'labels'."""
+        if (
+            self.target_shape is None or self.target_shape == DefaultFromLibrary.YES
+        ) and (self.mask_name is None or self.mask_name == DefaultFromLibrary.YES):
+            raise ValueError(
+                "If 'target_shape' is None or is not passed, a valid 'mask_name' must be passed."
+            )
+        if (
+            self.mask_name is None or self.mask_name == DefaultFromLibrary.YES
+        ) and not (self.labels is None or self.labels == DefaultFromLibrary.YES):
+            raise ValueError(
+                "If 'mask_name' is not passed, 'labels' must be left to None."
+            )
+        return self
 
 
 class ResizeConfig(TransformConfig):
@@ -64,7 +110,7 @@ class EnsureShapeMultipleConfig(TransformConfig):
 class CropConfig(TransformConfig):
     """Config class for Crop transform."""
 
-    cropping: Union[Bounds, DefaultFromLibrary] = DefaultFromLibrary.YES
+    cropping: Union[Bounds, DefaultFromLibrary]
 
     @computed_field
     @property
@@ -76,7 +122,7 @@ class CropConfig(TransformConfig):
 class PadConfig(TransformConfig):
     """Config class for Pad transform."""
 
-    padding: Union[Bounds, DefaultFromLibrary] = DefaultFromLibrary.YES
+    padding: Union[Bounds, DefaultFromLibrary]
     padding_mode: Union[float, PaddingMode, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field

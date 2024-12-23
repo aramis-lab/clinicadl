@@ -113,7 +113,8 @@ class Transforms(ClinicaDLConfig):
         only_transforms = []
         for transform in list_transforms:
             if isinstance(transform, TransformConfig):
-                only_transforms.append(get_transform_from_config(transform))
+                real_transform, _ = get_transform_from_config(transform)
+                only_transforms.append(real_transform)
             else:
                 only_transforms.append(transform)
 

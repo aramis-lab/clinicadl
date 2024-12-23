@@ -1,12 +1,24 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
-from pydantic import NonNegativeInt, computed_field, field_validator
+from pydantic import (
+    NonNegativeFloat,
+    NonNegativeInt,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .enum import AnatomicalLabel, ImplementedTransform, NumericalAxis, TransformType
+from .enum import (
+    AnatomicalAxis,
+    AnatomicalLabel,
+    ImplementedTransform,
+    NumericalAxis,
+    TransformType,
+)
 
 
 class TransformConfig(ClinicaDLConfig, ABC):
@@ -55,10 +67,35 @@ class TransformConfig(ClinicaDLConfig, ABC):
         Global checks for spatial parameters that are passed as a tuple (either a common tuple
         or a tuple for each dimension).
         """
-        if len(tuple) == 2:
+        if len(tup) == 2:
             cls._is_couple_sorted(tup, field_name)
-        elif len(tuple) == 6:
+        elif len(tup) == 6:
             cls._is_six_tuple_sorted(tup, field_name)
+
+
+class OneOfConfig(TransformConfig):
+    """Config class for OneOf augmentation."""
+
+    transforms: List[TransformConfig]
+    probabilities: Optional[List[NonNegativeFloat]] = None
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedTransform:
+        """The name of the transform."""
+        return ImplementedTransform.ONE_OF
+
+    @model_validator(mode="after")
+    def check_probabilities(self):
+        """Checks that 'probabilities' is the same length as 'transforms'."""
+        if self.probabilities is None:
+            self.probabilities = [(1 / len(self.transforms)) for _ in self.transforms]
+        else:
+            if len(self.transforms) != len(self.probabilities):
+                raise ValueError(
+                    "If 'probabilities' is passed, it must be the same length as 'transforms'."
+                )
+        return self
 
 
 Bounds = Union[
@@ -96,9 +133,13 @@ class _MaskingMethodConfig(ClinicaDLConfig):
         return v
 
 
-class _NumericalAxesConfig(ClinicaDLConfig):
-    """Config class for 'axes' option when it supports only numerical values."""
+class _AnatomicalAxesConfig(ClinicaDLConfig):
+    """Config class for 'axes' option when it supports anatomical values."""
 
     axes: Union[
-        NumericalAxis, Tuple[NumericalAxis, ...], DefaultFromLibrary
+        NumericalAxis,
+        Tuple[NumericalAxis, ...],
+        AnatomicalAxis,
+        Tuple[AnatomicalAxis, ...],
+        DefaultFromLibrary,
     ] = DefaultFromLibrary.YES
