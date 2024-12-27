@@ -18,6 +18,7 @@ from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 
 __all__ = [
     "CropOrPadConfig",
+    "ToCanonicalConfig",
     "ResizeConfig",
     "ResampleConfig",
     "EnsureShapeMultipleConfig",
@@ -64,6 +65,16 @@ class CropOrPadConfig(TransformConfig):
                 "If 'mask_name' is not passed, 'labels' must be left to None."
             )
         return self
+
+
+class ToCanonicalConfig(TransformConfig):
+    """Config class for ToCanonical transform."""
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedTransform:
+        """The name of the transform."""
+        return ImplementedTransform.TO_CANONICAL
 
 
 class ResizeConfig(TransformConfig):

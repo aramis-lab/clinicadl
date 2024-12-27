@@ -28,6 +28,7 @@ from .spatial import (
     PadConfig,
     ResampleConfig,
     ResizeConfig,
+    ToCanonicalConfig,
 )
 from .spatial_augmentations import (
     RandomAffineConfig,

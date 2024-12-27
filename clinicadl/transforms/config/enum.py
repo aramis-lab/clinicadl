@@ -24,6 +24,7 @@ class ImplementedTransform(str, BaseEnum):
     Z_NORMALIZATION = "ZNormalization"
     MASK = "Mask"
     CROP_OR_PAD = "CropOrPad"
+    TO_CANONICAL = "ToCanonical"
     CLAMP = "Clamp"
     RESAMPLE = "Resample"
     RESIZE = "Resize"
