@@ -10,8 +10,8 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import TransformConfig, _AnatomicalAxesConfig
-from .enum import ImplementedTransform, InterpolationMode
+from .base import TransformConfig
+from .enum import ImplementedTransform, InterpolationMode, NumericalAxis
 
 __all__ = [
     "RandomMotionConfig",
@@ -54,11 +54,14 @@ class RandomMotionConfig(TransformConfig):
         return v
 
 
-class RandomGhostingConfig(TransformConfig, _AnatomicalAxesConfig):
+class RandomGhostingConfig(TransformConfig):
     """Config class for RandomGhosting augmentation."""
 
     num_ghosts: Union[
         NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt], DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    axes: Union[
+        NumericalAxis, Tuple[NumericalAxis, ...], DefaultFromLibrary
     ] = DefaultFromLibrary.YES
     intensity: Union[
         NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat], DefaultFromLibrary

@@ -131,15 +131,3 @@ class _MaskingMethodConfig(ClinicaDLConfig):
             except ValueError:
                 pass
         return v
-
-
-class _AnatomicalAxesConfig(ClinicaDLConfig):
-    """Config class for 'axes' option when it supports anatomical values."""
-
-    axes: Union[
-        NumericalAxis,
-        Tuple[NumericalAxis, ...],
-        AnatomicalAxis,
-        Tuple[AnatomicalAxis, ...],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES

@@ -133,7 +133,7 @@ def test_interpolation():
 
 
 def test_axes():
-    axes = [0, 1, 2, (0, 1), "AP", "LR", "IS", ("AP", "LR", "IS")]
+    axes = [0, 1, 2, (0, 1), "LR", "PA", "IS", ("LR", "PA", "IS")]
     for ax in axes:
         c = create_transform_config("RandomFlip")(axes=ax)
         assert c.axes == ax

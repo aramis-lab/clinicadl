@@ -138,7 +138,7 @@ class AnatomicalAxis(str, Enum):
     """
 
     LEFT_RIGHT = "LR"
-    ANTERIOR_POSTERIOR = "AP"
+    POSTERIOR_ANTERIOR = "PA"
     INFERIOR_SUPERIOR = "IS"
 
 

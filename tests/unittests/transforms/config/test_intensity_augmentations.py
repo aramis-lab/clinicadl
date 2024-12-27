@@ -14,7 +14,8 @@ BAD_INPUTS = [
     ({"num_ghosts": (-1, 1)}, "RandomGhosting"),
     ({"intensity": -0.1}, "RandomGhosting"),
     ({"intensity": (-0.1, 0.1)}, "RandomGhosting"),
-    ({"axes": "abc"}, "RandomGhosting"),
+    ({"axes": "R"}, "RandomGhosting"),
+    ({"axes": 3}, "RandomGhosting"),
     ({"restore": 1.1}, "RandomGhosting"),
     ({"num_spikes": 1.1}, "RandomSpike"),
     ({"num_spikes": -1}, "RandomSpike"),
@@ -35,8 +36,11 @@ BAD_INPUTS = [
 GOOD_INPUTS = [
     ({"degrees": 0.5, "translation": 0.5, "num_transforms": 1}, "RandomMotion"),
     ({"degrees": (-0.5, 0.5), "translation": (-0.5, 0.5)}, "RandomMotion"),
-    ({"num_ghosts": 0, "intensity": 0.1, "restore": 0.5}, "RandomGhosting"),
-    ({"num_ghosts": (1, 5), "intensity": (0.1, 0.2), "restore": 0}, "RandomGhosting"),
+    ({"num_ghosts": 0, "axes": 0, "intensity": 0.1, "restore": 0.5}, "RandomGhosting"),
+    (
+        {"num_ghosts": (1, 5), "axes": (0, 2), "intensity": (0.1, 0.2), "restore": 0},
+        "RandomGhosting",
+    ),
     ({"num_spikes": (0, 1), "intensity": 1.0}, "RandomSpike"),
     ({"num_spikes": 1, "intensity": (-1.0, 1.0)}, "RandomSpike"),
     ({"coefficients": 0, "order": 0}, "RandomBiasField"),
@@ -88,10 +92,3 @@ def test_interpolation():
         for transform in ["RandomMotion"]:
             c = create_transform_config(transform)(image_interpolation=mode)
             assert c.image_interpolation == mode
-
-
-def test_axes():
-    axes = [0, 1, 2, (0, 1), "AP", "LR", "IS", ("AP", "LR", "IS")]
-    for ax in axes:
-        c = create_transform_config("RandomGhosting")(axes=ax)
-        assert c.axes == ax
