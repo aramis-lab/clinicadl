@@ -1,6 +1,15 @@
+from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from pydantic import PositiveInt, computed_field, field_validator, model_validator
+import numpy as np
+from pydantic import (
+    PositiveFloat,
+    PositiveInt,
+    computed_field,
+    field_validator,
+    model_validator,
+)
+from torchio import Image
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
@@ -10,6 +19,7 @@ from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 __all__ = [
     "CropOrPadConfig",
     "ResizeConfig",
+    "ResampleConfig",
     "EnsureShapeMultipleConfig",
     "CropConfig",
     "PadConfig",
@@ -92,6 +102,64 @@ class ResizeConfig(TransformConfig):
                 "The size of dimensions passed in 'target_shape' must be positive "
                 f"integers or -1. Got {dim}"
             )
+
+
+class ResampleConfig(TransformConfig):
+    """Config class for Resample transform."""
+
+    target: Union[
+        PositiveFloat,
+        Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
+        str,
+        Path,
+        Tuple[Tuple[PositiveInt, PositiveInt, PositiveInt], np.ndarray],
+        DefaultFromLibrary,
+    ] = DefaultFromLibrary.YES
+    pre_affine_name: Optional[DefaultFromLibrary] = DefaultFromLibrary.YES
+    image_interpolation: Union[
+        InterpolationMode, DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    label_interpolation: Union[
+        InterpolationMode, DefaultFromLibrary
+    ] = DefaultFromLibrary.YES
+    scalars_only: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+
+    @computed_field
+    @property
+    def name(self) -> ImplementedTransform:
+        """The name of the transform."""
+        return ImplementedTransform.RESAMPLE
+
+    @field_validator("pre_affine_name", mode="before")
+    @classmethod
+    def validator_pre_affine_name(cls, v):
+        """Checks that 'pre_affine_name' is not passed."""
+        if v is not None and v != DefaultFromLibrary.YES:
+            raise ValueError("'pre_affine_name' is not supported in ClinicaDL.")
+        return v
+
+    @field_validator("target", mode="before")
+    @classmethod
+    def not_tio_image(cls, v):
+        """Checks that 'target' is not a TorchIO Image."""
+        if isinstance(v, Image):
+            raise ValueError("TorchIO Image not supported for 'target'.")
+        return v
+
+    @field_validator("target", mode="after")
+    @classmethod
+    def validator_target(cls, v):
+        """Validates 'target' argument."""
+        if isinstance(v, tuple) and len(v) == 2:
+            affine: np.ndarray = v[1]
+            if affine.shape != (4, 4):
+                raise ValueError(
+                    "If 'target' is passed as '(spatial_shape, affine)', 'affine' must be "
+                    f"a numpy array of shape (4, 4). Got shape {affine.shape}"
+                )
+        elif isinstance(v, Path) and not v.is_file():
+            raise ValueError(f"Got a path for 'target', but {v} is not a valid file.")
+        return v
 
 
 class EnsureShapeMultipleConfig(TransformConfig):

@@ -26,6 +26,7 @@ from .spatial import (
     CropOrPadConfig,
     EnsureShapeMultipleConfig,
     PadConfig,
+    ResampleConfig,
     ResizeConfig,
 )
 from .spatial_augmentations import (

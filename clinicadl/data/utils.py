@@ -1,6 +1,6 @@
 # coding: utf8
 from glob import glob
-from logging import getLoggero
+from logging import getLogger
 from pathlib import Path
 from typing import List, Tuple, Union
 

@@ -25,6 +25,7 @@ class ImplementedTransform(str, BaseEnum):
     MASK = "Mask"
     CROP_OR_PAD = "CropOrPad"
     CLAMP = "Clamp"
+    RESAMPLE = "Resample"
     RESIZE = "Resize"
     ENSURE_MULTIPLE = "EnsureShapeMultiple"
     CROP = "Crop"
