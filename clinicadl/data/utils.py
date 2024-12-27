@@ -1,6 +1,6 @@
 # coding: utf8
 from glob import glob
-from logging import getLogger
+from logging import getLoggero
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -259,96 +259,3 @@ def get_infos_from_parameters(
         Path(caps_dir),
         Path(data_tsv),
     )
-
-
-class Mask:
-    """To handle masks in ClinicaDL. More precisely, it makes the difference
-    between a mask passed as a file name, that corresponds to a common mask,
-    and a mask passed as a suffix (a simple string), that corresponds to a mask
-    specific to each subject.
-
-    For example, `Mask("masks/mask.nii.gz")` will be understood has a common
-    mask, where as `Mask("mask")` will be understood has a specific mask.
-
-    In the latter case, it is expected that all the (subject, session) studied
-    have the associated mask in their CAPS folders. It will look for files with
-    the suffix `mask` in these folders.
-
-    Parameters
-    ----------
-    filename : Union[str, Path]
-        the mask, passed as a path or a suffix.
-    """
-
-    def __init__(self, mask: Union[str, Path]) -> None:
-        if isinstance(mask, Path):
-            if not self._check_path(mask):
-                raise ValueError(
-                    f"The mask has been passed as a Path object (got {mask}), but no such file exists."
-                )
-            self.common_mask = True
-            self.mask = Path(mask)
-
-        elif isinstance(mask, str):
-            if self._check_path(mask):
-                self.common_mask = True
-                self.mask = Path(mask)
-            else:
-                self.common_mask = False
-                self.mask = mask
-
-    @staticmethod
-    def _check_path(mask_path: Union[str, Path]) -> bool:
-        """Checks if the mask file exists."""
-        mask_path = Path(mask_path)
-        return mask_path.is_file()
-
-    def get_associated_mask(self, filename: Union[str, Path]) -> Path:
-        """
-        Returns the mask associated to an image.
-
-        If the mask is common to all subjects and sessions, the method will
-        simply return it. On the other hand, if the mask is specific to each
-        (subject, session), the method will use the input `filename` to get
-        the associated mask.
-
-        Parameters
-        ----------
-        filename : Union[str, Path]
-            the image whose associated mask is to be found.
-
-        Returns
-        -------
-        Path :
-            the path to the mask associated to the image.
-
-        Raises
-        ------
-        ValueError
-            if the associated mask doesn't exist.
-
-        Examples
-        --------
-        >>> mask=Mask("seg")
-        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
-        PosixPath('sub-001_ses-M000_seg.nii.gz')
-
-        >>> mask=Mask("masks/leftHippocampus.nii.gz")
-        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
-        PosixPath('masks/leftHippocampus.nii.gz')
-        """
-
-        if self.common_mask:
-            return self.mask
-        else:
-            filename = Path(filename)
-            without_extension = str(filename).rstrip("".join(filename.suffixes))
-            suffix = without_extension.rsplit("_", maxsplit=1)[-1]
-            mask_file = str(filename).replace(f"_{suffix}.", f"_{self.mask}.")
-            if not self._check_path(mask_file):
-                raise ValueError(
-                    f"A mask associated to {str(filename)} was expected "
-                    f"to be found in {mask_file}, but there is no such file."
-                )
-
-            return Path(mask_file)

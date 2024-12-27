@@ -20,7 +20,7 @@ from clinicadl.data.utils import (
 )
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.transforms.utils import get_tio_image
+from clinicadl.transforms.types import get_tio_image
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor

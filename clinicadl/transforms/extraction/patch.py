@@ -6,6 +6,7 @@ import torch
 import torchio as tio
 from pydantic import NonNegativeInt, PositiveInt, computed_field, field_validator
 
+from clinicadl.data.structures import DataPoint
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.loading import nifti_to_tensor
@@ -139,7 +140,7 @@ class Patch(Extraction):
         ]
         return patch_list
 
-    def extract_sample(
+    def extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
     ) -> torch.Tensor:
         """
@@ -251,7 +252,7 @@ class Patch(Extraction):
 
     def format_output(
         self,
-        tio_sample: tio.Subject,
+        data_point: DataPoint,
         participant_id: str,
         session_id: str,
         image_path: PathType,
@@ -262,9 +263,8 @@ class Patch(Extraction):
 
         Parameters
         ----------
-        tio_sample : tio.Subject
-            a TorchIO Subject corresponding to the patch, with at least a ScalarImage named 'image'
-            and an attribute named 'label'.
+        data_point : DataPoint
+            the `DataPoint` object associated to the patch.
         participant_id : str
             the subject concerned.
         session_id : str
@@ -278,20 +278,12 @@ class Patch(Extraction):
         -------
         PatchSample
             a PatchSample object with the patch and all the relevant information on the patch.
-
-        Raises
-        ------
-        AttributeError
-            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
-            'label'.
         """
-        self._check_tio_subject(tio_sample)
-
-        patch = tio_sample.image.tensor
-        if isinstance(tio_sample.label, tio.Image):
-            label = tio_sample.label.tensor
+        patch = data_point.image.tensor
+        if isinstance(data_point.label, tio.Image):
+            label = data_point.label.tensor
         else:
-            label = tio_sample.label
+            label = data_point.label
 
         return PatchSample(
             sample=patch,
@@ -304,35 +296,33 @@ class Patch(Extraction):
             patch_stride=self.stride,
         )
 
-    def extract_tio_sample(
-        self, tio_image: tio.Subject, sample_index: int
-    ) -> Tuple[tio.Subject, int]:
+    def extract_sample(
+        self, data_point: DataPoint, sample_index: int
+    ) -> Tuple[DataPoint, int]:
         """
-        Extracts a patch from a TorchIO Subject.
+        Extracts a patch from a DataPoint.
 
         Parameters
         ----------
-        tio_image : tio.Subject
-            The TorchIO Subject to perform extraction on.
+        data_point : DataPoint
+            The DataPoint to perform extraction on.
         sample_index : int
             Index indicating the patch to extract.
 
         Returns
         -------
-        tio.Subject
-            A new TorchIO Subject with the extracted patches for each image
-            present in the original `tio_image`. The patch extracted from an
+        DataPoint
+            A new DataPoint object with the extracted patches for each image
+            present in the original `data_point`. The patch extracted from an
             image is accessible via the same name as was the image in the original
-            `tio_image`.
+            `data_point`.
         int
             The patch index. For compatibility, as the patch index is always equal
             to `sample_index` here.
 
         Raises
         ------
-        ValueError
-            If all the images in `tio_image` don't have the same shape.
         IndexError
             If 'sample_index' is greater or equal to the number of patches in the images.
         """
-        return super().extract_tio_sample(tio_image, sample_index)
+        return super().extract_sample(data_point, sample_index)

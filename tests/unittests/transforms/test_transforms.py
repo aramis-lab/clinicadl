@@ -6,8 +6,8 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
+from clinicadl.data.structures import DataPoint
 from clinicadl.transforms import Patch, Transforms, get_transform_config
-from clinicadl.transforms.utils import get_tio_image
 
 
 def test_args():
@@ -41,7 +41,7 @@ def test_get_transforms():
     label = torch.randint(0, 3, (1, 14, 14, 14))
     mask_1 = torch.zeros(1, 14, 14, 14)
     mask_1[:, 2:12, 2:12, 2:12] = 1
-    tio_image = get_tio_image(image, label, mask_1=mask_1)
+    data_point = DataPoint(image, label, mask_1=mask_1)
     transforms = Transforms(
         extraction=Patch(patch_size=4, stride=4),
         image_transforms=[
@@ -59,26 +59,26 @@ def test_get_transforms():
         sample_augmentations,
     ) = transforms.get_transforms()
 
-    tio_image = image_transforms(tio_image)
-    assert tio_image.image.tensor.min() == 0
-    assert tio_image.image.tensor.max() == 1
-    assert tio_image.image.tensor.shape == (1, 12, 12, 12)
-    assert tio_image.label.tensor.max() == 2
-    assert tio_image.label.tensor.shape == (1, 12, 12, 12)
-    assert tio_image.mask_1.tensor.shape == (1, 12, 12, 12)
+    data_point = image_transforms(data_point)
+    assert data_point.image.tensor.min() == 0
+    assert data_point.image.tensor.max() == 1
+    assert data_point.image.tensor.shape == (1, 12, 12, 12)
+    assert data_point.label.tensor.max() == 2
+    assert data_point.label.tensor.shape == (1, 12, 12, 12)
+    assert data_point.mask_1.tensor.shape == (1, 12, 12, 12)
 
-    old_tio_image = deepcopy(tio_image)
-    tio_image = image_augmentations(tio_image)
-    assert (tio_image.image.tensor == old_tio_image.image.tensor).all()
-    assert (tio_image.label.tensor == old_tio_image.label.tensor).all()
-    assert (tio_image.mask_1.tensor == old_tio_image.mask_1.tensor).all()
+    old_data_point = deepcopy(data_point)
+    data_point = image_augmentations(data_point)
+    assert (data_point.image.tensor == old_data_point.image.tensor).all()
+    assert (data_point.label.tensor == old_data_point.label.tensor).all()
+    assert (data_point.mask_1.tensor == old_data_point.mask_1.tensor).all()
 
-    tio_sample, _ = transforms.extraction.extract_tio_sample(tio_image, 0)
+    tio_sample, _ = transforms.extraction.extract_sample(data_point, 0)
     patch_mask = np.zeros((1, 4, 4, 4))
     patch_mask[:, 1:, 1:, 1:] = 1
     patch_mask = torch.from_numpy(patch_mask)
-    assert (tio_sample.image.tensor == tio_image.image.tensor[:, :4, :4, :4]).all()
-    assert (tio_sample.label.tensor == tio_image.label.tensor[:, :4, :4, :4]).all()
+    assert (tio_sample.image.tensor == data_point.image.tensor[:, :4, :4, :4]).all()
+    assert (tio_sample.label.tensor == data_point.label.tensor[:, :4, :4, :4]).all()
     assert (tio_sample.mask_1.tensor == patch_mask).all()
 
     tio_sample = sample_transforms(tio_sample)
