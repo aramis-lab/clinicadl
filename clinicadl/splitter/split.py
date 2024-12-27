@@ -60,6 +60,8 @@ class Split(ClinicaDLConfig):
             weights (used if `dataloader_config` is not provided).
         shuffle : bool (optional, default=False)
             Whether to shuffle the data (used if `dataloader_config` is not provided).
+            .. note:: If `sampling_weights` is passed, the data will be fetched randomly with
+            replacement. So, data are shuffled, no matter the argument `shuffle`.
         drop_last : bool (optional, default=False)
             Whether to drop the last incomplete batch (used if `dataloader_config` is not provided).
         num_workers : int (optional, default=0)
@@ -126,6 +128,8 @@ class Split(ClinicaDLConfig):
             weights (used if `dataloader_config` is not provided).
         shuffle : bool (optional, default=False)
             Whether to shuffle the data (used if `dataloader_config` is not provided).
+            .. note:: If `sampling_weights` is passed, the data will be fetched randomly with
+            replacement. So, data are shuffled, no matter the argument `shuffle`.
         drop_last : bool (optional, default=False)
             Whether to drop the last incomplete batch (used if `dataloader_config` is not provided).
         num_workers : int (optional, default=0)
