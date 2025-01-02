@@ -27,18 +27,8 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-<<<<<<< HEAD
-<<<<<<< HEAD
 python = ">=3.9,<3.13"
 torch = "^2.3.0"
-=======
-python = ">=3.9,<3.12"
-torch = "^2.1.0"
->>>>>>> 78ccf96c ([MAINT] Drop python 3.8 (#663))
-=======
-python = ">=3.9,<3.13"
-torch = "^2.3.0"
->>>>>>> 3c40944b ([MAINT] Support python `3.12` (#667))
 torchvision = "*"
 tensorboard = "*"
 toml = "*"
