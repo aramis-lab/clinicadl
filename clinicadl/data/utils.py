@@ -6,10 +6,10 @@ from typing import List, Tuple, Union
 
 import pandas as pd
 
-from clinicadl.data import preprocessing
+from clinicadl.data.datatype import preprocessing
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.enum import ExtractionMethod, PreprocessingMethod
+from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.iotools.utils import read_preprocessing
 
@@ -174,7 +174,7 @@ def get_extraction(
 
 
 def get_preprocessing(
-    preprocessing_type: Union[str, PreprocessingMethod],
+    preprocessing_type: Union[str, preprocessing.PreprocessingMethod],
 ) -> type[preprocessing.Preprocessing]:
     """
     Retrieves the preprocessing class based on the specified preprocessing type.
@@ -188,17 +188,17 @@ def get_preprocessing(
     Raises:
         ValueError: If the provided `preprocessing_type` is not supported or is invalid.
     """
-    preprocessing_type = PreprocessingMethod(preprocessing_type)
-    if preprocessing_type == PreprocessingMethod.T1_LINEAR:
-        return preprocessing.PreprocessingT1
-    elif preprocessing_type == PreprocessingMethod.PET_LINEAR:
-        return preprocessing.PreprocessingPET
-    elif preprocessing_type == PreprocessingMethod.FLAIR_LINEAR:
-        return preprocessing.PreprocessingFlair
-    elif preprocessing_type == PreprocessingMethod.CUSTOM:
-        return preprocessing.PreprocessingCustom
-    elif preprocessing_type == PreprocessingMethod.DWI_DTI:
-        return preprocessing.PreprocessingDTI
+    preprocessing_type = preprocessing.PreprocessingMethod(preprocessing_type)
+    if preprocessing_type == preprocessing.PreprocessingMethod.T1_LINEAR:
+        return preprocessing.T1Linear
+    elif preprocessing_type == preprocessing.PreprocessingMethod.PET_LINEAR:
+        return preprocessing.PETLinear
+    elif preprocessing_type == preprocessing.PreprocessingMethod.FLAIR_LINEAR:
+        return preprocessing.FlairLinear
+    elif preprocessing_type == preprocessing.PreprocessingMethod.CUSTOM:
+        return preprocessing.Custom
+    elif preprocessing_type == preprocessing.PreprocessingMethod.DWI_DTI:
+        return preprocessing.DWIDTI
     else:
         raise ValueError(
             f"Preprocessing {preprocessing_type.value} is not implemented."
@@ -247,14 +247,14 @@ def get_infos_from_parameters(
     if "preprocessing_dict" in kwargs:
         kwargs = kwargs["preprocessing_dict"]
 
-    preprocessing = PreprocessingMethod(kwargs["preprocessing"])
+    preprocessing_ = preprocessing.PreprocessingMethod(kwargs["preprocessing"])
     mode = ExtractionMethod(kwargs["extract_method"])
     extraction = get_extraction(mode)(**kwargs)
     transforms = Transforms(extraction=extraction, **kwargs)
     caps_dir = kwargs["caps_directory"]
     data_tsv = kwargs["data_tsv"]
     return (
-        get_preprocessing(preprocessing)(**kwargs),
+        get_preprocessing(preprocessing_)(**kwargs),
         transforms,
         Path(caps_dir),
         Path(data_tsv),

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.data.datatype.preprocessing import PreprocessingMethod, PreprocessingT1
+from clinicadl.data.datatype.preprocessing import PreprocessingMethod, T1Linear
 from clinicadl.data.readers import CapsReader
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -31,7 +31,7 @@ def test_good_caps_reader():
         caps_reader.get_participant_path("sub-000") == caps_dir / "subjects" / "sub-000"
     )
     assert (
-        caps_reader.get_tensor_dir("sub-000", "ses-M000", PreprocessingT1())
+        caps_reader.get_tensor_dir("sub-000", "ses-M000", T1Linear())
         == caps_dir
         / "subjects"
         / "sub-000"
@@ -41,7 +41,7 @@ def test_good_caps_reader():
         / "t1_linear"
     )
     assert (
-        caps_reader.get_tensor_path("sub-000", "ses-M000", PreprocessingT1())
+        caps_reader.get_tensor_path("sub-000", "ses-M000", T1Linear())
         == caps_dir
         / "subjects"
         / "sub-000"
@@ -52,7 +52,7 @@ def test_good_caps_reader():
         / "sub-000_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt"
     )
     assert (
-        caps_reader.get_image_path("sub-000", "ses-M000", PreprocessingT1())
+        caps_reader.get_image_path("sub-000", "ses-M000", T1Linear())
         == caps_dir
         / "subjects"
         / "sub-000"
