@@ -49,8 +49,8 @@ class DWIDTI(Preprocessing, DWI):
         space = self.dti_space
 
         return FileType(
-            pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
-            description=f"DTI-based {measure.value} in space {space}.",
+            pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure}.nii.gz",
+            description=f"DTI-based {measure} in space {space}.",
             needed_pipeline=PreprocessingMethod.DWI_DTI,
         )
 

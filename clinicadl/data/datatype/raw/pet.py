@@ -26,8 +26,8 @@ class RawPET(RawData, PET):
         """
         trc, rec, description = "", "", "PET data"
         if self.tracer:
-            description += f" with {self.tracer.value} tracer"
-            trc = f"_trc-{self.tracer.value}"
+            description += f" with {self.tracer} tracer"
+            trc = f"_trc-{self.tracer}"
         if reconstruction:
             description += f" and reconstruction method {reconstruction}"
             rec = f"_rec-{reconstruction}"

@@ -40,25 +40,4 @@ class Custom(Modality):
         Raises:
             ValueError: If the suffix is empty.
         """
-        if not value:
-            raise ValueError("Custom suffix cannot be empty.")
         return str(value)
-
-
-# Create an instance of RawCustom
-custom_data = Custom(custom_suffix="example")
-
-# Access its properties
-print(custom_data.modality)  # Output: ImageModality.CUSTOM
-print(custom_data.custom_suffix)  # Output: "example"
-
-# String representation
-print(
-    custom_data
-)  # Output: RawCustom Configuration: Custom raw images with suffix 'example'.
-
-# Invalid suffix (triggers validation error)
-try:
-    invalid_custom = Custom(custom_suffix="!invalid")
-except ValueError as e:
-    print(e)  # Output: Custom suffix must be alphanumeric. Avoid special characters.

@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.data.config import FileType
+from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.utils import PreprocessingMethod
 
 
@@ -8,7 +8,7 @@ def test_good_filetype():
     config = FileType(
         pattern="test",
         description="file type configurztion for unittests",
-        needed_pipeline="t1-linear",
+        needed_pipeline="t1-linear",  # type: ignore
     )
 
     assert config.pattern == "test"
@@ -19,12 +19,14 @@ def test_good_filetype():
 
 def test_bad_filetype():
     with pytest.raises(ValueError):
-        config = FileType(pattern="/test", description="test")
+        FileType(pattern="/test", description="test")
 
     with pytest.raises(ValueError):
-        config = FileType(pattern="test", needed_pipeline="t1-linear")
+        FileType(pattern="test", needed_pipeline="t1-linear")  # type: ignore
 
     with pytest.raises(ValueError):
-        config = FileType(
-            pattern="test", description="test", needed_pipeline="invalid_pipeline"
+        FileType(
+            pattern="test",
+            description="test",
+            needed_pipeline="invalid_pipeline",  # type: ignore
         )
