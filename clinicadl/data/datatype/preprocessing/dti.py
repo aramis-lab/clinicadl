@@ -6,8 +6,9 @@ from pydantic import computed_field
 
 from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.modalities import DWI
+from clinicadl.data.datatype.utils import PreprocessingMethod
 
-from .base import Preprocessing, PreprocessingMethod
+from .base import Preprocessing
 
 
 class DTIMeasure(str, Enum):

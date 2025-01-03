@@ -1,6 +1,8 @@
 from pydantic import computed_field
 
-from .base import ImageModality, Modality
+from clinicadl.data.datatype.utils import ImageModality
+
+from .base import Modality
 
 
 class Flair(Modality):

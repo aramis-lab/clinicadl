@@ -7,6 +7,7 @@ from typing import List, Tuple, Union
 import pandas as pd
 
 from clinicadl.data.datatype import preprocessing
+from clinicadl.data.datatype.utils import PreprocessingMethod
 from clinicadl.transforms import extraction
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.enum import ExtractionMethod
@@ -174,7 +175,7 @@ def get_extraction(
 
 
 def get_preprocessing(
-    preprocessing_type: Union[str, preprocessing.PreprocessingMethod],
+    preprocessing_type: Union[str, PreprocessingMethod],
 ) -> type[preprocessing.Preprocessing]:
     """
     Retrieves the preprocessing class based on the specified preprocessing type.
@@ -188,16 +189,16 @@ def get_preprocessing(
     Raises:
         ValueError: If the provided `preprocessing_type` is not supported or is invalid.
     """
-    preprocessing_type = preprocessing.PreprocessingMethod(preprocessing_type)
-    if preprocessing_type == preprocessing.PreprocessingMethod.T1_LINEAR:
+    preprocessing_type = PreprocessingMethod(preprocessing_type)
+    if preprocessing_type == PreprocessingMethod.T1_LINEAR:
         return preprocessing.T1Linear
-    elif preprocessing_type == preprocessing.PreprocessingMethod.PET_LINEAR:
+    elif preprocessing_type == PreprocessingMethod.PET_LINEAR:
         return preprocessing.PETLinear
-    elif preprocessing_type == preprocessing.PreprocessingMethod.FLAIR_LINEAR:
+    elif preprocessing_type == PreprocessingMethod.FLAIR_LINEAR:
         return preprocessing.FlairLinear
-    elif preprocessing_type == preprocessing.PreprocessingMethod.CUSTOM:
+    elif preprocessing_type == PreprocessingMethod.CUSTOM:
         return preprocessing.Custom
-    elif preprocessing_type == preprocessing.PreprocessingMethod.DWI_DTI:
+    elif preprocessing_type == PreprocessingMethod.DWI_DTI:
         return preprocessing.DWIDTI
     else:
         raise ValueError(
@@ -247,7 +248,7 @@ def get_infos_from_parameters(
     if "preprocessing_dict" in kwargs:
         kwargs = kwargs["preprocessing_dict"]
 
-    preprocessing_ = preprocessing.PreprocessingMethod(kwargs["preprocessing"])
+    preprocessing_ = PreprocessingMethod(kwargs["preprocessing"])
     mode = ExtractionMethod(kwargs["extract_method"])
     extraction = get_extraction(mode)(**kwargs)
     transforms = Transforms(extraction=extraction, **kwargs)

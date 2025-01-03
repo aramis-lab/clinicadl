@@ -1,4 +1,4 @@
-from .base import Preprocessing, PreprocessingMethod
+from .base import Preprocessing
 from .custom import Custom
 from .dti import DWIDTI
 from .flair import FlairLinear

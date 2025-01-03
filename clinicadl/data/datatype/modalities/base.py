@@ -3,17 +3,8 @@ from enum import Enum
 
 from pydantic import computed_field
 
+from clinicadl.data.datatype.utils import ImageModality
 from clinicadl.utils.config import ClinicaDLConfig
-
-
-class ImageModality(str, Enum):
-    """Possible modality for images in clinicaDL."""
-
-    T1W = "T1w"
-    DWI = "dwi"
-    PET = "pet"
-    FLAIR = "flair"
-    CUSTOM = "custom"
 
 
 class Modality(ClinicaDLConfig, abc.ABC):

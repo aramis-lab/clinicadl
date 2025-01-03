@@ -4,7 +4,8 @@ from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.data.datatype.preprocessing import Preprocessing, PreprocessingMethod
+from clinicadl.data.datatype.preprocessing import Preprocessing
+from clinicadl.data.datatype.utils import PreprocessingMethod
 from clinicadl.data.readers.reader import Reader
 from clinicadl.data.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms

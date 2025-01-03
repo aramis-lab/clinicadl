@@ -1,4 +1,3 @@
-from .base import ImageModality
 from .custom import Custom
 from .dwi import DWI
 from .flair import Flair

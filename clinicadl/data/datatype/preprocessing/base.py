@@ -1,21 +1,10 @@
 import abc
-from enum import Enum
 
 from pydantic import computed_field
 
 from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import ImageModality
+from clinicadl.data.datatype.utils import ImageModality, PreprocessingMethod
 from clinicadl.utils.config import ClinicaDLConfig
-
-
-class PreprocessingMethod(str, Enum):
-    """Possible preprocessing methods available in Clinica."""
-
-    T1_LINEAR = "t1-linear"
-    PET_LINEAR = "pet-linear"
-    FLAIR_LINEAR = "flair-linear"
-    CUSTOM = "custom"
-    DWI_DTI = "dwi-dti"
 
 
 class Preprocessing(ClinicaDLConfig, abc.ABC):
