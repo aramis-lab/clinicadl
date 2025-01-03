@@ -1,21 +1,34 @@
+from enum import Enum
 from logging import getLogger
 from typing import Optional
 
 from pydantic import computed_field
 
-from clinicadl.data.preprocessing import Preprocessing
-from clinicadl.utils.enum import (
-    DTIMeasure,
-    DTISpace,
-    PreprocessingMethod,
-)
-from clinicadl.utils.iotools.clinica_utils import FileType
+from clinicadl.data.datatype.file_type import FileType
+from clinicadl.data.datatype.modalities import DWI
 
-logger = getLogger("clinicadl.preprocessing.dti")
+from .base import Preprocessing, PreprocessingMethod
 
 
-class PreprocessingDTI(Preprocessing):
-    """Config class for Clinica's 't1-linear' preprocessing."""
+class DTIMeasure(str, Enum):
+    """Possible DTI measures."""
+
+    FRACTIONAL_ANISOTROPY = "FA"
+    MEAN_DIFFUSIVITY = "MD"
+    AXIAL_DIFFUSIVITY = "AD"
+    RADIAL_DIFFUSIVITY = "RD"
+
+
+class DTISpace(str, Enum):
+    """Possible DTI spaces."""
+
+    NATIVE = "native"
+    NORMALIZED = "normalized"
+    ALL = "*"
+
+
+class DWIDTI(Preprocessing, DWI):
+    """Config class for Clinica's 'dwi-dti' preprocessing."""
 
     dti_measure: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
     dti_space: DTISpace = DTISpace.ALL
@@ -26,28 +39,22 @@ class PreprocessingDTI(Preprocessing):
         """The preprocessing method."""
         return PreprocessingMethod.DWI_DTI
 
-    def get_bids_filerype(self, reconstruction: Optional[str] = None) -> FileType:
-        return FileType(pattern="dwi/sub-*_ses-*_dwi.nii*", description="DWI NIfTI")
-
     def get_caps_filetype(self) -> FileType:
-        """Return the query dict required to capture DWI DTI images.
-
-        Parameters
-        ----------
-        config: PreprocessingDTI
-
-        Returns
-        -------
-        FileType :
         """
+        Constructs the FileType for DWI_DTI preprocessing.
+        """
+
         measure = self.dti_measure
         space = self.dti_space
 
         return FileType(
             pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure.value}.nii.gz",
             description=f"DTI-based {measure.value} in space {space}.",
-            needed_pipeline="dwi_dti",
+            needed_pipeline=PreprocessingMethod.DWI_DTI,
         )
 
     def __str__(self):
+        """
+        Provides a string representation of the preprocessing configuration.
+        """
         return f"Preprocessing of DTI images with measure {self.dti_measure.value} and space {self.dti_space.value}. "

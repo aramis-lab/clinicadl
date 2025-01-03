@@ -2,9 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.data.preprocessing import PreprocessingT1
+from clinicadl.data.datatype.preprocessing import PreprocessingMethod, PreprocessingT1
 from clinicadl.data.readers import CapsReader
-from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,

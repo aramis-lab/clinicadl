@@ -3,15 +3,15 @@ from typing import Optional
 
 from pydantic import computed_field
 
-from clinicadl.utils.enum import LinearModality, PreprocessingMethod
-from clinicadl.utils.iotools.clinica_utils import FileType
+from clinicadl.data.datatype.file_type import FileType
+from clinicadl.data.datatype.modalities import Flair
 
-from .base import _PreprocessingWithCrop
+from .base import PreprocessingMethod, _PreprocessingWithCrop
 
 logger = getLogger("clinicadl.preprocessing.flair")
 
 
-class PreprocessingFlair(_PreprocessingWithCrop):
+class FlairLinear(_PreprocessingWithCrop, Flair):
     """Config class for Clinica's 'flair-linear' preprocessing."""
 
     @computed_field
@@ -20,14 +20,17 @@ class PreprocessingFlair(_PreprocessingWithCrop):
         """The preprocessing method."""
         return PreprocessingMethod.FLAIR_LINEAR
 
-    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
-        return FileType(pattern="sub-*_ses-*_flair.nii*", description="FLAIR T2w MRI")
-
     def get_caps_filetype(self) -> FileType:
+        """
+        Constructs the FileType for flair-linear preprocessing.
+        """
         return self.linear_nii(
-            modality=LinearModality.FLAIR,
+            modality=self.modality,
             needed_pipeline=PreprocessingMethod.FLAIR_LINEAR,
         )
 
     def __str__(self):
+        """
+        Provides a string representation of the preprocessing configuration.
+        """
         return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} Flair images with flair-linear pipeline"

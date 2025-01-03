@@ -4,15 +4,15 @@ from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.data.preprocessing import Preprocessing
+from clinicadl.data.datatype.preprocessing import Preprocessing, PreprocessingMethod
 from clinicadl.data.readers.reader import Reader
 from clinicadl.data.utils import insensitive_glob
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.utils.enum import PreprocessingMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
 )
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.caps_reader")
 
@@ -32,7 +32,7 @@ class CapsReader(Reader):
 
     def __init__(
         self,
-        caps_directory: Path,
+        caps_directory: PathType,
     ):
         """
         Initializes the CAPS reader by verifying the structure of the CAPS directory.
