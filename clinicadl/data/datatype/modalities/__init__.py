@@ -1,3 +1,4 @@
+from .base import Modality
 from .custom import Custom
 from .dwi import DWI
 from .flair import Flair

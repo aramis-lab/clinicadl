@@ -1,6 +1,4 @@
 from enum import Enum
-from logging import getLogger
-from typing import Optional
 
 from pydantic import computed_field
 
@@ -40,7 +38,7 @@ class DWIDTI(Preprocessing, DWI):
         """The preprocessing method."""
         return PreprocessingMethod.DWI_DTI
 
-    def get_caps_filetype(self) -> FileType:
+    def _get_caps_filetype(self) -> FileType:
         """
         Constructs the FileType for DWI_DTI preprocessing.
         """

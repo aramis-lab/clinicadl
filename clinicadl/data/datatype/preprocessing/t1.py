@@ -1,17 +1,15 @@
 from logging import getLogger
-from typing import Optional
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.modalities import T1w
 
-from .base import PreprocessingMethod, _PreprocessingWithCrop
+from .base import PreprocessingMethod, _LinearPreprocessing
 
 logger = getLogger("clinicadl.preprocessing.t1")
 
 
-class T1Linear(_PreprocessingWithCrop, T1w):
+class T1Linear(_LinearPreprocessing, T1w):
     """Config class for Clinica's 't1-linear' preprocessing."""
 
     @computed_field
@@ -19,14 +17,6 @@ class T1Linear(_PreprocessingWithCrop, T1w):
     def preprocessing(self) -> PreprocessingMethod:
         """The preprocessing method."""
         return PreprocessingMethod.T1_LINEAR
-
-    def get_caps_filetype(self) -> FileType:
-        """
-        Constructs the FileType for t1-linear preprocessing.
-        """
-        return self.linear_nii(
-            modality=self.modality, needed_pipeline=PreprocessingMethod.T1_LINEAR
-        )
 
     def __str__(self):
         """

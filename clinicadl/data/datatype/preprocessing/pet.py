@@ -3,10 +3,10 @@ from pydantic import computed_field
 from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.modalities import PET
 
-from .base import PreprocessingMethod, _PreprocessingWithCrop
+from .base import PreprocessingMethod, _LinearPreprocessing
 
 
-class PETLinear(_PreprocessingWithCrop, PET):
+class PETLinear(_LinearPreprocessing, PET):
     """Config class for Clinica's 'pet-linear' preprocessing."""
 
     @computed_field
@@ -15,7 +15,7 @@ class PETLinear(_PreprocessingWithCrop, PET):
         """The preprocessing method."""
         return PreprocessingMethod.PET_LINEAR
 
-    def get_caps_filetype(self) -> FileType:
+    def _get_caps_filetype(self) -> FileType:
         """
         Constructs the FileType for pet-linear preprocessing.
         """

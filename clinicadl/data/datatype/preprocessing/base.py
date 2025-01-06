@@ -3,7 +3,8 @@ import abc
 from pydantic import computed_field
 
 from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.utils import ImageModality, PreprocessingMethod
+from clinicadl.data.datatype.modalities import Modality
+from clinicadl.data.datatype.utils import PreprocessingMethod
 from clinicadl.utils.config import ClinicaDLConfig
 
 
@@ -28,50 +29,40 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         Returns the FileType associated with the preprocessed data.
         This method delegates to the `get_caps_filetype()` method to get the details.
         """
-        return self.get_caps_filetype()
+        return self._get_caps_filetype()
 
     @abc.abstractmethod
-    def get_caps_filetype(self) -> FileType:
+    def _get_caps_filetype(self) -> FileType:
         """
         Abstract method to obtain FileType details.
 
         The specific implementation of this method should return a FileType
         object based on the preprocessing pipeline and modality.
         """
-        pass
 
 
-class _PreprocessingWithCrop(Preprocessing):
+class _LinearPreprocessing(Preprocessing, Modality):
     """
-    Base class for preprocessing methods with the option to use uncropped images.
+    Base class for linear preprocessings (`t1-linear`, `flair-linear` or `pet-linear`).
 
     If the `use_uncropped_image` is set to True, it uses the uncropped image pattern;
-    otherwise, it adds the '_desc-Crop' suffix to the pattern to indicate cropped images.
+    otherwise, it adds the `_desc-Crop` suffix to the pattern to indicate cropped images.
     """
 
     use_uncropped_image: bool = False
 
-    def linear_nii(
-        self, modality: ImageModality, needed_pipeline: PreprocessingMethod
-    ) -> FileType:
+    def _get_caps_filetype(self) -> FileType:
         """
-        Constructs the file type for linear preprocessed image data in CAPS format.
-
-        Args:
-            modality (ImageModality): The image modality (e.g., T1w, DWI, etc.)
-            needed_pipeline (PreprocessingMethod): The preprocessing pipeline applied to the modality.
-
-        Returns:
-            FileType: A `FileType` object that describes the preprocessed file type.
+        Base method to construct the FileType for linear preprocessings.
         """
         # Determine the suffix based on the uncropped image option
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
 
         # Construct the pattern based on the preprocessing method and modality
-        pattern = f"{self.preprocessing.value.replace('-', '_')}/*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{modality.value}.nii.gz"
+        pattern = f"{self.preprocessing.value.replace('-', '_')}/*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii.gz"
 
         # Construct the description based on the uncropped image option
-        description = f"{modality.value} Image registered in MNI152NLin2009cSym space using {needed_pipeline.value} pipeline"
+        description = f"{self.modality.value} Image registered in MNI152NLin2009cSym space using {self.preprocessing.value} pipeline"
         if not self.use_uncropped_image:
             description += (
                 " and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
@@ -81,5 +72,5 @@ class _PreprocessingWithCrop(Preprocessing):
         return FileType(
             pattern=pattern,
             description=description,
-            needed_pipeline=needed_pipeline,
+            needed_pipeline=self.preprocessing.value,
         )

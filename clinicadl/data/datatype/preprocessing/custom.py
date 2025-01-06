@@ -18,7 +18,7 @@ class Custom(Preprocessing, CustomModality):
         """The preprocessing method."""
         return PreprocessingMethod.CUSTOM
 
-    def get_caps_filetype(self) -> FileType:
+    def _get_caps_filetype(self) -> FileType:
         """
         Constructs the FileType for custom preprocessing.
         """
