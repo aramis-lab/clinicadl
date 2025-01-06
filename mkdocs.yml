@@ -20,10 +20,10 @@ google_analytics:
 
 # Configuration
 theme:
-  name: material
+  name: mkdocs
   custom_dir: docs/overrides
   icon:
-    repo: material/github
+    repo: mkdocs/github
   language: en
   logo: images/clinicadl_logo.png
   favicon: images/favicon.png
@@ -33,12 +33,12 @@ theme:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: mkdocs/toggle-switch-off-outline
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       toggle:
-        icon: material/toggle-switch
+        icon: mkdocs/toggle-switch
         name: Switch to light mode
 
 # Version panel
@@ -50,11 +50,11 @@ extra:
   feature:
     tabs: true
   social:
-    - icon: material/github
+    - icon: mkdocs/github
       link: https://github.com/aramis-lab/
-    - icon: material/twitter
+    - icon: mkdocs/twitter
       link: https://twitter.com/clinica_run
-    - icon: material/earth
+    - icon: mkdocs/earth
       link: http://www.aramislab.fr
   version:
     default: stable
