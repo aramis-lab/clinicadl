@@ -71,8 +71,8 @@ optional = true
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.6.1"
-mkdocs-material = "*"
-pymdown-extensions = "*"
+mkdocs-material = "^9.5.0"
+pymdown-extensions = "^10.13"
 
 
 [build-system]
