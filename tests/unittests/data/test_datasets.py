@@ -91,7 +91,6 @@ def test_bad_caps_dataset():
         CapsDataset(
             caps_directory=caps_dir,
             preprocessing=PETLinear(),
-
             transforms=transforms,
         )
 
