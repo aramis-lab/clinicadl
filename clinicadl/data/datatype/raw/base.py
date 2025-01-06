@@ -8,10 +8,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 class RawData(ClinicaDLConfig, abc.ABC):
     """
-    Abstract base class for the preprocessing procedure.
-
-    This class defines the common structure and methods that all preprocessing
-    procedures should follow.
+    Abstract base class for the use of Raw Data (Unprocessed data in BIDS format).
     """
 
     @computed_field
@@ -23,10 +20,10 @@ class RawData(ClinicaDLConfig, abc.ABC):
         This property uses the `get_bids_filetype` method to return the correct
         file type for the modality being handled.
         """
-        return self.get_bids_filetype()
+        return self._get_bids_filetype()
 
     @abc.abstractmethod
-    def get_bids_filetype(self) -> FileType:
+    def _get_bids_filetype(self) -> FileType:
         """
         Abstract method to obtain the BIDS-compatible FileType.
 

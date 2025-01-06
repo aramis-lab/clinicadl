@@ -9,10 +9,10 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 class Modality(ClinicaDLConfig, abc.ABC):
     """
-    Abstract base class for the preprocessing procedure.
+    Abstract configuration class for image modalities.
 
-    This class defines the common structure and methods that all preprocessing
-    procedures should follow.
+    This class defines the common structure and methods that all image modalities
+    modalities should follow.
     """
 
     @computed_field

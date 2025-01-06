@@ -14,7 +14,9 @@ class RawPET(RawData, PET):
     methods to define file patterns and descriptions.
     """
 
-    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
+    reconstruction: Optional[str] = None
+
+    def _get_bids_filetype(self) -> FileType:
         """
         Generate the BIDS-compatible file type pattern and description.
 
@@ -28,9 +30,9 @@ class RawPET(RawData, PET):
         if self.tracer:
             description += f" with {self.tracer} tracer"
             trc = f"_trc-{self.tracer}"
-        if reconstruction:
-            description += f" and reconstruction method {reconstruction}"
-            rec = f"_rec-{reconstruction}"
+        if self.reconstruction:
+            description += f" and reconstruction method {self.reconstruction}"
+            rec = f"_rec-{self.reconstruction}"
 
         return FileType(pattern=f"pet/*{trc}{rec}_pet.nii*", description=description)
 

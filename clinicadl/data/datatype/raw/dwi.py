@@ -14,7 +14,7 @@ class RawDWI(RawData, DWI):
     methods to define file patterns and descriptions.
     """
 
-    def get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
+    def _get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
         """
         Get the BIDS-compatible file type for raw DWI images.
 

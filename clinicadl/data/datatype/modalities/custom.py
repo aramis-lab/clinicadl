@@ -25,19 +25,3 @@ class Custom(Modality):
             ImageModality: The modality, always set to ImageModality.CUSTOM.
         """
         return ImageModality.CUSTOM
-
-    @field_validator("custom_suffix", mode="before")
-    def validate_suffix(cls, value: str) -> str:
-        """
-        Validate the custom suffix to ensure it is not empty.
-
-        Args:
-            value (str): The custom suffix to validate.
-
-        Returns:
-            str: The validated suffix.
-
-        Raises:
-            ValueError: If the suffix is empty.
-        """
-        return str(value)

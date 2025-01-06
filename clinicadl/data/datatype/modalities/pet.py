@@ -45,17 +45,3 @@ class PET(Modality):
             ImageModality: The modality, always set to ImageModality.CUSTOM.
         """
         return ImageModality.PET
-
-
-# Create a PET configuration with default values
-default_pet = PET()
-print(default_pet.modality)  # Output: ImageModality.PET
-print(default_pet.tracer)  # Output: Tracer.FFDG
-print(
-    default_pet.suvr_reference_region
-)  # Output: SUVRReferenceRegions.CEREBELLUM_PONS2
-
-# Create a PET configuration with a different tracer
-custom_pet = PET(tracer=Tracer.FAV45, suvr_reference_region=SUVRReferenceRegions.PONS)
-print(custom_pet.tracer)  # Output: Tracer.FAV45
-print(custom_pet.suvr_reference_region)  # Output: SUVRReferenceRegions.PONS
