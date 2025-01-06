@@ -1,7 +1,7 @@
 import pytest
 
-from clinicadl.data.config import FileType
-from clinicadl.utils.enum import PreprocessingMethod
+from clinicadl.data.datatype.file_type import FileType
+from clinicadl.data.datatype.utils import PreprocessingMethod
 
 
 def test_good_filetype():
