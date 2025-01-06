@@ -8,7 +8,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 class RawData(ClinicaDLConfig, abc.ABC):
     """
-    Abstract base class for the use of Raw Data (Unprocessed data in BIDS format).
+    Abstract base class for handling raw (unprocessed) neuroimaging data in BIDS format.
     """
 
     @computed_field
