@@ -8,7 +8,7 @@ import torch
 import torchio as tio
 from pydantic import computed_field
 
-from clinicadl.dictionary.words import IMAGE, LABEL
+from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.typing import PathType
@@ -46,8 +46,9 @@ class Extraction(ClinicaDLConfig, ABC):
     def extract_method(self) -> ExtractionMethod:
         """The method to be used for the extraction process (Image, Patch, Slice)."""
 
+    # TODO : put in private?
     @abstractmethod
-    def extract_sample(
+    def extract_tensor_sample(
         self,
         image_tensor: torch.Tensor,
         sample_index: int,
@@ -151,7 +152,7 @@ class Extraction(ClinicaDLConfig, ABC):
     @abstractmethod
     def format_output(
         self,
-        tio_sample: tio.Subject,
+        data_point: DataPoint,
         participant_id: str,
         session_id: str,
         image_path: PathType,
@@ -162,9 +163,8 @@ class Extraction(ClinicaDLConfig, ABC):
 
         Parameters
         ----------
-        tio_sample : tio.Subject
-            a TorchIO Subject, with at least a ScalarImage named 'image'
-            and an attribute named 'label'.
+        data_point : DataPoint
+            the `DataPoint` object associated to the sample.
         participant_id : str
             the subject concerned.
         session_id : str
@@ -178,82 +178,49 @@ class Extraction(ClinicaDLConfig, ABC):
         -------
         Sample
             a Sample object with all the relevant information on the sample.
-
-        Raises
-        ------
-        AttributeError
-            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
-            'label'.
         """
 
-    def extract_tio_sample(
-        self, tio_image: tio.Subject, sample_index: int
-    ) -> Tuple[tio.Subject, Any]:
+    def extract_sample(
+        self, data_point: DataPoint, sample_index: int
+    ) -> Tuple[DataPoint, Any]:
         """
-        Extracts a sample from a TorchIO Subject.
+        Extracts a sample from a DataPoint object.
 
         Parameters
         ----------
-        tio_image : tio.Subject
-            The TorchIO Subject to perform extraction on.
+        data_point : DataPoint
+            The DataPoint to perform extraction on.
         sample_index : int
             Index indicating the sample to extract.
 
         Returns
         -------
-        tio.Subject
-            A new TorchIO Subject with the extracted samples for each image
-            present in the original `tio_image`. The sample extracted from an
+        DataPoint
+            A new DataPoint with the extracted samples for each image
+            present in the original `data_point`. The sample extracted from an
             image is accessible via the same name as was the image in the original
-            `tio_image`.
+            `data_point`.
         Any
             A description of the sample (e.g. slice position or patch index).
 
         Raises
         ------
-        ValueError
-            If all the images in `tio_image` don't have the same shape.
         IndexError
             If 'sample_index' is greater or equal to the number of samples in the images.
         """
-        tio_sample = deepcopy(tio_image)
+        extracted_data_point = deepcopy(data_point)
 
         image: tio.Image
-        for i, (name, image) in enumerate(
-            tio_image.get_images_dict(intensity_only=False).items()
-        ):
-            if i == 0:
-                shape = image.tensor.shape
-                description = self._get_sample_description(image.tensor, sample_index)
-            if image.tensor.shape != shape:  # pylint: disable=possibly-used-before-assignment
-                raise ValueError(
-                    f"Got images of different size in 'tio_image': {tio_image.get_images_names()[0]} is "
-                    f"{shape}, whereas {name} is {image.tensor.shape}"
-                )
-
-            sample = self.extract_sample(image.tensor, sample_index)
+        for name, image in data_point.get_images_dict(intensity_only=False).items():
+            sample = self.extract_tensor_sample(image.tensor, sample_index)
 
             if isinstance(image, tio.ScalarImage):
-                tio_sample.add_image(tio.ScalarImage(tensor=sample), name)
+                extracted_data_point.add_image(tio.ScalarImage(tensor=sample), name)
             elif isinstance(image, tio.LabelMap):
-                tio_sample.add_image(tio.LabelMap(tensor=sample), name)
+                extracted_data_point.add_image(tio.LabelMap(tensor=sample), name)
 
-        return tio_sample, description  # pylint: disable=possibly-used-before-assignment
+        description = self._get_sample_description(
+            data_point.image.tensor, sample_index
+        )
 
-    @staticmethod
-    def _check_tio_subject(tio_subject: tio.Subject):
-        """
-        Checks that a TorchIO Subject is valid, i.e. a Subject with a TorchIO ScalarImage
-        named 'image' and a label named 'label'.
-        """
-        if not hasattr(tio_subject, IMAGE) or not isinstance(
-            tio_subject.image, tio.ScalarImage
-        ):
-            raise AttributeError(
-                "The TorchIO Subject must contain a ScalarImage named 'image'. Got only the following images: "
-                f"{tio_subject.get_images_names()}"
-            )
-        if not hasattr(tio_subject, LABEL):
-            raise AttributeError(
-                "The TorchIO Subject must contain an attribute named 'label'."
-            )
+        return extracted_data_point, description
