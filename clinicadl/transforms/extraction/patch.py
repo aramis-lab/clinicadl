@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 
 import torch
 import torchio as tio
-from pydantic import NonNegativeInt, PositiveInt, computed_field, field_validator
+from pydantic import NonNegativeInt, PositiveInt, computed_field
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.dictionary.suffixes import PT
@@ -69,8 +69,21 @@ class Patch(Extraction):
         stride will be used for the three spatial dimensions.
     """
 
-    patch_size: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]] = 50
-    stride: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]] = 50
+    patch_size: Tuple[PositiveInt, PositiveInt, PositiveInt]
+    stride: Tuple[PositiveInt, PositiveInt, PositiveInt]
+
+    def __init__(
+        self,
+        *,
+        patch_size: Union[
+            PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]
+        ] = 50,
+        stride: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]] = 50,
+    ) -> None:
+        super().__init__(
+            patch_size=self._ensure_tuples(patch_size),
+            stride=self._ensure_tuples(stride),
+        )
 
     @computed_field
     @property
@@ -78,18 +91,17 @@ class Patch(Extraction):
         """The method to be used for the extraction process (Image, Patch, Slice)."""
         return ExtractionMethod.PATCH
 
-    @field_validator("patch_size", "stride", mode="after")
-    @classmethod
-    def ensure_tuples(
-        cls, v: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
+    @staticmethod
+    def _ensure_tuples(
+        value: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]],
     ) -> Tuple[PositiveInt, PositiveInt, PositiveInt]:
         """
-        Ensures that 'patch_size' and 'stride' is always a tuple.
+        Ensures that 'patch_size' and 'stride' are always tuples.
         """
-        if isinstance(v, int):
-            return (v, v, v)
+        if isinstance(value, int):
+            return (value, value, value)
         else:
-            return v
+            return value
 
     def num_samples_per_image(self, image: torch.Tensor) -> int:
         """

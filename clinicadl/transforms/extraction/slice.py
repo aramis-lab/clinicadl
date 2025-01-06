@@ -9,7 +9,6 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
     computed_field,
-    field_validator,
     model_validator,
 )
 from typing_extensions import Self
@@ -84,8 +83,23 @@ class Slice(Extraction):
 
     slices: Optional[List[NonNegativeInt]] = None
     discarded_slices: Optional[List[NonNegativeInt]] = None
-    borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None
+    borders: Optional[Tuple[PositiveInt, PositiveInt]] = None
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
+
+    def __init__(
+        self,
+        *,
+        slices: Optional[List[NonNegativeInt]] = None,
+        discarded_slices: Optional[List[NonNegativeInt]] = None,
+        borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None,
+        slice_direction: SliceDirection = SliceDirection.SAGITTAL,
+    ) -> None:
+        super().__init__(
+            slices=slices,
+            discarded_slices=discarded_slices,
+            borders=self._ensure_tuple(borders),
+            slice_direction=slice_direction,
+        )
 
     @computed_field
     @property
@@ -93,18 +107,17 @@ class Slice(Extraction):
         """The method to be used for the extraction process (Image, Patch, Slice)."""
         return ExtractionMethod.SLICE
 
-    @field_validator("borders", mode="after")
-    @classmethod
-    def validate_borders(
-        cls, v: Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]
+    @staticmethod
+    def _ensure_tuple(
+        value: Union[PositiveInt, Tuple[PositiveInt, PositiveInt]],
     ) -> Tuple[PositiveInt, PositiveInt]:
         """
         Ensures that 'borders' is always a tuple.
         """
-        if isinstance(v, int):
-            return (v, v)
+        if isinstance(value, int):
+            return (value, value)
         else:
-            return v
+            return value
 
     @model_validator(mode="after")
     def validate_slices(self) -> Self:
