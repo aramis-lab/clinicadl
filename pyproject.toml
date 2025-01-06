@@ -66,10 +66,10 @@ mlflow = ["mlflow>=2.0.0,<3.0"]
 codecarbon = ["codecarbon>=2.3.1,<3.0"]
 
 
-[tool.poetry.group.docs]
+[tool.group.docs]
 optional = true
 
-[tool.poetry.group.docs.dependencies]
+[tool.group.docs.dependencies]
 mkdocs = "^1.6.1"
 mkdocs-material = "^9.5.0"
 pymdown-extensions = "^10.13"
