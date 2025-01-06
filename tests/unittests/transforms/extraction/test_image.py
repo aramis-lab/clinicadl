@@ -7,6 +7,7 @@ import pytest
 import torch
 import torchio as tio
 
+from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Image
 
 
@@ -30,13 +31,15 @@ def test_sample_path():
     ) == Path("sub-001/ses-M001/sub-001_ses-M001_FLAIR.pt")
 
 
-def test_extract_sample():
+def test_extract_tensor_sample():
     image = Image()
     image_tensor = torch.randn(1, 3, 4, 5)
-    assert (image.extract_sample(image_tensor, sample_index=0) == image_tensor).all()
+    assert (
+        image.extract_tensor_sample(image_tensor, sample_index=0) == image_tensor
+    ).all()
 
     with pytest.raises(IndexError):
-        image.extract_sample(image_tensor, sample_index=1)
+        image.extract_tensor_sample(image_tensor, sample_index=1)
 
 
 def test_extract():
@@ -60,43 +63,36 @@ def test_extract():
     shutil.rmtree(tmp_dir)
 
 
-def test_extract_tio_sample():
+def test_extract_sample():
     image = Image()
     image_tensor = torch.randn(1, 3, 4, 5)
     mask_1 = torch.ones(1, 3, 4, 5)
     mask_2 = torch.zeros(1, 3, 4, 5)
     label = torch.ones(1, 3, 4, 5)
 
-    tio_image = tio.Subject(
+    data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
         mask_2=tio.LabelMap(tensor=mask_2),
     )
-    tio_sample, description = image.extract_tio_sample(tio_image)
+    extracted_data_point, description = image.extract_sample(data_point)
     assert description is None
-    assert isinstance(tio_sample.image, tio.ScalarImage)
-    assert (tio_sample.image.tensor == image_tensor).all()
-    assert isinstance(tio_sample.label, tio.LabelMap)
-    assert (tio_sample.label.tensor == label).all()
-    assert isinstance(tio_sample.mask_1, tio.LabelMap)
-    assert (tio_sample.mask_1.tensor == mask_1).all()
-    assert isinstance(tio_sample.mask_2, tio.LabelMap)
-    assert (tio_sample.mask_2.tensor == mask_2).all()
+    assert isinstance(extracted_data_point.image, tio.ScalarImage)
+    assert (extracted_data_point.image.tensor == image_tensor).all()
+    assert isinstance(extracted_data_point.label, tio.LabelMap)
+    assert (extracted_data_point.label.tensor == label).all()
+    assert isinstance(extracted_data_point.mask_1, tio.LabelMap)
+    assert (extracted_data_point.mask_1.tensor == mask_1).all()
+    assert isinstance(extracted_data_point.mask_2, tio.LabelMap)
+    assert (extracted_data_point.mask_2.tensor == mask_2).all()
 
-    tio_image = tio.Subject(image=tio.ScalarImage(tensor=image_tensor), label=1)
-    tio_sample, _ = image.extract_tio_sample(tio_image)
-    assert tio_sample.label == 1
+    data_point = DataPoint(image=tio.ScalarImage(tensor=image_tensor), label=1)
+    extracted_data_point, _ = image.extract_sample(data_point)
+    assert extracted_data_point.label == 1
 
     with pytest.raises(IndexError):
-        image.extract_tio_sample(tio_image, sample_index=1)
-    with pytest.raises(ValueError):
-        image.extract_tio_sample(
-            tio.Subject(
-                label=tio.LabelMap(tensor=label),
-                image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 4)),
-            )
-        )
+        image.extract_sample(data_point, sample_index=1)
 
 
 def test_format_output():
@@ -105,13 +101,13 @@ def test_format_output():
     mask_1 = torch.ones(1, 3, 4, 5)
     label = torch.ones(1, 3, 4, 5)
 
-    tio_sample = tio.Subject(
+    sample_data = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
     )
     output = image.format_output(
-        tio_sample,
+        sample_data,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
@@ -123,36 +119,14 @@ def test_format_output():
     assert output.extraction == "image"
     assert output.image_path == "sub-001_ses-M001_T1w.nii.gz"
 
-    tio_sample = tio.Subject(
+    sample_data = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=0.5,
     )
     output = image.format_output(
-        tio_sample,
+        sample_data,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
     )
     assert output.label == 0.5
-
-
-@pytest.mark.parametrize(
-    "tio_sample",
-    [
-        tio.Subject(
-            label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
-        ),
-        tio.Subject(
-            image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-        ),
-    ],
-)
-def test_format_output_errors(tio_sample):
-    image = Image()
-    with pytest.raises(AttributeError):
-        image.format_output(
-            tio_sample,
-            participant_id="sub-001",
-            session_id="ses-M001",
-            image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
-        )

@@ -9,11 +9,11 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
     computed_field,
-    field_validator,
     model_validator,
 )
 from typing_extensions import Self
 
+from clinicadl.data.structures import DataPoint
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import (
     ExtractionMethod,
@@ -83,8 +83,23 @@ class Slice(Extraction):
 
     slices: Optional[List[NonNegativeInt]] = None
     discarded_slices: Optional[List[NonNegativeInt]] = None
-    borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None
+    borders: Optional[Tuple[PositiveInt, PositiveInt]] = None
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
+
+    def __init__(
+        self,
+        *,
+        slices: Optional[List[NonNegativeInt]] = None,
+        discarded_slices: Optional[List[NonNegativeInt]] = None,
+        borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None,
+        slice_direction: SliceDirection = SliceDirection.SAGITTAL,
+    ) -> None:
+        super().__init__(
+            slices=slices,
+            discarded_slices=discarded_slices,
+            borders=self._ensure_tuple(borders),
+            slice_direction=slice_direction,
+        )
 
     @computed_field
     @property
@@ -92,18 +107,17 @@ class Slice(Extraction):
         """The method to be used for the extraction process (Image, Patch, Slice)."""
         return ExtractionMethod.SLICE
 
-    @field_validator("borders", mode="after")
-    @classmethod
-    def validate_borders(
-        cls, v: Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]
+    @staticmethod
+    def _ensure_tuple(
+        value: Union[PositiveInt, Tuple[PositiveInt, PositiveInt]],
     ) -> Tuple[PositiveInt, PositiveInt]:
         """
         Ensures that 'borders' is always a tuple.
         """
-        if isinstance(v, int):
-            return (v, v)
+        if isinstance(value, int):
+            return (value, value)
         else:
-            return v
+            return value
 
     @model_validator(mode="after")
     def validate_slices(self) -> Self:
@@ -161,14 +175,14 @@ class Slice(Extraction):
         image_tensor = nifti_to_tensor(nii_path)
         slices = []
         for i in range(self.num_samples_per_image(image_tensor)):
-            slice_tensor = self.extract_sample(image_tensor, i).squeeze(
+            slice_tensor = self.extract_tensor_sample(image_tensor, i).squeeze(
                 self.slice_direction + 1
             )
             slices.append((self.sample_path(nii_path, i), slice_tensor))
 
         return slices
 
-    def extract_sample(
+    def extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
     ) -> torch.Tensor:
         """
@@ -304,7 +318,7 @@ class Slice(Extraction):
 
     def format_output(
         self,
-        tio_sample: tio.Subject,
+        data_point: DataPoint,
         participant_id: str,
         session_id: str,
         image_path: PathType,
@@ -315,9 +329,8 @@ class Slice(Extraction):
 
         Parameters
         ----------
-        tio_sample : tio.Subject
-            a TorchIO Subject corresponding to the slice, with at least a ScalarImage named 'image',
-            an attribute named 'label'. Slices inside should be in 4D (including a channel dimension).
+        data_point : DataPoint
+            the `DataPoint` object associated to the slice.
         participant_id : str
             the subject concerned.
         session_id : str
@@ -332,20 +345,12 @@ class Slice(Extraction):
         SliceSample
             a SliceSample object with the slice (a 3D tensor with a channel dimension)
             and all the relevant information on the slice.
-
-        Raises
-        ------
-        AttributeError
-            if `tio_sample` doesn't contain a TorchIO ScalarImage named 'image' and an attribute
-            'label'.
         """
-        self._check_tio_subject(tio_sample)
-
-        slice_ = tio_sample.image.tensor.squeeze(self.slice_direction + 1)
-        if isinstance(tio_sample.label, tio.Image):
-            label = tio_sample.label.tensor.squeeze(self.slice_direction + 1)
+        slice_ = data_point.image.tensor
+        if isinstance(data_point.label, tio.Image):
+            label = data_point.label.tensor
         else:
-            label = tio_sample.label
+            label = data_point.label
 
         return SliceSample(
             sample=slice_,
@@ -357,34 +362,32 @@ class Slice(Extraction):
             slice_direction=self.slice_direction,
         )
 
-    def extract_tio_sample(
-        self, tio_image: tio.Subject, sample_index: int
-    ) -> Tuple[tio.Subject, int]:
+    def extract_sample(
+        self, data_point: DataPoint, sample_index: int
+    ) -> Tuple[DataPoint, int]:
         """
-        Extracts a slice from a TorchIO Subject.
+        Extracts a slice from a DataPoint.
 
         Parameters
         ----------
-        tio_image : tio.Subject
-            The TorchIO Subject to perform extraction on.
+        data_point : DataPoint
+            The DataPoint to perform extraction on.
         sample_index : int
             Index indicating the slice to extract.
 
         Returns
         -------
-        tio.Subject
-            A new TorchIO Subject with the extracted slices for each image
-            present in the original `tio_image`. The slice extracted from an
+        DataPoint
+            A new DataPoint object with the extracted slices for each image
+            present in the original `data_point`. The slice extracted from an
             image is accessible via the same name as was the image in the original
-            `tio_image`.
+            `data_point`.
         int
             The slice position in the original image.
 
         Raises
         ------
-        ValueError
-            If all the images in `tio_image` don't have the same shape.
         IndexError
             If 'sample_index' is greater or equal to the number of slices in the images.
         """
-        return super().extract_tio_sample(tio_image, sample_index)
+        return super().extract_sample(data_point, sample_index)
