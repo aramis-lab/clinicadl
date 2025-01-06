@@ -60,14 +60,11 @@ class _LinearPreprocessing(Preprocessing, Modality):
 
         # Construct the pattern based on the preprocessing method and modality
         if self.preprocessing == PreprocessingMethod.PET_LINEAR:
-            filename = (
-                f"*_trc-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-*_{self.modality.value}.nii.gz",
-            )
+            filename = f"*_trc-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-*_{self.modality.value}.nii.gz"
         else:
             filename = f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii.gz"
 
-        pattern = f"{self.preprocessing.value.replace('-', '_')}/{filename}"
-
+        pattern = self.preprocessing.value.replace("-", "_") + f"/{filename}"
         # Construct the description based on the uncropped image option
         description = f"{self.modality.value} Image registered in MNI152NLin2009cSym space using {self.preprocessing.value} pipeline"
 
