@@ -21,6 +21,7 @@ bids_dir = Path(__file__).parents[1] / "ressources" / "bids_example"
 
 def test_good_caps_dataset():
     preprocessing = T1Linear()
+
     transforms = Transforms(image_transforms=[tio.RescaleIntensity()])
 
     caps_dataset = CapsDataset(
@@ -90,6 +91,7 @@ def test_bad_caps_dataset():
         CapsDataset(
             caps_directory=caps_dir,
             preprocessing=PETLinear(),
+
             transforms=transforms,
         )
 
