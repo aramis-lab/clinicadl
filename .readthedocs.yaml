@@ -13,8 +13,8 @@ build:
   jobs:
     post_create_environment:
       # Install Poetry 1.7
-      # TODO: Investigate why pipeline is broken with 1.8
-      - pip install poetry==2.0.0
+      # TODO: Investigate why pipeline is broken with 1.8 and with 2.0.0
+      - pip install poetry==1.7.1
       # Do not use virtual environments
       - poetry config virtualenvs.create false
       # Install docs group of dependencies
