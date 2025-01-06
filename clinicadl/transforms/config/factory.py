@@ -26,7 +26,9 @@ from .spatial import (
     CropOrPadConfig,
     EnsureShapeMultipleConfig,
     PadConfig,
+    ResampleConfig,
     ResizeConfig,
+    ToCanonicalConfig,
 )
 from .spatial_augmentations import (
     RandomAffineConfig,

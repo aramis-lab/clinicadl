@@ -10,8 +10,9 @@ from pydantic import (
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import TransformConfig, _AnatomicalAxesConfig
+from .base import TransformConfig
 from .enum import (
+    AnatomicalAxis,
     CenterMode,
     ImplementedTransform,
     InterpolationMode,
@@ -28,9 +29,16 @@ __all__ = [
 ]
 
 
-class RandomFlipConfig(TransformConfig, _AnatomicalAxesConfig):
+class RandomFlipConfig(TransformConfig):
     """Config class for RandomFlip augmentation."""
 
+    axes: Union[
+        NumericalAxis,
+        Tuple[NumericalAxis, ...],
+        AnatomicalAxis,
+        Tuple[AnatomicalAxis, ...],
+        DefaultFromLibrary,
+    ] = DefaultFromLibrary.YES
     flip_probability: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
 
     @computed_field

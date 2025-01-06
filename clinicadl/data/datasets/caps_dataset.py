@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 
 from clinicadl.data.preprocessing import Preprocessing, PreprocessingT1
 from clinicadl.data.readers.caps_reader import CapsReader
+from clinicadl.data.structures import DataPoint
 from clinicadl.data.utils import (
     Mask,
     check_df,
@@ -21,7 +22,6 @@ from clinicadl.data.utils import (
 )
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.transforms.utils import get_tio_image
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.loading import nifti_to_tensor, pt_to_tensor
@@ -420,22 +420,22 @@ class CapsDataset(Dataset):
         label = self._get_label(img_index)
         masks = self._get_masks(img_index)
 
-        tio_image = get_tio_image(image, label, **masks)
+        data_point = DataPoint(image, label, **masks)
 
-        tio_image = self.image_transform(tio_image)
+        data_point = self.image_transform(data_point)
         if not self.eval_mode:
-            tio_image = self.image_augmentation(tio_image)
+            data_point = self.image_augmentation(data_point)
 
-        tio_sample, sample_description = self.extraction.extract_tio_sample(
-            tio_image, sample_index
+        sample, sample_description = self.extraction.extract_sample(
+            data_point, sample_index
         )
 
-        tio_sample = self.sample_transform(tio_sample)
+        sample = self.sample_transform(sample)
         if not self.eval_mode:
-            tio_sample = self.sample_augmentation(tio_sample)
+            sample = self.sample_augmentation(sample)
 
         return self.extraction.format_output(
-            tio_sample,
+            sample,
             participant_id=participant,
             session_id=session,
             image_path=image_path,

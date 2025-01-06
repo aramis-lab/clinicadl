@@ -13,7 +13,7 @@ from .config import (
     create_transform_config,
 )
 from .config.base import OneOfConfig
-from .utils import Transform
+from .types import Transform
 
 
 def get_transform_config(

@@ -24,7 +24,9 @@ class ImplementedTransform(str, BaseEnum):
     Z_NORMALIZATION = "ZNormalization"
     MASK = "Mask"
     CROP_OR_PAD = "CropOrPad"
+    TO_CANONICAL = "ToCanonical"
     CLAMP = "Clamp"
+    RESAMPLE = "Resample"
     RESIZE = "Resize"
     ENSURE_MULTIPLE = "EnsureShapeMultiple"
     CROP = "Crop"
@@ -136,7 +138,7 @@ class AnatomicalAxis(str, Enum):
     """
 
     LEFT_RIGHT = "LR"
-    ANTERIOR_POSTERIOR = "AP"
+    POSTERIOR_ANTERIOR = "PA"
     INFERIOR_SUPERIOR = "IS"
 
 

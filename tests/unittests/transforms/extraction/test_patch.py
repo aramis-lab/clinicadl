@@ -8,6 +8,7 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
+from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Patch
 
 
@@ -52,30 +53,30 @@ def test_sample_path():
     )
 
 
-def test_extract_sample():
+def test_extract_tensor_sample():
     image_tensor = torch.randn(1, 5, 7, 3)
 
     patch = Patch(patch_size=2, stride=1)
     assert (
-        patch.extract_sample(image_tensor, sample_index=1)
+        patch.extract_tensor_sample(image_tensor, sample_index=1)
         == image_tensor[:, :2, :2, 1:3]  # .view starts with the last dimension
     ).all()
 
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
     assert (
-        patch.extract_sample(image_tensor, sample_index=5)
+        patch.extract_tensor_sample(image_tensor, sample_index=5)
         == image_tensor[:, :2, 4:7, 1:3]
     ).all()
 
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
     assert (
-        patch.extract_sample(image_tensor, sample_index=7)
+        patch.extract_tensor_sample(image_tensor, sample_index=7)
         == image_tensor[:, 1:3, :3, 1:3]
     ).all()
 
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
     with pytest.raises(IndexError):
-        patch.extract_sample(image_tensor, sample_index=24)
+        patch.extract_tensor_sample(image_tensor, sample_index=24)
 
 
 def test_extract():
@@ -102,40 +103,32 @@ def test_extract():
     shutil.rmtree(tmp_dir)
 
 
-def test_extract_tio_sample():
+def test_extract_sample():
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
     image_tensor = torch.randn(1, 5, 7, 3)
     mask_1 = torch.ones(1, 5, 7, 3)
     label = torch.ones(1, 5, 7, 3)
 
-    tio_image = tio.Subject(
+    data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
     )
-    tio_sample, description = patch.extract_tio_sample(tio_image, sample_index=5)
+    extracted_data_point, description = patch.extract_sample(data_point, sample_index=5)
     assert description == 5
-    assert isinstance(tio_sample.image, tio.ScalarImage)
-    assert (tio_sample.image.tensor == image_tensor[:, :2, 4:7, 1:3]).all()
-    assert isinstance(tio_sample.label, tio.LabelMap)
-    assert (tio_sample.label.tensor == label[:, :2, 4:7, 1:3]).all()
-    assert isinstance(tio_sample.mask_1, tio.LabelMap)
-    assert (tio_sample.mask_1.tensor == mask_1[:, :2, 4:7, 1:3]).all()
+    assert isinstance(extracted_data_point.image, tio.ScalarImage)
+    assert (extracted_data_point.image.tensor == image_tensor[:, :2, 4:7, 1:3]).all()
+    assert isinstance(extracted_data_point.label, tio.LabelMap)
+    assert (extracted_data_point.label.tensor == label[:, :2, 4:7, 1:3]).all()
+    assert isinstance(extracted_data_point.mask_1, tio.LabelMap)
+    assert (extracted_data_point.mask_1.tensor == mask_1[:, :2, 4:7, 1:3]).all()
 
-    tio_image = tio.Subject(image=tio.ScalarImage(tensor=image_tensor), label=1)
-    tio_sample, _ = patch.extract_tio_sample(tio_image, sample_index=5)
-    assert tio_sample.label == 1
+    data_point = DataPoint(image=tio.ScalarImage(tensor=image_tensor), label=1)
+    extracted_data_point, _ = patch.extract_sample(data_point, sample_index=5)
+    assert extracted_data_point.label == 1
 
     with pytest.raises(IndexError):
-        patch.extract_tio_sample(tio_image, sample_index=25)
-    with pytest.raises(ValueError):
-        patch.extract_tio_sample(
-            tio.Subject(
-                label=tio.LabelMap(tensor=label),
-                image=tio.ScalarImage(tensor=torch.randn(1, 5, 7, 4)),
-            ),
-            sample_index=5,
-        )
+        patch.extract_sample(data_point, sample_index=25)
 
 
 def test_format_output():
@@ -144,13 +137,13 @@ def test_format_output():
     mask_1 = torch.ones(1, 3, 4, 5)
     label = torch.ones(1, 3, 4, 5)
 
-    tio_sample = tio.Subject(
+    sample_data = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=tio.LabelMap(tensor=label),
         mask_1=tio.LabelMap(tensor=mask_1),
     )
     output = patch.format_output(
-        tio_sample,
+        sample_data,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),
@@ -166,13 +159,12 @@ def test_format_output():
     assert output.patch_size == (3, 4, 3)
     assert output.patch_stride == (2, 2, 2)
 
-    tio_sample = tio.Subject(
+    sample_data = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         label=0.5,
-        description=1,
     )
     output = patch.format_output(
-        tio_sample,
+        sample_data,
         participant_id="sub-001",
         session_id="ses-M001",
         image_path=Path("sub-001_ses-M001_T1w.nii.gz"),

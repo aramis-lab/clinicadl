@@ -11,7 +11,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
 from .factory import get_transform_from_config
-from .utils import Transform
+from .types import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
 
@@ -172,7 +172,7 @@ class Transforms(ClinicaDLConfig):
 
         Returns
         -------
-        Tuple[tio.Compose, tio.Compose, tio.Compose, tio.Compose]
+        Tuple[Transform, Transform, Transform, Transform]
             A tuple containing:
             - The composed image transformations.
             - The composed sample transformations.
