@@ -60,7 +60,7 @@ class _LinearPreprocessing(Preprocessing, Modality):
 
         # Construct the pattern based on the preprocessing method and modality
         if self.preprocessing == PreprocessingMethod.PET_LINEAR:
-            filename = f"*_trc-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-*_{self.modality.value}.nii.gz"
+            filename = self._get_filename()  # type: ignore
         else:
             filename = f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii.gz"
 

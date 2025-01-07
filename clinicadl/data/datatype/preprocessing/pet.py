@@ -20,3 +20,7 @@ class PETLinear(_LinearPreprocessing, PET):
         Provides a string representation of the preprocessing configuration.
         """
         return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} PET images with tracer {self.tracer} and suvr reference region {self.suvr_reference_region}. "
+
+    def _get_filename(self):
+        desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
+        return f"*_trc-{self.tracer}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality.value}.nii.gz"

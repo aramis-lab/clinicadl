@@ -56,7 +56,7 @@ def test_good_pet():
     assert pet_data.preprocessing == PreprocessingMethod.PET_LINEAR
     assert (
         pet_data.file_type.pattern
-        == "pet_linear/*_trc-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-*_pet.nii.gz"
+        == "pet_linear/*_trc-18FFDG_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-cerebellumPons2_pet.nii.gz"
     )
     assert "Image registered in MNI152NLin2009cSym" in pet_data.file_type.description
     assert pet_data.file_type.needed_pipeline == PreprocessingMethod.PET_LINEAR
