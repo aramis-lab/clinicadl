@@ -1,20 +1,10 @@
 from logging import getLogger
 from pathlib import Path
 
-import click
 import pandas as pd
 import torchio as tio
 from joblib import Parallel, delayed
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
-    data,
-    dataloader,
-    preprocessing,
-)
-from clinicadl.commandline.pipelines.generate.artifacts import options as artifacts
-from clinicadl.data.caps_dataset_config import CapsDatasetConfig
-from clinicadl.data.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateArtifactsConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
@@ -28,24 +18,7 @@ from clinicadl.utils.iotools.read_utils import get_info_from_filename
 logger = getLogger("clinicadl.generate.artifacts")
 
 
-@click.command(name="artifacts", no_args_is_help=True)
-@arguments.caps_directory
-@arguments.generated_caps_directory
-@dataloader.n_proc
-@preprocessing.preprocessing
-@preprocessing.use_uncropped_image
-@data.participants_tsv
-@preprocessing.tracer
-@preprocessing.suvr_reference_region
-@artifacts.contrast
-@artifacts.motion
-@artifacts.noise_std
-@artifacts.noise
-@artifacts.num_transforms
-@artifacts.translation
-@artifacts.rotation
-@artifacts.gamma
-def cli(generated_caps_directory, **kwargs):
+def generate_artifacts(generated_caps_directory, **kwargs):
     """
     Addition of artifacts (noise, motion or contrast) to brain images
 
@@ -169,7 +142,3 @@ def cli(generated_caps_directory, **kwargs):
     logger.info(
         f"Images corrupted with artefacts were generated at {generated_caps_directory}"
     )
-
-
-if __name__ == "__main__":
-    cli()
