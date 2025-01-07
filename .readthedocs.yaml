@@ -16,7 +16,8 @@ build:
       # TODO: Investigate why pipeline is broken with 1.8 and with 2.0.0
       - pip install poetry==2.0.0
       # Do not use virtual environments
-      - poetry config virtualenvs.create false
+      - poetry config virtualenvs.create false 
+      - poetry config virtualenvs.use-poetry-python true
       # Install docs group of dependencies
       - poetry install --only docs
       # - pip install mkdocs-material
