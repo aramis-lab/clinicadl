@@ -14,7 +14,7 @@ class RawFlair(RawData, Flair):
     methods to define file patterns and descriptions.
     """
 
-    def _get_bids_filetype(self, reconstruction: Optional[str] = None) -> FileType:
+    def _get_bids_filetype(self) -> FileType:
         """
         Generate the BIDS-compatible file type pattern and description.
 
