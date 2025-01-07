@@ -1,21 +1,11 @@
 from logging import getLogger
 from pathlib import Path
 
-import click
 import nibabel as nib
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
-    data,
-    dataloader,
-    preprocessing,
-)
-from clinicadl.commandline.pipelines.generate.random import options as random
-from clinicadl.data.caps_dataset_config import CapsDatasetConfig
-from clinicadl.data.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateRandomConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
@@ -29,19 +19,7 @@ from clinicadl.utils.iotools.iotools import commandline_to_json
 logger = getLogger("clinicadl.generate.random")
 
 
-@click.command(name="random", no_args_is_help=True)
-@arguments.caps_directory
-@arguments.generated_caps_directory
-@preprocessing.preprocessing
-@data.participants_tsv
-@data.n_subjects
-@dataloader.n_proc
-@preprocessing.use_uncropped_image
-@preprocessing.tracer
-@preprocessing.suvr_reference_region
-@random.mean
-@random.sigma
-def cli(generated_caps_directory, n_proc, **kwargs):
+def generate_random(generated_caps_directory, n_proc, **kwargs):
     """Addition of random gaussian noise to brain images.
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the random dataset will be saved.
@@ -149,7 +127,3 @@ def cli(generated_caps_directory, n_proc, **kwargs):
     )
     write_missing_mods(generated_caps_directory, output_df)
     logger.info(f"Random dataset was generated at {generated_caps_directory}")
-
-
-if __name__ == "__main__":
-    cli()

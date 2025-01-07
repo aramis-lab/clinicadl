@@ -1,14 +1,10 @@
 from logging import getLogger
 
-import click
 import numpy as np
 import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader
-from clinicadl.commandline.pipelines.generate.shepplogan import options as shepplogan
 from clinicadl.data.datatype.file_type import FileType
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 from clinicadl.generate.generate_utils import (
@@ -18,19 +14,8 @@ from clinicadl.generate.generate_utils import (
 from clinicadl.utils.iotools.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.iotools.utils import write_preprocessing
 
-logger = getLogger("clinicadl.generate.shepplogan")
 
-
-@click.command(name="shepplogan", no_args_is_help=True)
-@arguments.generated_caps_directory
-@data.n_subjects
-@dataloader.n_proc
-@shepplogan.extract_json
-@shepplogan.image_size
-@shepplogan.cn_subtypes_distribution
-@shepplogan.ad_subtypes_distribution
-@shepplogan.smoothing
-def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
+def generate_shepplogan(generated_caps_directory, n_subjects, n_proc, **kwargs):
     """Random generation of 2D Shepp-Logan phantoms.
     Generate a dataset of 2D images at GENERATED_CAPS_DIRECTORY including
     3 subtypes based on Shepp-Logan phantom.
@@ -140,7 +125,3 @@ def cli(generated_caps_directory, n_subjects, n_proc, **kwargs):
     write_missing_mods(generated_caps_directory, data_df)
 
     logger.info(f"Shepplogan dataset was generated at {generated_caps_directory}")
-
-
-if __name__ == "__main__":
-    cli()

@@ -1,20 +1,10 @@
 from logging import getLogger
 from pathlib import Path
 
-import click
 import nibabel as nib
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import (
-    data,
-    dataloader,
-    preprocessing,
-)
-from clinicadl.commandline.pipelines.generate.trivial import options as trivial
-from clinicadl.data.caps_dataset_config import CapsDatasetConfig
-from clinicadl.data.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateTrivialConfig
 from clinicadl.generate.generate_utils import (
     im_loss_roi_gaussian_distribution,
@@ -30,19 +20,7 @@ from clinicadl.utils.iotools.read_utils import get_mask_path
 logger = getLogger("clinicadl.generate.trivial")
 
 
-@click.command(name="trivial", no_args_is_help=True)
-@arguments.caps_directory
-@arguments.generated_caps_directory
-@preprocessing.preprocessing
-@data.participants_tsv
-@data.n_subjects
-@dataloader.n_proc
-@preprocessing.use_uncropped_image
-@preprocessing.tracer
-@preprocessing.suvr_reference_region
-@trivial.atrophy_percent
-@data.mask_path
-def cli(generated_caps_directory, **kwargs):
+def generate_trivial(generated_caps_directory, **kwargs):
     """Generation of a trivial dataset"""
 
     caps_config = CapsDatasetConfig.from_preprocessing_and_extraction_method(
@@ -159,7 +137,3 @@ def cli(generated_caps_directory, **kwargs):
     output_df.to_csv(generated_caps_directory / "data.tsv", sep="\t", index=False)
     write_missing_mods(generated_caps_directory, output_df)
     logger.info(f"Trivial dataset was generated at {generated_caps_directory}")
-
-
-if __name__ == "__main__":
-    cli()

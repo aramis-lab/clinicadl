@@ -1,19 +1,11 @@
 from logging import getLogger
 from pathlib import Path
 
-import click
 import nibabel as nib
 import pandas as pd
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-from clinicadl.commandline import arguments
-from clinicadl.commandline.modules_options import data, dataloader, preprocessing
-from clinicadl.commandline.pipelines.generate.hypometabolic import (
-    options as hypometabolic,
-)
-from clinicadl.data.caps_dataset_config import CapsDatasetConfig
-from clinicadl.data.caps_dataset_utils import find_file_type
 from clinicadl.generate.generate_config import GenerateHypometabolicConfig
 from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
@@ -23,7 +15,6 @@ from clinicadl.generate.generate_utils import (
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
 from clinicadl.utils.enum import (
     ExtractionMethod,
-    Preprocessing,
 )
 from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.iotools.iotools import commandline_to_json
@@ -32,17 +23,7 @@ from clinicadl.utils.iotools.read_utils import get_mask_path
 logger = getLogger("clinicadl.generate.hypometabolic")
 
 
-@click.command(name="hypometabolic", no_args_is_help=True)
-@arguments.caps_directory
-@arguments.generated_caps_directory
-@dataloader.n_proc
-@data.participants_tsv
-@data.n_subjects
-@preprocessing.use_uncropped_image
-@hypometabolic.sigma
-@hypometabolic.anomaly_degree
-@hypometabolic.pathology
-def cli(generated_caps_directory, **kwargs):
+def generate_hypometabolic(generated_caps_directory, **kwargs):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
@@ -152,7 +133,3 @@ def cli(generated_caps_directory, **kwargs):
         f"Hypometabolic dataset was generated, with {generate_config.anomaly_degree} % of "
         f"dementia {generate_config.pathology.value} at {generated_caps_directory}."
     )
-
-
-if __name__ == "__main__":
-    cli()
