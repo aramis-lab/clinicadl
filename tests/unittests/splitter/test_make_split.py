@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.preprocessing import PreprocessingT1
+from clinicadl.data.datatype.preprocessing import T1Linear
 from clinicadl.splitter.make_splits import make_kfold, make_split
 from clinicadl.transforms import Transforms
 from clinicadl.tsvtools.tsvtools_utils import extract_baseline
@@ -101,7 +101,7 @@ def test_good_split():
 
 
 def test_make_split_and_kfold_from_df():
-    dataset = CapsDataset(caps_dir, PreprocessingT1(), Transforms())
+    dataset = CapsDataset(caps_dir, T1Linear(), Transforms())
     with pytest.raises(ValueError):
         _ = make_split(dataset.df, n_test=0.2)
 

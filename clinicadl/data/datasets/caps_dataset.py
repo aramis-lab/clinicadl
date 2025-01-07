@@ -11,7 +11,7 @@ import torch
 from pydantic import NonNegativeInt
 from torch.utils.data import Dataset
 
-from clinicadl.data.preprocessing import Preprocessing, PreprocessingT1
+from clinicadl.data.datatype.preprocessing import Preprocessing, T1Linear
 from clinicadl.data.readers.caps_reader import CapsReader
 from clinicadl.data.structures import DataPoint
 from clinicadl.data.utils import (
@@ -70,7 +70,7 @@ class CapsDataset(Dataset):
     def __init__(
         self,
         caps_directory: PathType,
-        preprocessing: Preprocessing = PreprocessingT1(),
+        preprocessing: Preprocessing = T1Linear(),
         transforms: Transforms = Transforms(),
         data: Optional[DataType] = None,
         label: Optional[str] = None,

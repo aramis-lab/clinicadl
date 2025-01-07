@@ -2,14 +2,15 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
+from clinicadl.data import prepare_data
 from clinicadl.data.datasets import CapsDataset, ConcatDataset
-from clinicadl.data.preprocessing import (
-    BasePreprocessing,
-    PreprocessingFlair,
-    PreprocessingPET,
-    PreprocessingT1,
+from clinicadl.data.datatype.modalities.pet import SUVRReferenceRegions, Tracer
+from clinicadl.data.datatype.preprocessing import (
+    FlairLinear,
+    PETLinear,
+    Preprocessing,
+    T1Linear,
 )
-from clinicadl.data.preprocessing.pet import SUVRReferenceRegions, Tracer
 from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
@@ -37,29 +38,29 @@ caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
 )  # output of clinica pipelines
 
-preprocessing_pet_45 = PreprocessingPET(
+preprocessing_pet_45 = PETLinear(
     tracer=Tracer.FAV45, suvr_reference_region=SUVRReferenceRegions.PONS2
 )
-preprocessing_pet_11 = PreprocessingPET(
+preprocessing_pet_11 = PETLinear(
     tracer=Tracer.CPIB, suvr_reference_region=SUVRReferenceRegions.PONS2
 )
 
-preprocessing_t1 = PreprocessingT1()
-preprocessing_flair = PreprocessingFlair()
+preprocessing_t1 = T1Linear()
+preprocessing_flair = FlairLinear()
 
 
 transforms_patch = Transforms(
-    object_augmentation=[transforms.Ghosting(2, 1, 0.1, 0.1)],
-    image_augmentation=[transforms.RandomMotion()],
+    sample_augmentations=[transforms.Ghosting(2, 1, 0.1, 0.1)],
+    image_augmentations=[transforms.RandomMotion()],
     extraction=Patch(patch_size=60),
     image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],
-    object_transforms=[transforms.RandomMotion()],
+    sample_transforms=[transforms.RandomMotion()],
 )  # not mandatory
 
 transforms_slice = Transforms(extraction=Slice())
 
 transforms_image = Transforms(
-    image_augmentation=[transforms.RandomMotion()],
+    image_augmentations=[transforms.RandomMotion()],
     extraction=Image(),
     image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],
 )
@@ -72,15 +73,13 @@ dataset_pet_45_patch = CapsDataset(
     preprocessing=preprocessing_pet_45,
     transforms=transforms_patch,
 )
-dataset_pet_45_patch.prepare_data(n_proc=2)
+prepare_data(dataset_pet_45_patch, n_proc=2)
 
 print(dataset_pet_45_patch)
 print(dataset_pet_45_patch.__len__())
 print(dataset_pet_45_patch._get_meta_data(3))
 print(dataset_pet_45_patch._get_meta_data(80))
 # print(dataset_pet_45_patch._get_full_image())
-print(dataset_pet_45_patch.__getitem__(80).elem_idx)
-print(dataset_pet_45_patch.elem_per_image)
 
 dataset_pet_45_patch.caps_reader._write_caps_json(
     transforms_patch, preprocessing_pet_45, sub_ses_pet_45, name="tfsdklsqfh"
@@ -95,8 +94,8 @@ dataset_pet_11_image = CapsDataset(
     preprocessing=preprocessing_pet_11,
     transforms=transforms_image,
 )
-dataset_pet_11_image.prepare_data(
-    n_proc=2
+prepare_data(
+    dataset_pet_11_image, n_proc=2
 )  # to extract the tensor of the PET file this time
 
 print(dataset_pet_11_image)
@@ -104,8 +103,8 @@ print(dataset_pet_11_image.__len__())
 print(dataset_pet_11_image._get_meta_data(0))
 print(dataset_pet_11_image._get_meta_data(1))
 # print(dataset_pet_11_image._get_full_image())
-print(dataset_pet_11_image.__getitem__(1).elem_idx)
-print(dataset_pet_11_image.elem_per_image)
+# print(dataset_pet_11_image.__getitem__(1).elem_idx)
+# print(dataset_pet_11_image.elem_per_image)
 
 
 print("T1 and image ")
@@ -116,8 +115,8 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-dataset_t1_image.prepare_data(
-    n_proc=2
+prepare_data(
+    dataset_t1_image, n_proc=2
 )  # to extract the tensor of the PET file this time
 
 print(dataset_t1_image)
@@ -125,8 +124,8 @@ print(dataset_t1_image.__len__())
 print(dataset_t1_image._get_meta_data(3))
 print(dataset_t1_image._get_meta_data(5))
 # print(dataset_t1_image._get_full_image())
-print(dataset_t1_image.__getitem__(5).elem_idx)
-print(dataset_t1_image.elem_per_image)
+# print(dataset_t1_image.__getitem__(5).elem_idx)
+# print(dataset_t1_image.elem_per_image)
 
 
 print("Flair and slice ")
@@ -137,8 +136,8 @@ dataset_flair_slice = CapsDataset(
     preprocessing=preprocessing_flair,
     transforms=transforms_slice,
 )
-dataset_flair_slice.prepare_data(
-    n_proc=2
+prepare_data(
+    dataset_flair_slice, n_proc=2
 )  # to extract the tensor of the PET file this time
 
 print(dataset_flair_slice)
@@ -146,8 +145,8 @@ print(dataset_flair_slice.__len__())
 print(dataset_flair_slice._get_meta_data(3))
 print(dataset_flair_slice._get_meta_data(80))
 # print(dataset_flair_slice._get_full_image())
-print(dataset_flair_slice.__getitem__(80).elem_idx)
-print(dataset_flair_slice.elem_per_image)
+# print(dataset_flair_slice.__getitem__(80).elem_idx)
+# print(dataset_flair_slice.elem_per_image)
 
 
 lity_multi_extract = ConcatDataset(

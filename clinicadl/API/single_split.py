@@ -2,12 +2,13 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
+from clinicadl.data import prepare_data
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
-from clinicadl.data.preprocessing import (
-    PreprocessingPET,
-    PreprocessingT1,
+from clinicadl.data.datatype.preprocessing import (
+    PETLinear,
+    T1Linear,
 )
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
@@ -26,9 +27,9 @@ caps_directory = Path(
 )  # output of clinica pipelines
 
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
-preprocessing_t1 = PreprocessingT1()
+preprocessing_t1 = T1Linear()
 transforms_image = Transforms(
-    image_augmentation=[transforms.RandomMotion()],
+    image_augmentations=[transforms.RandomMotion()],
     extraction=Image(),
     image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],
 )
@@ -39,7 +40,7 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-dataset_t1_image.prepare_data(n_proc=2)  # to extract the tensor of the T1 file
+prepare_data(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
 
 
 split_dir = make_split(
@@ -56,7 +57,7 @@ maps_path = Path("/")
 manager = ExperimentManager(maps_path, overwrite=False)
 
 config_file = Path("config_file")
-trainer = Trainer.from_json(config_file=config_file, manager=manager)
+trainer = Trainer.from_json(config_file=config_file)
 
 split = splitter.get_splits(dataset=dataset_t1_image)
 

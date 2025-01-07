@@ -4,7 +4,7 @@ import pytest
 import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.preprocessing import PreprocessingPET, PreprocessingT1
+from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -20,7 +20,8 @@ bids_dir = Path(__file__).parents[1] / "ressources" / "bids_example"
 
 
 def test_good_caps_dataset():
-    preprocessing = PreprocessingT1()
+    preprocessing = T1Linear()
+
     transforms = Transforms(image_transforms=[tio.RescaleIntensity()])
 
     caps_dataset = CapsDataset(
@@ -65,7 +66,7 @@ def test_good_caps_dataset():
 
 
 def test_bad_caps_dataset():
-    preprocessing = PreprocessingT1()
+    preprocessing = T1Linear()
     transforms = Transforms()
 
     with pytest.raises(ClinicaDLArgumentError):
@@ -89,7 +90,7 @@ def test_bad_caps_dataset():
     with pytest.raises(ClinicaDLConfigurationError):
         CapsDataset(
             caps_directory=caps_dir,
-            preprocessing=PreprocessingPET(),
+            preprocessing=PETLinear(),
             transforms=transforms,
         )
 

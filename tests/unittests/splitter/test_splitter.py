@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.preprocessing import PreprocessingT1
+from clinicadl.data.datatype.preprocessing import T1Linear
 from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
 from clinicadl.splitter.splitter.single_split import SingleSplit, SingleSplitConfig
 from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit
@@ -36,9 +36,7 @@ def test_single_split():
     splitter = SingleSplit(split_dir=split_dir)
 
     with pytest.raises(ClinicaDLTSVError):
-        splitter.get_splits(
-            dataset=CapsDataset(caps_dir, PreprocessingT1(), Transforms())
-        )
+        splitter.get_splits(dataset=CapsDataset(caps_dir, T1Linear(), Transforms()))
 
     with pytest.raises(FileNotFoundError):
         splitter._read_split(Path("doesnt_exist"))
@@ -73,9 +71,7 @@ def test_kfold():
 
     with pytest.raises(ClinicaDLTSVError):
         splits = list(
-            kfold.get_splits(
-                dataset=CapsDataset(caps_dir, PreprocessingT1(), Transforms())
-            )
+            kfold.get_splits(dataset=CapsDataset(caps_dir, T1Linear(), Transforms()))
         )
 
     with pytest.raises(FileNotFoundError):

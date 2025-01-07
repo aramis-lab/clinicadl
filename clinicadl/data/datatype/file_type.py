@@ -2,8 +2,8 @@ from typing import Optional, Union
 
 from pydantic import field_validator
 
+from clinicadl.data.datatype.utils import PreprocessingMethod
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.enum import PreprocessingMethod
 
 
 class FileType(ClinicaDLConfig):

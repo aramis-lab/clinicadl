@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Tuple
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
+from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.reader")
 
@@ -20,7 +21,7 @@ class Reader:
         and session subdirectories for the corresponding dataset.
     """
 
-    def __init__(self, input_dir: Path) -> None:
+    def __init__(self, input_dir: PathType) -> None:
         """
         Initializes the Reader object with the input directory and performs folder validation.
 
