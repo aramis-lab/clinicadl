@@ -46,12 +46,15 @@ dependencies = [
 "monai[einops,huggingface_hub]>=1.3.1,<1.5",
 ]
 
-[tool.group.dev.dependencies]
-pre-commit = "pre-commit"
-pytest = "pytest"
-pytest-timeout = "pytest-timeout"
-pytest-xdist = "pytest-xdist"
-pytest-cov = "pytest-cov>=2.0.0,<4.0.0"
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "*"
+pytest = "*"
+pytest-timeout = "*"
+pytest-xdist = "*"
+pytest-cov = ">=2.0.0,<4.0.0"
 
 
 [project.urls]
