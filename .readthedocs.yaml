@@ -18,7 +18,7 @@ build:
       # Do not use virtual environments
       - poetry config virtualenvs.create false
       # Install docs group of dependencies
-      - poetry install --with docs
+      - poetry install --only docs
       # - pip install mkdocs-material
 
 mkdocs:
