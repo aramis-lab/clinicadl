@@ -19,7 +19,7 @@ build:
       - poetry config virtualenvs.create false
       # Install docs group of dependencies
       - poetry install --only docs
-      - pip install mkdocs-material
+      # - pip install mkdocs-material
 
 mkdocs:
   configuration: mkdocs.yml
