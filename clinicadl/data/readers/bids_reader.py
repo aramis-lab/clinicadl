@@ -2,7 +2,7 @@ import json
 from logging import getLogger
 from pathlib import Path
 
-from clinicadl.data.config import FileType
+from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.utils import insensitive_glob
 from clinicadl.utils.exceptions import ClinicaDLBIDSError
 

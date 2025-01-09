@@ -3,10 +3,10 @@ from pathlib import Path
 import pandas as pd
 import torchio.transforms as transforms
 
+from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.preprocessing import PreprocessingT1
+from clinicadl.data.datatype.preprocessing import T1Linear
 from clinicadl.splitter import make_kfold, make_split
-from clinicadl.splitter.dataloader import DataLoaderConfig
 from clinicadl.splitter.splitter import KFold, SingleSplit
 from clinicadl.transforms.extraction import Image, Patch, Slice
 from clinicadl.transforms.transforms import Transforms
@@ -134,7 +134,7 @@ fold_dir = make_kfold(train_path, stratification="sex", n_splits=2)
 print(fold_dir)
 
 caps_directory = Path("/Users/camille.brianceau/aramis/CLINICADL/caps")
-preprocessing_t1 = PreprocessingT1()
+preprocessing_t1 = T1Linear()
 transforms_image = Transforms(
     image_augmentation=[transforms.RandomMotion()],
     extraction=Image(),
