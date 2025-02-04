@@ -41,9 +41,9 @@ class RandomMotionConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_MOTION
+        return ImplementedTransform.RANDOM_MOTION.value
 
     @field_validator("degrees", "translation", mode="after")
     @classmethod
@@ -70,9 +70,9 @@ class RandomGhostingConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_GHOSTING
+        return ImplementedTransform.RANDOM_GHOSTING.value
 
     @field_validator("num_ghosts", "intensity", "restore", mode="after")
     @classmethod
@@ -103,9 +103,9 @@ class RandomSpikeConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_SPIKE
+        return ImplementedTransform.RANDOM_SPIKE.value
 
     @field_validator("num_spikes", "intensity", mode="after")
     @classmethod
@@ -126,9 +126,9 @@ class RandomBiasFieldConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_BIAS_FIELD
+        return ImplementedTransform.RANDOM_BIAS_FIELD.value
 
     @field_validator("coefficients", mode="after")
     @classmethod
@@ -161,9 +161,9 @@ class RandomBlurConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_BLUR
+        return ImplementedTransform.RANDOM_BLUR.value
 
     @field_validator("std", mode="after")
     @classmethod
@@ -186,9 +186,9 @@ class RandomNoiseConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_NOISE
+        return ImplementedTransform.RANDOM_NOISE.value
 
     @field_validator("mean", "std", mode="after")
     @classmethod
@@ -209,9 +209,9 @@ class RandomSwapConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_SWAP
+        return ImplementedTransform.RANDOM_SWAP.value
 
 
 class RandomGammaConfig(TransformConfig):
@@ -223,6 +223,6 @@ class RandomGammaConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_GAMMA
+        return ImplementedTransform.RANDOM_GAMMA.value

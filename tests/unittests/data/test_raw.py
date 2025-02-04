@@ -1,7 +1,7 @@
 import pytest
 
-from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.modalities.pet import SUVRReferenceRegions, Tracer
+from clinicadl.data.datatype.preprocessing.file_type import FileType
 from clinicadl.data.datatype.raw import RawCustom, RawDWI, RawFlair, RawPET, RawT1w
 from clinicadl.data.datatype.utils import ImageModality, PreprocessingMethod
 

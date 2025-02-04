@@ -1,8 +1,7 @@
 from typing import Optional
 
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import PET
-
+from ..modalities import PET
+from ..preprocessing.file_type import FileType
 from .base import RawData
 
 

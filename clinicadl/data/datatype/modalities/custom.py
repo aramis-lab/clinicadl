@@ -1,8 +1,6 @@
-from pydantic import computed_field, field_validator
+from pydantic import computed_field
 
-from clinicadl.data.datatype.utils import ImageModality
-
-from .base import Modality
+from .base import ImageModality, Modality
 
 
 class Custom(Modality):

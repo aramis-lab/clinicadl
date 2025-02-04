@@ -43,9 +43,9 @@ class RandomFlipConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_FLIP
+        return ImplementedTransform.RANDOM_FLIP.value
 
     @field_validator("flip_probability", mode="after")
     @classmethod
@@ -85,9 +85,9 @@ class RandomAffineConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_AFFINE
+        return ImplementedTransform.RANDOM_AFFINE.value
 
     @field_validator("scales", "degrees", "translation", mode="after")
     @classmethod
@@ -122,9 +122,9 @@ class RandomElasticDeformationConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_DEFORMATION
+        return ImplementedTransform.RANDOM_DEFORMATION.value
 
     @field_validator("num_control_points", mode="after")
     @classmethod
@@ -156,9 +156,9 @@ class RandomAnisotropyConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RANDOM_ANISOTROPY
+        return ImplementedTransform.RANDOM_ANISOTROPY.value
 
     @field_validator("downsampling", mode="after")
     @classmethod

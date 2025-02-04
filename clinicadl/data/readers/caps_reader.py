@@ -4,18 +4,19 @@ from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.data.datatype.preprocessing import Preprocessing
-from clinicadl.data.datatype.utils import PreprocessingMethod
+from clinicadl.data.datatype.preprocessing import Preprocessing, PreprocessingMethod
 from clinicadl.data.readers.reader import Reader
-from clinicadl.data.utils import insensitive_glob
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.dictionary.suffixes import PT
+from clinicadl.dictionary.words import SUBJECTS, TENSORS
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
 )
 from clinicadl.utils.typing import PathType
 
-logger = getLogger("clinicadl.caps_reader")
+from .utils import insensitive_glob
+
+logger = getLogger("clinicadl.data.readers.caps_reader")
 
 
 class CapsReader(Reader):
@@ -29,22 +30,20 @@ class CapsReader(Reader):
     ----------
     caps_directory : Path
         The path to the CAPS directory containing preprocessed neuroimaging data.
+
+    Raises
+    ------
+    ClinicaDLCAPSError :
+        If the `caps_directory` is a BIDS folder or does not contain the expected structure.
     """
 
     def __init__(
         self,
         caps_directory: PathType,
     ):
-        """
-        Initializes the CAPS reader by verifying the structure of the CAPS directory.
-
-        Args:
-            caps_directory (Path): Path to the CAPS directory.
-        """
-
         super().__init__(caps_directory)
         self._check_caps_folder()
-        self.subject_directory = self.input_directory / "subjects"
+        self.subject_directory = self.input_directory / SUBJECTS
 
     def _check_caps_folder(self) -> None:
         """
@@ -54,10 +53,10 @@ class CapsReader(Reader):
         ------
         ValueError :
             If `caps_directory` is not a valid string or directory.
-
         ClinicaDLCAPSError :
             If the `caps_directory` is a BIDS folder or does not contain the expected structure.
         """
+        # TODO : more checks
         sub_folders = [
             f for f in self.input_directory.iterdir() if f.name.startswith("sub-")
         ]
@@ -70,7 +69,7 @@ class CapsReader(Reader):
             for directory in sub_folders:
                 error_string += f"\t{directory}\n"
             error_string += (
-                "A CAPS directory has a folder 'subjects' at its root, in which "
+                "A CAPS directory must have a folder 'subjects' at its root, in which "
                 "are stored the output of the pipeline for each participant."
             )
             raise ClinicaDLCAPSError(error_string)
@@ -120,43 +119,52 @@ class CapsReader(Reader):
         """
         return self.subject_directory / participant
 
-    def get_tensor_dir(
-        self, participant: str, session: str, preprocessing: Preprocessing
+    @staticmethod
+    def path_to_tensor(
+        path: PathType,
     ) -> Path:
         """
-        Retrieves the directory for storing tensor data for a given participant, session, and preprocessing.
+        Converts the path of an image to the path of the associated
+        tensor (even if it does not exist yet).
 
-        Args:
-            participant (str): ID of the participant.
-            session (str): ID of the session.
-            preprocessing (Preprocessing): Configuration of the preprocessing steps.
+        Parameters
+        ----------
+        path: PathType
+            Path of the image.
 
         Returns
         -------
         Path
-            Directory where tensor data is stored.
+            Path to the associated tensor.
         """
-        return (
-            self.get_session_path(participant, session)
-            / "deeplearning_prepare_data"
-            / "image_based"
-            / preprocessing.preprocessing.value.replace("-", "_")
-        )
+        path = Path(path)
+        parent = path.parent
+        pt_file_name = (
+            path.with_suffix("").with_suffix("").with_suffix(PT).name
+        )  # two times to handle double extensions (.nii.gz)
+
+        return parent / TENSORS / pt_file_name
 
     def get_tensor_path(
-        self, participant: str, session: str, preprocessing: Preprocessing
+        self,
+        participant: str,
+        session: str,
+        preprocessing: Preprocessing,
+        check: bool = True,
     ) -> Path:
         """
         Retrieves the path to the tensor image (*.pt) for a given participant, session, and preprocessing.
 
         Parameters
         ----------
-            participant: str
-                ID of the participant.
-            session: str
-                ID of the session.
-            preprocessing: Preprocessing
-                Configuration of the preprocessing steps.
+        participant: str
+            ID of the participant.
+        session: str
+            ID of the session.
+        preprocessing: Preprocessing
+            Configuration of the preprocessing steps.
+        check : bool, (optional, default=True)
+            Whether to check if the tensor path exists.
 
         Returns
         -------
@@ -166,25 +174,19 @@ class CapsReader(Reader):
         Raises
         ------
         ClinicaDLCAPSError
-            If the path for the tensor image cannot be found.
+            If there is no or more than one images associated with the participant/session pair.
+        ClinicaDLCAPSError
+            If `check` is true and the tensor image cannot be found.
         """
 
-        try:
-            filepath = self.get_image_path(participant, session, preprocessing)
-            image_filename = (
-                filepath.with_suffix("").with_suffix("").with_suffix(".pt").name
-            )  # two times to handle double extensions
-            image_path = (
-                self.get_tensor_dir(participant, session, preprocessing)
-                / image_filename
-            )
-
-            return image_path
-
-        except ClinicaDLCAPSError:
+        filepath = self.get_image_path(participant, session, preprocessing)
+        tensor_path = self.path_to_tensor(filepath)
+        if check and not tensor_path.is_file():
             raise ClinicaDLCAPSError(
-                f"Could not find the pt path for participant {participant} and session {session}"
+                f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"
             )
+
+        return tensor_path
 
     def get_image_path(
         self, participant: str, session: str, preprocessing: Preprocessing
@@ -232,9 +234,9 @@ class CapsReader(Reader):
 
     def _write_caps_json(
         self,
-        transforms: Transforms,
-        preprocessing: Preprocessing,
-        data_tsv: Path,
+        # transforms: Transforms,
+        # preprocessing: Preprocessing,
+        # data_tsv: Path,
         name: Optional[str] = None,
     ) -> None:
         """

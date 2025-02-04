@@ -2,10 +2,10 @@ import abc
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import Modality
-from clinicadl.data.datatype.utils import PreprocessingMethod
 from clinicadl.utils.config import ClinicaDLConfig
+
+from ..modalities import Modality
+from .file_type import FileType
 
 
 class Preprocessing(ClinicaDLConfig, abc.ABC):
@@ -19,7 +19,7 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
     @computed_field
     @property
     @abc.abstractmethod
-    def preprocessing(self) -> PreprocessingMethod:
+    def preprocessing(self) -> str:
         """The preprocessing method being applied (e.g., t1-linear, pet-linear)."""
 
     @computed_field
@@ -27,7 +27,7 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
     def file_type(self) -> FileType:
         """
         Returns the FileType associated with the preprocessed data.
-        This method delegates to the `get_caps_filetype()` method to get the details.
+        This method delegates to the `_get_caps_filetype()`.
         """
         return self._get_caps_filetype()
 
@@ -51,22 +51,26 @@ class _LinearPreprocessing(Preprocessing, Modality):
 
     use_uncropped_image: bool = False
 
+    def _get_filename(self) -> str:
+        """
+        Constructs the file name depending on the preprocessing parameters.
+        May be overwritten for some preprocessings.
+        """
+        desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
+        return (
+            f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii*"
+        )
+
     def _get_caps_filetype(self) -> FileType:
         """
         Base method to construct the FileType for linear preprocessings.
         """
-        # Determine the suffix based on the uncropped image option
-        desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-
         # Construct the pattern based on the preprocessing method and modality
-        if self.preprocessing == PreprocessingMethod.PET_LINEAR:
-            filename = self._get_filename()  # type: ignore
-        else:
-            filename = f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii.gz"
+        filename = self._get_filename()
+        pattern = self.preprocessing.replace("-", "_") + f"/{filename}"
 
-        pattern = self.preprocessing.value.replace("-", "_") + f"/{filename}"
         # Construct the description based on the uncropped image option
-        description = f"{self.modality.value} Image registered in MNI152NLin2009cSym space using {self.preprocessing.value} pipeline"
+        description = f"{self.modality.value} image registered in MNI152NLin2009cSym space using {self.preprocessing} pipeline"
 
         if not self.use_uncropped_image:
             description += (

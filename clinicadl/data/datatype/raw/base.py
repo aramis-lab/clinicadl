@@ -2,8 +2,9 @@ import abc
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
 from clinicadl.utils.config import ClinicaDLConfig
+
+from ..preprocessing.file_type import FileType
 
 
 class RawData(ClinicaDLConfig, abc.ABC):

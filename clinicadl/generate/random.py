@@ -11,7 +11,7 @@ from clinicadl.generate.generate_utils import (
     load_and_check_tsv,
     write_missing_mods,
 )
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline
+from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.iotools.clinica_utils import clinicadl_file_reader
 from clinicadl.utils.iotools.iotools import commandline_to_json

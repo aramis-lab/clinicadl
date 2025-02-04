@@ -43,7 +43,6 @@ class _PreTrainedSEResNetConfig(_PreTrainedConfig):
 
     pretrained: bool = False
 
-    @computed_field
     @property
     def _type(self) -> NetworkType:
         """To know where to look for the network."""

@@ -1,20 +1,17 @@
 from logging import getLogger
-from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 import torch
 import torchio as tio
-from pydantic import PositiveInt, computed_field
+from pydantic import computed_field
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.loading import nifti_to_tensor
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, Sample
 
-logger = getLogger("clinicadl.extraction.image")
+logger = getLogger("clinicadl.transforms.extraction.image")
 
 
 class ImageSample(Sample):
@@ -24,10 +21,12 @@ class ImageSample(Sample):
     Attributes
     ----------
     sample : torch.Tensor
-        the image as 4D PyTorch tensor (with one channel dimension).
-    participant_id : str
-        the subject concerned.
-    session_id : str
+        the image as a 4D PyTorch tensor (with one channel dimension).
+    affine : np.ndarray
+        the affine matrix associated to the image.
+    participant : str
+        the participant concerned.
+    session : str
         the session concerned.
     image_path : str
         the path to the image.
@@ -37,9 +36,9 @@ class ImageSample(Sample):
 
     @computed_field
     @property
-    def extraction(self) -> ExtractionMethod:
+    def extraction(self) -> str:
         """The extraction method."""
-        return ExtractionMethod.IMAGE
+        return ExtractionMethod.IMAGE.value
 
 
 class Image(Extraction):
@@ -52,160 +51,9 @@ class Image(Extraction):
 
     @computed_field
     @property
-    def extract_method(self) -> ExtractionMethod:
+    def extract_method(self) -> str:
         """The method to be used for the extraction process (Image, Patch, Slice)."""
-        return ExtractionMethod.IMAGE
-
-    def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:
-        """
-        Extracts the full image as a single tensor file and returns the path
-        where to save it.
-
-        Parameters
-        ----------
-        nii_path : Path
-            The path to the NIfTI image to be processed.
-
-        Returns
-        -------
-        List[Tuple[Path, torch.Tensor]]
-            A list containing a single tuple with the output file path and the extracted image tensor.
-
-        Notes
-        -----
-        The image is loaded and returned into a tensor along with the input path with the `.pt` extension.
-        """
-        image_tensor = nifti_to_tensor(nii_path)
-
-        return [(self.sample_path(nii_path), self.extract_tensor_sample(image_tensor))]
-
-    def extract_tensor_sample(
-        self,
-        image_tensor: torch.Tensor,
-        sample_index: int = 0,
-    ) -> torch.Tensor:
-        """
-        Returns the entire image tensor as no further extraction is needed.
-
-        Parameters
-        ----------
-        image_tensor : torch.Tensor
-            The image tensor to extract data from.
-        sample_index : int (optional, default=0)
-            The index to identify the extracted data (though this is not used in this method).
-
-        Returns
-        -------
-        torch.Tensor
-            The same image tensor as no further extraction is applied.
-
-        Raises
-        ------
-        IndexError
-            If 'sample_index' is not 0.
-
-        Notes
-        -----
-        This method is a placeholder in this class as the full image is returned without modification.
-        """
-        if sample_index != 0:
-            raise IndexError(
-                f"'sample_index' {sample_index} is out of range as there is only "
-                "1 sample in the image."
-            )
-
-        return image_tensor.clone()
-
-    def sample_path(self, image_path: Path, sample_index: int = 0) -> Path:  # pylint:disable=unused-argument
-        """
-        Returns the input image path as the path to save the extracted data.
-
-        Parameters
-        ----------
-        image_path : Path
-            The path to the original image.
-        index : int
-            The index to identify the extracted data (though this is not used in this method).
-
-        Returns
-        -------
-        Path
-            The path where the extracted data will be saved (same as the input image path).
-
-        Notes
-        -----
-        This method only changes the extension of the path.
-        """
-        return image_path.with_suffix("").with_suffix(PT)
-
-    def num_samples_per_image(self, image: torch.Tensor) -> PositiveInt:
-        """
-        Returns the number of elements per image. Since the entire image is extracted, this method always returns 1.
-
-        Parameters
-        ----------
-        image : torch.Tensor
-            The image tensor to determine the number of extracted elements.
-
-        Returns
-        -------
-        PositiveInt
-            The number of elements per image, which is always 1 for full image extraction.
-
-        Notes
-        -----
-        This method is specific to the full image extraction, where only one element (the image) is returned.
-        """
-        return 1
-
-    def _get_sample_description(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> None:
-        """No need for description in the case of image extraction."""
-        return None
-
-    def format_output(
-        self,
-        data_point: DataPoint,
-        participant_id: str,
-        session_id: str,
-        image_path: PathType,
-        description: Any = None,
-    ) -> ImageSample:
-        """
-        Puts all the output information in an ImageSample object.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            the `DataPoint` object associated to the image.
-        participant_id : str
-            the subject concerned.
-        session_id : str
-            the session concerned.
-        image_path : PathType
-            the path of the image.
-        description : Any (optional, default=None)
-            a description of the sample. For compatibility, not necessary in the case of Image.
-
-        Returns
-        -------
-        ImageSample
-            an ImageSample object with all the relevant information on the image.
-        """
-        image = data_point.image.tensor
-        if isinstance(data_point.label, tio.Image):
-            label = data_point.label.tensor
-        else:
-            label = data_point.label
-
-        return ImageSample(
-            sample=image,
-            participant_id=participant_id,
-            session_id=session_id,
-            image_path=str(image_path),
-            label=label,
-        )
+        return ExtractionMethod.IMAGE.value
 
     def extract_sample(
         self, data_point: DataPoint, sample_index: int = 0
@@ -236,3 +84,80 @@ class Image(Extraction):
             If 'sample_index' is not 0.
         """
         return super().extract_sample(data_point, sample_index)
+
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
+        """
+        Returns the number of elements per image. Since the entire image is extracted, this method always returns 1.
+
+        Parameters
+        ----------
+        image : torch.Tensor
+            The image tensor to determine the number of extracted elements.
+
+        Returns
+        -------
+        PositiveInt
+            The number of elements per image, which is always 1 for full image extraction.
+        """
+        return 1
+
+    def format_output(
+        self,
+        data_point: DataPoint,
+        image_path: PathType,
+        description: Any = None,
+    ) -> ImageSample:
+        """
+        Puts all the output information in an ImageSample object.
+
+        Parameters
+        ----------
+        data_point : DataPoint
+            the `DataPoint` object associated to the image.
+        image_path : PathType
+            the path of the image.
+        description : Any (optional, default=None)
+            a description of the sample. For compatibility, not necessary in the case of Image.
+
+        Returns
+        -------
+        ImageSample
+            an ImageSample object with all the relevant information on the image.
+        """
+        return ImageSample(
+            sample=data_point.image.tensor,
+            affine=data_point.image.affine,
+            participant=data_point.participant,
+            session=data_point.session,
+            image_path=str(image_path),
+            label=data_point.label.tensor
+            if isinstance(data_point.label, tio.LabelMap)
+            else data_point.label,
+        )
+
+    def _extract_tensor_sample(
+        self,
+        image_tensor: torch.Tensor,
+        sample_index: int = 0,
+    ) -> torch.Tensor:
+        """
+        Returns the entire image tensor as no further extraction is needed.
+
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is not 0.
+        """
+        if sample_index != 0:
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there is only "
+                "1 sample in the image."
+            )
+
+        return image_tensor.clone()
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> None:
+        """No need for description in the case of image extraction."""
+        return None

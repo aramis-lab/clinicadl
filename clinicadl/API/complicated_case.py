@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.data import prepare_data
+from clinicadl.data import tensor_conversion
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -40,7 +40,7 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-prepare_data(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
+tensor_conversion(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
 
 
 sub_ses_pet_45 = Path(
@@ -54,7 +54,7 @@ dataset_pet_image = CapsDataset(
     preprocessing=preprocessing_pet_45,
     transforms=transforms_image,
 )
-prepare_data(dataset_t1_image, n_proc=2)  # to extract the tensor of the PET file
+tensor_conversion(dataset_t1_image, n_proc=2)  # to extract the tensor of the PET file
 
 
 dataset_multi_modality = ConcatDataset(

@@ -1,8 +1,5 @@
-from typing import Optional
-
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import DWI
-
+from ..modalities import DWI
+from ..preprocessing.file_type import FileType
 from .base import RawData
 
 

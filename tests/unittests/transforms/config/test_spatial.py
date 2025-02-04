@@ -9,7 +9,7 @@ from clinicadl.transforms.config import create_transform_config
 
 mask_path = (
     Path(__file__).parents[2]
-    / "ressources"
+    / "resources"
     / "caps_example"
     / "masks"
     / "leftHippocampus.nii.gz"

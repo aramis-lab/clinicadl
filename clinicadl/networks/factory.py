@@ -68,10 +68,10 @@ def get_network_from_config(config: NetworkConfig) -> Tuple[nn.Module, NetworkCo
     getter = _update_config_with_getter(config)
 
     if network_type == NetworkType.CUSTOM:
-        config_dict = config.model_dump(exclude={"name", "_type"})
+        config_dict = config.model_dump(exclude="name")
 
     else:  # sota networks
-        config_dict = config.model_dump(exclude={"_type"})
+        config_dict = config.model_dump()
 
     network = getter(**config_dict)
 

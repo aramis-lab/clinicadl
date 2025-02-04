@@ -36,9 +36,9 @@ class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RESCALE_INTENSITY
+        return ImplementedTransform.RESCALE_INTENSITY.value
 
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
@@ -74,9 +74,9 @@ class ZNormalizationConfig(TransformConfig, _MaskingMethodConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.Z_NORMALIZATION
+        return ImplementedTransform.Z_NORMALIZATION.value
 
 
 class MaskConfig(TransformConfig):
@@ -90,9 +90,9 @@ class MaskConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.MASK
+        return ImplementedTransform.MASK.value
 
     @field_validator("masking_method", mode="before")
     @classmethod
@@ -109,9 +109,9 @@ class ClampConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.CLAMP
+        return ImplementedTransform.CLAMP.value
 
     @model_validator(mode="after")
     def validate_min_max(self):
@@ -140,11 +140,10 @@ class NanRemovalConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.NAN_REMOVAL
+        return ImplementedTransform.NAN_REMOVAL.value
 
-    @computed_field
     @property
     def _type(self) -> TransformType:
         """The source where the transform can be found."""

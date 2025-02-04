@@ -1,20 +1,17 @@
 from logging import getLogger
-from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import torch
 import torchio as tio
 from pydantic import NonNegativeInt, PositiveInt, computed_field
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.suffixes import PT
 from clinicadl.utils.enum import ExtractionMethod
-from clinicadl.utils.loading import nifti_to_tensor
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, Sample
 
-logger = getLogger("clinicadl.extraction.patch")
+logger = getLogger("clinicadl.transforms.extraction.patch")
 
 
 class PatchSample(Sample):
@@ -24,10 +21,12 @@ class PatchSample(Sample):
     Attributes
     ----------
     sample : torch.Tensor
-        the patch as 4D PyTorch tensor (with one channel dimension).
-    participant_id : str
+        the patch as a 4D PyTorch tensor (with one channel dimension).
+    affine : np.ndarray
+        the affine matrix associated to the patch.
+    participant : str
         the subject concerned.
-    session_id : str
+    session : str
         the session concerned.
     image_path : str
         the path to the image from which the patch has been extracted.
@@ -47,9 +46,9 @@ class PatchSample(Sample):
 
     @computed_field
     @property
-    def extraction(self) -> ExtractionMethod:
+    def extraction(self) -> str:
         """The extraction method."""
-        return ExtractionMethod.PATCH
+        return ExtractionMethod.PATCH.value
 
 
 class Patch(Extraction):
@@ -87,9 +86,9 @@ class Patch(Extraction):
 
     @computed_field
     @property
-    def extract_method(self) -> ExtractionMethod:
+    def extract_method(self) -> str:
         """The method to be used for the extraction process (Image, Patch, Slice)."""
-        return ExtractionMethod.PATCH
+        return ExtractionMethod.PATCH.value
 
     @staticmethod
     def _ensure_tuples(
@@ -102,211 +101,6 @@ class Patch(Extraction):
             return (value, value, value)
         else:
             return value
-
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
-        """
-        Returns the total number of patches extracted from an image.
-
-        Parameters
-        ----------
-        image : torch.Tensor
-            The input image tensor (4D), where the first dimension represents the channel dimension.
-
-        Returns
-        -------
-        int
-            The total number of patches that can be extracted from the image.
-
-        Notes
-        -----
-        The number of patches is determined by the image size, the patch size, and the stride.
-        """
-        return self.get_patches(image).shape[0]
-
-    def extract(self, nii_path: Path) -> List[Tuple[Path, torch.Tensor]]:
-        """
-        Extracts all the patches from a NIfTI image tensor.
-
-        Parameters
-        ----------
-        nii_path : Path
-            The path to the NIfTI image file from which patches will be extracted.
-
-        Returns
-        -------
-        List[Tuple[Path, torch.Tensor]]
-            A list of tuples, where each tuple contains an extracted patch,
-            and the path where to store it.
-
-        Notes
-        -----
-        This method extracts patches from the full image and saves them as separate tensors.
-        Each patch tensor is returned along with its associated file path.
-        """
-
-        image_tensor = nifti_to_tensor(nii_path)
-        patches_tensor = self.get_patches(image_tensor)
-        patch_list = [
-            (self.sample_path(nii_path, idx), patches_tensor[idx])
-            for idx in range(patches_tensor.size(0))
-        ]
-        return patch_list
-
-    def extract_tensor_sample(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> torch.Tensor:
-        """
-        Extracts a single patch from an image.
-
-        Parameters
-        ----------
-        image_tensor : torch.Tensor
-            The input image tensor from which a patch will be extracted. Must be a 4D tensor
-            with a channel dimension and 3 spatial dimensions.
-        patch_index : int
-            The index of the patch to extract from the image tensor.
-
-        Returns
-        -------
-        torch.Tensor
-            The extracted patch as a 4D tensor (with a channel dimension).
-
-        Raises
-        ------
-        IndexError
-            If 'sample_index' is greater or equal to the number of patches in the image.
-
-        Notes
-        -----
-        This method allows for the extraction of individual patches based on the provided index.
-        """
-        patches_tensor = self.get_patches(image_tensor)
-        try:
-            return patches_tensor[sample_index].unsqueeze(0).clone()
-        except IndexError as exc:
-            raise IndexError(
-                f"'sample_index' {sample_index} is out of range as there are only "
-                f"{len(patches_tensor)} patches in the image."
-            ) from exc
-
-    def sample_path(self, image_path: Path, sample_index: int) -> Path:
-        """
-        Constructs the path to save a given patch.
-
-        Parameters
-        ----------
-        image_path : Path
-            The original image path, used to derive the path for saving the patch.
-        sample_index : int
-            The index of the patch being saved.
-
-        Returns
-        -------
-        Path
-            The path where the patch will be saved, including the patch size and stride
-            information in the filename.
-
-        Notes
-        -----
-        The filename is generated using the original image name, appending patch size, stride,
-        and the patch index to ensure each patch is saved with a unique name.
-        """
-        parent = image_path.parent
-        prefix_suffix = image_path.name.rsplit("_", 1)
-        patch_size_str = "x".join([str(s) for s in self.patch_size])
-        stride_str = "x".join([str(s) for s in self.stride])
-        return (
-            (
-                parent
-                / f"{prefix_suffix[0]}_patchsize-{patch_size_str}_stride-{stride_str}_patch-{sample_index}_{prefix_suffix[1]}"
-            )
-            .with_suffix("")
-            .with_suffix(PT)
-        )
-
-    def get_patches(self, image_tensor: torch.Tensor) -> torch.Tensor:
-        """
-        Creates a tensor of patches from the image using the PyTorch method `unfold`.
-
-        Parameters
-        ----------
-        image_tensor : torch.Tensor
-            The input image tensor (4D), where the first dimension represents the channel dimension.
-
-        Returns
-        -------
-        torch.Tensor
-            A tensor containing all the patches extracted from the image. The tensor shape
-            will be `(num_patches, patch_size[0], patch_size[1], patch_size[2])`, where `num_patches` is
-            determined by the image size, the patch size, and the stride.
-
-        Notes
-        -----
-        The `unfold` method is used to extract patches by sliding a window over the image.
-        The patches are then reshaped into a 4D tensor where each patch is a separate element.
-        """
-        patches_tensor = (
-            image_tensor.unfold(1, self.patch_size[0], self.stride[0])
-            .unfold(2, self.patch_size[1], self.stride[1])
-            .unfold(3, self.patch_size[2], self.stride[2])
-            .contiguous()
-        )
-
-        return patches_tensor.view(
-            -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
-        )
-
-    def _get_sample_description(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> int:
-        """The sample description for patch extraction is the index of the patch."""
-        return sample_index
-
-    def format_output(
-        self,
-        data_point: DataPoint,
-        participant_id: str,
-        session_id: str,
-        image_path: PathType,
-        description: int,
-    ) -> PatchSample:
-        """
-        Puts all the output information in an PatchSample object.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            the `DataPoint` object associated to the patch.
-        participant_id : str
-            the subject concerned.
-        session_id : str
-            the session concerned.
-        image_path : PathType
-            the path of the image from which the patch is extracted.
-        description : int
-            the patch index.
-
-        Returns
-        -------
-        PatchSample
-            a PatchSample object with the patch and all the relevant information on the patch.
-        """
-        patch = data_point.image.tensor
-        if isinstance(data_point.label, tio.Image):
-            label = data_point.label.tensor
-        else:
-            label = data_point.label
-
-        return PatchSample(
-            sample=patch,
-            participant_id=participant_id,
-            session_id=session_id,
-            image_path=str(image_path),
-            label=label,
-            patch_index=description,
-            patch_size=self.patch_size,
-            patch_stride=self.stride,
-        )
 
     def extract_sample(
         self, data_point: DataPoint, sample_index: int
@@ -338,3 +132,108 @@ class Patch(Extraction):
             If 'sample_index' is greater or equal to the number of patches in the images.
         """
         return super().extract_sample(data_point, sample_index)
+
+    def num_samples_per_image(self, image: torch.Tensor) -> int:
+        """
+        Returns the total number of patches extracted from an image.
+
+        Parameters
+        ----------
+        image : torch.Tensor
+            The input image tensor (4D), where the first dimension represents the channel dimension.
+
+        Returns
+        -------
+        int
+            The total number of patches that can be extracted from the image.
+
+        Notes
+        -----
+        The number of patches is determined by the image size, the patch size, and the stride.
+        """
+        return self._get_patches(image).shape[0]
+
+    def format_output(
+        self,
+        data_point: DataPoint,
+        image_path: PathType,
+        description: int,
+    ) -> PatchSample:
+        """
+        Puts all the output information in an PatchSample object.
+
+        Parameters
+        ----------
+        data_point : DataPoint
+            the `DataPoint` object associated to the patch.
+        image_path : PathType
+            the path of the image from which the patch is extracted.
+        description : int
+            the patch index.
+
+        Returns
+        -------
+        PatchSample
+            a PatchSample object with the patch and all the relevant information on the patch.
+        """
+        return PatchSample(
+            sample=data_point.image.tensor,
+            affine=data_point.image.affine,
+            participant=data_point.participant,
+            session=data_point.session,
+            image_path=str(image_path),
+            label=data_point.label.tensor
+            if isinstance(data_point.label, tio.LabelMap)
+            else data_point.label,
+            patch_index=description,
+            patch_size=self.patch_size,
+            patch_stride=self.stride,
+        )
+
+    def _extract_tensor_sample(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> torch.Tensor:
+        """
+        Extracts a single patch from an image.
+
+        Raises
+        ------
+        IndexError
+            If 'sample_index' is greater or equal to the number of patches in the image.
+        """
+        patches_tensor = self._get_patches(image_tensor)
+        try:
+            return patches_tensor[sample_index].unsqueeze(0).clone()
+        except IndexError as exc:
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there are only "
+                f"{len(patches_tensor)} patches in the image."
+            ) from exc
+
+    def _get_sample_description(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> int:
+        """The sample description for patch extraction is the index of the patch."""
+        return sample_index
+
+    def _get_patches(self, image_tensor: torch.Tensor) -> torch.Tensor:
+        """
+        Creates a tensor of patches from the image using the PyTorch method `unfold`.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor containing all the patches extracted from the image. The tensor shape
+            will be `(num_patches, patch_size[0], patch_size[1], patch_size[2])`, where `num_patches` is
+            determined by the image size, the patch size, and the stride.
+        """
+        patches_tensor = (
+            image_tensor.unfold(1, self.patch_size[0], self.stride[0])
+            .unfold(2, self.patch_size[1], self.stride[1])
+            .unfold(3, self.patch_size[2], self.stride[2])
+            .contiguous()
+        )
+
+        return patches_tensor.view(
+            -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
+        )

@@ -1,30 +1,33 @@
+from logging import getLogger
+
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import Custom as CustomModality
-from clinicadl.data.datatype.utils import PreprocessingMethod
-
+from ..modalities import Custom as CustomModality
 from .base import Preprocessing
+from .enum import PreprocessingMethod
+from .file_type import FileType
+
+logger = getLogger("clinicadl.data.datatype.preprocessing.custom")
 
 
-class Custom(Preprocessing, CustomModality):
+class CustomPreprocessing(Preprocessing, CustomModality):
     """
     Configuration for custom preprocessing with a user-defined suffix.
     """
 
     @computed_field
     @property
-    def preprocessing(self) -> PreprocessingMethod:
+    def preprocessing(self) -> str:
         """The preprocessing method."""
-        return PreprocessingMethod.CUSTOM
+        return PreprocessingMethod.CUSTOM.value
 
     def _get_caps_filetype(self) -> FileType:
         """
         Constructs the FileType for custom preprocessing.
         """
         return FileType(
-            pattern=f"custom/*{self.custom_suffix}",
-            description="Custom suffix",
+            pattern=f"custom/*{self.custom_suffix}.nii*",
+            description="Custom preprocessing",
         )
 
     def __str__(self):

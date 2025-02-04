@@ -2,11 +2,11 @@ from logging import getLogger
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.modalities import Flair
+from ..modalities import Flair
+from .base import _LinearPreprocessing
+from .enum import PreprocessingMethod
 
-from .base import PreprocessingMethod, _LinearPreprocessing
-
-logger = getLogger("clinicadl.preprocessing.flair")
+logger = getLogger("clinicadl.data.datatype.preprocessing.flair")
 
 
 class FlairLinear(_LinearPreprocessing, Flair):
@@ -14,12 +14,12 @@ class FlairLinear(_LinearPreprocessing, Flair):
 
     @computed_field
     @property
-    def preprocessing(self) -> PreprocessingMethod:
+    def preprocessing(self) -> str:
         """The preprocessing method."""
-        return PreprocessingMethod.FLAIR_LINEAR
+        return PreprocessingMethod.FLAIR_LINEAR.value
 
     def __str__(self):
         """
         Provides a string representation of the preprocessing configuration.
         """
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} Flair images with flair-linear pipeline"
+        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} Flair images with 'flair-linear' pipeline"

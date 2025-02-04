@@ -1,12 +1,11 @@
-import json
 from logging import getLogger
 from pathlib import Path
 
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.utils import insensitive_glob
+from clinicadl.data.datatype.preprocessing.file_type import FileType
 from clinicadl.utils.exceptions import ClinicaDLBIDSError
 
 from .reader import Reader
+from .utils import insensitive_glob
 
 logger = getLogger("clinicadl.bids_reader")
 

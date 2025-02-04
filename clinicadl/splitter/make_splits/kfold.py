@@ -9,7 +9,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from clinicadl.data.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.kfold import KFoldConfig
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline
+from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType, PathType
 

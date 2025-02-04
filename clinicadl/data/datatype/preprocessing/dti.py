@@ -1,12 +1,14 @@
 from enum import Enum
+from logging import getLogger
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
-from clinicadl.data.datatype.modalities import DWI
-from clinicadl.data.datatype.utils import PreprocessingMethod
-
+from ..modalities import DWI
 from .base import Preprocessing
+from .enum import PreprocessingMethod
+from .file_type import FileType
+
+logger = getLogger("clinicadl.data.datatype.preprocessing.dti")
 
 
 class DTIMeasure(str, Enum):
@@ -34,22 +36,21 @@ class DWIDTI(Preprocessing, DWI):
 
     @computed_field
     @property
-    def preprocessing(self) -> PreprocessingMethod:
+    def preprocessing(self) -> str:
         """The preprocessing method."""
-        return PreprocessingMethod.DWI_DTI
+        return PreprocessingMethod.DWI_DTI.value
 
     def _get_caps_filetype(self) -> FileType:
         """
         Constructs the FileType for DWI_DTI preprocessing.
         """
-
         measure = self.dti_measure
         space = self.dti_space
 
         return FileType(
-            pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure}.nii.gz",
+            pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure}.nii*",
             description=f"DTI-based {measure} in space {space}.",
-            needed_pipeline=PreprocessingMethod.DWI_DTI,
+            needed_pipeline=self.preprocessing,
         )
 
     def __str__(self):

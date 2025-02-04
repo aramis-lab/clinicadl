@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.data import prepare_data
+from clinicadl.data import tensor_conversion
 from clinicadl.data.datasets import CapsDataset, ConcatDataset
 from clinicadl.data.datatype.modalities.pet import SUVRReferenceRegions, Tracer
 from clinicadl.data.datatype.preprocessing import (
@@ -73,7 +73,7 @@ dataset_pet_45_patch = CapsDataset(
     preprocessing=preprocessing_pet_45,
     transforms=transforms_patch,
 )
-prepare_data(dataset_pet_45_patch, n_proc=2)
+tensor_conversion(dataset_pet_45_patch, n_proc=2)
 
 print(dataset_pet_45_patch)
 print(dataset_pet_45_patch.__len__())
@@ -94,7 +94,7 @@ dataset_pet_11_image = CapsDataset(
     preprocessing=preprocessing_pet_11,
     transforms=transforms_image,
 )
-prepare_data(
+tensor_conversion(
     dataset_pet_11_image, n_proc=2
 )  # to extract the tensor of the PET file this time
 
@@ -115,7 +115,7 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-prepare_data(
+tensor_conversion(
     dataset_t1_image, n_proc=2
 )  # to extract the tensor of the PET file this time
 
@@ -136,7 +136,7 @@ dataset_flair_slice = CapsDataset(
     preprocessing=preprocessing_flair,
     transforms=transforms_slice,
 )
-prepare_data(
+tensor_conversion(
     dataset_flair_slice, n_proc=2
 )  # to extract the tensor of the PET file this time
 

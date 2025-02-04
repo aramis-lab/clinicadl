@@ -1,5 +1,5 @@
 import re
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from typing import Tuple
@@ -10,7 +10,7 @@ from clinicadl.utils.typing import PathType
 logger = getLogger("clinicadl.reader")
 
 
-class Reader:
+class Reader(ABC):
     """
     Base reader class for handling BIDS and CAPS directories.
 

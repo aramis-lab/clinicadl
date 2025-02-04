@@ -1,6 +1,5 @@
 import pytest
 
-from clinicadl.data.datatype.file_type import FileType
 from clinicadl.data.datatype.modalities.pet import SUVRReferenceRegions, Tracer
 from clinicadl.data.datatype.preprocessing import (
     DWIDTI,
@@ -10,6 +9,7 @@ from clinicadl.data.datatype.preprocessing import (
     T1Linear,
 )
 from clinicadl.data.datatype.preprocessing.dti import DTIMeasure, DTISpace
+from clinicadl.data.datatype.preprocessing.file_type import FileType
 from clinicadl.data.datatype.utils import ImageModality, PreprocessingMethod
 
 

@@ -2,9 +2,7 @@ from enum import Enum
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.utils import ImageModality
-
-from .base import Modality
+from .base import ImageModality, Modality
 
 
 class Tracer(str, Enum):
