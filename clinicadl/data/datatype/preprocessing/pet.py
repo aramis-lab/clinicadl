@@ -1,16 +1,54 @@
+from enum import Enum
 from logging import getLogger
 
 from pydantic import computed_field
 
+from ..enum import PreprocessingMethod
 from ..modalities import PET
 from .base import _LinearPreprocessing
-from .enum import PreprocessingMethod
 
 logger = getLogger("clinicadl.data.datatype.preprocessing.pet")
 
 
-class PETLinear(_LinearPreprocessing, PET):
-    """Config class for Clinica's 'pet-linear' preprocessing."""
+class SUVRReferenceRegion(str, Enum):
+    """Supported SUVR reference region in Clinica."""
+
+    PONS = "pons"
+    CEREBELLUM_PONS = "cerebellumPons"
+    PONS2 = "pons2"
+    CEREBELLUM_PONS2 = "cerebellumPons2"
+
+
+class PETLinear(PET, _LinearPreprocessing):
+    """
+    Configuration class to handle Positron Emission Tomography (PET) images,
+    preprocessed with Clinica's `pet-linear` pipeline.
+
+    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/
+
+    Parameters
+    ----------
+    tracer : Tracer
+        the radioactive tracer used for acquisition, among `11CPIB`, `18FAV1451`, `18FAV45`, `18FFBB`,
+        `18FFDG` and `18FFMM`.
+    reconstruction : Optional[ReconstructionMethod] (optional, default=None)
+        the method used to reconstruct the image, among `nacstat`, `nacdyn`, `acstat`, `acdyn`, `coregdyn`,
+        `coregavg`, `coregstd` and `coregiso`. Leave to `None` if not specified.
+    suvr_reference_region : SUVRReferenceRegion
+        the reference region used to compute SUVR, among `pons`, `cerebellumPons`, `pons2` and `cerebellumPons2`.
+    use_uncropped_image : bool (optional, default=False)
+        whether to use the uncropped images returned by Clinica.
+        - if `use_uncropped_image=True`: only the files that match the pattern
+        `"pet_linear/sub-*_ses-*_trc-{tracer}_space-MNI152NLin2009cSym_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*"`
+        in the caps directory will be considered.
+        - else: only the files that match the pattern
+        `"pet_linear/sub-*_ses-*_trc-{tracer}_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*"`
+        in the caps directory will be considered.
+        ..note::if `reconstruction` is specified, the pattern will be modified as follows:
+        `"pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*"`
+    """
+
+    suvr_reference_region: SUVRReferenceRegion
 
     @computed_field
     @property
@@ -18,15 +56,27 @@ class PETLinear(_LinearPreprocessing, PET):
         """The preprocessing method."""
         return PreprocessingMethod.PET_LINEAR.value
 
-    def __str__(self):
+    def _get_description(self) -> str:
         """
-        Provides a string representation of the preprocessing configuration.
+        Constructs a description depending on the preprocessing parameters.
         """
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} PET images with tracer {self.tracer} and suvr reference region {self.suvr_reference_region}. "
+        description = f"PET images with tracer '{self.tracer}'"
+        if self.reconstruction:
+            description += f" and reconstruction method '{self.reconstruction}'"
+        description += (
+            f", registered to MNI152NLin2009cSym space using Clinica's '{self.preprocessing}' pipeline "
+            f"with SUVR reference region '{self.suvr_reference_region}'"
+        )
+        if not self.use_uncropped_image:
+            description += (
+                ", and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
+            )
+        return description
 
     def _get_filename(self):
         """
         Constructs the file name depending on the parameters of 'pet-linear'.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return f"*_trc-{self.tracer}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality.value}.nii*"
+        rec = f"_rec-{self.reconstruction}" if self.reconstruction else ""
+        return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality.value}.nii*"

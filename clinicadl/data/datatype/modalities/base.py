@@ -1,27 +1,17 @@
 import abc
-from enum import Enum
 
 from pydantic import computed_field
 
 from clinicadl.utils.config import ClinicaDLConfig
 
-
-class ImageModality(str, Enum):
-    """Possible modality for images in clinicaDL."""
-
-    T1W = "T1w"
-    DWI = "dwi"
-    PET = "pet"
-    FLAIR = "flair"
-    CUSTOM = "custom"
+from ..enum import ImageModality
 
 
 class Modality(ClinicaDLConfig, abc.ABC):
     """
     Abstract configuration class for image modalities.
 
-    This class defines the common structure and methods that all image modalities
-    modalities should follow.
+    This class defines the common structure and methods that all image modalities should follow.
     """
 
     @computed_field
@@ -34,4 +24,3 @@ class Modality(ClinicaDLConfig, abc.ABC):
         This property must be implemented by subclasses to return the specific
         image modality being handled.
         """
-        raise NotImplementedError("Subclasses must define the `modality` property.")

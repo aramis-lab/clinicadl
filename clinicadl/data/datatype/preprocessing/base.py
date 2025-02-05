@@ -4,13 +4,13 @@ from pydantic import computed_field
 
 from clinicadl.utils.config import ClinicaDLConfig
 
+from ..file_type import FileType
 from ..modalities import Modality
-from .file_type import FileType
 
 
 class Preprocessing(ClinicaDLConfig, abc.ABC):
     """
-    Abstract configuration class for the preprocessing procedure.
+    Abstract configuration class for to model the preprocessing step.
 
     This class should be inherited by all preprocessing methods to define specific
     configurations for each preprocessing pipeline.
@@ -31,6 +31,12 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         """
         return self._get_caps_filetype()
 
+    def __str__(self):
+        """
+        Provides a string representation of the preprocessing.
+        """
+        return self.file_type.description
+
     @abc.abstractmethod
     def _get_caps_filetype(self) -> FileType:
         """
@@ -46,7 +52,7 @@ class _LinearPreprocessing(Preprocessing, Modality):
     Base class for linear preprocessings (`t1-linear`, `flair-linear` or `pet-linear`).
 
     If the `use_uncropped_image` is set to True, it uses the uncropped image pattern;
-    otherwise, it adds the `_desc-Crop` suffix to the pattern to indicate cropped images.
+    otherwise, it adds the `_desc-Crop` suffix to the pattern to select cropped images.
     """
 
     use_uncropped_image: bool = False
@@ -57,27 +63,33 @@ class _LinearPreprocessing(Preprocessing, Modality):
         May be overwritten for some preprocessings.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return (
-            f"*space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii*"
-        )
+        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii*"
+
+    def _get_description(self) -> str:
+        """
+        Constructs a description depending on the preprocessing parameters.
+        May be overwritten for some preprocessings.
+        """
+        modality = self.modality.value
+        if not modality.endswith("w"):
+            modality = modality.upper()
+
+        description = f"{modality} images registered to MNI152NLin2009cSym space using Clinica's '{self.preprocessing}' pipeline"
+
+        if not self.use_uncropped_image:
+            description += (
+                ", and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
+            )
+        return description
 
     def _get_caps_filetype(self) -> FileType:
         """
         Base method to construct the FileType for linear preprocessings.
         """
-        # Construct the pattern based on the preprocessing method and modality
         filename = self._get_filename()
         pattern = self.preprocessing.replace("-", "_") + f"/{filename}"
+        description = self._get_description()
 
-        # Construct the description based on the uncropped image option
-        description = f"{self.modality.value} image registered in MNI152NLin2009cSym space using {self.preprocessing} pipeline"
-
-        if not self.use_uncropped_image:
-            description += (
-                " and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
-            )
-
-        # Return the constructed FileType
         return FileType(
             pattern=pattern,
             description=description,

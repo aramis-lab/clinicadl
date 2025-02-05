@@ -3,10 +3,10 @@ from logging import getLogger
 
 from pydantic import computed_field
 
+from ..enum import PreprocessingMethod
+from ..file_type import FileType
 from ..modalities import DWI
 from .base import Preprocessing
-from .enum import PreprocessingMethod
-from .file_type import FileType
 
 logger = getLogger("clinicadl.data.datatype.preprocessing.dti")
 
@@ -25,14 +25,33 @@ class DTISpace(str, Enum):
 
     NATIVE = "native"
     NORMALIZED = "normalized"
-    ALL = "*"
 
 
 class DWIDTI(Preprocessing, DWI):
-    """Config class for Clinica's 'dwi-dti' preprocessing."""
+    """
+    Configuration class to handle Diffusion-Weighted MRI (DWI) images,
+    preprocessed with Clinica's `dwi-dti` pipeline.
 
-    dti_measure: DTIMeasure = DTIMeasure.FRACTIONAL_ANISOTROPY
-    dti_space: DTISpace = DTISpace.ALL
+    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/
+
+    Parameters
+    ----------
+    measure : DTIMeasure
+        the DTI-based measure to use, among `FA` (fractional anisotropy),
+        `MD` (mean diffusivity), `AD` (axial diffusivity) and `RD` (radial diffusivity).
+    space : DTISpace
+        either `native` (the data in the native space) or `normalized` (the data in
+        MNI152Lin standard space).
+        - with `native`: only the files that match the pattern
+        `dwi/dti_based_processing/native_space/sub-*_ses-*_space-*_{measure}.nii*`
+        in the caps directory will be considered.
+        - with `normalized`: only the files that match the pattern
+        `dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*`
+        in the caps directory will be considered.
+    """
+
+    measure: DTIMeasure
+    space: DTISpace
 
     @computed_field
     @property
@@ -44,17 +63,15 @@ class DWIDTI(Preprocessing, DWI):
         """
         Constructs the FileType for DWI_DTI preprocessing.
         """
-        measure = self.dti_measure
-        space = self.dti_space
+        if self.space == DTISpace.NORMALIZED:
+            folder = "normalized_space"
+            space = "MNI152Lin"
+        else:
+            folder = "native_space"
+            space = "*"
 
         return FileType(
-            pattern=f"dwi/dti_based_processing/*/*_space-{space}_{measure}.nii*",
-            description=f"DTI-based {measure} in space {space}.",
+            pattern=f"dwi/dti_based_processing/{folder}/sub-*_ses-*_space-{space}_{self.measure}.nii*",
+            description=f"DTI {self.measure} images in {self.space} space, preprocessed with Clinica's 'dwi-dti' pipeline",
             needed_pipeline=self.preprocessing,
         )
-
-    def __str__(self):
-        """
-        Provides a string representation of the preprocessing configuration.
-        """
-        return f"Preprocessing of DTI images with measure {self.dti_measure.value} and space {self.dti_space.value}. "

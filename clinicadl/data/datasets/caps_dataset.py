@@ -566,7 +566,7 @@ class CapsDataset(Dataset):
         Determines if a mask is a common or an individual mask.
         """
         if Path(mask).suffix:  # it is a file
-            return Mask(self.directory / COMMON_MASKS_DIR / mask)
+            return Mask(self.caps_reader.get_common_mask_path(mask.name))
         else:
             return Mask(mask)
 
@@ -592,8 +592,8 @@ class CapsDataset(Dataset):
         """
         if data is None:
             data = create_subs_sess_list(
-                input_dir=self.caps_reader.input_directory,
-                output_dir=self.caps_reader.input_directory,
+                input_dir=self.directory,
+                output_dir=self.directory,
                 is_bids_dir=False,
             )
             logger.info(f"Creating a subject session TSV file at {data}")

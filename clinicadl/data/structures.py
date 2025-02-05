@@ -6,7 +6,7 @@ import torch
 import torchio as tio
 
 from clinicadl.dictionary.suffixes import PT
-from clinicadl.dictionary.words import AFFINE, IMAGE
+from clinicadl.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
 
 LabelType = Optional[Union[int, float, tio.LabelMap]]
@@ -186,7 +186,7 @@ class Mask:
         See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion.save_mask_as_tensor`.
         """
         pt_mask = torch.load(path, weights_only=True)
-        return pt_mask[IMAGE], pt_mask[AFFINE]
+        return pt_mask[MASK], pt_mask[AFFINE]
 
     def _lazy_load_common_mask(self) -> tio.LabelMap:
         """
@@ -207,7 +207,9 @@ class Mask:
         >>> mask._get_associated_mask_path("sub-000_ses-M000_pet.nii.gz")
         sub-000_ses-M000_brain.nii.gz
         """
-        suffix = str(filename.stem).rsplit("_", maxsplit=1)[-1]
+        suffix = str(filename.with_suffix("").stem).rsplit("_", maxsplit=1)[
+            -1
+        ]  # with_suffix to handle double extensions
         mask_file = str(filename).replace(f"_{suffix}.", f"_{self.name}.")
 
         return Path(mask_file)

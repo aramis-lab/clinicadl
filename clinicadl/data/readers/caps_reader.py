@@ -4,7 +4,8 @@ from typing import Optional, Sequence, Tuple
 
 import pandas as pd
 
-from clinicadl.data.datatype.preprocessing import Preprocessing, PreprocessingMethod
+from clinicadl.data.datatype.enum import PreprocessingMethod
+from clinicadl.data.datatype.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import SUBJECTS, TENSORS
@@ -17,6 +18,9 @@ from clinicadl.utils.typing import PathType
 from .utils import insensitive_glob
 
 logger = getLogger("clinicadl.data.readers.caps_reader")
+
+COMMON_MASKS_DIR = "masks"
+CONVERSION_JSON_DIRECTORY = "tensor_conversion"
 
 
 class CapsReader(Reader):
@@ -44,6 +48,10 @@ class CapsReader(Reader):
         super().__init__(caps_directory)
         self._check_caps_folder()
         self.subject_directory = self.input_directory / SUBJECTS
+
+    @property
+    def tensor_conversion_json_dir(self) -> Path:
+        return self.input_directory / CONVERSION_JSON_DIRECTORY
 
     def _check_caps_folder(self) -> None:
         """
@@ -101,6 +109,7 @@ class CapsReader(Reader):
         Path
             Path to the folder containing the preprocessing data.
         """
+        preprocessing = PreprocessingMethod(preprocessing)
         return self.get_session_path(participant=participant, session=session) / (
             preprocessing.value
         ).replace("-", "_")
@@ -140,8 +149,10 @@ class CapsReader(Reader):
         path = Path(path)
         parent = path.parent
         pt_file_name = (
-            path.with_suffix("").with_suffix("").with_suffix(PT).name
-        )  # two times to handle double extensions (.nii.gz)
+            path.with_suffix("")
+            .with_suffix(PT)
+            .name  # with_suffix("") to handle double extensions
+        )
 
         return parent / TENSORS / pt_file_name
 
@@ -217,20 +228,32 @@ class CapsReader(Reader):
         current_pattern = (
             self.get_session_path(participant, session)
             / "**"
-            / preprocessing.file_type.pattern
+            / preprocessing.file_type.pattern  # TODO: what about participant, session inside filename?
         )
         current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
-        if len(current_glob_found) > 1:
-            error_str = f"\t*  ({participant} | {session}): More than 1 file found:\n"
+        error_msg = (
+            "An error occurred while trying to get images preprocessed with "
+            f"'{preprocessing.preprocessing}' for ({participant} | {session}): "
+        )
+        if len(current_glob_found) > 1:  # TODO: make it impossible to happen!
+            error_msg += "more than 1 file found:\n"
             for found_file in current_glob_found:
-                error_str += f"\t\t{found_file}\n"
-            raise ClinicaDLCAPSError(error_str)
+                error_msg += f"\t\t{found_file}\n"
+            raise ClinicaDLCAPSError(error_msg)
         elif len(current_glob_found) == 0:
-            raise ClinicaDLCAPSError(
-                f"\t* ({participant} | {session}): No file found\n"
-            )
+            error_msg += f"no file found"
+            raise ClinicaDLCAPSError(error_msg)
         else:
             return Path(current_glob_found[0])
+
+    def get_common_mask_path(self, mask_name: str) -> Path:
+        """
+        Gives the full path of a common mask, from the file name.
+        """
+        if Path(mask_name).suffix == PT:
+            return self.input_directory / COMMON_MASKS_DIR / TENSORS / mask_name
+        else:
+            return self.input_directory / COMMON_MASKS_DIR / mask_name
 
     def _write_caps_json(
         self,
@@ -338,9 +361,5 @@ class CapsReader(Reader):
         """
         pattern = preprocessing.file_type.pattern
         for participant, session in subjects_sessions:
-            folder = self.get_session_path(participant=participant, session=session)
-            if not list(folder.glob(pattern)):
-                raise ClinicaDLConfigurationError(
-                    f"Could not find preprocessing {preprocessing.preprocessing.value} for "
-                    f"participant {participant} and session {session} with pattern: {pattern}"
-                )
+            folder = self.get_image_path(participant, session, preprocessing)
+            self.get_image_path(participant, session, preprocessing)

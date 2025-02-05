@@ -1,33 +1,21 @@
-from ..modalities import Custom
-from ..preprocessing.file_type import FileType
+from ..file_type import FileType
+from ..modalities import CustomModality
 from .base import RawData
 
 
-class RawCustom(RawData, Custom):
+class RawCustom(RawData, CustomModality):
     """
-    Configuration class for raw custom imaging data with a user-defined suffix.
-
-    This class represents custom images in their raw BIDS format and provides
-    methods to define file patterns and descriptions.
+    Configuration class to handle raw custom imaging data with a user-defined suffix.
     """
 
     def _get_bids_filetype(self) -> FileType:
         """
         Generate the BIDS-compatible file type pattern and description.
 
-        Args:
-            reconstruction (Optional[str]): Reconstruction identifier (unused here).
-
         Returns:
             FileType: A FileType object containing the pattern and description.
         """
         return FileType(
-            pattern=f"*{self.custom_suffix}",
-            description="Custom suffix for raw data",
+            pattern=f"sub-*_ses-*_{self.custom_suffix}.nii*",
+            description=f"Raw custom NIfTI images with suffix '{self.custom_suffix}'",
         )
-
-    def __str__(self) -> str:
-        """
-        String representation of the RawCustom class.
-        """
-        return f"Custom raw images with suffix '{self.custom_suffix}'"

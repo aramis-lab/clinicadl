@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 
-from clinicadl.data.datatype.preprocessing.file_type import FileType
+from clinicadl.data.datatype.file_type import FileType
 from clinicadl.generate.generate_config import GenerateSheppLoganConfig
 from clinicadl.generate.generate_utils import (
     generate_shepplogan_phantom,

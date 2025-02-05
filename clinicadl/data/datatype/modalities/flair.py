@@ -1,23 +1,18 @@
 from pydantic import computed_field
 
-from .base import ImageModality, Modality
+from ..enum import ImageModality
+from .base import Modality
 
 
 class Flair(Modality):
     """
-    Configuration for FLAIR (Fluid-Attenuated Inversion Recovery) modality preprocessing.
-
-    This class defines the specific settings and attributes for handling
-    FLAIR images in a preprocessing pipeline.
+    Configuration to handle FLAIR (Fluid-Attenuated Inversion Recovery) images.
     """
 
     @computed_field
     @property
     def modality(self) -> ImageModality:
         """
-        The image modality for this configuration.
-
-        Returns:
-            ImageModality: Always set to ImageModality.FLAIR.
+        The modality, always 'flair' here.
         """
         return ImageModality.FLAIR

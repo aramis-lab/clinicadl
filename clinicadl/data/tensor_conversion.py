@@ -37,7 +37,8 @@ if TYPE_CHECKING:
 logger = getLogger("clinicadl.data.tesnor_conversion")
 
 
-SAVE_DIRECTORY = "tensor_conversion"
+SCALAR = "Scalar"
+MASK = "Mask"
 
 
 class TensorConversionInfo(ClinicaDLConfig):
@@ -48,6 +49,7 @@ class TensorConversionInfo(ClinicaDLConfig):
 
     preprocessing: Preprocessing
     participants_sessions: list[tuple[str, str]]
+    label: Optional[str]
     individual_masks: list[str]
     common_masks: list[str]
     transforms: Optional[
@@ -77,7 +79,7 @@ class TensorConversion:
         self.caps_reader = caps_dataset.caps_reader
         self.preprocessing = caps_dataset.preprocessing
         self.transform = caps_dataset.image_transform
-        self.save_directory = self.caps_reader.input_directory / SAVE_DIRECTORY
+        self.save_directory = self.caps_reader.tensor_conversion_json_dir
 
         self.json = None
 
@@ -103,12 +105,19 @@ class TensorConversion:
         -------
         TensorConversionInfo
             a data structure that contains the information,
-            with attributes 'preprocessing', 'participants_sessions',
+            with attributes 'preprocessing', 'participants_sessions', 'label',
             'individual_masks', 'common_masks', 'trasnforms', and 'spacing'.
         """
+        label = self.caps_dataset.label
+        if isinstance(label, Mask):
+            label = MASK + ": " + label.name
+        elif isinstance(label, Column):
+            label = SCALAR + ": " + label
+
         return TensorConversionInfo(
             preprocessing=self.preprocessing,
             participants_sessions=self._participants_sessions_converted,
+            label=label,
             individual_masks=self.caps_dataset.individual_masks,
             common_masks=self._masks_converted,
             transforms=self.caps_dataset.transforms.image_transforms
@@ -158,6 +167,9 @@ class TensorConversion:
         )
         if transforms_saved and check_transforms:
             self._compare_transforms(conversion_info)
+
+        # is it the same label in .pt files?
+        self._compare_label(conversion_info)
 
         # do we have the right individual masks in the .pt files?
         self._compare_individual_masks(conversion_info)
@@ -729,20 +741,58 @@ class TensorConversion:
                 f"and {caps_image_transforms}"
             )
 
+    def _compare_label(self, old_conversion: TensorConversionInfo) -> None:
+        """
+        Checks that the labels stored with tensors are the same.
+        """
+        old_label = old_conversion.label
+        current_label = self.caps_dataset.label
+        if old_label is not None:
+            if old_label.startswith(MASK):
+                mask_name = old_label.split()[-1]
+                if (
+                    not isinstance(current_label, Mask)
+                    or current_label.name != mask_name
+                ):
+                    raise ClinicaDLTensorConversionError(
+                        f"""The labels stored in tensor files associated to {self._currently_reading} """
+                        f"""are masks '{mask_name}', which do not match the current labels that are """
+                        f"""{"None" if current_label is None else f"values in column '{current_label}'"}."""
+                    )
+            elif old_label.startswith(SCALAR):
+                column_name = old_label.split()[-1]
+                if (
+                    not isinstance(current_label, Column)
+                    or current_label != column_name
+                ):
+                    raise ClinicaDLTensorConversionError(
+                        f"""The labels stored in tensor files associated to {self._currently_reading} """
+                        f"""are the values in column '{column_name}', which do not match the current """
+                        """labels that are """
+                        f"""{"None" if current_label is None else f"masks '{current_label.name}'"}."""
+                    )
+        else:
+            if current_label is not None:
+                raise ClinicaDLTensorConversionError(
+                    f"""The labels stored in tensor files associated to {self._currently_reading} """
+                    f"""are None, which do not match the current labels that are """
+                    f"""{f"masks '{current_label.name}'" if isinstance(current_label, Mask) else f"values in column '{current_label}'"}."""
+                )
+
     def _compare_individual_masks(self, old_conversion: TensorConversionInfo) -> None:
         """
-        Checks that the individual masks stored along with the images in the .pt files
-        are the right ones.
+        Checks that all individual masks have been converted.
         """
-        individual_masks_in_caps = [
+        individual_masks_in_caps = {
             mask.name for mask in self.caps_dataset.individual_masks
-        ]
-        if old_conversion.individual_masks != individual_masks_in_caps:
+        }
+        masks_not_converted = individual_masks_in_caps.difference(
+            old_conversion.common_masks
+        )
+        if len(masks_not_converted) > 0:
             raise ClinicaDLTensorConversionError(
-                "The image-specific masks present in .pt files produced by the tensor conversion "
-                f"associated to {self._currently_reading} are: {old_conversion.individual_masks}."
-                "They do not match the image-specific masks mentioned in this CapsDataset "
-                f"({individual_masks_in_caps})."
+                "Some image-specific masks have not been converted by the conversion "
+                f"associated to {self._currently_reading}: {masks_not_converted}"
             )
 
     def _compare_common_masks(self, old_conversion: TensorConversionInfo) -> None:
