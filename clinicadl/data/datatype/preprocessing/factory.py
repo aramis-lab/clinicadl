@@ -10,7 +10,7 @@ from .t1 import T1Linear
 
 
 def get_preprocessing_config(
-    preprocessing: Union[str, PreprocessingMethod], **kwargs: Any
+    name: Union[str, PreprocessingMethod], **kwargs: Any
 ) -> Preprocessing:
     """
     Factory function to get a Preprocessing object from its name
@@ -18,7 +18,7 @@ def get_preprocessing_config(
 
     Parameters
     ----------
-    preprocessing : Union[str, PreprocessingMethod]
+    name : Union[str, PreprocessingMethod]
         the name of the preprocessing. Check our documentation to know
         supported neuroimaging preprocessings.
     **kwargs : Any
@@ -30,7 +30,7 @@ def get_preprocessing_config(
     Preprocessing
         the Preprocessing object.
     """
-    preprocessing = PreprocessingMethod(preprocessing)
+    preprocessing = PreprocessingMethod(name)
     if preprocessing == PreprocessingMethod.T1_LINEAR:
         config = T1Linear
     elif preprocessing == PreprocessingMethod.FLAIR_LINEAR:

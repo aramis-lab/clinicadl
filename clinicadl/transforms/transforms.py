@@ -62,7 +62,7 @@ class Transforms(ClinicaDLConfig):
         """
         if isinstance(self.extraction, Image) and self.sample_transforms:
             logger.warning(
-                "You provided sample_transforms but in the chosen configuration, image and sample are the same."
+                "You provided 'sample_transforms' but in the chosen configuration, image and sample are the same."
             )
             for trans in self.sample_transforms:
                 self.image_transforms.append(trans)

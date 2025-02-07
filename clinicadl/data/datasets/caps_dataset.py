@@ -33,7 +33,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLTSVError,
 )
-from clinicadl.utils.iotools.clinica_utils import create_subs_sess_list
 from clinicadl.utils.typing import DataType, PathType
 
 from ..datatype.preprocessing import Preprocessing, T1Linear
@@ -47,18 +46,6 @@ N_SAMPLES = "n_samples"
 FIRST_INDEX = "first_idx"
 LAST_INDEX = "last_idx"
 COMMON_MASKS_DIR = "masks"
-
-
-class CapsDescription(ClinicaDLConfig):
-    """
-    Description of a CapsDataset. Can be converted to
-    a dictionary with the method `to_dict`.
-    """
-
-    total_samples: int
-    participant_session_pairs: list[tuple[str, str]]
-    preprocessing: Preprocessing
-    extraction: Extraction
 
 
 class CapsDataset(Dataset):
@@ -81,20 +68,19 @@ class CapsDataset(Dataset):
     preprocessing : Preprocessing, (optional, default=PreprocessingT1())
         Description of the preprocessing steps applied to the data. Default is Clinica's `t1-linear`
         pipeline. See :py:class:`clinicadl.data.datatype.Preprocessing`.
-    transforms : Transforms, (optional, default=Transforms())
-        Transformation pipeline to apply to the data during loading. Default will only apply `NaN` removal
-        to images. See :py:class:`clinicadl.transforms.Transforms`.
     data : Optional[DataType], (optional, default=None)
         A DataFrame (or a path to a TSV file containing the dataframe) with the list of participant/session
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
         regression).\n
         Only participant/session pairs in this TSV file will be in the CapsDataset.\n
         If None, all participant/session pairs in `caps_directory` will be used. Besides, a TSV file
-        named `subjects_sessions_list.tsv` will be created in `caps_directory`, with the list of all subject/session
-        pairs in the directory.
+        named will be created in `caps_directory`, with the list of all participant/session
+        pairs in the directory. The name of the created TSV depends on the preprocessing, but it will
+        always start with `overview` (e.g. `overview_t1-linear_cropped.tsv`,
+        `overview_pet-linear_18FFDG_pons2.tsv`, etc.).
         .. warning::
-            If a `subjects_sessions_list.tsv` already exists in `caps_directory`, it will be overwritten when `data`
-            is None.
+            Beware that your TSV files inside `caps_directory` may be overwritten. A good practice is not
+            to name your own TSV files with a name starting with `overview`.
     label : Optional[str], (optional, default=None)
         A potential label related to the image.\n
         If `label` and `data` are not None, CapsDataset will look for a column with that name in `data`.
@@ -105,6 +91,9 @@ class CapsDataset(Dataset):
         `sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz` and `label="seg"`, it will look for the associated
         mask in 'sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz'.\n
         If None, no label will be used (e.g. reconstruction).
+    transforms : Transforms, (optional, default=Transforms())
+        Transformation pipeline to apply to the data during loading. Default will only apply `NaN` removal
+        to images. See :py:class:`clinicadl.transforms.Transforms`.
     masks : Optional[list[Union[str, PathType]]], (optional, default=None)
         Potential masks that are useful to compute some transforms.
         A mask can be either a suffix (image-specific masks) or a file in the `masks` folder of
@@ -122,9 +111,9 @@ class CapsDataset(Dataset):
     ClinicaDLArgumentError
         if `caps_directory` if not a directory.
     ClinicaDLArgumentError
-        If 'data' is not a DataFrame, a path or None.
+        If `data` is not a DataFrame, a path or None.
     ClinicaDLTSVError
-        If 'data' is a TSV file that does not exist.
+        If `data` is a TSV file that does not exist.
     ClinicaDLTSVError
         If the DataFrame in `data` is empty.
     ClinicaDLTSVError
@@ -148,9 +137,9 @@ class CapsDataset(Dataset):
         self,
         caps_directory: PathType,
         preprocessing: Preprocessing = T1Linear(),
-        transforms: Transforms = Transforms(),
         data: Optional[DataType] = None,
         label: Optional[str] = None,
+        transforms: Transforms = Transforms(),
         masks: Optional[list[Union[str, PathType]]] = None,
     ):
         self.eval_mode = False
@@ -274,14 +263,14 @@ class CapsDataset(Dataset):
         self._load_pt_masks()
         self._count_samples()
 
-    def describe(self) -> CapsDescription:
+    def describe(self) -> Dict[str, Any]:
         """
         Returns a description of the CapsDataset.
 
         Returns
         -------
-        CapsDescription
-            A dataclass containing:
+        Dict[str, Any]
+            A dictionary containing:
             - `total_samples`: the size of the dataset, i.e.
             the total number of samples.
             - `participant_session_pairs`: the list of participant/session
@@ -295,12 +284,12 @@ class CapsDataset(Dataset):
             if samples are extracted from the images and 'to_tensors' or
             'read_tensor_conversion' has not been run previously.
         """
-        return CapsDescription(
-            total_samples=len(self),
-            participant_session_pairs=self.get_participant_session_couples(),
-            preprocessing=self.preprocessing.to_dict(),
-            extraction=self.extraction.to_dict(),
-        )
+        return {
+            "total_samples": len(self),
+            "participant_session_pairs": self.get_participant_session_couples(),
+            "preprocessing": self.preprocessing.model_dump(),
+            "extraction": self.extraction.model_dump(),
+        }
 
     def get_sample_info(self, idx: int, column: str) -> Any:
         """
@@ -492,7 +481,14 @@ class CapsDataset(Dataset):
         ):  # image transforms not saved
             data = self.image_transform(data)
 
-        sample, sample_description = self.extraction.extract_sample(data, sample_index)
+        try:
+            sample, sample_description = self.extraction.extract_sample(
+                data, sample_index
+            )
+        except IndexError as exc:
+            raise ClinicaDLCAPSError(
+                f"An error occurred while extracting samples from images of ({participant}, {session})."
+            ) from exc
 
         sample = self.sample_transform(sample)
 
@@ -548,6 +544,11 @@ class CapsDataset(Dataset):
         if masks is None:
             return [], []
 
+        if not isinstance(masks, (tuple, list)):
+            raise ClinicaDLArgumentError(
+                f"'masks' should be a list or a tuple, got: {masks}"
+            )
+
         masks: list[Mask] = [self._read_mask(mask) for mask in masks]
         individual_masks = [mask for mask in masks if not mask.is_common_mask]
         common_masks = [mask for mask in masks if mask.is_common_mask]
@@ -566,7 +567,7 @@ class CapsDataset(Dataset):
         Determines if a mask is a common or an individual mask.
         """
         if Path(mask).suffix:  # it is a file
-            return Mask(self.caps_reader.get_common_mask_path(mask.name))
+            return Mask(self.caps_reader.get_common_mask_path(mask))
         else:
             return Mask(mask)
 
@@ -591,12 +592,8 @@ class CapsDataset(Dataset):
             If the data does not match the preprocessing configuration.
         """
         if data is None:
-            data = create_subs_sess_list(
-                input_dir=self.directory,
-                output_dir=self.directory,
-                is_bids_dir=False,
-            )
-            logger.info(f"Creating a subject session TSV file at {data}")
+            data = self.caps_reader.create_subjects_sessions_tsv(self.preprocessing)
+            print(f"Creating a TSV file at {data}")
 
         if not isinstance(data, DataType):
             raise ClinicaDLArgumentError(
@@ -684,9 +681,10 @@ class CapsDataset(Dataset):
             session=session,
         )
 
+        individual_masks_name = [mask.name for mask in self.individual_masks]
         # individual masks
         for name, image in images_dict.items():
-            if name not in {IMAGE, LABEL, AFFINE}:
+            if name not in {IMAGE, LABEL, AFFINE} and name in individual_masks_name:
                 data.add_mask(
                     tio.LabelMap(tensor=image, affine=images_dict[AFFINE]), name
                 )
@@ -741,7 +739,8 @@ class CapsDataset(Dataset):
             if (
                 self.tensor_conversion.get_info().shape
             ):  # uniform shape across the dataset
-                participant, session, _ = self._get_meta_data(0)
+                first_row = self.df.iloc[0]
+                participant, session = first_row[PARTICIPANT_ID], first_row[SESSION_ID]
                 self.df[N_SAMPLES] = self._get_n_samples(participant, session)
             else:
                 for idx, row in self.df.iterrows():
@@ -762,7 +761,12 @@ class CapsDataset(Dataset):
             self.tensor_conversion.get_info().transforms is None
         ):  # image transforms not saved
             data = self.image_transform(data)
-        return self.extraction.num_samples_per_image(data.image.tensor)
+        try:
+            return self.extraction.num_samples_per_image(data.image.tensor)
+        except IndexError as exc:
+            raise ClinicaDLCAPSError(
+                f"An error occurred while counting samples in images of ({participant}, {session})."
+            ) from exc
 
     def _map_indices_to_images(self) -> None:
         """

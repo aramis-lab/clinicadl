@@ -30,6 +30,6 @@ class FlairLinear(_LinearPreprocessing, Flair):
 
     @computed_field
     @property
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method."""
         return PreprocessingMethod.FLAIR_LINEAR.value

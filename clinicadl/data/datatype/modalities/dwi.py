@@ -11,8 +11,8 @@ class DWI(Modality):
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
         The modality, always 'dwi' here.
         """
-        return ImageModality.DWI
+        return ImageModality.DWI.value

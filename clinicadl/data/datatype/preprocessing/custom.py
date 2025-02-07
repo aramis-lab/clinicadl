@@ -29,7 +29,7 @@ class CustomPreprocessing(Preprocessing, CustomModality):
 
     @computed_field
     @property
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method."""
         return PreprocessingMethod.CUSTOM.value
 
@@ -41,3 +41,10 @@ class CustomPreprocessing(Preprocessing, CustomModality):
             pattern=f"custom/sub-*_ses-*_{self.custom_suffix}.nii*",
             description=f"Custom images with suffix '{self.custom_suffix}'",
         )
+
+    def _get_tsv_name(self) -> str:
+        """
+        Builds a suffix for a tsv file saving
+        information on this preprocessing.
+        """
+        return self.custom_suffix

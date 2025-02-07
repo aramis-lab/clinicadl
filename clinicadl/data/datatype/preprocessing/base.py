@@ -2,6 +2,7 @@ import abc
 
 from pydantic import computed_field
 
+from clinicadl.dictionary.suffixes import TSV
 from clinicadl.utils.config import ClinicaDLConfig
 
 from ..file_type import FileType
@@ -19,7 +20,7 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
     @computed_field
     @property
     @abc.abstractmethod
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method being applied (e.g., t1-linear, pet-linear)."""
 
     @computed_field
@@ -30,6 +31,14 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         This method delegates to the `_get_caps_filetype()`.
         """
         return self._get_caps_filetype()
+
+    @property
+    def tsv_filename(self) -> str:
+        """
+        Builds a filename for a tsv file saving
+        information on this preprocessing.
+        """
+        return "overview_" + self._get_tsv_name() + TSV
 
     def __str__(self):
         """
@@ -44,6 +53,13 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
 
         The specific implementation of this method should return a FileType
         object based on the preprocessing pipeline and modality.
+        """
+
+    @abc.abstractmethod
+    def _get_tsv_name(self) -> str:
+        """
+        Builds a suffix for a tsv file saving
+        information on this preprocessing.
         """
 
 
@@ -63,18 +79,18 @@ class _LinearPreprocessing(Preprocessing, Modality):
         May be overwritten for some preprocessings.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality.value}.nii*"
+        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"
 
     def _get_description(self) -> str:
         """
         Constructs a description depending on the preprocessing parameters.
         May be overwritten for some preprocessings.
         """
-        modality = self.modality.value
+        modality = self.modality
         if not modality.endswith("w"):
             modality = modality.upper()
 
-        description = f"{modality} images registered to MNI152NLin2009cSym space using Clinica's '{self.preprocessing}' pipeline"
+        description = f"{modality} images registered to MNI152NLin2009cSym space using Clinica's '{self.name}' pipeline"
 
         if not self.use_uncropped_image:
             description += (
@@ -87,11 +103,18 @@ class _LinearPreprocessing(Preprocessing, Modality):
         Base method to construct the FileType for linear preprocessings.
         """
         filename = self._get_filename()
-        pattern = self.preprocessing.replace("-", "_") + f"/{filename}"
+        pattern = self.name.replace("-", "_") + f"/{filename}"
         description = self._get_description()
 
         return FileType(
             pattern=pattern,
             description=description,
-            needed_pipeline=self.preprocessing,
+            needed_pipeline=self.name,
         )
+
+    def _get_tsv_name(self) -> str:
+        """
+        Builds a suffix for a tsv file saving
+        information on this preprocessing.
+        """
+        return f"{self.name}{'' if self.use_uncropped_image else '_cropped'}"

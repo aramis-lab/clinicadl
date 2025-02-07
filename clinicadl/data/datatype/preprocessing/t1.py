@@ -30,6 +30,6 @@ class T1Linear(_LinearPreprocessing, T1w):
 
     @computed_field
     @property
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method."""
         return PreprocessingMethod.T1_LINEAR.value

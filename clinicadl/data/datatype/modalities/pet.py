@@ -65,8 +65,8 @@ class PET(Modality):
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
         The modality, always 'pet' here.
         """
-        return ImageModality.PET
+        return ImageModality.PET.value

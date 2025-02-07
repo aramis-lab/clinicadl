@@ -18,8 +18,8 @@ class CustomModality(Modality):
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
         The modality, always 'custom' here.
         """
-        return ImageModality.CUSTOM
+        return ImageModality.CUSTOM.value

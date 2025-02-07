@@ -2,13 +2,15 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 
 from clinicadl.data.datatype.enum import PreprocessingMethod
 from clinicadl.data.datatype.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
 from clinicadl.dictionary.suffixes import PT
-from clinicadl.dictionary.words import SUBJECTS, TENSORS
+from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID, SUBJECTS, TENSORS
+from clinicadl.tsvtools.utils import df_to_tsv
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
@@ -224,24 +226,23 @@ class CapsReader(Reader):
         ClinicaDLCAPSError
             If more than one or no image file is found.
         """
+        file_pattern = preprocessing.file_type.pattern
+        file_pattern = file_pattern.replace("sub-*", participant)
+        file_pattern = file_pattern.replace("ses-*", session)
+        global_pattern = self.get_session_path(participant, session) / file_pattern
 
-        current_pattern = (
-            self.get_session_path(participant, session)
-            / "**"
-            / preprocessing.file_type.pattern  # TODO: what about participant, session inside filename?
-        )
-        current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+        current_glob_found = insensitive_glob(str(global_pattern))
         error_msg = (
             "An error occurred while trying to get images preprocessed with "
-            f"'{preprocessing.preprocessing}' for ({participant} | {session}): "
+            f"'{preprocessing.name}' for ({participant} | {session}): "
         )
-        if len(current_glob_found) > 1:  # TODO: make it impossible to happen!
+        if len(current_glob_found) > 1:  # e.g. a nii and a nii.gz file
             error_msg += "more than 1 file found:\n"
             for found_file in current_glob_found:
-                error_msg += f"\t\t{found_file}\n"
+                error_msg += f"\t * {found_file}\n"
             raise ClinicaDLCAPSError(error_msg)
         elif len(current_glob_found) == 0:
-            error_msg += f"no file found"
+            error_msg += "no file found"
             raise ClinicaDLCAPSError(error_msg)
         else:
             return Path(current_glob_found[0])
@@ -359,7 +360,48 @@ class CapsReader(Reader):
         ClinicaDLConfigurationError
             If the preprocessing is not found for a subject/session pair.
         """
-        pattern = preprocessing.file_type.pattern
         for participant, session in subjects_sessions:
-            folder = self.get_image_path(participant, session, preprocessing)
             self.get_image_path(participant, session, preprocessing)
+
+    def get_participants_sessions(
+        self,
+        preprocessing: Preprocessing,
+    ) -> pd.DataFrame:
+        """
+        Finds all the (participant, session) for a specific preprocessing.
+        """
+        pattern = (
+            self.subject_directory / "sub-*" / "ses-*" / preprocessing.file_type.pattern
+        )
+        files_found = insensitive_glob(str(pattern), recursive=True)
+        participants_sessions = set()
+        for file in files_found:
+            participant_session = (
+                Path(file).relative_to(self.subject_directory).parents[-3]
+            )
+            participant = str(participant_session.parent)
+            session = participant_session.name
+            participants_sessions.add((participant, session))
+
+        return (
+            pd.DataFrame(
+                np.array(list(participants_sessions)),
+                columns=[PARTICIPANT_ID, SESSION_ID],
+            )
+            .sort_values([PARTICIPANT_ID, SESSION_ID])
+            .reset_index(drop=True)
+        )
+
+    def create_subjects_sessions_tsv(
+        self,
+        preprocessing: Preprocessing,
+    ) -> str:
+        """
+        Finds all the (participant, session) for a specific preprocessing
+        and saves them in a tsv.
+        """
+        tsv_path = self.input_directory / preprocessing.tsv_filename
+        df = self.get_participants_sessions(preprocessing)
+        df_to_tsv(tsv_path, df)
+
+        return str(tsv_path)

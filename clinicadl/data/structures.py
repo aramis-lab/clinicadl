@@ -1,4 +1,5 @@
 import copy
+from collections import UserString
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
@@ -12,10 +13,17 @@ from clinicadl.utils.typing import PathType
 LabelType = Optional[Union[int, float, tio.LabelMap]]
 
 
-class Column(str):
+class Column(UserString):
     """
     Dummy class to store label when it represents a column of a dataframe.
     """
+
+    def __init__(self, name: str):
+        self._name = name
+        super().__init__(name)
+
+    def __str__(self):
+        return f"Column('{self._name}')"
 
 
 class DataPoint(tio.Subject):
@@ -167,6 +175,12 @@ class Mask:
         """Checks if the mask file exists."""
         mask_path = Path(mask_path)
         return mask_path.is_file()
+
+    def __str__(self):
+        if self.is_common_mask:
+            return f"Mask('{self.path}')"
+        else:
+            return f"Mask('{self.name}')"
 
     @classmethod
     def _load_mask(cls, path: Path) -> tio.LabelMap:

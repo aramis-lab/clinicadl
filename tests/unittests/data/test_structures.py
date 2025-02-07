@@ -7,7 +7,13 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data.structures import DataPoint, Mask
+from clinicadl.data.structures import Column, DataPoint, Mask, NoneLabel
+
+
+def test_Column():
+    c = Column("age")
+    assert c == "age"
+    assert str(c) == "Column('age')"
 
 
 def test_DataPoint():
@@ -123,6 +129,7 @@ def test_Mask():
     mask = Mask(str(caps_dir / "masks" / "leftHippocampus.nii.gz"))
     assert mask.path == caps_dir / "masks" / "leftHippocampus.nii.gz"
     assert mask.name == "leftHippocampus.nii.gz"
+    assert str(mask) == f"Mask('{str(mask.path)}')"
 
     mask = Mask(caps_dir / "masks" / "leftHippocampus.nii.gz")
     assert mask.is_common_mask
@@ -150,6 +157,7 @@ def test_Mask():
     #####################################
     mask = Mask("brain")
     assert not mask.is_common_mask
+    assert str(mask) == "Mask('brain')"
 
     associated_mask = mask.get_associated_mask(
         subject_dir / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz"

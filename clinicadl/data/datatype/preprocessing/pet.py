@@ -52,7 +52,7 @@ class PETLinear(PET, _LinearPreprocessing):
 
     @computed_field
     @property
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method."""
         return PreprocessingMethod.PET_LINEAR.value
 
@@ -64,7 +64,7 @@ class PETLinear(PET, _LinearPreprocessing):
         if self.reconstruction:
             description += f" and reconstruction method '{self.reconstruction}'"
         description += (
-            f", registered to MNI152NLin2009cSym space using Clinica's '{self.preprocessing}' pipeline "
+            f", registered to MNI152NLin2009cSym space using Clinica's '{self.name}' pipeline "
             f"with SUVR reference region '{self.suvr_reference_region}'"
         )
         if not self.use_uncropped_image:
@@ -79,4 +79,14 @@ class PETLinear(PET, _LinearPreprocessing):
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
         rec = f"_rec-{self.reconstruction}" if self.reconstruction else ""
-        return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality.value}.nii*"
+        return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality}.nii*"
+
+    def _get_tsv_name(self) -> str:
+        """
+        Builds a suffix for a tsv file saving
+        information on this preprocessing.
+        """
+        return (
+            f"pet-linear_{self.tracer}_{self.suvr_reference_region}{'_' + self.reconstruction if self.reconstruction else ''}"
+            f"{'' if self.use_uncropped_image else '_cropped'}"
+        )

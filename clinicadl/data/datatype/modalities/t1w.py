@@ -11,8 +11,8 @@ class T1w(Modality):
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
         The modality, always 'T1w' here.
         """
-        return ImageModality.T1W
+        return ImageModality.T1W.value

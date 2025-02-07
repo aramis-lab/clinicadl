@@ -1,8 +1,9 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
-from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
+from clinicadl.data.datatype.preprocessing import FlairLinear, PETLinear, T1Linear
 from clinicadl.data.readers import CapsReader
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -99,6 +100,34 @@ def test_good_caps_reader():
             tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
         ),
     )
+    with pytest.raises(ClinicaDLCAPSError):
+        caps_reader.check_preprocessing(
+            [("sub-666", "ses-M666")],
+            FlairLinear(
+                use_uncropped_image=True,
+            ),
+        )
+
+    # get_participants_sessions
+    true_df = pd.DataFrame.from_dict(
+        {
+            "participant_id": ["sub-000", "sub-000", "sub-010", "sub-010"],
+            "session_id": ["ses-M000", "ses-M003", "ses-M003", "ses-M012"],
+        }
+    )
+    participants_sessions = caps_reader.get_participants_sessions(
+        T1Linear(use_uncropped_image=True)
+    )
+    assert (participants_sessions == true_df).all().all()
+
+    # create_subjects_sessions_tsv
+    tsv_path = caps_reader.create_subjects_sessions_tsv(
+        T1Linear(use_uncropped_image=True)
+    )
+    tsv = pd.read_csv(caps_dir / "overview_t1-linear.tsv", sep="\t")
+    assert (tsv == true_df).all().all()
+    (caps_dir / "overview_t1-linear.tsv").unlink()
+    assert tsv_path == str(caps_dir / "overview_t1-linear.tsv")
 
 
 def test_bad_caps_reader():

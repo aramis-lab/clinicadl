@@ -1,6 +1,6 @@
 # coding: utf8
 from logging import getLogger
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import numpy as np
 from torch.utils.data import ConcatDataset as TorchConcatDataset
@@ -8,7 +8,7 @@ from torch.utils.data import ConcatDataset as TorchConcatDataset
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
-from .caps_dataset import CapsDataset, CapsDescription
+from .caps_dataset import CapsDataset
 
 logger = getLogger("clinicadl.data.datasets.concat")
 
@@ -20,7 +20,7 @@ class ConcatDataset(TorchConcatDataset):
         self.datasets: list[CapsDataset]
         self._check_consistency(ignore_spacing)
 
-    def describe(self) -> list[CapsDescription]:
+    def describe(self) -> list[Dict[str, Any]]:
         """
         Returns a description of the CapsDataset.
 

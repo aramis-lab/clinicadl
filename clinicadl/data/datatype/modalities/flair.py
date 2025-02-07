@@ -11,8 +11,8 @@ class Flair(Modality):
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
         The modality, always 'flair' here.
         """
-        return ImageModality.FLAIR
+        return ImageModality.FLAIR.value

@@ -55,7 +55,7 @@ class DWIDTI(Preprocessing, DWI):
 
     @computed_field
     @property
-    def preprocessing(self) -> str:
+    def name(self) -> str:
         """The preprocessing method."""
         return PreprocessingMethod.DWI_DTI.value
 
@@ -73,5 +73,12 @@ class DWIDTI(Preprocessing, DWI):
         return FileType(
             pattern=f"dwi/dti_based_processing/{folder}/sub-*_ses-*_space-{space}_{self.measure}.nii*",
             description=f"DTI {self.measure} images in {self.space} space, preprocessed with Clinica's 'dwi-dti' pipeline",
-            needed_pipeline=self.preprocessing,
+            needed_pipeline=self.name,
         )
+
+    def _get_tsv_name(self) -> str:
+        """
+        Builds a suffix for a tsv file saving
+        information on this preprocessing.
+        """
+        return f"dwi-dti_{self.measure}_{self.space}"
