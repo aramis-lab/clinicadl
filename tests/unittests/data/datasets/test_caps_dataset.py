@@ -454,7 +454,7 @@ def test__getitem__():
                 tio.RescaleIntensity(masking_method="brain"),
                 tio.Mask(masking_method="leftHippocampus"),
             ],
-            augmentations=[tio.RemapLabels({1: 10})],
+            augmentations=[tio.RemapLabels({0: 10})],
         ),
     )
     caps_dataset.read_tensor_conversion("t1_without_transform")
@@ -506,5 +506,5 @@ def test__getitem__():
         out_sample.label
         == tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
             tio.LabelMap(tensor=tensors["label"])
-        ).tensor[:, 0]
+        ).tensor[:, 1]
     ).all()

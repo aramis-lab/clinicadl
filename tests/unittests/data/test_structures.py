@@ -7,7 +7,7 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data.structures import Column, DataPoint, Mask, NoneLabel
+from clinicadl.data.structures import Column, DataPoint, Mask
 
 
 def test_Column():
