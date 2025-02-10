@@ -24,6 +24,8 @@
             * shape: (3, 3, 3)
             * label: "seg"
             * masks: "brain"
+        * tensors:
+            * shape: (2, 2, 2)
     * ses-M012
         * niftis:
             * uncropped only

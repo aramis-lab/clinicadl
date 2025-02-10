@@ -227,6 +227,13 @@ class Patch(Extraction):
             will be `(num_patches, patch_size[0], patch_size[1], patch_size[2])`, where `num_patches` is
             determined by the image size, the patch size, and the stride.
         """
+        spatial_shape = image_tensor.shape[1:]
+        if self.patch_size > spatial_shape:
+            raise IndexError(
+                "The patch size can't be greater than the size of the image. "
+                f"Got image with spatial shape {tuple(spatial_shape)}, but patch size is {self.patch_size}."
+            )
+
         patches_tensor = (
             image_tensor.unfold(1, self.patch_size[0], self.stride[0])
             .unfold(2, self.patch_size[1], self.stride[1])

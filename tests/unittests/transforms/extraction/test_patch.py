@@ -79,6 +79,10 @@ def test_extract_sample():
         extracted_data_point.image.tensor == image_tensor[:, :2, :2, 1:3]
     ).all()  # .view starts with the last dimension
 
+    patch = Patch(patch_size=15, stride=1)
+    with pytest.raises(IndexError):
+        patch.extract_sample(data_point, sample_index=0)
+
 
 def test_format_output():
     patch = Patch(patch_size=(3, 4, 3), stride=2)

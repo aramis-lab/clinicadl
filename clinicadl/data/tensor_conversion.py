@@ -387,7 +387,7 @@ class TensorConversion:
         except RuntimeError as exc:
             message = f"Inconsistent shapes were found for ({images.participant}, {images.session}):\n"
             for image in images.get_images(intensity_only=False):
-                message += f"   {image.path}: {image.spatial_shape}\n"
+                message += f"   * {image.path}: {image.spatial_shape}\n"
             message += "The masks associated to an image must have the same shape!"
             raise ClinicaDLTensorConversionError(message) from exc
 
@@ -402,7 +402,7 @@ class TensorConversion:
         except RuntimeError as exc:
             message = f"Inconsistent affine matrices were found for ({images.participant}, {images.session}):\n"
             for image in images.get_images(intensity_only=False):
-                message += f"   {image.path}: {image.affine}\n"
+                message += f"   * {image.path}:\n {image.affine}\n"
             message += (
                 "The masks associated to an image must have the same affine matrix!"
             )

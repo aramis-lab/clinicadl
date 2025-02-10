@@ -389,6 +389,14 @@ def test_convert_to_tensors():
     with open(tmp_dir / "tensor_conversion" / "new_conversion_pet.json", "r") as f:
         conversion_info = json.load(f)
     assert conversion_info["label"] == "Column('age')"
+    assert conversion_info["transforms"] == [
+        {
+            "name": "NanRemoval",
+            "nan": 0.0,
+            "posinf": None,
+            "neginf": None,
+        }
+    ]
     with open(tmp_dir / "tensor_conversion" / "pet_ref.json", "r") as f:
         old_conversion_info = json.load(f)
     assert sorted(old_conversion_info["participants_sessions"]) == sorted(

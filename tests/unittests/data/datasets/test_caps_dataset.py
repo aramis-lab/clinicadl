@@ -8,10 +8,11 @@ import torchio as tio
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
 from clinicadl.data.structures import Mask
-from clinicadl.transforms import Slice, Transforms, get_transform_config
+from clinicadl.transforms import Patch, Slice, Transforms, get_transform_config
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
+    ClinicaDLTSVError,
 )
 
 caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
@@ -210,12 +211,22 @@ def test_describe():
             ("sub-010", "ses-M012"),
         ]
     )
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        T1Linear(use_uncropped_image=True),
+        data=data,
+    )
+    assert caps_dataset.describe()["total_samples"] == 3
+
     caps_dataset = CapsDataset(
         tmp_dir,
         T1Linear(use_uncropped_image=True),
         data=data,
         transforms=Transforms(extraction=Slice()),
     )
+    with pytest.raises(ClinicaDLCAPSError):
+        caps_dataset.describe()
     caps_dataset.to_tensors("t1", ignore_spacing=True)
     description = caps_dataset.describe()
     assert description["total_samples"] == 7
@@ -243,3 +254,102 @@ def test_describe():
         "squeeze": True,
     }
     shutil.rmtree(tmp_dir)
+
+
+def test_get_sample_info():
+    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
+
+    if tmp_dir.is_dir():
+        shutil.rmtree(tmp_dir)
+    shutil.copytree(caps_dir, tmp_dir)
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=PETLinear(
+            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
+        ),
+        data=data,
+    )
+    assert caps_dataset.get_sample_info(0, "age") == 1.0
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        transforms=Transforms(extraction=Patch(patch_size=2, stride=1)),
+    )
+    with pytest.raises(ClinicaDLCAPSError):
+        caps_dataset.get_sample_info(8, "age")
+    caps_dataset.read_tensor_conversion("t1")
+    assert caps_dataset.get_sample_info(7, "age") == 1.0
+    assert caps_dataset.get_sample_info(8, "age") == 2.0
+
+
+def test_train_eval():
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-000", "ses-M003"),
+            ("sub-010", "ses-M003"),
+            ("sub-010", "ses-M012"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        caps_dir,
+        PETLinear(
+            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
+        ),
+        data=data,
+    )
+    assert not caps_dataset.eval_mode
+    caps_dataset.eval()
+    assert caps_dataset.eval_mode
+    caps_dataset.train()
+    assert not caps_dataset.eval_mode
+
+
+def test_subset():
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-000", "ses-M003"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        caps_dir,
+        PETLinear(
+            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
+        ),
+        data=data,
+    )
+    subset = caps_dataset.subset(
+        sub_data(
+            [
+                ("sub-000", "ses-M000"),
+                ("sub-000", "ses-M003"),
+            ]
+        )
+    )
+    assert isinstance(subset, CapsDataset)
+    assert len(subset) == 2
+
+    with pytest.raises(ClinicaDLTSVError):
+        caps_dataset.subset(
+            sub_data(
+                [
+                    ("sub-000", "ses-M000"),
+                    ("sub-000", "ses-M003"),
+                    ("sub-010", "ses-M012"),
+                ]
+            )
+        )

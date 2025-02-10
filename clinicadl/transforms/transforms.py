@@ -39,7 +39,9 @@ class Transforms(ClinicaDLConfig):
     """
 
     extraction: Extraction = Image()
-    image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
+    image_transforms: list[Union[Transform, TransformConfig]] = [
+        NanRemovalConfig(nan=0.0, posinf=None, neginf=None)
+    ]
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
     _image_transforms_processed: list[Transform] = []

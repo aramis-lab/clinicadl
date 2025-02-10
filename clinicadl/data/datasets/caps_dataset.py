@@ -154,6 +154,9 @@ class CapsDataset(Dataset):
         ) = transforms.get_transforms()
         self.extraction = transforms.extraction
         self.df = self._get_df_from_input(data)
+        self.caps_reader.check_preprocessing(
+            self.get_participant_session_couples(), self.preprocessing
+        )
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
@@ -405,8 +408,7 @@ class CapsDataset(Dataset):
             )
 
             err_message = (
-                "Some couples (participant, session) are not in the dataset, "
-                "missing (participant, session):\n"
+                "Some couples (participant, session) are not in the dataset:\n"
             )
             for pair in missing_pairs:
                 err_message += f" - {pair} \n"
@@ -601,12 +603,8 @@ class CapsDataset(Dataset):
             )
 
         df = self._check_data_instance(data)
-        self.df = df
-        self.caps_reader.check_preprocessing(
-            self.get_participant_session_couples(), self.preprocessing
-        )
 
-        return df
+        return deepcopy(df)
 
     @staticmethod
     def _check_data_instance(data: DataType) -> pd.DataFrame:
