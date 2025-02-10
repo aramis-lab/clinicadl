@@ -44,6 +44,14 @@
     "interrupted": false,
     "participants_sessions": [
         [
+            "sub-000",
+            "ses-M000"
+        ],
+        [
+            "sub-000",
+            "ses-M003"
+        ],
+        [
             "sub-010",
             "ses-M003"
         ],

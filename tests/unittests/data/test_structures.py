@@ -128,7 +128,7 @@ def test_Mask():
     #########################################################
     mask = Mask(str(caps_dir / "masks" / "leftHippocampus.nii.gz"))
     assert mask.path == caps_dir / "masks" / "leftHippocampus.nii.gz"
-    assert mask.name == "leftHippocampus.nii.gz"
+    assert mask.name == "leftHippocampus"
     assert str(mask) == f"Mask('{str(mask.path)}')"
 
     mask = Mask(caps_dir / "masks" / "leftHippocampus.nii.gz")

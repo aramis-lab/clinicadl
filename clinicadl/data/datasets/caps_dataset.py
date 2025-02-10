@@ -20,13 +20,12 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.transforms.extraction import Extraction, Sample
+from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import (
     check_df,
     tsv_to_df,
 )
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -499,8 +498,6 @@ class CapsDataset(Dataset):
 
         return self.extraction.format_output(
             sample,
-            participant_id=participant,
-            session_id=session,
             image_path=tensor_path,
             description=sample_description,
         )
@@ -551,16 +548,25 @@ class CapsDataset(Dataset):
                 f"'masks' should be a list or a tuple, got: {masks}"
             )
 
-        masks: list[Mask] = [self._read_mask(mask) for mask in masks]
-        individual_masks = [mask for mask in masks if not mask.is_common_mask]
-        common_masks = [mask for mask in masks if mask.is_common_mask]
+        mask_objects: list[Mask] = [self._read_mask(mask) for mask in masks]
 
-        for mask in individual_masks:
+        if len(mask_objects) != len(set(mask.name for mask in mask_objects)):
+            raise ClinicaDLArgumentError(
+                f"Duplicated mask names in {masks}. "
+                "Beware that if you passed a path in 'masks' (e.g. 'leftHippocampus.nii.gz'), "
+                "CapsDatset will identify it with its file name, without "
+                "the extension (e.g. 'leftHippocampus')."
+            )
+
+        for mask in mask_objects:
             if mask.name in {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION}:
-                raise ClinicaDLCAPSError(
+                raise ClinicaDLArgumentError(
                     f"Mask suffix cannot be {mask.name}. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
                     "are protected names. Please change the suffix of your masks."
                 )
+
+        individual_masks = [mask for mask in mask_objects if not mask.is_common_mask]
+        common_masks = [mask for mask in mask_objects if mask.is_common_mask]
 
         return individual_masks, common_masks
 
@@ -644,7 +650,7 @@ class CapsDataset(Dataset):
         row = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
             (participant, session)
         ]
-        sample_idx = int(idx - row[FIRST_INDEX].iloc[0])
+        sample_idx = int(idx - row[FIRST_INDEX])
 
         return participant, session, sample_idx
 
@@ -703,7 +709,7 @@ class CapsDataset(Dataset):
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Tensor conversion was performed, as suggested in {self.tensor_conversion.json}. "
-                f"Nevertheless, file {path} is not found. The tensors have probably been deleted "
+                f"Nevertheless, file {str(path)} is not found. The tensors have probably been deleted "
                 "after conversion. Please rerun 'to_tensors' to generate the tensor files again."
             ) from exc
 

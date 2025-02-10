@@ -156,13 +156,15 @@ class Mask:
                 )
             self.is_common_mask = True
             self.path = Path(mask)
-            self.name = self.path.name
+            self.name = self.path.with_suffix(
+                ""
+            ).stem  # with_suffix to handle double extensions
 
         elif isinstance(mask, str):
             if self._check_path(mask):
                 self.is_common_mask = True
                 self.path = Path(mask)
-                self.name = self.path.name
+                self.name = self.path.with_suffix("").stem
             else:
                 self.is_common_mask = False
                 self.path = None

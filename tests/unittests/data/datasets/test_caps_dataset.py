@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import torch
 import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset
@@ -52,10 +53,10 @@ def test_good_caps_dataset():
     caps_dataset = CapsDataset(
         caps_dir,
         preprocessing,
-        transforms,
-        data,
-        label,
-        masks,
+        transforms=transforms,
+        data=data,
+        label=label,
+        masks=masks,
     )
     assert isinstance(caps_dataset.image_transform, tio.Compose)
     assert len(caps_dataset.image_transform.transforms) == 1
@@ -161,6 +162,20 @@ def test_checks():
             data=data,
             masks="leftHippocampus.nii.gz",
         )
+    with pytest.raises(ClinicaDLArgumentError):
+        CapsDataset(
+            caps_dir,
+            T1Linear(use_uncropped_image=True),
+            data=data,
+            masks=["affine"],
+        )
+    with pytest.raises(ClinicaDLArgumentError):
+        CapsDataset(
+            caps_dir,
+            T1Linear(use_uncropped_image=True),
+            data=data,
+            masks=["leftHippocampus", "leftHippocampus.nii.gz"],
+        )
     caps_dataset = CapsDataset(
         caps_dir,
         T1Linear(use_uncropped_image=True),
@@ -195,7 +210,7 @@ def test_get_participant_session_couples():
 
 
 def test_describe():
-    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
+    tmp_dir = Path(__file__).parents[2] / "resources" / "caps_tmp"
 
     if tmp_dir.is_dir():
         shutil.rmtree(tmp_dir)
@@ -227,7 +242,7 @@ def test_describe():
     )
     with pytest.raises(ClinicaDLCAPSError):
         caps_dataset.describe()
-    caps_dataset.to_tensors("t1", ignore_spacing=True)
+    caps_dataset.to_tensors("t1_", ignore_spacing=True)
     description = caps_dataset.describe()
     assert description["total_samples"] == 7
     assert description["participant_session_pairs"] == [
@@ -257,15 +272,6 @@ def test_describe():
 
 
 def test_get_sample_info():
-    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
-
-    if tmp_dir.is_dir():
-        shutil.rmtree(tmp_dir)
-    shutil.copytree(caps_dir, tmp_dir)
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
-
     data = sub_data(
         [
             ("sub-000", "ses-M000"),
@@ -273,19 +279,31 @@ def test_get_sample_info():
         ]
     )
     caps_dataset = CapsDataset(
-        tmp_dir,
+        caps_dir,
         preprocessing=PETLinear(
             tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
         ),
         data=data,
     )
     assert caps_dataset.get_sample_info(0, "age") == 1.0
+    with pytest.raises(KeyError):
+        caps_dataset.get_sample_info(0, "abc")
+    with pytest.raises(ValueError):
+        caps_dataset.get_sample_info(-1, "age")
+    with pytest.raises(IndexError):
+        caps_dataset.get_sample_info(2, "abc")
 
     caps_dataset = CapsDataset(
-        tmp_dir,
+        caps_dir,
         preprocessing=T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(extraction=Patch(patch_size=2, stride=1)),
+        label="seg",
+        transforms=Transforms(
+            extraction=Patch(patch_size=1, stride=1),
+            image_transforms=[
+                get_transform_config("Crop", cropping=(0, 1, 0, 1, 0, 1))
+            ],
+        ),
     )
     with pytest.raises(ClinicaDLCAPSError):
         caps_dataset.get_sample_info(8, "age")
@@ -353,3 +371,140 @@ def test_subset():
                 ]
             )
         )
+
+
+def test__getitem__():
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        label="seg",
+        masks=["brain"],
+        transforms=Transforms(
+            extraction=Slice(),
+            image_transforms=[
+                get_transform_config("Crop", cropping=(0, 1, 0, 1, 0, 1))
+            ],
+            sample_transforms=[tio.RescaleIntensity(masking_method="brain")],
+            augmentations=[tio.RemapLabels({1: 10})],
+        ),
+    )
+
+    with pytest.raises(ClinicaDLCAPSError):
+        caps_dataset[0]
+
+    caps_dataset.read_tensor_conversion("t1")
+
+    tensors = torch.load(
+        caps_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        weights_only=True,
+    )
+    out_sample = caps_dataset[0]
+    assert out_sample.slice_position == 0
+    assert out_sample.slice_direction == 0
+    assert (
+        out_sample.sample
+        == tio.RescaleIntensity(masking_method="brain")(
+            tio.Subject(
+                image=tio.ScalarImage(tensor=tensors["image"][:, 0:1]),
+                brain=tio.LabelMap(tensor=tensors["brain"][:, 0:1]),
+            )
+        ).image.tensor[:, 0]
+    ).all()
+    assert (out_sample.affine == tensors["affine"]).all()
+    assert out_sample.participant == "sub-000"
+    assert out_sample.session == "ses-M000"
+    assert out_sample.image_path == str(
+        caps_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+    )
+    assert (
+        out_sample.label
+        == tio.RemapLabels({1: 10})(tio.LabelMap(tensor=tensors["label"])).tensor[:, 0]
+    ).all()
+
+    ###########
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        label="seg",
+        masks=["brain", "leftHippocampus.nii.gz"],
+        transforms=Transforms(
+            extraction=Slice(),
+            image_transforms=[tio.Crop((0, 0, 0, 0, 0, 1))],
+            sample_transforms=[
+                tio.RescaleIntensity(masking_method="brain"),
+                tio.Mask(masking_method="leftHippocampus"),
+            ],
+            augmentations=[tio.RemapLabels({1: 10})],
+        ),
+    )
+    caps_dataset.read_tensor_conversion("t1_without_transform")
+    caps_dataset.eval()
+    tensors = torch.load(
+        caps_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        weights_only=True,
+    )
+    common_mask = torch.load(
+        caps_dir / "masks" / "tensors" / "leftHippocampus.pt",
+        weights_only=True,
+    )["mask"]
+    out_sample = caps_dataset[3]
+    assert out_sample.slice_position == 1
+    assert out_sample.slice_direction == 0
+    assert out_sample.participant == "sub-010"
+    assert out_sample.session == "ses-M003"
+    assert (
+        out_sample.sample
+        == tio.Mask(masking_method="leftHippocampus")(
+            tio.RescaleIntensity(masking_method="brain")(
+                tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
+                    tio.Subject(
+                        image=tio.ScalarImage(tensor=tensors["image"][:, 1:2]),
+                        brain=tio.LabelMap(tensor=tensors["brain"][:, 1:2]),
+                        leftHippocampus=tio.LabelMap(tensor=common_mask[:, 1:2]),
+                    )
+                )
+            )
+        ).image.tensor[:, 0]
+    ).all()
+    assert (out_sample.affine == tensors["affine"]).all()
+    assert out_sample.image_path == str(
+        caps_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    )
+    assert (
+        out_sample.label
+        == tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
+            tio.LabelMap(tensor=tensors["label"])
+        ).tensor[:, 0]
+    ).all()

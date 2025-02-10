@@ -180,7 +180,9 @@ class TensorConversion:
         self._participants_sessions_converted = (
             self.caps_dataset.get_participant_session_couples()
         )
-        self._masks_converted = [mask.name for mask in self.caps_dataset.common_masks]
+        self._masks_converted = [
+            mask.path.name for mask in self.caps_dataset.common_masks
+        ]
         self._output_spacing = conversion_info.spacing
         self._output_shape = conversion_info.shape
         self._save_transforms = transforms_saved
@@ -307,7 +309,7 @@ class TensorConversion:
         label_map = getattr(images, mask.name)
         self.save_mask_as_tensor(label_map, pt_path)
 
-        self._masks_converted.append(mask.name)
+        self._masks_converted.append(mask.path.name)
 
     def _transform(self, images: DataPoint) -> DataPoint:
         """
@@ -796,7 +798,9 @@ class TensorConversion:
         """
         Checks that all common masks have been converted.
         """
-        common_masks_in_caps = {mask.name for mask in self.caps_dataset.common_masks}
+        common_masks_in_caps = {
+            mask.path.name for mask in self.caps_dataset.common_masks
+        }
         masks_not_converted = common_masks_in_caps.difference(
             old_conversion.common_masks
         )
