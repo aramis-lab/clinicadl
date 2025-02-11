@@ -48,6 +48,18 @@ class Split(ClinicaDLConfig):
     _dp_degree: Optional[PositiveInt] = None
     _rank: Optional[NonNegativeInt] = None
 
+    def reset(self) -> None:
+        """
+        Resets the computed fields of the Split object
+        ('train_loader', 'val_loader', etc.).
+        """
+        self.train_loader = None
+        self.val_loader = None
+        self.train_loader_config = None
+        self.val_loader_config = None
+        self._dp_degree = None
+        self._rank = None
+
     def parallelism(self, dp_degree: int, rank: int) -> None:
         """
         Instantiates data parallelism. The data will then be split
@@ -60,6 +72,11 @@ class Split(ClinicaDLConfig):
         rank : Optional[int] (optional, default=None)
             Process id within the data parallelism communicator.
         """
+        if rank >= dp_degree:
+            raise ValueError(
+                "'rank' must be strictly smaller than 'dp_degree'. Got "
+                f"dp_degree={dp_degree} and rank={rank}"
+            )
         self._dp_degree = dp_degree
         self._rank = rank
 
