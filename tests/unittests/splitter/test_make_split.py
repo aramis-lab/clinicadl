@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatype.preprocessing import T1Linear
 from clinicadl.splitter.make_splits import make_kfold, make_split
-from clinicadl.transforms import Transforms
 from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
@@ -37,7 +36,7 @@ def remove_non_empty_dir(dir_path: Path):
         print(f"{dir_path} does not exist or is not a directory.")
 
 
-caps_dir = Path(__file__).parents[1] / "ressources" / "caps_example"
+caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 
 sub_ses_t1 = caps_dir / "subjects_t1.tsv"
 sub_ses_df = pd.read_csv(sub_ses_t1, sep="\t")
@@ -101,7 +100,10 @@ def test_good_split():
 
 
 def test_make_split_and_kfold_from_df():
-    dataset = CapsDataset(caps_dir, T1Linear(), Transforms())
+    dataset = CapsDataset(
+        caps_dir,
+        T1Linear(),
+    )
     with pytest.raises(ValueError):
         _ = make_split(dataset.df, n_test=0.2)
 

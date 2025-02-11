@@ -1,20 +1,24 @@
+import shutil
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.datatype.preprocessing import T1Linear
+from clinicadl.data.datatype.preprocessing import PETLinear
 from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
 from clinicadl.splitter.splitter.single_split import SingleSplit, SingleSplitConfig
 from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit
-from clinicadl.transforms import Transforms
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
+data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+
 split_dir = caps_dir / "split_test" / "split"
 fold_path = split_dir / "2_fold"
+data = pd.read_csv(caps_dir / "labels.tsv")
 
 
 def test_single_splitter():
@@ -33,10 +37,21 @@ def test_single_splitter():
 
 
 def test_single_split():
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=PETLinear(
+            tracer="18FAV45",
+            suvr_reference_region="pons2",
+            use_uncropped_image=True,
+        ),
+        data=data,
+    )
     splitter = SingleSplit(split_dir=split_dir)
 
     with pytest.raises(ClinicaDLTSVError):
-        splitter.get_splits(dataset=CapsDataset(caps_dir, T1Linear(), Transforms()))
+        splitter.get_splits(
+            dataset=caps_dataset,
+        )
 
     with pytest.raises(FileNotFoundError):
         splitter._read_split(Path("doesnt_exist"))
@@ -70,9 +85,7 @@ def test_kfold():
     assert isinstance(kfold.subjects_sessions_split[0], SubjectsSessionsSplit)
 
     with pytest.raises(ClinicaDLTSVError):
-        splits = list(
-            kfold.get_splits(dataset=CapsDataset(caps_dir, T1Linear(), Transforms()))
-        )
+        splits = list(kfold.get_splits(dataset=CapsDataset(caps_dir, PETLinear())))
 
     with pytest.raises(FileNotFoundError):
         kfold._read_split(Path("doesnt_exist"))
