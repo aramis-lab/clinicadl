@@ -5,13 +5,12 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from pydantic import PositiveFloat
-from scipy.stats import chisquare, ks_2samp, ttest_ind
-from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
+from scipy.stats import chisquare, ttest_ind
+from sklearn.model_selection import ShuffleSplit
 
-from clinicadl.data.utils import tsv_to_df
 from clinicadl.splitter.make_splits.utils import write_to_csv
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
-from clinicadl.tsvtools.utils import extract_baseline
+from clinicadl.tsvtools.utils import extract_baseline, tsv_to_df
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType, PathType
 

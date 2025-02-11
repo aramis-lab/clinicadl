@@ -8,19 +8,6 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
-from .defaults import (
-    BATCH_SIZE,
-    DP_DEGREE,
-    DROP_LAST,
-    NUM_WORKERS,
-    PERSISTENT_WORKERS,
-    PIN_MEMORY,
-    PREFETCH_FACTOR,
-    RANK,
-    SAMPLING_WEIGHTS,
-    SHUFFLE,
-)
-
 
 class WeightedRandomSampler(BaseWeightedRandomSampler):
     """
@@ -36,16 +23,50 @@ class WeightedRandomSampler(BaseWeightedRandomSampler):
 
 
 class DataLoaderConfig(ClinicaDLConfig):
-    """Config class to parametrize a PyTorch DataLoader."""
+    """
+    Class to configure a PyTorch DataLoader from a CapsDataset.
 
-    batch_size: PositiveInt = BATCH_SIZE
-    sampling_weights: Optional[str] = SAMPLING_WEIGHTS
-    shuffle: bool = SHUFFLE
-    num_workers: NonNegativeInt = NUM_WORKERS
-    pin_memory: bool = PIN_MEMORY
-    drop_last: bool = DROP_LAST
-    prefetch_factor: Optional[NonNegativeInt] = PREFETCH_FACTOR
-    persistent_workers: bool = PERSISTENT_WORKERS
+    ..sealso::https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+
+    Parameters
+    ----------
+    dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
+        Pre-configured DataLoader configuration.
+    batch_size : PositiveInt (optional, default=1)
+        Batch size for the DataLoader.
+    sampling_weights : Optional[str] (optional, default=None)
+        Name of the column in the dataframe of the CapsDataset where to find the sampling
+        weights. The column must contain float values.
+    shuffle : bool (optional, default=True)
+        Whether to shuffle the data.
+        .. note:: If `sampling_weights` is passed, the data will be fetched randomly with
+        replacement. So, data are shuffled, no matter the argument `shuffle`.
+    num_workers : NonNegativeInt (optional, default=0)
+        Number of workers for data loading.
+    pin_memory : bool (optional, default=True)
+        whether to copy Tensors into device/CUDA pinned memory before returning them.
+    drop_last : bool (optional, default=False)
+        Whether to drop the last incomplete batch.
+    prefetch_factor : Optional[int] (optional, default=None)
+        Number of batches loaded in advance by each worker. Can't be passed if `num_workers` is 0.
+    persistent_workers : bool (optional, default=False)
+        Whether to maintain the worker processes alive at the end of an epoch.
+        Can't be passed if `num_workers` is 0.
+
+    Raises
+    ------
+    ValueError
+        If `prefetch_factor` or `persistent_workers` is passed, but `num_workers` is 0.
+    """
+
+    batch_size: PositiveInt = 1
+    sampling_weights: Optional[str] = None
+    shuffle: bool = True
+    num_workers: NonNegativeInt = 0
+    pin_memory: bool = True
+    drop_last: bool = False
+    prefetch_factor: Optional[NonNegativeInt] = None
+    persistent_workers: bool = False
 
     @model_validator(mode="after")
     def validate_worker_parameters(self):
@@ -65,8 +86,8 @@ class DataLoaderConfig(ClinicaDLConfig):
     def get_dataloader(
         self,
         dataset: CapsDataset,
-        dp_degree: Optional[int] = DP_DEGREE,
-        rank: Optional[int] = RANK,
+        dp_degree: Optional[int] = None,
+        rank: Optional[int] = None,
     ) -> DataLoader:
         """
         To get a dataloader from a dataset. The dataloader is parametrized
@@ -100,8 +121,8 @@ class DataLoaderConfig(ClinicaDLConfig):
     def _generate_sampler(
         self,
         dataset: CapsDataset,
-        dp_degree: Optional[int] = DP_DEGREE,
-        rank: Optional[int] = RANK,
+        dp_degree: Optional[int],
+        rank: Optional[int],
     ) -> Sampler:
         """
         Returns a WeightedRandomSampler if self.sampling_weights is not None, otherwise a

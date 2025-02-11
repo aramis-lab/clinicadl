@@ -12,7 +12,7 @@ from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit
 from clinicadl.transforms import Transforms
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
-caps_dir = Path(__file__).parents[1] / "ressources" / "caps_example"
+caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 split_dir = caps_dir / "split_test" / "split"
 fold_path = split_dir / "2_fold"
 
