@@ -63,16 +63,16 @@ def test_good_caps_reader():
     # get_image_path
     assert (
         caps_reader.get_image_path(
-            "sub-999",
-            "ses-M099",
+            "sub-100",
+            "ses-M000",
             PETLinear(tracer="18FAV45", suvr_reference_region="pons2"),
         )
         == caps_dir
         / "subjects"
-        / "sub-999"
-        / "ses-M099"
+        / "sub-100"
+        / "ses-M000"
         / "pet_linear"
-        / "sub-999_ses-M099_trc-18FAV45_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.nii.gz"
+        / "sub-100_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.nii.gz"
     )
 
     # get_common_mask_path

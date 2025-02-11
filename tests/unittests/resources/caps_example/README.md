@@ -84,7 +84,7 @@
 * sub-999:
     * ses-M099:
         * niftis:
-            * cropped and uncropped
+            * uncropped only
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors

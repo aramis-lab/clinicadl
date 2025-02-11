@@ -123,6 +123,12 @@ def test_get_dataloader():
     ):
         dataloader_config.get_dataloader(caps)
 
+    dataloader_config = DataLoaderConfig(
+        sampling_weights="age",
+    )
+    with pytest.raises(ValueError, match="For data parallelism*"):
+        dataloader_config.get_dataloader(caps, rank=0)
+
 
 def test_ddp():
     caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"

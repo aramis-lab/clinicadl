@@ -527,4 +527,7 @@ def test__getitem__():
     caps_dataset.read_tensor_conversion("pet_age_label")
     out_sample = caps_dataset[0]
     assert out_sample.label == 1.0
+    out_sample = caps_dataset[1]
     assert out_sample.label == 2.0
+    with pytest.raises(IndexError):
+        caps_dataset[2]
