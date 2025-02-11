@@ -56,14 +56,14 @@ class DataPoint(tio.Subject):
         session: str,
         **masks: Union[tio.LabelMap, PathType],
     ) -> None:
-        if isinstance(image, PathType):
+        if isinstance(image, (Path, str)):
             image = tio.ScalarImage(path=image)
 
-        if isinstance(label, PathType):
+        if isinstance(label, (Path, str)):
             label = tio.LabelMap(path=label)
 
         for name, mask in masks.items():
-            if isinstance(mask, PathType):
+            if isinstance(mask, (Path, str)):
                 masks[name] = tio.LabelMap(path=mask)
 
         super().__init__(
@@ -90,7 +90,7 @@ class DataPoint(tio.Subject):
         mask_name : str
             the name that the mask will take in the DataPoint.
         """
-        if isinstance(mask, PathType):
+        if isinstance(mask, (Path, str)):
             mask = tio.LabelMap(path=mask)
         self.add_image(mask, mask_name)
 
