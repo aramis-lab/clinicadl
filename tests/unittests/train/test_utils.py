@@ -212,7 +212,7 @@ def test_merge_cli_and_config_file_options():
     def cli_test(**kwargs):
         return merge_cli_and_config_file_options(Task.CLASSIFICATION, **kwargs)
 
-    config_file = Path(__file__).parents[1] / "ressources" / "config_example.toml"
+    config_file = Path(__file__).parents[1] / "resources" / "config_example.toml"
     excpected_output = {
         "compensation": "given by user",
         "sampler": "found in config file",
