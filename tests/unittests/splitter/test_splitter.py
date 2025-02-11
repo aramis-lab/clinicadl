@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +17,6 @@ data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
 
 split_dir = caps_dir / "split_test" / "split"
 fold_path = split_dir / "2_fold"
-data = pd.read_csv(caps_dir / "labels.tsv")
 
 
 def test_single_splitter():
@@ -74,6 +72,16 @@ def test_kfold_splitter():
 
 
 def test_kfold():
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=PETLinear(
+            tracer="18FAV45",
+            suvr_reference_region="pons2",
+            use_uncropped_image=True,
+        ),
+        data=data,
+    )
+
     kfold = KFold(split_dir=fold_path)
     config = kfold.config
     assert config.subset_name == "validation"
@@ -85,7 +93,7 @@ def test_kfold():
     assert isinstance(kfold.subjects_sessions_split[0], SubjectsSessionsSplit)
 
     with pytest.raises(ClinicaDLTSVError):
-        splits = list(kfold.get_splits(dataset=CapsDataset(caps_dir, PETLinear())))
+        list(kfold.get_splits(dataset=caps_dataset))
 
     with pytest.raises(FileNotFoundError):
         kfold._read_split(Path("doesnt_exist"))

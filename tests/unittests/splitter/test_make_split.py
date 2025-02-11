@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatype.preprocessing import T1Linear
+from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
 from clinicadl.splitter.make_splits import make_kfold, make_split
 from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.exceptions import (
@@ -37,6 +37,7 @@ def remove_non_empty_dir(dir_path: Path):
 
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
+data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
 
 sub_ses_t1 = caps_dir / "subjects_t1.tsv"
 sub_ses_df = pd.read_csv(sub_ses_t1, sep="\t")
@@ -102,7 +103,12 @@ def test_good_split():
 def test_make_split_and_kfold_from_df():
     dataset = CapsDataset(
         caps_dir,
-        T1Linear(),
+        preprocessing=PETLinear(
+            tracer="18FAV45",
+            suvr_reference_region="pons2",
+            use_uncropped_image=True,
+        ),
+        data=data,
     )
     with pytest.raises(ValueError):
         _ = make_split(dataset.df, n_test=0.2)
@@ -120,11 +126,11 @@ def test_make_split_and_kfold_from_df():
 
 
 def test_bad_split():
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(FileNotFoundError):
         make_split(caps_dir / "test.tsv", n_test=15)
 
     with pytest.raises(ClinicaDLTSVError):
-        make_split(caps_dir / "subject_false.tsv", n_test=2)
+        make_split(caps_dir / "subjects_false.tsv", n_test=2)
 
     with pytest.raises(ValueError):
         make_split(sub_ses_t1, p_categorical_threshold=12, n_test=2)
@@ -186,12 +192,12 @@ def test_good_kfold():
 
 
 def test_bad_kfold():
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(FileNotFoundError):
         make_kfold(caps_dir / "test.tsv", output_dir=caps_dir / "test_kfold")
 
     with pytest.raises(ClinicaDLTSVError):
         make_kfold(
-            caps_dir / "subject_false.tsv",
+            caps_dir / "subjects_false.tsv",
             n_splits=1,
             output_dir=caps_dir / "test_kfold",
         )
