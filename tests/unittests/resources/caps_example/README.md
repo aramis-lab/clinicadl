@@ -34,7 +34,7 @@
             * label: "seg"
             * masks: "brain"
 
-## pet (trc=18FAV45, suvr=pons2)
+## pet (trc=18FAV45, suvr_reference_region=pons2)
 * sub-000:
     * ses-M000:
         * niftis:
@@ -73,14 +73,14 @@
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: None
+            * label: 3.0
     * ses-M012:
         * niftis:
             * uncropped only
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: None
+            * label: 3.0
 * sub-999:
     * ses-M099:
         * niftis:
@@ -88,14 +88,14 @@
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: None
+            * label: 4.0
     * ses-M999:
         * niftis:
             * uncropped only
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: None
+            * label: 4.0
 
 ## common masks
 * leftHipppocampus:

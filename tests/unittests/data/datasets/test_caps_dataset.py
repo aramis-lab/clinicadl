@@ -508,3 +508,23 @@ def test__getitem__():
             tio.LabelMap(tensor=tensors["label"])
         ).tensor[:, 1]
     ).all()
+
+    # other label
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=data,
+        label="age",
+    )
+    caps_dataset.read_tensor_conversion("pet_age_label")
+    out_sample = caps_dataset[0]
+    assert out_sample.label == 1.0
+    assert out_sample.label == 2.0

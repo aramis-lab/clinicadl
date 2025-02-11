@@ -13,6 +13,7 @@ from .defaults import (
     DP_DEGREE,
     DROP_LAST,
     NUM_WORKERS,
+    PERSISTENT_WORKERS,
     PIN_MEMORY,
     PREFETCH_FACTOR,
     RANK,
@@ -40,18 +41,24 @@ class DataLoaderConfig(ClinicaDLConfig):
     batch_size: PositiveInt = BATCH_SIZE
     sampling_weights: Optional[str] = SAMPLING_WEIGHTS
     shuffle: bool = SHUFFLE
-    drop_last: bool = DROP_LAST
     num_workers: NonNegativeInt = NUM_WORKERS
-    prefetch_factor: Optional[NonNegativeInt] = PREFETCH_FACTOR
     pin_memory: bool = PIN_MEMORY
+    drop_last: bool = DROP_LAST
+    prefetch_factor: Optional[NonNegativeInt] = PREFETCH_FACTOR
+    persistent_workers: bool = PERSISTENT_WORKERS
 
     @model_validator(mode="after")
-    def validate_prefetch_factor(self):
+    def validate_worker_parameters(self):
         """Checks that 'prefetch_factor' is None if 'num_workers' = 0."""
-        if self.num_workers == 0 and self.prefetch_factor is not None:
+        if self.num_workers == 0 and self.prefetch_factor:
             raise ValueError(
                 "'prefetch_factor' option can only be specified num_workers > 0. Got "
                 f"prefetch_factor={self.prefetch_factor} and num_workers={self.num_workers}"
+            )
+        if self.num_workers == 0 and self.persistent_workers:
+            raise ValueError(
+                "'persistent_workers' option can only be specified num_workers > 0. Got "
+                f"persistent_workers={self.persistent_workers} and num_workers={self.num_workers}"
             )
         return self
 
@@ -84,6 +91,7 @@ class DataLoaderConfig(ClinicaDLConfig):
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
+            collate_fn=lambda x: x,
             **self.model_dump(exclude=["sampling_weights", "shuffle"]),
         )
 
@@ -129,6 +137,9 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     @staticmethod
     def _get_weights(dataset: CapsDataset, weights_name: str) -> list[float]:
+        """
+        Gets the list of weights from the column of the dataframe.
+        """
         try:
             weights = [
                 dataset.get_sample_info(idx, weights_name)
@@ -136,14 +147,14 @@ class DataLoaderConfig(ClinicaDLConfig):
             ]
         except KeyError as exc:
             raise KeyError(
-                f"Got {weights_name} for 'sampling_weights' but there is no "
-                "such column the metadata dataframe of the dataset."
+                f"Got '{weights_name}' for 'sampling_weights' but there is no "
+                "such column in the metadata dataframe of the dataset."
             ) from exc
         try:
             weights = [float(weight) for weight in weights]
         except ValueError as exc:
             raise ValueError(
-                f"Got {weights_name} for 'sampling_weights' but cannot convert "
+                f"Got '{weights_name}' for 'sampling_weights' but cannot convert "
                 "this column to float values."
             ) from exc
 

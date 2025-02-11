@@ -10,5 +10,7 @@ PREFETCH_FACTOR = None
 
 PIN_MEMORY = True  # training is supposed to be on a GPU
 
+PERSISTENT_WORKERS = False  # shut down the worker processes at the end of the dataset
+
 DP_DEGREE = None  # no data parallelism
 RANK = None
