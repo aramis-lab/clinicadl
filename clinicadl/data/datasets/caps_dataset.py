@@ -618,7 +618,7 @@ class CapsDataset(Dataset):
         Checks the DataFrame passed by the user (either as a DataFrame or
         as a path to a TSV). Returns the checked DataFrame.
         """
-        if isinstance(data, PathType):
+        if isinstance(data, (str, Path)):
             path = Path(data)
             df = tsv_to_df(path)
         elif isinstance(data, pd.DataFrame):
