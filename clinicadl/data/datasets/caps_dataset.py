@@ -603,7 +603,7 @@ class CapsDataset(Dataset):
             data = self.caps_reader.create_subjects_sessions_tsv(self.preprocessing)
             print(f"Creating a TSV file at {data}")
 
-        if not isinstance(data, DataType):
+        if not isinstance(data, Union[str, Path, pd.DataFrame]):
             raise ClinicaDLArgumentError(
                 f"'data' must be a Pandas DataFrame, a path to a TSV file or None. Got {data}"
             )
