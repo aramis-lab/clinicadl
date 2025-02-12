@@ -377,7 +377,7 @@ class CapsReader(Reader):
         participants_sessions = set()
         for file in files_found:
             participant_session = (
-                Path(file).relative_to(self.subject_directory).parents[-3]
+                Path(file).relative_to(self.subject_directory).parents[1]
             )
             participant = str(participant_session.parent)
             session = participant_session.name
