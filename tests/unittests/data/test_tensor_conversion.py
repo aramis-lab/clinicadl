@@ -47,7 +47,6 @@ def test_read_conversion():
     converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
     info = converter.get_info()
     assert info.preprocessing == preprocessing
-    assert info.label is None
     assert info.individual_masks == []
     assert info.common_masks == []
     assert info.transforms == []
@@ -91,26 +90,17 @@ def test_read_conversion():
     converter = TensorConversion(caps_dataset)
     with pytest.raises(ClinicaDLTensorConversionError):
         converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
-
-    caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=preprocessing,
-        data=data,
-        label="age",
-    )
-    converter = TensorConversion(caps_dataset)
-    with pytest.raises(ClinicaDLTensorConversionError):
-        converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
+    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_masks.json")
 
     caps_dataset = CapsDataset(
         caps_dir,
         preprocessing=preprocessing,
         data=data,
         label="brain",
+        masks=["brain"],
     )
     converter = TensorConversion(caps_dataset)
-    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_mask_label.json")
-    assert converter.get_info().label == "Mask('brain')"
+    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_masks.json")
 
     caps_dataset = CapsDataset(
         caps_dir,
@@ -119,8 +109,7 @@ def test_read_conversion():
         label="age",
     )
     converter = TensorConversion(caps_dataset)
-    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_age_label.json")
-    assert converter.get_info().label == "Column('age')"
+    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
 
     # check masks
     caps_dataset = CapsDataset(
@@ -315,8 +304,7 @@ def test_convert_to_tensors():
             "needed_pipeline": "t1-linear",
         },
     }
-    assert conversion_info["label"] == "Mask('seg')"
-    assert conversion_info["individual_masks"] == ["brain"]
+    assert set(conversion_info["individual_masks"]) == {"brain", "seg"}
     assert conversion_info["common_masks"] == ["leftHippocampus.nii.gz"]
     assert conversion_info["transforms"] == [
         {
@@ -386,7 +374,6 @@ def test_convert_to_tensors():
     converter.convert_to_tensors("new_conversion_pet")
     with open(tmp_dir / "tensor_conversion" / "new_conversion_pet.json", "r") as f:
         conversion_info = json.load(f)
-    assert conversion_info["label"] == "Column('age')"
     assert conversion_info["transforms"] == [
         {
             "name": "NanRemoval",
@@ -417,7 +404,6 @@ def test_convert_to_tensors():
     converter.convert_to_tensors("no_transforms", save_transforms=False)
     with open(tmp_dir / "tensor_conversion" / "no_transforms.json", "r") as f:
         conversion_info = json.load(f)
-    assert old_conversion_info["label"] is None
     assert conversion_info["transforms"] == []
     tensors = torch.load(
         tmp_dir
