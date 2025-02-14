@@ -9,8 +9,7 @@
             "needed_pipeline": "t1-linear"
         }
     },
-    "label": "Mask('seg')",
-    "individual_masks": ["brain"],
+    "individual_masks": ["brain", "seg"],
     "common_masks": ["leftHippocampus.nii.gz"],
     "transforms": [
         {

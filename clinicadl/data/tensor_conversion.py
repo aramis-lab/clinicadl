@@ -351,7 +351,7 @@ class TensorConversion:
         if isinstance(label, Mask):
             images[LABEL] = label.get_associated_mask(image_path)
         else:
-            images[LABEL] = self.caps_dataset._get_scalar_label(participant, session)
+            images[LABEL] = None  # no use here if it is not an image
 
         # image-specific masks
         for mask in self.caps_dataset.individual_masks:

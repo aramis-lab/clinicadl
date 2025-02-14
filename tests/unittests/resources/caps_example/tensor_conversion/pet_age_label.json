@@ -12,7 +12,6 @@
             "needed_pipeline": "pet-linear"
         }
     },
-    "label": "Column('age')",
     "individual_masks": [],
     "common_masks": [],
     "transforms": [],
