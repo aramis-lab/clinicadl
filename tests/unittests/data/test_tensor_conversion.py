@@ -50,7 +50,7 @@ def test_read_conversion():
     assert info.label is None
     assert info.individual_masks == []
     assert info.common_masks == []
-    assert info.transforms is None
+    assert info.transforms == []
     assert info.spacing == (1.3, 1.2, 1.1)
     assert info.shape == (1, 1, 1)
     assert info.participants_sessions == sub_ses
@@ -238,10 +238,8 @@ def test_read_conversion():
     converter = TensorConversion(caps_dataset)
     with pytest.raises(ClinicaDLTensorConversionError):
         converter.read_conversion(caps_dir / "tensor_conversion" / "pet_transform.json")
-    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_no_transform.json")
-    assert converter.get_info().transforms is None
     converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
-    assert converter.get_info().transforms is None
+    assert converter.get_info().transforms == []
 
     # check subject session
     caps_dataset = CapsDataset(
@@ -420,7 +418,7 @@ def test_convert_to_tensors():
     with open(tmp_dir / "tensor_conversion" / "no_transforms.json", "r") as f:
         conversion_info = json.load(f)
     assert old_conversion_info["label"] is None
-    assert conversion_info["transforms"] is None
+    assert conversion_info["transforms"] == []
     tensors = torch.load(
         tmp_dir
         / "subjects"

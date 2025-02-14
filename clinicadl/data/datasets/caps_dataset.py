@@ -482,7 +482,7 @@ class CapsDataset(Dataset):
         )
 
         if (
-            self.tensor_conversion.get_info().transforms is None
+            not self.tensor_conversion.get_info().transforms
         ):  # image transforms not saved
             data = self.image_transform(data)
 
@@ -766,7 +766,7 @@ class CapsDataset(Dataset):
         """
         data = self._get_data(participant, session)
         if (
-            self.tensor_conversion.get_info().transforms is None
+            not self.tensor_conversion.get_info().transforms
         ):  # image transforms not saved
             data = self.image_transform(data)
         try:
