@@ -49,7 +49,6 @@ class TensorConversionInfo(ClinicaDLConfig):
     preprocessing: SerializeAsAny[
         Preprocessing
     ]  # SerializeAsAny to have fields that are not in the base Preprocessing
-    label: Optional[str]
     individual_masks: list[str]
     common_masks: list[str]
     transforms: Optional[
@@ -107,16 +106,19 @@ class TensorConversion:
         -------
         TensorConversionInfo
             a data structure that contains the information,
-            with attributes 'preprocessing', 'participants_sessions', 'label',
+            with attributes 'preprocessing', 'participants_sessions',
             'individual_masks', 'common_masks', 'transforms', and 'spacing'.
         """
+        individual_masks = set(
+            [mask.name for mask in self.caps_dataset.individual_masks]
+        )
+        if isinstance(self.caps_dataset.label, Mask):
+            individual_masks.add(self.caps_dataset.label.name)
+
         return TensorConversionInfo(
             preprocessing=self.preprocessing,
             participants_sessions=self._participants_sessions_converted,
-            label=str(self.caps_dataset.label)
-            if self.caps_dataset.label is not None
-            else None,
-            individual_masks=[mask.name for mask in self.caps_dataset.individual_masks],
+            individual_masks=individual_masks,
             common_masks=self._masks_converted,
             transforms=self.caps_dataset.transforms.image_transforms
             if self._save_transforms
@@ -165,9 +167,6 @@ class TensorConversion:
         transforms_saved = conversion_info.transforms != []
         if transforms_saved and check_transforms:
             self._compare_transforms(conversion_info)
-
-        # is it the same label in .pt files?
-        self._compare_label(conversion_info)
 
         # do we have the individual masks in the .pt files?
         self._compare_individual_masks(conversion_info)
@@ -345,7 +344,14 @@ class TensorConversion:
         image_path = self.caps_reader.get_image_path(
             participant, session, self.preprocessing
         )
-        images = {IMAGE: image_path, LABEL: self._get_label(participant, session)}
+        images = {IMAGE: image_path}
+
+        # label
+        label = self.caps_dataset.label
+        if isinstance(label, Mask):
+            images[LABEL] = label.get_associated_mask(image_path)
+        else:
+            images[LABEL] = self.caps_dataset._get_scalar_label(participant, session)
 
         # image-specific masks
         for mask in self.caps_dataset.individual_masks:
@@ -365,26 +371,6 @@ class TensorConversion:
             )  # with common masks, we don't check the affine matrix but only spacing
 
         return images
-
-    def _get_label(self, participant: str, session: str) -> LabelType:
-        """
-        Gets the label associated to a (participant, session).
-        If it is a mask (segmentation), it will load it.
-        If the label is in the dataframe of the CapsDataset
-        (classification, regression), it will get it.
-        """
-        label = self.caps_dataset.label
-        if label is None:
-            return None
-        elif isinstance(label, Mask):
-            image_path = self.caps_reader.get_image_path(
-                participant, session, self.preprocessing
-            )
-            return label.get_associated_mask(image_path)
-        elif isinstance(label, Column):
-            return self.caps_dataset.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
-                (participant, session)
-            ][label]
 
     @staticmethod
     def _check_shapes_consistency(images: DataPoint) -> None:
@@ -438,22 +424,18 @@ class TensorConversion:
             raise ClinicaDLTensorConversionError(message) from exc
 
     ### to save tensors ###
-    @staticmethod
-    def save_images_as_tensors(images: DataPoint, path: PathType) -> None:
+    def save_images_as_tensors(self, images: DataPoint, path: PathType) -> None:
         """
         Saves all the images related to an image in the same .pt file.
         The affine matrix of the image is also saved in the file.
 
-        More precisely, they are saved as a dict with at least the keys 'image',
-        'label' and 'affine'. Other potential masks can be accessed via their name.
-
-        Note that 'label' can be either a tensor (segmentation) or an int, a float or
-        None (classification, regression, reconstruction).
+        More precisely, they are saved as a dict with at least the keys 'image'
+        and 'affine'. Potential masks can be accessed via their name.
 
         Parameters
         ----------
         images : DataPoint
-            a DataPoint containing the image, the label and the associated masks.
+            a DataPoint containing the image and the associated masks.
         path : PathType
             where to save the images.
         """
@@ -462,12 +444,10 @@ class TensorConversion:
         images_dict = {IMAGE: images.image.tensor.float()}
 
         if isinstance(images.label, tio.LabelMap):
-            images_dict[LABEL] = images.label.tensor.int()
-        else:
-            images_dict[LABEL] = images.label
+            images_dict[self.caps_dataset.label.name] = images.label.tensor.int()
 
         for name, value in images.items():
-            if isinstance(value, tio.LabelMap) and name != LABEL:
+            if isinstance(value, tio.LabelMap):
                 images_dict[name] = value.tensor.int()
 
         images_dict[AFFINE] = torch.from_numpy(images.image.affine).float()
@@ -760,7 +740,6 @@ class TensorConversion:
                     "'save_transforms' is set to False, but some transforms have already been saved "
                     f"in old tensor files associated to {self._currently_reading}."
                 )
-        self._compare_label(conversion_info)
         self._compare_individual_masks(
             conversion_info, match_exactly=True
         )  # here, we want to have exactly the same masks in .pt files
@@ -828,19 +807,6 @@ class TensorConversion:
                 f"and {caps_image_transforms}"
             )
 
-    def _compare_label(self, old_conversion: TensorConversionInfo) -> None:
-        """
-        Checks that the labels stored with tensors are the same.
-        """
-        old_label = str(old_conversion.label)
-        current_label = str(self.caps_dataset.label)
-
-        if old_label != current_label:
-            raise ClinicaDLTensorConversionError(
-                f"""The labels stored in tensor files associated to {self._currently_reading} are {old_label}, """
-                f"""which do not match the current labels that are {current_label}."""
-            )
-
     def _compare_individual_masks(
         self, old_conversion: TensorConversionInfo, match_exactly: bool = False
     ) -> None:
@@ -854,6 +820,8 @@ class TensorConversion:
         individual_masks_in_caps = {
             mask.name for mask in self.caps_dataset.individual_masks
         }
+        if isinstance(self.caps_dataset.label, Mask):
+            individual_masks_in_caps.add(self.caps_dataset.label.name)
 
         if match_exactly:
             sym_diff = individual_masks_in_caps.symmetric_difference(

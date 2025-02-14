@@ -676,9 +676,11 @@ class CapsDataset(Dataset):
         images_dict = self._load_pt(pt_path)
 
         # label
-        label = images_dict[LABEL]
-        if isinstance(label, torch.Tensor):
-            label = tio.LabelMap(tensor=label, affine=images_dict[AFFINE])
+        if isinstance(self.label, Mask):
+            mask_label = images_dict[self.label.name]
+            label = tio.LabelMap(tensor=label, affine=mask_label)
+        else:
+            label = self._get_scalar_label(participant, session)
 
         data = DataPoint(
             image=tio.ScalarImage(
@@ -716,6 +718,19 @@ class CapsDataset(Dataset):
                 f"Nevertheless, file {str(path)} is not found. The tensors have probably been deleted "
                 "after conversion. Please rerun 'to_tensors' to generate the tensor files again."
             ) from exc
+
+    def _get_scalar_label(
+        self, participant: str, session: str
+    ) -> Optional[Union[int, float]]:
+        """
+        Returns the label when it is not an image.
+        """
+        if self.label is None:
+            return None
+        elif isinstance(self.label, Column):
+            return self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
+                (participant, session)
+            ][self.label]
 
     ### other utils ###
     def _load_pt_masks(self) -> None:
