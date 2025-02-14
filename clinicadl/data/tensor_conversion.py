@@ -26,7 +26,10 @@ from clinicadl.transforms import get_transform_config
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.exceptions import ClinicaDLTensorConversionError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTensorConversionError,
+)
 from clinicadl.utils.typing import PathType
 
 from .datatype.preprocessing import Preprocessing, get_preprocessing_config
@@ -86,12 +89,13 @@ class TensorConversion:
         self._save_transforms = True
         self._ignore_spacing = False
         self._raise_warnings = True
-        self._ref_image = None
+        self._ref_image_spacing = None
+        self._ref_image_shape = None
         self._output_shape = None
         self._output_spacing = None
         self._uniform_shape = True
-        self._participants_sessions_converted = []
-        self._masks_converted = []
+        self._participants_sessions_converted = set()
+        self._masks_converted = set()
 
         self._currently_reading = None
 
@@ -116,7 +120,7 @@ class TensorConversion:
             common_masks=self._masks_converted,
             transforms=self.caps_dataset.transforms.image_transforms
             if self._save_transforms
-            else None,
+            else [],
             spacing=self._output_spacing,
             shape=self._output_shape,
         )
@@ -158,16 +162,14 @@ class TensorConversion:
         self._compare_preprocessing(conversion_info)
 
         # are the transforms applied during conversion the same?
-        transforms_saved = (conversion_info.transforms is not None) and (
-            conversion_info.transforms != []
-        )
+        transforms_saved = conversion_info.transforms != []
         if transforms_saved and check_transforms:
             self._compare_transforms(conversion_info)
 
         # is it the same label in .pt files?
         self._compare_label(conversion_info)
 
-        # do we have the right individual masks in the .pt files?
+        # do we have the individual masks in the .pt files?
         self._compare_individual_masks(conversion_info)
 
         # have all the current common masks been converted?
@@ -177,12 +179,12 @@ class TensorConversion:
         self._compare_participants_sessions(conversion_info)
 
         # all checks passed, update current state
-        self._participants_sessions_converted = (
+        self._participants_sessions_converted = set(
             self.caps_dataset.get_participant_session_couples()
         )
-        self._masks_converted = [
+        self._masks_converted = set(
             mask.path.name for mask in self.caps_dataset.common_masks
-        ]
+        )
         self._output_spacing = conversion_info.spacing
         self._output_shape = conversion_info.shape
         self._save_transforms = transforms_saved
@@ -204,7 +206,10 @@ class TensorConversion:
         json_name : str (optional, default="tensor_conversion")
             the name of the json file where the information on the conversion
             (e.g. transforms applied) will be stored. The full path of
-            the json file will be `{caps_directory}/prepare_data/tensor_conversion/{json_name}.json`.
+            the json file will be `{caps_directory}/prepare_data/tensor_conversion/{json_name}.json`.\n
+            If the file already exists, TensorConversion will try to merge the old
+            tensor conversion with the new one, if they concern the same type of data (e.g. same
+            preprocessing, same transforms applied), otherwise an error will be raised.
         save_transforms : bool (optional, default=True)
             whether to save raw images as tensors (False) or images on which were applied image
             transforms (True).
@@ -221,8 +226,9 @@ class TensorConversion:
 
         Raises
         ------
-        FileExistsError
-            if a json file with the same `json_name` already exists.
+        ClinicaDLArgumentError
+            if a json file with the same `json_name` already exists and the new conversion cannot
+            be merged with the old one.
         ClinicaDLCAPSError
             if images don't have the same voxel spacing across (participant, session), and
             `ignore_spacing` is False.
@@ -246,21 +252,27 @@ class TensorConversion:
             Parallel(n_jobs=n_proc, require="sharedmem")(
                 delayed(self._transform_and_save_images)(participant, session)
                 for participant, session in tqdm(
-                    self.caps_dataset.get_participant_session_couples(),
+                    set(self.caps_dataset.get_participant_session_couples()).difference(
+                        self._participants_sessions_converted
+                    ),
                     desc="Converting images",
                 )
             )
             Parallel(n_jobs=n_proc, require="sharedmem")(
                 delayed(self._transform_and_save_mask)(mask)
                 for mask in tqdm(
-                    self.caps_dataset.common_masks, desc="Converting masks"
+                    set(self.caps_dataset.common_masks).difference(
+                        self._masks_converted
+                    ),
+                    desc="Converting masks",
                 )
             )
         except Exception as exc:
             self._update_json_dir(json_path, interrupted=True)
             raise ClinicaDLTensorConversionError(
                 "An error occurred during conversion. The images correctly converted before "
-                f"the exception was raised can be found in {str(json_path)}."
+                f"the exception was raised can be found in {str(json_path)}. See exception traceback "
+                "for more information."
             ) from exc
 
         # save info
@@ -287,7 +299,7 @@ class TensorConversion:
         )
         self.save_images_as_tensors(images, pt_path)
 
-        self._participants_sessions_converted.append((participant, session))
+        self._participants_sessions_converted.add((participant, session))
 
     def _transform_and_save_mask(self, mask: Mask) -> None:
         """
@@ -298,18 +310,14 @@ class TensorConversion:
         """
         logger.debug("Conversion of mask '%s'.", mask.name)
 
-        (
-            participant,
-            session,
-        ) = self._get_first_participant_session()  # or any other participant, session
-        images = self._get_nifti_images(participant, session)
+        images = self._get_first_images()
         images = self._transform(images)
 
         pt_path = self.caps_reader.path_to_tensor(mask.path)
         label_map = getattr(images, mask.name)
         self.save_mask_as_tensor(label_map, pt_path)
 
-        self._masks_converted.append(mask.path.name)
+        self._masks_converted.add(mask.path.name)
 
     def _transform(self, images: DataPoint) -> DataPoint:
         """
@@ -514,8 +522,10 @@ class TensorConversion:
         Sets the reference information to that of the first image
         seen.
         """
-        if self._ref_image is None:
-            self._ref_image = image
+        if self._ref_image_spacing is None:
+            self._ref_image_spacing = image
+        if self._ref_image_shape is None:
+            self._ref_image_shape = image
 
     def _check_spacing(self, image: tio.Image) -> None:
         """
@@ -523,11 +533,11 @@ class TensorConversion:
         equal to the reference spacing.
         """
         spacing = tuple(float(s) for s in image.spacing)
-        if not np.isclose(spacing, self._ref_image.spacing, rtol=1e-2).all():
+        if not np.isclose(spacing, self._ref_image_spacing.spacing, rtol=1e-2).all():
             raise ClinicaDLTensorConversionError(
                 "Different voxel spacings found in the CAPS dataset: "
                 f"for example, voxel spacing is {spacing} in {image.path}, "
-                f"but {tuple(float(s) for s in self._ref_image.spacing)} in {self._ref_image.path}.\n"
+                f"but {tuple(float(s) for s in self._ref_image_spacing.spacing)} in {self._ref_image_spacing.path}.\n"
                 "If you don't care about voxel spacing and want to ignore this error, set `ignore_spacing` "
                 "to True."
             )
@@ -537,7 +547,7 @@ class TensorConversion:
         Checks that the shape of an image is equal to the reference shape.
         """
         shape = image.spatial_shape
-        if shape != self._ref_image.spatial_shape:
+        if shape != self._ref_image_shape.spatial_shape:
             if (
                 self._raise_warnings
                 and self._uniform_shape  # to avoid raising to many warnings
@@ -545,7 +555,7 @@ class TensorConversion:
                 warnings.warn(
                     "Different image shapes found in the CAPS dataset: "
                     f"for example, {image.path} is {shape}, "
-                    f"but {self._ref_image.path} is {self._ref_image.spatial_shape}.\n"
+                    f"but {self._ref_image_shape.path} is {self._ref_image_shape.spatial_shape}.\n"
                     "It can be problematic if your network only accepts a specific shape.\n"
                     "If you don't want this warning to be raised, set `raise_warnings` "
                     "to False."
@@ -709,14 +719,67 @@ class TensorConversion:
 
     def _get_json_path(self, json_name: str) -> Path:
         """
-        Checks that 'json_name' is available.
+        Checks if 'json_name' exists. If it exists,
+        tries to merge the two tensor conversions.
         """
         json_path = (self.save_directory / json_name).with_suffix(JSON)
         if json_path.is_file():
-            raise FileExistsError(
-                f"{json_path} already exists, please give another 'json_name'."
-            )
+            try:
+                self._merge_conversion(json_path)
+            except ClinicaDLTensorConversionError as exc:
+                raise ClinicaDLArgumentError(
+                    f"{json_path} already exists, so ClinicaDL tried to merge the current tensor conversion "
+                    "with the old one. But an error occurred, most likely because the two conversions concern "
+                    "different kinds of data (e.g. different preprocessing, different transforms applied, different "
+                    "masks used). See exception traceback for more details. If you want to run a new tensor conversion, "
+                    "please give an available 'json_name'."
+                ) from exc
+
         return json_path
+
+    def _merge_conversion(
+        self,
+        json_path: Path,
+    ) -> None:
+        """
+        Tries to merge old conversion in `json_path` with the current one.
+        Checks beforehand that they match.
+        """
+        conversion_info = self._read_json(json_path)
+        self._currently_reading = str(json_path)  # for potential error messages
+
+        # check that .pt files contain the same things
+        self._compare_preprocessing(conversion_info)
+        if self._save_transforms:
+            self._compare_transforms(conversion_info)
+        else:
+            if (
+                conversion_info.transforms != []
+            ):  # ensure no transform has been saved in old .pt files
+                raise ClinicaDLTensorConversionError(
+                    "'save_transforms' is set to False, but some transforms have already been saved "
+                    f"in old tensor files associated to {self._currently_reading}."
+                )
+        self._compare_label(conversion_info)
+        self._compare_individual_masks(
+            conversion_info, match_exactly=True
+        )  # here, we want to have exactly the same masks in .pt files
+
+        # all checks passed, update current state
+        if len(conversion_info.participants_sessions) > 0:
+            ref_participant, ref_session = conversion_info.participants_sessions[0]
+            ref_image = self._get_nifti_images(ref_participant, ref_session)
+            if conversion_info.spacing:
+                self._ref_image_spacing = ref_image
+            if conversion_info.shape:
+                self._ref_image_shape = ref_image
+            else:
+                self._uniform_shape = False
+
+        self._participants_sessions_converted = set(
+            conversion_info.participants_sessions
+        )
+        self._masks_converted = set(conversion_info.common_masks)
 
     ### to see if a conversion works with the current CapsDataset ###
     def _compare_preprocessing(self, old_conversion: TensorConversionInfo) -> None:
@@ -778,21 +841,39 @@ class TensorConversion:
                 f"""which do not match the current labels that are {current_label}."""
             )
 
-    def _compare_individual_masks(self, old_conversion: TensorConversionInfo) -> None:
+    def _compare_individual_masks(
+        self, old_conversion: TensorConversionInfo, match_exactly: bool = False
+    ) -> None:
         """
         Checks that all individual masks have been converted.
+
+        If `match_exactly`, it will check that the individual masks in .pt files
+        match exactly the individual masks of the CapsDataset. Otherwise, it will
+        only check that the .pt files have AT LEAST the individual masks required by the CapsDataset.
         """
         individual_masks_in_caps = {
             mask.name for mask in self.caps_dataset.individual_masks
         }
-        masks_not_converted = individual_masks_in_caps.difference(
-            old_conversion.individual_masks
-        )
-        if len(masks_not_converted) > 0:
-            raise ClinicaDLTensorConversionError(
-                "Some image-specific masks have not been converted by the conversion "
-                f"associated to {self._currently_reading}: {masks_not_converted}"
+
+        if match_exactly:
+            sym_diff = individual_masks_in_caps.symmetric_difference(
+                old_conversion.individual_masks
             )
+            if len(sym_diff) > 0:
+                raise ClinicaDLTensorConversionError(
+                    f"There is a mismatch between image-specific masks in the current CapsDataset "
+                    f"({individual_masks_in_caps}) and those converted in {self._currently_reading} "
+                    f"({old_conversion.individual_masks})."
+                )
+        else:
+            masks_not_converted = individual_masks_in_caps.difference(
+                old_conversion.individual_masks
+            )
+            if len(masks_not_converted) > 0:
+                raise ClinicaDLTensorConversionError(
+                    "Some image-specific masks have not been converted by the conversion "
+                    f"associated to {self._currently_reading}: {masks_not_converted}"
+                )
 
     def _compare_common_masks(self, old_conversion: TensorConversionInfo) -> None:
         """
@@ -845,12 +926,13 @@ class TensorConversion:
         self._save_transforms = True
         self._ignore_spacing = False
         self._raise_warnings = True
-        self._ref_image = None
+        self._ref_image_spacing = None
+        self._ref_image_shape = None
         self._output_shape = None
         self._output_spacing = None
         self._uniform_shape = True
-        self._participants_sessions_converted = []
-        self._masks_converted = []
+        self._participants_sessions_converted = set()
+        self._masks_converted = set()
 
         self._currently_reading = None
 
@@ -862,19 +944,19 @@ class TensorConversion:
         for mask in self.caps_dataset.common_masks:
             images.remove_image(mask.name)
 
-    def _get_first_participant_session(self) -> tuple[str, str]:
+    def _get_first_images(self) -> DataPoint:
         """
-        To get an example of (participant, session).
+        To get an example of DataPoint.
         """
-        return self.caps_dataset.get_participant_session_couples()[0]
+        participant, session = self.caps_dataset.get_participant_session_couples()[0]
+        return self._get_nifti_images(participant, session)
 
     def _compute_output_info(self) -> None:
         """
         Gets output spacing and shape.
         """
         if (not self._ignore_spacing) or self._uniform_shape:
-            participant, session = self._get_first_participant_session()
-            images = self._get_nifti_images(participant, session)
+            images = self._get_first_images()
             out_image = self._transform(images).image
 
             if not self._ignore_spacing:

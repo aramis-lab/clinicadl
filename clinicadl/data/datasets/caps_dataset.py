@@ -228,7 +228,10 @@ class CapsDataset(Dataset):
         json_name : str (optional, default="tensor_conversion")
             the name of the json file where the information on the conversion
             (e.g. transforms applied) will be stored. The full path of
-            the json file will be `{caps_directory}/prepare_data/tensor_conversion/{json_name}.json`.
+            the json file will be `{caps_directory}/prepare_data/tensor_conversion/{json_name}.json`.\n
+            If the file already exists, ClinicaDL will try to merge the old
+            tensor conversion with the new one, if they concern the same type of data (same
+            preprocessing, same transforms applied, etc.), otherwise an error will be raised.
         save_transforms : bool (optional, default=True)
             whether to save raw images as tensors (False) or images on which were applied image
             transforms (True). Saving transformed images will speed up dataloading. However transformed
@@ -246,8 +249,9 @@ class CapsDataset(Dataset):
 
         Raises
         ------
-        FileExistsError
-            if a json file with the same `json_name` already exists.
+        ClinicaDLArgumentError
+            if a json file with the same `json_name` already exists and the new conversion cannot
+            be merged with the old one.
         ClinicaDLCAPSError
             if images don't have the same voxel spacing across (participant, session), and
             `ignore_spacing` is False.
