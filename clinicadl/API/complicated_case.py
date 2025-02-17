@@ -2,7 +2,6 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.data import tensor_conversion
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -17,7 +16,7 @@ from clinicadl.networks.config.resnet import ResNetConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
-from clinicadl.transforms.extraction import Extraction, Image, Patch, Slice
+from clinicadl.transforms.extraction import Image
 from clinicadl.transforms.transforms import Transforms
 
 caps_directory = Path(
@@ -27,9 +26,9 @@ caps_directory = Path(
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
 preprocessing_t1 = T1Linear()
 transforms_image = Transforms(
-    image_augmentations=[transforms.RandomMotion()],
+    augmentations=[transforms.RandomMotion()],  # type: ignore
     extraction=Image(),
-    image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],
+    image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],  # type: ignore
 )
 
 print("T1 and image ")
@@ -40,7 +39,9 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-tensor_conversion(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
+dataset_t1_image.to_tensors(
+    json_name="test.json", n_proc=2
+)  # give random name to the json if not given ?
 
 
 sub_ses_pet_45 = Path(
@@ -54,7 +55,9 @@ dataset_pet_image = CapsDataset(
     preprocessing=preprocessing_pet_45,
     transforms=transforms_image,
 )
-tensor_conversion(dataset_t1_image, n_proc=2)  # to extract the tensor of the PET file
+dataset_pet_image.to_tensors(
+    json_name="test_pet.json", n_proc=2
+)  # to extract the tensor of the PET file
 
 
 dataset_multi_modality = ConcatDataset(

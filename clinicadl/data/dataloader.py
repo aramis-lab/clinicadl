@@ -112,8 +112,8 @@ class DataLoaderConfig(ClinicaDLConfig):
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
-            collate_fn=lambda x: x,
-            **self.model_dump(exclude=["sampling_weights", "shuffle"]),
+            collate_fn=lambda x: x,  # TODO: check if we want to maybe return something else in the dataloader ?
+            **self.model_dump(exclude=set(["sampling_weights", "shuffle"])),
         )
 
         return loader
@@ -141,7 +141,7 @@ class DataLoaderConfig(ClinicaDLConfig):
             dp_degree = 1
             rank = 0
 
-        if self.sampling_weights:
+        if self.sampling_weights and rank is not None:
             weights = self._get_weights(dataset, self.sampling_weights)
             length = len(weights) // dp_degree + int(rank < len(weights) % dp_degree)
             sampler = WeightedRandomSampler(weights, num_samples=length)  # type: ignore

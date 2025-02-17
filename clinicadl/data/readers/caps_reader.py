@@ -247,7 +247,7 @@ class CapsReader(Reader):
         else:
             return Path(current_glob_found[0])
 
-    def get_common_mask_path(self, mask_name: str) -> Path:
+    def get_common_mask_path(self, mask_name: PathType) -> Path:
         """
         Gives the full path of a common mask, from the file name.
         """

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import field_validator
 
@@ -16,7 +16,7 @@ class FileType(ClinicaDLConfig):
 
     pattern: str
     description: str
-    needed_pipeline: Optional[PreprocessingMethod] = None
+    needed_pipeline: Optional[Union[PreprocessingMethod, str]] = None
 
     @field_validator("pattern", mode="after")
     @classmethod
