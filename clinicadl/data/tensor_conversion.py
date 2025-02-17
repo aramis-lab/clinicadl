@@ -572,9 +572,7 @@ class TensorConversion:
         info = cls._check_json(json_path)
 
         try:
-            if info["transforms"] is None:
-                transforms = None
-            elif isinstance(info["transforms"], list):
+            if isinstance(info["transforms"], list):
                 transforms = []
                 for transform in info["transforms"]:
                     if isinstance(transform, dict):
@@ -745,9 +743,11 @@ class TensorConversion:
         # all checks passed, update current state
         if len(conversion_info.participants_sessions) > 0:
             ref_participant, ref_session = conversion_info.participants_sessions[0]
-            ref_image = self._get_nifti_images(ref_participant, ref_session)
+            ref_image = self._get_nifti_images(ref_participant, ref_session).image
             if conversion_info.spacing:
                 self._ref_image_spacing = ref_image
+            else:
+                self._ignore_spacing = True
             if conversion_info.shape:
                 self._ref_image_shape = ref_image
             else:

@@ -188,14 +188,14 @@ class CapsReader(Reader):
         ------
         ClinicaDLCAPSError
             If there is no or more than one images associated with the participant/session pair.
-        ClinicaDLCAPSError
+        FileNotFoundError
             If `check` is true and the tensor image cannot be found.
         """
 
         filepath = self.get_image_path(participant, session, preprocessing)
         tensor_path = self.path_to_tensor(filepath)
         if check and not tensor_path.is_file():
-            raise ClinicaDLCAPSError(
+            raise FileNotFoundError(
                 f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"
             )
 
