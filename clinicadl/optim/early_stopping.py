@@ -1,11 +1,27 @@
+from __future__ import annotations
+
 import math
+from enum import Enum
+from typing import Callable, Optional
 
 import numpy as np
+from pydantic import (
+    NonNegativeFloat,
+    PositiveInt,
+    computed_field,
+)
 
-from .config import EarlyStoppingConfig, Mode
+from clinicadl.utils.config import ClinicaDLConfig
 
 
-class EarlyStopping(object):
+class Mode(str, Enum):
+    """Supported mode for Early Stopping."""
+
+    MIN = "min"
+    MAX = "max"
+
+
+class EarlyStopping(ClinicaDLConfig):
     """
     To perform early stopping.
 
@@ -15,15 +31,20 @@ class EarlyStopping(object):
         The Early Stopping config object.
     """
 
-    def __init__(self, config: EarlyStoppingConfig) -> None:
-        self.mode = config.mode
-        self.min_delta = config.min_delta
-        self.patience = config.patience
-        self.check_finite = config.check_finite
-        self.upper_bound = config.upper_bound
-        self.lower_bound = config.lower_bound
-        self.is_better = self._get_comparison_function()
+    patience: Optional[PositiveInt] = None
+    min_delta: NonNegativeFloat = 0.0
+    mode: Mode = Mode.MIN
+    check_finite: bool = True
+    upper_bound: Optional[float] = None
+    lower_bound: Optional[float] = None
+
+    def __init__(self) -> None:
         self.reset()
+
+    @computed_field
+    @property
+    def is_better(self):
+        return self._get_comparison_function()
 
     def reset(self) -> None:
         """Resets the epoch count and the best value."""
@@ -71,9 +92,11 @@ class EarlyStopping(object):
 
         return False
 
-    def _get_comparison_function(self):
+    def _get_comparison_function(self) -> Callable:
         """Returns the comparison function."""
         if self.mode == Mode.MIN:
             return lambda value, best: value < best - self.min_delta
         if self.mode == Mode.MAX:
             return lambda value, best: value > best + self.min_delta
+
+        raise ValueError(f"Invalid mode: {self.mode}")
