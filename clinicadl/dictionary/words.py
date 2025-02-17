@@ -39,3 +39,9 @@ TRANSFORMATION = "transformation"
 TENSORS = "tensors"
 VALIDATION = "validation"
 VALUE = "value"
+
+
+N_SAMPLES = "n_samples"
+FIRST_INDEX = "first_idx"
+LAST_INDEX = "last_idx"
+COMMON_MASKS_DIR = "masks"

@@ -305,6 +305,8 @@ class TensorConversion:
         images = self._get_nifti_images(participant, session)
         images = self._transform(images)
 
+        assert mask.path is not None  # TODO: check if a test is needed
+
         pt_path = self.caps_reader.path_to_tensor(mask.path)
         label_map = getattr(images, mask.name)
         self.save_mask_as_tensor(label_map, pt_path)
@@ -374,7 +376,7 @@ class TensorConversion:
             )
             return label.get_associated_mask(image_path)
         elif isinstance(label, Column):
-            return self.caps_dataset.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
+            return self.caps_dataset.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
                 (participant, session)
             ][label]
 
@@ -707,7 +709,7 @@ class TensorConversion:
             )
         return json_path
 
-    def _get_json_path(self, json_name: str) -> Path:
+    def _get_json_path(self, json_name: PathType) -> Path:
         """
         Checks that 'json_name' is available.
         """

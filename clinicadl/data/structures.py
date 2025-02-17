@@ -148,7 +148,7 @@ class Mask:
         if `mask` is passed as a path that does not match any file.
     """
 
-    def __init__(self, mask: Union[str, PathType]) -> None:
+    def __init__(self, mask: PathType) -> None:
         if isinstance(mask, Path):
             if not self._check_path(mask):
                 raise FileNotFoundError(
@@ -208,6 +208,10 @@ class Mask:
         """
         Gets or loads a common mask (in nifti or .pt file).
         """
+        if not self.path:
+            raise ValueError(
+                f"Mask '{self.name}' does not correspond to a common mask."
+            )
         if self._mask_img is None:
             self._mask_img = self._load_mask(self.path)
         return self._mask_img

@@ -13,8 +13,11 @@ from torch.utils.data import Dataset
 
 from clinicadl.dictionary.words import (
     AFFINE,
+    FIRST_INDEX,
     IMAGE,
     LABEL,
+    LAST_INDEX,
+    N_SAMPLES,
     PARTICIPANT,
     PARTICIPANT_ID,
     SESSION,
@@ -40,11 +43,6 @@ from ..structures import Column, DataPoint, Mask
 from ..tensor_conversion import TensorConversion
 
 logger = getLogger("clinicadl.caps_dataset")
-
-N_SAMPLES = "n_samples"
-FIRST_INDEX = "first_idx"
-LAST_INDEX = "last_idx"
-COMMON_MASKS_DIR = "masks"
 
 
 class CapsDataset(Dataset):
@@ -93,7 +91,7 @@ class CapsDataset(Dataset):
     transforms : Transforms, (optional, default=Transforms())
         Transformation pipeline to apply to the data during loading. Default will only apply `NaN` removal
         to images. See :py:class:`clinicadl.transforms.Transforms`.
-    masks : Optional[list[Union[str, PathType]]], (optional, default=None)
+    masks : Optional[list[PathType]], (optional, default=None)
         Potential masks that are useful to compute some transforms.
         A mask can be either a suffix (image-specific masks) or a file in the `masks` folder of
         `caps_directory` (common masks).\n
@@ -139,7 +137,7 @@ class CapsDataset(Dataset):
         data: Optional[DataType] = None,
         label: Optional[str] = None,
         transforms: Transforms = Transforms(),
-        masks: Optional[list[Union[str, PathType]]] = None,
+        masks: Optional[list[PathType]] = None,
     ):
         self.eval_mode = False
         self.caps_reader = CapsReader(caps_directory)
@@ -150,6 +148,7 @@ class CapsDataset(Dataset):
             self.image_transform,
             self.sample_transform,
             self.augmentation,
+            _,
         ) = transforms.get_transforms()
         self.extraction = transforms.extraction
         self.df = self._get_df_from_input(data)
@@ -526,7 +525,7 @@ class CapsDataset(Dataset):
 
     def _read_masks(
         self,
-        masks: Optional[list[Union[str, PathType]]],
+        masks: Optional[list[PathType]],
     ) -> tuple[list[Mask], list[Mask]]:
         """
         Reads the masks passed by the user and splits them between common masks
@@ -570,7 +569,7 @@ class CapsDataset(Dataset):
 
         return individual_masks, common_masks
 
-    def _read_mask(self, mask: Union[str, PathType]) -> Mask:
+    def _read_mask(self, mask: PathType) -> Mask:
         """
         Determines if a mask is a common or an individual mask.
         """
@@ -650,7 +649,7 @@ class CapsDataset(Dataset):
         row = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
             (participant, session)
         ]
-        sample_idx = int(idx - row[FIRST_INDEX])
+        sample_idx = int(idx - row.at[FIRST_INDEX])
 
         return participant, session, sample_idx
 
@@ -721,6 +720,8 @@ class CapsDataset(Dataset):
         """
         pt_common_masks = []
         for mask in self.common_masks:
+            if not mask.path:
+                raise ClinicaDLCAPSError("Common mask path is not defined.")
             mask_pt_path = self.caps_reader.path_to_tensor(mask.path)
             pt_common_masks.append(Mask(mask_pt_path))
         self.common_masks = pt_common_masks
@@ -750,7 +751,7 @@ class CapsDataset(Dataset):
                 for idx, row in self.df.iterrows():
                     participant = row[PARTICIPANT_ID]
                     session = row[SESSION_ID]
-                    self.df.loc[idx, N_SAMPLES] = self._get_n_samples(
+                    self.df.at[idx, N_SAMPLES] = self._get_n_samples(
                         participant, session
                     )
 
