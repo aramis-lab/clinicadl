@@ -437,7 +437,7 @@ def test__getitem__():
     )
     assert (
         out_sample.label
-        == tio.RemapLabels({1: 10})(tio.LabelMap(tensor=tensors["label"])).tensor[:, 0]
+        == tio.RemapLabels({1: 10})(tio.LabelMap(tensor=tensors["seg"])).tensor[:, 0]
     ).all()
 
     ###########
@@ -505,7 +505,7 @@ def test__getitem__():
     assert (
         out_sample.label
         == tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
-            tio.LabelMap(tensor=tensors["label"])
+            tio.LabelMap(tensor=tensors["seg"])
         ).tensor[:, 1]
     ).all()
 
@@ -524,7 +524,7 @@ def test__getitem__():
         data=data,
         label="age",
     )
-    caps_dataset.read_tensor_conversion("pet_age_label")
+    caps_dataset.read_tensor_conversion("pet_ref")
     out_sample = caps_dataset[0]
     assert out_sample.label == 1.0
     out_sample = caps_dataset[1]

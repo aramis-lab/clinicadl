@@ -675,8 +675,8 @@ class CapsDataset(Dataset):
 
         # label
         if isinstance(self.label, Mask):
-            mask_label = images_dict[self.label.name]
-            label = tio.LabelMap(tensor=label, affine=mask_label)
+            label_mask = images_dict[self.label.name]
+            label = tio.LabelMap(tensor=label_mask, affine=images_dict[AFFINE])
         else:
             label = self._get_scalar_label(participant, session)
 
@@ -738,8 +738,6 @@ class CapsDataset(Dataset):
         """
         pt_common_masks = []
         for mask in self.common_masks:
-            if not mask.path:
-                raise ClinicaDLCAPSError("Common mask path is not defined.")
             mask_pt_path = self.caps_reader.path_to_tensor(mask.path)
             pt_common_masks.append(Mask(mask_pt_path))
         self.common_masks = pt_common_masks

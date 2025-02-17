@@ -139,8 +139,9 @@ def test_ddp():
         ),
         label="age",
         data=data,
+        transforms=Transforms(image_transforms=[]),
     )
-    caps.read_tensor_conversion("pet_age_label")
+    caps.read_tensor_conversion("pet_all")
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         shuffle=False,
@@ -218,16 +219,6 @@ def test_ddp():
         next(dataloader)
 
     # weighting
-    caps = CapsDataset(
-        caps_dir,
-        preprocessing=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        label="age",
-        data=data,
-    )
-    caps.read_tensor_conversion("pet_age_label")
-
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         sampling_weights="age",
@@ -259,8 +250,8 @@ def test_ddp():
     assert len(batch) == 2
     assert batch[0].session == "ses-M012"
     assert batch[0].participant == "sub-100"
-    assert batch[1].session == "ses-M012"
-    assert batch[1].participant == "sub-100"
+    assert batch[1].session == "ses-M099"
+    assert batch[1].participant == "sub-999"
     batch: list[Sample] = next(dataloader)
     assert len(batch) == 1
     assert batch[0].session == "ses-M012"

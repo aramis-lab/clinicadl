@@ -620,6 +620,12 @@ def test_merge_conversions():
     preprocessing = T1Linear(use_uncropped_image=True)
 
     # control
+    shutil.rmtree(tmp_dir / "tensor_conversion")
+    (tmp_dir / "tensor_conversion").mkdir()
+    shutil.copy(
+        caps_dir / "tensor_conversion" / "t1_ref_interrupted.json",
+        tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json",
+    )
     caps_dataset = CapsDataset(
         tmp_dir,
         preprocessing=preprocessing,
@@ -627,9 +633,11 @@ def test_merge_conversions():
         transforms=Transforms(image_transforms=[]),
     )
     converter = TensorConversion(caps_dataset)
-    converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
+        )
     with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
         conversion_info = json.load(f)
     assert sorted(conversion_info["participants_sessions"]) == sorted(
