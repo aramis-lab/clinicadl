@@ -19,8 +19,6 @@ from clinicadl.dictionary.words import (
     IMAGE,
     LABEL,
     MASK,
-    PARTICIPANT_ID,
-    SESSION_ID,
 )
 from clinicadl.transforms import get_transform_config
 from clinicadl.transforms.config import TransformConfig
@@ -33,7 +31,7 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.typing import PathType
 
 from .datatype.preprocessing import Preprocessing, get_preprocessing_config
-from .structures import Column, DataPoint, LabelType, Mask
+from .structures import DataPoint, Mask
 
 if TYPE_CHECKING:
     from .datasets import CapsDataset
@@ -447,7 +445,7 @@ class TensorConversion:
             images_dict[self.caps_dataset.label.name] = images.label.tensor.int()
 
         for name, value in images.items():
-            if isinstance(value, tio.LabelMap):
+            if isinstance(value, tio.LabelMap) and name != LABEL:
                 images_dict[name] = value.tensor.int()
 
         images_dict[AFFINE] = torch.from_numpy(images.image.affine).float()

@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import warnings
 from pathlib import Path
@@ -13,7 +14,10 @@ from clinicadl.data import CapsDataset
 from clinicadl.data.datatype import PETLinear, T1Linear
 from clinicadl.data.tensor_conversion import TensorConversion
 from clinicadl.transforms import Slice, Transforms, get_transform_config
-from clinicadl.utils.exceptions import ClinicaDLTensorConversionError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTensorConversionError,
+)
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
@@ -23,6 +27,13 @@ def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
     data = full_data.set_index(["participant_id", "session_id"])
     data = data.loc[participants_sessions]
     return data.reset_index()
+
+
+def delete_pt_files(dir_path: Path):
+    for root, _, files in os.walk(dir_path):
+        for file in files:
+            if file.endswith(".pt"):
+                os.remove(os.path.join(root, file))
 
 
 def test_read_conversion():
@@ -102,22 +113,13 @@ def test_read_conversion():
     converter = TensorConversion(caps_dataset)
     converter.read_conversion(caps_dir / "tensor_conversion" / "pet_masks.json")
 
-    caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=preprocessing,
-        data=data,
-        label="age",
-    )
-    converter = TensorConversion(caps_dataset)
-    converter.read_conversion(caps_dir / "tensor_conversion" / "pet_ref.json")
-
     # check masks
     caps_dataset = CapsDataset(
         caps_dir, preprocessing=preprocessing, data=data, masks=["brain", "seg"]
     )
     converter = TensorConversion(caps_dataset)
     converter.read_conversion(caps_dir / "tensor_conversion" / "pet_masks.json")
-    assert converter.get_info().individual_masks == ["brain", "seg"]
+    assert set(converter.get_info().individual_masks) == set(["brain", "seg"])
 
     caps_dataset = CapsDataset(
         caps_dir,
@@ -137,7 +139,7 @@ def test_read_conversion():
     )
     converter = TensorConversion(caps_dataset)
     converter.read_conversion(caps_dir / "tensor_conversion" / "pet_masks.json")
-    assert converter.get_info().individual_masks == ["brain", "seg"]
+    assert set(converter.get_info().individual_masks) == set(["brain", "seg"])
     assert converter.get_info().common_masks == ["leftHippocampus.nii.gz"]
 
     caps_dataset = CapsDataset(
@@ -271,6 +273,7 @@ def test_convert_to_tensors():
     Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
     Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
     Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+    delete_pt_files(tmp_dir)
 
     sub_ses = [
         ("sub-000", "ses-M000"),
@@ -322,6 +325,27 @@ def test_convert_to_tensors():
         ]
     )
 
+    #       check files
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+
+    #       check old conversion updates
     with open(tmp_dir / "tensor_conversion" / "pet_masks.json", "r") as f:
         old_conversion_info = json.load(f)
     assert old_conversion_info["common_masks"] == ["rightHippocampus.nii.gz"]
@@ -357,6 +381,8 @@ def test_convert_to_tensors():
         weights_only=True,
     )
     assert sorted(list(tensors.keys())) == sorted(list(true_tensors.keys()))
+    print(tensors["image"].shape)
+    print(true_tensors["image"].shape)
     for name in tensors.keys():
         assert (tensors[name] == true_tensors[name]).all()
 
@@ -374,6 +400,7 @@ def test_convert_to_tensors():
     converter.convert_to_tensors("new_conversion_pet")
     with open(tmp_dir / "tensor_conversion" / "new_conversion_pet.json", "r") as f:
         conversion_info = json.load(f)
+    assert conversion_info["individual_masks"] == []
     assert conversion_info["transforms"] == [
         {
             "name": "NanRemoval",
@@ -392,6 +419,7 @@ def test_convert_to_tensors():
     )
 
     # test save transforms
+    delete_pt_files(tmp_dir)
     caps_dataset = CapsDataset(
         tmp_dir,
         preprocessing=T1Linear(use_uncropped_image=True),
@@ -418,6 +446,7 @@ def test_convert_to_tensors():
     assert tensors["image"].shape == (1, 3, 3, 3)  # not cropped
 
     # spacing checked
+    delete_pt_files(tmp_dir)
     data = sub_data(
         [
             ("sub-000", "ses-M000"),
@@ -436,6 +465,25 @@ def test_convert_to_tensors():
         conversion_info = json.load(f)
     assert len(conversion_info["participants_sessions"]) == 1
     assert conversion_info["spacing"] is not None
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file() != (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+
+    delete_pt_files(tmp_dir)
     converter.convert_to_tensors("not_check_spacing", ignore_spacing=True)
     with open(tmp_dir / "tensor_conversion" / "not_check_spacing.json", "r") as f:
         conversion_info = json.load(f)
@@ -446,6 +494,24 @@ def test_convert_to_tensors():
             ["sub-010", "ses-M012"],
         ]
     )
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
 
     # shape warning
     data = sub_data(
@@ -462,6 +528,9 @@ def test_convert_to_tensors():
     converter = TensorConversion(caps_dataset)
     with pytest.warns(match="Different image shapes found in the CAPS dataset:*"):
         converter.convert_to_tensors("check_shape", ignore_spacing=True)
+    with open(tmp_dir / "tensor_conversion" / "check_shape.json", "r") as f:
+        conversion_info = json.load(f)
+    assert conversion_info["shape"] is None
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         converter.convert_to_tensors(
@@ -522,5 +591,292 @@ def test_convert_to_tensors():
     )
     converter = TensorConversion(caps_dataset)
     converter.convert_to_tensors("subject_consistency_control")
+
+    shutil.rmtree(tmp_dir)
+
+
+def test_merge_conversions():
+    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
+
+    if tmp_dir.is_dir():
+        shutil.rmtree(tmp_dir)
+    shutil.copytree(caps_dir, tmp_dir)
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+    (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).unlink()
+
+    sub_ses = [
+        ("sub-000", "ses-M000"),
+        ("sub-010", "ses-M003"),
+    ]
+    data = sub_data(sub_ses)
+    preprocessing = T1Linear(use_uncropped_image=True)
+
+    # control
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
+    )
+    with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
+    assert np.isclose(conversion_info["spacing"], (1.3, 1.2, 1.1)).all()
+    assert conversion_info["shape"] == [3, 3, 3]
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+    )
+    (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M003"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).unlink()
+
+    # check preprocessing
+    data = sub_data(sub_ses)
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=PETLinear(
+            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
+        ),
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
+        )
+
+    # check label
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+        label="brain",
+        masks=["seg"],
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
+        )
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
+    )
+    with open(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_masks_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"),
+    )
+
+    # check masks
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+        masks=["brain", "seg", "leftHippocampus.nii.gz", "leftHemisphere.nii"],
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
+    )
+    with open(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["common_masks"]) == sorted(
+        ["leftHippocampus.nii.gz", "rightHippocampus.nii.gz", "leftHemisphere.nii"]
+    )
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
+    assert (tmp_dir / "masks" / "tensors" / "leftHippocampus.pt").is_file()
+    assert (tmp_dir / "masks" / "tensors" / "leftHemisphere.pt").is_file()
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_masks_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"),
+    )
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+        masks=["seg"],
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
+        )
+
+    # check transforms
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(
+            extraction=Slice(slices=[0]),
+            image_transforms=[
+                get_transform_config("RescaleIntensity"),
+                get_transform_config("Clamp", out_min=-10, out_max=10),
+            ],
+            sample_transforms=[get_transform_config("Crop", cropping=1)],
+            augmentation=[get_transform_config("Pad", padding=1)],
+        ),
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json",
+    )
+    with open(
+        tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json", "r"
+    ) as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_transform_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json"),
+    )
+
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
+        )
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json",
+        save_transforms=False,
+    )
+    with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+    )
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json",
+        )
+
+    # spacing and shape
+    data = sub_data(
+        [
+            ("sub-010", "ses-M012"),
+        ]
+    )
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLTensorConversionError):
+        converter.convert_to_tensors("t1_ref_interrupted")
+    # with pytest.warns(match="Different image shapes found in the CAPS dataset:*"):
+    converter.convert_to_tensors("t1_ref_interrupted", ignore_spacing=True)
+    0 // 0
+    with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M012"],
+        ]
+    )
+    assert conversion_info["spacing"] is None
+    assert conversion_info["shape"] is None
+    assert (
+        tmp_dir
+        / "subjects"
+        / "sub-010"
+        / "ses-M012"
+        / "t1_linear"
+        / "tensors"
+        / "sub-010_ses-M012_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
+    ).is_file()
+    shutil.copy(
+        Path(caps_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+        Path(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"),
+    )
+
+    # without shape warning
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        converter.convert_to_tensors(
+            "not_check_shape", ignore_spacing=True, raise_warnings=False
+        )
 
     shutil.rmtree(tmp_dir)

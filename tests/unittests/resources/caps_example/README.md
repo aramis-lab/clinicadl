@@ -43,14 +43,12 @@
             * affine: diag(1.3, 1.2, 1.1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 1.0
     * ses-M003:
         * niftis:
             * uncropped only
             * affine: diag(1.3, 1.2, 1.1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 1.0
 * sub-010:
     * ses-M003:
         * niftis:
@@ -58,14 +56,12 @@
             * affine: diag(1.3, 1.2, 1.1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 2.0
     * ses-M012
         * niftis:
             * uncropped only
             * affine: diag(1.3, 1.2, 1.1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 2.0
 * sub-100:
     * ses-M000:
         * niftis:
@@ -73,14 +69,12 @@
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 3.0
     * ses-M012:
         * niftis:
             * uncropped only
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 3.0
 * sub-999:
     * ses-M099:
         * niftis:
@@ -88,14 +82,12 @@
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 4.0
     * ses-M999:
         * niftis:
             * uncropped only
             * affine: diag(1, 1, 1) 
             * shape: (1, 1, 1)
         * tensors
-            * label: 4.0
 
 ## common masks
 * leftHipppocampus:
@@ -108,6 +100,11 @@
     * nifti:
         * affine: diag(1, 1, 1) 
         * shape: (3, 3, 3)
+* leftHemisphere:
+    * nifti:
+        * affine: diag(1.3, 1.2, 1.1) 
+        * shape: (3, 3, 3)
+        * .nii extension
 * rightHemisphere:
     * nifti:
         * affine: diag(1, 1, 1) 
