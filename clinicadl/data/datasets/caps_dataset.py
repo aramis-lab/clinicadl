@@ -11,6 +11,7 @@ import torch
 import torchio as tio
 from torch.utils.data import Dataset
 
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import (
     AFFINE,
     FIRST_INDEX,
@@ -127,7 +128,30 @@ class CapsDataset(Dataset):
 
     Examples
     --------
-    >>>
+    >>> from clinicadl.data import CapsDataset
+    >>> from clinicadl.data.datatype import PETLinear
+    >>> from clinicadl.transforms import Transforms, get_transform_config
+    >>> from clinicadl.transforms.extraction import Patch
+    >>> normalization = get_transform_config("ZNormalization", masking_method="brain")
+    >>> mask = get_transform_config("Mask", masking_method="leftHippocampus")
+    >>> resize = get_transform_config("EnsureShapeMultiple", target_multiple=128)
+    >>> flip = get_transform_config("RandomFlip", flip_probability=0.3)
+    >>> dataset = CapsDataset(
+            caps_directory="my_caps",
+            preprocessing=PETLinear(
+                tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+            ),
+            data="my_caps/pet.tsv",
+            transforms=Transforms(
+                extraction=Patch(patch_size=32, stride=32),
+                image_transforms=[normalization, mask],
+                sample_transforms=[crop],
+                augmentations=[flip],
+            ),
+            label="seg",
+            masks=["brain", "leftHippocampus.nii.gz"]   #
+        )
+    >>> dataset.to_tensors("pet_masked", n_proc=4)
     """
 
     def __init__(
@@ -157,6 +181,8 @@ class CapsDataset(Dataset):
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
+
+        self.common_masks_tensors: list[Mask] = []
 
     def read_tensor_conversion(
         self, json_name: str, check_transforms: bool = True
@@ -476,7 +502,7 @@ class CapsDataset(Dataset):
         participant, session, sample_index = self._get_meta_data(idx)
         data = self._get_data(participant, session)
         tensor_path = self.caps_reader.get_tensor_path(
-            participant, session, preprocessing=self.preprocessing
+            participant, session, preprocessing=self.preprocessing, check=False
         )
 
         if (
@@ -669,7 +695,7 @@ class CapsDataset(Dataset):
             If the '.pt' file cannot be found for this (participant, session).
         """
         pt_path = self.caps_reader.get_tensor_path(
-            participant, session, self.preprocessing
+            participant, session, self.preprocessing, check=False
         )
         images_dict = self._load_pt(pt_path)
 
@@ -698,7 +724,7 @@ class CapsDataset(Dataset):
                 )
 
         # common masks (already loaded)
-        for mask in self.common_masks:
+        for mask in self.common_masks_tensors:
             data.add_mask(mask.get_associated_mask(), mask.name)
 
         return data
@@ -712,8 +738,8 @@ class CapsDataset(Dataset):
             return torch.load(path, weights_only=True)
         except FileNotFoundError as exc:
             raise FileNotFoundError(
-                f"Tensor conversion was performed, as suggested in {self.tensor_conversion.json}. "
-                f"Nevertheless, file {str(path)} is not found. The tensors have probably been deleted "
+                f"Tensor conversion was performed, as suggested in '{self.tensor_conversion.json}'. "
+                f"Nevertheless, file '{str(path)}'  cannot be found. The tensors have probably been deleted "
                 "after conversion. Please rerun 'to_tensors' to generate the tensor files again."
             ) from exc
 
@@ -736,11 +762,17 @@ class CapsDataset(Dataset):
         Converts nifti masks to the associated tensor masks
         when 'to_tensors' or 'read_tensor_conversion' is called.
         """
-        pt_common_masks = []
+        self.common_masks_tensors = []
         for mask in self.common_masks:
             mask_pt_path = self.caps_reader.path_to_tensor(mask.path)
-            pt_common_masks.append(Mask(mask_pt_path))
-        self.common_masks = pt_common_masks
+            try:
+                self.common_masks_tensors.append(Mask(mask_pt_path))
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(
+                    f"Tensor conversion was performed, as suggested in '{self.tensor_conversion.json}'. "
+                    f"Nevertheless, mask '{str(mask_pt_path)}' cannot be found. The tensors have probably been deleted "
+                    "after conversion. Please rerun 'to_tensors' to generate the tensor file again."
+                ) from exc
 
     def _count_samples(self) -> None:
         """

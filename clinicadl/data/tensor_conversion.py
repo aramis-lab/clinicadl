@@ -13,7 +13,7 @@ from joblib import Parallel, delayed
 from pydantic import SerializeAsAny, ValidationError
 from tqdm import tqdm
 
-from clinicadl.dictionary.suffixes import JSON
+from clinicadl.dictionary.suffixes import JSON, PT
 from clinicadl.dictionary.words import (
     AFFINE,
     IMAGE,
@@ -258,9 +258,11 @@ class TensorConversion:
             Parallel(n_jobs=n_proc, require="sharedmem")(
                 delayed(self._transform_and_save_mask)(mask)
                 for mask in tqdm(
-                    set(self.caps_dataset.common_masks).difference(
-                        self._masks_converted
-                    ),
+                    [
+                        mask
+                        for mask in self.caps_dataset.common_masks
+                        if mask.path.name not in self._masks_converted
+                    ],
                     desc="Converting masks",
                 )
             )
