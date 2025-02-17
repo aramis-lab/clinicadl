@@ -8,7 +8,7 @@ from typing import Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from clinicadl.data.preprocessing import BasePreprocessing
+# from clinicadl.data.preprocessing import BasePreprocessing
 from clinicadl.data.readers import CapsReader
 from clinicadl.metrics.old_metrics.utils import check_selection_metric
 from clinicadl.model.clinicadl_model import ClinicaDLModel
@@ -68,33 +68,33 @@ class ExperimentManager:
     def information_log(self) -> Path:
         return self.maps_path / "information.log"
 
-    def get_info_from_json(
-        self,
-    ) -> tuple[PreprocessingConfig, Extraction, CapsReader, ClinicaDLModel]:
-        """Reads the maps.json file and returns its content."""  # I don't know if this is a useful function
+    # def get_info_from_json(
+    #     self,
+    # ) -> tuple[PreprocessingConfig, Extraction, CapsReader, ClinicaDLModel]:
+    #     """Reads the maps.json file and returns its content."""  # I don't know if this is a useful function
 
-        if self.maps_json.is_file():
-            with self.maps_json.open(mode="r") as file:
-                dict_ = json.load(file, object_hook=path_decoder)
-        else:
-            raise FileNotFoundError(f"maps.json file not found in {self.maps_json}.")
+    #     if self.maps_json.is_file():
+    #         with self.maps_json.open(mode="r") as file:
+    #             dict_ = json.load(file, object_hook=path_decoder)
+    #     else:
+    #         raise FileNotFoundError(f"maps.json file not found in {self.maps_json}.")
 
-        preprocessing, extraction = get_preprocessing_and_mode_from_parameters(
-            dict_
-        )  # function defined in another PR
+    #     preprocessing, extraction = get_preprocessing_and_mode_from_parameters(
+    #         dict_
+    #     )  # function defined in another PR
 
-        caps_reader = CapsReader(caps_directory=dict_["caps_directory"])
+    #     caps_reader = CapsReader(caps_directory=dict_["caps_directory"])
 
-        clinicadl_model = get_clinicadl_model_from_parameters(
-            dict_
-        )  # function to define in another PR
+    #     clinicadl_model = get_clinicadl_model_from_parameters(
+    #         dict_
+    #     )  # function to define in another PR
 
-        return (
-            preprocessing,
-            extraction,
-            caps_reader,
-            clinicadl_model,
-        )  # do we need to return other things ? like a trainConfig or something
+    #     return (
+    #         preprocessing,
+    #         extraction,
+    #         caps_reader,
+    #         clinicadl_model,
+    #     )  # do we need to return other things ? like a trainConfig or something
 
     def print_description_log(
         self,

@@ -126,12 +126,28 @@ class GeneralResNet(nn.Module):
 
         self._init_module(conv_type, norm_type)
 
+    # def forward(self, x: torch.Tensor) -> torch.Tensor:
+    #     x = self.conv0(x)
+    #     x = self.norm0(x)
+    #     x = self.act0(x)
+    #     x = self.pool0(x)
+
+    #     for i in range(1, self.n_layers + 1):
+    #         x = self.get_submodule(f"layer{i}")(x)
+
+    #     if self.fc is not None:
+    #         x = self.fc(x)
+
+    #     return x
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Passage par les couches convolutionnelles et activations
         x = self.conv0(x)
         x = self.norm0(x)
         x = self.act0(x)
         x = self.pool0(x)
 
+        # Passage par les couches suivantes
         for i in range(1, self.n_layers + 1):
             x = self.get_submodule(f"layer{i}")(x)
 

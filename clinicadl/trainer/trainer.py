@@ -1,38 +1,126 @@
 from __future__ import annotations
 
+import random
 from contextlib import nullcontext
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Union
 
+import numpy as np
 import torch
 import torch.distributed as dist
+from monai.metrics.metric import CumulativeIterationMetric as Metric
 from torch.amp.autocast_mode import autocast
 from torch.amp.grad_scaler import GradScaler
+from torch.nn.parallel import DistributedDataParallel
+from torch.profiler import (
+    ProfilerActivity,
+    profile,
+    record_function,
+    schedule,
+    tensorboard_trace_handler,
+)
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
-from clinicadl.metrics.old_metrics.metric_module import RetainBest
+from clinicadl.metrics.base import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
-from clinicadl.optim.early_stopping import EarlyStopping
+from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
-from clinicadl.trainer.tasks_utils import get_criterion
+
+# from clinicadl.utils.cluster.profiler import (
+#                 ProfilerActivity,
+#                 profile,
+#                 schedule,
+#                 tensorboard_trace_handler,
+#             )
 from clinicadl.utils import cluster
-from clinicadl.utils.logwriter import LogWriter
+from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
+
+# from clinicadl.utils.dlo_jz import Chronometer
+# from clinicadl.utils.logwriter import LogWriter
+
 
 logger = getLogger("clinicadl.trainer")
 
 
+def test(dataloader: DataLoader, model: ClinicaDLModel, device, amp):
+    model.network.eval()
+    with torch.no_grad():
+        for i, data in enumerate(dataloader):
+            images = torch.cat(list(sample.sample for sample in data), dim=0).to(device)
+            labels = (
+                torch.tensor([sample.label for sample in data], dtype=torch.float32)
+                .unsqueeze(1)
+                .to(device)
+            )  # TO REMOVE AND CHECK FOR MASK
+            # initialize the loss list to save the loss components
+            with autocast(device.type, enabled=amp):
+                outputs = model.network(images)
+                loss = model.loss(outputs, labels)
+
+            # scaler.scale(loss_train).backward()
+            print(f"for batch {i} : loss is {loss}")
+
+    model.network.train()
+    return None
+
+
 class Trainer:
-    def __init__(self, maps_path: PathType) -> None:
+    def __init__(
+        self,
+        maps_path: PathType,
+    ) -> None:
         """TO COMPLETE"""
+
         self.reader = MapsReader(maps_path)
-        self.maps_path = maps_path
+        self.maps_path = Path(maps_path)
+        self.batch_size: int = 2
+        self.epochs: int = 1
+        self.lr: float = 0.1
+        self.weight_decay: float = 0.0
+        self.momentum: float = 0.9
+        self.num_workers: int = 0
+        self.persistent_workers: bool = True
+        self.pin_memory: bool = True
+        self.non_blocking: bool = True
+        self.prefetch_factor: int = 0
+        self.drop_last: bool = False
+        self.amp: bool = True
+        self.accumulation_steps: int = 1  # gives the number of iterations during which gradients are accumulated before performing the weights update. This allows to virtually increase the size of the batch. Default: 1.
+        self.evaluation_steps: int = 5  # gives the number of iterations to perform an evaluation internal to an epoch. Default will only perform an evaluation at the end of each epoch.
+        self.current_epoch: int = 0
+        self.tolerance = 0
+        self.patience = 10
+        self.seed = 123
+        self.device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
+
+        # SEED
+        seed_everything(123, deterministic=False, compensation="memory")
+
+        # Chronometer initialisation
+        # self.chrono = Chronometer()
+
+        # Initialize the parallel environment
+        # dist.init_process_group(backend='nccl', init_method='env://',
+        #                         world_size=cluster.size, rank=cluster.rank)
+
+        # define model & device
+        # bind the proper GPU to the current process
+        # torch.cuda.set_device('cpu')
+
+        # distribute batch size (mini-batch)
+        self.num_replica = cluster.size
+        self.mini_batch_size = self.batch_size
+        self.global_batch_size = self.mini_batch_size * self.num_replica
 
     @classmethod
     def from_json(cls, config_file: Path) -> Trainer:
@@ -44,8 +132,25 @@ class Trainer:
         """TO COMPLETE"""
         return Trainer(maps_path)
 
-    def _init_profiler(self):
-        pass
+    def _init_profiler(self, profiler: bool = True):
+        if profiler:
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            dist.broadcast_object_list(filename, src=0)
+            prof = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(str(filename)[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            prof = nullcontext()
+            prof.step = lambda *args, **kwargs: None
+
+        return prof
 
     def resume(self, split: Split):
         """TO COMPLETE"""
@@ -55,149 +160,154 @@ class Trainer:
         model.load_optim_state_dict(
             self.reader.optimizer_path(split.index, resume=True)
         )
-        current_epoch = model.load_state_dict(
+        self.current_epoch = model.load_state_dict(
             self.reader.checkpoint_path(split.index, resume=True)
         )
+        metrics = load_metrics()
+        self.train(model, split, metrics)
 
-    def train(self, model: ClinicaDLModel, split: Split, epoch: int = 0):
+    def train(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
         """TO COMPLETE"""
 
-        # NEEDED ARG
-        adaptive_learning_rate: bool = False
-        amp: bool = False
-        n_epochs: int = 30
-        accumulation_steps: int = 3
-        evaluation_steps: int = 4
-        save_outputs: bool = (
-            False  # depend on the network task, only ok for reconstruction
-        )
-        network_task: str = "classification"  # TASK enum
-        #
+        self.on_train_begin(model, split)
 
-        # INIT
-        criterion = get_criterion(network_task, model.loss)
-        early_stopping = EarlyStopping()
-        metrics_valid = {"loss": None}
-        retain_best = RetainBest()
-        scaler = GradScaler("cuda", enabled=amp)
-        profiler = self._init_profiler()
+        while self.epoch < self.epochs and not self.early_stopping.step(
+            metrics.val_loss
+        ):
+            self.on_epoch_begin(model.network)
 
-        if cluster.master:
-            log_writer = LogWriter()
+            for i, data in enumerate(split.train_loader):
+                ############
+                images = torch.cat(list(i.sample for i in data), dim=0).to(self.device)
+                labels = (
+                    torch.tensor([i.label for i in data], dtype=torch.float32)
+                    .unsqueeze(1)
+                    .to(self.device)
+                )  # TO REMOVE AND CHECK FOR MASK
+                ############
 
-        model.network.train()
-        split.train_loader.dataset.train()
+                with autocast(self.device.type, enabled=self.amp):
+                    outputs = model.network(images)
+                    loss, _ = metrics.compute(
+                        i, self.epoch, (outputs, labels), val=False
+                    )
 
-        if adaptive_learning_rate:
-            from torch.optim.lr_scheduler import ReduceLROnPlateau
+                self.scaler.scale(loss).backward()
+                self.weights_update(model)
+                del loss
 
-            scheduler = ReduceLROnPlateau(model.optimizer, mode="min", factor=0.1)
+                # Evaluate the model only when no gradients are accumulated
+                if self.evaluation_steps != 0 and (i + 1) % self.evaluation_steps == 0:
+                    self.evaluation_flag = False
+                    print(" Evaluate the model only when no gradients are accumulated")
+                    print(f"Évaluation - Epoch {self.epoch}, Batch {i}:")
+                    test(split.val_loader, model, self.device, self.amp)
 
-        validator = Predictor()
-        #
+            # PROFILER STEP
 
-        while epoch < n_epochs and not early_stopping.step(metrics_valid["loss"]):
-            if isinstance(split.train_loader.sampler, DistributedSampler):
-                # It should always be true for a random sampler. But just in case
-                # we get a WeightedRandomSampler or a forgotten RandomSampler,
-                # we do not want to execute this line.
-                split.train_loader.sampler.set_epoch(epoch)
+            # If no evaluation has been performed, warn the user
+            if self.evaluation_flag and self.evaluation_steps != 0:
+                print(
+                    f"Your evaluation steps {self.evaluation_steps} are too big "
+                    f"compared to the size of the dataset. "
+                    f"The model is evaluated only once at the end epochs."
+                )
 
+            # Update weights one last time if gradients were computed without update
+            if (i + 1) % self.accumulation_steps != 0:
+                self.weights_update(model)
+
+            # Always test the results and save them once at the end of the epoch
             model.network.zero_grad(set_to_none=True)
-            evaluation_flag, step_flag = True, True
+            test(split.train_loader, model, self.device, self.amp)
+            test(split.val_loader, model, self.device, self.amp)
 
-            with profiler:
-                for i, data in enumerate(split.train_loader):
-                    update: bool = (i + 1) % accumulation_steps == 0
-                    sync = nullcontext() if update else model.network.no_sync()
-                    with sync:
-                        with autocast("cuda", enabled=amp):
-                            _, loss_dict = model.network(data, criterion)
+            self.scheduler.step()  # Update learning rate based on validation loss
 
-                        loss = loss_dict["loss"]
-                        scaler.scale(loss).backward()
+            print("increase epoch")
+            self.epoch += 1
+            # Sauvegarde du modèle à la fin de chaque epoch
+            torch.save(
+                model.network.state_dict(),
+                self.reader.maps_path / f"model_epoch_{self.epoch}.pth",
+            )  # model.save_checkpoint(epoch = epoch)
 
-                    if update:
-                        step_flag = False
-                        scaler.step(model.optimizer)
-                        scaler.update()
-                        model.optimizer.zero_grad(set_to_none=True)
+    def weights_update(self, model: ClinicaDLModel):
+        self.scaler.step(model.optimizer)
+        self.scaler.update()
+        model.optimizer.zero_grad(set_to_none=True)
 
-                        del loss
+    def on_epoch_begin(self, network: torch.nn.Module):
+        network.zero_grad(set_to_none=True)
+        self.evaluation_flag = True
 
-                        # Evaluate the model only when no gradients are accumulated
-                        if evaluation_steps != 0 and (i + 1) % evaluation_steps == 0:
-                            evaluation_flag = False
+    def on_train_begin(self, model: ClinicaDLModel, split: Split):
+        """TO COMPLETE"""
 
-                            _, metrics_train = validator.test(
-                                dataloader=split.train_loader
-                            )
-                            _, metrics_valid = validator.test(
-                                dataloader=split.val_loader
-                            )
+        self.reader._create_maps(overwrite=True)
 
-                            model.network.train()
-                            split.train_loader.dataset.train()
+        model.network.to(self.device)
+        model.network.train()
 
-                            if cluster.master:
-                                log_writer.step(
-                                    epoch,
-                                    i,
-                                    metrics_train,
-                                    metrics_valid,
-                                    len(split.train_loader),
-                                )
+        self.epoch = (
+            self.current_epoch
+        )  # will be different if resume or transfer learning
 
-                    profiler.step()
+        self._init_early_stopping(self.patience, "min", self.tolerance)
 
-                # If no step has been performed, raise Exception
-                if step_flag:
-                    raise ValueError(
-                        "The model has not been updated once in the epoch. The accumulation step may be too large."
-                    )
+        self._init_scaler(self.device, self.amp)
 
-                # If no evaluation has been performed, warn the user
-                elif evaluation_flag and evaluation_steps != 0:
-                    logger.warning(
-                        f"Your evaluation steps {evaluation_steps} are too big "
-                        f"compared to the size of the dataset. "
-                        f"The model is evaluated only once at the end epochs."
-                    )
+        # profiler = init_profiler(maps_path)
 
-                # Update weights one last time if gradients were computed without update
-                if (i + 1) % accumulation_steps != 0:
-                    scaler.step(model.optimizer)
-                    scaler.update()
-                    model.optimizer.zero_grad(set_to_none=True)
+        # TODO: init tracker like WandB or MlFlow (callbacks ?)
 
-                # Always test the results and save them once at the end of the epoch
-                model.network.zero_grad(set_to_none=True)
-                logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+        # dataset size 8 x nb de slice
+        self.n_batch = len(split.train_loader)
 
-                _, metrics_train = validator.test(dataloader=split.train_loader)
-                _, metrics_valid = validator.test(dataloader=split.val_loader)
+        # Vérification de evaluation_steps
+        self.check_evaluation_steps()
 
-                model.network.train()
-                split.train_loader.dataset.train()
+        self.n_val_batch = len(split.val_loader)
 
-            if cluster.master:
-                # Save checkpoints and best models
-                best_dict = retain_best.step(metrics_valid)
-                self.reader._write_optim_weights(best_dict)
-                self.reader._write_network_weights(best_dict)
+        self._init_scheduler(model.optimizer, self.lr, self.n_batch, self.epochs)
 
-            dist.barrier()
+    def _init_scheduler(
+        self,
+        optimizer: torch.optim.optimizer.Optimizer,
+        lr: float,
+        n_batch: int,
+        epochs: int,
+    ):
+        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer, max_lr=lr, steps_per_epoch=n_batch, epochs=epochs
+        )
 
-            if adaptive_learning_rate:
-                scheduler.step(
-                    metrics_valid["loss"]
-                )  # Update learning rate based on validation loss
+    def _init_scaler(
+        self,
+        device,
+        amp,
+    ):
+        self.scaler = GradScaler(device=device, enabled=amp)
 
-            epoch += 1
+    def _init_early_stopping(self, patience: int, mode: str, tolerance: float):
+        config = EarlyStoppingConfig(mode=mode, min_delta=tolerance, patience=patience)
+        self.early_stopping = EarlyStopping(config)
 
-        del model
-        validator._test_loader(dataloader=split.train_loader)
-        validator._test_loader(datalaoder=split.val_loader)
+    def check_evaluation_steps(self):
+        """Check if the current batch is an evaluation step."""
+        # Vérification de evaluation_steps
+        if self.evaluation_steps >= self.n_batch:
+            print(
+                f"Warning: evaluation_steps ({self.evaluation_steps}) >= N_batch ({self.n_batch}) ! Réduction automatique à N_batch // 2."
+            )
+            self.evaluation_steps = max(
+                1, self.n_batch // 2
+            )  # Évite d'avoir une valeur trop grande
 
-        if save_outputs:
-            self.reader.write_tensor()
+        elif self.n_batch % self.evaluation_steps != 0:
+            print(
+                f"Warning: evaluation_steps ({self.evaluation_steps}) ne divise pas exactement N_batch ({self.n_batch})."
+            )
+            self.evaluation_steps = max(
+                1, min(self.evaluation_steps, self.n_batch // 2)
+            )  # Ajuste pour garder une fréquence raisonnable

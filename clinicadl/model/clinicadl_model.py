@@ -11,20 +11,31 @@ from clinicadl.networks import get_network_from_config
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.optim import get_optimizer_from_config
 from clinicadl.optim.optimizers import OptimizerConfig
+from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
+
+# import idr_torch
 
 
 class ClinicaDLModel:
     def __init__(self, network: nn.Module, loss: Loss, optimizer: Optimizer):
-        self.network = network
+        # self.network = network
         self.loss = loss
         self.optimizer = optimizer
 
-        self.network = DDP(
-            self.network,
-            fsdp=fully_sharded_data_parallel,
-            amp=amp,
-        )  # to check
+        gpu = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.network = network.to(gpu, memory_format=torch.channels_last)
+
+        # if cluster.rank == 0: print(f'model: {network}')
+        # if cluster.rank == 0: print('number of parameters: {}'.format(sum([p.numel()
+        #                                       for p in network.parameters()])))
+
+        # if cluster.rank == 0: print(f'Optimizer: {optimizer}')
+        # self.network = DDP(
+        #     self.network,
+        #     fsdp=fully_sharded_data_parallel,
+        #     amp=amp,
+        # )  # to check
 
     @classmethod
     def from_config(

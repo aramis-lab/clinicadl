@@ -40,3 +40,7 @@ class ClinicaDLCAPSError(ClinicaDLException):
 
 class ClinicaDLTensorConversionError(ClinicaDLException):
     """Base class for tsv files exceptions."""
+
+    
+class ClinicaDLTrainingException(ClinicaDLException):
+    """Base class for training exceptions."""
