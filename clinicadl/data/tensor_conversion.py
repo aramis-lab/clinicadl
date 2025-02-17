@@ -376,9 +376,9 @@ class TensorConversion:
             )
             return label.get_associated_mask(image_path)
         elif isinstance(label, Column):
-            return self.caps_dataset.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
+            return self.caps_dataset.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
                 (participant, session)
-            ][label]
+            ][label]  # to check loc or at or iloc ?
 
     @staticmethod
     def _check_shapes_consistency(images: DataPoint) -> None:

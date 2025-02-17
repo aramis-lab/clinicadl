@@ -161,7 +161,7 @@ class Transforms(ClinicaDLConfig):
 
     def get_transforms(
         self,
-    ) -> Tuple[Transform, Transform, Transform, Transform]:
+    ) -> Tuple[Transform, Transform, Transform]:
         """
         Composes and returns the transformations and augmentations.
 

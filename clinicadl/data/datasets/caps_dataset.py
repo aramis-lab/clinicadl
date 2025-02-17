@@ -148,7 +148,6 @@ class CapsDataset(Dataset):
             self.image_transform,
             self.sample_transform,
             self.augmentation,
-            _,
         ) = transforms.get_transforms()
         self.extraction = transforms.extraction
         self.df = self._get_df_from_input(data)
