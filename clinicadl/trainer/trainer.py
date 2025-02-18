@@ -27,7 +27,7 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
-from clinicadl.metrics.base import Metrics
+from clinicadl.metrics.metrics import Metrics, TrainingMetrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
@@ -166,13 +166,13 @@ class Trainer:
         metrics = load_metrics()
         self.train(model, split, metrics)
 
-    def train(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
+    def train(self, model: ClinicaDLModel, split: Split, metrics: TrainingMetrics):
         """TO COMPLETE"""
 
         self.on_train_begin(model, split)
 
         while self.epoch < self.epochs and not self.early_stopping.step(
-            metrics.val_loss
+            metrics.val_loss.get_value(epoch=self.epoch)
         ):
             self.on_epoch_begin(model.network)
 
@@ -230,7 +230,8 @@ class Trainer:
             torch.save(
                 model.network.state_dict(),
                 self.reader.maps_path / f"model_epoch_{self.epoch}.pth",
-            )  # model.save_checkpoint(epoch = epoch)
+            )
+            model.network.save_checkpoint(epoch=self.epoch)
 
     def weights_update(self, model: ClinicaDLModel):
         self.scaler.step(model.optimizer)
@@ -245,6 +246,7 @@ class Trainer:
         """TO COMPLETE"""
 
         self.reader._create_maps(overwrite=True)
+        self._check_split(split)  # not sure if needed
 
         model.network.to(self.device)
         model.network.train()
@@ -265,7 +267,7 @@ class Trainer:
         self.n_batch = len(split.train_loader)
 
         # Vérification de evaluation_steps
-        self.check_evaluation_steps()
+        self._check_evaluation_steps()
 
         self.n_val_batch = len(split.val_loader)
 
@@ -293,7 +295,7 @@ class Trainer:
         config = EarlyStoppingConfig(mode=mode, min_delta=tolerance, patience=patience)
         self.early_stopping = EarlyStopping(config)
 
-    def check_evaluation_steps(self):
+    def _check_evaluation_steps(self):
         """Check if the current batch is an evaluation step."""
         # Vérification de evaluation_steps
         if self.evaluation_steps >= self.n_batch:
@@ -311,3 +313,14 @@ class Trainer:
             self.evaluation_steps = max(
                 1, min(self.evaluation_steps, self.n_batch // 2)
             )  # Ajuste pour garder une fréquence raisonnable
+
+    def _check_split(self, split: Split):
+        """Check if the split is well defined."""
+        if split.train_loader is None:
+            raise ValueError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        if split.val_loader is None:
+            raise ValueError(
+                "The split has no val_loader defined. Please run `get_dataloader()`"
+            )
