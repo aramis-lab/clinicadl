@@ -28,13 +28,13 @@ class PETLinear(PET, _LinearPreprocessing):
 
     Parameters
     ----------
-    tracer : Tracer
+    tracer : Tracer (optional, default="18FFDG")
         the radioactive tracer used for acquisition, among `11CPIB`, `18FAV1451`, `18FAV45`, `18FFBB`,
         `18FFDG` and `18FFMM`.
     reconstruction : Optional[ReconstructionMethod] (optional, default=None)
         the method used to reconstruct the image, among `nacstat`, `nacdyn`, `acstat`, `acdyn`, `coregdyn`,
         `coregavg`, `coregstd` and `coregiso`. Leave to `None` if not specified.
-    suvr_reference_region : SUVRReferenceRegion
+    suvr_reference_region : SUVRReferenceRegion (optional, default="pons")
         the reference region used to compute SUVR, among `pons`, `cerebellumPons`, `pons2` and `cerebellumPons2`.
     use_uncropped_image : bool (optional, default=False)
         whether to use the uncropped images returned by Clinica.
@@ -48,7 +48,7 @@ class PETLinear(PET, _LinearPreprocessing):
         `"pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*"`
     """
 
-    suvr_reference_region: SUVRReferenceRegion
+    suvr_reference_region: SUVRReferenceRegion = SUVRReferenceRegion.PONS
 
     @computed_field
     @property

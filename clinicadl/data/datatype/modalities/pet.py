@@ -60,7 +60,7 @@ class PET(Modality):
         the method used to reconstruct the image.
     """
 
-    tracer: Tracer
+    tracer: Tracer = Tracer.FDG
     reconstruction: Optional[ReconstructionMethod] = None
 
     @computed_field
