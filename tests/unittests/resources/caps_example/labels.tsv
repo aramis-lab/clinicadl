@@ -1,0 +1,9 @@
+participant_id	session_id	age
+sub-000	ses-M000	1
+sub-000	ses-M003	1
+sub-010	ses-M003	2
+sub-010	ses-M012	2
+sub-100	ses-M000	3
+sub-100	ses-M012	3
+sub-999	ses-M099	4
+sub-999	ses-M999	4

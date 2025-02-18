@@ -1,0 +1,48 @@
+{
+    "preprocessing": {
+        "name": "t1-linear",
+        "use_uncropped_image": true,
+        "modality": "T1w",
+        "file_type": {
+            "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*",
+            "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
+            "needed_pipeline": "t1-linear"
+        }
+    },
+    "individual_masks": ["brain", "seg"],
+    "common_masks": ["leftHippocampus.nii.gz"],
+    "transforms": [
+        {
+            "name": "Crop",
+            "cropping": [
+                0,
+                1,
+                0,
+                1,
+                0,
+                1
+            ]
+        }
+    ],
+    "spacing": [
+        1.2999999523162842,
+        1.2000000476837158,
+        1.100000023841858
+    ],
+    "shape": [
+        2,
+        2,
+        2
+    ],
+    "interrupted": false,
+    "participants_sessions": [
+        [
+            "sub-000",
+            "ses-M000"
+        ],
+        [
+            "sub-010",
+            "ses-M003"
+        ]
+    ]
+}

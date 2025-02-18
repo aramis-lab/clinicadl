@@ -12,7 +12,7 @@ from clinicadl.generate.generate_utils import (
     mask_processing,
     write_missing_mods,
 )
-from clinicadl.tsvtools.tsvtools_utils import extract_baseline
+from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.enum import (
     ExtractionMethod,
 )

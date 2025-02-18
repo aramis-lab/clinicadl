@@ -79,7 +79,6 @@ class NetworkConfig(ClinicaDLConfig, ABC):
     def name(self) -> ImplementedNetwork:
         """The name of the network."""
 
-    @computed_field
     @property
     def _type(self) -> NetworkType:
         """

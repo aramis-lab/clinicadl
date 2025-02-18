@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from clinicadl.tsvtools.tsvtools_utils import (
+from clinicadl.tsvtools.utils import (
     add_demographics,
     cleaning_nan_diagnoses,
     find_label,

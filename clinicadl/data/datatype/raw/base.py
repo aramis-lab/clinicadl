@@ -2,13 +2,14 @@ import abc
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.file_type import FileType
 from clinicadl.utils.config import ClinicaDLConfig
+
+from ..file_type import FileType
 
 
 class RawData(ClinicaDLConfig, abc.ABC):
     """
-    Abstract base class for handling raw (unprocessed) neuroimaging data in BIDS format.
+    Abstract base class to handle raw (unprocessed) neuroimaging data in BIDS format.
     """
 
     @computed_field
@@ -17,7 +18,7 @@ class RawData(ClinicaDLConfig, abc.ABC):
         """
         The file type associated with the BIDS dataset.
 
-        This property uses the `get_bids_filetype` method to return the correct
+        This property uses the `_get_bids_filetype` method to return the correct
         file type for the modality being handled.
         """
         return self._get_bids_filetype()
@@ -30,6 +31,9 @@ class RawData(ClinicaDLConfig, abc.ABC):
         This method must be implemented by subclasses to specify the file type
         associated with the modality.
         """
-        raise NotImplementedError(
-            "Subclasses must implement the `get_bids_filetype` method."
-        )
+
+    def __str__(self):
+        """
+        String description of the data.
+        """
+        return self.file_type.description

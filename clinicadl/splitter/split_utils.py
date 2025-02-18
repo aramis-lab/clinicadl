@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from clinicadl.tsvtools.tsvtools_utils import first_session
+from clinicadl.tsvtools.utils import first_session
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 

@@ -83,7 +83,6 @@ class ResNetConfig(
 class _PreTrainedResNetConfig(_PreTrainedConfig):
     """Base config class for SOTA ResNets."""
 
-    @computed_field
     @property
     def _type(self) -> NetworkType:
         """To know where to look for the network."""

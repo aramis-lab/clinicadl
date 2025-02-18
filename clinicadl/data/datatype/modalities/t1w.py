@@ -1,25 +1,18 @@
 from pydantic import computed_field
 
-from clinicadl.data.datatype.utils import ImageModality
-
+from ..enum import ImageModality
 from .base import Modality
 
 
 class T1w(Modality):
     """
-    Configuration for T1-weighted (T1w) modality preprocessing.
-
-    This class defines the specific settings and attributes for handling
-    T1-weighted images in a preprocessing pipeline.
+    Configuration to handle T1-weighted (T1w) images.
     """
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
-        The image modality for this configuration.
-
-        Returns:
-            ImageModality: Always set to ImageModality.T1W.
+        The modality, always 'T1w' here.
         """
-        return ImageModality.T1W
+        return ImageModality.T1W.value

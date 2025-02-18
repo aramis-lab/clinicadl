@@ -2,24 +2,34 @@ from logging import getLogger
 
 from pydantic import computed_field
 
-from clinicadl.data.datatype.modalities import T1w
+from ..enum import PreprocessingMethod
+from ..modalities import T1w
+from .base import _LinearPreprocessing
 
-from .base import PreprocessingMethod, _LinearPreprocessing
-
-logger = getLogger("clinicadl.preprocessing.t1")
+logger = getLogger("clinicadl.data.datatype.preprocessing.t1")
 
 
 class T1Linear(_LinearPreprocessing, T1w):
-    """Config class for Clinica's 't1-linear' preprocessing."""
+    """
+    Configuration class to handle T1-weighted MRI images,
+    preprocessed with Clinica's `t1-linear` pipeline.
+
+    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/
+
+    Parameters
+    ----------
+    use_uncropped_image : bool (optional, default=False)
+        whether to use the uncropped images returned by Clinica.
+        - if `use_uncropped_image=True`: only the files that match the pattern
+        `"t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*"`
+        in the caps directory will be considered.
+        - else: only the files that match the pattern
+        `"t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*"`
+        in the caps directory will be considered.
+    """
 
     @computed_field
     @property
-    def preprocessing(self) -> PreprocessingMethod:
+    def name(self) -> str:
         """The preprocessing method."""
-        return PreprocessingMethod.T1_LINEAR
-
-    def __str__(self):
-        """
-        Provides a string representation of the preprocessing configuration.
-        """
-        return f"Preprocessing of {'uncropped' if self.use_uncropped_image else 'cropped'} T1 images with t1-linear pipeline"
+        return PreprocessingMethod.T1_LINEAR.value

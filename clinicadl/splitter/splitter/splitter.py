@@ -1,7 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Tuple, Union
+from typing import Generator, List, Optional, Sequence, Union
 
 import pandas as pd
 from pydantic import (

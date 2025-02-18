@@ -1,27 +1,25 @@
-from pydantic import computed_field, field_validator
+from pydantic import computed_field
 
-from clinicadl.data.datatype.utils import ImageModality
-
+from ..enum import ImageModality
 from .base import Modality
 
 
 class Custom(Modality):
     """
-    Configuration for custom preprocessing with a user-defined suffix.
+    Configuration to handle custom images with a user-defined suffix.
 
-    Attributes:
-        custom_suffix (str): User-defined suffix for custom preprocessing patterns.
+    Parameters
+    ----------
+    custom_suffix : str
+        User-defined suffix for custom modality.
     """
 
-    custom_suffix: str = ""
+    custom_suffix: str
 
     @computed_field
     @property
-    def modality(self) -> ImageModality:
+    def modality(self) -> str:
         """
-        Specifies the modality for custom preprocessing.
-
-        Returns:
-            ImageModality: The modality, always set to ImageModality.CUSTOM.
+        The modality, always 'custom' here.
         """
-        return ImageModality.CUSTOM
+        return ImageModality.CUSTOM.value
