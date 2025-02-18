@@ -3,14 +3,14 @@ import pytest
 from clinicadl.data.datatype.modalities import (
     DWI,
     PET,
-    CustomModality,
+    Custom,
     Flair,
     T1w,
 )
 
 
 def test_good_custom():
-    custom_data = CustomModality(custom_suffix="example")
+    custom_data = Custom(custom_suffix="example")
     assert custom_data.custom_suffix == "example"
     assert custom_data.modality == "custom"
 

@@ -1,5 +1,5 @@
 from ..file_type import FileType
-from ..modalities import CustomModality
+from ..modalities import Custom as CustomModality
 from .base import RawData
 
 
