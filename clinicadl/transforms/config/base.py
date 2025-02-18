@@ -27,10 +27,9 @@ class TransformConfig(ClinicaDLConfig, ABC):
     @computed_field
     @property
     @abstractmethod
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
 
-    @computed_field
     @property
     def _type(self) -> TransformType:
         """The source where the transform can be found."""
@@ -81,9 +80,9 @@ class OneOfConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.ONE_OF
+        return ImplementedTransform.ONE_OF.value
 
     @model_validator(mode="after")
     def check_probabilities(self):
@@ -131,3 +130,15 @@ class _MaskingMethodConfig(ClinicaDLConfig):
             except ValueError:
                 pass
         return v
+
+
+class _AnatomicalAxesConfig(ClinicaDLConfig):
+    """Config class for 'axes' option when it supports anatomical values."""
+
+    axes: Union[
+        NumericalAxis,
+        Tuple[NumericalAxis, ...],
+        AnatomicalAxis,
+        Tuple[AnatomicalAxis, ...],
+        DefaultFromLibrary,
+    ] = DefaultFromLibrary.YES

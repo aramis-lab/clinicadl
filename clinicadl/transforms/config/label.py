@@ -16,9 +16,9 @@ class RemapLabelsConfig(TransformConfig, _MaskingMethodConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.REMAP_LABELS
+        return ImplementedTransform.REMAP_LABELS.value
 
 
 class OneHotConfig(TransformConfig):
@@ -28,9 +28,9 @@ class OneHotConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.ONE_HOT
+        return ImplementedTransform.ONE_HOT.value
 
     @field_validator("num_classes", mode="after")
     @classmethod

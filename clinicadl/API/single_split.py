@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torchio.transforms as transforms
 
-from clinicadl.data import prepare_data
+from clinicadl.data import tensor_conversion
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -29,7 +29,7 @@ caps_directory = Path(
 sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
 preprocessing_t1 = T1Linear()
 transforms_image = Transforms(
-    image_augmentations=[transforms.RandomMotion()],
+    augmentations=[transforms.RandomMotion()],
     extraction=Image(),
     image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],
 )
@@ -40,7 +40,9 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
 )
-prepare_data(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
+dataset_t1_image.to_tensors(
+    "json.json", n_proc=2
+)  # to extract the tensor of the T1 file
 
 
 split_dir = make_split(

@@ -5,7 +5,6 @@ import pandas as pd
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 from .caps_reader import CapsReader
-from .reader import Reader
 
 
 class CapsMultiReader:

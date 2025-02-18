@@ -52,7 +52,6 @@ class DenseNetConfig(
 class _PreTrainedDenseNetConfig(_PreTrainedConfig):
     """Base config class for SOTA DenseNets."""
 
-    @computed_field
     @property
     def _type(self) -> NetworkType:
         """To know where to look for the network."""

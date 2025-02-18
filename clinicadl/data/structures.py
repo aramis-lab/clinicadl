@@ -1,11 +1,29 @@
 import copy
+from collections import UserString
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
 import torch
 import torchio as tio
 
-from clinicadl.dictionary.words import LABEL
+from clinicadl.dictionary.suffixes import PT
+from clinicadl.dictionary.words import AFFINE, MASK
+from clinicadl.utils.typing import PathType
+
+LabelType = Optional[Union[int, float, tio.LabelMap]]
+
+
+class Column(UserString):
+    """
+    Dummy class to store label when it represents a column of a dataframe.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        super().__init__(name)
+
+    def __str__(self):
+        return f"Column('{self._name}')"
 
 
 class DataPoint(tio.Subject):
@@ -15,51 +33,66 @@ class DataPoint(tio.Subject):
 
     Parameters
     ----------
-    image : Union[torch.Tensor, tio.ScalarImage]
-        the image, as a Pytorch tensor or a TorchIO ScalarImage.
-    label : Optional[Union[float, int, torch.Tensor, tio.LabelMap]]
+    image : Union[tio.ScalarImage, PathType]
+        the image, as a TorchIO ScalarImage or a path to a nifti file.
+    label : Optional[Union[float, int, tio.LabelMap, PathType]]
         the label associated to the image. Can be a float (e.g. regression),
-        an int (e.g. classification), a mask (passed as torch Tensor or a
-        TorchIO LabelMap; e.g. segmentation) or None if no label (e.g. reconstruction).
-    **masks : Union[torch.Tensor, tio.LabelMap]
+        an int (e.g. classification), a mask (passed as a TorchIO LabelMap
+        or a path to a nifti file; e.g. segmentation) or None if no label (e.g. reconstruction).
+    **masks : Union[tio.LabelMap, PathType]
         any mask related to the image and useful to compute transforms.
-
-    Raises
-    ------
-    AssertionError
-        If all the images/masks passed don't have the same shape.
     """
 
     image: tio.ScalarImage
-    label: Optional[Union[float, int, tio.LabelMap]]
+    label: LabelType
+    participant: str
+    session: str
 
     def __init__(
         self,
-        image: Union[torch.Tensor, tio.ScalarImage],
-        label: Optional[Union[float, int, torch.Tensor, tio.LabelMap]],
-        **masks: Union[torch.Tensor, tio.LabelMap],
+        image: Union[tio.ScalarImage, PathType],
+        label: Optional[Union[float, int, tio.LabelMap, PathType]],
+        participant: str,
+        session: str,
+        **masks: Union[tio.LabelMap, PathType],
     ) -> None:
-        if not isinstance(image, tio.ScalarImage):
-            image = tio.ScalarImage(tensor=image)
-        image_shape = image.tensor.shape
+        if isinstance(image, (Path, str)):
+            image = tio.ScalarImage(path=image)
 
-        if isinstance(label, torch.Tensor):
-            label = tio.LabelMap(tensor=label)
-
-        for name, mask in masks.items():
-            if not isinstance(mask, tio.LabelMap):
-                masks[name] = tio.LabelMap(tensor=mask)
-        masks[LABEL] = label
+        if isinstance(label, (Path, str)):
+            label = tio.LabelMap(path=label)
 
         for name, mask in masks.items():
-            if isinstance(mask, tio.LabelMap):
-                assert mask.tensor.shape == image_shape, (
-                    f"Masks must be the same shape as the image, but got "
-                    f"{image_shape} for the image and {mask.tensor.shape} "
-                    f"for '{name}')"
-                )
+            if isinstance(mask, (Path, str)):
+                masks[name] = tio.LabelMap(path=mask)
 
-        super().__init__(image=image, **masks)
+        super().__init__(
+            image=image, label=label, participant=participant, session=session, **masks
+        )
+
+    @property
+    def affine(self):
+        """Return affine matrix of first image in subject.
+
+        Consistency of matrices across images in the subject is checked first.
+        """
+        self.check_consistent_affine()
+        return self.get_first_image().affine
+
+    def add_mask(self, mask: Union[tio.LabelMap, PathType], mask_name: str) -> None:
+        """
+        To add a mask to the DataPoint.
+
+        Parameters
+        ----------
+        mask : Union[tio.LabelMap, PathType]
+            the mask to add, as a TorchIO ScalarImage or a path to a nifti file.
+        mask_name : str
+            the name that the mask will take in the DataPoint.
+        """
+        if isinstance(mask, (Path, str)):
+            mask = tio.LabelMap(path=mask)
+        self.add_image(mask, mask_name)
 
     def __copy__(self):
         return _subject_copy_helper(self, type(self))
@@ -88,92 +121,174 @@ def _subject_copy_helper(
 
 class Mask:
     """To handle masks in ClinicaDL. More precisely, it makes the difference
-    between a mask passed as a file name, that corresponds to a common mask,
+    between a mask passed as an image path, that corresponds to a common mask,
     and a mask passed as a suffix (a simple string), that corresponds to a mask
-    specific to each subject.
+    specific to each image.
 
     For example, `Mask("masks/mask.nii.gz")` will be understood has a common
-    mask, where as `Mask("mask")` will be understood has a specific mask.
+    mask, whereas `Mask("mask")` will be understood has an image-specific mask.
 
-    In the latter case, it is expected that all the (subject, session) studied
-    have the associated mask in their CAPS folders. It will look for files with
-    the suffix `mask` in these folders.
+    In the latter case, it is expected that all the images studied
+    have the associated mask in the CAPS directory.
+
+    If the mask is in a `.pt` file (e.g. `Mask("masks/mask.pt")`), it is expected
+    to be a 4D tensor with the associated affine matrix, as saved by
+    `clinicadl.TensorConversion.save_mask_as_tensor`.\n
+    If the mask is in a NIfTI file (e.g. `Mask("masks/mask.nii.gz")`), it is expected
+    to be a 3D image.
 
     Parameters
     ----------
-    filename : Union[str, Path]
+    mask : mask
         the mask, passed as a path or a suffix.
+
+    Raises
+    ------
+    FileNotFoundError
+        if `mask` is passed as a path that does not match any file.
     """
 
-    def __init__(self, mask: Union[str, Path]) -> None:
+    def __init__(self, mask: PathType) -> None:
         if isinstance(mask, Path):
             if not self._check_path(mask):
-                raise ValueError(
+                raise FileNotFoundError(
                     f"The mask has been passed as a Path object (got {mask}), but no such file exists."
                 )
-            self.common_mask = True
-            self.mask = Path(mask)
+            self.is_common_mask = True
+            self.path = Path(mask)
+            self.name = self.path.with_suffix(
+                ""
+            ).stem  # with_suffix to handle double extensions
 
         elif isinstance(mask, str):
             if self._check_path(mask):
-                self.common_mask = True
-                self.mask = Path(mask)
+                self.is_common_mask = True
+                self.path = Path(mask)
+                self.name = self.path.with_suffix("").stem
             else:
-                self.common_mask = False
-                self.mask = mask
+                self.is_common_mask = False
+                self.path = None
+                self.name = mask
+
+        self._mask_img: Union[tio.LabelMap, None] = None  # lazy loading
 
     @staticmethod
-    def _check_path(mask_path: Union[str, Path]) -> bool:
+    def _check_path(mask_path: PathType) -> bool:
         """Checks if the mask file exists."""
         mask_path = Path(mask_path)
         return mask_path.is_file()
 
-    def get_associated_mask(self, filename: Union[str, Path]) -> Path:
+    def __str__(self):
+        if self.is_common_mask:
+            return f"Mask('{self.path}')"
+        else:
+            return f"Mask('{self.name}')"
+
+    @classmethod
+    def _load_mask(cls, path: Path) -> tio.LabelMap:
         """
-        Returns the mask associated to an image.
+        Loads a mask (in nifti or .pt file) and return a TorchIO LabelMap.
+        """
+        if path.suffix == PT:
+            mask_tensor, affine = cls._load_pt_mask(path)
+            return tio.LabelMap(tensor=mask_tensor, affine=affine)
+        else:
+            return tio.LabelMap(path=path)
+
+    @staticmethod
+    def _load_pt_mask(path: Path) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Loads a mask and its affine matrix from a .pt file.
+        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion.save_mask_as_tensor`.
+        """
+        pt_mask = torch.load(path, weights_only=True)
+        return pt_mask[MASK], pt_mask[AFFINE]
+
+    def _lazy_load_common_mask(self) -> tio.LabelMap:
+        """
+        Gets or loads a common mask (in nifti or .pt file).
+        """
+        if not self.path:
+            raise ValueError(
+                f"Mask '{self.name}' does not correspond to a common mask."
+            )
+        if self._mask_img is None:
+            self._mask_img = self._load_mask(self.path)
+        return self._mask_img
+
+    def _get_associated_mask_path(self, filename: Path) -> Path:
+        """
+        Returns the path of the mask associated to an image, when the
+        mask is not a common mask.
+
+        Examples
+        --------
+        >>> mask=Mask("brain")
+        >>> mask._get_associated_mask_path("sub-000_ses-M000_pet.nii.gz")
+        sub-000_ses-M000_brain.nii.gz
+        """
+        suffix = str(filename.with_suffix("").stem).rsplit("_", maxsplit=1)[
+            -1
+        ]  # with_suffix to handle double extensions
+        mask_file = str(filename).replace(f"_{suffix}.", f"_{self.name}.")
+
+        return Path(mask_file)
+
+    def get_associated_mask(self, filename: Optional[PathType] = None) -> tio.LabelMap:
+        """
+        Returns the mask associated to an image, in a TorchIO LabelMap.
 
         If the mask is common to all subjects and sessions, the method will
         simply return it. On the other hand, if the mask is specific to each
-        (subject, session), the method will use the input `filename` to get
+        image, the method will use the input `filename` to get
         the associated mask.
 
         Parameters
         ----------
-        filename : Union[str, Path]
+        filename : Optional[PathType], (optional, default=None)
             the image whose associated mask is to be found.
+            Can be None if the mask is a common mask (thus it does not depend
+            on 'filename').
 
         Returns
         -------
-        Path :
-            the path to the mask associated to the image.
+        tio.LabelMap :
+            the mask, in a TorchIO LabelMap.
 
         Raises
         ------
-        ValueError
+        FileNotFoundError
             if the associated mask doesn't exist.
 
         Examples
         --------
         >>> mask=Mask("seg")
-        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
-        PosixPath('sub-001_ses-M000_seg.nii.gz')
+        >>> mask.get_associated_mask_path("sub-001_ses-M000_T1w.nii.gz")
+        # will get the image in 'sub-001_ses-M000_seg.nii.gz'
 
         >>> mask=Mask("masks/leftHippocampus.nii.gz")
-        >>> mask.get_associated_mask("sub-001_ses-M000_T1w.nii.gz")
-        PosixPath('masks/leftHippocampus.nii.gz')
+        >>> mask.get_associated_mask_path("sub-001_ses-M000_T1w.nii.gz")
+        # will get the image in 'masks/leftHippocampus.nii.gz'
+        >>> mask.get_associated_mask_path()
+        # will get the image in 'masks/leftHippocampus.nii.gz'
         """
-
-        if self.common_mask:
-            return self.mask
+        if self.is_common_mask:
+            return self._lazy_load_common_mask()
         else:
-            filename = Path(filename)
-            without_extension = str(filename).rstrip("".join(filename.suffixes))
-            suffix = without_extension.rsplit("_", maxsplit=1)[-1]
-            mask_file = str(filename).replace(f"_{suffix}.", f"_{self.mask}.")
-            if not self._check_path(mask_file):
+            if filename is None:
                 raise ValueError(
-                    f"A mask associated to {str(filename)} was expected "
-                    f"to be found in {mask_file}, but there is no such file."
+                    f"The mask {self.name} is an image-specific mask, "
+                    "you must therefore give a 'filename' to get the associated "
+                    "mask."
                 )
 
-            return Path(mask_file)
+            filename = Path(filename)
+            mask_file = self._get_associated_mask_path(filename)
+            try:
+                return self._load_mask(mask_file)
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(
+                    f"No file matches {self.name}, so it is understood as a suffix. "
+                    f"Therefore, the mask associated to {str(filename)} was expected "
+                    f"to be found in {str(mask_file)}, but there is no such file."
+                ) from exc

@@ -85,7 +85,7 @@ def get_transform_from_config(
         }
         transform = transform_class(config_dict)
     else:
-        config_dict = config.model_dump(exclude={"name", "_type"})
+        config_dict = config.model_dump(exclude="name")
         transform = transform_class(**config_dict)
 
     return transform, config

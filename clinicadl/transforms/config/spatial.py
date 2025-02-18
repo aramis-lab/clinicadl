@@ -45,9 +45,9 @@ class CropOrPadConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.CROP_OR_PAD
+        return ImplementedTransform.CROP_OR_PAD.value
 
     @model_validator(mode="after")
     def check_shape(self):
@@ -72,9 +72,9 @@ class ToCanonicalConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.TO_CANONICAL
+        return ImplementedTransform.TO_CANONICAL.value
 
 
 class ResizeConfig(TransformConfig):
@@ -90,9 +90,9 @@ class ResizeConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RESIZE
+        return ImplementedTransform.RESIZE.value
 
     @field_validator("target_shape", mode="after")
     @classmethod
@@ -137,9 +137,9 @@ class ResampleConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.RESAMPLE
+        return ImplementedTransform.RESAMPLE.value
 
     @field_validator("pre_affine_name", mode="before")
     @classmethod
@@ -181,9 +181,9 @@ class EnsureShapeMultipleConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.ENSURE_MULTIPLE
+        return ImplementedTransform.ENSURE_MULTIPLE.value
 
 
 class CropConfig(TransformConfig):
@@ -193,9 +193,9 @@ class CropConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.CROP
+        return ImplementedTransform.CROP.value
 
 
 class PadConfig(TransformConfig):
@@ -206,6 +206,6 @@ class PadConfig(TransformConfig):
 
     @computed_field
     @property
-    def name(self) -> ImplementedTransform:
+    def name(self) -> str:
         """The name of the transform."""
-        return ImplementedTransform.PAD
+        return ImplementedTransform.PAD.value

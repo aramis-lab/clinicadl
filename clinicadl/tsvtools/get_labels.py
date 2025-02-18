@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from clinicadl.tsvtools.tsvtools_utils import (
+from clinicadl.tsvtools.utils import (
     cleaning_nan_diagnoses,
     find_label,
     first_session,

@@ -3,7 +3,7 @@ from typing import Optional
 
 import pandas as pd
 
-from clinicadl.tsvtools.tsvtools_utils import retrieve_longitudinal
+from clinicadl.tsvtools.utils import retrieve_longitudinal
 
 
 def _write_to_csv(df: pd.DataFrame, file_path: Path) -> None:
