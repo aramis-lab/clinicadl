@@ -11,7 +11,7 @@ from ..modalities import Modality
 
 class Preprocessing(ClinicaDLConfig, abc.ABC):
     """
-    Abstract configuration class for to model the preprocessing step.
+    Abstract configuration class to model the preprocessing step.
 
     This class should be inherited by all preprocessing methods to define specific
     configurations for each preprocessing pipeline.
