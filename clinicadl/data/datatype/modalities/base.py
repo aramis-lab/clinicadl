@@ -4,8 +4,6 @@ from pydantic import computed_field
 
 from clinicadl.utils.config import ClinicaDLConfig
 
-from ..enum import ImageModality
-
 
 class Modality(ClinicaDLConfig, abc.ABC):
     """

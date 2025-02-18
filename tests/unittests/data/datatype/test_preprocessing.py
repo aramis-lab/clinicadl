@@ -2,7 +2,7 @@ import pytest
 
 from clinicadl.data.datatype.preprocessing import (
     DWIDTI,
-    CustomPreprocessing,
+    Custom,
     FlairLinear,
     PETLinear,
     T1Linear,
@@ -11,7 +11,7 @@ from clinicadl.data.datatype.preprocessing import (
 
 
 def test_good_custom():
-    custom_data = CustomPreprocessing(custom_suffix="example")
+    custom_data = Custom(custom_suffix="example")
     assert custom_data.custom_suffix == "example"
     assert custom_data.modality == "custom"
     assert custom_data.name == "custom"
@@ -125,7 +125,7 @@ def test_good_dwi():
     [
         ("t1-linear", T1Linear),
         ("pet-linear", PETLinear),
-        ("custom", CustomPreprocessing),
+        ("custom", Custom),
         ("flair-linear", FlairLinear),
         ("dwi-dti", DWIDTI),
     ],

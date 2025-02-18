@@ -2,7 +2,7 @@ from typing import Any, Union
 
 from ..enum import PreprocessingMethod
 from .base import Preprocessing
-from .custom import CustomPreprocessing
+from .custom import Custom
 from .dti import DWIDTI
 from .flair import FlairLinear
 from .pet import PETLinear
@@ -40,6 +40,6 @@ def get_preprocessing_config(
     elif preprocessing == PreprocessingMethod.DWI_DTI:
         config = DWIDTI
     elif preprocessing == PreprocessingMethod.CUSTOM:
-        config = CustomPreprocessing
+        config = Custom
 
     return config(**kwargs)  # pylint: disable=possibly-used-before-assignment

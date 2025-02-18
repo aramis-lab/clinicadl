@@ -4,7 +4,7 @@ from ..enum import ImageModality
 from .base import Modality
 
 
-class CustomModality(Modality):
+class Custom(Modality):
     """
     Configuration to handle custom images with a user-defined suffix.
 

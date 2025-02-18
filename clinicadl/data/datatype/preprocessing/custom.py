@@ -4,13 +4,13 @@ from pydantic import computed_field
 
 from ..enum import PreprocessingMethod
 from ..file_type import FileType
-from ..modalities import CustomModality
+from ..modalities import Custom as CustomModality
 from .base import Preprocessing
 
 logger = getLogger("clinicadl.data.datatype.preprocessing.custom")
 
 
-class CustomPreprocessing(Preprocessing, CustomModality):
+class Custom(Preprocessing, CustomModality):
     """
     Configuration class to handle custom images,
     i.e. images that have not been preprocessed with any of the supported

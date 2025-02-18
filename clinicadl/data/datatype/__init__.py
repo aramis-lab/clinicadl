@@ -1,6 +1,6 @@
 from .preprocessing import (
     DWIDTI,
-    CustomPreprocessing,
+    Custom,
     FlairLinear,
     PETLinear,
     T1Linear,
