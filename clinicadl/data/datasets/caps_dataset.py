@@ -71,24 +71,24 @@ class CapsDataset(Dataset):
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
         regression).\n
         Only participant/session pairs in this TSV file will be in the CapsDataset.\n
-        If None, all participant/session pairs in `caps_directory` will be used. Besides, a TSV file
+        If `None`, all participant/session pairs in `caps_directory` will be used. Besides, a TSV file
         named will be created in `caps_directory`, with the list of all participant/session
         pairs in the directory. The name of the created TSV depends on the preprocessing, but it will
         always start with `overview` (e.g. `overview_t1-linear_cropped.tsv`,
         `overview_pet-linear_18FFDG_pons2.tsv`, etc.).
-        .. warning::
-            Beware that your TSV files inside `caps_directory` may be overwritten. A good practice is not
-            to name your own TSV files with a name starting with `overview`.
+    .. warning::
+        Beware that your TSV files inside `caps_directory` may be overwritten. A good practice is not
+        to name your own TSV files with a name starting with `overview`.
     label : Optional[str], (optional, default=None)
         A potential label related to the image.\n
-        If `label` and `data` are not None, CapsDataset will look for a column with that name in `data`.
+        If `label` and `data` are not `None`, CapsDataset will look for a column with that name in `data`.
         It expects to find the associated column, with floats (regression) or integers (classification).\n
         If there is no such column in `data` (or if `data` is `None`), CapsDataset will look for
         masks with that label as a suffix. The label is thus a mask (segmentation). For example, if
-        the image of the participant 'sub-001' for the session 'ses-M000' is in
+        the image of the participant `sub-001` for the session `ses-M000` is in
         `sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz` and `label="seg"`, it will look for the associated
-        mask in 'sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz'.\n
-        If None, no label will be used (e.g. reconstruction).
+        mask in `sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz`.\n
+        If `None`, no label will be used (e.g. reconstruction).
     transforms : Transforms, (optional, default=Transforms())
         Transformation pipeline to apply to the data during loading. Default will only apply `NaN` removal
         to images. See :py:class:`clinicadl.transforms.Transforms`.
@@ -109,7 +109,7 @@ class CapsDataset(Dataset):
     ClinicaDLArgumentError
         if `caps_directory` if not a directory.
     ClinicaDLArgumentError
-        If `data` is not a DataFrame, a path or None.
+        If `data` is not a DataFrame, a path or `None`.
     ClinicaDLTSVError
         If `data` is a TSV file that does not exist.
     ClinicaDLTSVError
@@ -122,36 +122,50 @@ class CapsDataset(Dataset):
     ClinicaDLConfigurationError
         If the data does not match the preprocessing configuration.
     ClinicaDLArgumentError
-        If 'label' is not a string or None.
+        If `label` is not a string or `None`.
     FileNotFoundError
         If `masks` contain paths that do not match any files.
 
     Examples
     --------
+    >>> # data are as follows:
+    >>> # mycaps
+    >>> # ├── masks
+    >>> # │   └── leftHippocampus.nii.gz
+    >>> # ├── pet_data.tsv
+    >>> # └── subjects
+    >>> #     ├── sub-000
+    >>> #     │   └── ses-M000
+    >>> #     │       └── pet_linear
+    >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+    >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+    >>> #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz
+    >>> #         ...
+    >>> #     ...
     >>> from clinicadl.data import CapsDataset
     >>> from clinicadl.data.datatype import PETLinear
     >>> from clinicadl.transforms import Transforms, get_transform_config
     >>> from clinicadl.transforms.extraction import Patch
     >>> normalization = get_transform_config("ZNormalization", masking_method="brain")
     >>> mask = get_transform_config("Mask", masking_method="leftHippocampus")
-    >>> resize = get_transform_config("EnsureShapeMultiple", target_multiple=128)
     >>> flip = get_transform_config("RandomFlip", flip_probability=0.3)
     >>> dataset = CapsDataset(
-            caps_directory="my_caps",
+            caps_directory="mycaps",
             preprocessing=PETLinear(
                 tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
             ),
-            data="my_caps/pet.tsv",
+            data="mycaps/pet_data.tsv",
             transforms=Transforms(
                 extraction=Patch(patch_size=32, stride=32),
                 image_transforms=[normalization, mask],
-                sample_transforms=[crop],
+                sample_transforms=[],
                 augmentations=[flip],
             ),
-            label="seg",
-            masks=["brain", "leftHippocampus.nii.gz"]   #
-        )
-    >>> dataset.to_tensors("pet_masked", n_proc=4)
+            label="seg",    # labels are here images (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz")
+            masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
+        )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
+                                                        # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
+    >>> dataset.to_tensors("pet_masked")
     """
 
     def __init__(
