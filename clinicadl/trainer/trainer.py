@@ -148,7 +148,7 @@ class Trainer:
             )
         else:
             prof = nullcontext()
-            prof.step = lambda *args, **kwargs: None
+            prof.step = lambda *args, **kwargs: None  # TODO: check this
 
         return prof
 
@@ -163,7 +163,7 @@ class Trainer:
         self.current_epoch = model.load_state_dict(
             self.reader.checkpoint_path(split.index, resume=True)
         )
-        metrics = load_metrics()
+        metrics = self.reader.load_metrics()
         self.train(model, split, metrics)
 
     def train(self, model: ClinicaDLModel, split: Split, metrics: TrainingMetrics):

@@ -8,12 +8,13 @@ import pandas as pd
 import torch
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.utils import tsv_to_df
 from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV
 from clinicadl.dictionary.words import BEST, GROUPS, PARTICIPANT_ID, SPLIT, TMP
 from clinicadl.experiment_manager.data_group import DataGroup
+from clinicadl.metrics.metrics import Metrics, TrainingMetrics
 from clinicadl.model import ClinicaDLModel
 from clinicadl.splitter.split import Split
+from clinicadl.tsvtools.utils import tsv_to_df
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
@@ -58,6 +59,9 @@ class MapsReader:
 
     def get_model(self) -> ClinicaDLModel:
         return ClinicaDLModel()  # type: ignore
+
+    def get_metrics(self) -> TrainingMetrics:
+        return TrainingMetrics()  # type: ignore
 
     ##### WRITERS #######
     def _write_network_weights(self):
