@@ -9,6 +9,7 @@ from pydantic import (
     NonNegativeFloat,
     PositiveInt,
     computed_field,
+    model_validator,
 )
 
 from clinicadl.utils.config import ClinicaDLConfig
@@ -37,13 +38,26 @@ class EarlyStopping(ClinicaDLConfig):
     check_finite: bool = True
     upper_bound: Optional[float] = None
     lower_bound: Optional[float] = None
+    best: float = 0.0
+    num_bad_epochs: int = 0
 
-    def __init__(self) -> None:
-        self.reset()
+    @model_validator(mode="after")
+    def init_reset(self):
+        print(self)
+        if self.upper_bound is not None and self.lower_bound is not None:
+            if self.upper_bound < self.lower_bound:
+                raise ValueError(
+                    "The upper bound must be greater than the lower bound."
+                )
+
+        if self.best == 0:
+            self.reset()
+
+        return self
 
     @computed_field
     @property
-    def is_better(self):
+    def is_better(self) -> Callable:
         return self._get_comparison_function()
 
     def reset(self) -> None:
