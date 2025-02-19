@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List, Optional, Tuple, Union
 
+import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
@@ -9,7 +10,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import (
@@ -24,6 +25,11 @@ from .enum import (
 class TransformConfig(ClinicaDLConfig, ABC):
     """Base config class for the transforms."""
 
+    def __init__(self, **kwargs):
+        associated_class = self._get_class()
+        kwargs = update_kwargs_with_defaults(kwargs, function=associated_class.__init__)
+        super().__init__(**kwargs)
+
     @computed_field
     @property
     @abstractmethod
@@ -34,6 +40,24 @@ class TransformConfig(ClinicaDLConfig, ABC):
     def _type(self) -> TransformType:
         """The source where the transform can be found."""
         return TransformType.TORCHIO
+
+    @abstractmethod
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the class associated with the config class."""
+
+    def get_object(self) -> tio.Transform:
+        """
+        Returns the object associated with the config class,
+        parametrized with the parameters defined in the config
+        class.
+
+        Returns
+        -------
+        tio.Transform
+            The parametrized object.
+        """
+        associated_class = self._get_class()
+        return associated_class(**self.model_dump(exclude="name"))
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:

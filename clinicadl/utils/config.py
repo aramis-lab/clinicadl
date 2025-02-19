@@ -1,9 +1,11 @@
 from collections import OrderedDict
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from pydantic import BaseModel, ConfigDict
 
 from clinicadl.dictionary.words import NAME
+
+from .factories import DefaultFromLibrary, get_args_and_defaults
 
 
 class ClinicaDLConfig(BaseModel):
@@ -52,3 +54,29 @@ def _order_dict(model_or_field: Any) -> Any:
         return ordered_sequence
 
     return model_or_field
+
+
+def update_kwargs_with_defaults(
+    config: Dict[str, Any], function: Callable
+) -> Dict[str, Any]:
+    """
+    Updates arguments with the default values from a function.
+
+    Parameters
+    ----------
+    config : Dict[str, Any]
+        the arguments passed by the user.
+    function : Callable
+        the function from which the defaults are fetched.
+
+    Returns
+    -------
+    Dict[str, Any]
+        the updated arguments.
+    """
+    _, defaults = get_args_and_defaults(function)
+    for arg, value in config.items():
+        if value == DefaultFromLibrary.YES and arg in defaults:
+            config[arg] = defaults[arg]
+
+    return config

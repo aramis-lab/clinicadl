@@ -1,5 +1,6 @@
 from typing import Optional, Tuple, Union
 
+import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     computed_field,
@@ -24,21 +25,43 @@ __all__ = [
 class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
     """Config class for RescaleIntensity transform."""
 
-    out_min_max: Union[
-        NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    percentiles: Union[
-        NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    in_min_max: Union[
-        Optional[Union[NonNegativeFloat, Tuple[float, float]]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
+    percentiles: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
+    in_min_max: Union[Optional[Union[NonNegativeFloat, Tuple[float, float]]]]
+
+    def __init__(
+        self,
+        out_min_max: Union[
+            NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        percentiles: Union[
+            NonNegativeFloat,
+            Tuple[NonNegativeFloat, NonNegativeFloat],
+            DefaultFromLibrary,
+        ] = DefaultFromLibrary.YES,
+        in_min_max: Union[
+            Optional[Union[NonNegativeFloat, Tuple[float, float]]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        masking_method: Optional[
+            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            out_min_max=out_min_max,
+            percentiles=percentiles,
+            in_min_max=in_min_max,
+            masking_method=masking_method,
+        )
 
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.RESCALE_INTENSITY.value
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the class associated with the config class."""
+        return tio.RescaleIntensity
 
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
