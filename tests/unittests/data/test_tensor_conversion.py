@@ -10,7 +10,7 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data import CapsDataset
+from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatype import PETLinear, T1Linear
 from clinicadl.data.tensor_conversion import TensorConversion
 from clinicadl.transforms import Slice, Transforms, get_transform_config

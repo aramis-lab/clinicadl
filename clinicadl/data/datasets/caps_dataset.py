@@ -142,7 +142,7 @@ class CapsDataset(Dataset):
     >>> #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz
     >>> #         ...
     >>> #     ...
-    >>> from clinicadl.data import CapsDataset
+    >>> from clinicadl.data.datasets import CapsDataset
     >>> from clinicadl.data.datatype import PETLinear
     >>> from clinicadl.transforms import Transforms, get_transform_config
     >>> from clinicadl.transforms.extraction import Patch
