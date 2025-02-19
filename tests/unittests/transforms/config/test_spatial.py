@@ -2,10 +2,19 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import torch
+import torchio as tio
 from pydantic import ValidationError
 from torchio.datasets import Colin27
 
-from clinicadl.transforms.config import create_transform_config
+from clinicadl.transforms.config.spatial import (
+    CropConfig,
+    CropOrPadConfig,
+    EnsureShapeMultipleConfig,
+    PadConfig,
+    ResampleConfig,
+    ResizeConfig,
+)
 
 mask_path = (
     Path(__file__).parents[2]
@@ -16,60 +25,63 @@ mask_path = (
 )
 
 BAD_INPUTS = [
-    ({"target_shape": (0, 2, 3)}, ["CropOrPad", "Resize"]),
-    ({"target_shape": (1, 2)}, ["CropOrPad", "Resize"]),
-    ({"target_shape": (1, 2, 3), "padding_mode": "abc"}, "CropOrPad"),
-    ({"target_shape": (1, 2, 3), "mask_name": "mask", "labels": 0}, "CropOrPad"),
-    ({"target_shape": (1, 2, 3), "mask_name": "mask", "labels": [0.5]}, "CropOrPad"),
-    ({"target_shape": (1, 2, 3), "labels": (1,)}, "CropOrPad"),
-    ({"mask_name": None, "labels": None}, "CropOrPad"),
-    ({"target_shape": (1, 2, 3), "image_interpolation": "abc"}, "Resize"),
-    ({"target_shape": (1, 2, 3), "label_interpolation": "abc"}, "Resize"),
-    ({"target": 0}, "Resample"),
-    ({"target": (0, 1.2, 1)}, "Resample"),
-    ({"target": ((0, 3, 2), np.eye(4, 4))}, "Resample"),
-    ({"target": ((1.2, 3, 2), np.eye(4, 4))}, "Resample"),
-    ({"target": ((1, 3, 2), np.eye(4, 2))}, "Resample"),
-    ({"target": ((1, 3, 2), [[0, 1], [1, 0]])}, "Resample"),
+    ({"target_shape": (0, 2, 3)}, [CropOrPadConfig, ResizeConfig]),
+    ({"target_shape": (1, 2)}, [CropOrPadConfig, ResizeConfig]),
+    ({"target_shape": (1, 2, 3), "padding_mode": "abc"}, CropOrPadConfig),
+    ({"target_shape": (1, 2, 3), "mask_name": "mask", "labels": 0}, CropOrPadConfig),
+    (
+        {"target_shape": (1, 2, 3), "mask_name": "mask", "labels": [0.5]},
+        CropOrPadConfig,
+    ),
+    ({"target_shape": (1, 2, 3), "labels": (1,)}, CropOrPadConfig),
+    ({"mask_name": None, "labels": None}, CropOrPadConfig),
+    ({"target_shape": (1, 2, 3), "image_interpolation": "abc"}, ResizeConfig),
+    ({"target_shape": (1, 2, 3), "label_interpolation": "abc"}, ResizeConfig),
+    ({"target": 0}, ResampleConfig),
+    ({"target": (0, 1.2, 1)}, ResampleConfig),
+    ({"target": ((0, 3, 2), np.eye(4, 4))}, ResampleConfig),
+    ({"target": ((1.2, 3, 2), np.eye(4, 4))}, ResampleConfig),
+    ({"target": ((1, 3, 2), np.eye(4, 2))}, ResampleConfig),
+    ({"target": ((1, 3, 2), [[0, 1], [1, 0]])}, ResampleConfig),
     (
         {
             "target": Colin27().t1,
         },
-        "Resample",
+        ResampleConfig,
     ),
     (
         {
             "target": Path("abc.nii.gz"),
         },
-        "Resample",
+        ResampleConfig,
     ),
     (
         {
             "pre_affine_name": "t1",
         },
-        "Resample",
+        ResampleConfig,
     ),
     (
         {
             "image_interpolation": "abc",
         },
-        "Resample",
+        ResampleConfig,
     ),
     (
         {
             "label_interpolation": "abc",
         },
-        "Resample",
+        ResampleConfig,
     ),
-    ({"target_mutiple": (1, 0, 3)}, "EnsureShapeMultiple"),
-    ({"target_mutiple": (1, 2, 3), "method": "abc"}, "EnsureShapeMultiple"),
-    ({"cropping": -1}, "Crop"),
-    ({"cropping": (1, -1, 3)}, "Crop"),
-    ({"cropping": (1, 2, 3, 4, -1, 6)}, "Crop"),
-    ({"padding": -1}, "Pad"),
-    ({"padding": (1, -1, 3)}, "Pad"),
-    ({"padding": (1, 2, 3, 4, -1, 6)}, "Pad"),
-    ({"padding": 1, "padding_mode": "abc"}, "Pad"),
+    ({"target_multiple": (1, 0, 3)}, EnsureShapeMultipleConfig),
+    ({"target_multiple": (1, 2, 3), "method": "abc"}, EnsureShapeMultipleConfig),
+    ({"cropping": -1}, CropConfig),
+    ({"cropping": (1, -1, 3)}, CropConfig),
+    ({"cropping": (1, 2, 3, 4, -1, 6)}, CropConfig),
+    ({"padding": -1}, PadConfig),
+    ({"padding": (1, -1, 3)}, PadConfig),
+    ({"padding": (1, 2, 3, 4, -1, 6)}, PadConfig),
+    ({"padding": 1, "padding_mode": "abc"}, PadConfig),
 ]
 
 GOOD_INPUTS = [
@@ -80,43 +92,68 @@ GOOD_INPUTS = [
             "mask_name": None,
             "labels": None,
         },
-        "CropOrPad",
+        CropOrPadConfig,
     ),
-    ({"target_shape": (1, 2, 3), "mask_name": "mask", "labels": (1,)}, "CropOrPad"),
-    ({"mask_name": "mask", "labels": None}, "CropOrPad"),
-    ({"target_shape": (-1, 2, 3)}, "Resize"),
-    ({"target": 1, "pre_affine_name": None}, "Resample"),
-    ({"target": (1, 2.0, 2.1), "scalars_only": True}, "Resample"),
-    ({"target": "t1", "scalars_only": False}, "Resample"),
-    ({"target": mask_path}, "Resample"),
-    ({"target": ((1, 3, 2), np.eye(4, 4))}, "Resample"),
-    ({"target_multiple": (1, 2, 3), "method": "crop"}, "EnsureShapeMultiple"),
-    ({"target_multiple": (1, 2, 3), "method": "pad"}, "EnsureShapeMultiple"),
-    ({"cropping": 1}, "Crop"),
-    ({"cropping": (1, 0, 3)}, "Crop"),
-    ({"cropping": (1, 2, 3, 4, 5, 6)}, "Crop"),
-    ({"padding": 1}, "Pad"),
-    ({"padding": (1, 0, 3), "padding_mode": 1}, "Pad"),
-    ({"padding": (1, 2, 3, 4, 5, 6)}, "Pad"),
+    ({"target_shape": (1, 2, 3), "mask_name": "mask", "labels": (1,)}, CropOrPadConfig),
+    ({"mask_name": "mask", "labels": None}, CropOrPadConfig),
+    ({"target_shape": (-1, 2, 3)}, ResizeConfig),
+    ({"target": 1, "pre_affine_name": None}, ResampleConfig),
+    ({"target": (1, 2.0, 2.1), "scalars_only": True}, ResampleConfig),
+    ({"target": "t1", "scalars_only": False}, ResampleConfig),
+    ({"target": mask_path}, ResampleConfig),
+    ({"target": ((1, 3, 2), np.eye(4, 4))}, ResampleConfig),
+    ({"target_multiple": (1, 2, 3), "method": "crop"}, EnsureShapeMultipleConfig),
+    ({"target_multiple": (1, 2, 3), "method": "pad"}, EnsureShapeMultipleConfig),
+    ({"cropping": 1}, CropConfig),
+    ({"cropping": (1, 0, 3)}, CropConfig),
+    ({"cropping": (1, 2, 3, 4, 5, 6)}, CropConfig),
+    ({"padding": 1}, PadConfig),
+    ({"padding": (1, 0, 3), "padding_mode": 1}, PadConfig),
+    ({"padding": (1, 2, 3, 4, 5, 6)}, PadConfig),
 ]
 
+X = tio.Subject(
+    image=tio.ScalarImage(tensor=torch.randn(1, 16, 17, 18)),
+    label=tio.LabelMap(tensor=torch.ones(1, 16, 17, 18)),
+)
 
-@pytest.mark.parametrize("args,transform", BAD_INPUTS)
-def test_bad_inputs(args, transform):
-    if not isinstance(transform, list):
-        transform = [transform]
-    for trans in transform:
-        config = create_transform_config(trans)
+
+@pytest.mark.parametrize("args,configs", BAD_INPUTS)
+def test_bad_inputs(args, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
         with pytest.raises(ValidationError):
             config(**args)
 
 
-@pytest.mark.parametrize("args,transform", GOOD_INPUTS)
-def test_good_inputs(args: dict, transform):
-    config = create_transform_config(transform)
+@pytest.mark.parametrize("args,config", GOOD_INPUTS)
+def test_good_inputs(args: dict, config):
     c = config(**args)
     for arg, value in args.items():
         assert getattr(c, arg) == value
+
+
+@pytest.mark.parametrize(
+    "args,config,transform",
+    [
+        ({"cropping": 1}, CropConfig, tio.Crop),
+        ({"padding": 1}, PadConfig, tio.Pad),
+        ({"target_shape": 3}, CropOrPadConfig, tio.CropOrPad),
+        (
+            {"target_multiple": (1, 2, 3)},
+            EnsureShapeMultipleConfig,
+            tio.EnsureShapeMultiple,
+        ),
+        ({}, ResampleConfig, tio.Resample),
+        ({"target_shape": 3}, ResizeConfig, tio.Resize),
+    ],
+)
+def test_get_object(args, config, transform):
+    c = config(**args)
+    transform_from_config = c.get_object()
+    assert isinstance(transform_from_config, transform)
+    assert isinstance(transform_from_config(X), tio.Subject)
 
 
 def test_interpolation():
@@ -134,15 +171,13 @@ def test_interpolation():
         "welch",
     ]
     for mode in modes:
-        c = create_transform_config("Resize")(
+        c = ResizeConfig(
             target_shape=1, image_interpolation=mode, label_interpolation=mode
         )
         assert c.image_interpolation == mode
         assert c.label_interpolation == mode
 
-        c = create_transform_config("Resample")(
-            image_interpolation=mode, label_interpolation=mode
-        )
+        c = ResampleConfig(image_interpolation=mode, label_interpolation=mode)
         assert c.image_interpolation == mode
         assert c.label_interpolation == mode
 
@@ -160,7 +195,7 @@ def test_padding_mode():
         "wrap",
     ]
     for mode in modes:
-        c = create_transform_config("Pad")(padding=1, padding_mode=mode)
+        c = PadConfig(padding=1, padding_mode=mode)
         assert c.padding_mode == mode
-        c = create_transform_config("CropOrPad")(target_shape=1, padding_mode=mode)
+        c = CropOrPadConfig(target_shape=1, padding_mode=mode)
         assert c.padding_mode == mode

@@ -10,7 +10,6 @@ from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
-from .factory import get_transform_from_config
 from .types import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
@@ -111,7 +110,7 @@ class Transforms(ClinicaDLConfig):
         only_transforms = []
         for transform in list_transforms:
             if isinstance(transform, TransformConfig):
-                real_transform, _ = get_transform_from_config(transform)
+                real_transform = transform.get_object()
                 only_transforms.append(real_transform)
             else:
                 only_transforms.append(transform)

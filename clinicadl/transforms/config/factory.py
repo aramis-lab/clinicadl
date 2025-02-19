@@ -1,4 +1,4 @@
-from typing import Type, Union
+from typing import Any, Union
 
 # pylint: disable=unused-import
 from .base import OneOfConfig, TransformConfig
@@ -38,29 +38,30 @@ from .spatial_augmentations import (
 )
 
 
-def create_transform_config(
-    transform: Union[str, ImplementedTransform],
-) -> Type[TransformConfig]:
+def get_transform_config(
+    name: Union[str, ImplementedTransform], **kwargs: Any
+) -> TransformConfig:
     """
-    A factory function to create a config class suited for the transform.
+    Factory function to get a transform configuration object from its name
+    and parameters.
 
     Parameters
     ----------
-    transform : Union[str, ImplementedTransform]
-        The name of the transform.
+    name : Union[str, ImplementedTransform]
+        the name of the transform. Check our documentation to know
+        supported transforms.
+    **kwargs : Any
+        any parameter of the transform. Check our documentation on transforms to
+        know these parameters.
 
     Returns
     -------
-    Type[TransformConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        If `transform` is not supported.
+    TransformConfig
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
-    transform = ImplementedTransform(transform)
+    transform = ImplementedTransform(name)
     config_name = "".join([transform, "Config"])
     config = globals()[config_name]
 
-    return config
+    return config(**kwargs)
