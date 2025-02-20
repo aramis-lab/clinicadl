@@ -31,7 +31,10 @@ __all__ = [
 
 
 class RandomFlipConfig(TransformConfig):
-    """Config class for RandomFlip augmentation."""
+    """
+    Config class for TorchIO's `RandomFlip <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomFlip>`_
+    augmentation.
+    """
 
     axes: Union[
         NumericalAxis,
@@ -85,7 +88,10 @@ SpatialRange = Union[
 
 
 class RandomAffineConfig(TransformConfig):
-    """Config class for RandomAffine augmentation."""
+    """
+    Config class for TorchIO's `RandomAffine <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAffine>`_
+    augmentation.
+    """
 
     scales: SpatialRange
     degrees: SpatialRange
@@ -148,7 +154,10 @@ class RandomAffineConfig(TransformConfig):
 
 
 class RandomElasticDeformationConfig(TransformConfig):
-    """Config class for RandomElasticDeformation augmentation."""
+    """
+    Config class for TorchIO's `RandomElasticDeformation <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomElasticDeformation>`_
+    augmentation.
+    """
 
     num_control_points: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
     max_displacement: Union[
@@ -215,7 +224,10 @@ class RandomElasticDeformationConfig(TransformConfig):
 
 
 class RandomAnisotropyConfig(TransformConfig):
-    """Config class for RandomAnisotropy augmentation."""
+    """
+    Config class for TorchIO's `RandomAnisotropy <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAnisotropy>`_
+    augmentation.
+    """
 
     axes: Union[NumericalAxis, Tuple[NumericalAxis, ...]]
     downsampling: Union[PositiveFloat, Tuple[PositiveFloat, PositiveFloat]]

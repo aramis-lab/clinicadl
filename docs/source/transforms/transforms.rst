@@ -23,8 +23,6 @@ Slice
 Supported Transforms
 --------------------
 
-.. autofunction:: clinicadl.transforms.get_transform_config
-
 Use ``get_transform_config`` to get any :ref:`transforms_preprocessing` or  :ref:`transforms_augmentation` transform.
 
 .. toctree::

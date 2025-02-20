@@ -1,11 +1,16 @@
 .. _transforms_augmentation:
 
+.. currentmodule:: clinicadl.transforms.config
+
 Augmentation
 ============
 
+Composition
+---------
+.. autoclass:: OneOfConfig
+
 Intensity
 ---------
-.. currentmodule:: clinicadl.transforms.config.intensity_augmentations
 
 RandomMotion
 ************
@@ -41,7 +46,6 @@ RandomGamma
 
 Spatial
 -------
-.. currentmodule:: clinicadl.transforms.config.spatial_augmentations
 
 RandomFlip
 **********

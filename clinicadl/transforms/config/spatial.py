@@ -29,7 +29,10 @@ __all__ = [
 
 
 class CropOrPadConfig(TransformConfig):
-    """Config class for CropOrPad transform."""
+    """
+    Config class for TorchIO's `CropOrPad <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.CropOrPad>`_
+    transform.
+    """
 
     target_shape: Optional[
         Union[
@@ -90,7 +93,10 @@ class CropOrPadConfig(TransformConfig):
 
 
 class ToCanonicalConfig(TransformConfig):
-    """Config class for ToCanonical transform."""
+    """
+    Config class for TorchIO's `ToCanonical <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.ToCanonical>`_
+    transform.
+    """
 
     @computed_field
     @property
@@ -104,7 +110,10 @@ class ToCanonicalConfig(TransformConfig):
 
 
 class ResizeConfig(TransformConfig):
-    """Config class for Resize transform."""
+    """
+    Config class for TorchIO's `Resize <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Resize>`_
+    transform.
+    """
 
     target_shape: Union[int, Tuple[int, int, int]]
     image_interpolation: InterpolationMode
@@ -158,7 +167,10 @@ class ResizeConfig(TransformConfig):
 
 
 class ResampleConfig(TransformConfig):
-    """Config class for Resample transform."""
+    """
+    Config class for TorchIO's `Resample <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Resample>`_
+    transform.
+    """
 
     target: Union[
         PositiveFloat,
@@ -242,7 +254,10 @@ class ResampleConfig(TransformConfig):
 
 
 class EnsureShapeMultipleConfig(TransformConfig):
-    """Config class for EnsureShapeMultiple transform."""
+    """
+    Config class for TorchIO's `EnsureShapeMultiple <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.EnsureShapeMultiple>`_
+    transform.
+    """
 
     target_multiple: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
     method: EnsureShapeMultipleMode
@@ -273,7 +288,10 @@ class EnsureShapeMultipleConfig(TransformConfig):
 
 
 class CropConfig(TransformConfig):
-    """Config class for Crop transform."""
+    """
+    Config class for TorchIO's `Crop <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Crop>`_
+    transform.
+    """
 
     cropping: Bounds
 
@@ -294,7 +312,10 @@ class CropConfig(TransformConfig):
 
 
 class PadConfig(TransformConfig):
-    """Config class for Pad transform."""
+    """
+    Config class for TorchIO's `Pad <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Pad>`_
+    transform.
+    """
 
     padding: Bounds
     padding_mode: Union[float, PaddingMode]

@@ -24,7 +24,10 @@ __all__ = [
 
 
 class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
-    """Config class for RescaleIntensity transform."""
+    """
+    Config class for TorchIO's `RescaleIntensity <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.RescaleIntensity>`_
+    transform.
+    """
 
     out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
     percentiles: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
@@ -94,7 +97,10 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
 
 
 class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
-    """Config class for ZNormalization transform."""
+    """
+    Config class for TorchIO's `ZNormalization <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.ZNormalization>`_
+    transform.
+    """
 
     def __init__(
         self,
@@ -118,7 +124,10 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
 
 
 class MaskConfig(TransformConfig, MaskingMethodConfig):
-    """Config class for Mask transform."""
+    """
+    Config class for TorchIO's `Mask <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Mask>`_
+    transform.
+    """
 
     outside_value: float
     labels: Optional[Tuple[int, ...]]
@@ -147,7 +156,10 @@ class MaskConfig(TransformConfig, MaskingMethodConfig):
 
 
 class ClampConfig(TransformConfig):
-    """Config class for Clamp transform."""
+    """
+    Config class for TorchIO's `Clamp <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Clamp>`_
+    transform.
+    """
 
     out_min: Optional[float]
     out_max: Optional[float]
@@ -183,7 +195,9 @@ class ClampConfig(TransformConfig):
 
 
 class NanRemovalConfig(TransformConfig):
-    """Config class for NanRemoval transform."""
+    """
+    Config class for ClinicaDL's :ref:`nan_removal` transform.
+    """
 
     nan: float
     posinf: Optional[float]

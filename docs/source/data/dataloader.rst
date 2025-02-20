@@ -3,4 +3,4 @@
 DataLoader
 ==========
 
-.. autoclass:: clinicadl.dataloader.DataLoaderConfig
+.. autoclass:: clinicadl.data.dataloader.DataLoaderConfig

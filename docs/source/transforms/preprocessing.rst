@@ -25,7 +25,7 @@ Clamp
 
 NanRemoval
 **********
-.. autoclass:: CNanRemovalConfig
+.. autoclass:: NanRemovalConfig
 
 Spatial
 -------

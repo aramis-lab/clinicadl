@@ -1,4 +1,4 @@
-.. _caps_datatype:
+.. _caps_datatypes:
 
 CAPS datatypes
 ==============

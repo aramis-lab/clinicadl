@@ -16,5 +16,6 @@ ClinicaDL documentation
    :maxdepth: 3
    :caption: API Reference
 
+   api
    data/data
    transforms/transforms
