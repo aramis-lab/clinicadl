@@ -1,35 +1,51 @@
 import pytest
+import torch
+import torchio as tio
 from pydantic import ValidationError
 
-from clinicadl.transforms.config import create_transform_config
+from clinicadl.transforms.config.label import OneHotConfig, RemapLabelsConfig
 
 BAD_INPUTS = [
-    ({"remapping": {1: 1.5}}, "RemapLabels"),
-    ({"num_classes": 0}, "OneHot"),
+    ({"remapping": {1: 1.5}}, RemapLabelsConfig),
+    ({"num_classes": 0}, OneHotConfig),
 ]
 
 GOOD_INPUTS = [
-    ({"remapping": {-1: 2, 0: 3}}, "RemapLabels"),
-    ({"num_classes": 1}, "OneHot"),
+    ({"remapping": {-1: 2, 0: 3}}, RemapLabelsConfig),
+    ({"num_classes": 1}, OneHotConfig),
 ]
 
-
-@pytest.mark.parametrize("args,transform", BAD_INPUTS)
-def test_bad_inputs(args, transform):
-    if not isinstance(transform, list):
-        transform = [transform]
-    for trans in transform:
-        config = create_transform_config(trans)
-        with pytest.raises(ValidationError):
-            config(**args)
+X = tio.Subject(
+    image=tio.ScalarImage(tensor=torch.randn(1, 16, 17, 18)),
+    label=tio.LabelMap(tensor=torch.randint(0, 2, (1, 16, 17, 18))),
+)
 
 
-@pytest.mark.parametrize("args,transform", GOOD_INPUTS)
-def test_good_inputs(args: dict, transform):
-    config = create_transform_config(transform)
+@pytest.mark.parametrize("args,config", BAD_INPUTS)
+def test_bad_inputs(args, config):
+    with pytest.raises(ValidationError):
+        config(**args)
+
+
+@pytest.mark.parametrize("args,config", GOOD_INPUTS)
+def test_good_inputs(args: dict, config):
     c = config(**args)
     for arg, value in args.items():
         assert getattr(c, arg) == value
+
+
+@pytest.mark.parametrize(
+    "args,config,transform",
+    [
+        ({"remapping": {1: 2}}, RemapLabelsConfig, tio.RemapLabels),
+        ({"num_classes": 2}, OneHotConfig, tio.OneHot),
+    ],
+)
+def test_get_object(args, config, transform):
+    c = config(**args)
+    transform_from_config = c.get_object()
+    assert isinstance(transform_from_config, transform)
+    assert isinstance(transform_from_config(X), tio.Subject)
 
 
 def test_masking_method():
@@ -46,8 +62,7 @@ def test_masking_method():
         "Superior",
     ]
     for method in methods:
-        config = create_transform_config("RemapLabels")
-        c = config(remapping={0: 1}, masking_method=method)
+        c = RemapLabelsConfig(remapping={0: 1}, masking_method=method)
         assert c.masking_method == method
     with pytest.raises(ValidationError):
-        config(masking_method=lambda x: x > 1)
+        RemapLabelsConfig(remapping={0: 1}, masking_method=lambda x: x > 1)

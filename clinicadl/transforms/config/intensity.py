@@ -1,5 +1,6 @@
 from typing import Optional, Tuple, Union
 
+import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     computed_field,
@@ -7,10 +8,11 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.transforms.homemade_transforms import NanRemoval
+from clinicadl.utils.config import DefaultFromLibrary
 
-from .base import Bounds, ImplementedTransform, TransformConfig, _MaskingMethodConfig
-from .enum import AnatomicalLabel, TransformType
+from .base import Bounds, ImplementedTransform, MaskingMethodConfig, TransformConfig
+from .enum import AnatomicalLabel
 
 __all__ = [
     "RescaleIntensityConfig",
@@ -21,24 +23,46 @@ __all__ = [
 ]
 
 
-class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
+class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
     """Config class for RescaleIntensity transform."""
 
-    out_min_max: Union[
-        NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    percentiles: Union[
-        NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    in_min_max: Union[
-        Optional[Union[NonNegativeFloat, Tuple[float, float]]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
+    percentiles: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
+    in_min_max: Union[Optional[Union[NonNegativeFloat, Tuple[float, float]]]]
+
+    def __init__(
+        self,
+        out_min_max: Union[
+            NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        percentiles: Union[
+            NonNegativeFloat,
+            Tuple[NonNegativeFloat, NonNegativeFloat],
+            DefaultFromLibrary,
+        ] = DefaultFromLibrary.YES,
+        in_min_max: Union[
+            Optional[Union[NonNegativeFloat, Tuple[float, float]]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        masking_method: Optional[
+            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            out_min_max=out_min_max,
+            percentiles=percentiles,
+            in_min_max=in_min_max,
+            masking_method=masking_method,
+        )
 
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.RESCALE_INTENSITY.value
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.RescaleIntensity
 
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
@@ -69,8 +93,18 @@ class RescaleIntensityConfig(TransformConfig, _MaskingMethodConfig):
             )
 
 
-class ZNormalizationConfig(TransformConfig, _MaskingMethodConfig):
+class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
     """Config class for ZNormalization transform."""
+
+    def __init__(
+        self,
+        masking_method: Optional[
+            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            masking_method=masking_method,
+        )
 
     @computed_field
     @property
@@ -78,15 +112,28 @@ class ZNormalizationConfig(TransformConfig, _MaskingMethodConfig):
         """The name of the transform."""
         return ImplementedTransform.Z_NORMALIZATION.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.ZNormalization
 
-class MaskConfig(TransformConfig):
+
+class MaskConfig(TransformConfig, MaskingMethodConfig):
     """Config class for Mask transform."""
 
-    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
-    outside_value: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
-    labels: Union[
-        Optional[Tuple[int, ...]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    outside_value: float
+    labels: Optional[Tuple[int, ...]]
+
+    def __init__(
+        self,
+        masking_method: Optional[Union[str, AnatomicalLabel, Bounds]],
+        outside_value: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        labels: Union[Optional[Tuple[int, ...]], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        super().__init__(
+            masking_method=masking_method, outside_value=outside_value, labels=labels
+        )
 
     @computed_field
     @property
@@ -94,18 +141,23 @@ class MaskConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.MASK.value
 
-    @field_validator("masking_method", mode="before")
-    @classmethod
-    def validator_masking_method(cls, v):
-        """To handle 'masking_method' different types."""
-        return _MaskingMethodConfig.validator_masking_method(v)
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Mask
 
 
 class ClampConfig(TransformConfig):
     """Config class for Clamp transform."""
 
-    out_min: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
-    out_max: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
+    out_min: Optional[float]
+    out_max: Optional[float]
+
+    def __init__(
+        self,
+        out_min: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+        out_max: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(out_min=out_min, out_max=out_max)
 
     @computed_field
     @property
@@ -113,17 +165,16 @@ class ClampConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.CLAMP.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Clamp
+
     @model_validator(mode="after")
     def validate_min_max(self):
         """Checks consistency between 'out_min' and 'out_max'."""
-        if (self.out_min is None or self.out_min == DefaultFromLibrary.YES) and (
-            self.out_max is None or self.out_max == DefaultFromLibrary.YES
-        ):
+        if not self.out_min and not self.out_max:
             raise ValueError("'out_min' and 'out_max' cannot both be None.")
-        elif (
-            not (self.out_min is None or self.out_min == DefaultFromLibrary.YES)
-            and not (self.out_max is None or self.out_max == DefaultFromLibrary.YES)
-        ) and self.out_min > self.out_max:
+        elif self.out_min and self.out_max and self.out_min > self.out_max:
             raise ValueError(
                 f"'out_min' should be smaller than 'out_max'. Got out_min={self.out_min} and out_max={self.out_max}"
             )
@@ -134,9 +185,17 @@ class ClampConfig(TransformConfig):
 class NanRemovalConfig(TransformConfig):
     """Config class for NanRemoval transform."""
 
-    nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
-    posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
-    neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES
+    nan: float
+    posinf: Optional[float]
+    neginf: Optional[float]
+
+    def __init__(
+        self,
+        nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+        neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(nan=nan, posinf=posinf, neginf=neginf)
 
     @computed_field
     @property
@@ -144,7 +203,6 @@ class NanRemovalConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.NAN_REMOVAL.value
 
-    @property
-    def _type(self) -> TransformType:
-        """The source where the transform can be found."""
-        return TransformType.HOMEMADE
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return NanRemoval

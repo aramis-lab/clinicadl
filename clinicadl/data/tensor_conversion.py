@@ -13,15 +13,14 @@ from joblib import Parallel, delayed
 from pydantic import SerializeAsAny, ValidationError
 from tqdm import tqdm
 
-from clinicadl.dictionary.suffixes import JSON, PT
+from clinicadl.dictionary.suffixes import JSON
 from clinicadl.dictionary.words import (
     AFFINE,
     IMAGE,
     LABEL,
     MASK,
 )
-from clinicadl.transforms import get_transform_config
-from clinicadl.transforms.config import TransformConfig
+from clinicadl.transforms.config import TransformConfig, get_transform_config
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
