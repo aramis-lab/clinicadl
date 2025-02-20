@@ -18,6 +18,7 @@ extensions = ["sphinx.ext.autodoc", "sphinx_design"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
+autodoc_member_order = "bysource"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
