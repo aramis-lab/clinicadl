@@ -144,11 +144,12 @@ class CapsDataset(Dataset):
     >>> #     ...
     >>> from clinicadl.data.datasets import CapsDataset
     >>> from clinicadl.data.datatype import PETLinear
-    >>> from clinicadl.transforms import Transforms, get_transform_config
+    >>> from clinicadl.transforms import Transforms
+    >>> from clinicadl.transforms.config import ZNormalizationConfig, MaskConfig, RandomFlipConfig
     >>> from clinicadl.transforms.extraction import Patch
-    >>> normalization = get_transform_config("ZNormalization", masking_method="brain")
-    >>> mask = get_transform_config("Mask", masking_method="leftHippocampus")
-    >>> flip = get_transform_config("RandomFlip", flip_probability=0.3)
+    >>> normalization = ZNormalizationConfig(masking_method="brain")
+    >>> mask = MaskConfig(masking_method="leftHippocampus")
+    >>> flip = RandomFlipConfig(flip_probability=0.3)
     >>> dataset = CapsDataset(
             caps_directory="mycaps",
             preprocessing=PETLinear(

@@ -1,8 +1,5 @@
 import pytest
-import torch
-import torchio as tio
 
-from clinicadl.transforms.config import ImplementedTransform
 from clinicadl.transforms.config.factory import get_transform_config
 from clinicadl.transforms.config.intensity_augmentations import (
     RandomBlurConfig,
