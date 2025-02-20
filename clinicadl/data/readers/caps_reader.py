@@ -53,7 +53,10 @@ class CapsReader(Reader):
 
     @property
     def tensor_conversion_json_dir(self) -> Path:
-        return self.input_directory / CONVERSION_JSON_DIRECTORY
+        out_dir = self.input_directory / CONVERSION_JSON_DIRECTORY
+        if not out_dir.exists():
+            out_dir.mkdir(parents=True, exist_ok=True)
+        return out_dir
 
     def _check_caps_folder(self) -> None:
         """
@@ -246,6 +249,9 @@ class CapsReader(Reader):
             raise ClinicaDLCAPSError(error_msg)
         else:
             return Path(current_glob_found[0])
+
+    # /Users/camille.brianceau/aramis/CLINICADL/caps/subjects/sub-003/ses-M000/t1_linear/sub-003_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*
+    # /Users/camille.brianceau/aramis/CLINICADL/caps/subjects/sub-003/ses-M000/t1_linear/sub-003_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz
 
     def get_common_mask_path(self, mask_name: PathType) -> Path:
         """

@@ -241,7 +241,7 @@ class CapsDataset(Dataset):
 
     def to_tensors(
         self,
-        json_name: str,
+        json_name: PathType = "tensor_conversion",
         save_transforms: bool = True,
         n_proc: int = 1,
         ignore_spacing: bool = False,
@@ -301,6 +301,7 @@ class CapsDataset(Dataset):
         - Also raises a warning if some tensor files already present in the caps directory will be
         overwritten (unless `raise_warnings` is False).
         """
+
         self.tensor_conversion.convert_to_tensors(
             json_name, save_transforms, n_proc, ignore_spacing, raise_warnings
         )
@@ -380,6 +381,11 @@ class CapsDataset(Dataset):
             )
 
         row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
+        # print(self.df.iloc[[idx]])
+        # row = self.df.iloc[[idx], ]
+        # print(row)
+        # return self.df.loc[idx, column]
+
         return row[column].iloc[0]
 
     def get_participant_session_couples(self) -> List[Tuple[str, str]]:
@@ -556,6 +562,18 @@ class CapsDataset(Dataset):
         """
         if isinstance(label, str):
             if label in self.df.columns:
+                if self.df[label].dtype == str:
+                    label_list = self.df[label].unique()
+                    if len(label_list) > 5:
+                        raise ClinicaDLArgumentError(
+                            f"Column '{label}' contains to many values. "
+                            "It should contain maximum 5 different values for ClinicaDL to consider it as Classification"
+                        )
+                    else:
+                        self.label_dict = {
+                            key: value for key, value in enumerate(label_list)
+                        }
+
                 return Column(label)
             else:
                 return self._read_mask(label)
@@ -687,12 +705,18 @@ class CapsDataset(Dataset):
         IndexError
             If 'idx' is out of range.
         """
+
+        # img_idx = idx // self.samples_per_image
+
         participant = self.get_sample_info(idx, PARTICIPANT_ID)
+
         session = self.get_sample_info(idx, SESSION_ID)
         row = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
             (participant, session)
         ]
         sample_idx = int(idx - row.at[FIRST_INDEX])
+
+        # sample_idx = idx % row.at[N_SAMPLES]
 
         return participant, session, sample_idx
 
@@ -766,9 +790,10 @@ class CapsDataset(Dataset):
         if self.label is None:
             return None
         elif isinstance(self.label, Column):
-            return self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
-                (participant, session)
-            ][self.label]
+            df_tmp = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
+            if df_tmp[self.label._name].dtype == str:
+                return self.label_dict[df_tmp.at[(participant, session), self.label]]
+            return df_tmp.at[(participant, session), self.label]
 
     ### other utils ###
     def _load_pt_masks(self) -> None:

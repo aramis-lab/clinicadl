@@ -134,6 +134,8 @@ class Split(ClinicaDLConfig):
         KeyError
             If the column passed in `sampling_weights` cannot be converted to floats.
         """
+
+        self.train_dataset._count_samples()
         if dataloader_config:
             self.train_loader_config = dataloader_config
         else:
@@ -152,6 +154,7 @@ class Split(ClinicaDLConfig):
             dp_degree=self._dp_degree,
             rank=self._rank,
         )
+        self.train_loader.type = "train"
 
     def build_val_loader(
         self,
@@ -207,6 +210,7 @@ class Split(ClinicaDLConfig):
         KeyError
             If the column passed in `sampling_weights` cannot be converted to floats.
         """
+        self.val_dataset._count_samples()
         if dataloader_config:
             self.val_loader_config = dataloader_config
         else:
@@ -225,3 +229,4 @@ class Split(ClinicaDLConfig):
             dp_degree=self._dp_degree,
             rank=self._rank,
         )
+        self.val_loader.type = "val"

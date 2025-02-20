@@ -12,7 +12,6 @@ from torch.amp.grad_scaler import GradScaler
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.data import prepare_data
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -57,8 +56,9 @@ dataset_t1_image = CapsDataset(
     transforms=transforms_image,
     label="diagnosis",  # need to have a "diagnosis" column in the tsv/df given (data)
 )
-prepare_data(dataset_t1_image, n_proc=2)  # to extract the tensor of the T1 file
+dataset_t1_image.to_tensors(n_proc=2)  # to extract the tensor of the T1 file
 
+print("done")
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)  # Optional data tsv and output_dir
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
@@ -66,37 +66,10 @@ splitter = KFold(fold_dir)  # train : 24,  train baseline : 16 , val baseline : 
 
 
 maps_path = Path("maps_test")
-# if not maps_path.is_dir():
-#     maps_path.mkdir(parents=True)
-# manager = ExperimentManager(maps_path, overwrite=True)
 maps_reader = MapsReader(maps_path)  #
+
 config_file = Path("config_file")
 trainer = Trainer(maps_path)
-
-
-def test(dataloader: DataLoader, model: ClinicaDLModel, device, amp):
-    model.network.eval()
-    with torch.no_grad():
-        for i, data in enumerate(dataloader):
-            images = torch.cat(list(sample.sample for sample in data), dim=0).to(device)
-            labels = (
-                torch.tensor([sample.label for sample in data], dtype=torch.float32)
-                .unsqueeze(1)
-                .to(device)
-            )  # TO REMOVE AND CHECK FOR MASK
-            # initialize the loss list to save the loss components
-            with autocast(device.type, enabled=amp):
-                outputs = model.network(images)
-                loss = model.loss(outputs, labels)
-
-            # scaler.scale(loss_train).backward()
-            print(
-                f"for batch {i} : mse is {MSEMetric()(outputs, labels)} and loss is loss {loss}"
-            )
-
-    model.network.train()
-    return None
-
 
 ### PARAMETERS #####
 seed = 3
@@ -141,7 +114,7 @@ dataloader_config = DataLoaderConfig(
 for split in splitter.get_splits(dataset=dataset_t1_image):
     model = ClinicaDLModel.from_config(
         network_config=get_network_config(
-            ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
+            ImplementedNetwork.RESNET, num_outputs=3, spatial_dims=2, in_channels=1
         ),
         loss_config=MSELossConfig(),
         optimizer_config=AdamConfig(),
@@ -153,6 +126,8 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
     print("Loading training data...")
     # TODO: Deal with sampler and multi GPU and data //
     split.build_train_loader(dataloader_config)
+
+    print(split.train_loader.type)
     split.build_val_loader(dataloader_config)
     ###########################
 
@@ -216,7 +191,11 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
             print(f"########## BATCH {i} BEGIN ############ ")
 
             # TODO: to remove and to put in the dataloader
-            images = torch.cat(list(i.sample for i in data), dim=0).to(device)
+            images = (
+                torch.cat(list(i.sample for i in data), dim=0).unsqueeze(1).to(device)
+            )
+            print(images.shape)  # Should be (batch_size, channels, height, width)
+
             labels = (
                 torch.tensor([i.label for i in data], dtype=torch.float32)
                 .unsqueeze(1)

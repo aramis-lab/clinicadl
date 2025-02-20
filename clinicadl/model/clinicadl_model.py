@@ -19,12 +19,13 @@ from clinicadl.utils.computational.ddp import DDP
 
 class ClinicaDLModel:
     def __init__(self, network: nn.Module, loss: Loss, optimizer: Optimizer):
-        # self.network = network
+        self.network = network
         self.loss = loss
         self.optimizer = optimizer
 
-        gpu = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        self.network = network.to(gpu, memory_format=torch.channels_last)
+        self.device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
 
         # if cluster.rank == 0: print(f'model: {network}')
         # if cluster.rank == 0: print('number of parameters: {}'.format(sum([p.numel()
@@ -70,3 +71,8 @@ class ClinicaDLModel:
         """TO COMPLETE"""
         # Load network and optimizer from maps_path, for tranqfer learning
         pass
+
+    def train(self):
+        self.network.to(self.device)
+        self.network.to(memory_format=torch.channels_last)
+        self.network.train()

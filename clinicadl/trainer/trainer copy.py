@@ -27,7 +27,7 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics.metrics import Metrics, TrainingMetrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
@@ -58,9 +58,6 @@ class Trainer:
         """TO COMPLETE"""
 
         self.reader = MapsReader(maps_path)
-        self.reader._create_maps(overwrite=True)
-
-        #####
         self.maps_path = Path(maps_path)
         self.batch_size: int = 2
         self.epochs: int = 3
@@ -85,7 +82,6 @@ class Trainer:
         )
         self.deterministic: bool = False
         self.compensation: str = "memory"
-        self.mode = "min"
 
         # SEED
         seed_everything(
@@ -154,14 +150,16 @@ class Trainer:
         metrics = self.reader.load_metrics()
         self.train(model, split, metrics)
 
-    def train(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
+    def train(self, model: ClinicaDLModel, split: Split, metrics: TrainingMetrics):
         """TO COMPLETE"""
 
         self.validator = Predictor(reader=self.reader, metrics=metrics)
-        self.on_train_begin(model, split, metrics)
 
+        self.on_train_begin(model, split)
+
+        print(metrics.val_loss.df.iloc[-1].values[0])
         while self.epoch < self.epochs and not self.early_stopping.step(
-            metrics.val.loss
+            metrics.val_loss.df.iloc[-1].values[0]
         ):
             print(f"############# EPOCH {self.epoch}################")
             self.on_epoch_begin(model.network)
@@ -169,7 +167,6 @@ class Trainer:
             for batch, data in enumerate(split.train_loader):
                 print(f"############# BATCH {batch}################")
 
-                self.on_batch_begin()
                 ############
                 images = (
                     torch.cat(list(i.sample for i in data), dim=0)
@@ -186,74 +183,85 @@ class Trainer:
                 with autocast(self.device.type, enabled=self.amp):
                     outputs = model.network(images)
                     loss = model.loss(outputs, labels)
-                    metrics.train.compute(
-                        batch, self.epoch, (outputs, labels), loss=loss
-                    )
+                    # metrics.compute(
+                    #     batch, self.epoch, (outputs, labels), val=False, train= False
+                    # ) # compute que le train loss
 
+                metrics.save_loss(loss, batch, self.epoch)
+
+                # loss = metrics.train_loss.get_value(batch= batch, epoch=self.epoch)
                 self.scaler.scale(loss).backward()
                 self.weights_update(model)
 
-                self.on_batch_end()
+                # # Evaluate the model only when no gradients are accumulated
+                # if self.evaluation_steps != 0 and (batch + 1) % self.evaluation_steps == 0:
+                #     self.evaluation_flag = False
+                #     print(" Evaluate the model only when no gradients are accumulated")
+                #     print(f"Évaluation - Epoch {self.epoch}, Batch {batch}:")
+                #     self.validator.test(split.val_loader, model, epoch = self.epoch) # compute val metrics + val loss
                 del loss
 
             # PROFILER STEP
+
+            # If no evaluation has been performed, warn the user
+            if self.evaluation_flag and self.evaluation_steps != 0:
+                print(
+                    f"Your evaluation steps {self.evaluation_steps} are too big "
+                    f"compared to the size of the dataset. "
+                    f"The model is evaluated only once at the end epochs."
+                )
+
+            # Update weights one last time if gradients were computed without update
+            if (batch + 1) % self.accumulation_steps != 0:
+                self.weights_update(model)
+
             # Always test the results and save them once at the end of the epoch
-            self.on_epoch_end(split, metrics, model)
+            model.network.zero_grad(set_to_none=True)
+            # self.validator.test(split.train_loader, model, epoch = self.epoch)
+            self.validator.test(
+                split.val_loader, model, epoch=self.epoch
+            )  # compute tout sur val
+
+            self.scheduler.step()  # Update learning rate based on validation loss
+
+            print("increase epoch")
+            self.epoch += 1
+            # Sauvegarde du modèle à la fin de chaque epoch
+            torch.save(
+                model.network.state_dict(),
+                self.reader.maps_path / f"model_epoch_{self.epoch}.pth",
+            )
             # model.network.save_checkpoint(epoch=self.epoch)
 
-        self.on_train_end(split, metrics)
+            print(metrics.train_loss.df)
+            print(metrics.val_loss.df)
+            print(metrics.train_metrics.df)
+            print(metrics.val_metrics.df)
 
     def weights_update(self, model: ClinicaDLModel):
         self.scaler.step(model.optimizer)
         self.scaler.update()
         model.optimizer.zero_grad(set_to_none=True)
 
-    def on_batch_begin(self):
-        pass
-
-    def on_batch_end(self):
-        pass
-
     def on_epoch_begin(self, network: torch.nn.Module):
         network.zero_grad(set_to_none=True)
-        # self.evaluation_flag = True
+        self.evaluation_flag = True
 
-    def on_epoch_end(self, split: Split, metrics: Metrics, model: ClinicaDLModel):
-        model.network.zero_grad(set_to_none=True)
-        # Update learning rate based on validation loss
-        self.validator.test(
-            split.val_loader, model, epoch=self.epoch
-        )  # compute tout sur val
-        self.scheduler.step()
-
-        # Sauvegarde du modèle à la fin de chaque epoch
-
-        self.reader._write_weights(
-            model.network.state_dict(), split.index, metrics, epoch=self.epoch
-        )
-        # torch.save(
-        #     model.network.state_dict(),
-        #     self.reader.maps_path / f"model_epoch_{self.epoch}.pth",
-        # )
-
-        metrics.on_epoch_end(self.epoch)  # compute mean metrics
-
-        self.epoch += 1
-        # profiler.step()  # TODO: check this
-
-    def on_train_begin(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
+    def on_train_begin(self, model: ClinicaDLModel, split: Split):
         """TO COMPLETE"""
 
+        self.reader._create_maps(overwrite=True)
         self._check_split(split)  # not sure if needed
-        self.reader.init_split(split, metrics)
 
-        model.train()
+        model.network.to(self.device)
+        model.network.train()
 
         self.epoch = (
             self.current_epoch
         )  # will be different if resume or transfer learning
 
-        self._init_early_stopping(self.patience, self.mode, self.tolerance)
+        self._init_early_stopping(self.patience, "min", self.tolerance)
+
         self._init_scaler(self.device, self.amp)
 
         # profiler = init_profiler(maps_path)
@@ -264,21 +272,11 @@ class Trainer:
         self.n_batch = len(split.train_loader)
 
         # Vérification de evaluation_steps
-        # self._check_evaluation_steps()
+        self._check_evaluation_steps()
 
         self.n_val_batch = len(split.val_loader)
 
         self._init_scheduler(model.optimizer, self.lr, self.n_batch, self.epochs)
-
-    def on_train_end(self, split: Split, metrics: Metrics):
-        """TO COMPLETE"""
-        # profiler.stop()  # TODO: check this
-
-        # TODO: stop tracker like WandB or MlFlow (callbacks ?)
-
-        self.reader.save_metrics(
-            split, metrics
-        )  # maybe put save metrics in metrics instead of reader ?
 
     def _init_scheduler(
         self,
