@@ -18,7 +18,7 @@ build:
       # Do not use virtual environments
       - poetry config virtualenvs.create false
       # Install docs group of dependencies
-      - poetry install --only docs
+      - poetry install --with=docs
 
 mkdocs:
   configuration: docs/source/conf.py
