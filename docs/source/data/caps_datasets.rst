@@ -19,7 +19,7 @@ help you:
 .. code-block:: python
 
     >>> from clinicadl.data.datasets import CapsDataset
-    >>> from clinicadl.data.datatype import PETLinear
+    >>> from clinicadl.data.datatypes import PETLinear
     >>> dataset = CapsDataset(
             caps_directory="mycaps",
             preprocessing=PETLinear(

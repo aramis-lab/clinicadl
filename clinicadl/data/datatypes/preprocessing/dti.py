@@ -8,7 +8,7 @@ from ..file_type import FileType
 from ..modalities import DWI
 from .base import Preprocessing
 
-logger = getLogger("clinicadl.data.datatype.preprocessing.dti")
+logger = getLogger("clinicadl.data.datatypes.preprocessing.dti")
 
 
 class DTIMeasure(str, Enum):

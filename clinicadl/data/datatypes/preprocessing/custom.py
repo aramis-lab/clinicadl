@@ -7,7 +7,7 @@ from ..file_type import FileType
 from ..modalities import Custom as CustomModality
 from .base import Preprocessing
 
-logger = getLogger("clinicadl.data.datatype.preprocessing.custom")
+logger = getLogger("clinicadl.data.datatypes.preprocessing.custom")
 
 
 class Custom(Preprocessing, CustomModality):

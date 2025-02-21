@@ -160,7 +160,7 @@ class CapsDataset(Dataset):
     >>> #         ...
     >>> #     ...
     >>> from clinicadl.data.datasets import CapsDataset
-    >>> from clinicadl.data.datatype import PETLinear
+    >>> from clinicadl.data.datatypes import PETLinear
     >>> from clinicadl.transforms import Transforms
     >>> from clinicadl.transforms.config import ZNormalizationConfig, MaskConfig, RandomFlipConfig
     >>> from clinicadl.transforms.extraction import Patch

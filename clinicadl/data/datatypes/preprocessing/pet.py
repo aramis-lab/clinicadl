@@ -7,7 +7,7 @@ from ..enum import PreprocessingMethod
 from ..modalities import PET
 from .base import _LinearPreprocessing
 
-logger = getLogger("clinicadl.data.datatype.preprocessing.pet")
+logger = getLogger("clinicadl.data.datatypes.preprocessing.pet")
 
 
 class SUVRReferenceRegion(str, Enum):

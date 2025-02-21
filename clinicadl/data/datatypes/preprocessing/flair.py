@@ -6,7 +6,7 @@ from ..enum import PreprocessingMethod
 from ..modalities import Flair
 from .base import _LinearPreprocessing
 
-logger = getLogger("clinicadl.data.datatype.preprocessing.flair")
+logger = getLogger("clinicadl.data.datatypes.preprocessing.flair")
 
 
 class FlairLinear(_LinearPreprocessing, Flair):

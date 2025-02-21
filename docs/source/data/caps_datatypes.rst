@@ -2,7 +2,7 @@
 
 CAPS datatypes
 ==============
-.. currentmodule:: clinicadl.data.datatype
+.. currentmodule:: clinicadl.data.datatypes
 
 Let's take the following CAPS structure::
 
@@ -27,7 +27,7 @@ pipeline with ``pons2`` as a reference region for SUVR computation, you will cre
 
 .. code-block:: python
 
-    >>> from clinicadl.data.datatype import PETLinear
+    >>> from clinicadl.data.datatypes import PETLinear
     >>> PETLinear(tracer="18FFDG", suvr_reference_region="pons2")
     PETLinear(
         use_uncropped_image=False,

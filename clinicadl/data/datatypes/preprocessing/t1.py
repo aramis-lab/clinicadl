@@ -6,7 +6,7 @@ from ..enum import PreprocessingMethod
 from ..modalities import T1w
 from .base import _LinearPreprocessing
 
-logger = getLogger("clinicadl.data.datatype.preprocessing.t1")
+logger = getLogger("clinicadl.data.datatypes.preprocessing.t1")
 
 
 class T1Linear(_LinearPreprocessing, T1w):
