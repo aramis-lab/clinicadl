@@ -13,8 +13,7 @@ __all__ = ["RemapLabelsConfig", "OneHotConfig"]
 
 class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
     """
-    Config class for TorchIO's `RemapLabels <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.RemapLabels>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.RemapLabels`.
     """
 
     remapping: dict[int, int]
@@ -44,8 +43,7 @@ class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
 
 class OneHotConfig(TransformConfig):
     """
-    Config class for TorchIO's `OneHot <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.OneHot>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.OneHot`.
     """
 
     num_classes: int

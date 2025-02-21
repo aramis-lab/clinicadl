@@ -28,8 +28,7 @@ __all__ = [
 
 class RandomMotionConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomMotion <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomMotion>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomMotion`.
     """
 
     degrees: Union[NonNegativeFloat, Tuple[float, float]]
@@ -78,8 +77,7 @@ class RandomMotionConfig(TransformConfig):
 
 class RandomGhostingConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomGhosting <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomGhosting>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomGhosting`.
     """
 
     num_ghosts: Union[NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt]]
@@ -138,8 +136,7 @@ class RandomGhostingConfig(TransformConfig):
 
 class RandomSpikeConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomSpike <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomSpike>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomSpike`.
     """
 
     num_spikes: Union[NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt]]
@@ -180,8 +177,7 @@ class RandomSpikeConfig(TransformConfig):
 
 class RandomBiasFieldConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomBiasField <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomBiasField>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomBiasField`.
     """
 
     coefficients: Union[NonNegativeFloat, Tuple[float, float]]
@@ -235,8 +231,7 @@ Std = Union[
 
 class RandomBlurConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomBlur <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomBlur>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomBlur`.
     """
 
     std: Std
@@ -265,8 +260,7 @@ class RandomBlurConfig(TransformConfig):
 
 class RandomNoiseConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomNoise <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomNoise>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomNoise`.
     """
 
     mean: Union[NonNegativeFloat, Tuple[float, float]]
@@ -306,8 +300,7 @@ class RandomNoiseConfig(TransformConfig):
 
 class RandomSwapConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomSwap <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomSwap>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomSwap`.
     """
 
     patch_size: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
@@ -339,8 +332,7 @@ class RandomSwapConfig(TransformConfig):
 
 class RandomGammaConfig(TransformConfig):
     """
-    Config class for TorchIO's `RandomGamma <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomGamma>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.RandomGamma`.
     """
 
     log_gamma: Union[NonNegativeFloat, Tuple[float, float]]

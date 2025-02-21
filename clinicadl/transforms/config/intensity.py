@@ -25,8 +25,7 @@ __all__ = [
 
 class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
     """
-    Config class for TorchIO's `RescaleIntensity <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.RescaleIntensity>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.RescaleIntensity`.
     """
 
     out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
@@ -67,10 +66,6 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
         """Returns the transform associated to this config class."""
         return tio.RescaleIntensity
 
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RescaleIntensity
-
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
     def validator_ranges(cls, v, field):
@@ -102,19 +97,8 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
 
 class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
     """
-    Config class for TorchIO's `ZNormalization <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.ZNormalization>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.ZNormalization`.
     """
-
-    def __init__(
-        self,
-        masking_method: Optional[
-            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            masking_method=masking_method,
-        )
 
     def __init__(
         self,
@@ -139,8 +123,7 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
 
 class MaskConfig(TransformConfig, MaskingMethodConfig):
     """
-    Config class for TorchIO's `Mask <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Mask>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.Mask`.
     """
 
     outside_value: float
@@ -171,8 +154,7 @@ class MaskConfig(TransformConfig, MaskingMethodConfig):
 
 class ClampConfig(TransformConfig):
     """
-    Config class for TorchIO's `Clamp <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Clamp>`_
-    transform.
+    Config class for :py:class:`torchio.transforms.Clamp`.
     """
 
     out_min: Optional[float]
@@ -195,10 +177,6 @@ class ClampConfig(TransformConfig):
         """Returns the transform associated to this config class."""
         return tio.Clamp
 
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Clamp
-
     @model_validator(mode="after")
     def validate_min_max(self):
         """Checks consistency between 'out_min' and 'out_max'."""
@@ -214,20 +192,8 @@ class ClampConfig(TransformConfig):
 
 class NanRemovalConfig(TransformConfig):
     """
-    Config class for ClinicaDL's :ref:`nan_removal` transform.
+    Config class for :py:class:`clinicadl.transforms.NanRemoval <clinicadl.transforms.homemade_transforms.NanRemoval>`.
     """
-
-    nan: float
-    posinf: Optional[float]
-    neginf: Optional[float]
-
-    def __init__(
-        self,
-        nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-        neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(nan=nan, posinf=posinf, neginf=neginf)
 
     nan: float
     posinf: Optional[float]
@@ -246,10 +212,6 @@ class NanRemovalConfig(TransformConfig):
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.NAN_REMOVAL.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return NanRemoval
 
     def _get_class(self) -> type[tio.Transform]:
         """Returns the transform associated to this config class."""

@@ -31,19 +31,18 @@ class DataPoint(tio.Subject):
     Object that gathers an image, the associated label, and any
     mask associated to the image.
 
-    It inherits from TorchIO's `Subject <https://torchio.readthedocs.io/data/subject.html>`_.
+    It inherits from :py:class:`torchio.Subject`.
 
     Any transform used in ClinicaDL must work with this object.
 
     Parameters
     ----------
     image : Union[torchio.ScalarImage, PathType]
-        The image, as a TorchIO `ScalarImage <https://torchio.readthedocs.io/data/image.html#torchio.ScalarImage>`_
+        The image, as a :py:class:`torchio.ScalarImage`
         or a path to a NIfTI file.
     label : Optional[Union[float, int, torchio.LabelMap, PathType]]
         The label associated to the image. Can be a float (regression),
-        an int (classification), a mask (passed as a TorchIO
-        `LabelMap <https://torchio.readthedocs.io/data/image.html#torchio.LabelMap>`_
+        an int (classification), a mask (passed as a :py:class:`torchio.LabelMap`
         or a path to a NIfTI file; for segmentation) or None if no label (reconstruction).
     masks : Union[torchio.LabelMap, PathType]
         Any mask related to the image and useful to compute transforms.

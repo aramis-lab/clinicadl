@@ -3,11 +3,11 @@
 CAPS datasets
 =============
 
-``CapsDataset`` is the object that you will always use to
+``CapsDataset`` (or its derivatives) is the object that you will always use to
 manipulate your neuroimaging data stored in a `CAPS <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/>`_
 structure.
 
-As it inherits from PyTorch's `Dataset <https://pytorch.org/tutorials/beginner/basics/data_tutorial.html>`_,
+As it inherits from PyTorch's :py:class:`Dataset <torch.utils.data.Dataset>`,
 it is an iterable, whose length can be accessed via ``len(dataset)``, and whose elements can be
 accessed with their indices: ``dataset[i]``.
 

@@ -18,9 +18,8 @@ Configuration classes
 ---------------------
 
 In ClinicaDL, a configuration class is a dataclass that stores the
-parameters of a Python object. For example, let's take the
-`Pad transform <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Pad>`_
-from ``TorchIO``:
+parameters of a Python object. For example, let's take the transform
+:py:class:`torchio.transforms.Pad`:
 
 .. code-block:: python
 

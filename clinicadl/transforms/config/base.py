@@ -76,8 +76,7 @@ class TransformConfig(NewClinicaDLConfig):
 
 class OneOfConfig(TransformConfig):
     """
-    Config class for TorchIO's `OneOf <https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.OneOf>`_
-    augmentation.
+    Config class for :py:class:`torchio.transforms.OneOf`.
     """
 
     transforms: List[TransformConfig]
