@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, PositiveInt
 
+from clinicadl.utils.config import ClinicaDLConfig
+
 from .early_stopping import EarlyStoppingConfig
 
 
-class OptimizationConfig(BaseModel):
+class OptimizationConfig(ClinicaDLConfig):
     """Config class to configure the optimization process."""
 
-    accumulation_steps: PositiveInt = 1
+    accumulation_steps: PositiveInt = 1  # gives the number of iterations during which gradients are accumulated before performing the weights update. This allows to virtually increase the size of the batch. Default: 1.
+    evaluation_steps: PositiveInt = 5  # gives the number of iterations to perform an evaluation internal to an epoch. Default will only perform an evaluation at the end of each epoch.
     epochs: PositiveInt = 10
+    non_blocking: bool = True
     early_stopping: EarlyStoppingConfig = EarlyStoppingConfig()
-    # pydantic config
-    model_config = ConfigDict(
-        validate_assignment=True, use_enum_values=True, validate_default=True
-    )

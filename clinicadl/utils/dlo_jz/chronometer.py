@@ -3,7 +3,6 @@ from datetime import datetime
 from time import time
 
 import numpy as np
-from pynvml.smi import nvidia_smi
 
 ###############################
 # Author : Bertrand CABOT from IDRIS(CNRS)
@@ -79,12 +78,6 @@ class Chronometer:
         self.start_valid = None
         self.val_time = None
         self.time_point = None
-        self.nvsmi = nvidia_smi.getInstance()
-
-    def power_measurement(self):
-        powerquery = self.nvsmi.DeviceQuery("power.draw")["gpu"]
-        for g in range(len(powerquery)):
-            self.power.append(powerquery[g]["power_readings"]["power_draw"])
 
     def tac_time(self, clear=False):
         if self.time_point is None or clear:
@@ -149,7 +142,6 @@ class Chronometer:
 
     def update(self):
         self._backward()
-        self.power_measurement()
         self._training()
 
     def validation(self):

@@ -23,6 +23,8 @@ class ClinicaDLModel:
         self.loss = loss
         self.optimizer = optimizer
 
+        self.memory_format = torch.channels_last
+        self.non_blocking: bool = False
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
@@ -74,5 +76,7 @@ class ClinicaDLModel:
 
     def train(self):
         self.network.to(self.device)
-        self.network.to(memory_format=torch.channels_last)
+        self.network.to(
+            memory_format=self.memory_format, non_blocking=self.non_blocking
+        )
         self.network.train()

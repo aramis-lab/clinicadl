@@ -78,10 +78,11 @@ class MapsReader:
         path = self.maps_path / GROUPS / "train+validation.tsv"
         return tsv_to_df(path)
 
-    def get_model(self) -> ClinicaDLModel:
+    def get_model(self, split: Split, metrics: Metrics) -> ClinicaDLModel:
+        self.model_path(split.index, metrics)
         return ClinicaDLModel()  # type: ignore
 
-    def get_metrics(self) -> Metrics:
+    def load_metrics(self) -> Metrics:
         return Metrics()  # type: ignore
 
     ##### WRITERS #######

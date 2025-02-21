@@ -3,6 +3,7 @@ from typing import Callable, Optional, Union
 import pandas as pd
 import torch
 from monai.metrics.metric import Metric as MonaiMetric
+from monai.metrics.regression import MAEMetric, RMSEMetric, SSIMMetric
 from torch.amp.autocast_mode import autocast
 
 from clinicadl.losses.utils import Loss
@@ -14,6 +15,45 @@ from clinicadl.metrics.factory import get_metric_from_config
 from clinicadl.networks.factory import ImplementedNetwork, get_network_config
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLMetricsError
+
+ClassificationLoss = ["CrossEntropyLoss", "MultiMarginLoss"]
+ClassificationMetrics = [
+    "BA",
+    "accuracy",
+    "F1_score",
+    "sensitivity",
+    "specificity",
+    "PPV",
+    "NPV",
+    "MCC",
+    "MK",
+    "LR_plus",
+    "LR_minus",
+]
+
+
+ReconstructionMetrics = ["MAE", "RMSE", "PSNR", "SSIM"]
+ReconstructionLosses = [
+    "L1Loss",
+    "MSELoss",
+    "KLDivLoss",
+    "BCEWithLogitsLoss",
+    "HuberLoss",
+    "SmoothL1Loss",
+    "VAEGaussianLoss",
+    "VAEBernoulliLoss",
+    "VAEContinuousBernoulliLoss",
+]
+
+RegressionMetrics = [RMSEMetric(), MAEMetric()]
+RegressionLosses = [
+    "L1Loss",
+    "MSELoss",
+    "KLDivLoss",
+    "BCEWithLogitsLoss",
+    "HuberLoss",
+    "SmoothL1Loss",
+]
 
 
 class BaseMetrics:

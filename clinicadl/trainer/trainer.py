@@ -29,6 +29,9 @@ from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
+
+# from clinicadl.utils.logwriter import LogWriter
+from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
@@ -40,12 +43,10 @@ from clinicadl.splitter.split import Split
 #                 tensorboard_trace_handler,
 #             )
 from clinicadl.utils import cluster
+from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.dlo_jz import Chronometer
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
-
-# from clinicadl.utils.dlo_jz import Chronometer
-# from clinicadl.utils.logwriter import LogWriter
-
 
 logger = getLogger("clinicadl.trainer")
 
@@ -54,6 +55,8 @@ class Trainer:
     def __init__(
         self,
         maps_path: PathType,
+        optim_config: OptimizationConfig = OptimizationConfig(),
+        comp_config: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """TO COMPLETE"""
 
@@ -62,38 +65,15 @@ class Trainer:
 
         #####
         self.maps_path = Path(maps_path)
-        self.batch_size: int = 2
-        self.epochs: int = 3
-        self.lr: float = 0.1
-        self.weight_decay: float = 0.0
-        self.momentum: float = 0.9
-        self.num_workers: int = 0
-        self.persistent_workers: bool = True
-        self.pin_memory: bool = True
-        self.non_blocking: bool = True
-        self.prefetch_factor: int = 0
-        self.drop_last: bool = False
-        self.amp: bool = True
-        self.accumulation_steps: int = 1  # gives the number of iterations during which gradients are accumulated before performing the weights update. This allows to virtually increase the size of the batch. Default: 1.
-        self.evaluation_steps: int = 5  # gives the number of iterations to perform an evaluation internal to an epoch. Default will only perform an evaluation at the end of each epoch.
-        self.current_epoch: int = 0
-        self.tolerance = 0
-        self.patience = 10
-        self.seed = 123
-        self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
-        self.deterministic: bool = False
-        self.compensation: str = "memory"
-        self.mode = "min"
+        self.comp = comp_config
+        self.optim = optim_config
 
-        # SEED
-        seed_everything(
-            self.seed, deterministic=self.deterministic, compensation=self.compensation
-        )
+        self.current_epoch: int = 0
+
+        seed_everything(123, deterministic=False, compensation="memory")
 
         # Chronometer initialisation
-        # self.chrono = Chronometer()
+        self.chrono = Chronometer()
 
         # Initialize the parallel environment
         # dist.init_process_group(backend='nccl', init_method='env://',
@@ -104,9 +84,9 @@ class Trainer:
         # torch.cuda.set_device('cpu')
 
         # distribute batch size (mini-batch)
-        self.num_replica = cluster.size
-        self.mini_batch_size = self.batch_size
-        self.global_batch_size = self.mini_batch_size * self.num_replica
+        # self.num_replica = cluster.size
+        # self.mini_batch_size = self.batch_size
+        # self.global_batch_size = self.mini_batch_size * self.num_replica
 
         # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
 
@@ -160,7 +140,7 @@ class Trainer:
         self.validator = Predictor(reader=self.reader, metrics=metrics)
         self.on_train_begin(model, split, metrics)
 
-        while self.epoch < self.epochs and not self.early_stopping.step(
+        while self.epoch < self.optim.epochs and not self.early_stopping.step(
             metrics.val.loss
         ):
             print(f"############# EPOCH {self.epoch}################")
@@ -174,16 +154,16 @@ class Trainer:
                 images = (
                     torch.cat(list(i.sample for i in data), dim=0)
                     .unsqueeze(1)
-                    .to(self.device)
+                    .to(self.comp.device)
                 )
                 labels = (
                     torch.tensor([i.label for i in data], dtype=torch.float32)
                     .unsqueeze(1)
-                    .to(self.device)
+                    .to(self.comp.device)
                 )  # TO REMOVE AND CHECK FOR MASK
                 ############
 
-                with autocast(self.device.type, enabled=self.amp):
+                with autocast(self.comp.device.type, enabled=self.comp.amp):
                     outputs = model.network(images)
                     loss = model.loss(outputs, labels)
                     metrics.train.compute(
@@ -253,8 +233,8 @@ class Trainer:
             self.current_epoch
         )  # will be different if resume or transfer learning
 
-        self._init_early_stopping(self.patience, self.mode, self.tolerance)
-        self._init_scaler(self.device, self.amp)
+        self._init_early_stopping()
+        self._init_scaler()
 
         # profiler = init_profiler(maps_path)
 
@@ -268,7 +248,7 @@ class Trainer:
 
         self.n_val_batch = len(split.val_loader)
 
-        self._init_scheduler(model.optimizer, self.lr, self.n_batch, self.epochs)
+        self._init_scheduler(model.optimizer)
 
     def on_train_end(self, split: Split, metrics: Metrics):
         """TO COMPLETE"""
@@ -283,42 +263,44 @@ class Trainer:
     def _init_scheduler(
         self,
         optimizer: torch.optim.optimizer.Optimizer,
-        lr: float,
-        n_batch: int,
-        epochs: int,
     ):
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer, max_lr=lr, steps_per_epoch=n_batch, epochs=epochs
+            optimizer,
+            max_lr=optimizer.param_groups[0]["lr"],
+            steps_per_epoch=self.n_batch,
+            epochs=self.optim.epochs,
         )
 
     def _init_scaler(
         self,
-        device,
-        amp,
     ):
-        self.scaler = GradScaler(device=device, enabled=amp)
+        self.scaler = GradScaler(device=self.comp.device.type, enabled=self.comp.amp)
 
-    def _init_early_stopping(self, patience: int, mode: str, tolerance: float):
-        config = EarlyStoppingConfig(mode=mode, min_delta=tolerance, patience=patience)
+    def _init_early_stopping(self):
+        config = EarlyStoppingConfig(
+            mode=self.optim.early_stopping.mode,
+            min_delta=self.optim.early_stopping.min_delta,
+            patience=self.optim.early_stopping.patience,
+        )
         self.early_stopping = EarlyStopping(config)
 
     def _check_evaluation_steps(self):
         """Check if the current batch is an evaluation step."""
         # Vérification de evaluation_steps
-        if self.evaluation_steps >= self.n_batch:
+        if self.optim.evaluation_steps >= self.n_batch:
             print(
-                f"Warning: evaluation_steps ({self.evaluation_steps}) >= N_batch ({self.n_batch}) ! Réduction automatique à N_batch // 2."
+                f"Warning: evaluation_steps ({self.optim.evaluation_steps}) >= N_batch ({self.n_batch}) ! Réduction automatique à N_batch // 2."
             )
-            self.evaluation_steps = max(
+            self.optim.evaluation_steps = max(
                 1, self.n_batch // 2
             )  # Évite d'avoir une valeur trop grande
 
-        elif self.n_batch % self.evaluation_steps != 0:
+        elif self.n_batch % self.optim.evaluation_steps != 0:
             print(
-                f"Warning: evaluation_steps ({self.evaluation_steps}) ne divise pas exactement N_batch ({self.n_batch})."
+                f"Warning: evaluation_steps ({self.optim.evaluation_steps}) ne divise pas exactement N_batch ({self.n_batch})."
             )
-            self.evaluation_steps = max(
-                1, min(self.evaluation_steps, self.n_batch // 2)
+            self.optim.evaluation_steps = max(
+                1, min(self.optim.evaluation_steps, self.n_batch // 2)
             )  # Ajuste pour garder une fréquence raisonnable
 
     def _check_split(self, split: Split):

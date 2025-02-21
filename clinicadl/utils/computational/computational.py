@@ -1,19 +1,21 @@
 from logging import getLogger
 
+import torch
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.computational_config")
 
 
-class ComputationalConfig(BaseModel):
+class ComputationalConfig(ClinicaDLConfig):
     """Config class to handle computational parameters."""
 
     amp: bool = False
     fully_sharded_data_parallel: bool = False
-    gpu: bool = True
+    gpu: bool = False
     # pydantic config
     model_config = ConfigDict(validate_assignment=True)
 
@@ -31,3 +33,7 @@ class ComputationalConfig(BaseModel):
                 "AMP is designed to work with modern GPUs. Please add the --gpu flag."
             )
         return self
+
+    @property
+    def device(self):
+        return torch.device("cuda") if self.gpu else torch.device("cpu")
