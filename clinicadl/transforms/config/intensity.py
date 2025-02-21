@@ -67,6 +67,10 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
         """Returns the transform associated to this config class."""
         return tio.RescaleIntensity
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.RescaleIntensity
+
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
     def validator_ranges(cls, v, field):
@@ -101,6 +105,16 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
     Config class for TorchIO's `ZNormalization <https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.ZNormalization>`_
     transform.
     """
+
+    def __init__(
+        self,
+        masking_method: Optional[
+            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            masking_method=masking_method,
+        )
 
     def __init__(
         self,
@@ -181,6 +195,10 @@ class ClampConfig(TransformConfig):
         """Returns the transform associated to this config class."""
         return tio.Clamp
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Clamp
+
     @model_validator(mode="after")
     def validate_min_max(self):
         """Checks consistency between 'out_min' and 'out_max'."""
@@ -211,11 +229,27 @@ class NanRemovalConfig(TransformConfig):
     ):
         super().__init__(nan=nan, posinf=posinf, neginf=neginf)
 
+    nan: float
+    posinf: Optional[float]
+    neginf: Optional[float]
+
+    def __init__(
+        self,
+        nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+        neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(nan=nan, posinf=posinf, neginf=neginf)
+
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.NAN_REMOVAL.value
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return NanRemoval
 
     def _get_class(self) -> type[tio.Transform]:
         """Returns the transform associated to this config class."""
