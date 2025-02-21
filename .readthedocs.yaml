@@ -20,5 +20,5 @@ build:
       # Install docs group of dependencies
       - poetry install --with=docs
 
-mkdocs:
+sphinx:
   configuration: docs/source/conf.py
