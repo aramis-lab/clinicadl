@@ -21,4 +21,4 @@ build:
       - poetry install --only docs
 
 mkdocs:
-  configuration: docs/soource/conf.py
+  configuration: docs/source/conf.py
