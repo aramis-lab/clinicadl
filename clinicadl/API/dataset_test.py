@@ -4,14 +4,14 @@ import torchio.transforms as transforms
 
 from clinicadl.data import tensor_conversion
 from clinicadl.data.datasets import CapsDataset, ConcatDataset
-from clinicadl.data.datatype.modalities.pet import Tracer
-from clinicadl.data.datatype.preprocessing import (
+from clinicadl.data.datatypes.modalities.pet import Tracer
+from clinicadl.data.datatypes.preprocessing import (
     FlairLinear,
     PETLinear,
     Preprocessing,
     T1Linear,
 )
-from clinicadl.data.datatype.preprocessing.pet import SUVRReferenceRegion
+from clinicadl.data.datatypes.preprocessing.pet import SUVRReferenceRegion
 from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel

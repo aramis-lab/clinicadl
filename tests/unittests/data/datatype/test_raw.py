@@ -1,4 +1,4 @@
-from clinicadl.data.datatype.raw import RawCustom, RawDWI, RawFlair, RawPET, RawT1w
+from clinicadl.data.datatypes.raw import RawCustom, RawDWI, RawFlair, RawPET, RawT1w
 
 
 def test_good_custom():

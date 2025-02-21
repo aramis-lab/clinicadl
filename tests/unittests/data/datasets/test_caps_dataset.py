@@ -7,7 +7,7 @@ import torch
 import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
+from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
 from clinicadl.data.structures import Mask
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import get_transform_config

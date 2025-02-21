@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.data.datatype.preprocessing import (
+from clinicadl.data.datatypes.preprocessing import (
     DWIDTI,
     Custom,
     FlairLinear,

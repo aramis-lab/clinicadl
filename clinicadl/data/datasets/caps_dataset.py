@@ -37,7 +37,7 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.typing import DataType, PathType
 
-from ..datatype.preprocessing import Preprocessing, T1Linear
+from ..datatypes.preprocessing import Preprocessing, T1Linear
 from ..readers.caps_reader import CapsReader
 from ..structures import Column, DataPoint, Mask
 from ..tensor_conversion import TensorConversion

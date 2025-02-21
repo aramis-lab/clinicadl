@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.data.datatype.file_type import FileType
+from clinicadl.data.datatypes.file_type import FileType
 
 
 def test_good_filetype():

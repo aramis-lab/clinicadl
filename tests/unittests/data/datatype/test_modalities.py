@@ -1,6 +1,6 @@
 import pytest
 
-from clinicadl.data.datatype.modalities import (
+from clinicadl.data.datatypes.modalities import (
     DWI,
     PET,
     Custom,

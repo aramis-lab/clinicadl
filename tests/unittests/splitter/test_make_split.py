@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatype.preprocessing import PETLinear, T1Linear
+from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
 from clinicadl.splitter.make_splits import make_kfold, make_split
 from clinicadl.tsvtools.utils import extract_baseline
 from clinicadl.utils.exceptions import (

@@ -5,7 +5,7 @@ import torchio.transforms as transforms
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
-from clinicadl.data.datatype.preprocessing import (
+from clinicadl.data.datatypes.preprocessing import (
     PETLinear,
     T1Linear,
 )

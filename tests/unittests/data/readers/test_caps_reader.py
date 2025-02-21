@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from clinicadl.data.datatype.preprocessing import FlairLinear, PETLinear, T1Linear
+from clinicadl.data.datatypes.preprocessing import FlairLinear, PETLinear, T1Linear
 from clinicadl.data.readers import CapsReader
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,

@@ -5,7 +5,7 @@ import torchio.transforms as transforms
 
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.datatype.preprocessing import T1Linear
+from clinicadl.data.datatypes.preprocessing import T1Linear
 from clinicadl.splitter import make_kfold, make_split
 from clinicadl.splitter.splitter import KFold, SingleSplit
 from clinicadl.transforms.extraction import Image, Patch, Slice
