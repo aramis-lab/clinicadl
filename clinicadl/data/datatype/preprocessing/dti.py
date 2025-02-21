@@ -30,24 +30,23 @@ class DTISpace(str, Enum):
 class DWIDTI(Preprocessing, DWI):
     """
     Configuration class to handle Diffusion-Weighted MRI (DWI) images,
-    preprocessed with Clinica's `dwi-dti` pipeline.
-
-    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/
+    preprocessed with Clinica's `dwi-dti <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/>`_
+    pipeline.
 
     Parameters
     ----------
     measure : DTIMeasure
-        the DTI-based measure to use, among `FA` (fractional anisotropy),
-        `MD` (mean diffusivity), `AD` (axial diffusivity) and `RD` (radial diffusivity).
+        The DTI-based measure to use, among ``FA`` (fractional anisotropy),
+        ``MD`` (mean diffusivity), ``AD`` (axial diffusivity) and ``RD`` (radial diffusivity).
     space : DTISpace
-        either `native` (the data in the native space) or `normalized` (the data in
-        MNI152Lin standard space).
-        - with `native`: only the files that match the pattern
-        `dwi/dti_based_processing/native_space/sub-*_ses-*_space-*_{measure}.nii*`
-        in the caps directory will be considered.
-        - with `normalized`: only the files that match the pattern
-        `dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*`
-        in the caps directory will be considered.
+        Either ``native`` (the data in the native space) or ``normalized`` (the data in
+        MNI152Lin standard space):\n
+        - with ``native``: only the files that match the pattern
+          ``dwi/dti_based_processing/native_space/sub-*_ses-*_space-*_{measure}.nii*``
+          in the CAPS structure will be considered.
+        - with ``normalized``: only the files that match the pattern
+          ``dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*``
+          in the CAPS structure will be considered.
     """
 
     measure: DTIMeasure

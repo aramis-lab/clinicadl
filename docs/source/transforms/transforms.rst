@@ -4,13 +4,11 @@ Transforms
 ==========
 .. autoclass:: clinicadl.transforms.Transforms
 
+.. _extraction:
+
 Extraction
 ----------
 .. currentmodule:: clinicadl.transforms.extraction
-
-Image
-*****
-.. autoclass:: Image
 
 Patch
 *****
@@ -20,10 +18,16 @@ Slice
 *****
 .. autoclass:: Slice
 
+.. _supported_transforms:
+
 Supported Transforms
 --------------------
 
-Use ``get_transform_config`` to get any :ref:`transforms_preprocessing` or  :ref:`transforms_augmentation` transform.
+Many `TorchIO <https://torchio.readthedocs.io/index.html>`_ transforms are natively supported in ClinicaDL and
+can thus be passed to :py:class:`Transforms <clinicadl.transforms.Transforms>` via configuration classes.
+Checkout out the documentation on :ref:`preprocessing transforms <transforms_preprocessing>` and
+:ref:`augmentations <transforms_augmentation>` to know the catalogue of natively supported transforms
+in ClinicaDL.
 
 .. toctree::
     :maxdepth: 1

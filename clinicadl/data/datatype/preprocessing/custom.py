@@ -14,17 +14,15 @@ class Custom(Preprocessing, CustomModality):
     """
     Configuration class to handle custom images,
     i.e. images that have not been preprocessed with any of the supported
-    Clinica's pipeline (`t1-linear`, `flair-linear`, `pet-linear`
-    and `dwi-dti`).
-
-    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/
+    Clinica's pipeline (``t1-linear``, ``flair-linear``, ``pet-linear``
+    and ``dwi-dti``).
 
     Parameters
     ----------
     custom_suffix : str
-        the suffix to identify the files to select.\n
-        Only the files that match the pattern `custom/sub-*_ses-*_{custom_suffix}.nii*`
-        in the caps directory will be considered.
+        The suffix to identify the files to select.\n
+        Only the files that match the pattern ``custom/sub-*_ses-*_{custom_suffix}.nii*``
+        in the CAPS structure will be considered.
     """
 
     @computed_field

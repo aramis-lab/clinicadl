@@ -12,20 +12,19 @@ logger = getLogger("clinicadl.data.datatype.preprocessing.flair")
 class FlairLinear(_LinearPreprocessing, Flair):
     """
     Configuration class to handle Fluid-Attenuated Inversion Recovery (FLAIR) MRI images,
-    preprocessed with Clinica's `flair-linear` pipeline.
-
-    ..seealso::https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/
+    preprocessed with Clinica's `flair-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/>`_
+    pipeline.
 
     Parameters
     ----------
     use_uncropped_image : bool (optional, default=False)
-        whether to use the uncropped images returned by Clinica.
-        - if `use_uncropped_image=True`: only the files that match the pattern
-        `"flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_flair.nii*"`
-        in the caps directory will be considered.
+        Whether to use the uncropped images returned by Clinica:\n
+        - if ``use_uncropped_image=True``: only the files that match the pattern
+          ``flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_flair.nii*``
+          in the CAPS structure will be considered.
         - else: only the files that match the pattern
-        `"flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_flair.nii*"`
-        in the caps directory will be considered.
+          ``flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_flair.nii*``
+          in the CAPS structure will be considered.
     """
 
     @computed_field

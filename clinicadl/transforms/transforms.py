@@ -1,8 +1,8 @@
 from logging import getLogger
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torchio as tio
-from pydantic import field_serializer, model_validator
+from pydantic import field_serializer, field_validator, model_validator
 
 from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
 from clinicadl.transforms.config.intensity import NanRemovalConfig
@@ -19,33 +19,83 @@ CUSTOM_TRANSFORM = "Custom transform passed by the user"
 
 class Transforms(ClinicaDLConfig):
     """
-    A configuration class for applying transformations and augmentations to dataset images and
-    samples (slices and patches).
+    Configuration class to gather all the transforms applied to images.
 
-    This class manages the various transformations applied to images and their corresponding samples,
-    including image preprocessing, sample transformation and data augmentation.
+    ClinicaDL defines 4 types of transforms:\n
+    - ``extraction``: defines on what type of elements of the image we want to work
+      (the whole image, patches or slices).
+    - ``image_transforms``: transforms applied on the whole image, **before**
+      potential extraction is applied. This is typically where you want to
+      do normalization, to normalize on the whole image and not only on a patch
+      or a slice.
+    - ``sample_transforms``: transforms applied on a sample (a patch or a slice),
+      **after** extraction. This is typically where you want to
+      resize your sample so that it fits in your network.
+    - ``augmentations``: transforms applied after ``image_transforms``, ``extraction``
+      and ``sample_transforms``, only during training.
 
-    Attributes
+    .. note::
+        :ref:`Extraction objects <extraction>` are not exactly transforms since
+        they modify the size of the datasets: if you have 10 images with 100 slices each and you want to work on slices
+        (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
+
+    For ``image_transforms``, ``sample_transforms`` and ``augmentations``, the transforms must be passed as lists.
+    ``Transforms`` will compose the transforms in these lists, so **the order in the lists is important**.
+
+    Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <supported_transforms>`, but also
+    any custom transform created by the user (see :ref:`examples <examples>`). The only requirement is that this custom transforms
+    works with :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
+    you are encouraged to **use transform configuration classes for better reproducibility**.
+
+    Parameters
     ----------
-    extraction : Extraction, (optional, default=Image())
-        The extraction method used for preprocessing the data.
+    extraction : Optional[Extraction], (optional, default=None)
+        The extraction applied. See :ref:`extraction`. Default is ``None``, which means
+        that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
+        will output full images.
     image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[NanRemovalConfig()])
-        A list of transformations to apply on the whole image.
+        A list of transformations to apply on the whole image, before extraction.
     sample_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
         A list of transformations to apply on samples (patches or slices).
+
+    .. note::
+        If ``extraction=None``, ``image_transforms`` and ``sample_transforms`` are the same.
+        They will therefore be merged in ``image_transforms``.
+
     augmentations : list[Union[Transform, TransformConfig]], (optional, default=[])
         A list of augmentation transforms, to apply on samples, only during training.
+
+    .. _examples:
+
+    Examples
+    --------
+    >>> from clinicadl.transforms import Transforms
+    >>> from clinicadl.transforms.extraction import Patch
+    >>> from clinicadl.transforms.config import ZNormalizationConfig, RandomFlipConfig
+    >>> import torchio
+    >>> Transforms(
+            extraction=Patch(patch_size=32, stride=32),
+            image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],  # torchio.CropOrPad is not a config class, so it is a custom transform
+            sample_transforms=[],
+            augmentations=[RandomFlipConfig(flip_probability=0.3)],
+        )
     """
 
-    extraction: Extraction = Image()
-    image_transforms: list[Union[Transform, TransformConfig]] = [
-        NanRemovalConfig(nan=0.0, posinf=None, neginf=None)
-    ]
+    extraction: Optional[Extraction] = None
+    image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
     _image_transforms_processed: list[Transform] = []
     _sample_transforms_processed: list[Transform] = []
     _augmentations_processed: list[Transform] = []
+
+    @field_validator("extraction", mode="after")
+    @classmethod
+    def convert_extraction(cls, v):
+        """If 'extraction' is None, changes it to Image."""
+        if v is None:
+            return Image()
+        return v
 
     @model_validator(mode="after")
     def check_transforms(self):

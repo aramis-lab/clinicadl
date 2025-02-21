@@ -58,6 +58,10 @@ class CapsDataset(Dataset):
     ``.pt`` format with to ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
     must be called.
 
+    The :ref:`output of CapsDataset <capsdataset_outputs>` (i.e. what you get when you call ``dataset[i]``) depends
+    on the type of elements of the image you work on (the whole image, patches or slices; this is defined via the
+    argument ``transforms``).
+
     .. note::
         Some characteristics of the CapsDataset depends on the extraction method used (defined via the parameter
         ``transforms``). For example, if you have 10 images with 100 slices each and you want to work on slices

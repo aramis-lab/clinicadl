@@ -15,7 +15,7 @@ from clinicadl.transforms.config import (
     ToCanonicalConfig,
     ZNormalizationConfig,
 )
-from clinicadl.transforms.extraction import Patch
+from clinicadl.transforms.extraction import Image, Patch
 
 
 def test_args():
@@ -36,6 +36,7 @@ def test_check_transforms():
         tio.Resize,
     ]
     assert transforms.sample_transforms == []
+    assert transforms.extraction == Image()
 
 
 def test_get_transforms():

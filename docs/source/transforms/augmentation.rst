@@ -6,7 +6,7 @@ Augmentation
 ============
 
 Composition
----------
+-----------
 .. autoclass:: OneOfConfig
 
 Intensity

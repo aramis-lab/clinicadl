@@ -18,4 +18,3 @@ ClinicaDL documentation
 
    api
    data/data
-   transforms/transforms

@@ -7,9 +7,6 @@ At the moment, ClinicaDL only works with data organized in a
 `CAPS <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/>`_
 structure.
 
-CAPS data
----------
-
 To manipulate data organized in a CAPS structure, ClinicaDL introduces a
 :ref:`CapsDataset <caps_datasets>`, which is a `PyTorch dataset <https://pytorch.org/tutorials/beginner/basics/data_tutorial.html>`_
 with some specificities.
@@ -22,7 +19,7 @@ right images in your CAPS structure.
 
 Finally, the last ClinicaDL object that needs to be introduced here is :ref:`transforms`.
 This object aims to gather all the transforms that will be applied to the images
-when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch extraction).
+when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice extraction).
 
 .. toctree::
     :maxdepth: 1
