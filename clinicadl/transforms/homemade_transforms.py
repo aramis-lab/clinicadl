@@ -8,7 +8,7 @@ class NanRemoval(tio.IntensityTransform):
     """
     Replaces NaN, positive infinity, and negative infinity values.
 
-    See also [torch.nan_to_num](https://pytorch.org/docs/stable/generated/torch.nan_to_num.html).
+    See also :py:func:`torch.nan_to_num`.
 
     Parameters
     ----------

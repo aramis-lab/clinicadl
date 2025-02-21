@@ -31,7 +31,9 @@ __all__ = [
 
 
 class RandomFlipConfig(TransformConfig):
-    """Config class for RandomFlip augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.RandomFlip`.
+    """
 
     axes: Union[
         NumericalAxis,
@@ -85,7 +87,9 @@ SpatialRange = Union[
 
 
 class RandomAffineConfig(TransformConfig):
-    """Config class for RandomAffine augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.RandomAffine`.
+    """
 
     scales: SpatialRange
     degrees: SpatialRange
@@ -148,7 +152,9 @@ class RandomAffineConfig(TransformConfig):
 
 
 class RandomElasticDeformationConfig(TransformConfig):
-    """Config class for RandomElasticDeformation augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.RandomElasticDeformation`.
+    """
 
     num_control_points: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
     max_displacement: Union[
@@ -215,7 +221,9 @@ class RandomElasticDeformationConfig(TransformConfig):
 
 
 class RandomAnisotropyConfig(TransformConfig):
-    """Config class for RandomAnisotropy augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.RandomAnisotropy`.
+    """
 
     axes: Union[NumericalAxis, Tuple[NumericalAxis, ...]]
     downsampling: Union[PositiveFloat, Tuple[PositiveFloat, PositiveFloat]]

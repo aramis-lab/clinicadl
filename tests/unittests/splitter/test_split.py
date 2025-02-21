@@ -6,7 +6,7 @@ from torch.utils.data import WeightedRandomSampler
 
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatype import PETLinear
+from clinicadl.data.datatypes import PETLinear
 from clinicadl.splitter.split import Split
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"

@@ -75,7 +75,9 @@ class TransformConfig(NewClinicaDLConfig):
 
 
 class OneOfConfig(TransformConfig):
-    """Config class for OneOf augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.OneOf`.
+    """
 
     transforms: List[TransformConfig]
     probabilities: Optional[List[NonNegativeFloat]] = None

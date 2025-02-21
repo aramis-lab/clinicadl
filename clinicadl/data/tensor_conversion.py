@@ -29,7 +29,7 @@ from clinicadl.utils.exceptions import (
 )
 from clinicadl.utils.typing import PathType
 
-from .datatype.preprocessing import Preprocessing, get_preprocessing_config
+from .datatypes.preprocessing import Preprocessing, get_preprocessing_config
 from .structures import DataPoint, Mask
 
 if TYPE_CHECKING:

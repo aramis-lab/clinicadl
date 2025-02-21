@@ -29,7 +29,9 @@ __all__ = [
 
 
 class CropOrPadConfig(TransformConfig):
-    """Config class for CropOrPad transform."""
+    """
+    Config class for :py:class:`torchio.transforms.CropOrPad`.
+    """
 
     target_shape: Optional[
         Union[
@@ -90,7 +92,9 @@ class CropOrPadConfig(TransformConfig):
 
 
 class ToCanonicalConfig(TransformConfig):
-    """Config class for ToCanonical transform."""
+    """
+    Config class for :py:class:`torchio.transforms.ToCanonical`.
+    """
 
     @computed_field
     @property
@@ -104,7 +108,9 @@ class ToCanonicalConfig(TransformConfig):
 
 
 class ResizeConfig(TransformConfig):
-    """Config class for Resize transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Resize`.
+    """
 
     target_shape: Union[int, Tuple[int, int, int]]
     image_interpolation: InterpolationMode
@@ -158,7 +164,9 @@ class ResizeConfig(TransformConfig):
 
 
 class ResampleConfig(TransformConfig):
-    """Config class for Resample transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Resample`.
+    """
 
     target: Union[
         PositiveFloat,
@@ -242,7 +250,9 @@ class ResampleConfig(TransformConfig):
 
 
 class EnsureShapeMultipleConfig(TransformConfig):
-    """Config class for EnsureShapeMultiple transform."""
+    """
+    Config class for :py:class:`torchio.transforms.EnsureShapeMultiple`.
+    """
 
     target_multiple: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
     method: EnsureShapeMultipleMode
@@ -273,7 +283,9 @@ class EnsureShapeMultipleConfig(TransformConfig):
 
 
 class CropConfig(TransformConfig):
-    """Config class for Crop transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Crop`.
+    """
 
     cropping: Bounds
 
@@ -294,7 +306,9 @@ class CropConfig(TransformConfig):
 
 
 class PadConfig(TransformConfig):
-    """Config class for Pad transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Pad`.
+    """
 
     padding: Bounds
     padding_mode: Union[float, PaddingMode]

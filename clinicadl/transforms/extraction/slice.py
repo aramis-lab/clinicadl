@@ -31,20 +31,23 @@ class SliceSample(Sample):
     Attributes
     ----------
     sample : torch.Tensor
-       the slice as a PyTorch tensor with 1 channel dimension and
-       2 (`squeeze=True`) or 3 (`squeeze=False`) spatial dimensions.
+       The slice as a PyTorch tensor with 1 channel dimension and
+       2 (``squeeze=True``) or 3 (``squeeze=False``) spatial dimensions.
     affine : np.ndarray
-        the affine matrix associated to the patch.
+        The affine matrix associated to the slice.
     participant : str
-        the participant concerned.
+        The participant concerned.
     session : str
-        the session concerned.
+        The session concerned.
     image_path : str
-        the path to the image from which the slice has been extracted.
+        The path to the image from which the slice has been extracted.
+    label : Optional[Union[float, int, torch.Tensor]]
+        The potential label associated to the slice.
     slice_position : int
-        position of the slice in the original image.
+        The position of the slice in the original image.
     slice_direction : SliceDirection
-        the slicing direction. Can be 0 (sagittal direction), 1 (coronal) or 2 (axial).
+        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
+        or ``2`` (axial).
     """
 
     slice_position: NonNegativeInt
@@ -61,29 +64,27 @@ class Slice(Extraction):
     """
     Transform class to extract slices from an image in a specified direction.
 
-    This class allows users to define extraction configurations for obtaining slices from a 4D image tensor
-    (with one channel dimension).
-    The slices can be extracted in different directions (e.g., sagittal, coronal, axial).
-
     Parameters
     ----------
     slices : Optional[List[NonNegativeInt]] (optional, default=None)
-        the slices to select. If None, slices will be selected with `discarded_slices``
-        and/or `borders`. If all these three parameters are None, all slices will be
+        The slices to select. If ``None``, slices will be selected with ``discarded_slices``
+        and/or ``borders``. If all these three parameters are ``None``, all slices will be
         kept.
     discarded_slices : Optional[List[NonNegativeInt]] (optional, default=None)
-        indices of the slices to discard. Cannot be used with `slices`.
+        Indices of the slices to discard. Cannot be used with ``slices``.
     borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] (optional, default=None)
-        the number of border slices, that will be filtered out. If an integer `a` is passed, the first
-        `a` slices and the last `a` slices will be filtered out. If a tuple `(a, b)` is passed, the first
-        `a` slices and the last `b` slices will be filtered out.
+        The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
+        ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
+        ``a`` slices and the last ``b`` slices will be filtered out.
     slice_direction : SliceDirection (optional, default=SliceDirection.SAGITTAL)
-        the slicing direction. Can be 0 (sagittal direction), 1 (coronal) or 2 (axial).
+        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
     squeeze : bool (optional, default=True)
-        whether to squeeze slices to have images with 2 spatial dimensions.
-        If False, slices will still have 3 spatial dimensions.
-        ..note::squeezing is performed after applying transforms because ClinicaDL transforms
-        only accepts images with 3 spatial dimensions.
+        Whether to squeeze slices to have images with 2 spatial dimensions.
+        If ``False``, slices will still have 3 spatial dimensions.
+
+        .. note::
+            Squeezing is performed after applying transforms because ClinicaDL transforms
+            only accepts images with 3 spatial dimensions.
     """
 
     slices: Optional[List[NonNegativeInt]] = None

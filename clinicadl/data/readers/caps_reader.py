@@ -5,8 +5,8 @@ from typing import Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-from clinicadl.data.datatype.enum import PreprocessingMethod
-from clinicadl.data.datatype.preprocessing import Preprocessing
+from clinicadl.data.datatypes.enum import PreprocessingMethod
+from clinicadl.data.datatypes.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID, SUBJECTS, TENSORS

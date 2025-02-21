@@ -16,22 +16,23 @@ logger = getLogger("clinicadl.transforms.extraction.image")
 
 class ImageSample(Sample):
     """
-    Output of a CapsDataset when image extraction is performed (i.e. no extraction).
+    Output of a CapsDataset when no extraction is performed and
+    thus the full image is returned.
 
     Attributes
     ----------
     sample : torch.Tensor
-        the image as a 4D PyTorch tensor (with one channel dimension).
+        The image as a 4D PyTorch tensor (with one channel dimension).
     affine : np.ndarray
-        the affine matrix associated to the image.
+        The affine matrix associated to the image.
     participant : str
-        the participant concerned.
+        The participant concerned.
     session : str
-        the session concerned.
+        The session concerned.
     image_path : str
-        the path to the image.
+        The path to the image.
     label : Optional[Union[float, int, torch.Tensor]]
-        the potential label associated to the image.
+        The potential label associated to the image.
     """
 
     @computed_field
@@ -43,10 +44,8 @@ class ImageSample(Sample):
 
 class Image(Extraction):
     """
-    Transform class for full image extraction as a single tensor.
-
-    This class implements the extraction process to get the full image, where the entire
-    image is loaded and returned as a single tensor.
+    Transform class for full image extraction, which is equivalent to
+    no extraction.
     """
 
     @computed_field
