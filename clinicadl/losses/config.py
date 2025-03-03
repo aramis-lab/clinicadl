@@ -64,7 +64,7 @@ class _WeightConfig(ClinicaDLConfig):
 
 class NLLLossConfig(LossConfig, _WeightConfig):
     """
-    Config class for :py:class:`torchio.nn.NLLLoss`.
+    Config class for :py:class:`torch.nn.NLLLoss`.
     """
 
     ignore_index: int
@@ -101,7 +101,7 @@ class NLLLossConfig(LossConfig, _WeightConfig):
 
 class CrossEntropyLossConfig(NLLLossConfig):
     """
-    Config class for :py:class:`torchio.nn.CrossEntropyLoss`.
+    Config class for :py:class:`torch.nn.CrossEntropyLoss`.
     """
 
     label_smoothing: NonNegativeFloat
@@ -146,7 +146,7 @@ class CrossEntropyLossConfig(NLLLossConfig):
 
 class BCELossConfig(LossConfig, _WeightConfig):
     """
-    Config class for :py:class:`torchio.nn.BCELoss`.
+    Config class for :py:class:`torch.nn.BCELoss`.
     """
 
     def __init__(
@@ -183,7 +183,7 @@ class BCELossConfig(LossConfig, _WeightConfig):
 
 class BCEWithLogitsLossConfig(BCELossConfig):
     """
-    Config class for :py:class:`torchio.nn.BCEWithLogitsLoss`.
+    Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
     """
 
     pos_weight: Optional[List[Any]]
@@ -235,7 +235,7 @@ class BCEWithLogitsLossConfig(BCELossConfig):
 
 class MultiMarginLossConfig(LossConfig, _WeightConfig):
     """
-    Config class for :py:class:`torchio.nn.MultiMarginLoss`.
+    Config class for :py:class:`torch.nn.MultiMarginLoss`.
     """
 
     p: Order
@@ -270,7 +270,7 @@ class MultiMarginLossConfig(LossConfig, _WeightConfig):
 
 class KLDivLossConfig(LossConfig):
     """
-    Config class for :py:class:`torchio.nn.KLDivLoss`.
+    Config class for :py:class:`torch.nn.KLDivLoss`.
     """
 
     log_target: bool
@@ -298,7 +298,7 @@ class KLDivLossConfig(LossConfig):
 
 class HuberLossConfig(LossConfig):
     """
-    Config class for :py:class:`torchio.nn.HuberLoss`.
+    Config class for :py:class:`torch.nn.HuberLoss`.
     """
 
     delta: PositiveFloat
@@ -326,7 +326,7 @@ class HuberLossConfig(LossConfig):
 
 class SmoothL1LossConfig(LossConfig):
     """
-    Config class for :py:class:`torchio.nn.SmoothL1Loss`.
+    Config class for :py:class:`torch.nn.SmoothL1Loss`.
     """
 
     beta: NonNegativeFloat
@@ -354,7 +354,7 @@ class SmoothL1LossConfig(LossConfig):
 
 class L1LossConfig(LossConfig):
     """
-    Config class for :py:class:`torchio.nn.L1Loss`.
+    Config class for :py:class:`torch.nn.L1Loss`.
     """
 
     def __init__(
@@ -378,7 +378,7 @@ class L1LossConfig(LossConfig):
 
 class MSELossConfig(LossConfig):
     """
-    Config class for :py:class:`torchio.nn.MSELoss`.
+    Config class for :py:class:`torch.nn.MSELoss`.
     """
 
     def __init__(
