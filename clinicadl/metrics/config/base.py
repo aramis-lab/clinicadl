@@ -7,7 +7,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.losses.utils import Loss
+from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 

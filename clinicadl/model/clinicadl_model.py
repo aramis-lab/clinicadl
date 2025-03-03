@@ -6,7 +6,7 @@ from torch.optim.optimizer import Optimizer
 
 from clinicadl.losses import get_loss_function_from_config
 from clinicadl.losses.config import LossConfig
-from clinicadl.losses.utils import Loss
+from clinicadl.losses.types import Loss
 from clinicadl.networks import get_network_from_config
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.optim import get_optimizer_from_config
