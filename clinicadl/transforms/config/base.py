@@ -9,7 +9,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
 
 from .enum import (
     AnatomicalLabel,
@@ -146,7 +146,7 @@ Bounds = Union[
 ]
 
 
-class MaskingMethodConfig(NewClinicaDLConfig):
+class MaskingMethodConfig(ClinicaDLConfig):
     """Base config class 'masking_method' argument."""
 
     masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
