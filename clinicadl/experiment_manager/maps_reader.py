@@ -3,17 +3,19 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import pandas as pd
 import torch
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV
+from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
 from clinicadl.dictionary.words import (
     BEST,
     CHECKPOINT,
+    DATA,
     DESCRIPTION,
+    ENVIRONMENT,
     GROUPS,
     INFORMATION,
     MAPS,
@@ -30,10 +32,13 @@ from clinicadl.metrics.metrics import Metrics
 from clinicadl.model import ClinicaDLModel
 from clinicadl.splitter.split import Split
 from clinicadl.tsvtools.utils import tsv_to_df
+from clinicadl.utils import cluster
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
 )
+from clinicadl.utils.iotools.utils import path_encoder
 from clinicadl.utils.typing import PathType
 
 
@@ -63,6 +68,30 @@ class MapsReader:
 
     ###### GETTER ########
 
+    def read_json(self) -> dict:
+        """Reads the maps.json file."""
+        if not self.maps_json_path().is_file():
+            raise ClinicaDLConfigurationError("Could not find maps.json")
+
+        with open(self.maps_json_path(), "r") as file:
+            x = json.load(file)
+            return json.loads(x)
+
+    def get_config(
+        self, config: Union[Type[ClinicaDLConfig], list[Type[ClinicaDLConfig]]]
+    ) -> Union[ClinicaDLConfig, list[ClinicaDLConfig]]:
+        """Reads the configuration file."""
+        dict_ = self.read_json()
+
+        if isinstance(config, type(ClinicaDLConfig)):
+            return config(**dict_)
+
+        if isinstance(config, list):
+            return [conf(**dict_) for conf in config]
+        # need to know which network this is
+
+        raise ClinicaDLConfigurationError("Invalid config type")
+
     def get_data_group(self, name: str, split: Optional[int] = None) -> DataGroup:
         """creates a new data_group."""
         data_group = DataGroup(name=name, split=split, maps_path=self.maps_path)
@@ -78,14 +107,27 @@ class MapsReader:
         path = self.maps_path / GROUPS / "train+validation.tsv"
         return tsv_to_df(path)
 
-    def get_model(self, split: Split, metrics: Metrics) -> ClinicaDLModel:
-        self.model_path(split.index, metrics)
+    def get_model(self, split: int, selection_metric: str = "loss") -> ClinicaDLModel:
+        self.model_path(split, selection_metric)
         return ClinicaDLModel()  # type: ignore
 
     def load_metrics(self) -> Metrics:
         return Metrics()  # type: ignore
 
     ##### WRITERS #######
+
+    def write_model_info(self, model: ClinicaDLModel):
+        if model._network_config:
+            self._write_maps_json(model._network_config)
+
+        if model._loss_config:
+            self._write_maps_json(model._loss_config)
+
+        if model._optimizer_config:
+            self._write_maps_json(model._optimizer_config)
+
+    def write_split_info(self, split: Split):
+        self._write_split_json(split)
 
     def write_training_tsv(self, split: Split, metrics: Metrics):
         """Creates a training.tsv file."""
@@ -187,7 +229,7 @@ class MapsReader:
         with (self.maps_path / file_name).open(mode="w") as f:
             f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
             f.write(f"- Path :\t{self.maps_path}\n\n")
-            # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
+            # f.write("- Job ID :\t{}\n".format(cluster.?))
             f.write(f"- Model :\t{model.network.layers}\n\n")
 
     @staticmethod
@@ -226,14 +268,58 @@ class MapsReader:
         """TO COMPLETE"""
         pass
 
-    def _write_maps_json(self):
+    def _write_maps_json(
+        self, config: Optional[ClinicaDLConfig] = None, dict_: Optional[dict] = None
+    ):
         """Writes the maps.json file."""
-        if self.maps_json_path().is_file():
-            raise ClinicaDLConfigurationError(
-                "The maps.json file for this MPS already exists"
-            )
-        with (self.maps_json_path()).open(mode="w") as file:
-            json.dump({"test1": 1, "test": 2}, file, indent=4)
+        json_path = self.maps_json_path()
+        self._write_json(json_path, config, dict_)
+
+    def _write_split_json(self, split: Split):
+        """Writes the maps.json file."""
+        json_path = self.split_json_path(split.index)
+        self._write_json(json_path)  # called to create split
+
+        dict_ = split.model_dump(exclude={"train_loader", "val_loader"})
+
+        dict_["val_dataset"] = split.val_dataset.describe()
+        dict_["train_dataset"] = split.train_dataset.describe()
+
+        self._write_json(json_path, dict_=dict_)  # called to add data to the split.json
+        print(self.split_json_path(split=split.index))
+
+    def _write_json(
+        self,
+        json_path: Path,
+        config: Optional[ClinicaDLConfig] = None,
+        dict_: Optional[dict] = None,
+    ):
+        if config or dict_:  # the maps is supposed to already exists to write more info
+            if not json_path.is_file():
+                raise ClinicaDLConfigurationError(
+                    "The maps.json file for this MAPS does not exist."
+                )
+            with (json_path).open(mode="w") as file:
+                if config:
+                    json.dump(
+                        config.model_dump_json(indent=4),
+                        file,
+                        indent=4,
+                        default=path_encoder,
+                    )
+                if dict_:
+                    json.dump(dict_, file, indent=4, default=path_encoder)
+
+        else:  # the maps is not supposed to exists
+            if json_path.is_file():
+                raise ClinicaDLConfigurationError(
+                    f"The json file {json_path} already exists"
+                )
+            json_path.parent.mkdir(parents=True, exist_ok=True)
+            with (json_path).open(mode="w") as file:
+                json.dump(
+                    {"maps_path": self.maps_path}, file, indent=4, default=path_encoder
+                )
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -287,7 +373,7 @@ class MapsReader:
             metric_path.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(checkpoint_path, metric_path / best_filename)
 
-        loss_path = self.split_path(split) / "best-loss"
+        loss_path = self.best_metric_path(split=split, metric="loss")
         loss_path.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(checkpoint_path, loss_path / best_filename)
 
@@ -338,14 +424,34 @@ class MapsReader:
 
     ##### PATH #####
 
+    # FIRST LEVEL FILES
     def maps_json_path(self) -> Path:
         return self.maps_path / (MAPS + JSON)
 
-    def train_val_tsv_path(self) -> Path:
-        return self.maps_path / GROUPS / ("train+validation" + TSV)
-
     def information_log_path(self) -> Path:
         return self.maps_path / (INFORMATION + LOG)
+
+    def environment_txt_path(self) -> Path:
+        return self.maps_path / (ENVIRONMENT + TXT)
+
+    # FIRST LEVEL DIRECTORIES
+    def groups_path(self) -> Path:
+        return self.maps_path / GROUPS
+
+    def split_path(self, split: int) -> Path:
+        return self.maps_path / (SPLIT + "-" + str(split))
+
+    # SPLIT LEVEL
+
+    def split_json_path(self, split: int) -> Path:
+        return self.split_path(split) / (SPLIT + JSON)
+
+    # SPLIT / TMP PATH
+    def tmp_dir_path(self, split: int, resume: bool = False) -> Path:
+        checkpoint_dir = self.split_path(split) / TMP
+        if not checkpoint_dir.is_dir():
+            checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        return checkpoint_dir
 
     def description_log_path(
         self, split: int, selection_metric: str, data_group: str
@@ -354,39 +460,29 @@ class MapsReader:
             DESCRIPTION + LOG
         )
 
-    def split_path(self, split: int) -> Path:
-        return self.maps_path / (SPLIT + "-" + str(split))
-
     def optimizer_path(self, split: int, resume: bool = False) -> Path:
-        return self.split_path(split) / TMP / (OPTIMIZER + PTH + TAR)
+        return self.tmp_dir_path(split) / (OPTIMIZER + PTH + TAR)
 
-    def tmp_dir_path(self, split: int, resume: bool = False) -> Path:
-        checkpoint_dir = self.split_path(split) / TMP
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        return checkpoint_dir
+    def checkpoint_path(self, split: int, resume: bool = False) -> Path:
+        return self.tmp_dir_path(split) / (CHECKPOINT + PTH + TAR)
 
+    # SPLIT / ALL MODELS
     def all_model_dir_path(self, split: int, resume: bool = False) -> Path:
         all_models_dir = self.split_path(split) / "all_models"
         all_models_dir.mkdir(parents=True, exist_ok=True)
         return all_models_dir
 
-    def checkpoint_path(self, split: int, resume: bool = False) -> Path:
-        return self.tmp_dir_path(split) / (CHECKPOINT + PTH + TAR)
+    # SPLIT / BEST METRIC DIR
+    def best_metric_path(self, split: int, metric: str) -> Path:
+        return self.split_path(split) / f"{BEST}-{metric}"
 
     def model_path(self, split: int, metric: str) -> Path:
         return self.best_metric_path(split, metric) / (MODEL + PTH + TAR)
 
-    def best_metric_path(self, split: int, metric: str) -> Path:
-        return self.split_path(split) / f"{BEST}-{metric}"
+    # SPLIT / BEST METRICS / DATA GROUP
 
     def metrics_data_group_path(self, split: int, metric: str, data_group: str) -> Path:
         return self.best_metric_path(split, metric) / data_group
-
-    def training_logs_dir_path(self, split: int) -> Path:
-        return self.split_path(split) / "training_logs"
-
-    def training_tsv_path(self, split: int) -> Path:
-        return self.training_logs_dir_path(split) / (TRAINING + TSV)
 
     def prediction_tsv_path(self, split: int, metric: str, data_group: str) -> Path:
         return (
@@ -399,3 +495,41 @@ class MapsReader:
             self.metrics_data_group_path(split, metric, data_group)
             / f"{data_group}_metrics.tsv"
         )
+
+    def best_metric_description_log(
+        self, split: int, metric: str, data_group: str
+    ) -> Path:
+        return self.metrics_data_group_path(split, metric, data_group) / (
+            DESCRIPTION + LOG
+        )
+
+    # SPLIT / TRAINING LOGS
+    def training_logs_dir_path(self, split: int) -> Path:
+        return self.split_path(split) / "training_logs"
+
+    def tensorboard_dir(self, split: int) -> Path:
+        return self.training_logs_dir_path(split) / "tensorboard"
+
+    def training_tsv_path(self, split: int) -> Path:
+        return self.training_logs_dir_path(split) / (TRAINING + TSV)
+
+    # GROUPS LEVEL
+
+    def train_val_tsv_path(self) -> Path:
+        return self.groups_path() / ("train+validation" + TSV)
+
+    # GROUPS / DATA GROUP
+    def groups_data_group_path(self, data_group: str):
+        return self.groups_path() / data_group
+
+    # GROUPS / DATA GROUP / SPLIT
+    def groups_data_group_split_path(self, data_group: str, split: int) -> Path:
+        return self.groups_data_group_path(data_group) / (SPLIT + "-" + str(split))
+
+    def groups_data_group_split_tsv_path(self, data_group: str, split: int) -> Path:
+        return self.groups_data_group_split_path(data_group, split) / (DATA + TSV)
+
+    def groups_data_group_split_maps_json_path(
+        self, data_group: str, split: int
+    ) -> Path:
+        return self.groups_data_group_split_path(data_group, split) / (MAPS + JSON)

@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import NonNegativeInt, PositiveInt
 from torch.utils.data import DataLoader
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 

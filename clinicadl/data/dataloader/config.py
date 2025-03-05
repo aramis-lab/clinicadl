@@ -1,9 +1,10 @@
-from typing import Callable, Iterable, List, Optional, TypeVar, Union
+from typing import Optional
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
 from torch.utils.data import DataLoader, DistributedSampler, Sampler
 from torch.utils.data import WeightedRandomSampler as BaseWeightedRandomSampler
 
+from clinicadl.data.dataloader import BatchLoader
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
@@ -118,7 +119,9 @@ class DataLoaderConfig(ClinicaDLConfig):
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
-            collate_fn=lambda x: x,  # TODO: check if we want to maybe return something else in the dataloader ?
+            collate_fn=lambda x: BatchLoader(
+                x
+            ),  # TODO: check if we want to maybe return something else in the dataloader ?
             **self.model_dump(exclude=set(["sampling_weights", "shuffle"])),
         )
 

@@ -117,10 +117,11 @@ class BaseMetrics:
 
 
 class Metrics:
-    def __init__(self, metrics: list[MonaiMetric]):
+    def __init__(self, metrics: list[MonaiMetric], selection_metric: str = "loss"):
         self.metrics = metrics
         self.train = BaseMetrics(metrics)
         self.val = BaseMetrics(metrics)
+        self.selection_metric = selection_metric
 
     def on_epoch_end(self, epoch: int):
         self.train.df.loc[(epoch, "mean"), :] = self.train.df.loc[epoch, :].mean()

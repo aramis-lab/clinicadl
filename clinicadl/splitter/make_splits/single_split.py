@@ -9,6 +9,7 @@ from scipy.stats import chisquare, ttest_ind
 from sklearn.model_selection import ShuffleSplit
 
 from clinicadl.splitter.make_splits.utils import write_to_csv
+from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
 from clinicadl.tsvtools.utils import extract_baseline, tsv_to_df
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError

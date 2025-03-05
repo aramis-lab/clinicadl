@@ -65,11 +65,17 @@ class Trainer:
 
         #####
         self.maps_path = Path(maps_path)
-        self.comp = comp_config
-        self.optim = optim_config
 
+        self.comp = comp_config
+        self.reader._write_maps_json(comp_config)
+
+        self.optim = optim_config
+        self.reader._write_maps_json(optim_config)
+
+        # will be different if resume is called
         self.current_epoch: int = 0
 
+        # seed initialization
         seed_everything(123, deterministic=False, compensation="memory")
 
         # Chronometer initialisation
@@ -137,7 +143,13 @@ class Trainer:
     def train(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
         """TO COMPLETE"""
 
-        self.validator = Predictor(reader=self.reader, metrics=metrics)
+        self.reader.write_model_info(model)
+        self.reader.write_split_info(split)
+
+        self.validator = Predictor(
+            maps_path=self.reader.maps_path, comp_config=self.comp, model=model
+        )
+
         self.on_train_begin(model, split, metrics)
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(
@@ -150,17 +162,10 @@ class Trainer:
                 print(f"############# BATCH {batch}################")
 
                 self.on_batch_begin()
+
                 ############
-                images = (
-                    torch.cat(list(i.sample for i in data), dim=0)
-                    .unsqueeze(1)
-                    .to(self.comp.device)
-                )
-                labels = (
-                    torch.tensor([i.label for i in data], dtype=torch.float32)
-                    .unsqueeze(1)
-                    .to(self.comp.device)
-                )  # TO REMOVE AND CHECK FOR MASK
+                images = data.get_images().to(self.comp.device)
+                labels = data.get_labels().to(self.comp.device)
                 ############
 
                 with autocast(self.comp.device.type, enabled=self.comp.amp):
@@ -202,7 +207,7 @@ class Trainer:
         model.network.zero_grad(set_to_none=True)
         # Update learning rate based on validation loss
         self.validator.test(
-            split.val_loader, model, epoch=self.epoch
+            split.val_loader, metrics=metrics, epoch=self.epoch
         )  # compute tout sur val
         self.scheduler.step()
 

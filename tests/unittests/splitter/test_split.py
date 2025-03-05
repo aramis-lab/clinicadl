@@ -5,7 +5,7 @@ import pytest
 from torch.utils.data import WeightedRandomSampler
 
 from clinicadl.data import CapsDataset
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datatype import PETLinear
 from clinicadl.splitter.split import Split
 

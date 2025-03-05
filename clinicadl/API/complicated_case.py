@@ -4,7 +4,7 @@ import torch
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric, MSEMetric
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatype.preprocessing import T1Linear
 from clinicadl.losses.config import MSELossConfig
@@ -21,8 +21,8 @@ from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
+from clinicadl.transforms import OutputTransforms, Transforms
 from clinicadl.transforms.extraction import Image, Slice
-from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.seed import seed_everything
 
@@ -56,7 +56,9 @@ dataset_t1_image.to_tensors(
 
 # CAS CROSS-VALIDATION
 
-split_dir = make_split(sub_ses_t1, n_test=0.2)  # Optional data tsv and output_dir
+split_dir = make_split(
+    sub_ses_t1, n_test=0.2
+)  # Optional data tsv and output_dir DOIT RETOURNER UN SPLIT
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 splitter = KFold(fold_dir)
 
@@ -101,15 +103,27 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
 
 # TEST
 
-dataset_test = dataset_t1_image.subset(
-    "/Users/camille.brianceau/aramis/CLINICADL/caps/split_78/test_baseline.tsv"
-)
-predictor = Predictor(maps_path, optim_config, comput_config)
-
-# dataset_test = CapsDataset(
-#     caps_directory=caps_directory,
-#     data=sub_ses_t1,
-#     preprocessing=preprocessing_t1,
-#     transforms=transforms_image,
-#     label= "diagnosis",
+# dataset_test = dataset_t1_image.subset(
+#     "/Users/camille.brianceau/aramis/CLINICADL/caps/split/test_baseline.tsv"
 # )
+
+dataset_test = CapsDataset(
+    caps_directory=caps_directory,
+    data=sub_ses_t1,
+    preprocessing=preprocessing_t1,
+    transforms=transforms_image,
+    label="diagnosis",
+)
+
+# output_transforms = OutputTransforms(
+#     sample_transforms=[transforms.RandomMotion()]
+# )
+
+predictor = Predictor(maps_path, comp_config=comput_config, model=model)
+predictor.predict(
+    dataset=dataset_t1_image,
+    split_dir=split_dir,
+    data_loader_config=dataloader_config,
+    metrics=metrics,
+)
+# predictor.predict(dataset_tes_2)
