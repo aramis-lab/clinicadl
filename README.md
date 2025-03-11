@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="http://www.clinicadl.readthedocs.io">
-    <img src="https://clinicadl.readthedocs.io/en/latest/images/logo.png" alt="ClinicaDL Logo" width="120" height="120">
+    <img src="https://clinicadl.readthedocs.io/en/stable/images/logo.png" alt="ClinicaDL Logo" width="120" height="120">
   </a>
   <br/>
   ClinicaDL
@@ -9,9 +9,6 @@
 <p align="center"><strong>Framework for the reproducible processing of neuroimaging data with deep learning methods</strong></p>
 
 <p align="center">
-  <a href="https://ci.inria.fr/clinicadl/job/AD-DL/job/dev/">
-    <img src="https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fdev" alt="Build Status">
-  </a>
   <a href="https://badge.fury.io/py/clinicadl">
     <img src="https://badge.fury.io/py/clinicadl.svg" alt="PyPI version">
   </a>
