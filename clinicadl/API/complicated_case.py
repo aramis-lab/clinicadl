@@ -63,42 +63,50 @@ fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 splitter = KFold(fold_dir)
 
 
-optim_config = OptimizationConfig()
+optim_config = OptimizationConfig(epochs=4)
 comput_config = ComputationalConfig(gpu=False)
-maps_path = Path("maps_test")
+dataloader_config = DataLoaderConfig(batch_size=3)
 
-trainer = Trainer(maps_path, optim_config, comput_config)
+
+maps_path = Path("maps_test")
 print(maps_path.resolve())
 
-dataloader_config = DataLoaderConfig(
-    batch_size=3,
+# DEFINE MODEL
+model = ClinicaDLModel.from_config(
+    network_config=get_network_config(
+        ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
+    ),
+    loss_config=MSELossConfig(),
+    optimizer_config=AdamConfig(),
 )
+
+
+# DEFINE METRICS
+metrics = Metrics(
+    metrics=[MSEMetricConfig(), MAEMetricConfig()],
+    selection_metrics=[MSEMetricConfig(), "Loss"],
+)
+
+
+trainer = Trainer(
+    maps_path,
+    model=model,
+    comp_config=comput_config,
+    optim_config=optim_config,
+    metrics=metrics,
+)
+
 
 # CROOS VALIDATION LOOP
 for split in splitter.get_splits(dataset=dataset_t1_image):
     print(f"Training for split {split.index}")
-
-    # DEFINE MODEL
-    model = ClinicaDLModel.from_config(
-        network_config=get_network_config(
-            ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
-        ),
-        loss_config=MSELossConfig(),
-        optimizer_config=AdamConfig(),
-    )
-    # DEFINE METRICS
-    metrics = Metrics(metrics=[MSEMetric(), MAEMetric()])
 
     # BUILD DATALOADER
     split.build_train_loader(dataloader_config)
     split.build_val_loader(dataloader_config)
 
     # TRAIN
-    trainer.train(
-        model,
-        split,
-        metrics=metrics,
-    )
+    trainer.train(split)
     # le trainer va instancier un predictor/valdiator dans le train ou dans le init
 
 # TEST
@@ -109,21 +117,18 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
 
 dataset_test = CapsDataset(
     caps_directory=caps_directory,
-    data=sub_ses_t1,
+    data=split_dir / "test_baseline.tsv",
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
     label="diagnosis",
 )
+dataset_test.to_tensors(json_name="test_test.json", n_proc=2)
 
-# output_transforms = OutputTransforms(
-#     sample_transforms=[transforms.RandomMotion()]
-# )
+
+output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])
 
 predictor = Predictor(maps_path, comp_config=comput_config, model=model)
-predictor.predict(
-    dataset=dataset_t1_image,
-    split_dir=split_dir,
-    data_loader_config=dataloader_config,
-    metrics=metrics,
-)
-# predictor.predict(dataset_tes_2)
+
+dataloader = dataloader_config.get_dataloader(dataset_test)
+
+predictor.predict(dataloader, metrics=metrics, split=1, data_group="test")

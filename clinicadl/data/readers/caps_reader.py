@@ -250,9 +250,6 @@ class CapsReader(Reader):
         else:
             return Path(current_glob_found[0])
 
-    # /Users/camille.brianceau/aramis/CLINICADL/caps/subjects/sub-003/ses-M000/t1_linear/sub-003_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*
-    # /Users/camille.brianceau/aramis/CLINICADL/caps/subjects/sub-003/ses-M000/t1_linear/sub-003_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz
-
     def get_common_mask_path(self, mask_name: PathType) -> Path:
         """
         Gives the full path of a common mask, from the file name.

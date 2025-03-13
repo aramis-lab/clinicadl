@@ -14,6 +14,7 @@ from .enum import (
     DistanceMetric,
     GeneralizedDiceScoreReduction,
     ImplementedMetric,
+    Optimum,
     WeightType,
 )
 
@@ -49,6 +50,11 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
         """The name of the metric."""
         return ImplementedMetric.DICE
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
     @field_validator("return_with_label", mode="after")
     @classmethod
     def validator_return_with_label(cls, v):
@@ -68,6 +74,11 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
         """The name of the metric."""
         return ImplementedMetric.IOU
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
 
 class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     """Config class for generalized Dice score."""
@@ -82,6 +93,11 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.GENERALIZED_DICE
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
 
 
 class _BaseSurfaceDistanceConfig(
@@ -103,6 +119,11 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         """The name of the metric."""
         return ImplementedMetric.SURF_DIST
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
 
 class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """Config class for Hausdorff distance."""
@@ -117,6 +138,11 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.HAUSDORFF
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
 
     @field_validator("percentile", mode="after")
     @classmethod
@@ -140,3 +166,8 @@ class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.SURF_DICE
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX

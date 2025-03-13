@@ -68,7 +68,7 @@ class ClinicaDLModel:
 
     def load_optim_state_dict(self, optimizer_path: Path):
         checkpoint_state = torch.load(
-            optimizer_path, map_location=self.network.device, weights_only=True
+            optimizer_path, map_location=self.device, weights_only=True
         )
         self.network.load_optim_state_dict(
             self.optimizer, checkpoint_state["optimizer"]
@@ -76,23 +76,11 @@ class ClinicaDLModel:
 
     def load_state_dict(self, model_path: Path):
         model_state = torch.load(
-            model_path, map_location=self.network.device, weights_only=True
+            model_path, map_location=self.device, weights_only=True
         )
         self.network.load_state_dict(model_state["model"])
 
         return model_state["epoch"]
-
-    # def _init_from_maps(self, maps_path: Path):
-
-    #     if not maps_path.is_dir():
-    #         raise FileNotFoundError(f"Maps directory not found: {maps_path}")
-
-    #     reader = MapsReader(maps_path)
-
-    #     if not reader.maps_json_path().is_file():
-    #         raise FileNotFoundError(
-    #             f"Maps JSON file not found: {reader.maps_json_path()}, we can't initiate a model without a maps.json file"
-    #         )
 
     def train(self):
         self.network.to(self.device)

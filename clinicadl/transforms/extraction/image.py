@@ -40,6 +40,12 @@ class ImageSample(Sample):
         """The extraction method."""
         return ExtractionMethod.IMAGE.value
 
+    @computed_field
+    @property
+    def id(self) -> int:
+        """The extraction method."""
+        return 1
+
 
 class Image(Extraction):
     """

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import random
+import shutil
 from contextlib import nullcontext
 from datetime import datetime
 from logging import getLogger
@@ -27,6 +29,8 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
+from clinicadl.metrics.config.enum import Optimum
+from clinicadl.metrics.config.factory import create_metric_config
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 
@@ -35,6 +39,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
 
 # from clinicadl.utils.cluster.profiler import (
 #                 ProfilerActivity,
@@ -55,22 +60,37 @@ class Trainer:
     def __init__(
         self,
         maps_path: PathType,
+        model: ClinicaDLModel,
+        metrics: Metrics,
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
+        _overwrite: bool = True,
     ) -> None:
         """TO COMPLETE"""
 
+        ## MAPS CONFIG
         self.reader = MapsReader(maps_path)
-        self.reader._create_maps(overwrite=True)
 
-        #####
-        self.maps_path = Path(maps_path)
+        if _overwrite and self.reader.maps_path.is_dir():
+            remove_non_empty_dir(self.reader.maps_path)
 
+        if not self.reader.maps_path.is_dir():
+            self.reader._create_maps(
+                overwrite=_overwrite
+            )  # write maps.json + environment.txt
+            self.reader.write_model_info(model)
+            self.reader.write_config_info(comp_config, optim_config)
+            self.reader.write_metrics_info(metrics)
+
+        ## CONFIG
+        self.model = model
         self.comp = comp_config
-        self.reader._write_maps_json(comp_config)
-
         self.optim = optim_config
-        self.reader._write_maps_json(optim_config)
+        self.metrics = metrics
+
+        # METRICS CONFIG
+        metrics.set_computational(self.comp)
+        metrics.set_loss(model.loss)
 
         # will be different if resume is called
         self.current_epoch: int = 0
@@ -97,101 +117,97 @@ class Trainer:
         # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
 
     @classmethod
-    def from_json(cls, config_file: Path) -> Trainer:
+    def from_json(cls, json_file: Path) -> Trainer:
         """TO COMPLETE"""
-        return Trainer()
+        if not json_file.is_file():
+            raise FileNotFoundError(f"The json file {json_file} does not exist.")
+
+        with json_file.open(mode="r") as file:
+            try:
+                data = json.load(file)
+            except json.JSONDecodeError:
+                raise ValueError("Invalid JSON format in the maps file.")
+
+        maps_path = data["maps_path"]
+
+        return cls._from_dict(maps_path, data)
 
     @classmethod
     def from_maps(cls, maps_path: str | Path) -> Trainer:
         """TO COMPLETE"""
-        return Trainer(maps_path)
 
-    def _init_profiler(self, profiler: bool = True):
-        if profiler:
-            time = datetime.now().strftime("%H:%M:%S")
-            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
-            dist.broadcast_object_list(filename, src=0)
-            prof = profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
-                on_trace_ready=tensorboard_trace_handler(str(filename)[0]),
-                profile_memory=True,
-                record_shapes=False,
-                with_stack=False,
-                with_flops=False,
-            )
-        else:
-            prof = nullcontext()
-            prof.step = lambda *args, **kwargs: None  # TODO: check this
+        reader = MapsReader(maps_path)
+        if not reader.is_maps():
+            raise ValueError(f"Invalid maps file: {maps_path}")
 
-        return prof
+        dict_ = reader.read_maps_json()
+        return cls._from_dict(maps_path, dict_)
+
+    @classmethod
+    def _from_dict(cls, maps_path: PathType, dict_: dict):
+        reader = MapsReader(maps_path)
+
+        model = reader.get_model_info(dict_)
+        metrics = reader.get_metrics_info(dict_)
+        optim, comp = reader.get_config_info(dict_)
+
+        return cls(
+            maps_path,
+            model=model,
+            metrics=metrics,
+            optim_config=optim,
+            comp_config=comp,
+            _overwrite=False,
+        )
 
     def resume(self, split: Split):
         """TO COMPLETE"""
 
-        model = self.reader.get_model()
-
-        model.load_optim_state_dict(
+        self.model.load_optim_state_dict(
             self.reader.optimizer_path(split.index, resume=True)
         )
-        self.current_epoch = model.load_state_dict(
+        self.current_epoch = self.model.load_state_dict(
             self.reader.checkpoint_path(split.index, resume=True)
         )
         metrics = self.reader.load_metrics()
-        self.train(model, split, metrics)
 
-    def train(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
+        self.train(split)
+
+    def train(self, split: Split):
         """TO COMPLETE"""
 
-        self.reader.write_model_info(model)
-        self.reader.write_split_info(split)
-
-        self.validator = Predictor(
-            maps_path=self.reader.maps_path, comp_config=self.comp, model=model
-        )
-
-        self.on_train_begin(model, split, metrics)
+        self.on_train_begin(split)
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(
-            metrics.val.loss
+            self.metrics.val.get_loss()
         ):
-            print(f"############# EPOCH {self.epoch}################")
-            self.on_epoch_begin(model.network)
+            self.on_epoch_begin()
 
             for batch, data in enumerate(split.train_loader):
-                print(f"############# BATCH {batch}################")
-
                 self.on_batch_begin()
 
-                ############
                 images = data.get_images().to(self.comp.device)
                 labels = data.get_labels().to(self.comp.device)
-                ############
 
                 with autocast(self.comp.device.type, enabled=self.comp.amp):
-                    outputs = model.network(images)
-                    loss = model.loss(outputs, labels)
-                    metrics.train.compute(
-                        batch, self.epoch, (outputs, labels), loss=loss
+                    outputs = self.model.network(images)
+                    loss = self.model.loss(outputs, labels)
+
+                    self.metrics.write_training_loss(
+                        epoch=self.epoch, batch=batch, loss=loss.item()
                     )
 
                 self.scaler.scale(loss).backward()
-                self.weights_update(model)
+                self.weights_update()
 
-                self.on_batch_end()
-                del loss
+            self.on_epoch_end(split)
 
-            # PROFILER STEP
-            # Always test the results and save them once at the end of the epoch
-            self.on_epoch_end(split, metrics, model)
-            # model.network.save_checkpoint(epoch=self.epoch)
+        self.on_train_end(split)
 
-        self.on_train_end(split, metrics)
-
-    def weights_update(self, model: ClinicaDLModel):
-        self.scaler.step(model.optimizer)
+    def weights_update(self):
+        self.scaler.step(self.model.optimizer)
         self.scaler.update()
-        model.optimizer.zero_grad(set_to_none=True)
+        self.model.optimizer.zero_grad(set_to_none=True)
 
     def on_batch_begin(self):
         pass
@@ -199,40 +215,37 @@ class Trainer:
     def on_batch_end(self):
         pass
 
-    def on_epoch_begin(self, network: torch.nn.Module):
-        network.zero_grad(set_to_none=True)
+    def on_epoch_begin(self):
+        self.model.network.zero_grad(set_to_none=True)
         # self.evaluation_flag = True
 
-    def on_epoch_end(self, split: Split, metrics: Metrics, model: ClinicaDLModel):
-        model.network.zero_grad(set_to_none=True)
+    def on_epoch_end(self, split: Split):
+        self.model.network.zero_grad(set_to_none=True)
         # Update learning rate based on validation loss
-        self.validator.test(
-            split.val_loader, metrics=metrics, epoch=self.epoch
-        )  # compute tout sur val
+        validator = Predictor(self.reader.maps_path, self.model, self.comp)
+        validator.validate(split.val_loader, metrics=self.metrics.val, epoch=self.epoch)
+
+        if self.metrics.compute_train_metrics:
+            validator.validate(
+                split.train_loader, metrics=self.metrics.train, epoch=self.epoch
+            )
+
         self.scheduler.step()
 
         # Sauvegarde du modèle à la fin de chaque epoch
-
-        self.reader._write_weights(
-            model.network.state_dict(), split.index, metrics, epoch=self.epoch
-        )
-        # torch.save(
-        #     model.network.state_dict(),
-        #     self.reader.maps_path / f"model_epoch_{self.epoch}.pth",
-        # )
-
-        metrics.on_epoch_end(self.epoch)  # compute mean metrics
+        self._save_tmp_weights(split.index)
 
         self.epoch += 1
         # profiler.step()  # TODO: check this
 
-    def on_train_begin(self, model: ClinicaDLModel, split: Split, metrics: Metrics):
+    def on_train_begin(self, split: Split):
         """TO COMPLETE"""
 
+        self.reader._write_split_json(split)
         self._check_split(split)  # not sure if needed
-        self.reader.init_split(split, metrics)
+        self.reader.init_split(split, self.metrics)
 
-        model.train()
+        self.model.train()
 
         self.epoch = (
             self.current_epoch
@@ -242,36 +255,112 @@ class Trainer:
         self._init_scaler()
 
         # profiler = init_profiler(maps_path)
-
         # TODO: init tracker like WandB or MlFlow (callbacks ?)
 
-        # dataset size 8 x nb de slice
         self.n_batch = len(split.train_loader)
-
-        # Vérification de evaluation_steps
-        # self._check_evaluation_steps()
-
         self.n_val_batch = len(split.val_loader)
 
-        self._init_scheduler(model.optimizer)
+        self._init_scheduler()
+        self.chrono.start()
 
-    def on_train_end(self, split: Split, metrics: Metrics):
+    def on_train_end(self, split: Split):
         """TO COMPLETE"""
         # profiler.stop()  # TODO: check this
 
         # TODO: stop tracker like WandB or MlFlow (callbacks ?)
 
+        # self.metrics.on_train_end()
+
+        for metric in self.metrics.val.selection_metrics:
+            metric = metric.value
+            self.metrics.train.df.to_csv(
+                self.reader.metrics_tsv_path(split.index, str(metric), "train"),
+                sep="\t",
+                index=False,
+            )
+            self.metrics.val.df.to_csv(
+                self.reader.metrics_tsv_path(split.index, str(metric), "validation"),
+                sep="\t",
+                index=False,
+            )
+
         self.reader.save_metrics(
-            split, metrics
+            split, self.metrics
         )  # maybe put save metrics in metrics instead of reader ?
+
+        for metric in self.metrics.val.selection_metrics:
+            metric = metric.value
+
+            self.model.load_state_dict(
+                self.reader.best_metric_path(split=split.index, metric=metric)
+                / "model.pth.tar"
+            )
+
+            validator = Predictor(self.reader.maps_path, self.model, self.comp)
+            validator.test(
+                split.val_loader,
+                metric=metric,
+                split=split.index,
+                data_group="validation",
+            )
+
+            if self.metrics.compute_train_metrics:
+                validator.test(
+                    split.train_loader,
+                    metric=metric,
+                    split=split.index,
+                    data_group="train",
+                )
+
+    def _save_tmp_weights(self, split: int):
+        model_weights = {
+            "model": self.model.network.state_dict(),
+            "epoch": self.epoch,
+        }
+        # optimizer_weights = {
+        #         "optimizer": self.model.network.optim_state_dict(optimizer),
+        #         "epoch": self.epoch,
+        #     }
+
+        checkpoint_path = self.reader.tmp_dir_path(split) / "checkpoint.pth.tar"
+        torch.save(model_weights, checkpoint_path)
+
+        # optim_checkpoint_path = self.reader.tmp_dir_path(split) / "optimizer.pth.tar"
+        # torch.save(optimizer_weights, optim_checkpoint_path)
+
+        for metric_ in self.metrics.train.selection_metrics:
+            metric = metric_.value
+            metric_path = self.reader.best_metric_path(split, metric)
+            metric_path.mkdir(parents=True, exist_ok=True)
+
+            optimum = create_metric_config(metric).optimum()
+            if self.epoch == 0:
+                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
+            elif optimum == Optimum.MAX and (
+                self.metrics.val.get_value(self.epoch, metric)
+                > self.metrics.val.get_value(self.epoch - 1, metric)
+            ):
+                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
+            elif optimum == Optimum.MIN and (
+                self.metrics.val.get_value(self.epoch, metric)
+                < self.metrics.val.get_value(self.epoch - 1, metric)
+            ):
+                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
+
+    def _init_validator(self):
+        return Predictor(
+            maps_path=self.reader.maps_path,
+            model=self.model,
+            comp_config=self.comp,
+            optim_config=self.optim,
+        )
 
     def _init_scheduler(
         self,
-        optimizer: torch.optim.optimizer.Optimizer,
     ):
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=optimizer.param_groups[0]["lr"],
+            self.model.optimizer,
+            max_lr=self.model.optimizer.param_groups[0]["lr"],
             steps_per_epoch=self.n_batch,
             epochs=self.optim.epochs,
         )

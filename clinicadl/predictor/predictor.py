@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
+import nibabel as nib
 import pandas as pd
 import torch
 from torch.amp.autocast_mode import autocast
@@ -8,11 +9,18 @@ from torch.utils.data import DataLoader
 
 from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
 from clinicadl.experiment_manager import ExperimentManager
-from clinicadl.experiment_manager.maps_reader import MapsReader
+from clinicadl.experiment_manager.maps_reader import DataGroup, MapsReader
 from clinicadl.losses.config import LossConfig
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics import (
+    ImplementedMetric,
+    get_metric_config,
+    get_metric_from_config,
+)
+from clinicadl.metrics.config.enum import Optimum
+from clinicadl.metrics.metrics import GroupMetrics, Metrics
 from clinicadl.model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
@@ -20,7 +28,9 @@ from clinicadl.optim.optimizers import OptimizerConfig
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter import SingleSplit
 from clinicadl.transforms import OutputTransforms
-from clinicadl.tsvtools.utils import tsv_to_df
+from clinicadl.transforms.extraction import Sample
+from clinicadl.transforms.extraction.image import ImageSample
+from clinicadl.tsvtools.utils import df_to_tsv, tsv_to_df
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
@@ -35,6 +45,7 @@ class Predictor:
         maps_path: PathType,
         model: Optional[ClinicaDLModel] = None,
         comp_config: Optional[ComputationalConfig] = None,
+        # optim_config: Optional[OptimizationConfig] = None,
     ):
         """TO COMPLETE"""
 
@@ -61,14 +72,15 @@ class Predictor:
         else:
             self.model = model
 
-    def test(
+    def validate(
         self,
         dataloader: DataLoader,
-        metrics: Metrics,
-        transforms: Optional[OutputTransforms] = None,
+        metrics: GroupMetrics,
         epoch: int = 0,
     ):
         self.model.network.eval()
+        metrics._reset_callable()
+
         with torch.no_grad():
             for batch, data in enumerate(dataloader):
                 ############
@@ -79,219 +91,206 @@ class Predictor:
                 # initialize the loss list to save the loss components
                 with autocast(self.comp.device.type, enabled=self.comp.amp):
                     outputs = self.model.network(images)
-                    loss = self.model.loss(outputs, labels)
+                    # loss = self.model.loss(outputs, labels)
+                    # I think loss is one of callable metrics
 
-                if transforms:
-                    if len(outputs.shape) != len(images.shape):
-                        raise ValueError(
-                            "Outputs tensors can only be applied if the outputs is of same size as the input"
-                        )
+                    for callable_metric in metrics._callable_metrics.values():
+                        callable_metric(outputs, labels)
 
-                    else:
-                        (outputs, labels) = transforms.batch_apply(outputs, data)
-                        # TODO: check if apply on label but I think it is applied on all the sample/dataPoint -> it depends on the transforms
+            metrics.aggregate(epoch=epoch)
 
-                metrics.val.compute(
-                    batch=batch, epoch=epoch, data=(outputs, labels), loss=loss
-                )
-                print(loss)
-                print(metrics.val.get_loss(batch=batch, epoch=epoch))
         self.model.network.train()
         return None
 
+    def test(
+        self,
+        dataloader: DataLoader,
+        metric: str,
+        split: int,
+        data_group: str,
+    ):
+        self.model.network.eval()
+        df = self.create_prediction_df()
+        with torch.no_grad():
+            for batch, data in enumerate(dataloader):
+                if batch == 0:
+                    if isinstance(data[0].label, Union[float, int]):
+                        df = self.create_prediction_df()
+                    elif isinstance(data[0].label, Union[torch.Tensor, None]):
+                        caps_reader = self.create_caps_output(
+                            split=split, metric=metric, data_group=data_group
+                        )
+
+                # initialize the loss list to save the loss components
+                with autocast(self.comp.device.type, enabled=self.comp.amp):
+                    images = data.get_images().to(self.comp.device)
+                    outputs = self.model.network(images)
+
+                for i in range(len(data)):
+                    if isinstance(data[i].label, Union[float, int]):
+                        self.add_sample_pred(df, data[i], outputs[i])
+
+                    elif isinstance(data[i].label, Union[torch.Tensor, None]):
+                        self.save_sample_pred(caps_reader, data[i], outputs[i])
+
+        if isinstance(data[0].label, Union[float, int]):
+            df.sort_index(inplace=True)
+            df.reset_index(inplace=True)
+            df.to_csv(
+                self.reader.prediction_tsv_path(
+                    split=split, metric=metric, data_group=data_group
+                ),
+                sep="\t",
+                index=False,
+            )
+
+        self.model.network.train()
+
+        return None
+
+    def add_sample_pred(self, df: pd.DataFrame, sample: Sample, outputs: torch.Tensor):
+        df.sort_index(inplace=True)
+        df.at[
+            (sample.participant, sample.session, sample.id), "ground_truth"
+        ] = sample.label
+
+        for i in range(outputs.shape[-1]):
+            df.at[
+                (sample.participant, sample.session, sample.id), f"proba-{i}"
+            ] = outputs[i].item()
+
+        return df
+
+    def create_prediction_df(self):
+        df = pd.DataFrame(
+            columns=["participant_id", "session_id", "sample_id", "ground_truth"]
+        )
+        df.set_index(["participant_id", "session_id", "sample_id"], inplace=True)
+
+        return df
+
+    def save_sample_pred(
+        self, caps_reader: CapsReader, sample: Sample, output: torch.Tensor
+    ):
+        sample_path = Path(sample.image_path)
+
+        if not isinstance(sample, ImageSample):
+            relative_path = sample_path.relative_to(
+                *sample_path.parts[: sample_path.parts.index("subjects") + 1]
+            )
+            sample_path = Path(
+                str(relative_path).replace(
+                    f"ses-{sample.session}", f"ses-{sample.session}_sample-{sample.id}"
+                )
+            )
+
+        (caps_reader.subject_directory / sample_path).parent.mkdir(
+            parents=True, exist_ok=True
+        )
+
+        output = output.squeeze(0).detach().cpu().float()
+        output_nii = nib.Nifti1Image(output.numpy(), affine=sample.affine)
+        nib.save(output_nii, (caps_reader.subject_directory / sample_path))
+
+    def create_caps_output(self, split: int, metric: str, data_group: str):
+        caps_output_dir = self.reader.caps_output_path(
+            split=split, metric=metric, data_group=data_group
+        )
+
+        if caps_output_dir.is_dir():
+            raise ValueError(f"Directory {caps_output_dir} already exists")
+
+        caps_output_dir.mkdir(parents=True)
+        (caps_output_dir / "subjects").mkdir()
+        return CapsReader(caps_output_dir)
+
     def predict(
         self,
-        dataset: CapsDataset,
-        split_dir: Path,
-        data_loader_config: DataLoaderConfig,
+        dataloader: DataLoader[CapsDataset],
         metrics: Metrics,
+        split: int,
+        data_group: str,
         transforms: Optional[OutputTransforms] = None,
     ):
         """TO COMPLETE"""
 
-        splitter = SingleSplit(split_dir=split_dir)
-        split = splitter.get_splits(dataset=dataset)
+        self._check_leakage(dataset_test=dataloader.dataset)
+        # self.create_data_group(metrics, split, data_group)
 
-        self._check_leakage(dataset_test=split.val_dataset)
-        if data_loader_config is None:
-            data_loader_config = self.reader.get_data_loader_config()
-        split.build_val_loader(dataloader_config=data_loader_config)
-        self.test(split.val_loader, metrics, transforms)
+        data_group_ = DataGroup(maps_path=self.reader.maps_path, name=data_group)
+        data_group_.create(dataloader.dataset)
+
+        self.model.network.eval()
+        for metric in metrics.val.selection_metrics:
+            metric = metric.value
+            df = self.create_prediction_df()
+            metrics.val._reset_callable()
+
+            with torch.no_grad():
+                for batch, data in enumerate(dataloader):
+                    if batch == 0:
+                        if isinstance(data[0].label, Union[float, int]):
+                            df = self.create_prediction_df()
+                        elif isinstance(data[0].label, Union[torch.Tensor, None]):
+                            caps_reader = self.create_caps_output(
+                                split=split, metric=metric, data_group=data_group
+                            )
+
+                    # initialize the loss list to save the loss components
+                    with autocast(self.comp.device.type, enabled=self.comp.amp):
+                        images = data.get_images().to(self.comp.device)
+                        labels = data.get_labels().to(self.comp.device)
+                        outputs = self.model.network(images)
+
+                    if transforms is not None:
+                        outputs = transforms.batch_apply(outputs, data)
+
+                    for callable_metric in metrics.val._callable_metrics.values():
+                        callable_metric(outputs, labels)
+
+                    for i in range(len(data)):
+                        if isinstance(data[i].label, Union[float, int]):
+                            self.add_sample_pred(df, data[i], outputs[i])
+
+                        elif isinstance(data[i].label, Union[torch.Tensor, None]):
+                            self.save_sample_pred(caps_reader, data[i], outputs[i])
+
+            metrics.val.aggregate()
+
+            if isinstance(data[0].label, Union[float, int]):
+                df.sort_index(inplace=True)
+                df.reset_index(inplace=True)
+                tsv_path = self.reader.prediction_tsv_path(
+                    split=split, metric=metric, data_group=data_group
+                )
+                tsv_path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_csv(tsv_path, sep="\t", index=False)
+
+        self.model.network.train()
 
         return None
 
     def _check_leakage(self, dataset_test: CapsDataset):
         """Checks that no intersection exist between the participants used for training and those used for testing."""
 
-        df_train_val = self.reader.get_train_val_df()
-        df_test = dataset_test.df
+        if (
+            dataset_test.caps_reader.input_directory.resolve()
+            == "self.reader.get_config().resolve()"
+        ):  # TODO: add a function to get the caps dir of the czps used for the training from maps reader
+            df_train_val = self.reader.get_train_val_df()
+            df_test = dataset_test.df
 
-        participants_train = set(df_train_val[PARTICIPANT_ID].values)
-        participants_test = set(df_test[PARTICIPANT_ID].values)
-        intersection = participants_test & participants_train
+            participants_train = set(df_train_val[PARTICIPANT_ID].values)
+            participants_test = set(df_test[PARTICIPANT_ID].values)
+            intersection = participants_test & participants_train
 
-        if len(intersection) > 0:
-            raise ClinicaDLDataLeakageError(
-                "Your evaluation set contains participants who were already seen during "
-                "the training step. The list of common participants is the following: "
-                f"{intersection}."
+            if len(intersection) > 0:
+                raise ClinicaDLDataLeakageError(
+                    "Your evaluation set contains participants who were already seen during "
+                    "the training step. The list of common participants is the following: "
+                    f"{intersection}."
+                )
+        else:
+            print(
+                "The inference is done on a different dataset than for training so we are not able to define if there is data leakage or not."
             )
-
-    # def _test_loader(
-    #     self,
-    #     maps_manager: MapsManager,
-    #     dataloader,
-    #     criterion,
-    #     data_group: str,
-    #     split: int,
-    #     selection_metrics,
-    #     use_labels=True,
-    #     gpu=None,
-    #     amp=False,
-    #     network=None,
-    #     report_ci=True,
-    # ):
-    #     """
-    #     Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
-
-    #     Args:
-    #         dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
-    #         criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
-    #         data_group (str): name of the data group used for the testing task.
-    #         split (int): Index of the split used to train the model tested.
-    #         selection_metrics (list[str]): List of metrics used to select the best models which are tested.
-    #         use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-    #         gpu (bool): If given, a new value for the device of the model will be computed.
-    #         amp (bool): If enabled, uses Automatic Mixed Precision (requires GPU usage).
-    #         network (int): Index of the network tested (only used in multi-network setting).
-    #     """
-    #     for selection_metric in selection_metrics:
-    #         if cluster.master:
-    #             log_dir = (
-    #                 maps_manager.maps_path
-    #                 / f"split-{split}"
-    #                 / f"best-{selection_metric}"
-    #                 / data_group
-    #             )
-    #             maps_manager.write_description_log(
-    #                 log_dir,
-    #                 data_group,
-    #                 dataloader.dataset.config.data.caps_dict,
-    #                 dataloader.dataset.config.data.data_df,
-    #             )
-
-    #         # load the best trained model during the training
-    #         model, _ = maps_manager._init_model(
-    #             transfer_path=maps_manager.maps_path,
-    #             split=split,
-    #             transfer_selection=selection_metric,
-    #             gpu=gpu,
-    #             network=network,
-    #         )
-    #         model = DDP(
-    #             model,
-    #             fsdp=maps_manager.fully_sharded_data_parallel,
-    #             amp=maps_manager.amp,
-    #         )
-
-    #         prediction_df, metrics = self.test(
-    #             mode=maps_manager.mode,
-    #             metrics_module=maps_manager.metrics_module,
-    #             n_classes=maps_manager.n_classes,
-    #             network_task=maps_manager.network_task,
-    #             model=model,
-    #             dataloader=dataloader,
-    #             criterion=criterion,
-    #             use_labels=use_labels,
-    #             amp=amp,
-    #             report_ci=report_ci,
-    #         )
-    #         if use_labels:
-    #             if network is not None:
-    #                 metrics[f"{maps_manager.mode}_id"] = network
-
-    #             loss_to_log = (
-    #                 metrics["Metric_values"][-1] if report_ci else metrics["loss"]
-    #             )
-
-    #             logger.info(
-    #                 f"{maps_manager.mode} level {data_group} loss is {loss_to_log} for model selected on {selection_metric}"
-    #             )
-
-    #         if cluster.master:
-    #             # Replace here
-    #             maps_manager._mode_level_to_tsv(
-    #                 prediction_df,
-    #                 metrics,
-    #                 split,
-    #                 selection_metric,
-    #                 data_group=data_group,
-    #             )
-
-    # def _test_loader(self):
-    #     """Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files."""
-    #     pass
-
-    # def _compute_latent_tensor(self):
-    #     """Compute the output tensors and saves them in the MAPS."""
-    #     pass
-
-    # @torch.no_grad()
-    # def _compute_output_nifti(self):
-    #     """omputes the output nifti images and saves them in the MAPS."""
-    #     pass
-
-    # @torch.no_grad()
-    # def _compute_output_tensors(self):
-    #     """Compute the output tensors and saves them in the MAPS."""
-    #     pass
-
-    # def _ensemble_prediction(self):
-    #     """Computes the results on the image-level."""
-    #     pass
-
-    # def _get_prediction(
-    #     self,
-    #     data_group: str,
-    #     split: int = 0,
-    #     selection_metric: str = "loss",
-    #     mode: str = "image",  # TODO : need to change this to an ExtractionConfig
-    #     verbose: bool = False,  # TODO: do we remove verbose argument everywhere ?
-    # ):
-    #     """
-    #     Get the individual predictions for each participant corresponding to one group
-    #     of participants identified by its data group.
-
-    #     Args:
-    #         data_group (str): name of the data group used for the prediction task.
-    #         split (int): Index of the split used for training.
-    #         selection_metric (str): Metric used for best weights selection.
-    #         mode (str): level of the prediction.
-    #         verbose (bool): if True will print associated prediction.log.
-    #     Returns:
-    #         (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
-    #         identifies the image in the BIDS / CAPS.
-    #     """
-    #     selection_metric = check_selection_metric(
-    #         self.maps_path, split, selection_metric
-    #     )
-    #     if verbose:
-    #         self.print_description_log(split, selection_metric, data_group)
-
-    #     if not self.data_group_dir(
-    #         split=split, selection_metric=selection_metric, data_group=data_group
-    #     ).is_dir():
-    #         raise MAPSError(
-    #             f"No prediction corresponding to data group {data_group} was found."
-    #         )
-    #     df = pd.read_csv(
-    #         self.prediction_tsv(
-    #             split=split,
-    #             selection_metric=selection_metric,
-    #             data_group=data_group,
-    #             mode=mode,
-    #         ),
-    #         sep="\t",
-    #     )
-    #     df.set_index(self.df_index, inplace=True, drop=True)
-    #     return df

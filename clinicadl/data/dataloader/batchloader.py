@@ -21,13 +21,11 @@ class BatchLoader:
 
     def get_labels(self):
         # Retourner les labels du batch
-
-        label_0 = self.samples[0].label
-
-        if isinstance(label_0, torch.Tensor):
-            return torch.cat(
-                [sample.label for sample in self.samples], dim=0
-            ).unsqueeze(1)
+        if all(isinstance(sample.label, torch.Tensor) for sample in self.samples):
+            list_ = []
+            for sample in self.samples:
+                list_.append(sample.label)
+            return torch.cat(list_, dim=0).unsqueeze(1)
         else:
             return torch.tensor(
                 [sample.label for sample in self.samples], dtype=torch.float32

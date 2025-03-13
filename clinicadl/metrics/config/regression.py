@@ -1,7 +1,7 @@
 from pydantic import computed_field
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import ImplementedMetric
+from .enum import ImplementedMetric, Optimum
 
 __all__ = [
     "MSEMetricConfig",
@@ -20,6 +20,11 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         """The name of the metric."""
         return ImplementedMetric.MSE
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
+
 
 class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     "Config class for MAE."
@@ -30,6 +35,11 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         """The name of the metric."""
         return ImplementedMetric.MAE
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
+
 
 class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     "Config class for RMSE."
@@ -39,3 +49,8 @@ class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.RMSE
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN

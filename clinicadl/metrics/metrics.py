@@ -1,20 +1,37 @@
+from __future__ import annotations
+
 from typing import Callable, Optional, Union
 
+import numpy as np
 import pandas as pd
 import torch
 from monai.metrics.metric import Metric as MonaiMetric
 from monai.metrics.regression import MAEMetric, RMSEMetric, SSIMMetric
+from pydantic import field_validator, model_validator
 from torch.amp.autocast_mode import autocast
 
+from clinicadl.losses import (
+    ImplementedLoss,
+    get_loss_function_config,
+    get_loss_function_from_config,
+)
 from clinicadl.losses.utils import Loss
+from clinicadl.metrics import ImplementedMetric
+from clinicadl.metrics.config import MetricConfig
+from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.config.classification import (
     ConfusionMatrixMetricConfig,
     ROCAUCMetricConfig,
 )
-from clinicadl.metrics.factory import get_metric_from_config
+from clinicadl.metrics.factory import get_metric_config, get_metric_from_config
 from clinicadl.networks.factory import ImplementedNetwork, get_network_config
+from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLMetricsError
+
+MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
+
+LOSS = "Loss"
 
 ClassificationLoss = ["CrossEntropyLoss", "MultiMarginLoss"]
 ClassificationMetrics = [
@@ -32,7 +49,7 @@ ClassificationMetrics = [
 ]
 
 
-ReconstructionMetrics = ["MAE", "RMSE", "PSNR", "SSIM"]
+ReconstructionMetrics = [MAEMetric(), RMSEMetric(), "PSNR", "SSIM"]
 ReconstructionLosses = [
     "L1Loss",
     "MSELoss",
@@ -56,102 +73,227 @@ RegressionLosses = [
 ]
 
 
-class BaseMetrics:
-    def __init__(self, metrics: list[Callable]):
-        self.metrics = metrics
-        self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
-        self.amp: bool = True
-        self.reset()
-
-    # def set_loss(self, loss: Loss):
-    #     self.loss = loss
-
-    def compute(
+class GroupMetrics:
+    def __init__(
         self,
-        batch: int,
-        epoch: int,
-        data: tuple[torch.Tensor, torch.Tensor],
-        loss: Optional[torch.Tensor] = None,
+        metrics: Union[MetricsTypes, list[MetricsTypes]],
+        selection_metrics: Union[MetricsTypes, list[MetricsTypes]] = LOSS,
     ):
-        outputs, labels = data
+        self.metrics = self.check_metrics(metrics)
 
-        for metric in self.metrics:
-            with autocast(
-                device_type=self.device.type, enabled=self.amp
-            ):  # TODO: check autocast for all metrics
-                self.df.at[(epoch, batch), metric.__str__()] = (
-                    metric(outputs, labels).mean().item()
-                )
-        if loss:
-            self.df.at[(epoch, batch), "loss"] = loss.item()
+        if ImplementedMetric.LOSS not in self.metrics:
+            self.metrics.append(ImplementedMetric.LOSS)
 
-    @property
-    def loss(self):
-        return self.get_loss()
+        self.selection_metrics = self.check_metrics(selection_metrics)
 
-    def get_loss(self, epoch: Optional[int] = None, batch: Optional[int] = None):
-        return self.get_value("loss", epoch, batch)
+        if not set(self.selection_metrics).issubset(set(self.metrics)):
+            raise ValueError(
+                f"Selection metrics ({self.selection_metrics}) must be one of the provided metrics ({self.metrics})."
+            )
 
-    def get_value(
-        self, metric: str, epoch: Optional[int] = None, batch: Optional[int] = None
-    ):
-        if epoch is not None and batch is not None:
-            return self.df.at[(epoch, batch), metric]
-        elif epoch is not None:
-            return self.df.at[(epoch, "mean"), metric]
+        self.df = self._init_df()
+
+    def get_loss(self, epoch: Optional[int] = None):
+        if epoch:
+            return self.df.at[epoch, LOSS]
         else:
-            return self.df.at[("mean", "mean"), metric]
+            return self.df[LOSS].iloc[-1]
 
-    def reset(self):
-        self.df = pd.DataFrame(
-            columns=["epoch", "batch"]
-            + [metric.__str__() for metric in (self.metrics + ["loss"])]
+    def aggregate(self, epoch: int = 0):
+        for metric, callable_metric in self._callable_metrics.items():
+            value = callable_metric.aggregate()
+            self.df.at[epoch, metric] = value.item()
+
+    def _reset_callable(self):
+        self._callable_metrics = {}
+        for metric in self.metrics:
+            if metric.value == LOSS:
+                self._callable_metrics[metric.value] = self._callable_loss
+            else:
+                callable_metric, _ = get_metric_from_config(get_metric_config(metric))
+                self._callable_metrics[metric.value] = callable_metric
+
+    def _init_df(self):
+        df = pd.DataFrame(
+            columns=["epoch", "time"] + [metric.value for metric in self.metrics]
         )
-        self.df.set_index(["epoch", "batch"], inplace=True)
+        df.set_index(["epoch"], inplace=True)
+        df.at[0, "time"] = 0.0
+        df.at[0, LOSS] = 1
 
-        import numpy as np
+        return df
 
-        self.df.loc[("mean", "mean"), "loss"] = 10
+    def get_value(self, epoch: int, metric: str):
+        try:
+            return self.df.at[epoch, metric]
+        except KeyError:
+            raise KeyError(f"Metric '{metric}' not found in the provided metrics.")
+
+    @staticmethod
+    def check_metrics(
+        metrics: Union[MetricsTypes, list[MetricsTypes]],
+    ) -> list[ImplementedMetric]:
+        """Check that all metrics are of the correct type and have the required attributes."""
+        if isinstance(metrics, MetricsTypes):
+            metrics = [metrics]
+
+        if len(metrics) == 0:
+            raise ValueError("At least one metric must be provided.")
+
+        metrics_list = []
+
+        # Check that all MetricConfig instances have the required attributes
+        for metric in metrics:
+            if isinstance(metric, MonaiMetric):
+                ImplementedMetric._missing_(
+                    metric.__class__.__name__
+                )  # raise an error if missing
+                metric = ImplementedMetric(metric.__class__.__name__)
+
+            elif isinstance(metric, str):
+                metric = ImplementedMetric(metric)
+
+            elif isinstance(metric, MetricConfig):
+                metric = metric.name
+
+            elif not isinstance(metric, ImplementedMetric):
+                raise ValueError(f"Metric '{metric}' is not an implemented metric.")
+
+            metrics_list.append(metric)
+
+        if not all(isinstance(metric, ImplementedMetric) for metric in metrics_list):
+            raise ValueError(
+                "All metrics must be implemented in ClinicaDL in order to be used."
+            )
+
+        return metrics_list
+
+    def set_computational(self, computational_config: ComputationalConfig):
+        self.comp = computational_config
+
+    def set_loss(self, loss: Loss):
+        self._callable_loss, _ = get_metric_from_config(LossMetricConfig(loss_fn=loss))
+
+    def on_train_end(self):
+        pass
+
+    def model_dump(self):
+        dict_ = {}
+        dict_["metrics"] = {
+            "metrics": self.metrics,
+            "selection_metrics": self.selection_metrics,
+        }
+        return dict_
 
 
 class Metrics:
-    def __init__(self, metrics: list[MonaiMetric], selection_metric: str = "loss"):
-        self.metrics = metrics
-        self.train = BaseMetrics(metrics)
-        self.val = BaseMetrics(metrics)
-        self.selection_metric = selection_metric
+    def __init__(
+        self,
+        metrics: Union[MetricsTypes, list[MetricsTypes]],
+        selection_metrics: Union[MetricsTypes, list[MetricsTypes]] = LOSS,
+        compute_train_metrics: bool = True,
+    ):
+        self.train = GroupMetrics(metrics=metrics, selection_metrics=selection_metrics)
+        self.val = GroupMetrics(metrics=metrics, selection_metrics=selection_metrics)
 
-    def on_epoch_end(self, epoch: int):
-        self.train.df.loc[(epoch, "mean"), :] = self.train.df.loc[epoch, :].mean()
-        self.train.df.loc[("mean", "mean"), "loss"] = self.train.df.loc[
-            (epoch, "mean"), "loss"
-        ]
+        self.training_loss = self._init_training_df()
 
-        self.val.df.loc[(epoch, "mean"), :] = self.val.df.loc[epoch, :].mean()
-        self.val.df.loc[("mean", "mean"), "loss"] = self.val.df.loc[
-            (epoch, "mean"), "loss"
-        ]
+        self.compute_train_metrics = compute_train_metrics
 
-        # # Calculer la moyenne pour l'epoch donné
-        # mean_train_values = self.train.df.loc[epoch].mean()
+    def write_training_loss(self, epoch: int, batch: int, loss: float):
+        self.training_loss.at[(epoch, batch), LOSS] = loss
 
-        # # Ajouter la ligne "mean" pour cet epoch
-        # self.train.df = pd.concat(
-        #     [self.train.df, pd.DataFrame(mean_train_values).T.assign(epoch=epoch, batch="mean").set_index(["epoch", "batch"])]
-        # )
+    def _init_training_df(self):
+        df = pd.DataFrame(columns=["epoch", "batch", "time"])
+        df.set_index(["epoch", "batch"], inplace=True)
+        df.at[(0, 0), "time"] = 0.0
+        df.at[(0, 0), LOSS] = 1
 
-        # # Ajouter la moyenne globale pour "loss"
-        # self.train.df.loc[("mean", "mean"), "loss"] = self.train.df.xs("mean", level="batch")["loss"].mean()
+        return df
 
-        # # Calculer la moyenne pour l'epoch donné
-        # mean_val_values = self.val.df.loc[epoch].mean()
+    def set_computational(self, comp_config: ComputationalConfig):
+        self.train.set_computational(comp_config)
+        self.val.set_computational(comp_config)
 
-        # # Ajouter la ligne "mean" pour cet epoch
-        # self.val.df = pd.concat(
-        #     [self.val.df, pd.DataFrame(mean_val_values).T.assign(epoch=epoch, batch="mean").set_index(["epoch", "batch"])]
-        # )
+    def set_loss(self, loss: Loss):
+        self.train.set_loss(loss)
+        self.val.set_loss(loss)
 
-        # # Ajouter la moyenne globale pour "loss"
-        # self.val.df.loc[("mean", "mean"), "loss"] = self.val.df.xs("mean", level="batch")["loss"].mean()
+    def model_dump(self):
+        return self.val.model_dump()
+
+
+# class RetainBest:
+#     """
+#     A class to retain the best and overfitting values for a set of wanted metrics.
+#     """
+
+#     def __init__(self, selection_metrics: List[str], n_classes: int = 0):
+#         self.selection_metrics = selection_metrics
+
+#         if LOSS in selection_metrics:
+#             selection_metrics.remove(LOSS)
+#             metric_module = MetricModule(selection_metrics)
+#             selection_metrics.append(LOSS)
+#         else:
+#             metric_module = MetricModule(selection_metrics)
+
+#         implemented_metrics = set(metric_optimum.keys())
+#         if not set(self.selection_metrics).issubset(implemented_metrics):
+#             raise NotImplementedError(
+#                 f"The selection metrics {self.selection_metrics} are not all implemented. "
+#                 f"Available metrics are {implemented_metrics}."
+#             )
+#         self.best_metrics = dict()
+#         for selection in self.selection_metrics:
+#             if n_classes > 2:
+#                 metric_fn = metric_module.metrics[selection]
+#                 metric_args = list(metric_fn.__code__.co_varnames)
+#                 if "class_number" in metric_args:
+#                     for class_number in range(n_classes):
+#                         self.set_optimum(f"{selection}-{class_number}")
+#                 else:
+#                     self.set_optimum(selection)
+#             else:
+#                 self.set_optimum(selection)
+
+#     def set_optimum(self, selection: str):
+#         if metric_optimum[selection] == "min":
+#             self.best_metrics[selection] = np.inf
+#         elif metric_optimum[selection] == "max":
+#             self.best_metrics[selection] = -np.inf
+#         else:
+#             raise ValueError(
+#                 f"Objective {metric_optimum[selection]} unknown for metric {selection}."
+#                 f"Please choose between 'min' and 'max'."
+#             )
+
+#     def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
+#         """
+#         Computes for each metric if this is the best value ever seen.
+
+#         Args:
+#             metrics_valid: metrics computed on the validation set
+#         Returns:
+#             metric is associated to True if it is the best value ever seen.
+#         """
+
+#         metrics_dict = dict()
+#         for selection in self.selection_metrics:
+#             if metric_optimum[selection] == "min":
+#                 metrics_dict[selection] = (
+#                     metrics_valid[selection] < self.best_metrics[selection]
+#                 )
+#                 self.best_metrics[selection] = min(
+#                     metrics_valid[selection], self.best_metrics[selection]
+#                 )
+
+#             else:
+#                 metrics_dict[selection] = (
+#                     metrics_valid[selection] > self.best_metrics[selection]
+#                 )
+#                 self.best_metrics[selection] = max(
+#                     metrics_valid[selection], self.best_metrics[selection]
+#                 )
+
+#         return metrics_dict

@@ -189,7 +189,7 @@ class OutputTransforms(ClinicaDLConfig):
         transformed_outputs = []
         transformed_labels = []
 
-        for i in batch_tensor.shape[0]:
+        for i in range(batch_tensor.shape[0]):
             output_sample = deepcopy(data[i])
             output_sample.sample = batch_tensor[
                 i

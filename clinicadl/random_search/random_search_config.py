@@ -15,7 +15,7 @@ from clinicadl.trainer.config.regression import (
 from clinicadl.utils.enum import Normalization, Pooling, Task
 
 if TYPE_CHECKING:
-    from clinicadl.trainer.old_trainer import TrainConfig
+    from clinicadl.trainer.maps_manager import TrainConfig
 
 
 class RandomSearchConfig(

@@ -11,7 +11,7 @@ from clinicadl.losses.utils import Loss
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .enum import ImplementedMetric, Reduction
+from .enum import ImplementedMetric, Optimum, Reduction
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -24,6 +24,11 @@ class MetricConfig(ClinicaDLConfig, ABC):
     @abstractmethod
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
+
+    @staticmethod
+    @abstractmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
 
 
 class _IncludeBackgroundConfig(ClinicaDLConfig):
@@ -62,6 +67,11 @@ class LossMetricConfig(MetricConfig):
     def name(self) -> str:
         """The name of the metric."""
         return "LossMetric"
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
 
     @model_validator(mode="after")
     def check_reduction(self):

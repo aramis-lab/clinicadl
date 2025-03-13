@@ -28,13 +28,19 @@ from clinicadl.dictionary.words import (
     TRAINING,
 )
 from clinicadl.experiment_manager.data_group import DataGroup
+from clinicadl.losses import ImplementedLoss, get_loss_function_config
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.model import ClinicaDLModel
+from clinicadl.networks import ImplementedNetwork, get_network_config
+from clinicadl.optim.config import OptimizationConfig
+from clinicadl.optim.optimizers import ImplementedOptimizer, get_optimizer_config
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import tsv_to_df
+from clinicadl.tsvtools.utils import df_to_tsv, tsv_to_df
 from clinicadl.utils import cluster
+from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
 )
@@ -45,6 +51,26 @@ from clinicadl.utils.typing import PathType
 class MapsReader:
     def __init__(self, maps_path: PathType) -> None:
         self.maps_path = Path(maps_path)
+
+    def is_maps(self):
+        if not self.maps_path.is_dir():
+            raise ClinicaDLArgumentError(
+                f"{self.maps_path} is not a directory, this maps doesn't exists"
+            )
+
+        if not self.groups_path().is_dir():
+            raise ClinicaDLArgumentError(f"No groups found in {self.groups_path()}")
+
+        if not self.maps_json_path().is_file():
+            raise ClinicaDLConfigurationError(f"No maps.json found in {self.maps_path}")
+
+        if len(self.split_list()) == 0:
+            raise ClinicaDLArgumentError("No split found in the maps folder")
+
+        return True
+
+    def split_list(self):
+        return list(self.maps_path.glob(SPLIT + "-*"))
 
     def _create_maps(self, overwrite: bool = False):
         """TO COMPLETE"""
@@ -58,7 +84,7 @@ class MapsReader:
 
         self.maps_path.mkdir(parents=True, exist_ok=True)
         self._write_requirements_version()
-        self._write_maps_json()
+        self._write_json(self.maps_json_path())
 
     def init_split(self, split: Split, metrics: Metrics):
         """Initializes the split."""
@@ -68,7 +94,7 @@ class MapsReader:
 
     ###### GETTER ########
 
-    def read_json(self) -> dict:
+    def read_maps_json(self) -> dict:
         """Reads the maps.json file."""
         if not self.maps_json_path().is_file():
             raise ClinicaDLConfigurationError("Could not find maps.json")
@@ -81,7 +107,7 @@ class MapsReader:
         self, config: Union[Type[ClinicaDLConfig], list[Type[ClinicaDLConfig]]]
     ) -> Union[ClinicaDLConfig, list[ClinicaDLConfig]]:
         """Reads the configuration file."""
-        dict_ = self.read_json()
+        dict_ = self.read_maps_json()
 
         if isinstance(config, type(ClinicaDLConfig)):
             return config(**dict_)
@@ -107,6 +133,12 @@ class MapsReader:
         path = self.maps_path / GROUPS / "train+validation.tsv"
         return tsv_to_df(path)
 
+    def get_best_metric_value(
+        self, split: int, metric: str = "loss", group: str = "validation"
+    ) -> float:
+        df = tsv_to_df(self.metrics_tsv_path(split, metric, group))
+        return df.at["mean", "metric"]
+
     def get_model(self, split: int, selection_metric: str = "loss") -> ClinicaDLModel:
         self.model_path(split, selection_metric)
         return ClinicaDLModel()  # type: ignore
@@ -114,31 +146,114 @@ class MapsReader:
     def load_metrics(self) -> Metrics:
         return Metrics()  # type: ignore
 
+    def get_model_info(self, dict_: dict) -> ClinicaDLModel:
+        """Loads the model info from the maps.json file."""
+
+        # NETWORK
+        matching_values = [
+            network for network in ImplementedNetwork if network.value in dict_.keys()
+        ]
+        if len(matching_values) != 1:
+            raise ClinicaDLConfigurationError(
+                "No matching implemented network in maps.json, please give a model to initiate your trainer"
+            )
+        else:
+            network_config = get_network_config(
+                matching_values[0], **dict_[f"{matching_values[0]}"]
+            )
+
+        # OPTIM
+        matching_values = [
+            optimizer
+            for optimizer in ImplementedOptimizer
+            if optimizer.value in dict_.keys()
+        ]
+        if len(matching_values) != 1:
+            raise ClinicaDLConfigurationError(
+                "No matching implemented optimizer in maps.json, please give a model to initiate your trainer"
+            )
+        else:
+            optimizer_config = get_optimizer_config(
+                matching_values[0], **dict_[f"{matching_values[0]}"]
+            )
+
+        # LOSS
+        matching_values = [
+            loss for loss in ImplementedLoss if loss.value in dict_.keys()
+        ]
+        if len(matching_values) != 1:
+            raise ClinicaDLConfigurationError(
+                "No matching implemented loss in maps.json, please give a model to initiate your trainer"
+            )
+        else:
+            loss_config = get_loss_function_config(
+                matching_values[0], **dict_[f"{matching_values[0]}"]
+            )
+
+        model = ClinicaDLModel.from_config(
+            network_config=network_config,
+            loss_config=loss_config,
+            optimizer_config=optimizer_config,
+        )
+
+        return model
+
+    def get_metrics_info(self, dict_: dict) -> Metrics:
+        """Loads the metrics info from the maps.json file."""
+
+        if "metrics" not in dict_.keys():
+            raise ClinicaDLConfigurationError(
+                "No metrics in maps.json, please give metrics to initiate your trainer"
+            )
+
+        return Metrics(**dict_["metrics"])
+
+    def get_config_info(
+        self, dict_: dict
+    ) -> tuple[OptimizationConfig, ComputationalConfig]:
+        if OptimizationConfig.__name__ not in dict_.keys():
+            # TODO: ADD logger WARNING
+            optim = OptimizationConfig()
+        else:
+            optim = OptimizationConfig(**dict_[OptimizationConfig.__name__])
+
+        if ComputationalConfig.__name__ not in dict_.keys():
+            # TODO: ADD logger WARNING
+            comp = ComputationalConfig()
+        else:
+            comp = ComputationalConfig(**dict_[ComputationalConfig.__name__])
+
+        return optim, comp
+
     ##### WRITERS #######
 
     def write_model_info(self, model: ClinicaDLModel):
         if model._network_config:
-            self._write_maps_json(model._network_config)
+            self._update_json(self.maps_json_path(), model._network_config)
 
         if model._loss_config:
-            self._write_maps_json(model._loss_config)
+            self._update_json(self.maps_json_path(), model._loss_config)
 
         if model._optimizer_config:
-            self._write_maps_json(model._optimizer_config)
+            self._update_json(self.maps_json_path(), model._optimizer_config)
 
-    def write_split_info(self, split: Split):
-        self._write_split_json(split)
+    def write_config_info(
+        self, comp_config: ComputationalConfig, optim_config: OptimizationConfig
+    ):
+        self._update_json(self.maps_json_path(), comp_config)
+        self._update_json(self.maps_json_path(), optim_config)
+
+    def write_metrics_info(self, metrics: Metrics):
+        """Updates the metrics in the maps.json file."""
+        self._update_json(self.maps_json_path(), dict_=metrics.model_dump())
 
     def write_training_tsv(self, split: Split, metrics: Metrics):
         """Creates a training.tsv file."""
 
         self.training_logs_dir_path(split.index).mkdir(parents=True, exist_ok=True)
-
-        df_train = metrics.train.df.add_suffix("_train")
-        df_valid = metrics.val.df.add_suffix("_valid")
-
-        df_final = pd.concat([df_train, df_valid], axis=1)
-        df_final.to_csv(self.training_tsv_path(split.index), sep="\t", index=True)
+        metrics.training_loss.to_csv(
+            self.training_tsv_path(split.index), sep="\t", index=True
+        )
 
     def write_training_logs(self, split: Split):
         """Writes training logs to the logs directory."""
@@ -146,14 +261,17 @@ class MapsReader:
         pass
 
     def write_metrics(self, split: Split, metrics: Metrics):
-        for metric in metrics.metrics:
-            self.best_metric_path(split.index, metric.__str__()).mkdir(parents=True)
-            self.metrics_data_group_path(split.index, metric.__str__(), "train").mkdir(
+        for metric in metrics.val.selection_metrics:
+            metric = metric.value
+            self.best_metric_path(split.index, str(metric)).mkdir(parents=True)
+
+            self.metrics_data_group_path(split.index, str(metric), "train").mkdir(
                 parents=True
             )
-            self.metrics_data_group_path(
-                split.index, metric.__str__(), "validation"
-            ).mkdir(parents=True)
+
+            self.metrics_data_group_path(split.index, str(metric), "validation").mkdir(
+                parents=True
+            )
 
     def _write_data_group(
         self,
@@ -268,17 +386,18 @@ class MapsReader:
         """TO COMPLETE"""
         pass
 
-    def _write_maps_json(
-        self, config: Optional[ClinicaDLConfig] = None, dict_: Optional[dict] = None
-    ):
-        """Writes the maps.json file."""
-        json_path = self.maps_json_path()
-        self._write_json(json_path, config, dict_)
+    # def _write_maps_json(
+    #     self, config: Optional[ClinicaDLConfig] = None, dict_: Optional[dict] = None
+    # ):
+    #     """Writes the maps.json file."""
+    #     json_path = self.maps_json_path()
+    #     if config or
+    #     self._write_json(json_path, config, dict_)
 
     def _write_split_json(self, split: Split):
         """Writes the maps.json file."""
         json_path = self.split_json_path(split.index)
-        self._write_json(json_path)  # called to create split
+        # self._write_json(json_path)  # called to create split
 
         dict_ = split.model_dump(exclude={"train_loader", "val_loader"})
 
@@ -286,7 +405,39 @@ class MapsReader:
         dict_["train_dataset"] = split.train_dataset.describe()
 
         self._write_json(json_path, dict_=dict_)  # called to add data to the split.json
-        print(self.split_json_path(split=split.index))
+
+    def _update_json(
+        self,
+        json_path: Path,
+        config: Optional[ClinicaDLConfig] = None,
+        dict_: Optional[dict] = None,
+    ):
+        if not json_path.is_file():
+            raise FileNotFoundError("The maps.json file for this MAPS does not exist.")
+
+        # Lire le contenu existent du fichier
+        with json_path.open(mode="r") as file:
+            try:
+                existing_data = json.load(file)
+            except json.JSONDecodeError:
+                existing_data = {}
+
+        # Fusionner les nouvelles données
+        if config:
+            new_data = config.model_dump()  # Assurez-vous que c'est bien un dict
+            if hasattr(config, "name"):
+                name = config.name  # type: ignore
+            else:
+                name = config.__class__.__name__
+
+            existing_data.update({name: new_data})
+
+        if dict_:
+            existing_data.update(dict_)
+
+        # Écrire les données mises à jour dans le fichier
+        with json_path.open(mode="w") as file:
+            json.dump(existing_data, file, indent=4, default=path_encoder)
 
     def _write_json(
         self,
@@ -294,32 +445,17 @@ class MapsReader:
         config: Optional[ClinicaDLConfig] = None,
         dict_: Optional[dict] = None,
     ):
-        if config or dict_:  # the maps is supposed to already exists to write more info
-            if not json_path.is_file():
-                raise ClinicaDLConfigurationError(
-                    "The maps.json file for this MAPS does not exist."
-                )
-            with (json_path).open(mode="w") as file:
-                if config:
-                    json.dump(
-                        config.model_dump_json(indent=4),
-                        file,
-                        indent=4,
-                        default=path_encoder,
-                    )
-                if dict_:
-                    json.dump(dict_, file, indent=4, default=path_encoder)
+        if json_path.is_file():
+            raise ClinicaDLConfigurationError(
+                f"The json file {json_path} already exists"
+            )
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        with (json_path).open(mode="w") as file:
+            json.dump(
+                {"maps_path": self.maps_path}, file, indent=4, default=path_encoder
+            )
 
-        else:  # the maps is not supposed to exists
-            if json_path.is_file():
-                raise ClinicaDLConfigurationError(
-                    f"The json file {json_path} already exists"
-                )
-            json_path.parent.mkdir(parents=True, exist_ok=True)
-            with (json_path).open(mode="w") as file:
-                json.dump(
-                    {"maps_path": self.maps_path}, file, indent=4, default=path_encoder
-                )
+        self._update_json(json_path, config, dict_)
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -338,8 +474,7 @@ class MapsReader:
         self,
         state: Dict[str, Any],
         split: int,
-        metrics: Metrics,
-        network: Optional[int] = None,
+        selection_metrics: str = "loss",
         filename: str = (CHECKPOINT + PTH + TAR),
         save_all_models: bool = False,
         epoch: int = 0,
@@ -365,17 +500,15 @@ class MapsReader:
             )
 
         best_filename = "model.pth.tar"
-        if network is not None:
-            best_filename = f"network-{network}_model.pth.tar"
 
-        for metric in metrics.metrics:
-            metric_path = self.split_path(split) / f"best-{metric.__str__()}"
+        for metric in selection_metrics:
+            metric_path = self.best_metric_path(split, metric)
             metric_path.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(checkpoint_path, metric_path / best_filename)
 
-        loss_path = self.best_metric_path(split=split, metric="loss")
-        loss_path.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(checkpoint_path, loss_path / best_filename)
+        # loss_path = self.best_metric_path(split=split, metric="loss")
+        # loss_path.mkdir(parents=True, exist_ok=True)
+        # shutil.copyfile(checkpoint_path, loss_path / best_filename)
 
     def _create_data_group(
         self, name: str, caps_dataset: CapsDataset, split: Optional[int] = None
@@ -489,6 +622,9 @@ class MapsReader:
             self.metrics_data_group_path(split, metric, data_group)
             / f"{data_group}_prediction.tsv"
         )
+
+    def caps_output_path(self, split: int, metric: str, data_group: str) -> Path:
+        return self.metrics_data_group_path(split, metric, data_group) / "CapsOutput"
 
     def metrics_tsv_path(self, split: int, metric: str, data_group: str) -> Path:
         return (

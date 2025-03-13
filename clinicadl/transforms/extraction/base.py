@@ -31,6 +31,12 @@ class Sample(ClinicaDLConfig, ABC):
     def extraction(self) -> str:
         """The extraction method."""
 
+    @computed_field
+    @property
+    @abstractmethod
+    def id(self) -> int:
+        """The extraction method."""
+
     def get_datapoint(self) -> DataPoint:
         return DataPoint(
             image=tio.ScalarImage(self.sample, affine=self.affine),

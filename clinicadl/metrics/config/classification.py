@@ -10,7 +10,7 @@ from .base import (
     _IncludeBackgroundConfig,
     _ReductionConfig,
 )
-from .enum import Average, ImplementedMetric
+from .enum import Average, ImplementedMetric, Optimum
 
 __all__ = [
     "ROCAUCMetricConfig",
@@ -30,6 +30,11 @@ class ROCAUCMetricConfig(MetricConfig):
         """The name of the metric."""
         return ImplementedMetric.ROC_AUC
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
 
 class ConfusionMatrixMetricConfig(
     MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
@@ -44,3 +49,8 @@ class ConfusionMatrixMetricConfig(
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.CONF_MATRIX
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
