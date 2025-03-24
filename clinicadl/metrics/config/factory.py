@@ -1,4 +1,4 @@
-from typing import Type, Union
+from typing import Any, Union
 
 # pylint: disable=unused-import
 from .base import LossMetricConfig, MetricConfig
@@ -20,34 +20,30 @@ from .segmentation import (
 )
 
 
-def create_metric_config(
-    metric: Union[str, ImplementedMetric],
-) -> Type[MetricConfig]:
+def get_metric_config(
+    name: Union[str, ImplementedMetric],
+    **kwargs: Any,
+) -> MetricConfig:
     """
-    A factory function to create a config class suited for the metric.
+    Factory function to get a  metric configuration object from its name
+    and parameters.
 
     Parameters
     ----------
-    metric : Union[str, ImplementedMetric]
-        The name of the metric.
+    name : Union[str, ImplementedMetric]
+        the name of the metric. Check our documentation to know available metrics.
+    **kwargs : Any
+        any parameter of the metric. Check our documentation on metrics to
+        know these parameters.
 
     Returns
     -------
-    Type[MetricConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        When `metric`does not correspond to any supported metric.
-    ValueError
-        When `metric` is `Loss`.
+    MetricConfig
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
-    metric = ImplementedMetric(metric)
-    if metric == ImplementedMetric.LOSS:
-        return LossMetricConfig
-
+    metric = ImplementedMetric(name)
     config_name = "".join([metric, "Config"])
     config = globals()[config_name]
 
-    return config
+    return config(**kwargs)

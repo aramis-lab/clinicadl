@@ -1,5 +1,6 @@
 from typing import Tuple, Union
 
+import monai.metrics as metrics
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
@@ -12,7 +13,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import ImplementedMetric, Kernel
+from .enum import ImplementedMetric, Kernel, Reduction
 
 __all__ = [
     "PSNRMetricConfig",
@@ -22,28 +23,44 @@ __all__ = [
 
 
 class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
-    "Config class for PSNR."
+    """
+    Config class for :py:class:`monai.metrics.PSNRMetric`.
+    """
 
     max_val: PositiveFloat
 
+    def __init__(
+        self,
+        max_val: PositiveFloat,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            max_val=max_val,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
+
     @computed_field
     @property
-    def name(self) -> ImplementedMetric:
+    def name(self) -> str:
         """The name of the metric."""
-        return ImplementedMetric.PSNR
+        return ImplementedMetric.PSNR.value
+
+    def _get_class(self) -> type[metrics.Metric]:
+        """Returns the metric associated to this config class."""
+        return metrics.PSNRMetric
 
 
 class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
     "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt
-    data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
-    kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES
-    kernel_sigma: Union[
-        PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
-    k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    data_range: PositiveFloat
+    kernel_type: Kernel
+    kernel_sigma: Union[PositiveFloat, Tuple[PositiveFloat, ...]]
+    k1: NonNegativeFloat
+    k2: NonNegativeFloat
 
     @field_validator("spatial_dims", mode="after")
     @classmethod
@@ -69,17 +86,49 @@ class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
 
 
 class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
-    "Config class for SSIM."
+    """
+    Config class for :py:class:`monai.metrics.SSIMMetric`.
+    """
 
-    win_size: Union[
-        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    win_size: Union[PositiveInt, Tuple[PositiveInt, ...]]
+
+    def __init__(
+        self,
+        spatial_dims: PositiveInt,
+        data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        win_size: Union[PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        kernel_sigma: Union[
+            PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            spatial_dims=spatial_dims,
+            data_range=data_range,
+            kernel_type=kernel_type,
+            win_size=win_size,
+            kernel_sigma=kernel_sigma,
+            k1=k1,
+            k2=k2,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
 
     @computed_field
     @property
-    def name(self) -> ImplementedMetric:
+    def name(self) -> str:
         """The name of the metric."""
-        return ImplementedMetric.SSIM
+        return ImplementedMetric.SSIM.value
+
+    def _get_class(self) -> type[metrics.Metric]:
+        """Returns the metric associated to this config class."""
+        return metrics.SSIMMetric
 
     @model_validator(mode="after")
     def validator_win_size(self):
@@ -90,20 +139,54 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
 
 
 class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
-    "Config class for multi-scale SSIM."
+    """
+    Config class for :py:class:`monai.metrics.MultiScaleSSIMMetric`.
+    """
 
-    kernel_size: Union[
-        PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    weights: Union[
-        Tuple[PositiveFloat, ...], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    kernel_size: Union[PositiveInt, Tuple[PositiveInt, ...]]
+    weights: Tuple[PositiveFloat, ...]
+
+    def __init__(
+        self,
+        spatial_dims: PositiveInt,
+        data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        kernel_size: Union[PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        kernel_sigma: Union[
+            PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        weights: Union[Tuple[PositiveFloat, ...], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            spatial_dims=spatial_dims,
+            data_range=data_range,
+            kernel_type=kernel_type,
+            kernel_size=kernel_size,
+            kernel_sigma=kernel_sigma,
+            k1=k1,
+            k2=k2,
+            weights=weights,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
 
     @computed_field
     @property
-    def name(self) -> ImplementedMetric:
+    def name(self) -> str:
         """The name of the metric."""
-        return ImplementedMetric.MS_SSIM
+        return ImplementedMetric.MS_SSIM.value
+
+    def _get_class(self) -> type[metrics.Metric]:
+        """Returns the metric associated to this config class."""
+        return metrics.MultiScaleSSIMMetric
 
     @model_validator(mode="after")
     def validator_kernel_size(self):
