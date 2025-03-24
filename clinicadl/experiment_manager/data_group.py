@@ -14,10 +14,6 @@ from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 TRAIN_VAL = [TRAIN, VALIDATION]
 
 
-class SplitGroup(ClinicaDLConfig):
-    number: int
-
-
 class DataGroup(ClinicaDLConfig):
     maps_path: Path
     name: str

@@ -285,7 +285,6 @@ class CapsDataset(Dataset):
         * Also raises a warning if some tensor files already present in the CAPS directory will be
           overwritten (unless ``raise_warnings=False``).
         """
-
         self.tensor_conversion.convert_to_tensors(
             json_name, save_transforms, n_proc, ignore_spacing, raise_warnings
         )
@@ -480,7 +479,6 @@ class CapsDataset(Dataset):
             )
 
         row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
-
         return row[column].iloc[0]
 
     def get_participant_session_couples(self) -> List[Tuple[str, str]]:
@@ -734,9 +732,6 @@ class CapsDataset(Dataset):
         IndexError
             If 'idx' is out of range.
         """
-
-        # img_idx = idx // self.samples_per_image
-
         participant = self.get_sample_info(idx, PARTICIPANT_ID)
 
         session = self.get_sample_info(idx, SESSION_ID)
@@ -744,8 +739,6 @@ class CapsDataset(Dataset):
             (participant, session)
         ]
         sample_idx = int(idx - row.at[FIRST_INDEX])
-
-        # sample_idx = idx % row.at[N_SAMPLES]
 
         return participant, session, sample_idx
 

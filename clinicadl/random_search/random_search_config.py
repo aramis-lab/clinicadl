@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, field_validator
 
-from clinicadl.config.config_utils import get_type_from_config_class as get_type
 from clinicadl.trainer.config.classification import (
     ClassificationConfig as BaseClassificationConfig,
 )
@@ -13,9 +12,6 @@ from clinicadl.trainer.config.regression import (
     RegressionConfig as BaseRegressionConfig,
 )
 from clinicadl.utils.enum import Normalization, Pooling, Task
-
-if TYPE_CHECKING:
-    from clinicadl.trainer.maps_manager import TrainConfig
 
 
 class RandomSearchConfig(

@@ -4,7 +4,7 @@ Launch a random network training.
 
 from pathlib import Path
 
-from clinicadl.trainer.maps_manager import Trainer
+from clinicadl.trainer import Trainer
 
 from .random_search_config import RandomSearchConfig, create_training_config
 from .random_search_utils import get_space_dict, random_sampling
