@@ -11,15 +11,15 @@ class BatchLoader:
         if len(self) == 0:
             raise ValueError("No samples to load.")
 
-    def __len__(self):
+    def __len__(self) -> int:
         # Retourner la taille du batch
         return len(self.samples)
 
-    def get_images(self):
+    def get_images(self) -> torch.Tensor:
         # Retourner les images du batch
         return torch.cat([sample.sample for sample in self.samples], dim=0).unsqueeze(1)
 
-    def get_labels(self):
+    def get_labels(self) -> torch.Tensor:
         # Retourner les labels du batch
         if all(isinstance(sample.label, torch.Tensor) for sample in self.samples):
             list_ = []

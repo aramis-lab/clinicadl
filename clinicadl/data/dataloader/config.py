@@ -9,12 +9,6 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
-# class ClinicaDLDataLoader(DataLoader):
-
-#     def __init__(self, **kwargs):
-#         super.__init__(**kwargs)
-#         self.type
-
 
 class WeightedRandomSampler(BaseWeightedRandomSampler):
     """

@@ -381,10 +381,6 @@ class CapsDataset(Dataset):
             )
 
         row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
-        # print(self.df.iloc[[idx]])
-        # row = self.df.iloc[[idx], ]
-        # print(row)
-        # return self.df.loc[idx, column]
 
         return row[column].iloc[0]
 

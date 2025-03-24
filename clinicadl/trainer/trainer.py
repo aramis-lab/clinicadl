@@ -1,40 +1,22 @@
 from __future__ import annotations
 
 import json
-import random
 import shutil
-from contextlib import nullcontext
-from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Union
 
-import numpy as np
 import torch
-import torch.distributed as dist
 from monai.metrics.metric import CumulativeIterationMetric as Metric
 from torch.amp.autocast_mode import autocast
 from torch.amp.grad_scaler import GradScaler
 from torch.nn.parallel import DistributedDataParallel
-from torch.profiler import (
-    ProfilerActivity,
-    profile,
-    record_function,
-    schedule,
-    tensorboard_trace_handler,
-)
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
-from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import MapsReader
 from clinicadl.metrics.config.enum import Optimum
 from clinicadl.metrics.config.factory import create_metric_config
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
-
-# from clinicadl.utils.logwriter import LogWriter
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStopping, EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
@@ -117,8 +99,9 @@ class Trainer:
         # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
 
     @classmethod
-    def from_json(cls, json_file: Path) -> Trainer:
+    def from_json(cls, json_file: PathType) -> Trainer:
         """TO COMPLETE"""
+        json_file = Path(json_file)
         if not json_file.is_file():
             raise FileNotFoundError(f"The json file {json_file} does not exist.")
 
@@ -133,7 +116,7 @@ class Trainer:
         return cls._from_dict(maps_path, data)
 
     @classmethod
-    def from_maps(cls, maps_path: str | Path) -> Trainer:
+    def from_maps(cls, maps_path: PathType) -> Trainer:
         """TO COMPLETE"""
 
         reader = MapsReader(maps_path)
@@ -347,12 +330,12 @@ class Trainer:
             ):
                 shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
 
+    ## INITIALIZATION
     def _init_validator(self):
         return Predictor(
             maps_path=self.reader.maps_path,
             model=self.model,
             comp_config=self.comp,
-            optim_config=self.optim,
         )
 
     def _init_scheduler(
@@ -378,6 +361,7 @@ class Trainer:
         )
         self.early_stopping = EarlyStopping(config)
 
+    ## CHECK
     def _check_evaluation_steps(self):
         """Check if the current batch is an evaluation step."""
         # Vérification de evaluation_steps
