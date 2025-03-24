@@ -113,9 +113,7 @@ class DataLoaderConfig(ClinicaDLConfig):
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
-            collate_fn=lambda x: BatchLoader(
-                x
-            ),  # TODO: check if we want to maybe return something else in the dataloader ?
+            collate_fn=lambda x: BatchLoader(x),
             **self.model_dump(exclude=set(["sampling_weights", "shuffle"])),
         )
 
