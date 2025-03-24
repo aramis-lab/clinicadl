@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy as np
+import torchio as tio
 from pydantic import (
     PositiveFloat,
     PositiveInt,
@@ -11,7 +12,7 @@ from pydantic import (
 )
 from torchio import Image
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.config import DefaultFromLibrary
 
 from .base import Bounds, ImplementedTransform, TransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
@@ -28,20 +29,43 @@ __all__ = [
 
 
 class CropOrPadConfig(TransformConfig):
-    """Config class for CropOrPad transform."""
+    """
+    Config class for :py:class:`torchio.transforms.CropOrPad`.
+    """
 
     target_shape: Optional[
         Union[
             PositiveInt,
             Tuple[PositiveInt, PositiveInt, PositiveInt],
-            DefaultFromLibrary,
         ]
-    ] = DefaultFromLibrary.YES
-    padding_mode: Union[float, PaddingMode, DefaultFromLibrary] = DefaultFromLibrary.YES
-    mask_name: Optional[Union[str, DefaultFromLibrary]] = DefaultFromLibrary.YES
-    labels: Union[
-        Optional[Tuple[int, ...]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    ]
+    padding_mode: Union[float, PaddingMode]
+    mask_name: Optional[str]
+    labels: Optional[Tuple[int, ...]]
+
+    def __init__(
+        self,
+        target_shape: Optional[
+            Union[
+                PositiveInt,
+                Tuple[PositiveInt, PositiveInt, PositiveInt],
+                DefaultFromLibrary,
+            ]
+        ] = DefaultFromLibrary.YES,
+        padding_mode: Union[
+            float, PaddingMode, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        mask_name: Optional[Union[str, DefaultFromLibrary]] = DefaultFromLibrary.YES,
+        labels: Union[
+            Optional[Tuple[int, ...]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            target_shape=target_shape,
+            padding_mode=padding_mode,
+            mask_name=mask_name,
+            labels=labels,
+        )
 
     @computed_field
     @property
@@ -49,18 +73,18 @@ class CropOrPadConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.CROP_OR_PAD.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.CropOrPad
+
     @model_validator(mode="after")
     def check_shape(self):
         """Checks consistency between 'target_shape', 'mask_name' and 'labels'."""
-        if (
-            self.target_shape is None or self.target_shape == DefaultFromLibrary.YES
-        ) and (self.mask_name is None or self.mask_name == DefaultFromLibrary.YES):
+        if not self.target_shape and not self.mask_name:
             raise ValueError(
                 "If 'target_shape' is None or is not passed, a valid 'mask_name' must be passed."
             )
-        if (
-            self.mask_name is None or self.mask_name == DefaultFromLibrary.YES
-        ) and not (self.labels is None or self.labels == DefaultFromLibrary.YES):
+        if not self.mask_name and self.labels:
             raise ValueError(
                 "If 'mask_name' is not passed, 'labels' must be left to None."
             )
@@ -68,7 +92,9 @@ class CropOrPadConfig(TransformConfig):
 
 
 class ToCanonicalConfig(TransformConfig):
-    """Config class for ToCanonical transform."""
+    """
+    Config class for :py:class:`torchio.transforms.ToCanonical`.
+    """
 
     @computed_field
     @property
@@ -76,23 +102,45 @@ class ToCanonicalConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.TO_CANONICAL.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.ToCanonical
+
 
 class ResizeConfig(TransformConfig):
-    """Config class for Resize transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Resize`.
+    """
 
     target_shape: Union[int, Tuple[int, int, int]]
-    image_interpolation: Union[
-        InterpolationMode, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    label_interpolation: Union[
-        InterpolationMode, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    image_interpolation: InterpolationMode
+    label_interpolation: InterpolationMode
+
+    def __init__(
+        self,
+        target_shape: Union[int, Tuple[int, int, int]],
+        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        super().__init__(
+            target_shape=target_shape,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+        )
 
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.RESIZE.value
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Resize
 
     @field_validator("target_shape", mode="after")
     @classmethod
@@ -116,7 +164,9 @@ class ResizeConfig(TransformConfig):
 
 
 class ResampleConfig(TransformConfig):
-    """Config class for Resample transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Resample`.
+    """
 
     target: Union[
         PositiveFloat,
@@ -124,16 +174,38 @@ class ResampleConfig(TransformConfig):
         str,
         Path,
         Tuple[Tuple[PositiveInt, PositiveInt, PositiveInt], np.ndarray],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES
-    pre_affine_name: Optional[DefaultFromLibrary] = DefaultFromLibrary.YES
-    image_interpolation: Union[
-        InterpolationMode, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    label_interpolation: Union[
-        InterpolationMode, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    scalars_only: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    ]
+    pre_affine_name: Optional[str] = None
+    image_interpolation: InterpolationMode
+    label_interpolation: InterpolationMode
+    scalars_only: bool
+
+    def __init__(
+        self,
+        target: Union[
+            PositiveFloat,
+            Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
+            str,
+            Path,
+            Tuple[Tuple[PositiveInt, PositiveInt, PositiveInt], np.ndarray],
+            DefaultFromLibrary,
+        ] = DefaultFromLibrary.YES,
+        pre_affine_name: Optional[DefaultFromLibrary] = DefaultFromLibrary.YES,
+        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        scalars_only: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            target=target,
+            pre_affine_name=pre_affine_name,
+            image_interpolation=image_interpolation,
+            label_interpolation=label_interpolation,
+            scalars_only=scalars_only,
+        )
 
     @computed_field
     @property
@@ -141,11 +213,15 @@ class ResampleConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.RESAMPLE.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Resample
+
     @field_validator("pre_affine_name", mode="before")
     @classmethod
     def validator_pre_affine_name(cls, v):
         """Checks that 'pre_affine_name' is not passed."""
-        if v is not None and v != DefaultFromLibrary.YES:
+        if v is not None:
             raise ValueError("'pre_affine_name' is not supported in ClinicaDL.")
         return v
 
@@ -174,10 +250,26 @@ class ResampleConfig(TransformConfig):
 
 
 class EnsureShapeMultipleConfig(TransformConfig):
-    """Config class for EnsureShapeMultiple transform."""
+    """
+    Config class for :py:class:`torchio.transforms.EnsureShapeMultiple`.
+    """
 
     target_multiple: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
-    method: Union[EnsureShapeMultipleMode, DefaultFromLibrary] = DefaultFromLibrary.YES
+    method: EnsureShapeMultipleMode
+
+    def __init__(
+        self,
+        target_multiple: Union[
+            PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]
+        ],
+        method: Union[
+            EnsureShapeMultipleMode, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            target_multiple=target_multiple,
+            method=method,
+        )
 
     @computed_field
     @property
@@ -185,11 +277,22 @@ class EnsureShapeMultipleConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.ENSURE_MULTIPLE.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.EnsureShapeMultiple
+
 
 class CropConfig(TransformConfig):
-    """Config class for Crop transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Crop`.
+    """
 
-    cropping: Union[Bounds, DefaultFromLibrary]
+    cropping: Bounds
+
+    def __init__(self, cropping: Bounds):
+        super().__init__(
+            cropping=cropping,
+        )
 
     @computed_field
     @property
@@ -197,15 +300,37 @@ class CropConfig(TransformConfig):
         """The name of the transform."""
         return ImplementedTransform.CROP.value
 
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Crop
+
 
 class PadConfig(TransformConfig):
-    """Config class for Pad transform."""
+    """
+    Config class for :py:class:`torchio.transforms.Pad`.
+    """
 
-    padding: Union[Bounds, DefaultFromLibrary]
-    padding_mode: Union[float, PaddingMode, DefaultFromLibrary] = DefaultFromLibrary.YES
+    padding: Bounds
+    padding_mode: Union[float, PaddingMode]
+
+    def __init__(
+        self,
+        padding: Bounds,
+        padding_mode: Union[
+            float, PaddingMode, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            padding=padding,
+            padding_mode=padding_mode,
+        )
 
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.PAD.value
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.Pad

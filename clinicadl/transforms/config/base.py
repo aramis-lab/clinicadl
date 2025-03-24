@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
 from typing import Any, Callable, List, Optional, Tuple, Union
 
+import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
@@ -9,31 +9,33 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.config import NewClinicaDLConfig
 
 from .enum import (
-    AnatomicalAxis,
     AnatomicalLabel,
     ImplementedTransform,
-    NumericalAxis,
-    TransformType,
 )
 
+__all__ = [
+    "TransformConfig",
+    "OneOfConfig",
+]
 
-class TransformConfig(ClinicaDLConfig, ABC):
+
+class TransformConfig(NewClinicaDLConfig):
     """Base config class for the transforms."""
 
-    @computed_field
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """The name of the transform."""
+    def get_object(self) -> tio.Transform:
+        """
+        Returns the transform associated to this configuration,
+        parametrized with the parameters passed by the user.
 
-    @property
-    def _type(self) -> TransformType:
-        """The source where the transform can be found."""
-        return TransformType.TORCHIO
+        Returns
+        -------
+        tio.Transform:
+            The TorchIO transform.
+        """
+        return super().get_object()
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:
@@ -73,16 +75,49 @@ class TransformConfig(ClinicaDLConfig, ABC):
 
 
 class OneOfConfig(TransformConfig):
-    """Config class for OneOf augmentation."""
+    """
+    Config class for :py:class:`torchio.transforms.OneOf`.
+    """
 
     transforms: List[TransformConfig]
     probabilities: Optional[List[NonNegativeFloat]] = None
+
+    def __init__(
+        self,
+        transforms: List[TransformConfig],
+        probabilities: Optional[List[NonNegativeFloat]] = None,
+    ):
+        super().__init__(
+            transforms=transforms,
+            probabilities=probabilities,
+        )
 
     @computed_field
     @property
     def name(self) -> str:
         """The name of the transform."""
         return ImplementedTransform.ONE_OF.value
+
+    def get_object(self) -> tio.Transform:
+        """
+        Returns the transform associated to this configuration,
+        parametrized with the parameters passed by the user.
+
+        Returns
+        -------
+        tio.Transform:
+            The TorchIO transform.
+        """
+        config_dict = {
+            transform.get_object(): proba
+            for transform, proba in zip(self.transforms, self.probabilities)
+        }
+        one_of = self._get_class()(transforms=config_dict)
+        return one_of
+
+    def _get_class(self) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return tio.OneOf
 
     @model_validator(mode="after")
     def check_probabilities(self):
@@ -111,12 +146,10 @@ Bounds = Union[
 ]
 
 
-class _MaskingMethodConfig(ClinicaDLConfig):
-    """Base config class for normalization transforms."""
+class MaskingMethodConfig(NewClinicaDLConfig):
+    """Base config class 'masking_method' argument."""
 
-    masking_method: Optional[
-        Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
-    ] = DefaultFromLibrary.YES
+    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
 
     @field_validator("masking_method", mode="before")
     @classmethod
@@ -130,15 +163,3 @@ class _MaskingMethodConfig(ClinicaDLConfig):
             except ValueError:
                 pass
         return v
-
-
-class _AnatomicalAxesConfig(ClinicaDLConfig):
-    """Config class for 'axes' option when it supports anatomical values."""
-
-    axes: Union[
-        NumericalAxis,
-        Tuple[NumericalAxis, ...],
-        AnatomicalAxis,
-        Tuple[AnatomicalAxis, ...],
-        DefaultFromLibrary,
-    ] = DefaultFromLibrary.YES

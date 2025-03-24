@@ -1,56 +1,82 @@
 import pytest
+import torch
+import torchio as tio
 from pydantic import ValidationError
 
-from clinicadl.transforms.config import create_transform_config
+from clinicadl.transforms.config.intensity import (
+    ClampConfig,
+    MaskConfig,
+    NanRemovalConfig,
+    RescaleIntensityConfig,
+    ZNormalizationConfig,
+)
+from clinicadl.transforms.homemade_transforms import NanRemoval
 
 BAD_INPUTS = [
-    ({"out_min_max": -0.5}, "RescaleIntensity"),
-    ({"out_min_max": (0.5, -0.5)}, "RescaleIntensity"),
-    ({"percentiles": 101}, "RescaleIntensity"),
-    ({"percentiles": (0, 101.1)}, "RescaleIntensity"),
-    ({"in_min_max": -0.5}, "RescaleIntensity"),
-    ({"in_min_max": (0.5, -0.5)}, "RescaleIntensity"),
-    ({"masking_method": None, "labels": 0}, "Mask"),
-    ({"masking_method": None, "labels": [0.5]}, "Mask"),
-    ({"out_min": 1.0, "out_max": 0.5}, "Clamp"),
-    ({"out_min": None, "out_max": None}, "Clamp"),
-    ({}, "Clamp"),
+    ({"out_min_max": -0.5}, RescaleIntensityConfig),
+    ({"out_min_max": (0.5, -0.5)}, RescaleIntensityConfig),
+    ({"percentiles": 101}, RescaleIntensityConfig),
+    ({"percentiles": (0, 101.1)}, RescaleIntensityConfig),
+    ({"in_min_max": -0.5}, RescaleIntensityConfig),
+    ({"in_min_max": (0.5, -0.5)}, RescaleIntensityConfig),
+    ({"masking_method": None, "labels": 0}, MaskConfig),
+    ({"masking_method": None, "labels": [0.5]}, MaskConfig),
+    ({"out_min": 1.0, "out_max": 0.5}, ClampConfig),
+    ({"out_min": None, "out_max": None}, ClampConfig),
+    ({}, ClampConfig),
 ]
 
 GOOD_INPUTS = [
-    ({"out_min_max": 0.5}, "RescaleIntensity"),
-    ({"out_min_max": (-0.5, 0.5)}, "RescaleIntensity"),
-    ({"percentiles": 100}, "RescaleIntensity"),
-    ({"percentiles": (0.2, 99.2)}, "RescaleIntensity"),
-    ({"in_min_max": 0.5}, "RescaleIntensity"),
-    ({"in_min_max": (-0.5, 0.5)}, "RescaleIntensity"),
-    ({"masking_method": None, "outside_value": 1.0}, "Mask"),
-    ({"masking_method": None, "labels": (1,)}, "Mask"),
-    ({"masking_method": None, "labels": None}, "Mask"),
-    ({"out_min": 0.5, "out_max": 1.0}, "Clamp"),
-    ({"out_min": 0.5, "out_max": None}, "Clamp"),
-    ({"out_min": None, "out_max": 1.0}, "Clamp"),
-    ({"posinf": 1.2, "neginf": 0.1}, "NanRemoval"),
-    ({"posinf": None, "neginf": None}, "NanRemoval"),
+    ({"out_min_max": 0.5}, RescaleIntensityConfig),
+    ({"out_min_max": (-0.5, 0.5)}, RescaleIntensityConfig),
+    ({"percentiles": 100}, RescaleIntensityConfig),
+    ({"percentiles": (0.2, 99.2)}, RescaleIntensityConfig),
+    ({"in_min_max": 0.5}, RescaleIntensityConfig),
+    ({"in_min_max": (-0.5, 0.5)}, RescaleIntensityConfig),
+    ({"masking_method": None, "outside_value": 1.0}, MaskConfig),
+    ({"masking_method": None, "labels": (1,)}, MaskConfig),
+    ({"masking_method": None, "labels": None}, MaskConfig),
+    ({"out_min": 0.5, "out_max": 1.0}, ClampConfig),
+    ({"out_min": 0.5, "out_max": None}, ClampConfig),
+    ({"out_min": None, "out_max": 1.0}, ClampConfig),
+    ({"posinf": 1.2, "neginf": 0.1}, NanRemovalConfig),
+    ({"posinf": None, "neginf": None}, NanRemovalConfig),
 ]
 
-
-@pytest.mark.parametrize("args,transform", BAD_INPUTS)
-def test_bad_inputs(args, transform):
-    if not isinstance(transform, list):
-        transform = [transform]
-    for trans in transform:
-        config = create_transform_config(trans)
-        with pytest.raises(ValidationError):
-            config(**args)
+X = tio.Subject(
+    image=tio.ScalarImage(tensor=torch.randn(1, 16, 17, 18)),
+    label=tio.LabelMap(tensor=torch.ones(1, 16, 17, 18)),
+)
 
 
-@pytest.mark.parametrize("args,transform", GOOD_INPUTS)
-def test_good_inputs(args: dict, transform):
-    config = create_transform_config(transform)
+@pytest.mark.parametrize("args,config", BAD_INPUTS)
+def test_bad_inputs(args, config):
+    with pytest.raises(ValidationError):
+        config(**args)
+
+
+@pytest.mark.parametrize("args,config", GOOD_INPUTS)
+def test_good_inputs(args: dict, config):
     c = config(**args)
     for arg, value in args.items():
         assert getattr(c, arg) == value
+
+
+@pytest.mark.parametrize(
+    "args,config,transform",
+    [
+        ({}, RescaleIntensityConfig, tio.RescaleIntensity),
+        ({"masking_method": None}, MaskConfig, tio.Mask),
+        ({"out_max": 1.0}, ClampConfig, tio.Clamp),
+        ({}, NanRemovalConfig, NanRemoval),
+        ({}, ZNormalizationConfig, tio.ZNormalization),
+    ],
+)
+def test_get_object(args, config, transform):
+    c = config(**args)
+    transform_from_config = c.get_object()
+    assert isinstance(transform_from_config, transform)
+    assert isinstance(transform_from_config(X), tio.Subject)
 
 
 def test_masking_method():
@@ -66,10 +92,9 @@ def test_masking_method():
         "Inferior",
         "Superior",
     ]
-    transforms = ["Mask", "RescaleIntensity", "ZNormalization"]
-    for transform in transforms:
+    configs = [MaskConfig, RescaleIntensityConfig, ZNormalizationConfig]
+    for config in configs:
         for method in methods:
-            config = create_transform_config(transform)
             c = config(masking_method=method)
             assert c.masking_method == method
     with pytest.raises(ValidationError):

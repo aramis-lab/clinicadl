@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.datatype.preprocessing import PETLinear
+from clinicadl.data.datatypes.preprocessing import PETLinear
 from clinicadl.splitter.splitter.kfold import KFold, KFoldConfig
 from clinicadl.splitter.splitter.single_split import SingleSplit, SingleSplitConfig
 from clinicadl.splitter.splitter.splitter import SubjectsSessionsSplit

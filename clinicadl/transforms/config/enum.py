@@ -3,15 +3,6 @@ from enum import Enum
 from clinicadl.utils.enum import BaseEnum
 
 
-class TransformType(str, BaseEnum):
-    """
-    Sources for transforms in ClinicaDL.
-    """
-
-    TORCHIO = "TorchIO"
-    HOMEMADE = "HomeMade"
-
-
 class ImplementedTransform(str, BaseEnum):
     """
     Implemented transforms in ClinicaDL.

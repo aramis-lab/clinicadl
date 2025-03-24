@@ -7,7 +7,15 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms import Patch, Transforms, get_transform_config
+from clinicadl.transforms import Transforms
+from clinicadl.transforms.config import (
+    PadConfig,
+    RescaleIntensityConfig,
+    ResizeConfig,
+    ToCanonicalConfig,
+    ZNormalizationConfig,
+)
+from clinicadl.transforms.extraction import Image, Patch
 
 
 def test_args():
@@ -19,7 +27,7 @@ def test_args():
 
 def test_check_transforms():
     transforms = Transforms(
-        image_transforms=[get_transform_config("ZNormalization")],
+        image_transforms=[ZNormalizationConfig()],
         sample_transforms=[tio.Resize((16, 16, 16))],
         augmentations=[tio.RandomAffine()],
     )
@@ -28,6 +36,7 @@ def test_check_transforms():
         tio.Resize,
     ]
     assert transforms.sample_transforms == []
+    assert transforms.extraction == Image()
 
 
 def test_get_transforms():
@@ -42,9 +51,9 @@ def test_get_transforms():
         extraction=Patch(patch_size=4, stride=4),
         image_transforms=[
             tio.Crop(1),
-            get_transform_config("RescaleIntensity", padding=1),
+            RescaleIntensityConfig(),
         ],
-        sample_transforms=[get_transform_config("Pad", padding=1)],
+        sample_transforms=[PadConfig(padding=1)],
         augmentations=[tio.Mask(masking_method="mask_1")],
     )
     (
@@ -86,7 +95,7 @@ def test_str():
     transforms = Transforms(
         extraction=Patch(patch_size=4, stride=4),
         image_transforms=[tio.Resize(12), tio.RescaleIntensity()],
-        sample_transforms=[get_transform_config("Resize", target_shape=3)],
+        sample_transforms=[ResizeConfig(target_shape=3)],
         image_augmentations=[],
         sample_augmentations=[tio.Mask(masking_method=1)],
     )
@@ -98,13 +107,13 @@ def test_serialization():
         extraction=Patch(patch_size=4, stride=4),
         image_transforms=[
             tio.Resize(12),
-            get_transform_config("Resize", target_shape=3),
+            ResizeConfig(target_shape=3),
         ],
         sample_transforms=[
             tio.Resize(12),
-            get_transform_config("Resize", target_shape=3),
+            ResizeConfig(target_shape=3),
         ],
-        augmentations=[get_transform_config("ToCanonical"), tio.ToCanonical()],
+        augmentations=[ToCanonicalConfig(), tio.ToCanonical()],
     )
     d = transforms.to_dict()
     resize_ordered_dict = OrderedDict(

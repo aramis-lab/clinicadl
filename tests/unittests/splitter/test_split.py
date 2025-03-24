@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 from torch.utils.data import WeightedRandomSampler
 
-from clinicadl.data import CapsDataset
-from clinicadl.data.dataloader.config import DataLoaderConfig
-from clinicadl.data.datatype import PETLinear
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datatypes import PETLinear
 from clinicadl.splitter.split import Split
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"

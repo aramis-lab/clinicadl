@@ -8,9 +8,9 @@ from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
 from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatype import PETLinear, T1Linear
-from clinicadl.transforms import Slice, Transforms
-from clinicadl.transforms.extraction import Sample
+from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.transforms import Transforms
+from clinicadl.transforms.extraction import Sample, Slice
 from clinicadl.utils.seed import pl_worker_init_function
 
 BAD_INPUTS = [

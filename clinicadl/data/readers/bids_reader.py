@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 
-from clinicadl.data.datatype.file_type import FileType
+from clinicadl.data.datatypes.file_type import FileType
 from clinicadl.utils.exceptions import ClinicaDLBIDSError
 
 from .reader import Reader

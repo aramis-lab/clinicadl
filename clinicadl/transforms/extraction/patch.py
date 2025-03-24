@@ -21,23 +21,23 @@ class PatchSample(Sample):
     Attributes
     ----------
     sample : torch.Tensor
-        the patch as a 4D PyTorch tensor (with one channel dimension).
+        The patch as a 4D PyTorch tensor (with one channel dimension).
     affine : np.ndarray
-        the affine matrix associated to the patch.
+        The affine matrix associated to the patch.
     participant : str
-        the subject concerned.
+        The subject concerned.
     session : str
-        the session concerned.
+        The session concerned.
     image_path : str
-        the path to the image from which the patch has been extracted.
+        The path to the image from which the patch has been extracted.
     label : Optional[Union[float, int, torch.Tensor]]
-        the potential label associated to the image.
+        The potential label associated to the patch.
     patch_index : NonNegativeInt
-        the index of the patch among all patches extracted from the image.
+        The index of the patch among all patches extracted from the image.
     patch_size : Tuple[PositiveInt, PositiveInt, PositiveInt]
-        the size of the patch.
+        The size of the patch.
     patch_stride : Tuple[PositiveInt, PositiveInt, PositiveInt]
-        the stride used for patch extraction.
+        The stride used for patch extraction.
     """
 
     patch_index: NonNegativeInt
@@ -61,8 +61,8 @@ class Patch(Extraction):
     """
     Transform class to extract patches from an image.
 
-    This class enables patches extraction from an image tensor. The image is divided into smaller patches
-    using a sliding window approach, where the patch size and the stride are configurable.
+    The image is divided into smaller patches using a sliding window approach, where the patch size
+    and the stride are configurable.
 
     Parameters
     ----------
