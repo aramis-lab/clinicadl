@@ -27,9 +27,9 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers import OptimizerConfig
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter import SingleSplit
-from clinicadl.transforms import OutputTransforms
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
+from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.tsvtools.utils import df_to_tsv, tsv_to_df
 from clinicadl.utils.computational.computational import ComputationalConfig
 from clinicadl.utils.exceptions import (

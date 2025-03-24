@@ -51,5 +51,5 @@ def test_get_metric_config():
     assert config.kernel_sigma == 1.5
     assert config.spatial_dims == 3
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         get_metric_config("abc", **MANDATORY_ARGS)
