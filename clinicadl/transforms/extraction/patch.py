@@ -53,7 +53,7 @@ class PatchSample(Sample):
     @computed_field
     @property
     def id(self) -> int:
-        """The extraction method."""
+        """The index of the sample. Equal to `patch_index` here."""
         return self.patch_index
 
 

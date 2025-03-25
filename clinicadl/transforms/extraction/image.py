@@ -44,7 +44,7 @@ class ImageSample(Sample):
     @computed_field
     @property
     def id(self) -> int:
-        """The extraction method."""
+        """The index of the sample. Always 1 here."""
         return 1
 
 
