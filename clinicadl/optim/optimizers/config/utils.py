@@ -1,8 +1,14 @@
 from itertools import chain
-from typing import Iterator, List, Tuple, Union
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 import torch
 import torch.nn as nn
+
+__all__ = [
+    "get_params_in_groups",
+    "get_params_not_in_groups",
+    "regroup_args_by_param_group",
+]
 
 
 def get_params_in_groups(
@@ -118,3 +124,61 @@ def get_params_not_in_groups(
         param[0] for param in network.named_parameters() if param[0] not in in_groups
     )
     return params, params_names
+
+
+def regroup_args_by_param_group(
+    args: Dict[str, Any],
+) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
+    """
+    Groups arguments stored in a dict by parameter groups.
+
+    Parameters
+    ----------
+    args : Dict[str, Any]
+        the arguments.
+
+    Returns
+    -------
+    Dict[str, Dict[str, Any]]
+        the arguments for each group.
+    Dict[str, Any]
+        the arguments that are common to all groups.
+
+    Examples
+    --------
+    >>> args = {
+            "weight_decay": {"params_0": 0.0, "params_1": 1.0},
+            "alpha": {"params_1": 0.5, "ELSE": 0.1},
+            "betas": (0.1, 0.1),
+        }
+    >>> args_groups, args_global = _regroup_args_by_param_group(args)
+    >>> args_groups
+    {
+        "params_0": {"weight_decay": 0.0},
+        "params_1": {"alpha": 0.5, "weight_decay": 1.0},
+    }
+    >>> args_global
+        {"betas": (0.1, 0.1), "alpha": 0.1}
+
+    Notes
+    -----
+    "ELSE" is a special keyword. Passed as a group, it
+    enables the user to give a value for the rest of the
+    parameters (see examples).
+    """
+    args_groups = {}
+    args_global = {}
+    for arg, value in args.items():
+        if isinstance(value, dict):
+            for group, v in value.items():
+                if group == "ELSE":
+                    args_global[arg] = v
+                else:
+                    try:
+                        args_groups[group][arg] = v
+                    except KeyError:  # the first time this group is seen
+                        args_groups[group] = {arg: v}
+        else:
+            args_global[arg] = value
+
+    return args_groups, args_global

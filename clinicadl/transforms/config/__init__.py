@@ -1,4 +1,4 @@
-from .base import *
+from .base import OneOfConfig, TransformConfig
 from .enum import ImplementedTransform
 from .factory import get_transform_config
 from .intensity import *

@@ -4,11 +4,11 @@ import pytest
 import torch.nn as nn
 from torch.optim import Adagrad
 
-from clinicadl.optim.optimizers.config import (
+from clinicadl.optim.optimizers.config.configs import (
     ImplementedOptimizer,
     create_optimizer_config,
 )
-from clinicadl.optim.optimizers.factory import (
+from clinicadl.optim.optimizers.config.factory import (
     _regroup_args_by_param_group,
     get_optimizer_config,
     get_optimizer_from_config,

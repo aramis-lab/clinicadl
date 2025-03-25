@@ -14,7 +14,7 @@ from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
-from clinicadl.optim.optimizers.config import AdamConfig
+from clinicadl.optim.optimizers.config.configs import AdamConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.make_splits import make_kfold, make_split
 from clinicadl.splitter.splitter import KFold, SingleSplit

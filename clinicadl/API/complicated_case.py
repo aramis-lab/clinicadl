@@ -13,7 +13,7 @@ from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
-from clinicadl.optim.optimizers.config import AdamConfig
+from clinicadl.optim.optimizers.config.configs import AdamConfig
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms.extraction import Image
