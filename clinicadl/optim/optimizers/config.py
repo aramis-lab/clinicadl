@@ -25,9 +25,6 @@ __all__ = [
 ]
 
 
-# TODO: add momentum in Optimizer config momentum: float = 0.9
-
-
 class OptimizerConfig(ClinicaDLConfig, ABC):
     """Base config class for the optimizer."""
 

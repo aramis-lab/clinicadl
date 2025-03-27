@@ -33,45 +33,6 @@ MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
 
 LOSS = "Loss"
 
-ClassificationLoss = ["CrossEntropyLoss", "MultiMarginLoss"]
-ClassificationMetrics = [
-    "BA",
-    "accuracy",
-    "F1_score",
-    "sensitivity",
-    "specificity",
-    "PPV",
-    "NPV",
-    "MCC",
-    "MK",
-    "LR_plus",
-    "LR_minus",
-]
-
-
-ReconstructionMetrics = [MAEMetric(), RMSEMetric(), "PSNR", "SSIM"]
-ReconstructionLosses = [
-    "L1Loss",
-    "MSELoss",
-    "KLDivLoss",
-    "BCEWithLogitsLoss",
-    "HuberLoss",
-    "SmoothL1Loss",
-    "VAEGaussianLoss",
-    "VAEBernoulliLoss",
-    "VAEContinuousBernoulliLoss",
-]
-
-RegressionMetrics = [RMSEMetric(), MAEMetric()]
-RegressionLosses = [
-    "L1Loss",
-    "MSELoss",
-    "KLDivLoss",
-    "BCEWithLogitsLoss",
-    "HuberLoss",
-    "SmoothL1Loss",
-]
-
 
 class GroupMetrics:
     def __init__(
@@ -104,7 +65,7 @@ class GroupMetrics:
             value = callable_metric.aggregate()
             self.df.at[epoch, metric] = value.item()
 
-    def _reset_callable(self):
+    def reset(self):
         self._callable_metrics = {}
         for metric in self.metrics:
             if metric.value == LOSS:
@@ -168,9 +129,6 @@ class GroupMetrics:
 
         return metrics_list
 
-    def set_computational(self, computational_config: ComputationalConfig):
-        self.comp = computational_config
-
     def set_loss(self, loss: Loss):
         self._callable_loss, _ = get_metric_from_config(LossMetricConfig(loss_fn=loss))
 
@@ -210,10 +168,6 @@ class Metrics:
         df.at[(0, 0), LOSS] = 1
 
         return df
-
-    def set_computational(self, comp_config: ComputationalConfig):
-        self.train.set_computational(comp_config)
-        self.val.set_computational(comp_config)
 
     def set_loss(self, loss: Loss):
         self.train.set_loss(loss)

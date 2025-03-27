@@ -71,13 +71,13 @@ class Trainer:
         self.metrics = metrics
 
         # METRICS CONFIG
-        metrics.set_computational(self.comp)
         metrics.set_loss(model.loss)
 
         # will be different if resume is called
         self.current_epoch: int = 0
 
         # seed initialization
+        # TODO: let the user choose a random seed
         seed_everything(123, deterministic=False, compensation="memory")
 
         # Chronometer initialisation
@@ -152,6 +152,7 @@ class Trainer:
         self.current_epoch = self.model.load_state_dict(
             self.reader.checkpoint_path(split.index, resume=True)
         )
+        # TODO: need to resume the lr scheduler and the distributed Sampler
         metrics = self.reader.load_metrics()
 
         self.train(split)
@@ -166,7 +167,7 @@ class Trainer:
         ):
             self.on_epoch_begin()
 
-            for batch, data in enumerate(split.train_loader):
+            for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin()
 
                 images = data.get_images().to(self.comp.device)
@@ -177,7 +178,7 @@ class Trainer:
                     loss = self.model.loss(outputs, labels)
 
                     self.metrics.write_training_loss(
-                        epoch=self.epoch, batch=batch, loss=loss.item()
+                        epoch=self.epoch, batch=batch_idx, loss=loss.item()
                     )
 
                 self.scaler.scale(loss).backward()
@@ -203,8 +204,10 @@ class Trainer:
         # self.evaluation_flag = True
 
     def on_epoch_end(self, split: Split):
-        self.model.network.zero_grad(set_to_none=True)
+        # self.model.network.zero_grad(set_to_none=True)
         # Update learning rate based on validation loss
+
+        # PRedictor is initialized here because it depends on the new model
         validator = Predictor(self.reader.maps_path, self.model, self.comp)
         validator.validate(split.val_loader, metrics=self.metrics.val, epoch=self.epoch)
 

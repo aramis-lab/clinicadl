@@ -16,8 +16,7 @@ class ComputationalConfig(ClinicaDLConfig):
     amp: bool = False
     fully_sharded_data_parallel: bool = False
     gpu: bool = False
-    # pydantic config
-    model_config = ConfigDict(validate_assignment=True)
+    non_blocking: bool = True
 
     @model_validator(mode="after")
     def check_gpu(self) -> Self:
@@ -28,10 +27,6 @@ class ComputationalConfig(ClinicaDLConfig):
                 raise ClinicaDLArgumentError(
                     "No GPU is available. To run on CPU, please set gpu to false or add the --no-gpu flag if you use the commandline."
                 )
-        elif self.amp:
-            raise ClinicaDLArgumentError(
-                "AMP is designed to work with modern GPUs. Please add the --gpu flag."
-            )
         return self
 
     @property

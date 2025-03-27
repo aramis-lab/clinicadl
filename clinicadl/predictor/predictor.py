@@ -79,7 +79,9 @@ class Predictor:
         epoch: int = 0,
     ):
         self.model.network.eval()
-        metrics._reset_callable()
+        dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
+
+        metrics.reset()
 
         with torch.no_grad():
             for batch, data in enumerate(dataloader):
@@ -224,7 +226,7 @@ class Predictor:
         for metric in metrics.val.selection_metrics:
             metric = metric.value
             df = self.create_prediction_df()
-            metrics.val._reset_callable()
+            metrics.val.reset()
 
             with torch.no_grad():
                 for batch, data in enumerate(dataloader):
