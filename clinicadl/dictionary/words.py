@@ -33,6 +33,7 @@ OBJECT = "object"
 OTHER = "other"
 OPTIMIZATION = "optimization"
 OTHER = "other"
+OPTIMIZATION = "optimization"
 OPTIMIZER = "optimizer"
 PARTICIPANT = "participant"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
