@@ -62,7 +62,7 @@ def get_metric_from_config(config: MetricConfig) -> Tuple[Metric, MetricConfig]:
 
     update_config_with_defaults(config, function=metric_class.__init__)
 
-    config_dict = config.model_dump(exclude={"name", "optimum"})
+    config_dict = config.model_dump(exclude={"name"})
     metric = metric_class(**config_dict)
 
     return metric, config
