@@ -17,6 +17,7 @@ from clinicadl.dictionary.words import (
     IMAGE,
     LABEL,
     LAST_INDEX,
+    MASK,
     N_SAMPLES,
     PARTICIPANT,
     PARTICIPANT_ID,
@@ -40,7 +41,7 @@ from clinicadl.utils.typing import DataType, PathType
 from ..datatypes.preprocessing import Preprocessing, T1Linear
 from ..readers.caps_reader import CapsReader
 from ..structures import Column, DataPoint, Mask
-from ..tensor_conversion import TensorConversion
+from ..tensor_conversion import TensorConversion, TensorConversionInfo
 
 logger = getLogger("clinicadl.caps_dataset")
 
@@ -55,11 +56,11 @@ class CapsDataset(Dataset):
     also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.\n
 
     A CapsDataset works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch's
-    ``.pt`` format with to ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
+    ``.pt`` format with the ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
     must be called.
 
-    The :ref:`output of CapsDataset <capsdataset_outputs>` (i.e. what you get when you call ``dataset[i]``) depends
-    on the type of elements of the image you work on (the whole image, patches or slices; this is defined via the
+    The :ref:`outputs of the CapsDataset <capsdataset_outputs>` (i.e. what you get when you call ``dataset[i]``) depend
+    on the type of elements of the image you are working on (the whole image, patches or slices. This is defined via the
     argument ``transforms``).
 
     .. note::
@@ -68,7 +69,7 @@ class CapsDataset(Dataset):
         (so you passed ``transforms=Transforms(extraction=Slice())``), the length of your
         dataset will be :math:`10\\times100=1,000`.
 
-        To avoid confusion, we will use the term "sample" to refer to the actual element of the images we work on
+        To avoid confusion, we will use the term "sample" to refer to the actual element of the images we are working on
         (patch, slice or the whole image).
 
     Parameters
@@ -212,6 +213,7 @@ class CapsDataset(Dataset):
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
+        self._tensor_conversion_info: TensorConversionInfo = None
 
         self.common_masks_tensors: list[Mask] = []
 
@@ -222,6 +224,7 @@ class CapsDataset(Dataset):
         n_proc: int = 1,
         ignore_spacing: bool = False,
         raise_warnings: bool = True,
+        check_transforms: bool = True,
     ) -> None:
         """
         Converts NIfTI files to tensors (in PyTorch's ``.pt`` format), the only format that a
@@ -267,6 +270,20 @@ class CapsDataset(Dataset):
             Whether to raise warnings during conversion, related to different kinds of events ClinicaDL thinks
             the user should be aware of (e.g. images with different shapes, files overwritten, etc.).
 
+        check_transforms : bool (optional, default=True)
+            If ``json_name`` already exists, TensorConversion will try to merge the old
+            tensor conversion with the new one. ``check_transforms`` determines whether transforms
+            will be checked during the merger. If ``True``, TensorConversion will check that
+            the same transforms were applied during the two conversions.\n
+            Useful when you use custom transforms (i.e. transforms not in ClinicaDL), which cannot be checked.\n
+
+            .. note::
+                If ``save_transforms=False``, no check will be performed as the tensors saved
+                have not been transformed.
+
+            .. warning::
+                **To use carefully**. You must be sure that the transforms match.
+
         Raises
         ------
         ClinicaDLArgumentError
@@ -286,13 +303,19 @@ class CapsDataset(Dataset):
           overwritten (unless ``raise_warnings=False``).
         """
         self.tensor_conversion.convert_to_tensors(
-            json_name, save_transforms, n_proc, ignore_spacing, raise_warnings
+            json_name,
+            save_transforms,
+            n_proc,
+            ignore_spacing,
+            raise_warnings,
+            check_transforms,
         )
+        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
     def read_tensor_conversion(
-        self, json_name: str, check_transforms: bool = True
+        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
     ) -> None:
         """
         To read an old tensor conversion. The function will check that
@@ -324,6 +347,10 @@ class CapsDataset(Dataset):
             .. warning::
                 **To use carefully**. You must be sure that the transforms match.
 
+        load_also : list[str] (optional, default=[])
+            to load additional information potentially stored in `.pt` files. By default, only the image, the label, and masks
+            mentioned in ``masks`` of the CapsDataset will be loaded.
+
         Raises
         ------
         FileNotFoundError
@@ -333,7 +360,8 @@ class CapsDataset(Dataset):
             current CapsDataset (not the same preprocessing, images not all converted, transforms
             mismatch, etc.).
         """
-        self.tensor_conversion.read_conversion(json_name, check_transforms)
+        self.tensor_conversion.read_conversion(json_name, check_transforms, load_also)
+        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
@@ -548,34 +576,18 @@ class CapsDataset(Dataset):
 
         participant, session, sample_index = self._get_meta_data(idx)
         data = self._get_data(participant, session)
-        tensor_path = self.caps_reader.get_tensor_path(
-            participant, session, preprocessing=self.preprocessing, check=False
-        )
 
-        if (
-            not self.tensor_conversion.get_info().transforms
-        ):  # image transforms not saved
+        if not self._tensor_conversion_info.transforms:  # image transforms not saved
             data = self.image_transform(data)
 
-        try:
-            sample, sample_description = self.extraction.extract_sample(
-                data, sample_index
-            )
-        except IndexError as exc:
-            raise ClinicaDLCAPSError(
-                f"An error occurred while extracting samples from images of ({participant}, {session})."
-            ) from exc
+        sample = self.extraction.extract_sample(data, sample_index)
 
         sample = self.sample_transform(sample)
 
         if not self.eval_mode:
             sample = self.augmentation(sample)
 
-        return self.extraction.format_output(
-            sample,
-            image_path=tensor_path,
-            description=sample_description,
-        )
+        return sample
 
     ### to read user inputs ###
     def _check_label(self, label: Optional[str]) -> Optional[Union[Column, Mask]]:
@@ -760,15 +772,30 @@ class CapsDataset(Dataset):
             label=label,
             participant=participant,
             session=session,
+            image_path=pt_path,
         )
 
+        # other images/masks/info
+        loaad_also = self._tensor_conversion_info.also
         individual_masks_name = [mask.name for mask in self.individual_masks]
-        # individual masks
-        for name, image in images_dict.items():
-            if name not in {IMAGE, LABEL, AFFINE} and name in individual_masks_name:
-                data.add_mask(
-                    tio.LabelMap(tensor=image, affine=images_dict[AFFINE]), name
-                )
+        for name, value in images_dict.items():
+            if name not in {IMAGE, LABEL, AFFINE}:
+                if name in individual_masks_name:
+                    data.add_mask(
+                        tio.LabelMap(tensor=value, affine=images_dict[AFFINE]), name
+                    )
+                elif name in loaad_also:
+                    if loaad_also[name] == IMAGE:
+                        data.add_image(
+                            tio.ScalarImage(tensor=value, affine=images_dict[AFFINE]),
+                            name,
+                        )
+                    elif loaad_also[name] == MASK:
+                        data.add_mask(
+                            tio.LabelMap(tensor=value, affine=images_dict[AFFINE]), name
+                        )
+                    else:
+                        data[name] = value
 
         # common masks (already loaded)
         for mask in self.common_masks_tensors:
@@ -836,9 +863,7 @@ class CapsDataset(Dataset):
                     "to tensors using 'to_tensors', or use 'read_tensor_conversion' if it has "
                     "already be done."
                 )
-            if (
-                self.tensor_conversion.get_info().shape
-            ):  # uniform shape across the dataset
+            if self._tensor_conversion_info.shape:  # uniform shape across the dataset
                 first_row = self.df.iloc[0]
                 participant, session = first_row[PARTICIPANT_ID], first_row[SESSION_ID]
                 self.df[N_SAMPLES] = self._get_n_samples(participant, session)
@@ -857,14 +882,12 @@ class CapsDataset(Dataset):
         Gets the number of samples in an image.
         """
         data = self._get_data(participant, session)
-        if (
-            not self.tensor_conversion.get_info().transforms
-        ):  # image transforms not saved
+        if not self._tensor_conversion_info.transforms:  # image transforms not saved
             data = self.image_transform(data)
         try:
             return self.extraction.num_samples_per_image(data.image.tensor)
         except IndexError as exc:
-            raise ClinicaDLCAPSError(
+            raise IndexError(
                 f"An error occurred while counting samples in images of ({participant}, {session})."
             ) from exc
 

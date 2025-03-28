@@ -134,8 +134,9 @@ class Transforms(ClinicaDLConfig):
         "sample_transforms",
         "augmentations",
     )
+    @classmethod
     def serialize_transforms(
-        self, transforms: list[Union[Transform, TransformConfig]]
+        cls, transforms: list[Union[Transform, TransformConfig]]
     ) -> list[Union[str, dict]]:
         """
         Handles serialization of transforms that are not passed via

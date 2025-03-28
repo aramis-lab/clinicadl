@@ -23,7 +23,6 @@ intersphinx_mapping = {
     "torchio": ("https://torchio.readthedocs.io", None),
     "monai": ("https://docs.monai.io/en/stable", None),
     "torch": ("https://pytorch.org/docs/stable", None),
-    "clinica": ("https://aramislab.paris.inria.fr/clinica/docs/public/latest", None),
 }
 
 # -- Options for HTML output -------------------------------------------------

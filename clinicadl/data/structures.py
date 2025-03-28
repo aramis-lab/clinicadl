@@ -28,24 +28,68 @@ class Column(UserString):
 
 class DataPoint(tio.Subject):
     """
-    Object that gathers an image, the associated label, and any
-    mask associated to the image.
+    Dataclass that gathers an image, the associated label, and any other relevant information
+    associated to the image.
 
     It inherits from :py:class:`torchio.Subject`.
 
-    Any transform used in ClinicaDL must work with this object.
+    A DataPoint has the following attributes:
+        - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
+        - ``label``: the label. Either a scalar or a mask, as a :py:class:`torchio.LabelMap`;
+        - ``participant``: the id of the subject, as a ``str``;
+        - ``session``: the id of the session, as a ``str``.
+
+    You can easily access these elements using the attribute notation:
+
+    .. code-block:: python
+
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+            image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+        )
+        >>> datapoint.session
+        'ses-M000'
+
+    Besides, a DataPoint is dictionary-like object. So, you can easily add a key-value pair
+    to it:
+
+    .. code-block:: python
+
+        >>> datapoint["age"] = 55
+        >>> datapoint["age"]    # the attribute notation won't work here
+        55
+
+    However, to add an image or a mask to the DataPoint, prefer :py:func:`~add_image`
+    and :py:func:`~add_mask`.
+
+    If all the images and masks of your DataPoint have the same shape, voxel spacing and affine matrix, you can easily
+    access them via the attributes :py:attr:`~shape` (or :py:attr:`~spatial_shape` to remove the channel dimension),
+    :py:attr:`~spacing` and :py:attr:`~affine` respectively.
+
+    Finally,  you may also be interested in :py:func:`~plot` to plot images inside your DataPoint, and :py:func:`~get_applied_transforms`
+    to see the transforms applied to your data.
+
+    As DataPoint is a subclass of :py:class:`torchio.Subject`, you can also used all the other methods it inherits from.
+
+    .. note::
+        Any transform used in ClinicaDL must work with DataPoint.
 
     Parameters
     ----------
     image : Union[torchio.ScalarImage, PathType]
-        The image, as a :py:class:`torchio.ScalarImage`
-        or a path to a NIfTI file.
+        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
     label : Optional[Union[float, int, torchio.LabelMap, PathType]]
-        The label associated to the image. Can be a float (regression),
-        an int (classification), a mask (passed as a :py:class:`torchio.LabelMap`
-        or a path to a NIfTI file; for segmentation) or None if no label (reconstruction).
-    masks : Union[torchio.LabelMap, PathType]
-        Any mask related to the image and useful to compute transforms.
+        The label associated to the image. Can be a ``float`` (regression),
+        an ``int`` (classification), a mask (passed as a :py:class:`torchio.LabelMap`
+        or a ``path`` to a NIfTI file; for segmentation) or ``None`` if no label (reconstruction).
+    participant : str
+        The participant concerned.
+    session : str
+        The session concerned.
+    kwargs : Any
+        Any other information to store in the DataPoint.
     """
 
     image: tio.ScalarImage
@@ -59,7 +103,7 @@ class DataPoint(tio.Subject):
         label: Optional[Union[float, int, tio.LabelMap, PathType]],
         participant: str,
         session: str,
-        **masks: Union[tio.LabelMap, PathType],
+        **kwargs: Any,
     ) -> None:
         if isinstance(image, (Path, str)):
             image = tio.ScalarImage(path=image)
@@ -67,22 +111,127 @@ class DataPoint(tio.Subject):
         if isinstance(label, (Path, str)):
             label = tio.LabelMap(path=label)
 
-        for name, mask in masks.items():
-            if isinstance(mask, (Path, str)):
-                masks[name] = tio.LabelMap(path=mask)
-
         super().__init__(
-            image=image, label=label, participant=participant, session=session, **masks
+            image=image,
+            label=label,
+            participant=participant,
+            session=session,
+            **kwargs,
         )
 
     @property
-    def affine(self):
-        """Return affine matrix of first image in subject.
+    def shape(self):
+        """
+        Returns the shape of the images in the DataPoint.
 
-        Consistency of matrices across images in the subject is checked first.
+        Consistency of shapes across images in the DataPoint is checked first.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.shape
+        (1, 181, 217, 181)
+        """
+        return super().shape
+
+    @property
+    def spatial_shape(self):
+        """
+        Returns the spatial shape of the images in the DataPoint.
+
+        Consistency of spatial shapes across images in the DataPoint is checked first.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.spatial_shape
+        (181, 217, 181)
+        """
+        return super().spatial_shape
+
+    @property
+    def spacing(self):
+        """
+        Returns the voxel spacing of the images in the DataPoint.
+
+        Consistency of voxel spacings across images in the DataPoint is checked first.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.spacing
+        (1.0, 1.0, 1.0)
+        """
+        spacing = super().spacing
+        return tuple(float(s) for s in spacing)
+
+    @property
+    def affine(self):
+        """
+        Returns affine matrix of the images in the DataPoint.
+
+        Consistency of matrices across images in the DataPoint is checked first.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.affine
+        array([[   1.,    0.,    0.,  -90.],
+               [   0.,    1.,    0., -126.],
+               [   0.,    0.,    1.,  -72.],
+               [   0.,    0.,    0.,    1.]])
         """
         self.check_consistent_affine()
         return self.get_first_image().affine
+
+    def add_image(
+        self, image: Union[tio.ScalarImage, PathType], image_name: str
+    ) -> None:
+        """
+        To add an image to the DataPoint.
+
+        Parameters
+        ----------
+        image : Union[tio.ScalarImage, PathType]
+            The image to add, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
+        image_name : str
+            The name that the image will take in the DataPoint.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.add_image(data.t1, "t1_bis")
+        >>> datapoint["t1_bis"]
+        ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
+        """
+        if isinstance(image, (Path, str)):
+            image = tio.ScalarImage(path=image)
+        super().add_image(image, image_name)
 
     def add_mask(self, mask: Union[tio.LabelMap, PathType], mask_name: str) -> None:
         """
@@ -91,13 +240,46 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         mask : Union[tio.LabelMap, PathType]
-            the mask to add, as a TorchIO ScalarImage or a path to a nifti file.
+            The mask to add, as a :py:class:`torchio.LabelMap` or a ``path`` to a NIfTI file.
         mask_name : str
-            the name that the mask will take in the DataPoint.
+            The name that the mask will take in the DataPoint.
+
+        Examples
+        --------
+        >>> import torchio as tio
+        >>> from clinicadl.data.structures import DataPoint
+        >>> data = tio.datasets.Colin27()
+        >>> datapoint = DataPoint(
+                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
+            )
+        >>> datapoint.add_mask(data.head, "head")
+        >>> datapoint["head"]
+        LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
         """
         if isinstance(mask, (Path, str)):
             mask = tio.LabelMap(path=mask)
-        self.add_image(mask, mask_name)
+        super().add_image(mask, mask_name)
+
+    def get_applied_transforms(
+        self,
+    ) -> list[tio.Transform]:
+        """
+        Gets the history of transforms applied to the DataPoint.
+
+        Returns
+        -------
+        list[torchio.Transform]
+            The history of transforms applied.
+        """
+        return super().get_applied_transforms()
+
+    def plot(self, **kwargs) -> None:
+        """
+        Plots images using matplotlib.
+
+        See :py:meth:`torchio.Subject.plot` for more details.
+        """
+        super().plot(**kwargs)
 
     def __copy__(self):
         return _subject_copy_helper(self, type(self))
@@ -108,7 +290,7 @@ def _subject_copy_helper(
     new_subj_cls: Callable[[Dict[str, Any]], tio.Subject],
 ):
     """
-    Adapted torchio.data.subject._subject_copy_helper to work
+    Adapted from torchio.data.subject._subject_copy_helper to work
     with DataPoint.
     """
     result_dict = {}
@@ -213,10 +395,6 @@ class Mask:
         """
         Gets or loads a common mask (in nifti or .pt file).
         """
-        if not self.path:
-            raise ValueError(
-                f"Mask '{self.name}' does not correspond to a common mask."
-            )
         if self._mask_img is None:
             self._mask_img = self._load_mask(self.path)
         return self._mask_img

@@ -19,6 +19,7 @@ MAPS = "maps"
 MEAN = "mean"
 NAME = "name"
 OBJECT = "object"
+OTHER = "other"
 PARTICIPANT = "participant"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
 PREPARATION = "preparation"

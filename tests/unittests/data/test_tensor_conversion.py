@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import warnings
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +13,7 @@ import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.data.structures import DataPoint
 from clinicadl.data.tensor_conversion import TensorConversion
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import get_transform_config
@@ -23,6 +25,38 @@ from clinicadl.utils.exceptions import (
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+
+
+class CustomTransform:
+    def __call__(self, datapoint: DataPoint) -> DataPoint:
+        transformed = deepcopy(datapoint)
+        transformed.add_image(datapoint.image, "other_image")
+        transformed.add_mask(
+            tio.LabelMap(
+                tensor=torch.ones_like(datapoint.image.tensor),
+                affine=datapoint.image.affine,
+            ),
+            "other_mask",
+        )
+        transformed["age"] = 55
+
+        return transformed
+
+
+class CustomTransformBis:
+    def __call__(self, datapoint: DataPoint) -> DataPoint:
+        transformed = deepcopy(datapoint)
+        transformed.add_image(datapoint.image, "other_image")
+        transformed.add_mask(
+            tio.ScalarImage(
+                tensor=torch.ones_like(datapoint.image.tensor),
+                affine=datapoint.image.affine,
+            ),
+            "other_mask",
+        )
+        transformed["age"] = 55
+
+        return transformed
 
 
 def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
@@ -176,6 +210,26 @@ def test_read_conversion():
     with pytest.raises(ClinicaDLTensorConversionError):
         converter.read_conversion("pet_masks")
 
+    # check also
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(
+            image_transforms=[CustomTransform()],
+        ),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLTensorConversionError):
+        converter.read_conversion(
+            "pet_custom_transform",
+            load_also=["other_image", "sex"],
+            check_transforms=False,
+        )
+    converter.read_conversion(
+        "pet_custom_transform", load_also=["other_image", "age"], check_transforms=False
+    )
+
     # check transforms
     caps_dataset = CapsDataset(
         caps_dir,
@@ -295,7 +349,10 @@ def test_convert_to_tensors():
         preprocessing=preprocessing,
         data=data,
         transforms=Transforms(
-            image_transforms=[get_transform_config("Crop", cropping=(0, 1, 0, 1, 0, 1))]
+            image_transforms=[
+                get_transform_config("Crop", cropping=(0, 1, 0, 1, 0, 1)),
+                tio.Clamp(out_max=10),
+            ]
         ),
         label="seg",
         masks=["brain", "leftHippocampus.nii.gz"],
@@ -320,7 +377,8 @@ def test_convert_to_tensors():
         {
             "name": "Crop",
             "cropping": [0, 1, 0, 1, 0, 1],
-        }
+        },
+        "Custom transform passed by the user: 'Clamp'",
     ]
     assert np.isclose(conversion_info["spacing"], [1.3, 1.2, 1.1]).all()
     assert conversion_info["shape"] == [2, 2, 2]
@@ -387,7 +445,7 @@ def test_convert_to_tensors():
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
         weights_only=True,
     )
-    assert sorted(list(tensors.keys())) == sorted(list(true_tensors.keys()))
+    assert sorted(list(tensors.keys())) == sorted(["image", "seg", "brain", "affine"])
     for name in tensors.keys():
         assert (tensors[name] == true_tensors[name]).all()
 
@@ -597,6 +655,94 @@ def test_convert_to_tensors():
     converter = TensorConversion(caps_dataset)
     converter.convert_to_tensors("subject_consistency_control")
 
+    # custom transform
+    sub_ses = [
+        ("sub-000", "ses-M000"),
+        ("sub-010", "ses-M003"),
+    ]
+    data = sub_data(sub_ses)
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(
+            image_transforms=[CustomTransform()],
+        ),
+        label="seg",
+        masks=["brain"],
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors("custom_transform")
+    with open(tmp_dir / "tensor_conversion" / "custom_transform.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["individual_masks"]) == sorted(["brain", "seg"])
+    assert conversion_info["also"] == {
+        "other_image": "image",
+        "other_mask": "mask",
+        "age": "other",
+    }
+    tensors: dict = torch.load(
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        weights_only=True,
+    )
+    assert sorted(tensors.keys()) == sorted(
+        [
+            "image",
+            "seg",
+            "brain",
+            "age",
+            "other_image",
+            "other_mask",
+            "affine",
+        ]
+    )
+    assert tensors["age"] == 55
+    assert tensors["other_image"].dtype == torch.float32
+    assert tensors["other_mask"].dtype == torch.int32
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(
+            image_transforms=[CustomTransform()],
+        ),
+        label="seg",
+        masks=["brain"],
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors("custom_transform_not_saved", save_transforms=False)
+    with open(
+        tmp_dir / "tensor_conversion" / "custom_transform_not_saved.json", "r"
+    ) as f:
+        conversion_info = json.load(f)
+    assert conversion_info["also"] == {}
+    assert sorted(
+        torch.load(
+            tmp_dir
+            / "subjects"
+            / "sub-000"
+            / "ses-M000"
+            / "t1_linear"
+            / "tensors"
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+            weights_only=True,
+        ).keys()
+    ) == sorted(
+        [
+            "image",
+            "seg",
+            "brain",
+            "affine",
+        ]
+    )
+
     shutil.rmtree(tmp_dir)
 
 
@@ -762,6 +908,53 @@ def test_merge_conversions():
         converter.convert_to_tensors(
             tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
         )
+
+    # check also
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[CustomTransformBis()]),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+            check_transforms=False,
+        )
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[]),
+    )
+    converter = TensorConversion(caps_dataset)
+    with pytest.raises(ClinicaDLArgumentError):
+        converter.convert_to_tensors(
+            tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+            check_transforms=False,
+        )
+
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+        transforms=Transforms(image_transforms=[CustomTransform()]),
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors(
+        tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+        check_transforms=False,
+    )
+    with open(tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json", "r") as f:
+        conversion_info = json.load(f)
+    assert sorted(conversion_info["participants_sessions"]) == sorted(
+        [
+            ["sub-000", "ses-M000"],
+            ["sub-010", "ses-M003"],
+        ]
+    )
 
     # check transforms
     caps_dataset = CapsDataset(

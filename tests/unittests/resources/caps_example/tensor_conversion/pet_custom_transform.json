@@ -14,6 +14,11 @@
     },
     "individual_masks": [],
     "common_masks": [],
+    "also": {
+        "other_image": "image",
+        "other_mask": "mask",
+        "age": "other"
+    },
     "transforms": [
         {
             "name": "RescaleIntensity",
@@ -28,7 +33,7 @@
             ],
             "in_min_max": null
         },
-        "Custom transform passed by the user: 'Clamp'"
+        "Custom transform passed by the user: 'CustomTransform'"
     ],
     "spacing": [
         1.3,

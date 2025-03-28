@@ -4,13 +4,13 @@ import json
 import warnings
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
 
 import numpy as np
 import torch
 import torchio as tio
 from joblib import Parallel, delayed
-from pydantic import SerializeAsAny, ValidationError
+from pydantic import SerializeAsAny, ValidationError, field_serializer
 from tqdm import tqdm
 
 from clinicadl.dictionary.suffixes import JSON
@@ -19,7 +19,11 @@ from clinicadl.dictionary.words import (
     IMAGE,
     LABEL,
     MASK,
+    OTHER,
+    PARTICIPANT,
+    SESSION,
 )
+from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import TransformConfig, get_transform_config
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
@@ -48,13 +52,25 @@ class TensorConversionInfo(ClinicaDLConfig):
     ]  # SerializeAsAny to have fields that are not in the base Preprocessing
     individual_masks: list[str]
     common_masks: list[str]
-    transforms: Optional[
-        list[Union[str, Transform, TransformConfig]]
-    ]  # str: a description of the transform (see clinicadl.transforms.transforms.Transforms.serialize_transforms)
+    also: dict[str, Literal[IMAGE, MASK, OTHER]]  # other information stored in .pt
+    transforms: list[
+        Union[str, Transform, TransformConfig]
+    ]  # str: a description of the custom transform (see clinicadl.transforms.transforms.Transforms.serialize_transforms)
     spacing: Optional[tuple[float, float, float]]
     shape: Optional[tuple[int, int, int]]
     interrupted: bool = False
     participants_sessions: list[tuple[str, str]]
+
+    @field_serializer("transforms")
+    @classmethod
+    def serialize_transforms(
+        cls, transforms: list[Union[Transform, TransformConfig]]
+    ) -> list[Union[str, dict]]:
+        """
+        Handles serialization of transforms that are not passed via
+        TransformConfigs.
+        """
+        return Transforms.serialize_transforms(transforms)
 
 
 class TensorConversion:
@@ -92,6 +108,7 @@ class TensorConversion:
         self._uniform_shape = True
         self._participants_sessions_converted = set()
         self._masks_converted = set()
+        self._also = None
 
         self._currently_reading = None
 
@@ -117,6 +134,7 @@ class TensorConversion:
             participants_sessions=self._participants_sessions_converted,
             individual_masks=individual_masks,
             common_masks=self._masks_converted,
+            also=self._also if self._also else {},
             transforms=self.caps_dataset.transforms.image_transforms
             if self._save_transforms
             else [],
@@ -124,7 +142,9 @@ class TensorConversion:
             shape=self._output_shape,
         )
 
-    def read_conversion(self, json_name: str, check_transforms: bool = True):
+    def read_conversion(
+        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
+    ):
         """
         To read an old tensor conversion json and updates the states of the
         current TensorConversion object.
@@ -138,9 +158,18 @@ class TensorConversion:
             whether to checks if the image transforms potentially applied before tensor conversion
             match the current ones. Useful when you use custom transforms (i.e. transforms
             not in ClinicaDL), which cannot be checked.\n
-            ..note::If 'convert_to_tensors' was run with `save_transforms=False`, no check will
-            be performed as the tensors saved have not been transformed.
-            ..warning::To use carefully: you need to be sure that the transforms match.
+
+            .. note::
+                If ``to_tensors`` was run with ``save_transforms=False``, no check will
+                be performed as the tensors saved have not been transformed.
+
+            .. warning::
+                **To use carefully**. You must be sure that the transforms match.
+
+        load_also : list[str] (optional, default=[])
+            to load additional information potentially stored in `.pt` files. By default, only the image, the label, and masks
+            mentioned in ``masks`` of the CapsDataset will be loaded.
+
 
         Raises
         ------
@@ -171,6 +200,9 @@ class TensorConversion:
         # have all the current common masks been converted?
         self._compare_common_masks(conversion_info)
 
+        # do we have the information in 'load_also'?
+        self._check_load_also(conversion_info, load_also)
+
         # are all (participant, session)s converted?
         self._compare_participants_sessions(conversion_info)
 
@@ -184,6 +216,11 @@ class TensorConversion:
         self._output_spacing = conversion_info.spacing
         self._output_shape = conversion_info.shape
         self._save_transforms = transforms_saved
+        self._also = {
+            name: type_
+            for name, type_ in conversion_info.also.items()
+            if name in load_also
+        }
         self.json = json_path
 
     def convert_to_tensors(
@@ -193,6 +230,7 @@ class TensorConversion:
         n_proc: int = 1,
         ignore_spacing: bool = False,
         raise_warnings: bool = True,
+        check_transforms: bool = True,
     ) -> None:
         """
         Performs conversion.
@@ -219,6 +257,19 @@ class TensorConversion:
         raise_warnings : bool (optional, default=True)
             whether to raise different kinds of warnings detected during conversion (e.g. images with
             different shapes).
+        check_transforms : bool (optional, default=True)
+            If ``json_name`` already exists, TensorConversion will try to merge the old
+            tensor conversion with the new one. ``check_transforms`` determines whether transforms
+            should be checked during the merger. If ``True``, TensorConversion will check that
+            the same transforms were applied during the two conversions.\n
+            Useful when you use custom transforms (i.e. transforms not in ClinicaDL), which cannot be checked.\n
+
+            .. note::
+                If ``save_transforms=False``, no check will be performed as the tensors saved
+                have not been transformed.
+
+            .. warning::
+                **To use carefully**. You must be sure that the transforms match.
 
         Raises
         ------
@@ -241,7 +292,7 @@ class TensorConversion:
         self._ignore_spacing = ignore_spacing
         self._raise_warnings = raise_warnings
 
-        json_path = self._get_json_path(json_name)
+        json_path = self._get_json_path(json_name, check_transforms=check_transforms)
 
         # process images and masks, and manage errors
         try:
@@ -251,7 +302,7 @@ class TensorConversion:
                     set(self.caps_dataset.get_participant_session_couples()).difference(
                         self._participants_sessions_converted
                     ),
-                    desc="Converting images",
+                    desc="Converting images and image-specific masks",
                 )
             )
             Parallel(n_jobs=n_proc, require="sharedmem")(
@@ -262,7 +313,7 @@ class TensorConversion:
                         for mask in self.caps_dataset.common_masks
                         if mask.path.name not in self._masks_converted
                     ],
-                    desc="Converting masks",
+                    desc="Converting common masks",
                 )
             )
         except Exception as exc:
@@ -298,6 +349,8 @@ class TensorConversion:
         self.save_images_as_tensors(images, pt_path)
 
         self._participants_sessions_converted.add((participant, session))
+        if not self._also:
+            self._also = self._get_also(images)
 
     def _transform_and_save_mask(self, mask: Mask) -> None:
         """
@@ -442,14 +495,18 @@ class TensorConversion:
         """
         Path(path).parent.mkdir(exist_ok=True)
 
-        images_dict = {IMAGE: images.image.tensor.float()}
-
-        if isinstance(images.label, tio.LabelMap):
-            images_dict[self.caps_dataset.label.name] = images.label.tensor.int()
-
+        images_dict = {}
+        del images[PARTICIPANT]
+        del images[SESSION]
         for name, value in images.items():
-            if isinstance(value, tio.LabelMap) and name != LABEL:
+            if isinstance(value, tio.ScalarImage):
+                images_dict[name] = value.tensor.float()
+            elif isinstance(value, tio.LabelMap) and name == LABEL:
+                images_dict[self.caps_dataset.label.name] = value.tensor.int()
+            elif isinstance(value, tio.LabelMap) and name != LABEL:
                 images_dict[name] = value.tensor.int()
+            else:
+                images_dict[name] = value
 
         images_dict[AFFINE] = torch.from_numpy(images.image.affine).float()
 
@@ -696,7 +753,9 @@ class TensorConversion:
             )
         return json_path
 
-    def _get_json_path(self, json_name: PathType) -> Path:
+    def _get_json_path(
+        self, json_name: PathType, check_transforms: bool = True
+    ) -> Path:
         """
         Checks if 'json_name' exists. If it exists,
         tries to merge the two tensor conversions.
@@ -704,7 +763,7 @@ class TensorConversion:
         json_path = (self.save_directory / json_name).with_suffix(JSON)
         if json_path.is_file():
             try:
-                self._merge_conversion(json_path)
+                self._merge_conversion(json_path, check_transforms=check_transforms)
             except ClinicaDLTensorConversionError as exc:
                 raise ClinicaDLArgumentError(
                     f"{json_path} already exists, so ClinicaDL tried to merge the current tensor conversion "
@@ -719,6 +778,7 @@ class TensorConversion:
     def _merge_conversion(
         self,
         json_path: Path,
+        check_transforms: bool = True,
     ) -> None:
         """
         Tries to merge old conversion in `json_path` with the current one.
@@ -730,7 +790,8 @@ class TensorConversion:
         # check that .pt files contain the same things
         self._compare_preprocessing(conversion_info)
         if self._save_transforms:
-            self._compare_transforms(conversion_info)
+            if check_transforms:
+                self._compare_transforms(conversion_info)
         else:
             if (
                 conversion_info.transforms != []
@@ -742,6 +803,7 @@ class TensorConversion:
         self._compare_individual_masks(
             conversion_info, match_exactly=True
         )  # here, we want to have exactly the same masks in .pt files
+        self._compare_also(conversion_info)
 
         # all checks passed, update current state
         if len(conversion_info.participants_sessions) > 0:
@@ -760,6 +822,7 @@ class TensorConversion:
             conversion_info.participants_sessions
         )
         self._masks_converted = set(conversion_info.common_masks)
+        self._also = conversion_info.also
 
     ### to see if a conversion works with the current CapsDataset ###
     def _compare_preprocessing(self, old_conversion: TensorConversionInfo) -> None:
@@ -794,7 +857,7 @@ class TensorConversion:
                 raise ClinicaDLTensorConversionError(
                     f"Custom transforms have been passed to CapsDataset, "
                     f"e.g.: {transform}\n"
-                    f"ClinicaDL cannot compare such custom transforms to those in {self._currently_reading}."
+                    f"ClinicaDL cannot compare such custom transforms to those in {self._currently_reading}. "
                     "For ClinicaDL to be able to compare the current transforms to those used during "
                     "tensor conversion, use only transforms implemented in "
                     "ClinicaDL (see our documentation to know these transforms).\n"
@@ -860,6 +923,46 @@ class TensorConversion:
                 f"{masks_not_converted}"
             )
 
+    def _check_load_also(
+        self, old_conversion: TensorConversionInfo, also: list[str]
+    ) -> None:
+        """
+        Checks that the information in 'load_also' is effectively in the `.pt` files.
+        """
+        for info in also:
+            if info not in old_conversion.also:
+                raise ClinicaDLTensorConversionError(
+                    f"You passed '{info}' in 'load_also', but no such information was stored during "
+                    f"the conversion associated to {self._currently_reading}"
+                )
+
+    def _compare_also(self, old_conversion: TensorConversionInfo) -> None:
+        """
+        Checks that the additional information in 'old_conversion' is the same as the current
+        additional information.
+        """
+        images = self._get_first_images()
+        images = self._transform(images)
+        self._remove_common_mask(images)
+        current_also = self._get_also(images)
+        sym_diff = set(current_also.keys()).symmetric_difference(
+            set(old_conversion.also.keys())
+        )
+        if len(sym_diff) > 0:
+            raise ClinicaDLTensorConversionError(
+                f"There is a mismatch between the additional information in the CapsDataset "
+                f"({list(current_also.keys())}) and that in '.pt' files saved with {self._currently_reading} "
+                f"({list(old_conversion.also.keys())})."
+            )
+        for info in current_also:
+            if current_also[info] != old_conversion.also[info]:
+                raise ClinicaDLTensorConversionError(
+                    "There is a mismatch between the additional information in the CapsDataset "
+                    f"and that in '.pt' files saved with {self._currently_reading}: "
+                    f"'{info}' is of type '{current_also[info]}' in the current CapsDataset "
+                    f"and of type '{old_conversion.also[info]}' in '.pt' files."
+                )
+
     def _compare_participants_sessions(
         self, old_conversion: TensorConversionInfo
     ) -> None:
@@ -902,6 +1005,7 @@ class TensorConversion:
         self._uniform_shape = True
         self._participants_sessions_converted = set()
         self._masks_converted = set()
+        self._also = None
 
         self._currently_reading = None
 
@@ -919,6 +1023,26 @@ class TensorConversion:
         """
         participant, session = self.caps_dataset.get_participant_session_couples()[0]
         return self._get_nifti_images(participant, session)
+
+    def _get_also(self, images: DataPoint) -> dict[str, Literal[IMAGE, MASK, OTHER]]:
+        """
+        To get the list of additional keys in DataPoint, and their types.
+        """
+        also = (
+            set(images.keys())
+            .difference([IMAGE, AFFINE, PARTICIPANT, SESSION, LABEL])
+            .difference(self.get_info().individual_masks)
+        )
+        also_types = {}
+        for info in also:
+            if isinstance(images[info], tio.ScalarImage):
+                also_types[info] = IMAGE
+            elif isinstance(images[info], tio.LabelMap):
+                also_types[info] = MASK
+            else:
+                also_types[info] = OTHER
+
+        return also_types
 
     def _compute_output_info(self) -> None:
         """

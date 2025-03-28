@@ -1,4 +1,5 @@
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +9,7 @@ import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
-from clinicadl.data.structures import Mask
+from clinicadl.data.structures import DataPoint, Mask
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import get_transform_config
 from clinicadl.transforms.extraction import Patch, Slice
@@ -20,6 +21,22 @@ from clinicadl.utils.exceptions import (
 
 caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
 full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+
+
+class CustomTransform:
+    def __call__(self, datapoint: DataPoint) -> DataPoint:
+        transformed = deepcopy(datapoint)
+        transformed.add_image(datapoint.image, "other_image")
+        transformed.add_mask(
+            tio.LabelMap(
+                tensor=torch.ones_like(datapoint.image.tensor),
+                affine=datapoint.image.affine,
+            ),
+            "other_mask",
+        )
+        transformed["age"] = 55
+
+        return transformed
 
 
 def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
@@ -417,7 +434,7 @@ def test__getitem__():
     assert out_sample.slice_position == 0
     assert out_sample.slice_direction == 0
     assert (
-        out_sample.sample
+        out_sample.image.tensor
         == tio.RescaleIntensity(masking_method="brain")(
             tio.Subject(
                 image=tio.ScalarImage(tensor=tensors["image"][:, 0:1]),
@@ -428,17 +445,17 @@ def test__getitem__():
     assert (out_sample.affine == tensors["affine"]).all()
     assert out_sample.participant == "sub-000"
     assert out_sample.session == "ses-M000"
-    assert out_sample.image_path == str(
+    assert out_sample.image_path == (
         caps_dir
         / "subjects"
         / "sub-000"
         / "ses-M000"
         / "t1_linear"
         / "tensors"
-        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
     )
     assert (
-        out_sample.label
+        out_sample.label.tensor
         == tio.RemapLabels({1: 10})(tio.LabelMap(tensor=tensors["seg"])).tensor[:, 0]
     ).all()
 
@@ -481,7 +498,7 @@ def test__getitem__():
     assert out_sample.participant == "sub-010"
     assert out_sample.session == "ses-M003"
     assert (
-        out_sample.sample
+        out_sample.image.tensor
         == tio.Mask(masking_method="leftHippocampus")(
             tio.RescaleIntensity(masking_method="brain")(
                 tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
@@ -495,7 +512,7 @@ def test__getitem__():
         ).image.tensor[:, 0]
     ).all()
     assert (out_sample.affine == tensors["affine"]).all()
-    assert out_sample.image_path == str(
+    assert out_sample.image_path == (
         caps_dir
         / "subjects"
         / "sub-010"
@@ -505,7 +522,7 @@ def test__getitem__():
         / "sub-010_ses-M003_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
     )
     assert (
-        out_sample.label
+        out_sample.label.tensor
         == tio.Crop(cropping=(0, 0, 0, 0, 0, 1))(
             tio.LabelMap(tensor=tensors["seg"])
         ).tensor[:, 1]
@@ -533,3 +550,48 @@ def test__getitem__():
     assert out_sample.label == 2.0
     with pytest.raises(IndexError):
         caps_dataset[2]
+
+    # additional info
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        transforms=Transforms(
+            extraction=Slice(),
+            sample_transforms=[CustomTransform()],
+        ),
+    )
+    caps_dataset.read_tensor_conversion("t1_without_transform")
+    out_sample = caps_dataset[0]
+    assert "age" in out_sample.keys()
+
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        transforms=Transforms(
+            extraction=Slice(),
+            image_transforms=[CustomTransform()],
+        ),
+    )
+    caps_dataset.read_tensor_conversion("t1_without_transform")
+    out_sample = caps_dataset[0]
+    assert "age" in out_sample.keys()
+
+    data = sub_data([("sub-000", "ses-M000")])
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=data,
+        transforms=Transforms(
+            extraction=Slice(),
+            image_transforms=[CustomTransform()],
+        ),
+    )
+    caps_dataset.read_tensor_conversion(
+        "t1_custom_interrupted", load_also=["age", "other_image", "other_mask"]
+    )
+    out_sample = caps_dataset[0]
+    assert {"age", "other_image", "other_mask"}.difference(
+        set(out_sample.keys())
+    ) == set()

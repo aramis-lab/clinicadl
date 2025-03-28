@@ -3,3 +3,4 @@
 DataPoint
 =========
 .. autoclass:: clinicadl.data.structures.DataPoint
+    :members:

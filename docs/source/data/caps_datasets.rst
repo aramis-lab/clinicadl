@@ -52,7 +52,7 @@ Your CAPS structure will now look like this::
     │   │   └── ...
     │   └── ...
     └── tensor_conversion
-        └── pet_masked.json
+        └── pet_conversion.json
 
 New ``tensors`` folders has been added to contain the PyTorch tensors.
 A file like ``sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt`` contain the image as
@@ -65,10 +65,10 @@ again the next time you will instantiate your ``CapsDataset``. In this case, use
 
 .. code-block:: python
 
-    >>> dataset.read_tensor_conversion("pet_masked")
+    >>> dataset.read_tensor_conversion("pet_conversion")
 
 .. note::
-    ``CapsDataset`` will compare the content of ``tensor_conversion/pet_masked.json`` with its current state to
+    ``CapsDataset`` will compare the content of ``tensor_conversion/pet_conversion.json`` with its current state to
     be sure that data in ``.pt`` files are indeed the data you want to manipulate. For example, if you ran
     the tensor conversion with certain transforms but the current ``CapsDataset`` has been created with different
     transforms, this will raise an error.
