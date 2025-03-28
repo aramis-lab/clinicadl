@@ -50,7 +50,21 @@ class ConfusionMatrixMetricConfig(
         """The name of the metric."""
         return ImplementedMetric.CONF_MATRIX
 
-    @staticmethod
-    def optimum() -> Optimum:
+    def optimum(self) -> Optimum:  # pylint: disable=arguments-differ
         """The optimum of the metric."""
+        if self.metric_name in [
+            "miss_rate",
+            "false_negative_rate",
+            "fnr",
+            "fall_out",
+            "false_positive_rate",
+            "fpr",
+            "false_discovery_rate",
+            "fdr",
+            "false_omission_rate",
+            "for",
+            "prevalence_threshold",
+            "pt",
+        ]:
+            return Optimum.MIN
         return Optimum.MAX

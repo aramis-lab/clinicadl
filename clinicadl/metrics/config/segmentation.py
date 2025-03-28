@@ -122,7 +122,7 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     @staticmethod
     def optimum() -> Optimum:
         """The optimum of the metric."""
-        return Optimum.MAX
+        return Optimum.MIN
 
 
 class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
@@ -142,7 +142,7 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     @staticmethod
     def optimum() -> Optimum:
         """The optimum of the metric."""
-        return Optimum.MAX
+        return Optimum.MIN
 
     @field_validator("percentile", mode="after")
     @classmethod
