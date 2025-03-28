@@ -1,6 +1,6 @@
 from copy import deepcopy
 from logging import getLogger
-from typing import Optional, Tuple, Union
+from typing import Union
 
 import torch
 import torchio as tio
@@ -8,7 +8,6 @@ from pydantic import field_serializer, model_validator
 
 from clinicadl.data.dataloader import BatchLoader
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import SAMPLE, TRANSFORMATION
 from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
@@ -21,40 +20,24 @@ CUSTOM_TRANSFORM = "Custom transform passed by the user"
 
 class OutputTransforms(ClinicaDLConfig):
     """
-    A configuration class for applying transformations and augmentations to dataset images and
-    samples (slices and patches).
-
-    This class manages the various transformations applied to images and their corresponding samples,
-    including image preprocessing, sample transformation and data augmentation.
+    A configuration class for applying transformations on the outputs of a network.
 
     Attributes
     ----------
-    sample_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
-        A list of transformations to apply on samples (patches or slices).
+    transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+        A list of transformations to apply on the outputs.
     """
 
-    sample_transforms: list[Union[Transform, TransformConfig]] = []
+    transforms: list[Union[Transform, TransformConfig]] = []
 
-    _sample_transforms_processed: list[Transform] = []
+    _transforms_processed: list[Transform] = []
 
     @model_validator(mode="after")
     def check_transforms(self):
         """
-        Validates and adjusts the transformation configuration when image and sample transformations overlap.
-
-        If the `extraction` is of type `Image` and sample transformations or augmentations are provided,
-        they will be merged into the image transformations and augmentations. A warning is logged for
-        potential configuration conflicts.
-
-        Returns
-        -------
-        Transforms
-            The updated `Transforms` object after ensuring the consistency of transformations.
+        Converts configuration classes to actual transforms.
         """
-
-        self._sample_transforms_processed = self._config_to_transform(
-            self.sample_transforms
-        )
+        self._transforms_processed = self._config_to_transform(self.transforms)
 
         return self
 
@@ -96,63 +79,31 @@ class OutputTransforms(ClinicaDLConfig):
 
     def __str__(self) -> str:
         """
-        Returns a detailed string representation of the `Transforms` object,
-        showing the current configuration of image and sample transformations,
-        augmentations, and other settings.
-
-        Returns
-        -------
-        str
-            A detailed string representation of the `Transforms` object.
+        Returns a detailed string representation of the `OutputTransforms` object.
         """
         # Start with a general description of the object
-        transform_str = "Output Transforms Configuration:\n"
+        str_ = "Output Transforms Configuration:\n"
 
-        def _to_str(
-            list_: list[Transform],
-            object_: str,
-            transfo_: str,
-        ):
-            str_ = ""
-            if list_:
-                str_ += f"{object_} {transfo_}:\n"
-                for transform in list_:
-                    str_ += f"  - {type(transform).__name__}\n"
-            else:
-                str_ += f"No {object_} {transfo_} applied.\n"
+        if self._transforms_processed:
+            for transform in self._transforms_processed:
+                str_ += f"  - {type(transform).__name__}\n"
+        else:
+            str_ += "No transform applied.\n"
 
-            return str_
-
-        transform_str += _to_str(
-            self._sample_transforms_processed, object_=SAMPLE, transfo_=TRANSFORMATION
-        )
-
-        return transform_str
+        return str_
 
     def get_transforms(
         self,
     ) -> Transform:
         """
-        Composes and returns the transformations and augmentations.
+        Composes and returns the transformations.
 
         Returns
         -------
-        Tuple[Transform, Transform, Transform]
-            A tuple containing:
-            - The composed image transformations.
-            - The composed sample transformations.
-            - The composed sample augmentations.
+        Transform
+            The composed transformations.
         """
-        logger.info(
-            "Transforms will be applied in this order: image transforms, sample transforms, "
-            " and augmentations (during training only)."
-        )
-
-        sample_transforms = tio.Compose(
-            self._config_to_transform(self._sample_transforms_processed)
-        )
-
-        return sample_transforms
+        return tio.Compose(self._transforms_processed)
 
     def apply(
         self,
