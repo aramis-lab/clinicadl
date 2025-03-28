@@ -60,7 +60,7 @@ a tensor, as well as the individual masks associated to the image (the masks fro
 here). Notice that masks common to all images (stored in ``masks``) have also been converted.
 
 All the useful information (what contains the ``.pt`` files, which transforms have been applied, etc.) on the tensor conversion
-is stored in ``tensor_conversion/pet_masked.json``. This file will be particularly useful if you don't want to make the conversion
+is stored in ``tensor_conversion/pet_conversion.json``. This file will be particularly useful if you don't want to make the conversion
 again the next time you will instantiate your ``CapsDataset``. In this case, use the ``read_tensor_conversion`` method:
 
 .. code-block:: python

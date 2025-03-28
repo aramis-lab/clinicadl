@@ -48,10 +48,10 @@ logger = getLogger("clinicadl.caps_dataset")
 
 class CapsDataset(Dataset):
     """
-    CapsDataset is a custom PyTorch Dataset class for working with neuroimaging data in CAPS format.\n
+    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with neuroimaging data in CAPS format.\n
 
     The user specifies the type of data he wants to work on via ``preprocessing``, the (participant, session)
-    pairs he wants to work on via ``data``, the transforms he wants to apply on images via ``transforms`` and
+    pairs he wants to work on via ``data``, the transforms he wants to apply on images via ``transforms``, and
     where to find the label (scalars or segmentation masks) associated to the images via ``label``. Some transforms may
     also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.\n
 
@@ -65,7 +65,7 @@ class CapsDataset(Dataset):
 
     .. note::
         Some characteristics of the CapsDataset depends on the extraction method used (defined via the parameter
-        ``transforms``). For example, if you have 10 images with 100 slices each and you want to work on slices
+        ``transforms``). For example, if you have 10 images with 100 slices each, and you want to work on slices
         (so you passed ``transforms=Transforms(extraction=Slice())``), the length of your
         dataset will be :math:`10\\times100=1,000`.
 
@@ -75,23 +75,23 @@ class CapsDataset(Dataset):
     Parameters
     ----------
     caps_directory : PathType
-        Path to the CAPS directory containing the neuroimaging data. A string or a Path object.
+        Path to the CAPS directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
     preprocessing : Preprocessing, (optional, default=T1Linear())
         Description of the preprocessing steps applied to the data. Default is Clinica's ``t1-linear``
         pipeline. See :ref:`caps_datatypes` to know supported preprocessings.
     data : Optional[DataType], (optional, default=None)
-        A DataFrame (or a path to a TSV file containing the dataframe) with the list of participant/session
+        A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
         regression).\n
         Only participant/session pairs in this TSV file will be in the CapsDataset.\n
         If ``None``, all participant/session pairs in ``caps_directory`` will be used. Besides, a TSV file
         will be created in ``caps_directory``, with the list of all participant/session
-        pairs the matches ``preprocessing`` in the directory. The name of the created TSV depends on the preprocessing,
+        pairs in the directory that have the wanted ``preprocessing``. The name of the created TSV depends on the preprocessing,
         but it will always start with "overview" (e.g. `overview_t1-linear_cropped.tsv`,
         `overview_pet-linear_18FFDG_pons2.tsv`, etc.).
 
     .. warning::
-        Beware that your TSV files inside ``caps_directory`` may be overwritten. A good practice is not
+        Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not
         to name your own TSV files with a name starting with "overview".
 
     label : Optional[str], (optional, default=None)
@@ -116,7 +116,7 @@ class CapsDataset(Dataset):
         * For the mask ``"leftHippocampus.nii.gz"``, a file is passed. Therefore, it is understood as a mask common
           to all images. So, CapsDataset will simply get the mask in ``{caps_directory}/masks/leftHippocampus.nii.gz``.
         * For ``"brain"``, a suffix is passed. Therefore, it is understood as an image-specific mask:
-          if the image is in ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz``, it will look for the masks in
+          if the image is in ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz``, it will look for the mask in
           ``sub-001/ses-M000/sub-001_ses-M000_brain.nii.gz``.\n
 
         To use the masks in transforms, mention ``"brain"`` and ``"leftHippocampus"`` (see examples).
@@ -126,7 +126,7 @@ class CapsDataset(Dataset):
     ClinicaDLArgumentError
         If ``caps_directory`` if not a directory.
     ClinicaDLArgumentError
-        If ``data`` is not a DataFrame, a path or `None`.
+        If ``data`` is not a :py:class:`pandas.DataFrame`, a :pathlib.Path:`pathlib.Path <>` or ``None``.
     ClinicaDLTSVError
         If ``data`` is a TSV file that does not exist.
     ClinicaDLTSVError
@@ -135,55 +135,60 @@ class CapsDataset(Dataset):
         If the DataFrame in ``data`` does not contain the columns ``"participant_id"``
         and ``"session_id"``.
     ClinicaDLTSVError
-        If the DataFrame in ``data`` contains duplicated (participant_id, session_id) pairs.
+        If the DataFrame in ``data`` contains duplicated (``participant_id``, ``session_id``) pairs.
     ClinicaDLConfigurationError
-        If for some (participant, session) pairs, the images corresponding to ``preprocessing``
+        If for some (participant, session) pairs, the image corresponding to ``preprocessing``
         cannot be found.
     ClinicaDLArgumentError
-        If ``label`` is not a string or ``None``.
+        If ``label`` is not a ``str`` or ``None``.
     FileNotFoundError
         If ``masks`` contain paths that do not match any files.
 
     Examples
     --------
-    >>> # data are as follows:
-    >>> # mycaps
-    >>> # ├── masks
-    >>> # │   └── leftHippocampus.nii.gz
-    >>> # ├── pet_data.tsv
-    >>> # └── subjects
-    >>> #     ├── sub-000
-    >>> #     │   └── ses-M000
-    >>> #     │       └── pet_linear
-    >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-    >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-    >>> #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz
-    >>> #         ...
-    >>> #     ...
-    >>> from clinicadl.data.datasets import CapsDataset
-    >>> from clinicadl.data.datatypes import PETLinear
-    >>> from clinicadl.transforms import Transforms
-    >>> from clinicadl.transforms.config import ZNormalizationConfig, MaskConfig, RandomFlipConfig
-    >>> from clinicadl.transforms.extraction import Patch
-    >>> normalization = ZNormalizationConfig(masking_method="brain")
-    >>> mask = MaskConfig(masking_method="leftHippocampus")
-    >>> flip = RandomFlipConfig(flip_probability=0.3)
-    >>> dataset = CapsDataset(
-            caps_directory="mycaps",
-            preprocessing=PETLinear(
-                tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-            ),
-            data="mycaps/pet_data.tsv",
-            transforms=Transforms(
-                extraction=Patch(patch_size=32, stride=32),
-                image_transforms=[normalization, mask],
-                sample_transforms=[],
-                augmentations=[flip],
-            ),
-            label="seg",    # labels are here images (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz")
-            masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
-        )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
-                                                        # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
+    .. code-block:: python
+
+        >>> # data are as follows:
+        >>> # mycaps
+        >>> # ├── masks
+        >>> # │   └── leftHippocampus.nii.gz
+        >>> # ├── pet_data.tsv
+        >>> # └── subjects
+        >>> #     ├── sub-000
+        >>> #     │   └── ses-M000
+        >>> #     │       └── pet_linear
+        >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+        >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+        >>> #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz
+        >>> #         ...
+        >>> #     ...
+
+        >>> from clinicadl.data.datasets import CapsDataset
+        >>> from clinicadl.data.datatypes import PETLinear
+        >>> from clinicadl.transforms import Transforms
+        >>> from clinicadl.transforms.config import ZNormalizationConfig, MaskConfig, RandomFlipConfig
+        >>> from clinicadl.transforms.extraction import Patch
+
+        >>> normalization = ZNormalizationConfig(masking_method="brain")
+        >>> masking = MaskConfig(masking_method="leftHippocampus")
+        >>> flip = RandomFlipConfig(flip_probability=0.3)
+
+        >>> dataset = CapsDataset(
+                caps_directory="mycaps",
+                preprocessing=PETLinear(
+                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+                ),
+                data="mycaps/pet_data.tsv",
+                transforms=Transforms(
+                    extraction=Patch(patch_size=32, stride=32),
+                    image_transforms=[normalization, masking],
+                    sample_transforms=[],
+                    augmentations=[flip],
+                ),
+                label="seg",    # labels are here images (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz")
+                masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
+            )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
+                                                            # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
     """
 
     def __init__(
@@ -230,14 +235,14 @@ class CapsDataset(Dataset):
         Converts NIfTI files to tensors (in PyTorch's ``.pt`` format), the only format that a
         CapsDataset can manipulate.
 
-        This is a mandatory step before using a CapsDataset, as some checks on data will
-        be performed before conversion (shape consistency, voxel spacing consistency, etc.)
+        This is a **mandatory step** before using a CapsDataset, as some checks on data will
+        be performed before conversion (shape consistency, voxel spacing consistency, etc.),
         and some important attributes of the CapsDataset will be computed (e.g. its length, which
         depends on the number of samples per image).
-        Conversion to tensors also significantly speeds up data loading during training or
+        Conversion to tensors also significantly **speeds up data loading** during training or
         inference.\n
 
-        The user have the possibility to store transformed images, i.e. images on which
+        The user has the possibility to store transformed images, i.e. images on which
         image transforms have already been applied (see :py:class:`clinicadl.transforms.Transforms`).
         This practice will speed up dataloading during training or inference as the images don't have
         to be transformed each time they are loaded. The drawback is that the saved images can't be
@@ -259,7 +264,7 @@ class CapsDataset(Dataset):
         n_proc : int (optional, default=1)
             Number of cores to use to parallelize the conversion.
         ignore_spacing : bool (optional, default=False)
-            Whether to ignore the check made on voxel spacings. ``If False``, it will make sure that all
+            Whether to ignore the check made on voxel spacings. If ``False``, it will make sure that all
             images have the same voxel spacing before converting them.
 
             .. warning::
@@ -271,35 +276,34 @@ class CapsDataset(Dataset):
             the user should be aware of (e.g. images with different shapes, files overwritten, etc.).
 
         check_transforms : bool (optional, default=True)
-            If ``json_name`` already exists, TensorConversion will try to merge the old
+            If ``json_name`` already exists, the CapsDataset will try to merge the old
             tensor conversion with the new one. ``check_transforms`` determines whether transforms
-            will be checked during the merger. If ``True``, TensorConversion will check that
+            will be checked during the merger. If ``True``, the CapsDataset will check that
             the same transforms were applied during the two conversions.\n
             Useful when you use custom transforms (i.e. transforms not in ClinicaDL), which cannot be checked.\n
 
             .. note::
-                If ``save_transforms=False``, no check will be performed as the tensors saved
-                have not been transformed.
+                If ``save_transforms=False``, no such check will be performed.
 
             .. warning::
-                **To use carefully**. You must be sure that the transforms match.
+                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
         Raises
         ------
         ClinicaDLArgumentError
             If a json file with the same ``json_name`` already exists and the new conversion cannot
             be merged with the old one.
-        ClinicaDLCAPSError
+        ClinicaDLTensorConversionError
             If images don't have the same voxel spacing across (participant, session) pairs, and
             ``ignore_spacing=False``.
-        ClinicaDLCAPSError
+        ClinicaDLTensorConversionError
             If some image-specific masks don't have the same shape and affine matrix as the image.
 
         Warnings
         --------
         * Also raises a warning (only once) if images have different shapes across (participant, session)
           pairs (unless ``raise_warnings=False``).
-        * Also raises a warning if some tensor files already present in the CAPS directory will be
+        * Also raises a warning if some ``.pt`` files already present in the CAPS directory will be
           overwritten (unless ``raise_warnings=False``).
         """
         self.tensor_conversion.convert_to_tensors(
@@ -327,16 +331,17 @@ class CapsDataset(Dataset):
         applied before conversion match the image transforms of the current CapsDataset,
         unless ``check_transforms=False``.
 
-        See :py:func:`clinicadl.data.datasets.CapsDataset.to_tensors` for more information on
+        See :py:meth:`~CapsDataset.to_tensors` for more information on
         conversion to tensors.
 
         Parameters
         ----------
         json_name : str
             The name of the json file (**without** ``.json`` suffix) in the folder ``tensor_extraction``
-            of the CAPS directory describing the tensor conversion.
+            of the CAPS directory describing the tensor conversion. The file must then be located
+            at ``{caps_directory}/prepare_data/tensor_conversion/{json_name}.json``
         check_transforms : bool (optional, default=True)
-            Whether to checks if the image transforms potentially applied before tensor conversion
+            Whether to check if the image transforms potentially applied before tensor conversion
             match the current ones. Useful when you use custom transforms (i.e. transforms
             not in ClinicaDL), which cannot be read by ClinicaDL and thus cannot be checked.\n
 
@@ -345,11 +350,11 @@ class CapsDataset(Dataset):
                 be performed as the tensors saved have not been transformed.
 
             .. warning::
-                **To use carefully**. You must be sure that the transforms match.
+                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False`.
 
         load_also : list[str] (optional, default=[])
-            to load additional information potentially stored in `.pt` files. By default, only the image, the label, and masks
-            mentioned in ``masks`` of the CapsDataset will be loaded.
+            To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
+            mentioned in the argument ``masks`` of the CapsDataset will be loaded.
 
         Raises
         ------

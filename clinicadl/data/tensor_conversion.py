@@ -276,10 +276,10 @@ class TensorConversion:
         ClinicaDLArgumentError
             if a json file with the same `json_name` already exists and the new conversion cannot
             be merged with the old one.
-        ClinicaDLCAPSError
+        ClinicaDLTensorConversionError
             if images don't have the same voxel spacing across (participant, session), and
             `ignore_spacing` is False.
-        ClinicaDLCAPSError
+        ClinicaDLTensorConversionError
             if some image-specific masks don't have the same shape and affine matrix as the image.
 
         Also raises a warning (only once) if images have different shapes across (participant, session)
