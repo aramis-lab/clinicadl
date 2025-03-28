@@ -1,19 +1,21 @@
+from datetime import datetime
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
-# from clinicadl.experiment_manager.maps_reader import MapsReader
-from clinicadl.losses import get_loss_function_from_config
+from clinicadl.losses import get_loss_function_config, get_loss_function_from_config
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.utils import Loss
-from clinicadl.networks import get_network_from_config
+from clinicadl.networks import get_network_config, get_network_from_config
 from clinicadl.networks.config import NetworkConfig
-from clinicadl.optim import get_optimizer_from_config
+from clinicadl.optim import get_optimizer_config, get_optimizer_from_config
 from clinicadl.optim.optimizers import OptimizerConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
+from clinicadl.utils.iotools.utils import update_json
+from clinicadl.utils.typing import PathType
 
 # import idr_torch
 
@@ -44,6 +46,17 @@ class ClinicaDLModel:
         #     fsdp=fully_sharded_data_parallel,
         #     amp=amp,
         # )  # to check
+
+    @classmethod
+    def from_dict(cls, dict_: dict):
+        network_config = get_network_config(**dict_)
+        loss_config = get_loss_function_config(**dict_)
+        optimizer_config = get_optimizer_config(**dict_)
+        return cls.from_config(
+            network_config=network_config,
+            loss_config=loss_config,
+            optimizer_config=optimizer_config,
+        )
 
     @classmethod
     def from_config(
@@ -88,3 +101,14 @@ class ClinicaDLModel:
             memory_format=self.memory_format, non_blocking=self.non_blocking
         )
         self.network.train()
+
+    def write_info(self, json_path: PathType):
+        json_path = Path(json_path)
+        if self._network_config:
+            update_json(json_path, self._network_config)
+
+        if self._loss_config:
+            update_json(json_path, self._loss_config)
+
+        if self._optimizer_config:
+            update_json(json_path, self._optimizer_config)

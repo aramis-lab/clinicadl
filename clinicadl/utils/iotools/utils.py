@@ -2,7 +2,42 @@ import errno
 import json
 from copy import copy
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from clinicadl.utils.config import ClinicaDLConfig
+
+
+def update_json(
+    json_path: Path,
+    config: Optional[ClinicaDLConfig] = None,
+    dict_: Optional[dict] = None,
+):
+    if not json_path.is_file():
+        raise FileNotFoundError("The maps.json file for this MAPS does not exist.")
+
+    # Lire le contenu existent du fichier
+    with json_path.open(mode="r") as file:
+        try:
+            existing_data = json.load(file)
+        except json.JSONDecodeError:
+            existing_data = {}
+
+    # Fusionner les nouvelles données
+    if config:
+        new_data = config.model_dump()  # Assurez-vous que c'est bien un dict
+        if hasattr(config, "name"):
+            name = config.name  # type: ignore
+        else:
+            name = config.__class__.__name__
+
+        existing_data.update({name: new_data})
+
+    if dict_:
+        existing_data.update(dict_)
+
+    # Écrire les données mises à jour dans le fichier
+    with json_path.open(mode="w") as file:
+        json.dump(existing_data, file, indent=4, default=path_encoder)
 
 
 def path_encoder(obj):

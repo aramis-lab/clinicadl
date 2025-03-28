@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable, Optional, Union
 
 import numpy as np
@@ -158,6 +159,14 @@ class Metrics:
 
         self.compute_train_metrics = compute_train_metrics
 
+    @classmethod
+    def from_dict(cls, dict_: dict):
+        metrics_config = dict_["metrics"]
+        metrics = metrics_config["metrics"]
+        selection_metrics = metrics_config["selection_metrics"]
+
+        return cls(metrics=metrics, selection_metrics=selection_metrics)
+
     def write_training_loss(self, epoch: int, batch: int, loss: float):
         self.training_loss.at[(epoch, batch), LOSS] = loss
 
@@ -175,6 +184,13 @@ class Metrics:
 
     def model_dump(self):
         return self.val.model_dump()
+
+    def save_metrics(self, path: Path):
+        """Save the metrics in the MAPS."""
+        """Creates a training.tsv file."""
+
+        (path.parent).mkdir(parents=True, exist_ok=True)
+        self.training_loss.to_csv(path, sep="\t", index=True)
 
 
 # class RetainBest:
