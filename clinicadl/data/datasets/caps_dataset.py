@@ -589,7 +589,7 @@ class CapsDataset(Dataset):
         """
         if isinstance(label, str):
             if label in self.df.columns:
-                if self.df[label].dtype == str:
+                if isinstance(self.df[label].iloc[0], str):
                     label_list = self.df[label].unique()
                     if len(label_list) > 5:
                         raise ClinicaDLArgumentError(
@@ -598,7 +598,7 @@ class CapsDataset(Dataset):
                         )
                     else:
                         self.label_dict = {
-                            key: value for key, value in enumerate(label_list)
+                            key: value for value, key in enumerate(label_list)
                         }
 
                 return Column(label)
@@ -812,10 +812,12 @@ class CapsDataset(Dataset):
         if self.label is None:
             return None
         elif isinstance(self.label, Column):
-            df_tmp = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
-            if df_tmp[self.label._name].dtype == str:
-                return self.label_dict[df_tmp.at[(participant, session), self.label]]
-            return df_tmp.at[(participant, session), self.label]
+            label = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
+                (participant, session), self.label
+            ]
+            if isinstance(label, str):
+                return self.label_dict[label]
+            return label
 
     ### other utils ###
     def _load_pt_masks(self) -> None:
