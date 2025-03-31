@@ -355,41 +355,50 @@ def test_train_eval():
 
 
 def test_subset():
+    tmp_dir = Path(__file__).parents[2] / "resources" / "caps_tmp"
+
+    if tmp_dir.is_dir():
+        shutil.rmtree(tmp_dir)
+    shutil.copytree(caps_dir, tmp_dir)
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
+    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+
     data = sub_data(
         [
             ("sub-000", "ses-M000"),
-            ("sub-000", "ses-M003"),
             ("sub-010", "ses-M003"),
         ]
     )
     caps_dataset = CapsDataset(
-        caps_dir,
-        PETLinear(
-            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-        ),
+        tmp_dir,
+        T1Linear(use_uncropped_image=True),
+        transforms=Transforms(extraction=Slice(slices=[0, 1])),
         data=data,
     )
+    caps_dataset.to_tensors("for_subset")
     subset = caps_dataset.subset(
         sub_data(
             [
-                ("sub-000", "ses-M000"),
-                ("sub-000", "ses-M003"),
+                ("sub-010", "ses-M003"),
             ]
         )
     )
     assert isinstance(subset, CapsDataset)
     assert len(subset) == 2
+    assert subset[0].participant == "sub-010"
+    assert subset[0].session == "ses-M003"
 
     with pytest.raises(ClinicaDLTSVError):
         caps_dataset.subset(
             sub_data(
                 [
-                    ("sub-000", "ses-M000"),
-                    ("sub-000", "ses-M003"),
                     ("sub-010", "ses-M012"),
                 ]
             )
         )
+
+    shutil.rmtree(tmp_dir)
 
 
 def test__getitem__():

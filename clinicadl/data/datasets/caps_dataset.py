@@ -434,6 +434,7 @@ class CapsDataset(Dataset):
 
         dataset = deepcopy(self)
         dataset.df = subset_df
+        dataset._map_indices_to_images()
 
         return dataset
 
