@@ -79,7 +79,7 @@ class _LinearPreprocessing(Preprocessing, Modality):
         May be overwritten for some preprocessings.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"  # TODO: remove the T1w ine the middle of the name at the end of the refactoring (maybe provide a function to change the name in the CAPS)
+        return f"sub-*_ses-*_T1w_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"  # TODO: remove the T1w ine the middle of the name at the end of the refactoring (maybe provide a function to change the name in the CAPS)
 
     def _get_description(self) -> str:
         """
