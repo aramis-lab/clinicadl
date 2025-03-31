@@ -59,6 +59,12 @@ class SliceSample(Sample):
         """The extraction method."""
         return ExtractionMethod.SLICE.value
 
+    @computed_field
+    @property
+    def id(self) -> int:
+        """The index of the sample. Equal to `slice_position` here."""
+        return self.slice_position
+
 
 class Slice(Extraction):
     """

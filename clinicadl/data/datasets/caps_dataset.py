@@ -217,7 +217,7 @@ class CapsDataset(Dataset):
 
     def to_tensors(
         self,
-        json_name: str,
+        json_name: PathType = "tensor_conversion",
         save_transforms: bool = True,
         n_proc: int = 1,
         ignore_spacing: bool = False,
@@ -589,6 +589,18 @@ class CapsDataset(Dataset):
         """
         if isinstance(label, str):
             if label in self.df.columns:
+                if isinstance(self.df[label].iloc[0], str):
+                    label_list = self.df[label].unique()
+                    if len(label_list) > 5:
+                        raise ClinicaDLArgumentError(
+                            f"Column '{label}' contains to many values. "
+                            "It should contain maximum 5 different values for ClinicaDL to consider it as Classification"
+                        )
+                    else:
+                        self.label_dict = {
+                            key: value for value, key in enumerate(label_list)
+                        }
+
                 return Column(label)
             else:
                 return self._read_mask(label)
@@ -721,6 +733,7 @@ class CapsDataset(Dataset):
             If 'idx' is out of range.
         """
         participant = self.get_sample_info(idx, PARTICIPANT_ID)
+
         session = self.get_sample_info(idx, SESSION_ID)
         row = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
             (participant, session)
@@ -799,9 +812,12 @@ class CapsDataset(Dataset):
         if self.label is None:
             return None
         elif isinstance(self.label, Column):
-            return self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
-                (participant, session)
-            ][self.label]
+            label = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
+                (participant, session), self.label
+            ]
+            if isinstance(label, str):
+                return self.label_dict[label]
+            return label
 
     ### other utils ###
     def _load_pt_masks(self) -> None:

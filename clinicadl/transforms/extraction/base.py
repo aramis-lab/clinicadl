@@ -31,6 +31,26 @@ class Sample(ClinicaDLConfig, ABC):
     def extraction(self) -> str:
         """The extraction method."""
 
+    @computed_field
+    @property
+    @abstractmethod
+    def id(self) -> int:
+        """The index of the sample."""
+
+    def get_datapoint(self) -> DataPoint:
+        """
+        To get the sample as a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`.
+        """
+        return DataPoint(
+            image=tio.ScalarImage(self.sample, affine=self.affine),
+            label=tio.LabelMap(self.label, affine=self.affine)
+            if isinstance(self.label, torch.Tensor)
+            else self.label,
+            participant=self.participant,
+            session=self.session,
+            image_path=self.image_path,
+        )
+
 
 class Extraction(ClinicaDLConfig, ABC):
     """

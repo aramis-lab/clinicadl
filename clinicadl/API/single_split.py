@@ -3,7 +3,7 @@ from pathlib import Path
 import torchio.transforms as transforms
 
 from clinicadl.data import tensor_conversion
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
 from clinicadl.data.datatypes.preprocessing import (

@@ -53,7 +53,10 @@ class CapsReader(Reader):
 
     @property
     def tensor_conversion_json_dir(self) -> Path:
-        return self.input_directory / CONVERSION_JSON_DIRECTORY
+        out_dir = self.input_directory / CONVERSION_JSON_DIRECTORY
+        if not out_dir.exists():
+            out_dir.mkdir(parents=True, exist_ok=True)
+        return out_dir
 
     def _check_caps_folder(self) -> None:
         """

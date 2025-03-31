@@ -228,12 +228,8 @@ class Transforms(ClinicaDLConfig):
         )
 
         image_transforms = tio.Compose(self._image_transforms_processed)
-        sample_transforms = tio.Compose(
-            self._config_to_transform(self._sample_transforms_processed)
-        )
-        augmentations = tio.Compose(
-            self._config_to_transform(self._augmentations_processed)
-        )
+        sample_transforms = tio.Compose(self._sample_transforms_processed)
+        augmentations = tio.Compose(self._augmentations_processed)
 
         return (
             image_transforms,
