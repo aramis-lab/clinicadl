@@ -25,7 +25,7 @@ logger = getLogger("clinicadl.extraction.slice")
 class SliceSample(Sample):
     """
     Output of a CapsDataset when slice extraction is performed (i.e.
-    when :py:class:`~Slice` is used)..
+    when :py:class:`~Slice` is used).
 
     It is simply a :py:class:`~clinicadl.data.structures.DataPoint`, with
     additional information on the slice extraction.

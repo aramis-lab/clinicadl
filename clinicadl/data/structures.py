@@ -1,7 +1,7 @@
 import copy
 from collections import UserString
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import torch
 import torchio as tio
@@ -63,6 +63,8 @@ class DataPoint(tio.Subject):
 
     However, to add an image or a mask to the DataPoint, prefer :py:func:`~add_image`
     and :py:func:`~add_mask`.
+
+    To get all the images in your DataPoint, you can use :py:func:`get_images` or :py:func:`get_images_dict`.
 
     If all the images and masks of your DataPoint have the same shape, voxel spacing and affine matrix, you can easily
     access them via the attributes :py:attr:`~shape` (or :py:attr:`~spatial_shape` to remove the channel dimension),
@@ -203,6 +205,60 @@ class DataPoint(tio.Subject):
         """
         self.check_consistent_affine()
         return self.get_first_image().affine
+
+    def get_images(
+        self,
+        intensity_only=True,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> list[tio.Image]:
+        """
+        To get the list of all the images in a DataPoint.
+
+        Parameters
+        ----------
+        intensity_only : bool (optional, default=True)
+            To get only the images (:py:class:`torchio.ScalarImage`) and the not the
+            masks (:py:class:`torchio.LabelMap`).
+        include : Optional[Sequence[str]] (optional, default=None)
+            Names of the images to include. If ``None``, will return all the images
+            specified by ``intensity_only`` and not in ``exclude``.
+        exclude : Optional[Sequence[str]] (optional, default=None)
+            Names of the images to exclude.
+
+        Returns
+        -------
+        list[torchio.Image]
+            The list of the :py:class:`torchio.Image`.
+        """
+        return super().get_images(intensity_only, include, exclude)
+
+    def get_images_dict(
+        self,
+        intensity_only=True,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> dict[str, tio.Image]:
+        """
+        To get all the images in a DataPoint, and their names.
+
+        Parameters
+        ----------
+        intensity_only : bool (optional, default=True)
+            To get only the images (:py:class:`torchio.ScalarImage`) and the not the
+            masks (:py:class:`torchio.LabelMap`).
+        include : Optional[Sequence[str]] (optional, default=None)
+            Names of the images to include. If ``None``, will return all the images
+            specified by ``intensity_only`` and not in ``exclude``.
+        exclude : Optional[Sequence[str]] (optional, default=None)
+            Names of the images to exclude.
+
+        Returns
+        -------
+        dict[str, torchio.Image]
+            The images and their names.
+        """
+        return super().get_images_dict(intensity_only, include, exclude)
 
     def add_image(
         self, image: Union[tio.ScalarImage, PathType], image_name: str

@@ -90,6 +90,18 @@ def test_DataPoint():
     with pytest.raises(RuntimeError):
         data_point.shape
 
+    # get images
+    assert len(data_point.get_images()) == 3
+    assert len(data_point.get_images(intensity_only=False)) == 7
+    assert len(data_point.get_images(intensity_only=False, include="image")) == 1
+    assert len(data_point.get_images(intensity_only=False, exclude="image")) == 6
+
+    assert len(data_point.get_images_dict()) == 3
+    assert set(data_point.get_images_dict().keys()) == {"image", "image_2", "image_3"}
+    assert len(data_point.get_images_dict(intensity_only=False)) == 7
+    assert len(data_point.get_images_dict(intensity_only=False, include="image")) == 1
+    assert len(data_point.get_images_dict(intensity_only=False, exclude="image")) == 6
+
     # test copy
     c = copy(data_point)
     assert isinstance(c.image, tio.ScalarImage)

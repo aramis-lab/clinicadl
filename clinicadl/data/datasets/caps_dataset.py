@@ -393,7 +393,7 @@ class CapsDataset(Dataset):
         Parameters
         ----------
         data : DataType
-            A DataFrame (or a path to a TSV file containing the dataframe) with the list of participant/session
+            A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant-session
             pairs to extract. This list must be passed via two columns named ``"participant_id"``
             and ``"session_id"`` (other columns won't be considered).
 
@@ -484,7 +484,7 @@ class CapsDataset(Dataset):
         Returns
         -------
         Any
-            the information (e.g. the age, the sex, etc.)
+            The information (e.g. the age, the sex, etc.)
 
         Raises
         ------
@@ -521,7 +521,7 @@ class CapsDataset(Dataset):
         Returns
         -------
         List[Tuple[str, str]]
-            the list of (participant, session).
+            The list of (participant, session).
         """
         return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
