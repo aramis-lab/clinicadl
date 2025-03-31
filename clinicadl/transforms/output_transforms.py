@@ -11,11 +11,10 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
+from .transforms import CUSTOM_TRANSFORM
 from .types import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
-
-CUSTOM_TRANSFORM = "Custom transform passed by the user"
 
 
 class OutputTransforms(ClinicaDLConfig):
@@ -41,9 +40,7 @@ class OutputTransforms(ClinicaDLConfig):
 
         return self
 
-    @field_serializer(
-        "sample_transforms",
-    )
+    @field_serializer("sample_transforms", check_fields=False)
     def serialize_transforms(
         self, transforms: list[Union[Transform, TransformConfig]]
     ) -> list[Union[str, dict]]:
@@ -110,11 +107,6 @@ class OutputTransforms(ClinicaDLConfig):
         data_point: DataPoint,
     ) -> DataPoint:
         output = self.get_transforms()(data_point)
-
-        if data_point.image.shape != output.image.shape:
-            raise ValueError(
-                "One of the transform modifies the size of the tensor and can't be used"
-            )
 
         return output
 

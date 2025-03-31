@@ -9,8 +9,9 @@ from clinicadl.data.datatypes.preprocessing import (
     PETLinear,
     T1Linear,
 )
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
-from clinicadl.losses.config import CrossEntropyLossConfig
+from clinicadl.losses.config import MSELossConfig
+from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
+from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.factory import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig

@@ -79,7 +79,7 @@ class Predictor:
         metrics.reset()
 
         with torch.no_grad():
-            for batch, data in enumerate(dataloader):
+            for batch_idx, data in enumerate(dataloader):
                 ############
                 images = data.get_images().to(self.comp.device)
                 labels = data.get_labels().to(self.comp.device)

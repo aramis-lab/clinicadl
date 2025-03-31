@@ -154,7 +154,6 @@ class Split(ClinicaDLConfig):
             dp_degree=self._dp_degree,
             rank=self._rank,
         )
-        self.train_loader.type = "train"
 
     def build_val_loader(
         self,
@@ -229,4 +228,3 @@ class Split(ClinicaDLConfig):
             dp_degree=self._dp_degree,
             rank=self._rank,
         )
-        self.val_loader.type = "val"
