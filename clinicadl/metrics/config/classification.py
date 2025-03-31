@@ -10,7 +10,7 @@ from .base import (
     _IncludeBackgroundConfig,
     _ReductionConfig,
 )
-from .enum import Average, ImplementedMetric
+from .enum import Average, ImplementedMetric, Optimum
 
 __all__ = [
     "ROCAUCMetricConfig",
@@ -30,6 +30,11 @@ class ROCAUCMetricConfig(MetricConfig):
         """The name of the metric."""
         return ImplementedMetric.ROC_AUC
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
 
 class ConfusionMatrixMetricConfig(
     MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
@@ -44,3 +49,22 @@ class ConfusionMatrixMetricConfig(
     def name(self) -> ImplementedMetric:
         """The name of the metric."""
         return ImplementedMetric.CONF_MATRIX
+
+    def optimum(self) -> Optimum:  # pylint: disable=arguments-differ
+        """The optimum of the metric."""
+        if self.metric_name in [
+            "miss_rate",
+            "false_negative_rate",
+            "fnr",
+            "fall_out",
+            "false_positive_rate",
+            "fpr",
+            "false_discovery_rate",
+            "fdr",
+            "false_omission_rate",
+            "for",
+            "prevalence_threshold",
+            "pt",
+        ]:
+            return Optimum.MIN
+        return Optimum.MAX

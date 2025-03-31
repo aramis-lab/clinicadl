@@ -19,6 +19,7 @@ repos:
             )$
         additional_dependencies:
           - tomli
+        entry: codespell --ignore-words ignore-spelling-words.txt
   - repo: https://github.com/python-poetry/poetry
     rev: '1.7.1'
     hooks:

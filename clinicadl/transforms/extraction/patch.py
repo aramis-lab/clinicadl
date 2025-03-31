@@ -47,6 +47,12 @@ class PatchSample(Sample):
     patch_size: Tuple[int, int, int]
     patch_stride: Tuple[int, int, int]
 
+    @computed_field
+    @property
+    def id(self) -> int:
+        """The index of the sample. Equal to `patch_index` here."""
+        return self.patch_index
+
 
 class Patch(Extraction):
     """

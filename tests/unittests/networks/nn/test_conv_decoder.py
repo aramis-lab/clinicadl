@@ -23,7 +23,7 @@ def test_activations(input_tensor, act):
         output_act=act,
     )
     output_shape = net(input_tensor).shape
-    return len(output_shape) == 4 and output_shape[1] == 1
+    assert len(output_shape) == 4 and output_shape[1] == 1
 
 
 @pytest.mark.parametrize(

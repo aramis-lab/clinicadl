@@ -156,11 +156,23 @@ def test_checks():
     )
     tsv_path = caps_dir / "overview_t1-linear.tsv"
     tsv = pd.read_csv(tsv_path, sep="\t")
-    assert (caps_dataset.df == data.drop(columns=["age"])).all().all()
-    assert (tsv == data.drop(columns=["age"])).all().all()
+    assert (caps_dataset.df == data[["participant_id", "session_id"]]).all().all()
+    assert (tsv == data[["participant_id", "session_id"]]).all().all()
     tsv_path.unlink()
 
     # check label
+    with pytest.raises(ClinicaDLArgumentError):
+        CapsDataset(
+            caps_dir,
+            preprocessing=PETLinear(
+                use_uncropped_image=True,
+                tracer="18FAV45",
+                suvr_reference_region="pons2",
+            ),
+            data=full_data,
+            label="category",
+        )
+
     with pytest.raises(ClinicaDLArgumentError):
         CapsDataset(caps_dir, T1Linear(use_uncropped_image=True), data=data, label=0)
     caps_dataset = CapsDataset(
@@ -559,6 +571,19 @@ def test__getitem__():
     assert out_sample.label == 2.0
     with pytest.raises(IndexError):
         caps_dataset[2]
+
+    caps_dataset = CapsDataset(
+        caps_dir,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=data,
+        label="category",
+    )
+    caps_dataset.read_tensor_conversion("pet_ref")
+    assert caps_dataset.label_dict == {"A": 0, "C": 1}
+    out_sample = caps_dataset[0]
+    out_sample.label == 0
 
     # additional info
     caps_dataset = CapsDataset(

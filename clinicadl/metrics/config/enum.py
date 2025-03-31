@@ -27,10 +27,17 @@ class ImplementedMetric(str, Enum):
 
     @classmethod
     def _missing_(cls, value):
-        raise ValueError(
-            f"{value} is not implemented. Implemented metrics are: "
-            + ", ".join([repr(m.value) for m in cls])
-        )
+        if value not in cls:
+            raise ValueError(
+                f"{value} is not implemented. Implemented metrics are: "
+                + ", ".join([repr(m.value) for m in cls])
+            )
+        return False
+
+
+class Optimum(str, Enum):
+    MIN = "min"
+    MAX = "max"
 
 
 class Reduction(str, Enum):
