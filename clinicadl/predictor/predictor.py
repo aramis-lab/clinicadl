@@ -12,7 +12,7 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
 from clinicadl.losses.config import LossConfig
-from clinicadl.maps.maps_reader import DataGroup, MapsReader
+from clinicadl.maps.maps import Maps
 from clinicadl.metrics import (
     ImplementedMetric,
     get_metric_config,

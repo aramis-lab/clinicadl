@@ -5,7 +5,7 @@ cfgv==3.4.0
 charset-normalizer==3.4.1
 click==8.1.8
 click-option-group==0.5.6
--e git+ssh://git@github.com/camillebrianceau/clinicadl.git@c7a82b2418b0f8b3a77003b1a9dfa39eff78f121#egg=clinicadl
+-e git+ssh://git@github.com/camillebrianceau/clinicadl.git@502aa002312e79f238d3608cacc04fe34f2b7d33#egg=clinicadl
 coverage==7.6.10
 Deprecated==1.2.15
 distlib==0.3.9
