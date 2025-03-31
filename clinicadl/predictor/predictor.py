@@ -11,7 +11,6 @@ from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
-from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.experiment_manager.maps_reader import DataGroup, MapsReader
 from clinicadl.losses.config import LossConfig
 from clinicadl.metrics import (
@@ -84,7 +83,7 @@ class Predictor:
         metrics.reset()
 
         with torch.no_grad():
-            for batch, data in enumerate(dataloader):
+            for batch_idx, data in enumerate(dataloader):
                 ############
                 images = data.get_images().to(self.comp.device)
                 labels = data.get_labels().to(self.comp.device)

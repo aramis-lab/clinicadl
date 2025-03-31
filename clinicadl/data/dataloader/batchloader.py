@@ -57,6 +57,6 @@ class BatchLoader(list):
             return torch.cat(list_, dim=0).unsqueeze(1)
         else:
             return torch.tensor(
-                [sample.label if sample.label else sample.sample for sample in self],
+                [sample.label for sample in self],
                 dtype=torch.float32,
             ).unsqueeze(1)  # TODO: check torch.long
