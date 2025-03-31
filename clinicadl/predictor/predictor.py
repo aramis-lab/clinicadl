@@ -11,8 +11,8 @@ from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
-from clinicadl.experiment_manager.maps import Maps
 from clinicadl.losses.config import LossConfig
+from clinicadl.maps.maps import Maps
 from clinicadl.metrics import (
     ImplementedMetric,
     get_metric_config,

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.experiment_manager import ExperimentManager
+from clinicadl.maps import ExperimentManager
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer import Trainer
 

@@ -12,7 +12,7 @@ from torch.amp.autocast_mode import autocast
 from torch.amp.grad_scaler import GradScaler
 from torch.nn.parallel import DistributedDataParallel
 
-from clinicadl.experiment_manager.maps import Maps
+from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config.enum import Optimum
 from clinicadl.metrics.config.factory import create_metric_config
 from clinicadl.metrics.metrics import Metrics

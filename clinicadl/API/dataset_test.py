@@ -12,8 +12,8 @@ from clinicadl.data.datatypes.preprocessing import (
     T1Linear,
 )
 from clinicadl.data.datatypes.preprocessing.pet import SUVRReferenceRegion
-from clinicadl.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
+from clinicadl.maps import ExperimentManager
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.factory import (
     ConvEncoderOptions,
