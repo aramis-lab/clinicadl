@@ -798,7 +798,7 @@ class TensorConversion:
             ):  # ensure no transform has been saved in old .pt files
                 raise ClinicaDLTensorConversionError(
                     "'save_transforms' is set to False, but some transforms have already been saved "
-                    f"in old tensor files associated to {self._currently_reading}."
+                    f"in old tensor files associated to '{self._currently_reading}'."
                 )
         self._compare_individual_masks(
             conversion_info, match_exactly=True
@@ -832,7 +832,7 @@ class TensorConversion:
         if old_conversion.preprocessing != self.preprocessing:
             raise ClinicaDLTensorConversionError(
                 "The preprocessing mentioned in 'json_path' does not match the current "
-                f"preprocessing. In {self._currently_reading}, got {old_conversion.preprocessing}, "
+                f"preprocessing. In '{self._currently_reading}', got {old_conversion.preprocessing}, "
                 f"whereas current preprocessing is {self.preprocessing}"
             )
 
@@ -844,7 +844,7 @@ class TensorConversion:
             if not isinstance(transform, TransformConfig):
                 raise ClinicaDLTensorConversionError(
                     f"Custom transforms have been used during the conversion associated to "
-                    f"{self._currently_reading}, e.g.: '{transform}'\n"
+                    f"'{self._currently_reading}', e.g.: '{transform}'.\n"
                     "ClinicaDL cannot read such custom transforms. For ClinicaDL to be able "
                     "to read tensor conversion json files, use only transforms implemented in "
                     "ClinicaDL (see our documentation to know these transforms).\n"
@@ -856,8 +856,8 @@ class TensorConversion:
             if not isinstance(transform, TransformConfig):
                 raise ClinicaDLTensorConversionError(
                     f"Custom transforms have been passed to CapsDataset, "
-                    f"e.g.: {transform}\n"
-                    f"ClinicaDL cannot compare such custom transforms to those in {self._currently_reading}. "
+                    f"e.g.: '{transform}'.\n"
+                    f"ClinicaDL cannot compare such custom transforms to those in '{self._currently_reading}'. "
                     "For ClinicaDL to be able to compare the current transforms to those used during "
                     "tensor conversion, use only transforms implemented in "
                     "ClinicaDL (see our documentation to know these transforms).\n"
@@ -866,9 +866,9 @@ class TensorConversion:
 
         if old_conversion.transforms != caps_image_transforms:
             raise ClinicaDLTensorConversionError(
-                f"The image transforms found in {self._currently_reading} does not match those passed "
-                f"in the CapsDataset. Got respectively {old_conversion.transforms}\n"
-                f"and {caps_image_transforms}"
+                f"The image transforms found in '{self._currently_reading}' does not match those passed "
+                f"in the CapsDataset. Got respectively '{old_conversion.transforms}'\n"
+                f"and '{caps_image_transforms}'"
             )
 
     def _compare_individual_masks(
@@ -894,7 +894,7 @@ class TensorConversion:
             if len(sym_diff) > 0:
                 raise ClinicaDLTensorConversionError(
                     f"There is a mismatch between image-specific masks in the current CapsDataset "
-                    f"({individual_masks_in_caps}) and those converted in {self._currently_reading} "
+                    f"({individual_masks_in_caps}) and those converted in '{self._currently_reading}' "
                     f"({old_conversion.individual_masks})."
                 )
         else:
@@ -904,7 +904,7 @@ class TensorConversion:
             if len(masks_not_converted) > 0:
                 raise ClinicaDLTensorConversionError(
                     "Some image-specific masks have not been converted by the conversion "
-                    f"associated to {self._currently_reading}: {masks_not_converted}"
+                    f"associated to '{self._currently_reading}': {masks_not_converted}"
                 )
 
     def _compare_common_masks(self, old_conversion: TensorConversionInfo) -> None:
@@ -919,7 +919,7 @@ class TensorConversion:
         )
         if len(masks_not_converted) > 0:
             raise ClinicaDLTensorConversionError(
-                f"Some masks have not been converted by the conversion associated to {self._currently_reading}: "
+                f"Some masks have not been converted by the conversion associated to '{self._currently_reading}': "
                 f"{masks_not_converted}"
             )
 
@@ -933,7 +933,7 @@ class TensorConversion:
             if info not in old_conversion.also:
                 raise ClinicaDLTensorConversionError(
                     f"You passed '{info}' in 'load_also', but no such information was stored during "
-                    f"the conversion associated to {self._currently_reading}"
+                    f"the conversion associated to '{self._currently_reading}'"
                 )
 
     def _compare_also(self, old_conversion: TensorConversionInfo) -> None:
@@ -951,14 +951,14 @@ class TensorConversion:
         if len(sym_diff) > 0:
             raise ClinicaDLTensorConversionError(
                 f"There is a mismatch between the additional information in the CapsDataset "
-                f"({list(current_also.keys())}) and that in '.pt' files saved with {self._currently_reading} "
+                f"({list(current_also.keys())}) and that in '.pt' files saved with '{self._currently_reading}' "
                 f"({list(old_conversion.also.keys())})."
             )
         for info in current_also:
             if current_also[info] != old_conversion.also[info]:
                 raise ClinicaDLTensorConversionError(
                     "There is a mismatch between the additional information in the CapsDataset "
-                    f"and that in '.pt' files saved with {self._currently_reading}: "
+                    f"and that in '.pt' files saved with '{self._currently_reading}': "
                     f"'{info}' is of type '{current_also[info]}' in the current CapsDataset "
                     f"and of type '{old_conversion.also[info]}' in '.pt' files."
                 )
@@ -978,7 +978,7 @@ class TensorConversion:
         if len(not_converted) > 0:
             error_msg = (
                 f"Some (participant, session) have not been converted with the conversion "
-                f"mentioned in {self._currently_reading}:\n"
+                f"mentioned in '{self._currently_reading}':\n"
             )
             for participant, session in not_converted:
                 error_msg += f"   ({participant}, {session})\n"
