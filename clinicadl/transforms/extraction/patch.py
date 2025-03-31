@@ -6,10 +6,9 @@ import torchio as tio
 from pydantic import NonNegativeInt, PositiveInt, computed_field
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.typing import PathType
 
-from .base import Extraction, Sample
+from .base import Extraction, ExtractionMethod, Sample
 
 logger = getLogger("clinicadl.transforms.extraction.patch")
 

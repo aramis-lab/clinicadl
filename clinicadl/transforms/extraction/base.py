@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from enum import Enum
 from logging import getLogger
 from typing import Any, Optional, Tuple, Union
 
@@ -13,6 +14,14 @@ from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.transforms.extraction.base")
+
+
+class ExtractionMethod(str, Enum):
+    """Possible extraction methods."""
+
+    IMAGE = "image"
+    SLICE = "slice"
+    PATCH = "patch"
 
 
 class Sample(ClinicaDLConfig, ABC):

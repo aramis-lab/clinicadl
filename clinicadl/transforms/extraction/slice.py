@@ -13,13 +13,10 @@ from pydantic import (
 from typing_extensions import Self
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.enum import (
-    ExtractionMethod,
-    SliceDirection,
-)
+from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.typing import PathType
 
-from .base import Extraction, Sample
+from .base import Extraction, ExtractionMethod, Sample
 
 logger = getLogger("clinicadl.extraction.slice")
 
