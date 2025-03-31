@@ -10,8 +10,8 @@ from clinicadl.data.datatypes.preprocessing import (
     PETLinear,
     T1Linear,
 )
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
 from clinicadl.losses.config import CrossEntropyLossConfig
+from clinicadl.maps.experiment_manager import ExperimentManager
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
 from clinicadl.optim.optimizers.config import AdamConfig
