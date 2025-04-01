@@ -58,7 +58,7 @@ class SplitDir(Directory):
     @property
     def split_json(self) -> Path:
         """Returns the path to the `split.json` file storing the split configuration."""
-        return self.path / (SPLIT + JSON)
+        return (self.path / SPLIT).with_suffix(JSON)
 
     def create(self, split: Split) -> None:
         """Creates the directory structure for the split and initializes required files.
@@ -116,7 +116,7 @@ class TrainingLogs(Directory):
 
     @property
     def training_tsv(self) -> Path:
-        return self.path / (TRAINING + TSV)
+        return (self.path / TRAINING).with_suffix(TSV)
 
 
 class TmpDir(Directory):
@@ -139,8 +139,8 @@ class TmpDir(Directory):
 
     @property
     def checkpoint(self) -> Path:
-        return self.path / (CHECKPOINT + PTH + TAR)
+        return (self.path / CHECKPOINT).with_suffix(PTH).with_suffix(TAR)
 
     @property
     def optimizer(self) -> Path:
-        return self.path / (OPTIMIZER + PTH + TAR)
+        return (self.path / OPTIMIZER).with_suffix(PTH).with_suffix(TAR)

@@ -38,15 +38,15 @@ class BestMetricDataGroup(Directory):
 
     @property
     def description_log(self) -> Path:
-        return self.path / (DESCRIPTION + LOG)
+        return (self.path / DESCRIPTION).with_suffix(LOG)
 
     @property
     def metrics_tsv(self) -> Path:
-        return self.path / (METRICS + TSV)
+        return (self.path / METRICS).with_suffix(TSV)
 
     @property
     def prediction_tsv(self) -> Path:
-        return self.path / (PREDICTIONS + TSV)
+        return (self.path / PREDICTIONS).with_suffix(TSV)
 
     @property
     def caps_output(self) -> Path:
@@ -115,7 +115,7 @@ class BestMetric(Directory):
 
     @property
     def model(self) -> Path:
-        return self.path / (MODEL + PTH + TAR)
+        return (self.path / MODEL).with_suffix(PTH).with_suffix(TAR)
 
     def create(self, split: Split) -> None:
         """

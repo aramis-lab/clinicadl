@@ -78,27 +78,27 @@ class Maps(Directory):
     @property
     def train_val_tsv(self) -> Path:
         """Returns the path to the `train+validation.tsv` file."""
-        return self.path / f"{TRAIN}+{VALIDATION}{TSV}"
+        return (self.path / f"{TRAIN}+{VALIDATION}").with_suffix(TSV)
 
     @property
     def maps_json(self) -> Path:
         """Returns the path to the `maps.json` configuration file."""
-        return self.path / (MAPS + JSON)
+        return (self.path / MAPS).with_suffix(JSON)
 
     @property
     def model_json(self) -> Path:
         """Returns the path to the `model.json` configuration file."""
-        return self.path / (MODEL + JSON)
+        return (self.path / MODEL).with_suffix(JSON)
 
     @property
     def computational_json(self) -> Path:
         """Returns the path to the `computational.json` configuration file."""
-        return self.path / (COMPUTATIONAL + JSON)
+        return (self.path / COMPUTATIONAL).with_suffix(JSON)
 
     @property
     def optimization_json(self) -> Path:
         """Returns the path to the `optimization.json` configuration file."""
-        return self.path / (OPTIMIZATION + JSON)
+        return (self.path / OPTIMIZATION).with_suffix(JSON)
 
     def create_data_group(self, name: str, dataset: CapsDataset) -> None:
         """
