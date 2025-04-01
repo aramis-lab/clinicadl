@@ -198,4 +198,4 @@ class Maps(Directory):
             return json.loads(x)
 
     def caps_dir(self) -> Path:  # TODO: to change !
-        return self.read_maps()["caps_dir"]
+        return self.read_maps().get("caps_dir", Path(""))
