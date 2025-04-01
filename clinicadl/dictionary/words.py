@@ -1,4 +1,4 @@
-AFFINE = "affine"
+giut AFFINE = "affine"
 AGE = "age"
 AUGMENTATION = "augmentation"
 BASELINE = "baseline"
@@ -32,6 +32,7 @@ NAME = "name"
 OBJECT = "object"
 OTHER = "other"
 OPTIMIZATION = "optimization"
+OTHER = "other"
 OPTIMIZER = "optimizer"
 PARTICIPANT = "participant"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
