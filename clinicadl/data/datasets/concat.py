@@ -106,9 +106,10 @@ class ConcatDataset(TorchConcatDataset):
         ignore_spacing: bool = False,
         raise_warnings: bool = True,
     ):
-        super().__init__(datasets)
-        self.datasets: list[CapsDataset]
+        self.datasets = datasets
         self._check_conversion()
+        super().__init__(datasets)
+
         if raise_warnings:
             self._check_dimensionality()
         if not ignore_spacing:
@@ -173,7 +174,7 @@ class ConcatDataset(TorchConcatDataset):
             participants_sessions = dataset.get_participant_session_couples()
             participants_sessions = data.index.intersection(participants_sessions)
 
-            for participant_session in in_a_df:
+            for participant_session in participants_sessions:
                 in_a_df[participant_session] = True
 
             sub_data = data.loc[participants_sessions]
@@ -327,7 +328,7 @@ class ConcatDataset(TorchConcatDataset):
         _2d = False
         _3d = False
         for dataset in self.datasets:
-            extraction = dataset.extraction.extract_method
+            extraction = dataset.extraction
             if isinstance(extraction, Slice) and extraction.squeeze:
                 _2d = True
             else:
