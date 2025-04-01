@@ -81,21 +81,13 @@ class Transforms(ClinicaDLConfig):
         )
     """
 
-    extraction: Optional[Extraction] = None
+    extraction: Extraction = Image()
     image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
     _image_transforms_processed: list[Transform] = []
     _sample_transforms_processed: list[Transform] = []
     _augmentations_processed: list[Transform] = []
-
-    @field_validator("extraction", mode="after")
-    @classmethod
-    def convert_extraction(cls, v):
-        """If 'extraction' is None, changes it to Image."""
-        if v is None:
-            return Image()
-        return v
 
     @model_validator(mode="after")
     def check_transforms(self):
