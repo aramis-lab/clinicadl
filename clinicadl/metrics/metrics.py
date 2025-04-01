@@ -3,32 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Optional, Union
 
-import numpy as np
 import pandas as pd
-import torch
 from monai.metrics.metric import Metric as MonaiMetric
-from monai.metrics.regression import MAEMetric, RMSEMetric, SSIMMetric
-from pydantic import field_validator, model_validator
-from torch.amp.autocast_mode import autocast
 
-from clinicadl.losses import (
-    ImplementedLoss,
-    get_loss_function_config,
-    get_loss_function_from_config,
-)
 from clinicadl.losses.utils import Loss
 from clinicadl.metrics import ImplementedMetric
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.config.base import LossMetricConfig
-from clinicadl.metrics.config.classification import (
-    ConfusionMatrixMetricConfig,
-    ROCAUCMetricConfig,
-)
 from clinicadl.metrics.factory import get_metric_config, get_metric_from_config
-from clinicadl.networks.factory import ImplementedNetwork, get_network_config
-from clinicadl.utils.computational.computational import ComputationalConfig
-from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.exceptions import ClinicaDLMetricsError
 
 MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
 

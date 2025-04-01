@@ -312,16 +312,23 @@ class Trainer:
             metric_path.mkdir(parents=True, exist_ok=True)
 
             optimum = create_metric_config(metric).optimum()
-            if self.epoch == 0:
-                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
-            elif optimum == Optimum.MAX and (
-                self.metrics.val.get_value(self.epoch, metric)
-                > self.metrics.val.get_value(self.epoch - 1, metric)
-            ):
-                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
-            elif optimum == Optimum.MIN and (
-                self.metrics.val.get_value(self.epoch, metric)
-                < self.metrics.val.get_value(self.epoch - 1, metric)
+
+            if (
+                self.epoch == 0
+                or (
+                    optimum == Optimum.MAX
+                    and (
+                        self.metrics.val.get_value(self.epoch, metric)
+                        > self.metrics.val.get_value(self.epoch - 1, metric)
+                    )
+                )
+                or (
+                    optimum == Optimum.MIN
+                    and (
+                        self.metrics.val.get_value(self.epoch, metric)
+                        < self.metrics.val.get_value(self.epoch - 1, metric)
+                    )
+                )
             ):
                 shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
 

@@ -69,7 +69,7 @@ class Predictor:
 
     def validate(
         self,
-        dataloader: DataLoader,
+        dataloader: DataLoader[CapsDataset],
         metrics: GroupMetrics,
         epoch: int = 0,
     ):
@@ -278,7 +278,7 @@ class Predictor:
 
         if (
             dataset_test.caps_reader.input_directory.resolve()
-            == "self.reader.get_config().resolve()"
+            == self.maps.caps_dir().resolve()
         ):  # TODO: add a function to get the caps dir of the czps used for the training from maps reader
             df_train_val = tsv_to_df(self.maps.train_val_tsv)
             df_test = dataset_test.df
