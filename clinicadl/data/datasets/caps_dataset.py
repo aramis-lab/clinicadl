@@ -23,13 +23,12 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.transforms.extraction import Sample
+from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import (
     check_df,
     tsv_to_df,
 )
-from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
@@ -401,6 +400,7 @@ class CapsDataset(Dataset):
 
         dataset = deepcopy(self)
         dataset.df = subset_df
+        dataset._map_indices_to_images()
 
         return dataset
 

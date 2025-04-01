@@ -1,9 +1,9 @@
-.. _caps_datasets:
+.. _caps_dataset:
 
-CAPS datasets
-=============
+CapsDataset
+===========
 
-``CapsDataset`` (or its derivatives) is the object that you will always use to
+``CapsDataset`` is the object that you will always use to
 manipulate your neuroimaging data stored in a `CAPS <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/>`_
 structure.
 
@@ -73,8 +73,8 @@ again the next time you will instantiate your ``CapsDataset``. In this case, use
     the tensor conversion with certain transforms but the current ``CapsDataset`` has been created with different
     transforms, this will raise an error.
 
-CapsDataset
------------
-
 .. autoclass:: clinicadl.data.datasets.CapsDataset
     :members:
+
+See also: 
+    - :ref:`concat`

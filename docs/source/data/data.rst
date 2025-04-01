@@ -1,7 +1,7 @@
 .. _data:
 
 Data
-=====
+====
 
 At the moment, ClinicaDL only works with data organized in a
 `CAPS <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/>`_
@@ -24,6 +24,7 @@ when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice ex
 .. toctree::
     :maxdepth: 1
 
-    caps_datasets
+    caps_dataset
+    concat_dataset
     caps_datatypes
     ../transforms/transforms
