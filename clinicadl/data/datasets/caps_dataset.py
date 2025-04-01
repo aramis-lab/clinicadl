@@ -547,7 +547,7 @@ class CapsDataset(Dataset):
             self._count_samples()
         return int(self.df[N_SAMPLES].sum())
 
-    def __getitem__(self, idx: int) -> Sample:
+    def __getitem__(self, idx: int) -> DataPoint:
         """
         Retrieves the sample at a given index.
 
@@ -558,7 +558,7 @@ class CapsDataset(Dataset):
 
         Returns
         -------
-        Sample
+        DataPoint
             A structured output containing the processed data and metadata.
 
         Raises
