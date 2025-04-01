@@ -218,7 +218,7 @@ class CapsDataset(Dataset):
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
-        self._tensor_conversion_info: TensorConversionInfo = None
+        self._tensor_conversion_info: Optional[TensorConversionInfo] = None
 
         self.common_masks_tensors: list[Mask] = []
 
