@@ -795,7 +795,7 @@ class CapsDataset(Dataset):
         )
 
         # other images/masks/info
-        loaad_also = self._tensor_conversion_info.also
+        load_also = self._tensor_conversion_info.also
         individual_masks_name = [mask.name for mask in self.individual_masks]
         for name, value in images_dict.items():
             if name not in {IMAGE, LABEL, AFFINE}:
@@ -803,13 +803,13 @@ class CapsDataset(Dataset):
                     data.add_mask(
                         tio.LabelMap(tensor=value, affine=images_dict[AFFINE]), name
                     )
-                elif name in loaad_also:
-                    if loaad_also[name] == IMAGE:
+                elif name in load_also:
+                    if load_also[name] == IMAGE:
                         data.add_image(
                             tio.ScalarImage(tensor=value, affine=images_dict[AFFINE]),
                             name,
                         )
-                    elif loaad_also[name] == MASK:
+                    elif load_also[name] == MASK:
                         data.add_mask(
                             tio.LabelMap(tensor=value, affine=images_dict[AFFINE]), name
                         )
