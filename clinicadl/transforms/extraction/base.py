@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from logging import getLogger
-from typing import Any, Optional, Tuple, Union
 
-import numpy as np
 import torch
 import torchio as tio
 from pydantic import computed_field
@@ -15,49 +13,34 @@ from clinicadl.utils.typing import PathType
 logger = getLogger("clinicadl.transforms.extraction.base")
 
 
-class Sample(ClinicaDLConfig, ABC):
+class Sample(DataPoint):
     """Abstract class for outputs of CapsDataset."""
 
-    sample: torch.Tensor
-    affine: np.ndarray
-    participant: str
-    session: str
-    image_path: str
-    label: Optional[Union[float, int, torch.Tensor]]
+    image_path: PathType
+    extraction: str
+    sample_index: int
 
-    @computed_field
-    @property
-    @abstractmethod
-    def extraction(self) -> str:
-        """The extraction method."""
-
-    @computed_field
-    @property
-    @abstractmethod
-    def id(self) -> int:
-        """The index of the sample."""
-
-    def get_datapoint(self) -> DataPoint:
+    def get_tensors(self) -> dict[str, torch.Tensor]:
         """
-        To get the sample as a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`.
+        To get all the images and masks as 4D :py:class:`torch.Tensor`
+        (with one channel dimension).
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            The tensors with their names.
         """
-        return DataPoint(
-            image=tio.ScalarImage(self.sample, affine=self.affine),
-            label=tio.LabelMap(self.label, affine=self.affine)
-            if isinstance(self.label, torch.Tensor)
-            else self.label,
-            participant=self.participant,
-            session=self.session,
-            image_path=self.image_path,
-        )
+        tensors = {}
+        image: tio.Image
+        for name, image in self.get_images_dict(intensity_only=False).items():
+            tensors[name] = image.tensor
+
+        return tensors
 
 
 class Extraction(ClinicaDLConfig, ABC):
     """
-    Abstract base class for image extraction procedures.
-
-    This class defines the common structure and methods for extracting data from
-    neuroimaging files (such as NIfTI) into a tensor representation for further processing.
+    Abstract base class for sample extractions.
     """
 
     @computed_field
@@ -66,11 +49,10 @@ class Extraction(ClinicaDLConfig, ABC):
     def extract_method(self) -> str:
         """The method to be used for the extraction process (Image, Patch, Slice)."""
 
-    def extract_sample(
-        self, data_point: DataPoint, sample_index: int
-    ) -> Tuple[DataPoint, Any]:
+    @abstractmethod
+    def extract_sample(self, data_point: DataPoint, sample_index: int) -> Sample:
         """
-        Extracts a sample from a DataPoint object.
+        Abstract main public method to extract a sample from a DataPoint object.
 
         Parameters
         ----------
@@ -81,39 +63,19 @@ class Extraction(ClinicaDLConfig, ABC):
 
         Returns
         -------
-        DataPoint
-            A new DataPoint with the extracted samples for each image
-            present in the original `data_point`. The sample extracted from an
+        Sample
+            A new DataPoint with the extracted sample for each image
+            present in the original DataPoint. The sample extracted from an
             image is accessible via the same name as was the image in the original
-            `data_point`.
-        Any
-            A description of the sample (e.g. slice position or patch index).
+            DataPoint.
+            The DataPoint also contains some new information about the extraction
+            (e.g. the sample index).
 
         Raises
         ------
         IndexError
-            If 'sample_index' is greater or equal to the number of samples in the images.
+            If ``sample_index`` is greater or equal to the number of samples in the images.
         """
-        extracted_data_point = deepcopy(data_point)
-
-        image: tio.Image
-        for name, image in data_point.get_images_dict(intensity_only=False).items():
-            sample = self._extract_tensor_sample(image.tensor, sample_index)
-
-            if isinstance(image, tio.ScalarImage):
-                extracted_data_point.add_image(
-                    tio.ScalarImage(tensor=sample, affine=image.affine), name
-                )
-            elif isinstance(image, tio.LabelMap):
-                extracted_data_point.add_image(
-                    tio.LabelMap(tensor=sample, affine=image.affine), name
-                )
-
-        description = self._get_sample_description(
-            data_point.image.tensor, sample_index
-        )
-
-        return extracted_data_point, description
 
     @abstractmethod
     def num_samples_per_image(self, image: torch.Tensor) -> int:
@@ -129,36 +91,36 @@ class Extraction(ClinicaDLConfig, ABC):
         -------
         int
             The number of samples in the image.
-
-        Notes
-        -----
-        This method needs to be implemented in the subclasses.
         """
 
-    @abstractmethod
-    def format_output(
-        self,
-        data_point: DataPoint,
-        image_path: PathType,
-        description: Any,
-    ) -> Sample:
+    def _extract_datapoint_sample(
+        self, data_point: DataPoint, sample_index: int
+    ) -> DataPoint:
         """
-        Puts all the output information in a Sample object.
+        Extracts a sample from a DataPoint object, i.e. performs extraction on all
+        the images and masks of the DataPoint.
 
-        Parameters
-        ----------
-        data_point : DataPoint
-            the `DataPoint` object associated to the sample.
-        image_path : PathType
-            the path of the base image, from which the sample was extracted.
-        description : Any
-            a description of the sample (e.g. slice position or patch index).
-
-        Returns
-        -------
-        Sample
-            a Sample object with all the relevant information on the sample.
+        Raises
+        ------
+        IndexError
+            If ``sample_index`` is greater or equal to the number of samples in the images.
         """
+        extracted_data_point = deepcopy(data_point)
+
+        image: tio.Image
+        for name, image in extracted_data_point.get_images_dict(
+            intensity_only=False
+        ).items():
+            try:
+                sample = self._extract_tensor_sample(image.tensor, sample_index)
+            except IndexError as exc:
+                raise IndexError(
+                    f"An error occurred while extracting sample '{sample_index}' from image '{name}' of ({data_point.participant}, {data_point.session})."
+                ) from exc
+
+            image.set_data(sample)
+
+        return extracted_data_point
 
     @abstractmethod
     def _extract_tensor_sample(
@@ -174,9 +136,3 @@ class Extraction(ClinicaDLConfig, ABC):
         IndexError
             If 'sample_index' is greater or equal to the number of samples in the image.
         """
-
-    @abstractmethod
-    def _get_sample_description(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> Any:
-        """A description of the sample (e.g. slice position or patch index)."""

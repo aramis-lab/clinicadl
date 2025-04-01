@@ -27,6 +27,7 @@ MODEL = "model"
 N_SAMPLES = "n_samples"
 NAME = "name"
 OBJECT = "object"
+OTHER = "other"
 OPTIMIZER = "optimizer"
 PARTICIPANT = "participant"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID

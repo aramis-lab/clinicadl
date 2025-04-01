@@ -7,6 +7,7 @@
             * shape: (3, 3, 3)
             * label: "seg"
             * masks: "brain"
+            * additional info: "custom_image" (image), "custom_mask" (mask), "age" (float)
         * tensors:
             * shape: (2, 2, 2)
     * ses-M003:

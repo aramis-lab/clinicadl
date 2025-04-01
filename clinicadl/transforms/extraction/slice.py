@@ -3,7 +3,6 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torchio as tio
 from pydantic import (
     NonNegativeInt,
     PositiveInt,
@@ -17,7 +16,6 @@ from clinicadl.utils.enum import (
     ExtractionMethod,
     SliceDirection,
 )
-from clinicadl.utils.typing import PathType
 
 from .base import Extraction, Sample
 
@@ -26,38 +24,59 @@ logger = getLogger("clinicadl.extraction.slice")
 
 class SliceSample(Sample):
     """
-    Output of a CapsDataset when slice extraction is performed.
+    Output of a CapsDataset when slice extraction is performed (i.e.
+    when :py:class:`~Slice` is used).
+
+    It is simply a :py:class:`~clinicadl.data.structures.DataPoint`, with
+    additional information on the slice extraction.
 
     Attributes
     ----------
-    sample : torch.Tensor
-       The slice as a PyTorch tensor with 1 channel dimension and
-       2 (``squeeze=True``) or 3 (``squeeze=False``) spatial dimensions.
-    affine : np.ndarray
-        The affine matrix associated to the slice.
+    image : torchio.ScalarImage
+        The slice, as a :py:class:`torchio.ScalarImage`.
+    label : Optional[Union[float, int, torchio.LabelMap]]
+        The label associated to the slice. Can be a ``float`` (regression),
+        an ``int`` (classification), a mask (as a :py:class:`torchio.LabelMap`; for segmentation)
+        or ``None`` if no label (reconstruction). If the label is a mask, slice extraction
+        was also performed on it.
     participant : str
         The participant concerned.
     session : str
         The session concerned.
-    image_path : str
-        The path to the image from which the slice has been extracted.
-    label : Optional[Union[float, int, torch.Tensor]]
-        The potential label associated to the slice.
+    image_path : Union[str, Path]
+        The path to the image.
     slice_position : int
         The position of the slice in the original image.
     slice_direction : SliceDirection
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
         or ``2`` (axial).
+    squeeze : bool
+        Whether the tensors will be squeezed (see :py:meth:`~SliceSample.get_tensors`).
     """
 
-    slice_position: NonNegativeInt
+    slice_position: int
     slice_direction: SliceDirection
+    squeeze: bool
 
-    @computed_field
-    @property
-    def extraction(self) -> str:
-        """The extraction method."""
-        return ExtractionMethod.SLICE.value
+    def get_tensors(self) -> dict[str, torch.Tensor]:
+        """
+        To get all the images and masks as :py:class:`torch.Tensor`.
+
+        If ``squeeze`` was set to ``True`` in :py:class:`~Slice`, the tensors
+        will be 3D (with one channel dimension). Otherwise, they will be 4D, with
+        a dummy dimension.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            The tensors with their names.
+        """
+        tensors = super().get_tensors()
+        if self.squeeze:
+            for name, image in tensors.items():
+                tensors[name] = image.squeeze(self.slice_direction + 1)
+
+        return tensors
 
     @computed_field
     @property
@@ -151,9 +170,7 @@ class Slice(Extraction):
             )
         return self
 
-    def extract_sample(
-        self, data_point: DataPoint, sample_index: int
-    ) -> Tuple[DataPoint, int]:
+    def extract_sample(self, data_point: DataPoint, sample_index: int) -> SliceSample:
         """
         Extracts a slice from a DataPoint.
 
@@ -166,28 +183,39 @@ class Slice(Extraction):
 
         Returns
         -------
-        DataPoint
-            A new DataPoint object with the extracted slices for each image
-            present in the original `data_point`. The slice extracted from an
+        SliceSample
+            A :py:func:`~ImageSample` object with the extracted slices for each image
+            present in the original ``data_point``. The slice extracted from an
             image is accessible via the same name as was the image in the original
-            `data_point`.
-        int
-            The slice position in the original image.
+            ``data_point``.
+            Additional information on the extraction is added.
 
         Raises
         ------
         IndexError
-            If 'slices' or 'discarded_slices' mention slices that are not in the image.
+            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
         IndexError
-            If 'sample_index' is greater or equal to the number of selected slices in the image.
+            If ``sample_index`` is greater or equal to the number of selected slices in the image.
         """
-        return super().extract_sample(data_point, sample_index)
+        slice_position = self._get_slice_position(data_point.image.tensor, sample_index)
+        extracted_datapoint = self._extract_datapoint_sample(data_point, sample_index)
+        sample = SliceSample(
+            **extracted_datapoint,
+            extraction=self.extract_method,
+            sample_index=slice_position,
+            slice_position=slice_position,
+            slice_direction=self.slice_direction,
+            squeeze=self.squeeze,
+        )
+        sample.applied_transforms = extracted_datapoint.applied_transforms
+
+        return sample
 
     def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
         Returns the number of slices that can be extracted from the input image tensor.
 
-        If 'slices', 'discarded_slices' and 'borders' have not been passed, there is no
+        If ``slices``, ``discarded_slices`` and ``borders`` have not been passed, there is no
         slice filtering, so the function will simply output the number of slices in the
         image.
 
@@ -204,54 +232,9 @@ class Slice(Extraction):
         Raises
         ------
         IndexError
-            If 'slices' or 'discarded_slices' mention slices that are not in the image.
+            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
         """
         return self._get_slice_selection(image).sum()
-
-    def format_output(
-        self,
-        data_point: DataPoint,
-        image_path: PathType,
-        description: int,
-    ) -> SliceSample:
-        """
-        Puts all the output information in an SliceSample object.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            the `DataPoint` object associated to the slice.
-        image_path : PathType
-            the path of the image from which the slice is extracted.
-        description : int
-            the position of the slice in the original image.
-
-        Returns
-        -------
-        SliceSample
-            a SliceSample object with the slice (a 2D or 3D tensor with a channel dimension)
-            and all the relevant information on the slice.
-        """
-        slice_ = data_point.image.tensor
-        if self.squeeze:
-            slice_ = slice_.squeeze(self.slice_direction + 1)
-
-        label = data_point.label
-        if isinstance(label, tio.LabelMap):
-            label = label.tensor
-            if self.squeeze:
-                label = label.squeeze(self.slice_direction + 1)
-
-        return SliceSample(
-            sample=slice_,
-            affine=data_point.image.affine,
-            participant=data_point.participant,
-            session=data_point.session,
-            image_path=str(image_path),
-            label=label,
-            slice_position=description,
-            slice_direction=self.slice_direction,
-        )
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
@@ -262,28 +245,19 @@ class Slice(Extraction):
         Raises
         ------
         IndexError
-            If 'slices' or 'discarded_slices' mention slices that are not in the image.
+            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
         IndexError
-            If 'sample_index' is greater or equal to the number of selected slices in the image.
+            If ``sample_index`` is greater or equal to the number of selected slices in the image.
         """
         slice_position = self._get_slice_position(image_tensor, sample_index)
         slice_tensor = self._get_slice(image_tensor, slice_position)
 
-        return slice_tensor.clone()
-
-    def _get_sample_description(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> int:
-        """
-        The sample description for slice extraction is the position of the slice
-        in the original image.
-        """
-        return self._get_slice_position(image_tensor, sample_index)
+        return slice_tensor
 
     def _get_slice_selection(self, image: torch.Tensor) -> np.ndarray[bool]:
         """
-        Returns the slices of an image that can be extracted, depending on 'slices',
-        'discarded_slices' and 'borders'.
+        Returns the slices of an image that can be extracted, depending on ``slices``,
+        ``discarded_slices`` and ``borders``.
         """
         n_slices = image.size(self.slice_direction + 1)
         selection = np.ones(n_slices).astype(bool)
@@ -317,8 +291,8 @@ class Slice(Extraction):
 
     def _get_slice_position(self, image: torch.Tensor, slice_index: int) -> int:
         """
-        Returns the position in the image of 'slice_index'. They may differ as
-        'slice_index' is the index among the selected slices.
+        Returns the position in the image of ``slice_index``. They may differ as
+        ``slice_index`` is the index among the selected slices.
         """
         selection = self._get_slice_selection(image)
         slice_positions = np.arange(len(selection))[selection]
