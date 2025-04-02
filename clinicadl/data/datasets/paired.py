@@ -30,6 +30,9 @@ class PairedDataset(StackDataset):
     but if the second dataset now contains two slices of the images, this will raise an error because the second dataset
     will thus be two times bigger than the first one, and the two datasets cannot be paired.
 
+    A PairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
+    to the number of datasets forming the PairedDataset.
+
     PairedDataset inherits from :py:class:`torch.utils.data.StackDataset`.
 
     To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
@@ -109,6 +112,8 @@ class PairedDataset(StackDataset):
         >>> paired_dataset = PairedDataset([caps_t1, caps_pet])
         >>> len(paired_dataset)
         4
+        >>> len(paired_dataset[0])
+        2
     """
 
     def __init__(
@@ -119,6 +124,7 @@ class PairedDataset(StackDataset):
         self.df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)
         self.datasets: tuple[CapsDataset]
+        self.converted = True  # for compatibility with CapsDataset
 
     def eval(self) -> None:
         """
@@ -234,13 +240,14 @@ class PairedDataset(StackDataset):
                 f"No column named {column} in any DataFrame of the datasets forming the PairedDataset."
             )
         else:
-            for dataset_idx in list_info.keys()[1:]:
-                if list_info[dataset_idx] != list_info[0]:
+            ref_idx = list(list_info.keys())[0]
+            for dataset_idx in list(list_info.keys())[1:]:
+                if list_info[dataset_idx] != list_info[ref_idx]:
                     raise ClinicaDLCAPSError(
                         f"Different values found for '{column}' across the datasets forming the PairedDataset: "
-                        f"'{list_info[0]}' for dataset 0 and '{list_info[dataset_idx]}' for dataset {dataset_idx}."
+                        f"'{list_info[ref_idx]}' for dataset 0 and '{list_info[dataset_idx]}' for dataset {dataset_idx}."
                     )
-            return list_info[0]
+            return list_info[ref_idx]
 
     def get_participant_session_couples(self) -> list[Tuple[str, str]]:
         """
@@ -294,7 +301,7 @@ class PairedDataset(StackDataset):
         Checks that tensor conversion has been performed before pairing.
         """
         for dataset in datasets:
-            if dataset.tensor_conversion.json is None:
+            if not dataset.converted:
                 raise ClinicaDLCAPSError(
                     "Tensor conversion must be performed BEFORE pairing. Please call "
                     "'to_tensors' or 'read_tensor_conversion' for each dataset."
@@ -315,7 +322,7 @@ class PairedDataset(StackDataset):
             dataset.df = dataset.df.sort_values(
                 [PARTICIPANT_ID, SESSION_ID]
             ).reset_index(drop=True)
-            dataset._map_indices_to_images()
+            CapsDataset._map_indices_to_images(dataset.df)
 
         ref_df = datasets[0].df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
         for i, dataset in enumerate(datasets[1:], start=1):
@@ -331,4 +338,4 @@ class PairedDataset(StackDataset):
                     f"{difference}"
                 )
 
-        return ref_df.drop(columns=[N_SAMPLES])
+        return ref_df

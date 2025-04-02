@@ -1,6 +1,6 @@
-import shutil
 import warnings
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import pytest
@@ -13,34 +13,25 @@ from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 FULL_DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t")
-TMP_DIR = Path(__file__).parents[2] / "resources" / "caps_tmp"
 
 
-def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
+def sub_data(
+    participants_sessions: Optional[list[tuple[str, str]]] = None,
+) -> pd.DataFrame:
+    if not participants_sessions:
+        return FULL_DATA
     data = FULL_DATA.set_index(["participant_id", "session_id"])
     data = data.loc[participants_sessions]
     return data.reset_index()
 
 
-def copy_caps():
-    if TMP_DIR.is_dir():
-        shutil.rmtree(TMP_DIR)
-    shutil.copytree(CAPS_DIR, TMP_DIR)
-    Path(TMP_DIR / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
-    Path(TMP_DIR / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
-    Path(TMP_DIR / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
-
-
-def create_caps_datasets(t1_all: bool = False, pet_all: bool = False):
-    if not t1_all:
-        t1_data = sub_data(
-            [
-                ("sub-000", "ses-M000"),
-                ("sub-010", "ses-M003"),
-            ]
-        )
-    else:
-        t1_data = None
+def create_caps_datasets(pet_all: bool = False):
+    t1_data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
     if not pet_all:
         pet_data = sub_data(
             [
@@ -51,16 +42,16 @@ def create_caps_datasets(t1_all: bool = False, pet_all: bool = False):
             ]
         )
     else:
-        pet_data = None
+        pet_data = sub_data()
 
     caps_t1 = CapsDataset(
-        TMP_DIR,
+        CAPS_DIR,
         preprocessing=T1Linear(use_uncropped_image=True),
         data=t1_data,
         transforms=Transforms(extraction=Slice(squeeze=True)),
     )
     caps_pet = CapsDataset(
-        TMP_DIR,
+        CAPS_DIR,
         preprocessing=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
@@ -70,12 +61,11 @@ def create_caps_datasets(t1_all: bool = False, pet_all: bool = False):
 
 
 def test_checks():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_pet.to_tensors("pet_conversion")
+    caps_pet.read_tensor_conversion("pet_spacing-1")
     with pytest.raises(ClinicaDLCAPSError):
         ConcatDataset([caps_t1, caps_pet])
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     with pytest.raises(ClinicaDLCAPSError):
         ConcatDataset([caps_t1, caps_pet])
     with pytest.warns(
@@ -85,13 +75,11 @@ def test_checks():
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         ConcatDataset([caps_t1, caps_pet], ignore_spacing=True, raise_warnings=False)
-    shutil.rmtree(TMP_DIR)
 
 
 def test_get_participant_session_couples():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets(pet_all=True)
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     assert sorted(multimodal_dataset.get_participant_session_couples()) == sorted(
@@ -106,49 +94,41 @@ def test_get_participant_session_couples():
             ("sub-999", "ses-M999"),
         ]
     )
-    shutil.rmtree(TMP_DIR)
 
 
 def test_get_sample_info():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     assert multimodal_dataset.get_sample_info(0, "age") == 1
-    assert multimodal_dataset.get_sample_info(9, "age") == 4
+    assert multimodal_dataset.get_sample_info(7, "age") == 4
     with pytest.raises(IndexError):
-        multimodal_dataset.get_sample_info(10, "age")
-    shutil.rmtree(TMP_DIR)
+        multimodal_dataset.get_sample_info(8, "age")
 
 
 def test_len():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    assert len(multimodal_dataset) == 10
-    shutil.rmtree(TMP_DIR)
+    assert len(multimodal_dataset) == 8
 
 
 def test_describe():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     description = multimodal_dataset.describe()
     assert len(description) == 2
-    assert description[0]["total_samples"] == 6
+    assert description[0]["total_samples"] == 4
     assert description[1]["total_samples"] == 4
-    shutil.rmtree(TMP_DIR)
 
 
 def test_train_val():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     multimodal_dataset.eval()
@@ -157,29 +137,49 @@ def test_train_val():
     multimodal_dataset.train()
     assert not multimodal_dataset.datasets[0].eval_mode
     assert not multimodal_dataset.datasets[1].eval_mode
-    shutil.rmtree(TMP_DIR)
 
 
 def test_subset():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     subset = multimodal_dataset.subset(
         sub_data(
             [
-                ("sub-000", "ses-M000"),
-                ("sub-999", "ses-M099"),
                 ("sub-999", "ses-M999"),
+                ("sub-010", "ses-M003"),
+                ("sub-999", "ses-M099"),
             ]
         )
     )
-    assert len((subset)) == 5
-    assert subset[0].session == "ses-M000"
+    assert len((subset)) == 4
+    assert subset[0].session == "ses-M003"
     assert "T1w" in subset[0].image_path
     assert subset[3].session == "ses-M099"
     assert "pet" in subset[3].image_path
+    assert subset.df.equals(
+        pd.DataFrame(
+            {
+                "dataset_id": [0, 1, 1],
+                "participant_id": ["sub-010", "sub-999", "sub-999"],
+                "session_id": ["ses-M003", "ses-M999", "ses-M099"],
+                "n_samples": [2, 1, 1],
+            }
+        )
+    )
+    assert subset.datasets[0].df.equals(
+        pd.DataFrame(
+            {
+                "participant_id": ["sub-010"],
+                "session_id": ["ses-M003"],
+                "age": [2],
+                "n_samples": [2],
+                "first_idx": [0],
+                "last_idx": [1],
+            }
+        )
+    )
 
     subset = multimodal_dataset.subset(
         sub_data(
@@ -201,21 +201,47 @@ def test_subset():
             )
         )
 
-    shutil.rmtree(TMP_DIR)
+
+def test_df():
+    caps_t1 = CapsDataset(
+        CAPS_DIR,
+        preprocessing=T1Linear(use_uncropped_image=True),
+        data=sub_data([("sub-000", "ses-M000")]),
+        transforms=Transforms(extraction=Slice(squeeze=True)),
+    )
+    caps_pet = CapsDataset(
+        CAPS_DIR,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=sub_data([("sub-999", "ses-M999"), ("sub-000", "ses-M000")]),
+    )
+    caps_t1.read_tensor_conversion("t1_all")
+    caps_pet.read_tensor_conversion("pet_all")
+    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
+    assert multimodal_dataset.df.equals(
+        pd.DataFrame(
+            {
+                "dataset_id": [0, 1, 1],
+                "participant_id": ["sub-000", "sub-999", "sub-000"],
+                "session_id": ["ses-M000", "ses-M999", "ses-M000"],
+                "n_samples": [2, 1, 1],
+            }
+        )
+    )
 
 
 def test__getitem__():
-    copy_caps()
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.to_tensors("t1_conversion")
+    caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
     assert multimodal_dataset[0].participant == "sub-000"
     assert multimodal_dataset[0].session == "ses-M000"
     assert multimodal_dataset[0].extraction == "slice"
-    assert multimodal_dataset[3].participant == "sub-010"
-    assert multimodal_dataset[3].session == "ses-M003"
-    assert multimodal_dataset[3].extraction == "slice"
-    assert multimodal_dataset[6].participant == "sub-100"
-    assert multimodal_dataset[6].session == "ses-M000"
-    assert multimodal_dataset[6].extraction == "image"
+    assert multimodal_dataset[2].participant == "sub-010"
+    assert multimodal_dataset[2].session == "ses-M003"
+    assert multimodal_dataset[2].extraction == "slice"
+    assert multimodal_dataset[4].participant == "sub-100"
+    assert multimodal_dataset[4].session == "ses-M000"
+    assert multimodal_dataset[4].extraction == "image"

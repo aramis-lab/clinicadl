@@ -214,6 +214,11 @@ class CapsDataset(Dataset):
 
         self.common_masks_tensors: list[Mask] = []
 
+    @property
+    def converted(self) -> bool:
+        """Whether tensor conversion has been performed."""
+        return self.tensor_conversion.json is not None
+
     def to_tensors(
         self,
         json_name: str,
@@ -400,7 +405,8 @@ class CapsDataset(Dataset):
 
         dataset = deepcopy(self)
         dataset.df = subset_df
-        dataset._map_indices_to_images()
+        if self.converted:
+            self._map_indices_to_images(dataset.df)
 
         return dataset
 
@@ -539,7 +545,7 @@ class CapsDataset(Dataset):
             If the '.pt' file cannot be found for the (participant, session) associated
             to 'idx'.
         """
-        if self.tensor_conversion.json is None:
+        if not self.converted:
             raise ClinicaDLCAPSError(
                 "Cannot find tensor files. Please convert your CapsDataset "
                 "to tensors using 'to_tensors', or use 'read_tensor_conversion' if it has "
@@ -829,7 +835,7 @@ class CapsDataset(Dataset):
         if self.extraction.extract_method == ExtractionMethod.IMAGE:
             self.df[N_SAMPLES] = 1
         else:
-            if self.tensor_conversion.json is None:
+            if not self.converted:
                 raise ClinicaDLCAPSError(
                     "Needs tensors to compute the length of the dataset (which depends "
                     "on the number of samples per image). Please convert your CapsDataset "
@@ -850,7 +856,7 @@ class CapsDataset(Dataset):
                         participant, session
                     )
 
-        self._map_indices_to_images()
+        self._map_indices_to_images(self.df)
 
     def _get_n_samples(self, participant: str, session: str) -> int:
         """
@@ -868,12 +874,11 @@ class CapsDataset(Dataset):
                 f"An error occurred while counting samples in images of ({participant}, {session})."
             ) from exc
 
-    def _map_indices_to_images(self) -> None:
+    @staticmethod
+    def _map_indices_to_images(df: pd.DataFrame) -> None:
         """
         To have in the dataframe the last and the first sample index
         corresponding to each image.
         """
-        self.df[FIRST_INDEX] = (
-            (self.df[N_SAMPLES].cumsum().shift(1)).fillna(0).astype(int)
-        )
-        self.df[LAST_INDEX] = (self.df[N_SAMPLES].cumsum() - 1).astype(int)
+        df[FIRST_INDEX] = (df[N_SAMPLES].cumsum().shift(1)).fillna(0).astype(int)
+        df[LAST_INDEX] = (df[N_SAMPLES].cumsum() - 1).astype(int)

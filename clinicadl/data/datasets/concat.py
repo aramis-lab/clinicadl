@@ -11,7 +11,7 @@ import pandas as pd
 from torch.utils.data import ConcatDataset as TorchConcatDataset
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
 from clinicadl.transforms.extraction.slice import Slice
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType
@@ -110,6 +110,7 @@ class ConcatDataset(TorchConcatDataset):
         self._check_conversion(datasets)
         super().__init__(datasets)
         self.datasets: list[CapsDataset]
+        self.converted = True  # for compatibility with CapsDataset
 
         if raise_warnings:
             self._check_dimensionality()
@@ -262,7 +263,7 @@ class ConcatDataset(TorchConcatDataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
+        return list(set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID])))
 
     def __getitem__(self, idx: int) -> DataPoint:
         """
@@ -304,7 +305,7 @@ class ConcatDataset(TorchConcatDataset):
         Checks that tensor conversion has been performed before concatenation.
         """
         for dataset in datasets:
-            if dataset.tensor_conversion.json is None:
+            if not dataset.converted:
                 raise ClinicaDLCAPSError(
                     "Tensor conversion must be performed BEFORE concatenation. Please call "
                     "'to_tensors' or 'read_tensor_conversion' for each dataset."
@@ -354,13 +355,18 @@ class ConcatDataset(TorchConcatDataset):
 
     def _concat_dfs(self) -> pd.DataFrame:
         """
-        Concatenates the list of (subject, session) from all the datasets, and drops
-        duplicates.
+        Concatenates the dataframes from all the datasets.
         """
         df = pd.concat(
-            [dataset.df[[PARTICIPANT_ID, SESSION_ID]] for dataset in self.datasets],
-            ignore_index=True,
+            [
+                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
+                for dataset in self.datasets
+            ],
+            keys=range(len(self.datasets)),
+            names=["dataset_id"],
         )
-        df.drop_duplicates(inplace=True)
 
-        return df.reset_index(drop=True)
+        return df.reset_index(
+            drop=False,
+            level=0,
+        ).reset_index(drop=True)

@@ -290,7 +290,7 @@ def test_get_sample_info():
     assert caps_dataset.get_sample_info(0, "age") == 1.0
     with pytest.raises(KeyError):
         caps_dataset.get_sample_info(0, "abc")
-    with pytest.raises(ValueError):
+    with pytest.raises(IndexError):
         caps_dataset.get_sample_info(-1, "age")
     with pytest.raises(IndexError):
         caps_dataset.get_sample_info(2, "abc")
