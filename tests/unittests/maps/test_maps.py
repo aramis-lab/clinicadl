@@ -11,6 +11,6 @@ from clinicadl.utils.exceptions import (
 
 maps_path = Path()
 
+
 def test_good_maps():
     maps = Maps(maps_path)
-    
