@@ -1,4 +1,4 @@
-giut AFFINE = "affine"
+AFFINE = "affine"
 AGE = "age"
 AUGMENTATION = "augmentation"
 BASELINE = "baseline"
