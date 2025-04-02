@@ -24,16 +24,17 @@ logger = getLogger("clinicadl.data.datasets.concat")
 class ConcatDataset(TorchConcatDataset):
     """
     ConcatDataset is a useful class to assemble multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
-    (e.g. from different datasets, or different modalities). It inherits from :py:class:`torch.utils.data.ConcatDataset`.
+    (e.g. from different datasets, or different modalities). ConcatDataset concatenates the input datasets,
+    so the length of the new dataset will be equal to the sum of the lengths of each individual dataset.
 
-    To assemble CapsDatasets, you must previously perform tensor conversion for each dataset (see :ref:`caps_dataset`).
+    ConcatDataset inherits from :py:class:`torch.utils.data.ConcatDataset`.
 
-    The length of the new dataset will be equal to the sum of the lengths of each individual dataset.
+    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
 
     Parameters
     ----------
     datasets : Iterable[CapsDataset]
-         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be concatenated.
+        List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be concatenated.
     ignore_spacing : bool, (optional, default=False)
         Whether to ignore checks made on voxel spacing. If ``False``, ConcatDataset will check that the voxel spacing
         is consistent across all the datasets (if the information is provided in the ``.json`` file of the tensor
@@ -45,7 +46,7 @@ class ConcatDataset(TorchConcatDataset):
     Raises
     ------
     ClinicaDLCAPSError
-        If tensor conversion has not been performed for all the datasets.
+        If tensor conversion has not been performed for all the datasets before concatenating.
     ClinicaDLCAPSError
         If ``ignore_spacing=False`` and some datasets don't have the same voxel spacing.
 
@@ -106,9 +107,9 @@ class ConcatDataset(TorchConcatDataset):
         ignore_spacing: bool = False,
         raise_warnings: bool = True,
     ):
-        self.datasets = datasets
-        self._check_conversion()
+        self._check_conversion(datasets)
         super().__init__(datasets)
+        self.datasets: list[CapsDataset]
 
         if raise_warnings:
             self._check_dimensionality()
@@ -204,7 +205,7 @@ class ConcatDataset(TorchConcatDataset):
         -------
         list[Dict[str, Any]]
             The list of descriptions returned by :py:meth:`CapsDataset.describe
-            <clinicadl.data.datasets.caps_dataset.CapsDataset.describe>`.
+            <clinicadl.data.datasets.CapsDataset.describe>`.
 
         Raises
         ------
@@ -291,30 +292,18 @@ class ConcatDataset(TorchConcatDataset):
         Checks that a sample index is valid.
         """
         if not isinstance(idx, int) or idx < 0:
-            raise ValueError(f"Index must be a non-negative integer, got {idx}.")
+            raise IndexError(f"Index must be a non-negative integer, got {idx}.")
         if idx >= len(self):
             raise IndexError(
                 f"Index out of range, there are only {len(self)} samples in total in the dataset."
             )
 
-    def _concat_dfs(self) -> pd.DataFrame:
-        """
-        Concatenates the list of (subject, session) from all the datasets, and drops
-        duplicates.
-        """
-        df = pd.concat(
-            [dataset.df[[PARTICIPANT_ID, SESSION_ID]] for dataset in self.datasets],
-            ignore_index=True,
-        )
-        df.drop_duplicates(inplace=True)
-
-        return df.reset_index(drop=True)
-
-    def _check_conversion(self) -> None:
+    @staticmethod
+    def _check_conversion(datasets: list[CapsDataset]) -> None:
         """
         Checks that tensor conversion has been performed before concatenation.
         """
-        for dataset in self.datasets:
+        for dataset in datasets:
             if dataset.tensor_conversion.json is None:
                 raise ClinicaDLCAPSError(
                     "Tensor conversion must be performed BEFORE concatenation. Please call "
@@ -362,3 +351,16 @@ class ConcatDataset(TorchConcatDataset):
                             "If you don't care about voxel spacing, set 'ignore_spacing' "
                             "to True to ignore this error."
                         )
+
+    def _concat_dfs(self) -> pd.DataFrame:
+        """
+        Concatenates the list of (subject, session) from all the datasets, and drops
+        duplicates.
+        """
+        df = pd.concat(
+            [dataset.df[[PARTICIPANT_ID, SESSION_ID]] for dataset in self.datasets],
+            ignore_index=True,
+        )
+        df.drop_duplicates(inplace=True)
+
+        return df.reset_index(drop=True)

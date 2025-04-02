@@ -467,7 +467,7 @@ class CapsDataset(Dataset):
             If ``column`` is not in the metadata DataFrame.
         """
         if not isinstance(idx, int) or idx < 0:
-            raise ValueError(f"Index must be a non-negative integer, got {idx}.")
+            raise IndexError(f"Index must be a non-negative integer, got {idx}.")
         if idx >= len(self):
             raise IndexError(
                 f"Index out of range, there are only {len(self)} samples in the dataset."
@@ -531,7 +531,7 @@ class CapsDataset(Dataset):
         ------
         ClinicaDLCAPSError
             If 'to_tensors' or 'read_tensor_conversion' has not been called previously.
-        ValueError
+        InderError
             If 'idx' is not an non-negative integer.
         IndexError
             If 'idx' is greater or equal to the length of the dataset.

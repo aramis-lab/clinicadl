@@ -26,5 +26,6 @@ when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice ex
 
     caps_dataset
     concat_dataset
+    paired_dataset
     caps_datatypes
     ../transforms/transforms
