@@ -363,7 +363,7 @@ class CapsDataset(Dataset):
                 be performed as the tensors saved have not been transformed.
 
             .. warning::
-                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False`.
+                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
         load_also : list[str] (optional, default=[])
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks

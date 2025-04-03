@@ -29,9 +29,12 @@ class UnpairedDataset(Dataset):
     The randomness of the mapping between datasets can be controlled via :py:meth:`~UnpairedDataset.set_epoch`.
     This enables to have different associations for each epoch.
 
-    The size of an UnpairedDataset is set to **the size of its biggest underlying CapsDataset**. To handle datasets
+    The size of an UnpairedDataset is set to **the size of its biggest underlying CapsDataset** if ``oversample=True``,
+    or to **the size of its smallest underlying CapsDataset** if ``oversample=False``. To handle datasets
     with different sizes, UnpairedDataset will randomly replicate some of their samples so that they reach the
-    size of the biggest dataset. This randomness is also controlled via :py:meth:`~UnpairedDataset.set_epoch`.
+    size of the biggest dataset if ``oversample=True``, or will randomly drop some of their samples so that they reach the
+    size of the smallest dataset if ``oversample=False``. This randomness is also controlled via
+    :py:meth:`~UnpairedDataset.set_epoch`.
 
     An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
     to the number of datasets forming the UnpairedDataset.
@@ -46,6 +49,14 @@ class UnpairedDataset(Dataset):
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be stacked.
+    oversample: bool (optional, default=False)
+        Strategy to adopt when the datasets have different sizes:
+
+        - if ``oversample=True``: randomly replicate samples in smaller datasets so that they reach the
+          size of the biggest dataset.
+        - if ``oversample=False``: randomly drop samples in bigger datasets so that all datasets reach the
+          size of the smallest dataset.
+
 
     Raises
     ------
@@ -105,9 +116,9 @@ class UnpairedDataset(Dataset):
         >>> len(caps_pet)
         2
 
-        >>> stacked = UnpairedDataset([caps_t1, caps_pet])
+        >>> stacked = UnpairedDataset([caps_t1, caps_pet], oversample=True)
         >>> len(stacked)
-        4   # = length of the longest dataset
+        4   # = length of the biggest dataset
 
     We can access the random mapping made between the datasets via ``.mapping``:
 
@@ -159,17 +170,28 @@ class UnpairedDataset(Dataset):
         >>> sample = stacked[1]
         >>> sample[0].participant, sample[0].session, sample[0].slice_position
         ('sub-000', 'ses-M000', 1)
+
+    Finally, if ``oversample=False``:
+
+    .. code-block:: python
+
+        >>> stacked = UnpairedDataset([caps_t1, caps_pet], oversample=False)
+        >>> len(stacked)
+        2   # = length of the smallest dataset
+        >>> stacked.mapping
+        dataset_id	0	1
+               idx
+                0	2	0
+                1	3	1
     """
 
-    def __init__(
-        self,
-        datasets: Iterable[CapsDataset],
-    ):
+    def __init__(self, datasets: Iterable[CapsDataset], oversample: bool = False):
         super().__init__()
         self._check_conversion(datasets)
         self.df = self._concat_dfs(list(datasets))
         self.datasets = datasets
         self.epoch = 0
+        self.oversample = oversample
         self.mapping = self._map_datasets()
 
     def eval(self) -> None:
@@ -355,7 +377,7 @@ class UnpairedDataset(Dataset):
         """
         The length of an UnpairedDataset is the length of its biggest dataset.
         """
-        return max(len(dataset) for dataset in self.datasets)
+        return len(self.mapping)
 
     def __getitem__(self, idx: int) -> tuple[Sample]:
         """
@@ -442,25 +464,32 @@ class UnpairedDataset(Dataset):
 
         The randomness of the mapping is entirely controlled by ``self.epoch``.
         """
+        max_len = max(len(dataset) for dataset in self.datasets)
         shuffled_indices = []
         for i, dataset in enumerate(self.datasets):
             indices = pd.Series(range(len(dataset)))
-            indices = indices.reindex(range(len(self)))  # nans appear
+
+            if self.oversample:
+                indices = indices.reindex(range(max_len))  # nans appear
+
             indices = indices.sample(
                 frac=1.0,
-                random_state=self.epoch + i * 1000,
-                ignore_index=True,  # different shuffling for every dataset
+                random_state=self.epoch
+                + i * 1000,  # different shuffling for every dataset
+                ignore_index=True,
             )
             indices = (
-                indices.ffill().bfill().astype(int)
-            )  # fill nans, i.e. duplicate some data to reach len(self)
+                indices.ffill().bfill()  # fill nans, i.e. duplicate some data to reach len(self) when oversample=True
+            )
+
             shuffled_indices.append(indices)
 
-        df = pd.concat(
+        mapping: pd.DataFrame = pd.concat(
             shuffled_indices,
             axis=1,
             keys=range(len(self.datasets)),
             names=[DATASET_ID],
-        )
+        )  # nans appear only if oversample=False
+        mapping = mapping.dropna()
 
-        return df.rename_axis(index="idx")
+        return mapping.astype(int).rename_axis(index="idx")

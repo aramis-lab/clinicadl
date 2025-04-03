@@ -67,29 +67,38 @@ def test_checks():
 
 
 def test_df():
+    ref_df = pd.DataFrame(
+        {
+            (0, "participant_id"): ["sub-010", "sub-000", "nan"],
+            (0, "session_id"): ["ses-M003", "ses-M000", "nan"],
+            (0, "n_samples"): [2, 2, "nan"],
+            (1, "participant_id"): ["sub-010", "sub-999", "sub-000"],
+            (1, "session_id"): ["ses-M003", "ses-M099", "ses-M000"],
+            (1, "n_samples"): [1, 1, 1],
+        }
+    ).rename_axis(columns=["dataset_id", None])
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    assert unpaired.df.fillna("nan").equals(
-        pd.DataFrame(
-            {
-                (0, "participant_id"): ["sub-010", "sub-000", "nan"],
-                (0, "session_id"): ["ses-M003", "ses-M000", "nan"],
-                (0, "n_samples"): [2, 2, "nan"],
-                (1, "participant_id"): ["sub-010", "sub-999", "sub-000"],
-                (1, "session_id"): ["ses-M003", "ses-M099", "ses-M000"],
-                (1, "n_samples"): [1, 1, 1],
-            }
-        ).rename_axis(columns=["dataset_id", None])
-    )
+    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
+    assert unpaired.df.fillna("nan").equals(ref_df)
+    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
+    assert unpaired.df.fillna("nan").equals(ref_df)
 
 
 def test_get_participant_session_couples():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    paired = UnpairedDataset([caps_t1, caps_pet])
+    paired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
+    assert sorted(paired.get_participant_session_couples()) == sorted(
+        [
+            ("sub-010", "ses-M003"),
+            ("sub-999", "ses-M099"),
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    paired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
     assert sorted(paired.get_participant_session_couples()) == sorted(
         [
             ("sub-010", "ses-M003"),
@@ -141,16 +150,18 @@ def test_len():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    paired = UnpairedDataset([caps_t1, caps_pet])
+    paired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
     assert len(paired) == 4
+    paired = UnpairedDataset([caps_t1, caps_pet])
+    assert len(paired) == 3
 
 
 def test_subset():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    paired = UnpairedDataset([caps_t1, caps_pet])
-    subset = paired.subset(
+    unpaired = UnpairedDataset([caps_t1, caps_pet])
+    subset = unpaired.subset(
         sub_data(
             [
                 ("sub-999", "ses-M099"),
@@ -175,7 +186,7 @@ def test_subset():
     with pytest.raises(
         ClinicaDLCAPSError, match="Dataset 0 does not contain any of the*"
     ):
-        subset = paired.subset(
+        subset = unpaired.subset(
             sub_data(
                 [
                     ("sub-999", "ses-M099"),
@@ -184,7 +195,7 @@ def test_subset():
         )
 
     with pytest.raises(ClinicaDLCAPSError, match="Some couples*"):
-        subset = paired.subset(
+        subset = unpaired.subset(
             sub_data(
                 [
                     ("sub-999", "ses-M999"),
@@ -198,7 +209,9 @@ def test_set_epoch():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
+
+    # oversample
+    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
     assert unpaired.mapping.equals(
         pd.DataFrame(
             {
@@ -236,13 +249,52 @@ def test_set_epoch():
         "ses-M003",
     )
 
+    # undersample
+    unpaired = UnpairedDataset([caps_t1, caps_pet])
+    assert unpaired.mapping.equals(
+        pd.DataFrame(
+            {
+                0: [2, 3, 1],
+                1: [2, 1, 0],
+            }
+        ).rename_axis(columns="dataset_id", index="idx")
+    )
+    assert (
+        unpaired[0][0].participant,
+        unpaired[0][0].session,
+        unpaired[0][0].slice_position,
+    ) == ("sub-000", "ses-M000", 0)
+    assert (unpaired[0][1].participant, unpaired[0][1].session) == (
+        "sub-000",
+        "ses-M000",
+    )
+
+    unpaired.set_epoch(1)
+    assert unpaired.mapping.equals(
+        pd.DataFrame(
+            {
+                0: [3, 2, 0],
+                1: [0, 2, 1],
+            }
+        ).rename_axis(columns="dataset_id", index="idx")
+    )
+    assert (
+        unpaired[0][0].participant,
+        unpaired[0][0].session,
+        unpaired[0][0].slice_position,
+    ) == ("sub-000", "ses-M000", 1)
+    assert (unpaired[0][1].participant, unpaired[0][1].session) == (
+        "sub-010",
+        "ses-M003",
+    )
+
 
 def test_unpaired_concat():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     caps_pet_concat = ConcatDataset([caps_pet, caps_pet])
-    unpaired = UnpairedDataset([caps_t1, caps_pet_concat])
+    unpaired = UnpairedDataset([caps_t1, caps_pet_concat], oversample=True)
     assert len(unpaired) == 6
     assert (unpaired[3][1].participant, unpaired[3][1].session) == (
         "sub-000",
