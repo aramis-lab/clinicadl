@@ -8,7 +8,7 @@ At the moment, ClinicaDL only works with data organized in a
 structure.
 
 To manipulate data organized in a CAPS structure, ClinicaDL introduces
-:py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`, which is a :py:class:`torch.utils.data.Dataset`
+:py:class:`~clinicadl.data.datasets.CapsDataset`, which is a :py:class:`torch.utils.data.Dataset`
 with some specificities.
 
 A CAPS structure can contain different kinds of data (e.g. different modalities or
@@ -16,6 +16,10 @@ preprocessings). To define the type of data you want to manipulate, you must pas
 to the ``CapsDataset`` a :ref:`CAPS datatype <caps_datatypes>`, which is a
 representation of these data. ``CapsDataset`` will use this object to get the
 right images in your CAPS structure.
+
+To handle multiple datasets and/or multiple modalities, you may be interested in
+:py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset` or
+:py:class:`~clinicadl.data.datasets.UnpairedDataset`.
 
 Finally, the last ClinicaDL object that needs to be introduced here is :py:class:`Transforms <clinicadl.transforms.Transforms>`.
 This object aims to gather all the transforms that will be applied to the images
