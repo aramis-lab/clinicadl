@@ -155,9 +155,9 @@ def test_subset():
     )
     assert len((subset)) == 4
     assert subset[0].session == "ses-M003"
-    assert "T1w" in subset[0].image_path
+    assert "T1w" in str(subset[0].image_path)
     assert subset[3].session == "ses-M099"
-    assert "pet" in subset[3].image_path
+    assert "pet" in str(subset[3].image_path)
     assert subset.df.equals(
         pd.DataFrame(
             {
@@ -168,16 +168,29 @@ def test_subset():
             }
         )
     )
-    assert subset.datasets[0].df.equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-010"],
-                "session_id": ["ses-M003"],
-                "age": [2],
-                "n_samples": [2],
-                "first_idx": [0],
-                "last_idx": [1],
-            }
+    assert (
+        subset.datasets[0]
+        .df[
+            [
+                "participant_id",
+                "session_id",
+                "age",
+                "n_samples",
+                "first_idx",
+                "last_idx",
+            ]
+        ]
+        .equals(
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-010"],
+                    "session_id": ["ses-M003"],
+                    "age": [2],
+                    "n_samples": [2],
+                    "first_idx": [0],
+                    "last_idx": [1],
+                }
+            )
         )
     )
 

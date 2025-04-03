@@ -15,6 +15,7 @@
     "individual_masks": [],
     "common_masks": [],
     "transforms": [],
+    "also": {},
     "spacing": [
         1,
         1,

@@ -235,3 +235,16 @@ def test_set_epoch():
         "sub-010",
         "ses-M003",
     )
+
+
+def test_unpaired_concat():
+    caps_t1, caps_pet = create_caps_datasets()
+    caps_t1.read_tensor_conversion("t1_all")
+    caps_pet.read_tensor_conversion("pet_all")
+    caps_pet_concat = ConcatDataset([caps_pet, caps_pet])
+    unpaired = UnpairedDataset([caps_t1, caps_pet_concat])
+    assert len(unpaired) == 6
+    assert (unpaired[3][1].participant, unpaired[3][1].session) == (
+        "sub-000",
+        "ses-M000",
+    )

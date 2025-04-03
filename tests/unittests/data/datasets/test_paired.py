@@ -95,7 +95,9 @@ def test_df():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    assert caps_t1.df.equals(
+    assert caps_t1.df[
+        ["participant_id", "session_id", "age", "n_samples", "first_idx", "last_idx"]
+    ].equals(
         pd.DataFrame(
             {
                 "participant_id": ["sub-010", "sub-000"],
@@ -117,7 +119,9 @@ def test_df():
             }
         )
     )
-    assert caps_t1.df.equals(
+    assert caps_t1.df[
+        ["participant_id", "session_id", "age", "n_samples", "first_idx", "last_idx"]
+    ].equals(
         pd.DataFrame(
             {
                 "participant_id": ["sub-000", "sub-010"],
@@ -195,16 +199,29 @@ def test_subset():
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     paired = PairedDataset([caps_t1, caps_pet])
-    assert paired.datasets[0].df.equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-000", "sub-010"],
-                "session_id": ["ses-M000", "ses-M003"],
-                "age": [1, 2],
-                "n_samples": [1, 1],
-                "first_idx": [0, 1],
-                "last_idx": [0, 1],
-            }
+    assert (
+        paired.datasets[0]
+        .df[
+            [
+                "participant_id",
+                "session_id",
+                "age",
+                "n_samples",
+                "first_idx",
+                "last_idx",
+            ]
+        ]
+        .equals(
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-010"],
+                    "session_id": ["ses-M000", "ses-M003"],
+                    "age": [1, 2],
+                    "n_samples": [1, 1],
+                    "first_idx": [0, 1],
+                    "last_idx": [0, 1],
+                }
+            )
         )
     )
 
@@ -225,16 +242,29 @@ def test_subset():
             }
         )
     )
-    assert subset.datasets[0].df.equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-010"],
-                "session_id": ["ses-M003"],
-                "age": [2],
-                "n_samples": [1],
-                "first_idx": [0],
-                "last_idx": [0],
-            }
+    assert (
+        subset.datasets[0]
+        .df[
+            [
+                "participant_id",
+                "session_id",
+                "age",
+                "n_samples",
+                "first_idx",
+                "last_idx",
+            ]
+        ]
+        .equals(
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-010"],
+                    "session_id": ["ses-M003"],
+                    "age": [2],
+                    "n_samples": [1],
+                    "first_idx": [0],
+                    "last_idx": [0],
+                }
+            )
         )
     )
 
@@ -260,3 +290,35 @@ def test__getitem__():
     assert paired[0][1].participant == "sub-000"
     assert paired[0][1].session == "ses-M000"
     assert paired[0][1].extraction == "image"
+
+
+def test_paired_concat():
+    caps_t1, _ = create_caps_datasets()
+    caps_pet_1 = CapsDataset(
+        CAPS_DIR,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=sub_data(
+            [
+                ("sub-010", "ses-M003"),
+            ]
+        ),
+    )
+    caps_pet_2 = CapsDataset(
+        CAPS_DIR,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=sub_data(
+            [
+                ("sub-000", "ses-M000"),
+            ]
+        ),
+    )
+    caps_t1.read_tensor_conversion("t1_all")
+    caps_pet_1.read_tensor_conversion("pet_all")
+    caps_pet_2.read_tensor_conversion("pet_all")
+    caps_pet_concat = ConcatDataset([caps_pet_1, caps_pet_2])
+    paired = PairedDataset([caps_t1, caps_pet_concat])
+    assert (paired[1][1].participant, paired[1][1].session) == ("sub-000", "ses-M000")

@@ -668,7 +668,7 @@ class TensorConversion:
 
         if set(info.keys()) != set(TensorConversionInfo.model_fields.keys()):
             raise ClinicaDLTensorConversionError(
-                f"{json_path} is not a valid tensor conversion file."
+                f"{json_path} is not a valid tensor conversion file. "
                 f"Such a file should contain the keys {list(TensorConversionInfo.model_fields.keys())}."
             )
 
