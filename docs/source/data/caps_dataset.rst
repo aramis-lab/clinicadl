@@ -75,6 +75,7 @@ again the next time you will instantiate your ``CapsDataset``. In this case, use
 
 .. autoclass:: clinicadl.data.datasets.CapsDataset
     :members:
+    :exclude-members: converted
 
 See also: 
     - :ref:`concat`

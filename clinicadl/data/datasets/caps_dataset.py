@@ -188,6 +188,12 @@ class CapsDataset(Dataset):
                 masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
             )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
                                                             # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.data.datasets.ConcatDataset`
+    - :py:class:`~clinicadl.data.datasets.PairedDataset`
+    - :py:class:`~clinicadl.data.datasets.UnpairedDataset`
     """
 
     def __init__(
