@@ -40,6 +40,8 @@ class SliceSample(Sample):
         The participant concerned.
     session : str
         The session concerned.
+    preprocessing : Preprocessing
+        The proprocessing of the image (see :ref:`caps_datatypes`).
     image_path : Union[str, Path]
         The path to the image.
     slice_position : int
