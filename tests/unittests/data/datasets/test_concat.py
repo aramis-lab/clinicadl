@@ -191,7 +191,7 @@ def test_subset():
     )
     assert len(subset.datasets) == 1
 
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(ClinicaDLCAPSError):
         multimodal_dataset.subset(
             sub_data(
                 [

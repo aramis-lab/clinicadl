@@ -8,8 +8,8 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
-from clinicadl.utils.exceptions import ClinicaDLCAPSError
+from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType
 
 from .caps_dataset import CapsDataset
@@ -164,7 +164,7 @@ class UnpairedDataset(Dataset):
     ):
         super().__init__()
         self._check_conversion(datasets)
-        self.df = self._merge_dfs(list(datasets))
+        self.df = self._concat_dfs(list(datasets))
         self.datasets = datasets
         self.epoch = 0
         self.mapping = self._map_datasets()
@@ -214,9 +214,41 @@ class UnpairedDataset(Dataset):
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
         ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in the UnpairedDataset.
+            If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
+            forming the UnpairedDataset.
         """
-        return UnpairedDataset([dataset.subset(data) for dataset in self.datasets])
+        data = CapsDataset._check_data_instance(data).set_index(
+            [PARTICIPANT_ID, SESSION_ID]
+        )
+
+        in_a_df = {(participant, session): False for participant, session in data.index}
+        datasets = []
+        for i, dataset in enumerate(self.datasets):
+            participants_sessions = dataset.get_participant_session_couples()
+            participants_sessions = data.index.intersection(participants_sessions)
+
+            if len(participants_sessions) == 0:
+                raise ClinicaDLCAPSError(
+                    f"Dataset {i} does not contain any of the (participant, session) couples "
+                    "passed in 'data'. This would lead to an empty dataset!"
+                )
+
+            for participant_session in participants_sessions:
+                in_a_df[participant_session] = True
+
+            sub_data = data.loc[participants_sessions]
+            datasets.append(dataset.subset(sub_data.reset_index()))
+
+        raise_error = False
+        err_message = "Some couples (participant, session) are not in any of the datasets forming the UnpairedDataset:\n"
+        for participant_session in in_a_df:
+            if not in_a_df[participant_session]:
+                raise_error = True
+                err_message += f" - {participant_session} \n"
+        if raise_error:
+            raise ClinicaDLCAPSError(err_message)
+
+        return UnpairedDataset(datasets)
 
     def describe(self) -> tuple[Dict[str, Any]]:
         """
@@ -287,7 +319,7 @@ class UnpairedDataset(Dataset):
                 f"No column named {column} in any DataFrame of the datasets forming the UnairedDataset."
             )
 
-        return list_info
+        return tuple(list_info)
 
     def get_participant_session_couples(self) -> list[Tuple[str, str]]:
         """
@@ -379,12 +411,15 @@ class UnpairedDataset(Dataset):
                 )
 
     @staticmethod
-    def _merge_dfs(datasets: list[CapsDataset]) -> pd.DataFrame:
+    def _concat_dfs(datasets: list[CapsDataset]) -> pd.DataFrame:
         """
         Concatenate (along column axis) the dataframes.
         """
         df = pd.concat(
-            [dataset.df for dataset in datasets],
+            [
+                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
+                for dataset in datasets
+            ],
             axis=1,
             keys=range(len(datasets)),
             names=["dataset_id"],

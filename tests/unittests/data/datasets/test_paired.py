@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -155,8 +154,8 @@ def test_get_sample_info():
         paired.get_sample_info(10, "age")
     with pytest.raises(IndexError):
         paired.get_sample_info(-1, "age")
-    with pytest.raises(IndexError):
-        paired.get_sample_info(-1, "abc")
+    with pytest.raises(KeyError):
+        paired.get_sample_info(0, "abc")
     caps_t1.df.loc[0, "age"] = 2
     with pytest.raises(ClinicaDLCAPSError):
         paired.get_sample_info(0, "age")

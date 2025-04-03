@@ -162,7 +162,7 @@ class ConcatDataset(TorchConcatDataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
+        ClinicaDLCAPSError
             If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
             forming the ConcatDataset.
         """
@@ -192,11 +192,9 @@ class ConcatDataset(TorchConcatDataset):
                 raise_error = True
                 err_message += f" - {participant_session} \n"
         if raise_error:
-            raise ClinicaDLTSVError(err_message)
+            raise ClinicaDLCAPSError(err_message)
 
-        subset = ConcatDataset(datasets, ignore_spacing=True, raise_warnings=False)
-
-        return subset
+        return ConcatDataset(datasets, ignore_spacing=True, raise_warnings=False)
 
     def describe(self) -> tuple[Dict[str, Any]]:
         """
