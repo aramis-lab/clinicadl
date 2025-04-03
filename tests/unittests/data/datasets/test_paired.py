@@ -287,9 +287,13 @@ def test__getitem__():
     assert paired[0][0].participant == "sub-000"
     assert paired[0][0].session == "ses-M000"
     assert paired[0][0].extraction == "slice"
+    assert paired[0][0].preprocessing == T1Linear(use_uncropped_image=True)
     assert paired[0][1].participant == "sub-000"
     assert paired[0][1].session == "ses-M000"
     assert paired[0][1].extraction == "image"
+    assert paired[0][1].preprocessing == PETLinear(
+        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+    )
 
 
 def test_paired_concat():

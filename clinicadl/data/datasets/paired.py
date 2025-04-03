@@ -7,8 +7,8 @@ from typing import Any, Dict, Iterable, Tuple
 import pandas as pd
 from torch.utils.data import StackDataset
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.transforms.extraction import Sample
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
@@ -267,7 +267,7 @@ class PairedDataset(StackDataset):
         """
         return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
-    def __getitem__(self, idx: int) -> tuple[DataPoint]:
+    def __getitem__(self, idx: int) -> tuple[Sample]:
         """
         Retrieves the samples at a given index.
 
@@ -278,9 +278,10 @@ class PairedDataset(StackDataset):
 
         Returns
         -------
-        tuple[DataPoint]
+        tuple[Sample]
             A structured output containing the processed data and metadata
-            for each dataset of the PairedDataset.
+            for each dataset of the PairedDataset, as
+            :py:class:`~clinicadl.transforms.extraction.Sample`.
 
         Raises
         ------

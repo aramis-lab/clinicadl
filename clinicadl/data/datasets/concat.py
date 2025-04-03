@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import ConcatDataset as TorchConcatDataset
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.slice import Slice
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType
@@ -264,7 +264,7 @@ class ConcatDataset(TorchConcatDataset):
         """
         return list(set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID])))
 
-    def __getitem__(self, idx: int) -> DataPoint:
+    def __getitem__(self, idx: int) -> Sample:
         """
         Retrieves the sample at a given index.
 
@@ -275,8 +275,9 @@ class ConcatDataset(TorchConcatDataset):
 
         Returns
         -------
-        DataPoint
-            A structured output containing the processed data and metadata.
+        Sample
+            A structured output containing the processed data and metadata, as a
+            :py:class:`~clinicadl.transforms.extraction.Sample`.
 
         Raises
         ------

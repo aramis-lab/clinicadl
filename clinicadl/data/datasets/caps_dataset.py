@@ -24,7 +24,7 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.transforms.extraction import ExtractionMethod
+from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import (
     check_df,
@@ -560,7 +560,7 @@ class CapsDataset(Dataset):
             self._count_samples()
         return int(self.df[N_SAMPLES].sum())
 
-    def __getitem__(self, idx: int) -> DataPoint:
+    def __getitem__(self, idx: int) -> Sample:
         """
         Retrieves the sample at a given index.
 
@@ -571,8 +571,9 @@ class CapsDataset(Dataset):
 
         Returns
         -------
-        DataPoint
-            A structured output containing the processed data and metadata.
+        Sample
+            A structured output containing the processed data and metadata, as a
+            :py:class:`~clinicadl.transforms.extraction.Sample`.
 
         Raises
         ------
@@ -805,6 +806,7 @@ class CapsDataset(Dataset):
             participant=participant,
             session=session,
             image_path=pt_path,
+            preprocessing=self.preprocessing,
         )
 
         # other images/masks/info

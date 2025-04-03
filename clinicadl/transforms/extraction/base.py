@@ -7,6 +7,7 @@ import torch
 import torchio as tio
 from pydantic import computed_field
 
+from clinicadl.data.datatypes.preprocessing import Preprocessing
 from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
@@ -27,6 +28,7 @@ class Sample(DataPoint):
 
     image_path: PathType
     extraction: str
+    preprocessing: Preprocessing
     sample_index: int
 
     def get_tensors(self) -> dict[str, torch.Tensor]:

@@ -452,6 +452,7 @@ def test__getitem__():
         weights_only=True,
     )
     out_sample = caps_dataset[0]
+    assert out_sample.preprocessing == T1Linear(use_uncropped_image=True)
     assert out_sample.slice_position == 0
     assert out_sample.slice_direction == 0
     assert (
