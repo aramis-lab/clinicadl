@@ -24,7 +24,7 @@ logger = getLogger("clinicadl.data.datasets.concat")
 class ConcatDataset(TorchConcatDataset):
     """
     ConcatDataset is a useful class to assemble multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
-    (e.g. from different datasets, or different modalities). ConcatDataset concatenates the input datasets,
+    (e.g. from different datasets). ConcatDataset concatenates the input datasets,
     so the length of the new dataset will be equal to the sum of the lengths of each individual dataset.
 
     ConcatDataset inherits from :py:class:`torch.utils.data.ConcatDataset`.
