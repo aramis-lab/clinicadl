@@ -223,7 +223,6 @@ class CapsDataset(Dataset):
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
-        self._tensor_conversion_info: Optional[TensorConversionInfo] = None
 
         self.common_masks_tensors: list[Mask] = []
 
@@ -231,6 +230,11 @@ class CapsDataset(Dataset):
     def converted(self) -> bool:
         """Whether tensor conversion has been performed."""
         return self.tensor_conversion.json is not None
+
+    @property
+    def _tensor_conversion_info(self) -> Optional[TensorConversionInfo]:
+        """Information on tensor conversion."""
+        return self.tensor_conversion.get_info() if self.converted else None
 
     def to_tensors(
         self,
@@ -324,7 +328,6 @@ class CapsDataset(Dataset):
             raise_warnings,
             check_transforms,
         )
-        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
@@ -376,7 +379,6 @@ class CapsDataset(Dataset):
             mismatch, etc.).
         """
         self.tensor_conversion.read_conversion(json_name, check_transforms, load_also)
-        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
