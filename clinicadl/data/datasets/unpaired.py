@@ -8,8 +8,8 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
-from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
+from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
 from .caps_dataset import CapsDataset
@@ -38,6 +38,9 @@ class UnpairedDataset(Dataset):
 
     To use UnpairedDataset, you must **previously perform tensor conversion** for each underlying CapsDataset
     (see :ref:`caps_dataset`).
+
+    .. note::
+        ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.
 
     Parameters
     ----------
@@ -330,7 +333,7 @@ class UnpairedDataset(Dataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        stacked = self.df.stack("dataset_id")
+        stacked = self.df.stack(DATASET_ID)
         return list(set(zip(stacked[PARTICIPANT_ID], stacked[SESSION_ID])))
 
     def set_epoch(self, epoch: int) -> None:
@@ -422,7 +425,7 @@ class UnpairedDataset(Dataset):
             ],
             axis=1,
             keys=range(len(datasets)),
-            names=["dataset_id"],
+            names=[DATASET_ID],
         )
 
         return df
@@ -456,7 +459,7 @@ class UnpairedDataset(Dataset):
             shuffled_indices,
             axis=1,
             keys=range(len(self.datasets)),
-            names=["dataset_id"],
+            names=[DATASET_ID],
         )
 
         return df.rename_axis(index="idx")

@@ -8,7 +8,7 @@ import pandas as pd
 from torch.utils.data import StackDataset
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
@@ -36,6 +36,9 @@ class PairedDataset(StackDataset):
     PairedDataset inherits from :py:class:`torch.utils.data.StackDataset`.
 
     To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
+
+    .. note::
+        ``PairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.
 
     Parameters
     ----------
@@ -335,7 +338,7 @@ class PairedDataset(StackDataset):
 
             if not ref_df.equals(df):
                 difference = pd.concat(
-                    [ref_df, df], keys=[0, i], names=["dataset_id"]
+                    [ref_df, df], keys=[0, i], names=[DATASET_ID]
                 ).drop_duplicates(keep=False)
                 raise ClinicaDLCAPSError(
                     "To stack datasets, they must have exactly the same (participant, session) pairs and "
