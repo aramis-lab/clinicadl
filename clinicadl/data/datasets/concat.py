@@ -198,22 +198,23 @@ class ConcatDataset(TorchConcatDataset):
 
         return subset
 
-    def describe(self) -> list[Dict[str, Any]]:
+    def describe(self) -> tuple[Dict[str, Any]]:
         """
         Returns a description of the CapsDatasets forming the ConcatDataset.
 
         Returns
         -------
-        list[Dict[str, Any]]
-            The list of descriptions returned by :py:meth:`CapsDataset.describe
-            <clinicadl.data.datasets.CapsDataset.describe>`.
+        tuple[Dict[str, Any]]
+            The descriptions returned by :py:meth:`CapsDataset.describe
+            <clinicadl.data.datasets.CapsDataset.describe>` for each
+            dataset forming the ConcatDataset.
 
         Raises
         ------
         ClinicaDLCAPSError
             See :py:meth:`CapsDataset.describe <clinicadl.data.datasets.CapsDataset.describe>`.
         """
-        return [dataset.describe() for dataset in self.datasets]
+        return tuple([dataset.describe() for dataset in self.datasets])
 
     def get_sample_info(self, idx: int, column: str) -> Any:
         """

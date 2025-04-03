@@ -112,8 +112,13 @@ class PairedDataset(StackDataset):
         >>> paired_dataset = PairedDataset([caps_t1, caps_pet])
         >>> len(paired_dataset)
         4
-        >>> len(paired_dataset[0])
+        >>> sample = paired_dataset[0]
+        >>> len(sample)
         2
+        >>> sample[0].participant, sample[0].session
+        ('sub-000', 'ses-M000')
+        >>> sample[1].participant, sample[1].session
+        ('sub-000', 'ses-M000')
     """
 
     def __init__(
@@ -124,7 +129,6 @@ class PairedDataset(StackDataset):
         self.df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)
         self.datasets: tuple[CapsDataset]
-        self.converted = True  # for compatibility with CapsDataset
 
     def eval(self) -> None:
         """
@@ -209,7 +213,7 @@ class PairedDataset(StackDataset):
             The index of the sample in the PairedDataset.
         column : str
             The information to look for, i.e. a column present in the DataFrame of at least one of the
-            dataset forming the CapsDataset.
+            dataset forming the PairedDataset.
 
         Returns
         -------
@@ -262,7 +266,7 @@ class PairedDataset(StackDataset):
 
     def __getitem__(self, idx: int) -> tuple[DataPoint]:
         """
-        Retrieves the sample at a given index.
+        Retrieves the samples at a given index.
 
         Parameters
         ----------
@@ -307,7 +311,8 @@ class PairedDataset(StackDataset):
                     "'to_tensors' or 'read_tensor_conversion' for each dataset."
                 )
 
-    def _merge_dfs(self, datasets: list[CapsDataset]) -> pd.DataFrame:
+    @staticmethod
+    def _merge_dfs(datasets: list[CapsDataset]) -> pd.DataFrame:
         """
         Checks that "participant_id", "session_id" and "n_samples" are equal across the datasets,
         and returns the list of (participant, session).

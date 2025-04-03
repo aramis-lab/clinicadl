@@ -79,3 +79,4 @@ again the next time you will instantiate your ``CapsDataset``. In this case, use
 See also: 
     - :ref:`concat`
     - :ref:`paired`
+    - :ref:`unpaired`
