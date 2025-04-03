@@ -2,11 +2,9 @@ from logging import getLogger
 from typing import Tuple, Union
 
 import torch
-import torchio as tio
-from pydantic import NonNegativeInt, PositiveInt, computed_field
+from pydantic import PositiveInt, computed_field
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.typing import PathType
 
 from .base import Extraction, ExtractionMethod, Sample
 
@@ -15,39 +13,44 @@ logger = getLogger("clinicadl.transforms.extraction.patch")
 
 class PatchSample(Sample):
     """
-    Output of a CapsDataset when patch extraction is performed.
+    Output of a CapsDataset when patch extraction is performed (i.e.
+    when :py:class:`~Patch` is used).
+
+    It is simply a :py:class:`~clinicadl.data.structures.DataPoint`, with
+    additional information on the patch extraction.
 
     Attributes
     ----------
-    sample : torch.Tensor
-        The patch as a 4D PyTorch tensor (with one channel dimension).
-    affine : np.ndarray
-        The affine matrix associated to the patch.
+    image : torchio.ScalarImage
+        The patch, as a :py:class:`torchio.ScalarImage`.
+    label : Optional[Union[float, int, torchio.LabelMap]]
+        The label associated to the patch. Can be a ``float`` (regression),
+        an ``int`` (classification), a mask (as a :py:class:`torchio.LabelMap`; for segmentation)
+        or ``None`` if no label (reconstruction). If the label is a mask, patch extraction
+        was also performed on it.
     participant : str
-        The subject concerned.
+        The participant concerned.
     session : str
         The session concerned.
-    image_path : str
-        The path to the image from which the patch has been extracted.
-    label : Optional[Union[float, int, torch.Tensor]]
-        The potential label associated to the patch.
-    patch_index : NonNegativeInt
+    image_path : Union[str, Path]
+        The path to the image.
+    patch_index : int
         The index of the patch among all patches extracted from the image.
-    patch_size : Tuple[PositiveInt, PositiveInt, PositiveInt]
+    patch_size : Tuple[int, int, int]
         The size of the patch.
-    patch_stride : Tuple[PositiveInt, PositiveInt, PositiveInt]
+    patch_stride : Tuple[int, int, int]
         The stride used for patch extraction.
     """
 
-    patch_index: NonNegativeInt
-    patch_size: Tuple[PositiveInt, PositiveInt, PositiveInt]
-    patch_stride: Tuple[PositiveInt, PositiveInt, PositiveInt]
+    patch_index: int
+    patch_size: Tuple[int, int, int]
+    patch_stride: Tuple[int, int, int]
 
     @computed_field
     @property
-    def extraction(self) -> str:
-        """The extraction method."""
-        return ExtractionMethod.PATCH.value
+    def id(self) -> int:
+        """The index of the sample. Equal to `patch_index` here."""
+        return self.patch_index
 
 
 class Patch(Extraction):
@@ -101,9 +104,7 @@ class Patch(Extraction):
         else:
             return value
 
-    def extract_sample(
-        self, data_point: DataPoint, sample_index: int
-    ) -> Tuple[DataPoint, int]:
+    def extract_sample(self, data_point: DataPoint, sample_index: int) -> PatchSample:
         """
         Extracts a patch from a DataPoint.
 
@@ -118,19 +119,28 @@ class Patch(Extraction):
         -------
         DataPoint
             A new DataPoint object with the extracted patches for each image
-            present in the original `data_point`. The patch extracted from an
+            present in the original ``data_point``. The patch extracted from an
             image is accessible via the same name as was the image in the original
-            `data_point`.
-        int
-            The patch index. For compatibility, as the patch index is always equal
-            to `sample_index` here.
+            ``data_point``.
+            Additional information on the extraction is added.
 
         Raises
         ------
         IndexError
-            If 'sample_index' is greater or equal to the number of patches in the images.
+            If ``sample_index`` is greater or equal to the number of patches in the images.
         """
-        return super().extract_sample(data_point, sample_index)
+        extracted_datapoint = self._extract_datapoint_sample(data_point, sample_index)
+        sample = PatchSample(
+            **extracted_datapoint,
+            extraction=self.extract_method,
+            sample_index=sample_index,
+            patch_index=sample_index,
+            patch_size=self.patch_size,
+            patch_stride=self.stride,
+        )
+        sample.applied_transforms = extracted_datapoint.applied_transforms
+
+        return sample
 
     def num_samples_per_image(self, image: torch.Tensor) -> int:
         """
@@ -152,43 +162,6 @@ class Patch(Extraction):
         """
         return self._get_patches(image).shape[0]
 
-    def format_output(
-        self,
-        data_point: DataPoint,
-        image_path: PathType,
-        description: int,
-    ) -> PatchSample:
-        """
-        Puts all the output information in an PatchSample object.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            the `DataPoint` object associated to the patch.
-        image_path : PathType
-            the path of the image from which the patch is extracted.
-        description : int
-            the patch index.
-
-        Returns
-        -------
-        PatchSample
-            a PatchSample object with the patch and all the relevant information on the patch.
-        """
-        return PatchSample(
-            sample=data_point.image.tensor,
-            affine=data_point.image.affine,
-            participant=data_point.participant,
-            session=data_point.session,
-            image_path=str(image_path),
-            label=data_point.label.tensor
-            if isinstance(data_point.label, tio.LabelMap)
-            else data_point.label,
-            patch_index=description,
-            patch_size=self.patch_size,
-            patch_stride=self.stride,
-        )
-
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
     ) -> torch.Tensor:
@@ -198,32 +171,26 @@ class Patch(Extraction):
         Raises
         ------
         IndexError
-            If 'sample_index' is greater or equal to the number of patches in the image.
+            If ``sample_index`` is greater or equal to the number of patches in the image.
         """
         patches_tensor = self._get_patches(image_tensor)
         try:
-            return patches_tensor[sample_index].unsqueeze(0).clone()
+            return patches_tensor[sample_index].unsqueeze(0)
         except IndexError as exc:
             raise IndexError(
                 f"'sample_index' {sample_index} is out of range as there are only "
                 f"{len(patches_tensor)} patches in the image."
             ) from exc
 
-    def _get_sample_description(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> int:
-        """The sample description for patch extraction is the index of the patch."""
-        return sample_index
-
     def _get_patches(self, image_tensor: torch.Tensor) -> torch.Tensor:
         """
-        Creates a tensor of patches from the image using the PyTorch method `unfold`.
+        Creates a tensor of patches from the image using the PyTorch method :py:meth:`torch.Tensor.unfold`.
 
         Returns
         -------
         torch.Tensor
             A tensor containing all the patches extracted from the image. The tensor shape
-            will be `(num_patches, patch_size[0], patch_size[1], patch_size[2])`, where `num_patches` is
+            will be ``(num_patches, patch_size[0], patch_size[1], patch_size[2])``, where ``num_patches`` is
             determined by the image size, the patch size, and the stride.
         """
         spatial_shape = image_tensor.shape[1:]

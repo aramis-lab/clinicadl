@@ -15,7 +15,7 @@ def test_good_custom():
     assert custom_data.custom_suffix == "example"
     assert custom_data.modality == "custom"
     assert custom_data.name == "custom"
-    assert custom_data.file_type.pattern == "custom/sub-*_ses-*_example.nii*"
+    assert custom_data.file_type.pattern == "example/sub-*_ses-*_example.nii*"
     assert custom_data.file_type.description == "Custom images with suffix 'example'"
     assert custom_data.file_type.needed_pipeline is None
     assert str(custom_data) == "Custom images with suffix 'example'"

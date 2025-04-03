@@ -177,7 +177,7 @@ def test_validation_pass(arg, value):
         ("SurfaceDistanceMetric", SurfaceDistanceMetricConfig),
     ],
 )
-def test_create_optimizer_config(name, expected_class):
+def test_create_metric_config(name, expected_class):
     config = create_metric_config(name)
     assert config == expected_class
 
@@ -194,3 +194,33 @@ def test_check_reduction():
         LossMetricConfig(loss_fn=lambda x: x, reduction=None)
     config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction=None)
     assert config.reduction == "sum"
+
+
+@pytest.mark.parametrize(
+    "config,optimum",
+    [
+        (LossMetricConfig, "min"),
+        (ROCAUCMetricConfig, "max"),
+        (MultiScaleSSIMMetricConfig, "max"),
+        (PSNRMetricConfig, "max"),
+        (SSIMMetricConfig, "max"),
+        (MAEMetricConfig, "min"),
+        (MSEMetricConfig, "min"),
+        (RMSEMetricConfig, "min"),
+        (DiceMetricConfig, "max"),
+        (GeneralizedDiceScoreConfig, "max"),
+        (HausdorffDistanceMetricConfig, "min"),
+        (MeanIoUConfig, "max"),
+        (SurfaceDiceMetricConfig, "max"),
+        (SurfaceDistanceMetricConfig, "min"),
+    ],
+)
+def test_optimum(config, optimum):
+    assert config.optimum() == optimum
+
+
+def test_optimum_confusion_matrix():
+    config = ConfusionMatrixMetricConfig(metric_name="fpr")
+    assert config.optimum() == "min"
+    config = ConfusionMatrixMetricConfig(metric_name="tpr")
+    assert config.optimum() == "max"

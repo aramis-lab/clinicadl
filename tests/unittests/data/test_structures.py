@@ -48,22 +48,35 @@ def test_DataPoint():
         session="ses-M000",
         mask_1=mask,
     )
-    data_point.add_mask(mask_path, "mask_2")
+    data_point.add_image(image_path, "image_2")
+    data_point.add_image(image, "image_3")
+
+    data_point.add_mask(str(mask_path), "mask_2")
     data_point.add_mask(mask, "mask_3")
+
     assert isinstance(data_point.image, tio.ScalarImage)
     assert (
         data_point.image.tensor == torch.from_numpy(nib.load(image_path).get_fdata())
     ).all()
+
     assert isinstance(data_point.label, tio.LabelMap)
     assert (data_point.label.tensor == label.tensor).all()
-    assert isinstance(data_point.mask_1, tio.LabelMap)
-    assert (data_point.mask_1.tensor == mask.tensor).all()
-    assert isinstance(data_point.mask_2, tio.LabelMap)
+
+    assert isinstance(data_point["image_2"], tio.ScalarImage)
+    assert isinstance(data_point["image_3"], tio.ScalarImage)
     assert (
-        data_point.mask_2.tensor == torch.from_numpy(nib.load(mask_path).get_fdata())
+        data_point["image_2"].tensor
+        == torch.from_numpy(nib.load(image_path).get_fdata())
     ).all()
-    assert isinstance(data_point.mask_3, tio.LabelMap)
-    assert (data_point.mask_3.tensor == mask.tensor).all()
+    assert (data_point["image_3"].tensor == image.tensor).all()
+
+    assert isinstance(data_point["mask_2"], tio.LabelMap)
+    assert isinstance(data_point["mask_3"], tio.LabelMap)
+    assert (
+        data_point["mask_2"].tensor == torch.from_numpy(nib.load(mask_path).get_fdata())
+    ).all()
+    assert (data_point["mask_3"].tensor == mask.tensor).all()
+
     assert data_point.participant == "sub-000"
     assert data_point.session == "ses-M000"
 
@@ -74,6 +87,20 @@ def test_DataPoint():
         data_point.spacing
     with pytest.raises(RuntimeError):
         data_point.spatial_shape
+    with pytest.raises(RuntimeError):
+        data_point.shape
+
+    # get images
+    assert len(data_point.get_images()) == 3
+    assert len(data_point.get_images(intensity_only=False)) == 7
+    assert len(data_point.get_images(intensity_only=False, include="image")) == 1
+    assert len(data_point.get_images(intensity_only=False, exclude="image")) == 6
+
+    assert len(data_point.get_images_dict()) == 3
+    assert set(data_point.get_images_dict().keys()) == {"image", "image_2", "image_3"}
+    assert len(data_point.get_images_dict(intensity_only=False)) == 7
+    assert len(data_point.get_images_dict(intensity_only=False, include="image")) == 1
+    assert len(data_point.get_images_dict(intensity_only=False, exclude="image")) == 6
 
     # test copy
     c = copy(data_point)
@@ -81,10 +108,7 @@ def test_DataPoint():
     assert isinstance(c.label, tio.LabelMap)
     assert c.participant == "sub-000"
     assert c.session == "ses-M000"
-    assert isinstance(c.mask_1, tio.LabelMap)
-    assert isinstance(c.mask_2, tio.LabelMap)
-    assert isinstance(c.mask_2, tio.LabelMap)
-    assert isinstance(c.mask_3, tio.LabelMap)
+    assert isinstance(c["mask_3"], tio.LabelMap)
 
     # other tests
     data_point = DataPoint(
@@ -92,13 +116,10 @@ def test_DataPoint():
         label=None,
         participant="sub-000",
         session="ses-M000",
-        mask=mask_path,
     )
     assert (data_point.image.tensor == image.tensor).all()
     assert data_point.label is None
-    assert (
-        data_point.mask.tensor == torch.from_numpy(nib.load(mask_path).get_fdata())
-    ).all()
+
     data_point = DataPoint(
         image=image,
         label=1,
@@ -119,6 +140,13 @@ def test_DataPoint():
     assert data_point.spacing == (1.3, 1.2, 1.1)
     assert (data_point.affine == np.diag([1.3, 1.2, 1.1, 1])).all()
     assert data_point.spatial_shape == (3, 3, 3)
+    assert data_point.shape == (1, 3, 3, 3)
+
+    # transforms history
+    transform = tio.Clamp(out_min=0, out_max=1)
+    transformed_datapoint = transform(data_point)
+    assert len(transformed_datapoint.get_applied_transforms()) == 1
+    assert isinstance(transformed_datapoint.get_applied_transforms()[0], tio.Clamp)
 
 
 def test_Mask():

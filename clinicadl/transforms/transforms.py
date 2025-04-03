@@ -81,21 +81,13 @@ class Transforms(ClinicaDLConfig):
         )
     """
 
-    extraction: Optional[Extraction] = None
+    extraction: Extraction = Image()
     image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
     _image_transforms_processed: list[Transform] = []
     _sample_transforms_processed: list[Transform] = []
     _augmentations_processed: list[Transform] = []
-
-    @field_validator("extraction", mode="after")
-    @classmethod
-    def convert_extraction(cls, v):
-        """If 'extraction' is None, changes it to Image."""
-        if v is None:
-            return Image()
-        return v
 
     @model_validator(mode="after")
     def check_transforms(self):
@@ -134,8 +126,9 @@ class Transforms(ClinicaDLConfig):
         "sample_transforms",
         "augmentations",
     )
+    @classmethod
     def serialize_transforms(
-        self, transforms: list[Union[Transform, TransformConfig]]
+        cls, transforms: list[Union[Transform, TransformConfig]]
     ) -> list[Union[str, dict]]:
         """
         Handles serialization of transforms that are not passed via
@@ -228,12 +221,8 @@ class Transforms(ClinicaDLConfig):
         )
 
         image_transforms = tio.Compose(self._image_transforms_processed)
-        sample_transforms = tio.Compose(
-            self._config_to_transform(self._sample_transforms_processed)
-        )
-        augmentations = tio.Compose(
-            self._config_to_transform(self._augmentations_processed)
-        )
+        sample_transforms = tio.Compose(self._sample_transforms_processed)
+        augmentations = tio.Compose(self._augmentations_processed)
 
         return (
             image_transforms,

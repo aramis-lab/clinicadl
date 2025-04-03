@@ -7,6 +7,7 @@
             * shape: (3, 3, 3)
             * label: "seg"
             * masks: "brain"
+            * additional info: "custom_image" (image), "custom_mask" (mask), "age" (float)
         * tensors:
             * shape: (2, 2, 2)
     * ses-M003:
@@ -34,7 +35,7 @@
             * label: "seg"
             * masks: "brain"
 
-## pet (trc=18FAV45, suvr_reference_region=pons2)
+## pet (tracer=18FAV45, suvr_reference_region=pons2)
 * sub-000:
     * ses-M000:
         * niftis:
