@@ -13,7 +13,7 @@ def update_json(
     dict_: Optional[dict] = None,
 ):
     if not json_path.is_file():
-        raise FileNotFoundError("The maps.json file for this MAPS does not exist.")
+        raise FileNotFoundError("The json file for this MAPS does not exist.")
 
     # Lire le contenu existent du fichier
     with json_path.open(mode="r") as file:

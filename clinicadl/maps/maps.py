@@ -7,8 +7,9 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
 from clinicadl.dictionary.words import (
     COMPUTATIONAL,
+    ENVIRONMENT,
     GROUPS,
-    MAPS,
+    METRICS,
     MODEL,
     OPTIMIZATION,
     TRAIN,
@@ -16,6 +17,7 @@ from clinicadl.dictionary.words import (
 )
 from clinicadl.metrics.metrics import MetricConfig
 from clinicadl.splitter.split import Split
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
@@ -66,13 +68,29 @@ class Maps(Directory):
         return self.path / GROUPS
 
     @property
+    def json_dir(self) -> Path:
+        return self.path / "JSON"
+
+    @property
     def split_list(self) -> list[int]:
         """Returns a list of available split indices."""
-        return [int(x.name.split("-")[1]) for x in self.path.iterdir() if x.is_dir()]
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
+        return [
+            int(x.name.split("-")[1])
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith("split")
+        ]
 
     @property
     def group_list(self) -> list[str]:
         """Returns a list of available data group names."""
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
         return [x.name for x in self.groups_dir.iterdir() if x.is_dir()]
 
     @property
@@ -81,24 +99,29 @@ class Maps(Directory):
         return (self.path / f"{TRAIN}+{VALIDATION}").with_suffix(TSV)
 
     @property
-    def maps_json(self) -> Path:
+    def requirements_txt(self) -> Path:
+        """Returns the path to the `environment.txt`file."""
+        return (self.path / ENVIRONMENT).with_suffix(TXT)
+
+    @property
+    def metrics_json(self) -> Path:
         """Returns the path to the `maps.json` configuration file."""
-        return (self.path / MAPS).with_suffix(JSON)
+        return (self.json_dir / METRICS).with_suffix(JSON)
 
     @property
     def model_json(self) -> Path:
         """Returns the path to the `model.json` configuration file."""
-        return (self.path / MODEL).with_suffix(JSON)
+        return (self.json_dir / MODEL).with_suffix(JSON)
 
     @property
     def computational_json(self) -> Path:
         """Returns the path to the `computational.json` configuration file."""
-        return (self.path / COMPUTATIONAL).with_suffix(JSON)
+        return (self.json_dir / COMPUTATIONAL).with_suffix(JSON)
 
     @property
     def optimization_json(self) -> Path:
         """Returns the path to the `optimization.json` configuration file."""
-        return (self.path / OPTIMIZATION).with_suffix(JSON)
+        return (self.json_dir / OPTIMIZATION).with_suffix(JSON)
 
     def create_data_group(self, name: str, dataset: CapsDataset) -> None:
         """
@@ -173,6 +196,7 @@ class Maps(Directory):
 
         self.path.mkdir(parents=True, exist_ok=True)
         self.groups_dir.mkdir(parents=True)
+        self.json_dir.mkdir(parents=True)
         self._write_requirements_version()
 
     def _write_requirements_version(self) -> None:
@@ -181,21 +205,18 @@ class Maps(Directory):
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
             )
-            with (self.path / "environment.txt").open(mode="w") as file:
+            with (self.requirements_txt).open(mode="w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
             raise ClinicaDLConfigurationError(
                 "You do not have the right to execute pip freeze. Your environment will not be written"
             )
 
-    def read_maps(self) -> dict:
-        """Reads the maps.json file."""
-        if not self.maps_json.is_file():
-            raise ClinicaDLConfigurationError("Could not find maps.json")
-
-        with open(self.maps_json, "r") as file:
-            x = json.load(file)
-            return json.loads(x)
+    def read_json(self) -> dict:
+        return dict()
 
     def caps_dir(self) -> Path:  # TODO: to change !
-        return self.read_maps().get("caps_dir", Path(""))
+        return self.read_json().get("caps_dir", Path(""))
+
+    def remove(self) -> None:
+        remove_non_empty_dir(self.path)

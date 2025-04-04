@@ -1,0 +1,2 @@
+participant_id	session_id	age	diagnosis	category	n_samples	first_idx	last_idx
+sub-999	ses-M099	4	MCI	A	1	0	0

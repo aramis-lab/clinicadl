@@ -45,7 +45,7 @@ class BestMetricDataGroup(Directory):
         return (self.path / METRICS).with_suffix(TSV)
 
     @property
-    def prediction_tsv(self) -> Path:
+    def predictions_tsv(self) -> Path:
         return (self.path / PREDICTIONS).with_suffix(TSV)
 
     @property
@@ -115,7 +115,7 @@ class BestMetric(Directory):
 
     @property
     def model(self) -> Path:
-        return (self.path / MODEL).with_suffix(PTH).with_suffix(TAR)
+        return (self.path / MODEL).with_suffix(PTH + TAR)
 
     def create(self, split: Split) -> None:
         """

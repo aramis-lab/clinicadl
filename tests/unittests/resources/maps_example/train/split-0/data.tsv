@@ -1,0 +1,7 @@
+participant_id	session_id	age	diagnosis	category	n_samples	first_idx	last_idx
+sub-000	ses-M000	1	CN	A	1	0	0
+sub-000	ses-M003	1	AD	B	1	1	1
+sub-010	ses-M003	2	AD	C	1	2	2
+sub-010	ses-M012	2	CN	D	1	3	3
+sub-100	ses-M000	3	AD	E	1	4	4
+sub-100	ses-M012	3	CN	F	1	5	5

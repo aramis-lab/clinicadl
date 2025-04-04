@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Dict
 
@@ -87,6 +88,8 @@ class SplitDir(Directory):
         dict_["val_dataset"] = split.val_dataset.describe()
         dict_["train_dataset"] = split.train_dataset.describe()
 
+        with open(self.split_json, "w") as json_file:
+            json.dump({}, json_file)
         update_json(
             json_path=self.split_json, dict_=dict_
         )  # called to add data to the split.json
@@ -139,8 +142,8 @@ class TmpDir(Directory):
 
     @property
     def checkpoint(self) -> Path:
-        return (self.path / CHECKPOINT).with_suffix(PTH).with_suffix(TAR)
+        return (self.path / CHECKPOINT).with_suffix(PTH + TAR)
 
     @property
     def optimizer(self) -> Path:
-        return (self.path / OPTIMIZER).with_suffix(PTH).with_suffix(TAR)
+        return (self.path / OPTIMIZER).with_suffix(PTH + TAR)
