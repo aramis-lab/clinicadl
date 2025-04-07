@@ -60,7 +60,13 @@ def get_transform_config(
         not passed by the user.
     """
     transform = ImplementedTransform(name)
-    config_name = f"{transform}Config"
-    config = globals()[config_name]
+    config_name = f"{transform.value}Config"
+    try:
+        config = globals()[config_name]
+    except KeyError:
+        raise ValueError(
+            f"Can't find the transform {name}. "
+            f"Please check if you have imported the transform in the config factory."
+        )
 
     return config(**kwargs)
