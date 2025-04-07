@@ -300,7 +300,7 @@ class ConcatDataset(TorchConcatDataset):
             )
 
     @staticmethod
-    def _check_conversion(datasets: list[CapsDataset]) -> None:
+    def _check_conversion(datasets: Iterable[CapsDataset]) -> None:
         """
         Checks that tensor conversion has been performed before concatenation.
         """
