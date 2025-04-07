@@ -4,9 +4,8 @@ import torch
 from pydantic import computed_field
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.enum import ExtractionMethod
 
-from .base import Extraction, Sample
+from .base import Extraction, ExtractionMethod, Sample
 
 logger = getLogger("clinicadl.transforms.extraction.image")
 
@@ -31,6 +30,8 @@ class ImageSample(Sample):
         The participant concerned.
     session : str
         The session concerned.
+    preprocessing : Preprocessing
+        The proprocessing of the image (see :ref:`caps_datatypes`).
     image_path : Union[str, Path]
         The path to the image.
     """

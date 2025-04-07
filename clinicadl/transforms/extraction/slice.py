@@ -12,12 +12,9 @@ from pydantic import (
 from typing_extensions import Self
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.enum import (
-    ExtractionMethod,
-    SliceDirection,
-)
+from clinicadl.utils.enum import SliceDirection
 
-from .base import Extraction, Sample
+from .base import Extraction, ExtractionMethod, Sample
 
 logger = getLogger("clinicadl.extraction.slice")
 
@@ -43,6 +40,8 @@ class SliceSample(Sample):
         The participant concerned.
     session : str
         The session concerned.
+    preprocessing : Preprocessing
+        The proprocessing of the image (see :ref:`caps_datatypes`).
     image_path : Union[str, Path]
         The path to the image.
     slice_position : int

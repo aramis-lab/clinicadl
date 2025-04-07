@@ -377,6 +377,9 @@ class CapsReader(Reader):
             self.subject_directory / "sub-*" / "ses-*" / preprocessing.file_type.pattern
         )
         files_found = insensitive_glob(str(pattern), recursive=True)
+        if len(files_found) == 0:
+            raise ClinicaDLCAPSError("No image found for this preprocessing!")
+
         participants_sessions = set()
         for file in files_found:
             participant_session = (

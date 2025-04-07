@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from enum import Enum
 from logging import getLogger
 
 import torch
 import torchio as tio
 from pydantic import computed_field
 
+from clinicadl.data.datatypes.preprocessing import Preprocessing
 from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
@@ -13,11 +15,20 @@ from clinicadl.utils.typing import PathType
 logger = getLogger("clinicadl.transforms.extraction.base")
 
 
+class ExtractionMethod(str, Enum):
+    """Possible extraction methods."""
+
+    IMAGE = "image"
+    SLICE = "slice"
+    PATCH = "patch"
+
+
 class Sample(DataPoint):
     """Abstract class for outputs of CapsDataset."""
 
     image_path: PathType
     extraction: str
+    preprocessing: Preprocessing
     sample_index: int
 
     def get_tensors(self) -> dict[str, torch.Tensor]:

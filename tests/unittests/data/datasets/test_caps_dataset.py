@@ -319,7 +319,7 @@ def test_get_sample_info():
     assert caps_dataset.get_sample_info(0, "age") == 1.0
     with pytest.raises(KeyError):
         caps_dataset.get_sample_info(0, "abc")
-    with pytest.raises(ValueError):
+    with pytest.raises(IndexError):
         caps_dataset.get_sample_info(-1, "age")
     with pytest.raises(IndexError):
         caps_dataset.get_sample_info(2, "abc")
@@ -452,6 +452,7 @@ def test__getitem__():
         weights_only=True,
     )
     out_sample = caps_dataset[0]
+    assert out_sample.preprocessing == T1Linear(use_uncropped_image=True)
     assert out_sample.slice_position == 0
     assert out_sample.slice_direction == 0
     assert (

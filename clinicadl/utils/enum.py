@@ -49,14 +49,6 @@ class Pathology(str, Enum):
     SVPPA = "svppa"
 
 
-class ExtractionMethod(str, Enum):
-    """Possible extraction methods."""
-
-    IMAGE = "image"
-    SLICE = "slice"
-    PATCH = "patch"
-
-
 class SliceDirection(int, Enum):
     """Possible directions for a slice."""
 

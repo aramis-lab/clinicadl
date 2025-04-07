@@ -24,13 +24,12 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.transforms.extraction import Sample
+from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import (
     check_df,
     tsv_to_df,
 )
-from clinicadl.utils.enum import ExtractionMethod
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
@@ -189,6 +188,12 @@ class CapsDataset(Dataset):
                 masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
             )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
                                                             # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.data.datasets.ConcatDataset`
+    - :py:class:`~clinicadl.data.datasets.PairedDataset`
+    - :py:class:`~clinicadl.data.datasets.UnpairedDataset`
     """
 
     def __init__(
@@ -218,9 +223,18 @@ class CapsDataset(Dataset):
         self.label = self._check_label(label)
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self.tensor_conversion: TensorConversion = TensorConversion(self)
-        self._tensor_conversion_info: Optional[TensorConversionInfo] = None
 
         self.common_masks_tensors: list[Mask] = []
+
+    @property
+    def converted(self) -> bool:
+        """Whether tensor conversion has been performed."""
+        return self.tensor_conversion.json is not None
+
+    @property
+    def _tensor_conversion_info(self) -> Optional[TensorConversionInfo]:
+        """Information on tensor conversion."""
+        return self.tensor_conversion.get_info() if self.converted else None
 
     def to_tensors(
         self,
@@ -314,7 +328,6 @@ class CapsDataset(Dataset):
             raise_warnings,
             check_transforms,
         )
-        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
@@ -350,7 +363,7 @@ class CapsDataset(Dataset):
                 be performed as the tensors saved have not been transformed.
 
             .. warning::
-                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False`.
+                **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
         load_also : list[str] (optional, default=[])
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
@@ -366,7 +379,6 @@ class CapsDataset(Dataset):
             mismatch, etc.).
         """
         self.tensor_conversion.read_conversion(json_name, check_transforms, load_also)
-        self._tensor_conversion_info = self.tensor_conversion.get_info()
         self._load_pt_masks()
         self._count_samples()
 
@@ -434,7 +446,8 @@ class CapsDataset(Dataset):
 
         dataset = deepcopy(self)
         dataset.df = subset_df
-        dataset._map_indices_to_images()
+        if self.converted:
+            self._map_indices_to_images(dataset.df)
 
         return dataset
 
@@ -501,7 +514,7 @@ class CapsDataset(Dataset):
             If ``column`` is not in the metadata DataFrame.
         """
         if not isinstance(idx, int) or idx < 0:
-            raise ValueError(f"Index must be a non-negative integer, got {idx}.")
+            raise IndexError(f"Index must be a non-negative integer, got {idx}.")
         if idx >= len(self):
             raise IndexError(
                 f"Index out of range, there are only {len(self)} samples in the dataset."
@@ -547,7 +560,7 @@ class CapsDataset(Dataset):
             self._count_samples()
         return int(self.df[N_SAMPLES].sum())
 
-    def __getitem__(self, idx: int) -> DataPoint:
+    def __getitem__(self, idx: int) -> Sample:
         """
         Retrieves the sample at a given index.
 
@@ -558,14 +571,15 @@ class CapsDataset(Dataset):
 
         Returns
         -------
-        DataPoint
-            A structured output containing the processed data and metadata.
+        Sample
+            A structured output containing the processed data and metadata, as a
+            :py:class:`~clinicadl.transforms.extraction.Sample`.
 
         Raises
         ------
         ClinicaDLCAPSError
             If 'to_tensors' or 'read_tensor_conversion' has not been called previously.
-        ValueError
+        IndexError
             If 'idx' is not an non-negative integer.
         IndexError
             If 'idx' is greater or equal to the length of the dataset.
@@ -573,7 +587,7 @@ class CapsDataset(Dataset):
             If the '.pt' file cannot be found for the (participant, session) associated
             to 'idx'.
         """
-        if self.tensor_conversion.json is None:
+        if not self.converted:
             raise ClinicaDLCAPSError(
                 "Cannot find tensor files. Please convert your CapsDataset "
                 "to tensors using 'to_tensors', or use 'read_tensor_conversion' if it has "
@@ -792,6 +806,7 @@ class CapsDataset(Dataset):
             participant=participant,
             session=session,
             image_path=pt_path,
+            preprocessing=self.preprocessing,
         )
 
         # other images/masks/info
@@ -878,7 +893,7 @@ class CapsDataset(Dataset):
         if self.extraction.extract_method == ExtractionMethod.IMAGE:
             self.df[N_SAMPLES] = 1
         else:
-            if self.tensor_conversion.json is None:
+            if not self.converted:
                 raise ClinicaDLCAPSError(
                     "Needs tensors to compute the length of the dataset (which depends "
                     "on the number of samples per image). Please convert your CapsDataset "
@@ -897,7 +912,7 @@ class CapsDataset(Dataset):
                         participant, session
                     )
 
-        self._map_indices_to_images()
+        self._map_indices_to_images(self.df)
 
     def _get_n_samples(self, participant: str, session: str) -> int:
         """
@@ -913,12 +928,11 @@ class CapsDataset(Dataset):
                 f"An error occurred while counting samples in images of ({participant}, {session})."
             ) from exc
 
-    def _map_indices_to_images(self) -> None:
+    @staticmethod
+    def _map_indices_to_images(df: pd.DataFrame) -> None:
         """
         To have in the dataframe the last and the first sample index
         corresponding to each image.
         """
-        self.df[FIRST_INDEX] = (
-            (self.df[N_SAMPLES].cumsum().shift(1)).fillna(0).astype(int)
-        )
-        self.df[LAST_INDEX] = (self.df[N_SAMPLES].cumsum() - 1).astype(int)
+        df[FIRST_INDEX] = (df[N_SAMPLES].cumsum().shift(1)).fillna(0).astype(int)
+        df[LAST_INDEX] = (df[N_SAMPLES].cumsum() - 1).astype(int)
