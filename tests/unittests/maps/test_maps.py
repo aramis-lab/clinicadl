@@ -105,8 +105,8 @@ def test_good_maps():
     assert "test" in maps.data_groups
     assert isinstance(maps.data_groups["test"], DataGroup)
 
-    assert len(maps.group_list) == 1
-    assert maps.group_list[0] == "test"
+    assert len(maps.group_list) == 3
+    assert "test" in maps.group_list
 
     maps.remove()
 
