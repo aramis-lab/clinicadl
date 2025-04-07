@@ -579,7 +579,7 @@ class CapsDataset(Dataset):
         ------
         ClinicaDLCAPSError
             If 'to_tensors' or 'read_tensor_conversion' has not been called previously.
-        InderError
+        IndexError
             If 'idx' is not an non-negative integer.
         IndexError
             If 'idx' is greater or equal to the length of the dataset.
