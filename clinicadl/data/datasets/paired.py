@@ -131,7 +131,7 @@ class PairedDataset(StackDataset):
         self._check_conversion(datasets)
         self.df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)
-        self.datasets: tuple[CapsDataset]
+        self.datasets: tuple[CapsDataset, ...]
 
     def eval(self) -> None:
         """
@@ -188,7 +188,7 @@ class PairedDataset(StackDataset):
 
         Returns
         -------
-        tuple[Dict[str, Any]]
+        tuple[Dict[str, Any], ...]
             The descriptions returned by :py:meth:`CapsDataset.describe
             <clinicadl.data.datasets.CapsDataset.describe>` for each
             dataset forming the PairedDataset.
@@ -267,7 +267,7 @@ class PairedDataset(StackDataset):
         """
         return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
-    def __getitem__(self, idx: int) -> tuple[Sample]:
+    def __getitem__(self, idx: int) -> tuple[Sample, ...]:
         """
         Retrieves the samples at a given index.
 
@@ -278,7 +278,7 @@ class PairedDataset(StackDataset):
 
         Returns
         -------
-        tuple[Sample]
+        tuple[Sample, ...]
             A structured output containing the processed data and metadata
             for each dataset of the PairedDataset, as
             :py:class:`~clinicadl.transforms.extraction.Sample`.

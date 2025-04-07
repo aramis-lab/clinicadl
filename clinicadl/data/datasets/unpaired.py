@@ -281,7 +281,7 @@ class UnpairedDataset(Dataset):
 
         Returns
         -------
-        tuple[Dict[str, Any]]
+        tuple[Dict[str, Any], ...]
             The descriptions returned by :py:meth:`CapsDataset.describe
             <clinicadl.data.datasets.CapsDataset.describe>` for each
             dataset forming the UnpairedDataset.
@@ -293,7 +293,7 @@ class UnpairedDataset(Dataset):
         """
         return tuple([dataset.describe() for dataset in self.datasets])
 
-    def get_sample_info(self, idx: int, column: str) -> tuple[Any]:
+    def get_sample_info(self, idx: int, column: str) -> tuple[Any, ...]:
         """
         Retrieves information on a given sample.
 
@@ -317,7 +317,7 @@ class UnpairedDataset(Dataset):
 
         Returns
         -------
-        tuple[Any]
+        tuple[Any, ...]
             The information (e.g. the age, the sex, etc.) found for each sub-sample.
 
         Raises
@@ -379,7 +379,7 @@ class UnpairedDataset(Dataset):
         """
         return len(self.mapping)
 
-    def __getitem__(self, idx: int) -> tuple[Sample]:
+    def __getitem__(self, idx: int) -> tuple[Sample, ...]:
         """
         Retrieves the samples at a given index.
 
@@ -394,7 +394,7 @@ class UnpairedDataset(Dataset):
 
         Returns
         -------
-        tuple[Sample]
+        tuple[Sample, ...]
             A structured output containing the processed data and metadata
             for each dataset of the UnpairedDataset, as
             :py:class:`~clinicadl.transforms.extraction.Sample`.

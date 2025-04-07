@@ -202,7 +202,7 @@ class ConcatDataset(TorchConcatDataset):
 
         Returns
         -------
-        tuple[Dict[str, Any]]
+        tuple[Dict[str, Any], ...]
             The descriptions returned by :py:meth:`CapsDataset.describe
             <clinicadl.data.datasets.CapsDataset.describe>` for each
             dataset forming the ConcatDataset.
