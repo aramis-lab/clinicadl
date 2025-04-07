@@ -378,11 +378,12 @@ def test_get_metric_config(name, config):
 
     assert c.name == name
     assert isinstance(c, config)
-    with pytest.raises(ValueError):
-        get_metric_config("abc")
 
     if name == "SSIMMetric":
         config = get_metric_config("SSIMMetric", spatial_dims=2, data_range=1.5)
         assert config.name == "SSIMMetric"
         assert config.data_range == 1.5
         assert config.win_size == 11
+
+        with pytest.raises(ValueError):
+            get_metric_config("abc")

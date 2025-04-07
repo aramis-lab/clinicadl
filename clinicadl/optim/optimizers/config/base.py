@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import torch.nn as nn
 import torch.optim as optim
@@ -21,7 +21,6 @@ from .utils import (
 __all__ = [
     "ImplementedOptimizer",
     "OptimizerConfig",
-    "get_optimizer_config",
 ]
 
 
@@ -198,33 +197,3 @@ class _MomentumConfig(ClinicaDLConfig):
     """Config class 'momentum' option."""
 
     momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-
-
-def get_optimizer_config(
-    name: Union[str, ImplementedOptimizer],
-    **kwargs: Any,
-) -> OptimizerConfig:
-    """
-    Factory function to get an optimizer configuration object from its name
-    and parameters.
-
-    Parameters
-    ----------
-    name : Union[str, ImplementedOptimizer]
-        the name of the optimizer. Check our documentation to know
-        available optimizers.
-    **kwargs : Any
-        any parameter of the optimizer. Check our documentation on optimizers to
-        know these parameters.
-
-    Returns
-    -------
-    OptimizerConfig
-        the configuration object. Default values will be returned for the parameters
-        not passed by the user.
-    """
-    optimizer = ImplementedOptimizer(name)
-    config_name = "".join([optimizer, "Config"])
-    config = globals()[config_name]
-
-    return config(**kwargs)

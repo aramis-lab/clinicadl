@@ -106,3 +106,29 @@ def test_find_params_not_in_group(network):
             "dense1.bias",
         ]
     )
+
+
+def test_regroup_args_by_param_group():
+    from clinicadl.optim.optimizers.config.utils import regroup_args_by_param_group
+
+    args = {
+        "weight_decay": {"params_0": 0.0, "params_1": 1.0},
+        "alpha": {"params_1": 0.5, "ELSE": 0.1},
+        "momentum": {"params_3": 3.0},
+        "betas": (0.1, 0.1),
+    }
+    args_groups, args_global = regroup_args_by_param_group(args)
+    assert args_groups == {
+        "params_0": {"weight_decay": 0.0},
+        "params_1": {"alpha": 0.5, "weight_decay": 1.0},
+        "params_3": {"momentum": 3.0},
+    }
+    assert args_global == {"betas": (0.1, 0.1), "alpha": 0.1}
+
+    args_groups, args_global = regroup_args_by_param_group({"betas": (0.1, 0.1)})
+    assert len(args_groups) == 0
+
+    args_groups, args_global = regroup_args_by_param_group(
+        {"weight_decay": {"params_0": 0.0, "params_1": 1.0}}
+    )
+    assert len(args_global) == 0

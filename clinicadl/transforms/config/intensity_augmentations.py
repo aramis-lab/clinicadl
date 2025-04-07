@@ -187,7 +187,7 @@ class RandomBiasFieldConfig(TransformConfig):
         self,
         coefficients: Union[
             NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
+        ] = DefaultFromLibrary.YES,
         order: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
         super().__init__(

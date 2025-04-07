@@ -180,7 +180,7 @@ class ClampConfig(TransformConfig):
     @model_validator(mode="after")
     def validate_min_max(self):
         """Checks consistency between 'out_min' and 'out_max'."""
-        if not self.out_min and not self.out_max:
+        if self.out_min is None and self.out_max is None:
             raise ValueError("'out_min' and 'out_max' cannot both be None.")
         elif self.out_min and self.out_max and self.out_min > self.out_max:
             raise ValueError(

@@ -1,2 +1,3 @@
-from .base import ImplementedOptimizer, OptimizerConfig, get_optimizer_config
+from .base import ImplementedOptimizer, OptimizerConfig
 from .configs import *
+from .factory import get_optimizer_config
