@@ -15,8 +15,8 @@ from torch.utils.data.distributed import DistributedSampler
 from clinicadl.data.caps_dataset import (
     return_dataset,
 )
-from clinicadl.experiment_manager.maps_manager import MapsManager
 from clinicadl.interpret.config import InterpretConfig
+from clinicadl.maps.maps_manager import MapsManager
 from clinicadl.metrics.old_metrics.metric_module import MetricModule
 from clinicadl.metrics.old_metrics.utils import (
     check_selection_metric,

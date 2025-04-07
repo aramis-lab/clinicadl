@@ -1,0 +1,76 @@
+{
+    "index": 0,
+    "split_dir": "abc",
+    "train_dataset": {
+        "total_samples": 6,
+        "participant_session_pairs": [
+            [
+                "sub-000",
+                "ses-M000"
+            ],
+            [
+                "sub-000",
+                "ses-M003"
+            ],
+            [
+                "sub-010",
+                "ses-M003"
+            ],
+            [
+                "sub-010",
+                "ses-M012"
+            ],
+            [
+                "sub-100",
+                "ses-M000"
+            ],
+            [
+                "sub-100",
+                "ses-M012"
+            ]
+        ],
+        "preprocessing": {
+            "use_uncropped_image": true,
+            "tracer": "18FAV45",
+            "reconstruction": null,
+            "suvr_reference_region": "pons2",
+            "modality": "pet",
+            "name": "pet-linear",
+            "file_type": {
+                "pattern": "pet_linear/sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii*",
+                "description": "PET images with tracer '18FAV45', registered to MNI152NLin2009cSym space using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'",
+                "needed_pipeline": "pet-linear"
+            }
+        },
+        "extraction": {
+            "extract_method": "image"
+        }
+    },
+    "val_dataset": {
+        "total_samples": 1,
+        "participant_session_pairs": [
+            [
+                "sub-999",
+                "ses-M099"
+            ]
+        ],
+        "preprocessing": {
+            "use_uncropped_image": true,
+            "tracer": "18FAV45",
+            "reconstruction": null,
+            "suvr_reference_region": "pons2",
+            "modality": "pet",
+            "name": "pet-linear",
+            "file_type": {
+                "pattern": "pet_linear/sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii*",
+                "description": "PET images with tracer '18FAV45', registered to MNI152NLin2009cSym space using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'",
+                "needed_pipeline": "pet-linear"
+            }
+        },
+        "extraction": {
+            "extract_method": "image"
+        }
+    },
+    "train_loader_config": null,
+    "val_loader_config": null
+}

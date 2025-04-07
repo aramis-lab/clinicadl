@@ -135,7 +135,7 @@ class Split(ClinicaDLConfig):
             If the column passed in `sampling_weights` cannot be converted to floats.
         """
 
-        self.train_dataset._count_samples()
+        # self.train_dataset._count_samples()
         if dataloader_config:
             self.train_loader_config = dataloader_config
         else:

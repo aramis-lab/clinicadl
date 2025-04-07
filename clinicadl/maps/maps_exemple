@@ -1,0 +1,71 @@
+<maps_directory>
+├── environment.txt
+├── split-0
+│       ├── split.json
+│       ├── best-loss
+│       │       ├── model.pth.tar
+│       │       ├── train
+│       │       │       ├── description.log
+│       │       │       ├── train_image_level_metrics.tsv
+│       │       │       └── train_image_level_prediction.tsv
+│       │       ├── validation
+│       │       │       ├── description.log
+│       │       │       ├── validation_image_level_metrics.tsv
+│       │       │       └── validation_image_level_prediction.tsv
+│       │       └── test
+│       │               ├── description.log
+│       │               ├── test_image_level_metrics.tsv
+│       │               └── test_image_level_prediction.tsv
+│       └── training_logs
+│               ├── tensorboard
+│               │       ├── train
+│               │       └── validation
+│               └── training.tsv
+├── split-1
+│       ├── split.json
+│       ├── best-loss
+│       │       ├── model.pth.tar
+│       │       ├── train
+│       │       │       ├── description.log
+│       │       │       ├── train_image_level_metrics.tsv
+│       │       │       └── train_image_level_prediction.tsv
+│       │       ├── validation
+│       │       │       ├── description.log
+│       │       │       ├── validation_image_level_metrics.tsv
+│       │       │       └── validation_image_level_prediction.tsv
+│       │       └── test-2
+│       │               ├── description.log
+│       │               ├── test_image_level_metrics.tsv
+│       │               └── test_image_level_prediction.tsv
+│       └── training_logs
+│               ├── tensorboard
+│               │       ├── train
+│               │       └── validation
+│               └── training.tsv
+├── groups
+│       ├── train
+│       │       ├── split-0
+│       │       │       ├── data.tsv
+│       │       │       └── maps.json
+│       │       └── split-1
+│       │               ├── data.tsv
+│       │               └── maps.json
+│       ├── validation
+│       │       ├── split-0
+│       │       │       ├── data.tsv
+│       │       │       └── maps.json
+│       │       └── split-1
+│       │               ├── data.tsv
+│       │               └── maps.json
+│       ├── train+validation.tsv
+│       ├── test
+│       │     ├── data.tsv
+│       │     └── maps.json
+│       └── test-2
+│             ├── data.tsv
+│             └── maps.json
+└── json
+        ├── computational.json
+        ├── optimization.json
+        ├── model.json
+        └── metrics.json

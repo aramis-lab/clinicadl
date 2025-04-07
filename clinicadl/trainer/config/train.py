@@ -13,7 +13,7 @@ from clinicadl.callbacks.config import CallbacksConfig
 from clinicadl.config.config.lr_scheduler import LRschedulerConfig
 from clinicadl.config.config.reproducibility import ReproducibilityConfig
 from clinicadl.data.config.data import DataConfig
-from clinicadl.experiment_manager.config import MapsManagerConfig
+from clinicadl.maps.config import MapsManagerConfig
 from clinicadl.networks.old_network.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStoppingConfig

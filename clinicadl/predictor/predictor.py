@@ -11,8 +11,8 @@ from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import GROUPS, PARTICIPANT_ID
-from clinicadl.experiment_manager.maps_reader import DataGroup, MapsReader
 from clinicadl.losses.config import LossConfig
+from clinicadl.maps.maps import Maps
 from clinicadl.metrics import (
     ImplementedMetric,
     get_metric_config,
@@ -48,10 +48,12 @@ class Predictor:
     ):
         """TO COMPLETE"""
 
-        self.reader = MapsReader(maps_path=maps_path)
+        self.maps = Maps(maps_path)
+
+        dict_ = self.maps.read_maps()
 
         if comp_config is None:
-            self.comp = self.reader.get_config(ComputationalConfig)
+            self.comp = ComputationalConfig(**dict_)
         else:
             self.comp = comp_config
 
@@ -60,20 +62,14 @@ class Predictor:
                 "Model is loaded from config class, If you haven't created your model from config class, "
                 "please load the model by yourseld and give it as argument to the Predictor"
             )
-            config_list = self.reader.get_config(
-                [NetworkConfig, LossConfig, OptimizerConfig]
-            )
-            self.model = ClinicaDLModel.from_config(
-                network_config=config_list[0],
-                loss_config=config_list[1],
-                optimizer_config=config_list[2],
-            )
+
+            self.model = ClinicaDLModel.from_dict(dict_)
         else:
             self.model = model
 
     def validate(
         self,
-        dataloader: DataLoader,
+        dataloader: DataLoader[CapsDataset],
         metrics: GroupMetrics,
         epoch: int = 0,
     ):
@@ -138,9 +134,10 @@ class Predictor:
             df.sort_index(inplace=True)
             df.reset_index(inplace=True)
             df.to_csv(
-                self.reader.prediction_tsv_path(
-                    split=split, metric=metric, data_group=data_group
-                ),
+                self.maps.splits[split]
+                .best_metrics[metric]
+                .data_groups[data_group]
+                .prediction_tsv,
                 sep="\t",
                 index=False,
             )
@@ -194,8 +191,11 @@ class Predictor:
         nib.save(output_nii, (caps_reader.subject_directory / sample_path))
 
     def create_caps_output(self, split: int, metric: str, data_group: str):
-        caps_output_dir = self.reader.caps_output_path(
-            split=split, metric=metric, data_group=data_group
+        caps_output_dir = (
+            self.maps.splits[split]
+            .best_metrics[metric]
+            .data_groups[data_group]
+            .caps_output
         )
 
         if caps_output_dir.is_dir():
@@ -218,8 +218,7 @@ class Predictor:
         self._check_leakage(dataset_test=dataloader.dataset)
         # self.create_data_group(metrics, split, data_group)
 
-        data_group_ = DataGroup(maps_path=self.reader.maps_path, name=data_group)
-        data_group_.create(dataloader.dataset)
+        self.maps.create_data_group(name=data_group, dataset=dataloader.dataset)
 
         self.model.network.eval()
         for metric in metrics.val.selection_metrics:
@@ -261,8 +260,11 @@ class Predictor:
             if isinstance(data[0].label, Union[float, int]):
                 df.sort_index(inplace=True)
                 df.reset_index(inplace=True)
-                tsv_path = self.reader.prediction_tsv_path(
-                    split=split, metric=metric, data_group=data_group
+                tsv_path = (
+                    self.maps.splits[split]
+                    .best_metrics[metric]
+                    .data_groups[data_group]
+                    .prediction_tsv
                 )
                 tsv_path.parent.mkdir(parents=True, exist_ok=True)
                 df.to_csv(tsv_path, sep="\t", index=False)
@@ -276,9 +278,9 @@ class Predictor:
 
         if (
             dataset_test.caps_reader.input_directory.resolve()
-            == "self.reader.get_config().resolve()"
+            == self.maps.caps_dir().resolve()
         ):  # TODO: add a function to get the caps dir of the czps used for the training from maps reader
-            df_train_val = self.reader.get_train_val_df()
+            df_train_val = tsv_to_df(self.maps.train_val_tsv)
             df_test = dataset_test.df
 
             participants_train = set(df_train_val[PARTICIPANT_ID].values)
