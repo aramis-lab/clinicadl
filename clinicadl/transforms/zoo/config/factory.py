@@ -31,7 +31,7 @@ def get_transform_config(
         not passed by the user.
     """
     transform = ZooTransform(name)
-    config_name = "".join([transform, "Config"])
+    config_name = f"{transform}Config"
     config = globals()[config_name]
 
     return config(**kwargs)

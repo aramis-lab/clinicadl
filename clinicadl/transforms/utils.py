@@ -11,8 +11,9 @@ from .zoo.config.factory import get_transform_config as gtc_zoo
 Transform = Callable[[DataPoint], DataPoint]
 AllTransformsType = Union[ImplementedTransform, ZooTransform]
 
+
 def get_transform_config(
-    name: Union[str, AllTransfromsType], **kwargs: Any
+    name: Union[str, AllTransformsType], **kwargs: Any
 ) -> TransformConfig:
     """
     Factory function to get a transform configuration object from its name
