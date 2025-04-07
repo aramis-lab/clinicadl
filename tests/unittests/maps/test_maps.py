@@ -62,7 +62,6 @@ split = Split(
 )
 
 
-
 def test_good_maps():
     maps = Maps(maps_path)
     maps.remove()
