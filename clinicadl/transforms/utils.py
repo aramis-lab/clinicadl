@@ -1,14 +1,14 @@
 from typing import Any, Callable, Union
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.config.base import TransformConfig
-from clinicadl.transforms.config.enum import ImplementedTransform
-from clinicadl.transforms.config.factory import get_transform_config as gtc_implemented
-from clinicadl.transforms.zoo.config.enum import ZooTransform
-from clinicadl.transforms.zoo.config.factory import get_transform_config as gtc_zoo
+
+from .config.base import TransformConfig
+from .config.enum import ImplementedTransform
+from .config.factory import get_transform_config as gtc_implemented
+from .zoo.config.enum import ZooTransform
+from .zoo.config.factory import get_transform_config as gtc_zoo
 
 Transform = Callable[[DataPoint], DataPoint]
-
 AllTransfromsType = Union[ImplementedTransform, ZooTransform]
 
 
@@ -21,7 +21,7 @@ def get_transform_config(
 
     Parameters
     ----------
-    name : Union[str, ImplementedTransform]
+    name : Union[str, Union[ImplementedTransform, ZooTransform]]
         the name of the transform. Check our documentation to know
         supported transforms.
     **kwargs : Any

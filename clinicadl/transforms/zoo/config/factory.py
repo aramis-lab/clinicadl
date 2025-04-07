@@ -17,7 +17,7 @@ def get_transform_config(
 
     Parameters
     ----------
-    name : Union[str, ImplementedTransform]
+    name : Union[str, ZooTransform]
         the name of the transform. Check our documentation to know
         supported transforms.
     **kwargs : Any

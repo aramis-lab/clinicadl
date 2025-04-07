@@ -1,9 +1,7 @@
 from typing import Optional, Union
 
 import torchio as tio
-from pydantic import (
-    computed_field,
-)
+from pydantic import computed_field
 
 from clinicadl.utils.config import DefaultFromLibrary
 
