@@ -9,8 +9,7 @@ from .zoo.config.enum import ZooTransform
 from .zoo.config.factory import get_transform_config as gtc_zoo
 
 Transform = Callable[[DataPoint], DataPoint]
-AllTransfromsType = Union[ImplementedTransform, ZooTransform]
-
+AllTransformsType = Union[ImplementedTransform, ZooTransform]
 
 def get_transform_config(
     name: Union[str, AllTransfromsType], **kwargs: Any
