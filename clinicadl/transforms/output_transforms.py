@@ -12,7 +12,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
 from .transforms import CUSTOM_TRANSFORM
-from .types import Transform
+from .utils import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
 

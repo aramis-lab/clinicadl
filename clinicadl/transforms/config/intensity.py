@@ -8,7 +8,6 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.transforms.homemade_transforms import NanRemoval
 from clinicadl.utils.config import DefaultFromLibrary
 
 from .base import Bounds, ImplementedTransform, MaskingMethodConfig, TransformConfig
@@ -19,7 +18,6 @@ __all__ = [
     "ZNormalizationConfig",
     "MaskConfig",
     "ClampConfig",
-    "NanRemovalConfig",
 ]
 
 
@@ -30,7 +28,7 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
 
     out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
     percentiles: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
-    in_min_max: Union[Optional[Union[NonNegativeFloat, Tuple[float, float]]]]
+    in_min_max: Optional[Union[NonNegativeFloat, Tuple[float, float]]]
 
     def __init__(
         self,
@@ -188,31 +186,3 @@ class ClampConfig(TransformConfig):
             )
 
         return self
-
-
-class NanRemovalConfig(TransformConfig):
-    """
-    Config class for :py:class:`clinicadl.transforms.NanRemoval <clinicadl.transforms.homemade_transforms.NanRemoval>`.
-    """
-
-    nan: float
-    posinf: Optional[float]
-    neginf: Optional[float]
-
-    def __init__(
-        self,
-        nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-        neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(nan=nan, posinf=posinf, neginf=neginf)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.NAN_REMOVAL.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return NanRemoval

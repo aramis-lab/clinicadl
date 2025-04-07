@@ -9,8 +9,6 @@ class ImplementedTransform(str, BaseEnum):
     see: https://torchio.readthedocs.io/transforms/transforms.html
     """
 
-    NAN_REMOVAL = "NanRemoval"
-
     RESCALE_INTENSITY = "RescaleIntensity"
     Z_NORMALIZATION = "ZNormalization"
     MASK = "Mask"

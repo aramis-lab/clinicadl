@@ -1,10 +1,10 @@
 import pytest
 
-from clinicadl.transforms.config.factory import get_transform_config
 from clinicadl.transforms.config.intensity_augmentations import (
     RandomBlurConfig,
     RandomNoiseConfig,
 )
+from clinicadl.transforms.utils import get_transform_config
 
 
 def test_get_transform_config():
@@ -22,9 +22,3 @@ def test_get_transform_config():
 
     with pytest.raises(ValueError):
         get_transform_config("abc")
-
-    config = get_transform_config("NanRemoval", nan=1)
-    assert config.name == "NanRemoval"
-    assert config.nan == 1
-    assert config.posinf is None
-    assert config.neginf is None

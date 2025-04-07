@@ -16,8 +16,8 @@ from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.data.structures import DataPoint
 from clinicadl.data.tensor_conversion import TensorConversion
 from clinicadl.transforms import Transforms
-from clinicadl.transforms.config import get_transform_config
 from clinicadl.transforms.extraction import Slice
+from clinicadl.transforms.utils import get_transform_config
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTensorConversionError,

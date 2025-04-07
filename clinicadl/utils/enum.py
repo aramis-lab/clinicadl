@@ -22,6 +22,11 @@ class BaseEnum(Enum):
             + ", ".join([repr(m.value) for m in cls])
         )
 
+    @classmethod
+    def values(cls):
+        """Return all possible values of the enum."""
+        return [m.value for m in cls]
+
 
 class Task(str, Enum):
     """Tasks that can be performed in ClinicaDL."""

@@ -5,12 +5,12 @@ import torchio as tio
 from pydantic import field_serializer, field_validator, model_validator
 
 from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
-from clinicadl.transforms.config.intensity import NanRemovalConfig
 from clinicadl.transforms.extraction import Extraction, Image
+from clinicadl.transforms.zoo.config.factory import NanRemovalConfig
 from clinicadl.utils.config import ClinicaDLConfig
 
 from .config import TransformConfig
-from .types import Transform
+from .utils import Transform
 
 logger = getLogger("clinicadl.transforms.transforms")
 

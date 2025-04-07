@@ -24,8 +24,8 @@ from clinicadl.dictionary.words import (
     SESSION,
 )
 from clinicadl.transforms import Transforms
-from clinicadl.transforms.config import TransformConfig, get_transform_config
-from clinicadl.transforms.types import Transform
+from clinicadl.transforms.config import TransformConfig
+from clinicadl.transforms.utils import Transform, get_transform_config
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
