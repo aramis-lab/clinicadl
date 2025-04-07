@@ -196,7 +196,7 @@ class ConcatDataset(TorchConcatDataset):
 
         return ConcatDataset(datasets, ignore_spacing=True, raise_warnings=False)
 
-    def describe(self) -> tuple[Dict[str, Any]]:
+    def describe(self) -> tuple[Dict[str, Any], ...]:
         """
         Returns a description of the CapsDatasets forming the ConcatDataset.
 
