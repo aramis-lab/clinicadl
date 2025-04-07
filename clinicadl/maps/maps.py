@@ -69,7 +69,7 @@ class Maps(Directory):
 
     @property
     def json_dir(self) -> Path:
-        return self.path / "JSON"
+        return self.path / "json"
 
     @property
     def split_list(self) -> list[int]:
@@ -171,13 +171,13 @@ class Maps(Directory):
         self.splits[split.index] = split_dir
 
         train_group = TrainValDataGroup(
-            name=TRAIN, parent_dir=self.path, split=split.index
+            name=TRAIN, parent_dir=self.groups_dir, split=split.index
         )
         train_group.create(dataset=split.train_dataset)
         self.data_groups[TRAIN] = {split.index: train_group}
 
         val_group = TrainValDataGroup(
-            name=VALIDATION, parent_dir=self.path, split=split.index
+            name=VALIDATION, parent_dir=self.groups_dir, split=split.index
         )
         val_group.create(dataset=split.val_dataset)
         self.data_groups[VALIDATION] = {split.index: val_group}

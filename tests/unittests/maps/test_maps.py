@@ -71,10 +71,10 @@ def test_good_maps():
     assert maps.groups_dir == maps_path / "groups"
     assert maps.train_val_tsv == maps_path / "train+validation.tsv"
     assert maps.requirements_txt == maps_path / "environment.txt"
-    assert maps.computational_json == maps_path / "JSON" / "computational.json"
-    assert maps.model_json == maps_path / "JSON" / "model.json"
-    assert maps.optimization_json == maps_path / "JSON" / "optimization.json"
-    assert maps.metrics_json == maps_path / "JSON" / "metrics.json"
+    assert maps.computational_json == maps_path / "json" / "computational.json"
+    assert maps.model_json == maps_path / "json" / "model.json"
+    assert maps.optimization_json == maps_path / "json" / "optimization.json"
+    assert maps.metrics_json == maps_path / "json" / "metrics.json"
     assert maps.exists() is False
 
     maps.create()
