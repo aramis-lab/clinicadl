@@ -275,7 +275,7 @@ class UnpairedDataset(Dataset):
 
         return UnpairedDataset(datasets)
 
-    def describe(self) -> tuple[Dict[str, Any]]:
+    def describe(self) -> tuple[Dict[str, Any], ...]:
         """
         Returns a description of the CapsDatasets forming the UnpairedDataset.
 
