@@ -13,7 +13,6 @@ from clinicadl.dictionary.words import (
 from clinicadl.metrics.metrics import MetricConfig
 from clinicadl.splitter.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.iotools.utils import update_json
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
@@ -76,23 +75,8 @@ class SplitDir(Directory):
         if self.exists():
             raise ClinicaDLConfigurationError(f"Split '{self.number}' already exists.")
         self.path.mkdir(parents=True)
-        self._write_split_json(split=split)
         for metric in self.best_metrics.values():
             metric.create(split=split)
-
-    def _write_split_json(self, split: Split) -> None:
-        """Writes the split.json file."""
-
-        dict_ = split.model_dump(exclude={"train_loader", "val_loader"})
-
-        dict_["val_dataset"] = split.val_dataset.describe()
-        dict_["train_dataset"] = split.train_dataset.describe()
-
-        with open(self.split_json, "w") as json_file:
-            json.dump({}, json_file)
-        update_json(
-            json_path=self.split_json, dict_=dict_
-        )  # called to add data to the split.json
 
 
 class TrainingLogs(Directory):

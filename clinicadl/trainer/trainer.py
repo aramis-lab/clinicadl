@@ -23,7 +23,7 @@ from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
 from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
 from clinicadl.utils import cluster
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.dlo_jz import Chronometer
 from clinicadl.utils.exceptions import ClinicaDLMAPSError
 from clinicadl.utils.seed import seed_everything
@@ -41,6 +41,7 @@ class Trainer:
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = True,
+        seed: int = 123,
     ) -> None:
         """TO COMPLETE"""
 
@@ -60,9 +61,11 @@ class Trainer:
         # will be different if resume is called
         self.current_epoch: int = 0
 
+        self.early_stopping = self.optim.init_early_stopping()
+        self.scaler = self.comp.init_scaler()
+
         # seed initialization
-        # TODO: let the user choose a random seed
-        seed_everything(123, deterministic=False, compensation="memory")
+        seed_everything(seed, deterministic=False, compensation="memory")
 
         # Chronometer initialisation
         self.chrono = Chronometer()
@@ -82,38 +85,6 @@ class Trainer:
 
         # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
 
-    def init_maps(self, overwrite: bool):
-        """TO COMPLETE"""
-        if not self.maps.is_empty() and overwrite:
-            remove_non_empty_dir(self.maps.path)
-        else:
-            raise ClinicaDLMAPSError(
-                f"The maps directory {self.maps.path} is not empty."
-            )
-
-        if not self.maps.exists() or self.maps.is_empty():
-            self.maps.create()
-            self.model.write_info(self.maps.model_json)
-            self.optim.write_info(self.maps.optimization_json)
-            self.comp.write_info(self.maps.computational_json)
-
-    @classmethod
-    def from_json(cls, json_file: PathType) -> Trainer:
-        """TO COMPLETE"""
-        json_file = Path(json_file)
-        if not json_file.is_file():
-            raise FileNotFoundError(f"The json file {json_file} does not exist.")
-
-        with json_file.open(mode="r") as file:
-            try:
-                data = json.load(file)
-            except json.JSONDecodeError:
-                raise ValueError("Invalid JSON format in the maps file.")
-
-        maps_path = data["maps_path"]
-
-        return cls._from_dict(maps_path, data)
-
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
         """TO COMPLETE"""
@@ -122,8 +93,19 @@ class Trainer:
         if not maps.exists():
             raise ValueError(f"Invalid maps file: {maps_path}")
 
-        dict_ = maps.read_maps()  # TODO : read all json files
-        return cls._from_dict(maps_path, dict_)
+        model = ClinicaDLModel.from_json(maps.model_json)
+        metrics = Metrics.from_json(maps.metrics_json)
+        optim = OptimizationConfig.from_json(maps.optimization_json)
+        comp = ComputationalConfig.from_json(maps.computational_json)
+
+        return cls(
+            maps_path,
+            model=model,
+            metrics=metrics,
+            optim_config=optim,
+            comp_config=comp,
+            _overwrite=False,
+        )
 
     @classmethod
     def _from_dict(cls, maps_path: PathType, dict_: dict):
@@ -140,6 +122,24 @@ class Trainer:
             comp_config=comp,
             _overwrite=False,
         )
+
+    def init_maps(self, overwrite: bool):
+        """TO COMPLETE"""
+
+        if overwrite:
+            if self.maps.exists():
+                remove_non_empty_dir(self.maps.path)
+        else:
+            if self.maps.exists():
+                raise ClinicaDLMAPSError(
+                    f"The maps directory {self.maps.path} already exists. Use overwrite=True to remove it."
+                )
+
+        self.maps.create()
+        self.model.write_json(self.maps.model_json)
+        self.optim.write_json(self.maps.optimization_json)
+        self.comp.write_json(self.maps.computational_json)
+        self.metrics.write_json(self.maps.metrics_json)
 
     def resume(self, split: Split):
         """TO COMPLETE"""
@@ -192,17 +192,12 @@ class Trainer:
     def on_train_begin(self, split: Split):
         """TO COMPLETE"""
 
-        self._check_split(split)  # not sure if needed
-        self.maps.create_split(split, self.metrics.val.selection_metrics)
-
+        self.create_split(split)  # not sure if needed
         self.model.train()
 
         self.epoch = (
             self.current_epoch
         )  # will be different if resume or transfer learning
-
-        self.early_stopping = self.optim.init_early_stopping()
-        self.scaler = self.comp.init_scaler()
 
         # profiler = init_profiler(maps_path)
         # TODO: init tracker like WandB or MlFlow (callbacks ?)
@@ -370,7 +365,7 @@ class Trainer:
                 1, min(self.optim.evaluation_steps, self.n_batch // 2)
             )  # Ajuste pour garder une fréquence raisonnable
 
-    def _check_split(self, split: Split):
+    def create_split(self, split: Split):
         """Check if the split is well defined."""
         if split.train_loader is None:
             raise ValueError(
@@ -380,3 +375,6 @@ class Trainer:
             raise ValueError(
                 "The split has no val_loader defined. Please run `get_dataloader()`"
             )
+
+        self.maps.create_split(split, self.metrics.val.selection_metrics)
+        split.write_json(self.maps.splits[split.index].split_json)

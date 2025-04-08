@@ -8,7 +8,7 @@ from typing_extensions import Self
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.iotools.utils import update_json
+from clinicadl.utils.json import write_json
 from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.computational_config")
@@ -36,9 +36,6 @@ class ComputationalConfig(ClinicaDLConfig):
     @property
     def device(self):
         return torch.device("cuda") if self.gpu else torch.device("cpu")
-
-    def write_info(self, json_path: PathType):
-        update_json(json_path=Path(json_path), config=self)
 
     def init_scaler(self):
         return GradScaler(device=self.device.type, enabled=self.amp)

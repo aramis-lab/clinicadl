@@ -48,6 +48,22 @@ class Split(ClinicaDLConfig):
     _dp_degree: Optional[PositiveInt] = None
     _rank: Optional[NonNegativeInt] = None
 
+    def model_dump(self) -> dict:
+        """
+        Customized version of 'model_dump'.
+
+        Returns the serialized config class.
+        """
+        dict_ = super().model_dump()
+        # Remove the dataloaders from the dump
+        dict_.pop("train_loader", None)
+        dict_.pop("val_loader", None)
+
+        dict_["val_dataset"] = self.val_dataset.describe()
+        dict_["train_dataset"] = self.train_dataset.describe()
+
+        return dict_
+
     def reset(self) -> None:
         """
         Resets the computed fields of the Split object

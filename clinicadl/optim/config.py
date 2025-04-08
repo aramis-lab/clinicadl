@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, PositiveInt
+from pydantic import BaseModel, PositiveInt, computed_field
 
-from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.iotools.utils import update_json
+from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
 from clinicadl.utils.typing import PathType
 
 from .early_stopping import EarlyStopping, EarlyStoppingConfig
@@ -18,9 +17,6 @@ class OptimizationConfig(ClinicaDLConfig):
     evaluation_steps: PositiveInt = 5  # gives the number of iterations to perform an evaluation internal to an epoch. Default will only perform an evaluation at the end of each epoch.
     epochs: PositiveInt = 10
     early_stopping: EarlyStoppingConfig = EarlyStoppingConfig()
-
-    def write_info(self, json_path: PathType):
-        update_json(json_path=Path(json_path), config=self)
 
     def init_early_stopping(self):
         return EarlyStopping(self.early_stopping)

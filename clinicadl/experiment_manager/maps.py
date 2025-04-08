@@ -43,7 +43,7 @@ from clinicadl.optim.optimizers import ImplementedOptimizer, get_optimizer_confi
 from clinicadl.splitter.split import Split
 from clinicadl.tsvtools.utils import df_to_tsv, tsv_to_df
 from clinicadl.utils import cluster
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,

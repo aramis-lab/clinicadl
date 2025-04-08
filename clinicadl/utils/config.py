@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 import inspect
+import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.dictionary.words import NAME
+from clinicadl.utils.iotools.utils import path_decoder, path_encoder
+from clinicadl.utils.json import read_json, update_json, write_json
 
 
 class DefaultFromLibrary(str, Enum):
@@ -23,6 +29,15 @@ class ClinicaDLConfig(BaseModel):
         arbitrary_types_allowed=True,
     )
 
+    @classmethod
+    def from_json(cls, json_path: Path):
+        """
+        Reads the serialized config class from a JSON file.
+        """
+        json_path = Path(json_path)
+        dict_ = read_json(json_path=json_path)
+        return cls(**dict_)
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Customized version of 'model_dump'.
@@ -30,6 +45,24 @@ class ClinicaDLConfig(BaseModel):
         Returns the serialized config class.
         """
         return _order_dict(self.model_dump())
+
+    def write_json(self, json_path: Path, overwrite: bool = False) -> None:
+        """
+        Writes the serialized config class to a JSON file.
+        """
+        write_json(json_path=json_path, data=self.to_dict(), overwrite=overwrite)
+
+    def read_json(self, json_path: Path) -> Dict[str, Any]:
+        """
+        Reads the serialized config class from a JSON file.
+        """
+        return read_json(json_path=json_path)
+
+    def update_json(self, json_path: Path) -> None:
+        """
+        Updates the JSON file with the serialized config class.
+        """
+        update_json(json_path=json_path, new_data=self.to_dict())
 
 
 class NewClinicaDLConfig(ClinicaDLConfig, ABC):
@@ -74,7 +107,7 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
             The parametrized object.
         """
         associated_class = self._get_class()
-        return associated_class(**self.model_dump(exclude="name"))
+        return associated_class(**self.model_dump(exclude={"name"}))
 
 
 def _order_dict(model_or_field: Any) -> Any:

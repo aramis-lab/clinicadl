@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -14,7 +15,7 @@ from clinicadl.optim import get_optimizer_config, get_optimizer_from_config
 from clinicadl.optim.optimizers import OptimizerConfig
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
-from clinicadl.utils.iotools.utils import update_json
+from clinicadl.utils.json import read_json
 from clinicadl.utils.typing import PathType
 
 # import idr_torch
@@ -26,9 +27,9 @@ class ClinicaDLModel:
         self.loss = loss
         self.optimizer = optimizer
 
-        self._network_config = None
-        self._optimizer_config = None
-        self._loss_config = None
+        self._network_config: Optional[NetworkConfig] = None
+        self._optimizer_config: Optional[OptimizerConfig] = None
+        self._loss_config: Optional[LossConfig] = None
 
         self.memory_format = torch.channels_last
         self.non_blocking: bool = False
@@ -46,6 +47,16 @@ class ClinicaDLModel:
         #     fsdp=fully_sharded_data_parallel,
         #     amp=amp,
         # )  # to check
+
+    @classmethod
+    def from_json(cls, json_path: PathType):
+        """
+        Reads a JSON file and returns a ClinicaDLModel instance.
+        """
+        json_path = Path(json_path)
+        dict_ = read_json(json_path=json_path)
+
+        return cls.from_dict(dict_)
 
     @classmethod
     def from_dict(cls, dict_: dict):
@@ -98,17 +109,25 @@ class ClinicaDLModel:
     def train(self):
         self.network.to(self.device)
         self.network.to(
-            memory_format=self.memory_format, non_blocking=self.non_blocking
-        )
+            non_blocking=self.non_blocking
+        )  # memory_format=self.memory_format (for ddp)
         self.network.train()
 
-    def write_info(self, json_path: PathType):
+    def write_json(self, json_path: PathType, overwrite: bool = False) -> None:
+        """
+        Writes the serialized config class to a JSON file.
+        """
         json_path = Path(json_path)
-        if self._network_config:
-            update_json(json_path, self._network_config)
 
-        if self._loss_config:
-            update_json(json_path, self._loss_config)
+        if (
+            not self._network_config
+            or not self._loss_config
+            or not self._optimizer_config
+        ):
+            raise ValueError(
+                "Network, loss, and optimizer configs must be set before writing to JSON."
+            )
 
-        if self._optimizer_config:
-            update_json(json_path, self._optimizer_config)
+        self._network_config.write_json(json_path, overwrite=overwrite)
+        self._loss_config.update_json(json_path)
+        self._optimizer_config.update_json(json_path)
