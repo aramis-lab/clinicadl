@@ -7,10 +7,12 @@ import pandas as pd
 from monai.metrics.metric import Metric as MonaiMetric
 
 from clinicadl.losses.utils import Loss
+from clinicadl.maps import Maps
 from clinicadl.metrics import ImplementedMetric
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.factory import get_metric_config, get_metric_from_config
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
 from clinicadl.utils.json import read_json, write_json
 
 MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
@@ -176,12 +178,23 @@ class Metrics:
     def model_dump(self):
         return self.val.model_dump()
 
-    def save_metrics(self, path: Path):
+    def save_metrics(self, split: int, maps: Maps):
         """Save the metrics in the MAPS."""
         """Creates a training.tsv file."""
 
-        (path.parent).mkdir(parents=True, exist_ok=True)
-        self.training_loss.to_csv(path, sep="\t", index=True)
+        for metric in self.val.selection_metrics:
+            metric = metric.value
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].train.metrics_tsv,
+                self.train.df,
+            )
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].val.metrics_tsv,
+                self.val.df,
+            )
+        training_tsv = maps.splits[split].logs.training_tsv
+        (training_tsv.parent).mkdir(parents=True, exist_ok=True)
+        self.training_loss.to_csv(training_tsv, sep="\t", index=True)
 
     def write_json(self, json_path: Path, overwrite: bool = False) -> None:
         """

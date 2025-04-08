@@ -21,7 +21,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.dlo_jz import Chronometer
@@ -246,21 +246,7 @@ class Trainer:
         # TODO: stop tracker like WandB or MlFlow (callbacks ?)
 
         # self.metrics.on_train_end()
-
-        for metric in self.metrics.val.selection_metrics:
-            metric = metric.value
-            self.metrics.train.df.to_csv(
-                self.maps.splits[split.index].best_metrics[metric].train.metrics_tsv,
-                sep="\t",
-                index=False,
-            )
-            self.metrics.val.df.to_csv(
-                self.maps.splits[split.index].best_metrics[metric].val.metrics_tsv,
-                sep="\t",
-                index=False,
-            )
-
-        self.metrics.save_metrics(self.maps.splits[split.index].logs.training_tsv)
+        self.metrics.save_metrics(maps=self.maps, split=split.index)
 
         for metric in self.metrics.val.selection_metrics:
             metric = metric.value
@@ -328,13 +314,6 @@ class Trainer:
                 shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
 
     ## INITIALIZATION
-    def _init_validator(self):
-        return Predictor(
-            maps_path=self.maps.path,
-            model=self.model,
-            comp_config=self.comp,
-        )
-
     def _init_scheduler(
         self,
     ):
