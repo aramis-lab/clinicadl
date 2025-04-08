@@ -175,7 +175,7 @@ class OptimizerConfig(NewClinicaDLConfig):
         return self
 
 
-class _CapturableConfig(NewClinicaDLConfig):
+class _CapturableConfig(ClinicaDLConfig):
     """Config class for 'capturable' option."""
 
     capturable: Union[bool, Dict[str, bool]]

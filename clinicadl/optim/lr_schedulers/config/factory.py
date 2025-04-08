@@ -6,7 +6,7 @@ import torch.optim.lr_scheduler as lr_schedulers
 
 from clinicadl.utils.factories import update_config_with_defaults
 
-from .config import (
+from .configs import (
     ImplementedLRScheduler,
     LRSchedulerConfig,
     create_lr_scheduler_config,

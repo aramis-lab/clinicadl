@@ -5,10 +5,13 @@ class ImplementedLRScheduler(str, Enum):
     """Implemented LR schedulers in ClinicaDL."""
 
     CONSTANT = "ConstantLR"
+    EXPONENTIAL = "ExponentialLR"
     LINEAR = "LinearLR"
     STEP = "StepLR"
     MULTI_STEP = "MultiStepLR"
     PLATEAU = "ReduceLROnPlateau"
+    POLYNOMIAL = "PolynomialLR"
+    ONE_CYCLE = "OneCycleLR"
 
     @classmethod
     def _missing_(cls, value):
