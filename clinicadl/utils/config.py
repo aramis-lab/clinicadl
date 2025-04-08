@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.dictionary.words import NAME
-from clinicadl.utils.iotools.utils import path_decoder, path_encoder
 from clinicadl.utils.json import read_json, update_json, write_json
 
 

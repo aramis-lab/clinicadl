@@ -271,6 +271,22 @@ class Trainer:
                     data_group="train",
                 )
 
+    ## UTILS
+
+    def create_split(self, split: Split):
+        """Check if the split is well defined."""
+        if split.train_loader is None:
+            raise ValueError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        if split.val_loader is None:
+            raise ValueError(
+                "The split has no val_loader defined. Please run `get_dataloader()`"
+            )
+
+        self.maps.create_split(split, self.metrics.val.selection_metrics)
+        split.write_json(self.maps.splits[split.index].split_json)
+
     def _save_tmp_weights(self, split: int):
         model_weights = {
             "model": self.model.network.state_dict(),
@@ -343,17 +359,3 @@ class Trainer:
             self.optim.evaluation_steps = max(
                 1, min(self.optim.evaluation_steps, self.n_batch // 2)
             )  # Ajuste pour garder une fréquence raisonnable
-
-    def create_split(self, split: Split):
-        """Check if the split is well defined."""
-        if split.train_loader is None:
-            raise ValueError(
-                "The split has no train_loader defined. Please run `get_dataloader()`"
-            )
-        if split.val_loader is None:
-            raise ValueError(
-                "The split has no val_loader defined. Please run `get_dataloader()`"
-            )
-
-        self.maps.create_split(split, self.metrics.val.selection_metrics)
-        split.write_json(self.maps.splits[split.index].split_json)
