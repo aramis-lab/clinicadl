@@ -64,20 +64,14 @@ def path_encoder(obj):
     where keys suggest they point to filesystem paths.
     """
     if isinstance(obj, Path):
-        return obj.as_posix
+        return obj.as_posix()
 
     elif isinstance(obj, dict):
         for key, value in obj.items():
-            if isinstance(value, dict):
-                obj[key] = path_encoder(value)
-            elif is_path_key(key):
-                if not value:
-                    obj[key] = ""
-                elif isinstance(value, Path):
-                    obj[key] = value.as_posix()
+            obj[key] = path_encoder(value)
         return obj
-
-    return obj
+    else:
+        return obj
 
 
 def path_decoder(obj):
@@ -88,11 +82,13 @@ def path_decoder(obj):
     if isinstance(obj, dict):
         obj2 = deepcopy(obj)
         for key, value in obj2.items():
-            if isinstance(value, dict):
-                obj[key] = path_decoder(value)
-            elif is_path_key(key):
+            if is_path_key(key):
                 if value in ("", False, None):
-                    obj[key] = False
+                    obj2[key] = False
                 else:
-                    obj[key] = Path(value)
-    return obj
+                    obj2[key] = Path(value)
+            else:
+                obj2[key] = path_decoder(value)
+        return obj2
+    else:
+        return obj
