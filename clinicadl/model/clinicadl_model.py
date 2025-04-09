@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
+from clinicadl.data.dataloader import BatchLoader
 from clinicadl.losses import get_loss_function_config, get_loss_function_from_config
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.utils import Loss
@@ -94,17 +95,30 @@ class ClinicaDLModel:
         checkpoint_state = torch.load(
             optimizer_path, map_location=self.device, weights_only=True
         )
-        self.network.load_optim_state_dict(
-            self.optimizer, checkpoint_state["optimizer"]
-        )
+        self.optimizer.load_state_dict(checkpoint_state["optimizer"])
+        # self.network.load_optim_state_dict(
+        #     self.optimizer, checkpoint_state["optimizer"]
+        # )
 
-    def load_state_dict(self, model_path: Path):
+    def load_network_state_dict(self, model_path: Path):
         model_state = torch.load(
             model_path, map_location=self.device, weights_only=True
         )
         self.network.load_state_dict(model_state["model"])
 
         return model_state["epoch"]
+
+    def training_step(self, data: BatchLoader, device: torch.device):
+        """
+        Perform a training step on the model using the provided batch of data and return the computed loss
+        """
+        labels = data.get_labels().to(device)
+        images = data.get_images().to(device)
+
+        outputs = self.network(images)
+        loss = self.loss(outputs, labels)
+
+        return loss
 
     def train(self):
         self.network.to(self.device)

@@ -145,7 +145,7 @@ class Trainer:
         """TO COMPLETE"""
 
         self.model.load_optim_state_dict(self.maps.splits[split.index].tmp.optimizer)
-        self.current_epoch = self.model.load_state_dict(
+        self.current_epoch = self.model.load_network_state_dict(
             self.maps.splits[split.index].tmp.optimizer
         )
         # TODO: need to resume the lr scheduler and the distributed Sampler
@@ -166,28 +166,14 @@ class Trainer:
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin()
 
-                images = data.get_images().to(self.comp.device)
-                labels = data.get_labels().to(self.comp.device)
+                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
+                    loss = self.model.training_step(data=data, device=self.comp.device)
 
-                with autocast(self.comp.device.type, enabled=self.comp.amp):
-                    outputs = self.model.network(images)
-                    loss = self.model.loss(outputs, labels)
-
-                    self.metrics.write_training_loss(
-                        epoch=self.epoch, batch=batch_idx, loss=loss.item()
-                    )
-
-                self.scaler.scale(loss).backward()
-                self.weights_update()
+                self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
             self.on_epoch_end(split)
 
         self.on_train_end(split)
-
-    def weights_update(self):
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.model.optimizer.zero_grad(set_to_none=True)
 
     def on_train_begin(self, split: Split):
         """TO COMPLETE"""
@@ -215,8 +201,17 @@ class Trainer:
     def on_batch_begin(self):
         pass
 
-    def on_batch_end(self):
-        pass
+    def weights_update(self):
+        self.scaler.step(self.model.optimizer)
+        self.scaler.update()
+        self.model.optimizer.zero_grad(set_to_none=True)
+
+    def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
+        self.metrics.write_training_loss(
+            epoch=self.epoch, batch=batch_idx, loss=loss.item()
+        )
+        self.scaler.scale(loss).backward()
+        self.weights_update()
 
     def on_epoch_end(self, split: Split):
         # self.model.network.zero_grad(set_to_none=True)
@@ -251,7 +246,7 @@ class Trainer:
         for metric in self.metrics.val.selection_metrics:
             metric = metric.value
 
-            self.model.load_state_dict(
+            self.model.load_network_state_dict(
                 self.maps.splits[split.index].best_metrics[metric].model
             )
 
