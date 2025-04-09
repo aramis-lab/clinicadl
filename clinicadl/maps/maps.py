@@ -15,7 +15,7 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALIDATION,
 )
-from clinicadl.metrics.metrics import MetricConfig
+from clinicadl.metrics.config import MetricConfig
 from clinicadl.splitter.split import Split
 from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
