@@ -301,18 +301,13 @@ class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumCon
         """Returns the optimizer associated to this config class."""
         return optim.RMSprop
 
-    @field_validator("alpha")
-    @classmethod
-    def validator_alpha(cls, v, ctx):
-        return cls.validator_proba(v, ctx)
-
 
 class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
     """
     Config class for :py:class:`torch.optim.SGD`.
     """
 
-    dampening: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
+    dampening: Union[float, Dict[str, float]]
     nesterov: Union[bool, Dict[str, bool]]
 
     def __init__(
@@ -326,7 +321,7 @@ class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
             NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
         ] = DefaultFromLibrary.YES,
         dampening: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
+            float, Dict[str, float], DefaultFromLibrary
         ] = DefaultFromLibrary.YES,
         weight_decay: Union[
             NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
@@ -369,8 +364,3 @@ class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
     def _get_class(self) -> type[optim.Optimizer]:
         """Returns the optimizer associated to this config class."""
         return optim.SGD
-
-    @field_validator("dampening")
-    @classmethod
-    def validator_dampening(cls, v, ctx):
-        return cls.validator_proba(v, ctx)

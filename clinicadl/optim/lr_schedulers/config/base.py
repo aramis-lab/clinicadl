@@ -4,6 +4,7 @@ from pydantic import (
     PositiveFloat,
     PositiveInt,
     field_validator,
+    model_validator,
 )
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
@@ -24,6 +25,29 @@ class LRSchedulerConfig(NewClinicaDLConfig):
             )
         return v
 
+    @model_validator(mode="after")
+    def check_groups_consistency(self):
+        """
+        Checks that parameter groups are the same across fields.
+        """
+        ref_groups = None
+        ref_field = None
+        for name, value in self:
+            if isinstance(value, dict):
+                groups = set(value.keys())
+                if not ref_field:
+                    ref_field = name
+                    ref_groups = groups
+                else:
+                    if groups != ref_groups:
+                        raise ValueError(
+                            f"You passed different parameter groups to '{name}' ({groups}) "
+                            f"and '{ref_field}' ({ref_groups}). You must pass the same groups "
+                            "(the groups you passed to your optimizer)."
+                        )
+
+        return self
+
     def get_object(self, optimizer: Optimizer) -> LRScheduler:  # pylint: disable=arguments-differ
         """
         Returns the LR scheduler associated to this configuration,
@@ -40,7 +64,18 @@ class LRSchedulerConfig(NewClinicaDLConfig):
             The PyTorch LR Scheduler, associated to the optimizer.
         """
         associated_class = self._get_class()
-        return associated_class(optimizer, **self.model_dump(exclude=""))
+        config_dict = self.model_dump(exclude={"name"})
+
+        # deal with parameter groups
+        for arg, value in config_dict.items():
+            if isinstance(value, dict):
+                list_values = [
+                    value[group] for group in sorted(value.keys()) if group != "ELSE"
+                ]  # order in the list is important
+                list_values.append(value["ELSE"])  # ELSE must be the last group
+                config_dict[arg] = list_values
+
+        return associated_class(optimizer, **config_dict)
 
     def get_all_groups(self) -> Set[str]:
         """
@@ -51,12 +86,11 @@ class LRSchedulerConfig(NewClinicaDLConfig):
         Set[str]
             The groups.
         """
-        groups = set()
         for _, value in self:
             if isinstance(value, dict):
-                groups.update(set(value.keys()))
+                return set(value.keys())  # all dict have the same keys
 
-        return groups
+        return set()
 
 
 class _GammaConfig(ClinicaDLConfig):

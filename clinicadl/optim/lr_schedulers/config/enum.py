@@ -33,3 +33,10 @@ class ThresholdMode(str, Enum):
 
     ABS = "abs"
     REL = "rel"
+
+
+class AnnealingStrategy(str, Enum):
+    """Supported annealing strategy for OneCycleLR."""
+
+    COS = "cos"
+    LINEAR = "linear"

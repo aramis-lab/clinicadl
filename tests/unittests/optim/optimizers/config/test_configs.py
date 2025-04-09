@@ -24,9 +24,8 @@ BAD_INPUTS = [
     ({"lr_decay": -0.1}, AdagradConfig),
     ({"initial_accumulator_value": -0.1}, AdagradConfig),
     ({"betas": (0.9, 1.1)}, AdamConfig),
-    ({"alpha": 1.1}, RMSpropConfig),
+    ({"alpha": -0.1}, RMSpropConfig),
     ({"momentum": -0.1}, [RMSpropConfig, SGDConfig]),
-    ({"dampening": -0.1}, SGDConfig),
 ]
 
 GOOD_INPUTS = [
@@ -58,10 +57,10 @@ GOOD_INPUTS = [
     ({"initial_accumulator_value": 0}, AdagradConfig),
     ({"betas": (0.0, 0.0)}, AdamConfig),
     ({"amsgrad": True}, AdamConfig),
-    ({"alpha": 0.0}, RMSpropConfig),
-    ({"momentum": 0}, [RMSpropConfig, SGDConfig]),
+    ({"alpha": 10}, RMSpropConfig),
+    ({"momentum": 10}, [RMSpropConfig, SGDConfig]),
     ({"centered": True}, RMSpropConfig),
-    ({"dampening": 0}, SGDConfig),
+    ({"dampening": -1}, SGDConfig),
     ({"nesterov": True}, SGDConfig),
     (
         {"freeze": "params1"},
