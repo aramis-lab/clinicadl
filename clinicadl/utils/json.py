@@ -1,16 +1,9 @@
-import inspect
 import json
-from abc import ABC, abstractmethod
-from collections import OrderedDict
 from copy import deepcopy
-from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict
-
-from pydantic import BaseModel, ConfigDict, computed_field
+from typing import Any, Dict
 
 from clinicadl.dictionary.words import NAME
-from clinicadl.utils.iotools.utils import path_decoder, path_encoder
 
 
 def read_json(json_path: Path) -> Dict[str, Any]:

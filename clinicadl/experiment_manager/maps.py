@@ -51,7 +51,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     ClinicaDLMAPSError,
 )
-from clinicadl.utils.json import path_encoder, update_json
+from clinicadl.utils.json import update_json
 from clinicadl.utils.typing import PathType
 
 TRAIN_VAL = [TRAIN, VALIDATION]
