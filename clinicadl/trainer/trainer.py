@@ -67,8 +67,7 @@ class Trainer:
         self.chrono = Chronometer()
 
         ## MAPS CONFIG
-        self.maps = Maps(maps_path)
-        self.init_maps(overwrite=_overwrite)
+        self.maps = self.init_maps(maps_path, overwrite=_overwrite)
 
         # Initialize the parallel environment
         # dist.init_process_group(backend='nccl', init_method='env://',
@@ -123,18 +122,20 @@ class Trainer:
             _overwrite=False,
         )
 
-    def init_maps(self, overwrite: bool):
+    def init_maps(self, maps_path: PathType, overwrite: bool) -> Maps:
         """TO COMPLETE"""
-
+        maps = Maps(maps_path)
         if overwrite:
-            if self.maps.exists():
-                remove_non_empty_dir(self.maps.path)
+            if maps.exists():
+                remove_non_empty_dir(maps.path)
         else:
-            if self.maps.exists():
+            if maps.exists():
                 raise ClinicaDLMAPSError(
-                    f"The maps directory {self.maps.path} already exists. Use overwrite=True to remove it."
+                    f"The maps directory {maps.path} already exists. Use overwrite=True to remove it."
                 )
+        return maps
 
+    def write_infos(self):
         self.maps.create()
         self.model.write_json(self.maps.model_json)
         self.optim.write_json(self.maps.optimization_json)
@@ -143,6 +144,13 @@ class Trainer:
 
     def resume(self, split: Split):
         """TO COMPLETE"""
+
+        self.maps.load()
+
+        if split.index not in self.maps.splits:
+            raise ClinicaDLMAPSError(
+                f"The split {split.index} does not exist in the maps directory."
+            )
 
         self.model.load_optim_state_dict(self.maps.splits[split.index].tmp.optimizer)
         self.current_epoch = self.model.load_network_state_dict(
@@ -156,6 +164,7 @@ class Trainer:
     def train(self, split: Split):
         """TO COMPLETE"""
 
+        self.write_infos()
         self.on_train_begin(split)
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(

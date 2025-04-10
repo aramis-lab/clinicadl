@@ -85,9 +85,9 @@ class Maps(Directory):
         for split_idx in self.split_list:
             split_dir = SplitDir.load(num=split_idx, maps_path=self.path)
 
-            if not split_dir.exists():
+            if not split_dir.exists() or split_dir.is_empty():
                 raise ClinicaDLConfigurationError(
-                    f"The split at {split_dir.path} doesn't exist."
+                    f"The split at {split_dir.path} doesn't exist or is empty."
                 )
 
             self.splits[split_idx] = split_dir

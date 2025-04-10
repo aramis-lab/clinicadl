@@ -266,7 +266,17 @@ def test_load_maps():
 
 
 def test_bad_load():
-    pass
+    maps = Maps("false_maps")
+
+    with pytest.raises(ClinicaDLConfigurationError):
+        maps.load()
+
+    maps = Maps(maps_example)
+    (maps_example / "split-1").mkdir()
+    with pytest.raises(ClinicaDLConfigurationError):
+        maps.load()
+
+    (maps_example / "split-1").rmdir()
 
 
 def test_bad_best_metrics():
