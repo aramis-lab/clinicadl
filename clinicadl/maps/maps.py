@@ -17,10 +17,8 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALIDATION,
 )
-from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.metrics import Metrics
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
+from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
@@ -201,7 +199,7 @@ class Maps(Directory):
         ----------
             split: Split
                 Split object defining train/validation datasets.
-            best_metrics: list[MetricConfig]
+            best_metrics: list[str]
                 List of metrics used for model selection.
 
         Raises

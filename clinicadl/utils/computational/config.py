@@ -1,15 +1,12 @@
 from logging import getLogger
-from pathlib import Path
 
 import torch
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import model_validator
 from torch.amp.grad_scaler import GradScaler
 from typing_extensions import Self
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.json import write_json
-from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.computational_config")
 

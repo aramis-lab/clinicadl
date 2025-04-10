@@ -16,7 +16,6 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALIDATION,
 )
-from clinicadl.metrics.config import MetricConfig
 from clinicadl.splitter.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
@@ -122,8 +121,8 @@ class BestMetric(Directory):
 
         Parameters
         ----------
-            metric: MetricConfig
-                The metric configuration.
+            metric: str
+                The metric name.
             parent_dir: PathType
                 Path to the parent directory.
 
