@@ -16,7 +16,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
 
     with open(json_path, "r") as json_file:
         try:
-            existing_data = json.load(json_file, default=path_decoder)
+            existing_data = json.load(json_file, object_hook=path_decoder)
         except json.JSONDecodeError:
             existing_data = {}
 

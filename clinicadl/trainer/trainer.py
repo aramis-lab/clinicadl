@@ -45,10 +45,6 @@ class Trainer:
     ) -> None:
         """TO COMPLETE"""
 
-        ## MAPS CONFIG
-        self.maps = Maps(maps_path)
-        self.init_maps(overwrite=_overwrite)
-
         ## CONFIG
         self.model = model
         self.comp = comp_config
@@ -69,6 +65,10 @@ class Trainer:
 
         # Chronometer initialisation
         self.chrono = Chronometer()
+
+        ## MAPS CONFIG
+        self.maps = Maps(maps_path)
+        self.init_maps(overwrite=_overwrite)
 
         # Initialize the parallel environment
         # dist.init_process_group(backend='nccl', init_method='env://',
@@ -241,7 +241,7 @@ class Trainer:
         # TODO: stop tracker like WandB or MlFlow (callbacks ?)
 
         # self.metrics.on_train_end()
-        self.metrics.save_metrics(maps=self.maps, split=split.index)
+        self.save_metrics(maps=self.maps, split=split.index)
 
         for metric in self.metrics.val.selection_metrics:
             metric = metric.value
@@ -267,6 +267,24 @@ class Trainer:
                 )
 
     ## UTILS
+
+    def save_metrics(self, split: int, maps: Maps):
+        """Save the metrics in the MAPS."""
+        """Creates a training.tsv file."""
+
+        for metric in self.metrics.val.selection_metrics:
+            metric = metric.value
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].train.metrics_tsv,
+                self.metrics.train.df,
+            )
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].val.metrics_tsv,
+                self.metrics.val.df,
+            )
+        training_tsv = maps.splits[split].logs.training_tsv
+        (training_tsv.parent).mkdir(parents=True, exist_ok=True)
+        self.metrics.training_loss.to_csv(training_tsv, sep="\t", index=True)
 
     def create_split(self, split: Split):
         """Check if the split is well defined."""

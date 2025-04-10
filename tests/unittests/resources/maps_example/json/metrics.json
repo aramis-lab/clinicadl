@@ -1,0 +1,13 @@
+{
+    "metrics": {
+        "metrics": [
+            "MSEMetric",
+            "MAEMetric",
+            "Loss"
+        ],
+        "selection_metrics": [
+            "MSEMetric",
+            "Loss"
+        ]
+    }
+}

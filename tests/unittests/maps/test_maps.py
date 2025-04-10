@@ -21,7 +21,8 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
 )
 
-maps_path = Path(__file__).parents[1] / "resources" / "maps_test"
+maps_test = Path(__file__).parents[1] / "resources" / "maps_test"
+maps_example = Path(__file__).parents[1] / "resources" / "maps_example"
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
 
@@ -63,18 +64,18 @@ split = Split(
 
 
 def test_good_maps():
-    maps = Maps(maps_path)
+    maps = Maps(maps_test)
     maps.remove()
 
     assert maps.splits == {}
     assert maps.data_groups == {}
-    assert maps.groups_dir == maps_path / "groups"
-    assert maps.train_val_tsv == maps_path / "train+validation.tsv"
-    assert maps.requirements_txt == maps_path / "environment.txt"
-    assert maps.computational_json == maps_path / "json" / "computational.json"
-    assert maps.model_json == maps_path / "json" / "model.json"
-    assert maps.optimization_json == maps_path / "json" / "optimization.json"
-    assert maps.metrics_json == maps_path / "json" / "metrics.json"
+    assert maps.groups_dir == maps_test / "groups"
+    assert maps.train_val_tsv == maps_test / "train+validation.tsv"
+    assert maps.requirements_txt == maps_test / "environment.txt"
+    assert maps.computational_json == maps_test / "json" / "computational.json"
+    assert maps.model_json == maps_test / "json" / "model.json"
+    assert maps.optimization_json == maps_test / "json" / "optimization.json"
+    assert maps.metrics_json == maps_test / "json" / "metrics.json"
     assert maps.exists() is False
 
     maps.create()
@@ -86,7 +87,9 @@ def test_good_maps():
     assert len(maps.split_list) == 0
     assert len(maps.group_list) == 0
 
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     assert len(maps.split_list) == 1
     assert isinstance(maps.splits[split_idx], SplitDir)
@@ -112,44 +115,48 @@ def test_good_maps():
 
 
 def test_good_split_dir():
-    maps = Maps(maps_path)
+    maps = Maps(maps_test)
     maps.remove()
     maps.create()
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     assert (
         maps.splits[split_idx].split_json
-        == maps_path / f"split-{split_idx}" / "split.json"
+        == maps_test / f"split-{split_idx}" / "split.json"
     )
 
     assert isinstance(maps.splits[split_idx].logs, TrainingLogs)
     assert (
         maps.splits[split_idx].logs.training_tsv
-        == maps_path / f"split-{split_idx}" / "training_logs" / "training.tsv"
+        == maps_test / f"split-{split_idx}" / "training_logs" / "training.tsv"
     )
     assert (
         maps.splits[split_idx].logs.tensorboard
-        == maps_path / f"split-{split_idx}" / "training_logs" / "tensorboard"
+        == maps_test / f"split-{split_idx}" / "training_logs" / "tensorboard"
     )
 
     assert isinstance(maps.splits[split_idx].tmp, TmpDir)
     assert (
         maps.splits[split_idx].tmp.checkpoint
-        == maps_path / f"split-{split_idx}" / "tmp" / "checkpoint.pth.tar"
+        == maps_test / f"split-{split_idx}" / "tmp" / "checkpoint.pth.tar"
     )
     assert (
         maps.splits[split_idx].tmp.optimizer
-        == maps_path / f"split-{split_idx}" / "tmp" / "optimizer.pth.tar"
+        == maps_test / f"split-{split_idx}" / "tmp" / "optimizer.pth.tar"
     )
 
     maps.remove()
 
 
 def test_good_best_metrics():
-    maps = Maps(maps_path)
+    maps = Maps(maps_test)
     maps.remove()
     maps.create()
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     assert len(maps.splits[split_idx].best_metrics) == 2
 
@@ -159,7 +166,10 @@ def test_good_best_metrics():
     assert isinstance(maps.splits[split_idx].best_metrics["MSEMetric"], BestMetric)
     assert isinstance(maps.splits[split_idx].best_metrics["MAEMetric"], BestMetric)
 
-    assert maps.splits[split_idx].best_metrics["MSEMetric"].metric == MSEMetricConfig()
+    assert (
+        maps.splits[split_idx].best_metrics["MSEMetric"].metric
+        == MSEMetricConfig().name
+    )
     assert isinstance(
         maps.splits[split_idx].best_metrics["MSEMetric"].train, BestMetricDataGroup
     )
@@ -169,7 +179,7 @@ def test_good_best_metrics():
     assert len(maps.splits[split_idx].best_metrics["MSEMetric"].data_groups) == 0
     assert (
         maps.splits[split_idx].best_metrics["MSEMetric"].model
-        == maps_path / f"split-{split_idx}" / "best-MSEMetric" / "model.pth.tar"
+        == maps_test / f"split-{split_idx}" / "best-MSEMetric" / "model.pth.tar"
     )
 
     maps.splits[split_idx].best_metrics["MSEMetric"].create_data_group(name="test")
@@ -184,7 +194,7 @@ def test_good_best_metrics():
         .best_metrics["MSEMetric"]
         .data_groups["test"]
         .description_log
-        == maps_path
+        == maps_test
         / f"split-{split_idx}"
         / "best-MSEMetric"
         / "test"
@@ -195,7 +205,7 @@ def test_good_best_metrics():
         .best_metrics["MSEMetric"]
         .data_groups["test"]
         .predictions_tsv
-        == maps_path
+        == maps_test
         / f"split-{split_idx}"
         / "best-MSEMetric"
         / "test"
@@ -203,21 +213,69 @@ def test_good_best_metrics():
     )
     assert (
         maps.splits[split_idx].best_metrics["MSEMetric"].data_groups["test"].metrics_tsv
-        == maps_path / f"split-{split_idx}" / "best-MSEMetric" / "test" / "metrics.tsv"
+        == maps_test / f"split-{split_idx}" / "best-MSEMetric" / "test" / "metrics.tsv"
     )
     assert (
         maps.splits[split_idx].best_metrics["MSEMetric"].data_groups["test"].caps_output
-        == maps_path / f"split-{split_idx}" / "best-MSEMetric" / "test" / "CAPSOutput"
+        == maps_test / f"split-{split_idx}" / "best-MSEMetric" / "test" / "CAPSOutput"
     )
 
     maps.remove()
 
 
+def test_load_maps():
+    maps = Maps(maps_example)
+    maps.load()
+    assert maps.exists()
+    assert maps.requirements_txt.is_file()
+    assert maps.groups_dir.is_dir()
+    assert maps.split_list == [0]
+    assert maps.group_list.sort() == ["train", "validation", "test"].sort()
+    assert len(maps.splits) == 1
+    assert isinstance(maps.splits[0], SplitDir)
+    assert maps.splits[0].split_json == maps_example / "split-0" / "split.json"
+    assert maps.splits[0].split_json.is_file()
+    assert len(maps.splits[0].best_metrics_list) == 2
+    assert isinstance(maps.splits[0].best_metrics["MSEMetric"], BestMetric)
+    assert isinstance(maps.splits[0].best_metrics["Loss"], BestMetric)
+    assert isinstance(
+        maps.splits[0].best_metrics["MSEMetric"].train, BestMetricDataGroup
+    )
+    assert isinstance(maps.splits[0].best_metrics["MSEMetric"].val, BestMetricDataGroup)
+    assert isinstance(maps.splits[0].best_metrics["Loss"].train, BestMetricDataGroup)
+    assert isinstance(maps.splits[0].best_metrics["Loss"].val, BestMetricDataGroup)
+    assert len(maps.splits[0].best_metrics["MSEMetric"].data_groups) == 2
+    assert maps.splits[0].best_metrics["MSEMetric"].data_groups["train"].name == "train"
+    assert (
+        maps.splits[0].best_metrics["MSEMetric"].data_groups["train"].description_log
+        == maps_example / "split-0" / "best-MSEMetric" / "train" / "description.log"
+    )
+    assert (
+        maps.splits[0].best_metrics["MSEMetric"].data_groups["train"].predictions_tsv
+        == maps_example / "split-0" / "best-MSEMetric" / "train" / "predictions.tsv"
+    )
+
+    assert len(maps.data_groups) == 3
+    assert isinstance(maps.data_groups["train"], Dict)
+    assert isinstance(maps.data_groups["validation"], Dict)
+    assert isinstance(maps.data_groups["test"], DataGroup)
+    assert isinstance(maps.data_groups["train"][0], TrainValDataGroup)
+    assert isinstance(maps.data_groups["validation"][0], TrainValDataGroup)
+    assert isinstance(maps.data_groups["test"], DataGroup)
+    assert maps.train_val_tsv == maps_example / "train+validation.tsv"
+
+
+def test_bad_load():
+    pass
+
+
 def test_bad_best_metrics():
-    maps = Maps(maps_path)
+    maps = Maps(maps_test)
     maps.remove()
     maps.create()
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     with pytest.raises(ClinicaDLConfigurationError):
         maps.splits[split_idx].best_metrics["MSEMetric"].create(split)
@@ -231,10 +289,12 @@ def test_bad_best_metrics():
 
 
 def test_bad_split_dir():
-    maps = Maps(maps_path)
+    maps = Maps(maps_test)
     maps.remove()
     maps.create()
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     with pytest.raises(ClinicaDLConfigurationError):
         maps.splits[split_idx].create(split)
@@ -256,11 +316,13 @@ def test_bad_maps():
     with pytest.raises(ClinicaDLConfigurationError):
         maps.create()
 
-    maps.create_split(split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()])
+    maps.create_split(
+        split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
+    )
 
     with pytest.raises(ClinicaDLConfigurationError):
         maps.create_split(
-            split=split, best_metrics=[MSEMetricConfig(), MAEMetricConfig()]
+            split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
         )
 
     maps.create_data_group("test", dataset=test_dataset)
