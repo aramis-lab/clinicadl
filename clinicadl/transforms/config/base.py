@@ -79,7 +79,7 @@ class OneOfConfig(TransformConfig):
     Config class for :py:class:`torchio.transforms.OneOf`.
     """
 
-    transforms: List[TransformConfig]
+    transforms: List[Union[TransformConfig, List[TransformConfig]]]
     probabilities: Optional[List[NonNegativeFloat]] = None
 
     def __init__(
@@ -108,10 +108,14 @@ class OneOfConfig(TransformConfig):
         tio.Transform:
             The TorchIO transform.
         """
-        config_dict = {
-            transform.get_object(): proba
-            for transform, proba in zip(self.transforms, self.probabilities)
-        }
+        config_dict = {}
+        for transform, proba in zip(self.transforms, self.probabilities):
+            if isinstance(transform, TransformConfig):
+                config_dict[transform.get_object()] = proba
+            else:
+                transform: List[TransformConfig]
+                config_dict[tio.Compose([t.get_object() for t in transform])] = proba
+
         one_of = self._get_class()(transforms=config_dict)
         return one_of
 
