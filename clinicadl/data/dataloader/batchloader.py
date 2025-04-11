@@ -39,9 +39,7 @@ class BatchLoader(list):
             torch.Tensor: A tensor containing all the images from the batch.
         """
         # Return the images of the batch
-        return torch.cat(
-            [sample.get_tensors()["image"] for sample in self], dim=0
-        ).unsqueeze(1)
+        return torch.stack([sample.image.tensor for sample in self], dim=0)
 
     def get_labels(self) -> torch.Tensor:
         """
