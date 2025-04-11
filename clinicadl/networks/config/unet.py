@@ -4,7 +4,7 @@ from pydantic import PositiveFloat, PositiveInt, field_validator
 
 import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
-from clinicadl.utils.config import _update_kwargs_with_defaults
+from clinicadl.utils.config import update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
@@ -92,5 +92,5 @@ class AttentionUNetConfig(UNetConfig):
     ):
         kwargs = locals()
         del kwargs["self"]
-        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.UNet.__init__)
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.UNet.__init__)
         super(UNetConfig, self).__init__(**kwargs)

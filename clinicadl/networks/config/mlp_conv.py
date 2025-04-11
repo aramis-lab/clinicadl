@@ -24,7 +24,7 @@ from clinicadl.networks.nn.utils import (
     check_pool_indices,
     ensure_list_of_tuples,
 )
-from clinicadl.utils.config import _update_kwargs_with_defaults
+from clinicadl.utils.config import update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
@@ -89,7 +89,7 @@ class MLPOptions(_BaseMLPConvConfig):
     ):
         kwargs = locals()
         del kwargs["self"]
-        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.MLP.__init__)
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.MLP.__init__)
         super().__init__(**kwargs)
 
     @field_validator("norm")
@@ -206,9 +206,7 @@ class ConvEncoderOptions(_BaseConvOptions):
     ):
         kwargs = locals()
         del kwargs["self"]
-        kwargs = _update_kwargs_with_defaults(
-            kwargs, function=nets.ConvEncoder.__init__
-        )
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ConvEncoder.__init__)
         super().__init__(**kwargs)
 
     @model_validator(mode="after")
@@ -321,9 +319,7 @@ class ConvDecoderOptions(_BaseConvOptions):
     ):
         kwargs = locals()
         del kwargs["self"]
-        kwargs = _update_kwargs_with_defaults(
-            kwargs, function=nets.ConvDecoder.__init__
-        )
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ConvDecoder.__init__)
         super().__init__(**kwargs)
 
     @model_validator(mode="after")

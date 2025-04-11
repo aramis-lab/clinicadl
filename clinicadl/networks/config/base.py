@@ -13,7 +13,7 @@ from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.config import (
     ClinicaDLConfig,
     ObjectConfig,
-    _update_kwargs_with_defaults,
+    update_kwargs_with_defaults,
 )
 from clinicadl.utils.factories import DefaultFromLibrary
 
@@ -162,7 +162,7 @@ class _PreTrainedConfig(
         associated_getter = (
             self._get_class()
         )  # special cas here: _get_class does not return a class
-        kwargs = _update_kwargs_with_defaults(kwargs, function=associated_getter)
+        kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
         super().__init__(**kwargs)
 
     def get_object(self) -> nn.Module:

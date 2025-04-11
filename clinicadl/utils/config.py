@@ -55,9 +55,7 @@ class ObjectConfig(ClinicaDLConfig, ABC):
             )
 
         associated_class = self._get_class()
-        kwargs = _update_kwargs_with_defaults(
-            kwargs, function=associated_class.__init__
-        )
+        kwargs = update_kwargs_with_defaults(kwargs, function=associated_class.__init__)
         super(ClinicaDLConfig, self).__init__(**kwargs)
 
     @computed_field
@@ -90,6 +88,32 @@ class ObjectConfig(ClinicaDLConfig, ABC):
         return cls.__name__.replace(CONFIG, "")
 
 
+def update_kwargs_with_defaults(
+    config: Dict[str, Any], function: Callable
+) -> Dict[str, Any]:
+    """
+    Updates arguments with the default values from a function.
+
+    Parameters
+    ----------
+    config : Dict[str, Any]
+        The input arguments.
+    function : Callable
+        The function to retrieve the default values from.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The updated arguments.
+    """
+    defaults = _get_defaults(function)
+    for arg, value in config.items():
+        if value == DefaultFromLibrary.YES and arg in defaults:
+            config[arg] = defaults[arg]
+
+    return config
+
+
 def _order_dict(model_or_field: Any) -> Any:
     """
     To always have the field 'name' at the beginning.
@@ -117,20 +141,6 @@ def _order_dict(model_or_field: Any) -> Any:
         return ordered_sequence
 
     return model_or_field
-
-
-def _update_kwargs_with_defaults(
-    config: Dict[str, Any], function: Callable
-) -> Dict[str, Any]:
-    """
-    Updates arguments with the default values from a function.
-    """
-    defaults = _get_defaults(function)
-    for arg, value in config.items():
-        if value == DefaultFromLibrary.YES and arg in defaults:
-            config[arg] = defaults[arg]
-
-    return config
 
 
 def _get_defaults(func: Callable) -> Dict[str, Any]:

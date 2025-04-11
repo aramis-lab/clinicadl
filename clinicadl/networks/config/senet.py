@@ -7,7 +7,7 @@ import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.networks.nn.senet import check_se_channels
-from clinicadl.utils.config import _update_kwargs_with_defaults
+from clinicadl.utils.config import update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import ImplementedNetwork, _PreTrainedConfig
@@ -59,8 +59,8 @@ class SEResNetConfig(ResNetConfig):
     ):
         kwargs = locals()
         del kwargs["self"]
-        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.SEResNet.__init__)
-        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.ResNet.__init__)
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.SEResNet.__init__)
+        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ResNet.__init__)
         super(ResNetConfig, self).__init__(**kwargs)
 
     @model_validator(mode="after")
