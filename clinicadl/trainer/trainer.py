@@ -178,6 +178,9 @@ class Trainer:
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
                     loss = self.model.training_step(data=data, device=self.comp.device)
 
+                self.scaler.scale(loss).backward()
+                self.weights_update()
+
                 self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
             self.on_epoch_end(split)
@@ -219,8 +222,6 @@ class Trainer:
         self.metrics.write_training_loss(
             epoch=self.epoch, batch=batch_idx, loss=loss.item()
         )
-        self.scaler.scale(loss).backward()
-        self.weights_update()
 
     def on_epoch_end(self, split: Split):
         # self.model.network.zero_grad(set_to_none=True)
