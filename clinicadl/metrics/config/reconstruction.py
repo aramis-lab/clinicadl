@@ -1,11 +1,9 @@
 from typing import Tuple, Union
 
-import monai.metrics as metrics
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
-    computed_field,
     field_validator,
     model_validator,
 )
@@ -13,7 +11,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import ImplementedMetric, Kernel, Reduction
+from .enum import Kernel, Reduction
 
 __all__ = [
     "PSNRMetricConfig",
@@ -40,16 +38,6 @@ class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.PSNR.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.PSNRMetric
 
 
 class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
@@ -120,16 +108,6 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
             get_not_nans=get_not_nans,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.SSIM.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.SSIMMetric
-
     @model_validator(mode="after")
     def validator_win_size(self):
         """Checks coherence between fields."""
@@ -177,16 +155,6 @@ class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.MS_SSIM.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.MultiScaleSSIMMetric
 
     @model_validator(mode="after")
     def validator_kernel_size(self):

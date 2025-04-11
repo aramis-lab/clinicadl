@@ -1,5 +1,6 @@
 from typing import Set
 
+import torch.optim as optim
 from pydantic import (
     PositiveFloat,
     PositiveInt,
@@ -91,6 +92,11 @@ class LRSchedulerConfig(NewClinicaDLConfig):
                 return set(value.keys())  # all dict have the same keys
 
         return set()
+
+    @classmethod
+    def _get_class(cls) -> type[optim.lr_scheduler.LRScheduler]:
+        """Returns the lr scheduler associated to this config class."""
+        return getattr(optim.lr_scheduler, cls._get_name())
 
 
 class _GammaConfig(ClinicaDLConfig):

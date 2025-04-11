@@ -4,17 +4,13 @@ import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
-    computed_field,
     field_validator,
     model_validator,
 )
 
 from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
 
-from .enum import (
-    AnatomicalLabel,
-    ImplementedTransform,
-)
+from .enum import AnatomicalLabel
 
 __all__ = [
     "TransformConfig",
@@ -36,6 +32,11 @@ class TransformConfig(NewClinicaDLConfig):
             The TorchIO transform.
         """
         return super().get_object()
+
+    @classmethod
+    def _get_class(cls) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return getattr(tio.transforms, cls._get_name())
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:
@@ -92,12 +93,6 @@ class OneOfConfig(TransformConfig):
             probabilities=probabilities,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.ONE_OF.value
-
     def get_object(self) -> tio.Transform:
         """
         Returns the transform associated to this configuration,
@@ -118,10 +113,6 @@ class OneOfConfig(TransformConfig):
 
         one_of = self._get_class()(transforms=config_dict)
         return one_of
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.OneOf
 
     @model_validator(mode="after")
     def check_probabilities(self):

@@ -1,7 +1,6 @@
 from typing import Optional, Tuple, Union
 
-import monai.metrics as metrics
-from pydantic import NonNegativeFloat, PositiveInt, computed_field, field_validator
+from pydantic import NonNegativeFloat, PositiveInt, field_validator
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
@@ -13,7 +12,6 @@ from .base import (
 )
 from .enum import (
     DistanceMetric,
-    ImplementedMetric,
     Reduction,
     WeightType,
 )
@@ -64,16 +62,6 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
             return_with_label=return_with_label,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.DICE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.DiceMetric
-
     @field_validator("return_with_label", mode="after")
     @classmethod
     def validator_return_with_label(cls, v):
@@ -103,16 +91,6 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
             ignore_empty=ignore_empty,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.IOU.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.MeanIoU
-
 
 class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     """
@@ -133,16 +111,6 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
             reduction=reduction,
             weight_type=weight_type,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.GENERALIZED_DICE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.GeneralizedDiceScore
 
 
 class _BaseSurfaceDistanceConfig(
@@ -178,16 +146,6 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             get_not_nans=get_not_nans,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.SURF_DIST.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.SurfaceDistanceMetric
-
 
 class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """
@@ -218,16 +176,6 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.HAUSDORFF.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.HausdorffDistanceMetric
 
     @field_validator("percentile", mode="after")
     @classmethod
@@ -267,13 +215,3 @@ class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             get_not_nans=get_not_nans,
             use_subvoxels=use_subvoxels,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.SURF_DICE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.SurfaceDiceMetric

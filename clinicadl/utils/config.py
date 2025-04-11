@@ -8,8 +8,12 @@ from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.dictionary.words import NAME
 
+CONFIG = "Config"
+
 
 class DefaultFromLibrary(str, Enum):
+    """Argument to get the default values in config classes."""
+
     YES = "DefaultFromLibrary"
 
 
@@ -41,27 +45,26 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
     passed by the user.
 
     The user can then get the parametrized object with
-    the method `get_object`.
+    the method 'get_object'.
     """
 
     def __init__(self, **kwargs):
+        if not type(self).__name__.endswith(CONFIG):
+            raise NameError(
+                f"Invalid name for a NewClinicaDLConfig. The name of the class should end with '{CONFIG}'."
+            )
+
         associated_class = self._get_class()
         kwargs = _update_kwargs_with_defaults(
             kwargs, function=associated_class.__init__
         )
-        super().__init__(**kwargs)
+        super(ClinicaDLConfig, self).__init__(**kwargs)
 
     @computed_field
     @property
-    @abstractmethod
     def name(self) -> str:
-        """
-        The name of the object associated to this config class.
-        """
-
-    @abstractmethod
-    def _get_class(self) -> Any:
-        """Returns the class associated to this config class."""
+        """The name of the class associated to this config class."""
+        return self._get_name()
 
     def get_object(self) -> Any:
         """
@@ -76,13 +79,23 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
         associated_class = self._get_class()
         return associated_class(**self.model_dump(exclude="name"))
 
+    @classmethod
+    @abstractmethod
+    def _get_class(cls) -> Any:
+        """Returns the class associated to this config class."""
+
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return cls.__name__.replace(CONFIG, "")
+
 
 def _order_dict(model_or_field: Any) -> Any:
     """
     To always have the field 'name' at the beginning.
 
-    Recursive function to handle fields that themeselves
-    contain 'ClinicaDLConfig' instances.
+    Recursive function to handle fields that
+    contain themselves 'ClinicaDLConfig' instances.
     """
     if isinstance(model_or_field, dict):
         ordered_dict = OrderedDict(**model_or_field)

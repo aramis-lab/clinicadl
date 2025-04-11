@@ -1,8 +1,5 @@
 from typing import Union
 
-import monai.metrics as metrics
-from pydantic import computed_field
-
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
@@ -11,7 +8,7 @@ from .base import (
     _IncludeBackgroundConfig,
     _ReductionConfig,
 )
-from .enum import Average, ConfusionMatrixMetricName, ImplementedMetric, Reduction
+from .enum import Average, ConfusionMatrixMetricName, Reduction
 
 __all__ = [
     "ROCAUCMetricConfig",
@@ -31,16 +28,6 @@ class ROCAUCMetricConfig(MetricConfig):
         self, average: Union[Average, DefaultFromLibrary] = DefaultFromLibrary.YES
     ):
         super().__init__(average=average)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.ROC_AUC.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.ROCAUCMetric
 
 
 class ConfusionMatrixMetricConfig(
@@ -70,13 +57,3 @@ class ConfusionMatrixMetricConfig(
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.CONF_MATRIX.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.ConfusionMatrixMetric

@@ -1,16 +1,20 @@
-from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, Sequence, Union
 
+import torch.nn as nn
 from pydantic import (
     PositiveFloat,
     PositiveInt,
-    computed_field,
     field_validator,
 )
 
+import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
-from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.config import (
+    ClinicaDLConfig,
+    NewClinicaDLConfig,
+    _update_kwargs_with_defaults,
+)
 from clinicadl.utils.factories import DefaultFromLibrary
 
 __all__ = ["ImplementedNetwork", "NetworkConfig"]
@@ -57,76 +61,72 @@ class ImplementedNetwork(str, Enum):
         )
 
 
-class NetworkType(str, Enum):
-    """
-    Useful to know where to look for the network.
-    See :py:func:`clinicadl.monai_networks.factory.get_network`
-    """
-
-    CUSTOM = "custom"  # our own networks
-    RESNET = "sota-ResNet"
-    DENSENET = "sota-DenseNet"
-    SE_RESNET = "sota-SEResNet"
-    VIT = "sota-ViT"
-
-
-class NetworkConfig(ClinicaDLConfig, ABC):
+class NetworkConfig(NewClinicaDLConfig):
     """Base config class to configure neural networks."""
 
-    @computed_field
-    @property
-    @abstractmethod
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
+    def get_object(self) -> nn.Module:
+        """
+        Returns the neural network associated to this configuration,
+        parametrized with the parameters passed by the user.
 
-    @property
-    def _type(self) -> NetworkType:
+        Returns
+        -------
+        torch.nn.Module:
+            The neural network.
         """
-        To know where to look for the network.
-        Default to 'custom'.
-        """
-        return NetworkType.CUSTOM
+        return super().get_object()
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return getattr(nets, cls._get_name())
 
 
 class _FullyConvConfig(ClinicaDLConfig):
     """
-    Base config class for fully convolutional networks.
+    Config class for fully convolutional networks.
     """
 
     spatial_dims: PositiveInt
     in_channels: PositiveInt
 
+    @field_validator("spatial_dims", mode="after")
+    @classmethod
+    def dimension_validator(cls, v):
+        """Checks that the network is 1D, 2D or 3D."""
+        if v > 3:
+            raise ValueError(f"'spatial_dims' must be between 1 and 3. Got {v}")
+        return v
+
 
 class _InShapeConfig(ClinicaDLConfig):
-    """Base config class for 'in_shape' option."""
+    """Config class for 'in_shape' option."""
 
     in_shape: Sequence[PositiveInt]
 
 
 class _OptionalLastLinearLayersConfig(ClinicaDLConfig):
-    """Base config class for 'num_outputs' option."""
+    """Config class for 'num_outputs' option."""
 
     num_outputs: Optional[PositiveInt]
 
 
 class _MandatoryActConfig(ClinicaDLConfig):
-    """Base config class for 'output_act' option."""
+    """Config class for 'output_act' option."""
 
-    act: Union[ActivationParameters, DefaultFromLibrary] = DefaultFromLibrary.YES
+    act: ActivationParameters
 
 
 class _OutputActConfig(ClinicaDLConfig):
-    """Base config class for 'output_act' option."""
+    """Config class for 'output_act' option."""
 
-    output_act: Union[
-        Optional[ActivationParameters], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    output_act: Optional[ActivationParameters]
 
 
 class _DropOutConfig(ClinicaDLConfig):
     """Base config class for 'dropout' option."""
 
-    dropout: Union[Optional[PositiveFloat], DefaultFromLibrary] = DefaultFromLibrary.YES
+    dropout: Optional[PositiveFloat]
 
     @field_validator("dropout")
     @classmethod
@@ -135,11 +135,47 @@ class _DropOutConfig(ClinicaDLConfig):
         if isinstance(v, float):
             assert (
                 0 <= v <= 1
-            ), f"dropout must be between 0 and 1 but it has been set to {v}."
+            ), f"'dropout' must be between 0 and 1 but it has been set to {v}."
         return v
 
 
-class _PreTrainedConfig(_OptionalLastLinearLayersConfig, _OutputActConfig):
+class _PreTrainedConfig(
+    NetworkConfig, _OptionalLastLinearLayersConfig, _OutputActConfig
+):
     """Base config class for SOTA networks."""
 
-    pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    pretrained: bool
+
+    def __init__(
+        self,
+        num_outputs: Optional[PositiveInt],
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        kwargs = {
+            "num_outputs": num_outputs,
+            "output_act": output_act,
+            "pretrained": pretrained,
+        }
+        associated_getter = (
+            self._get_class()
+        )  # special cas here: _get_class does not return a class
+        kwargs = _update_kwargs_with_defaults(kwargs, function=associated_getter)
+        super().__init__(**kwargs)
+
+    def get_object(self) -> nn.Module:
+        """
+        Returns the neural network associated to this configuration,
+        parametrized with the parameters passed by the user.
+
+        Returns
+        -------
+        torch.nn.Module:
+            The neural network.
+        """
+        associated_getter = self._get_class()
+        return associated_getter(
+            name=self._get_name(), **self.model_dump(exclude="name")
+        )

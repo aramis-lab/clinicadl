@@ -1,13 +1,15 @@
-from typing import Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
-from pydantic import PositiveInt, computed_field
+import torch.nn as nn
+from pydantic import PositiveFloat, PositiveInt
 
+import clinicadl.networks.nn as nets
+from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
     ImplementedNetwork,
     NetworkConfig,
-    NetworkType,
     _DropOutConfig,
     _FullyConvConfig,
     _MandatoryActConfig,
@@ -33,66 +35,100 @@ class DenseNetConfig(
     _OutputActConfig,
     _DropOutConfig,
 ):
-    """Config class for DenseNet."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet`.
+    """
 
-    n_dense_layers: Union[
-        Sequence[PositiveInt], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    bottleneck_factor: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    n_dense_layers: Sequence[PositiveInt]
+    init_features: PositiveInt
+    growth_rate: PositiveInt
+    bottleneck_factor: PositiveInt
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.DENSENET
+    def __init__(
+        self,
+        spatial_dims: PositiveInt,
+        in_channels: PositiveInt,
+        num_outputs: Optional[PositiveInt],
+        n_dense_layers: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        bottleneck_factor: Union[
+            PositiveInt, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        dropout: Union[
+            Optional[PositiveFloat], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            num_outputs=num_outputs,
+            n_dense_layers=n_dense_layers,
+            init_features=init_features,
+            growth_rate=growth_rate,
+            bottleneck_factor=bottleneck_factor,
+            act=act,
+            output_act=output_act,
+            dropout=dropout,
+        )
 
 
 class _PreTrainedDenseNetConfig(_PreTrainedConfig):
     """Base config class for SOTA DenseNets."""
 
-    @property
-    def _type(self) -> NetworkType:
-        """To know where to look for the network."""
-        return NetworkType.DENSENET
+    @classmethod
+    def _get_class(cls) -> Callable[[Any], nn.Module]:
+        """Returns the network associated to this config class."""
+        return nets.get_densenet
 
 
 class DenseNet121Config(_PreTrainedDenseNetConfig):
-    """Config class for DenseNet-121."""
+    """
+    Config class for :py:func:`DenseNet-121 <clinicadl.networks.nn.get_densenet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.DENSENET_121
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.DENSENET_121.value
 
 
 class DenseNet161Config(_PreTrainedDenseNetConfig):
-    """Config class for DenseNet-161."""
+    """
+    Config class for :py:func:`DenseNet-161 <clinicadl.networks.nn.get_densenet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.DENSENET_161
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.DENSENET_161.value
 
 
 class DenseNet169Config(_PreTrainedDenseNetConfig):
-    """Config class for DenseNet-169."""
+    """
+    Config class for :py:func:`DenseNet-169 <clinicadl.networks.nn.get_densenet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.DENSENET_169
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.DENSENET_169.value
 
 
 class DenseNet201Config(_PreTrainedDenseNetConfig):
-    """Config class for DenseNet-201."""
+    """
+    Config class for :py:func:`DenseNet-201 <clinicadl.networks.nn.get_densenet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.DENSENET_201
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.DENSENET_201.value

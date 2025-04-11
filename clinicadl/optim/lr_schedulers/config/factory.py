@@ -2,10 +2,8 @@ from typing import Any, Union
 
 import clinicadl.optim.lr_schedulers.config as lr_schedulers
 
-from .configs import (
-    ImplementedLRScheduler,
-    LRSchedulerConfig,
-)
+from .configs import LRSchedulerConfig
+from .enum import ImplementedLRScheduler
 
 
 def get_lr_scheduler_config(

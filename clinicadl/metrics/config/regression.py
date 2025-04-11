@@ -1,12 +1,9 @@
 from typing import Union
 
-import monai.metrics as metrics
-from pydantic import computed_field
-
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import ImplementedMetric, Reduction
+from .enum import Reduction
 
 __all__ = [
     "MSEMetricConfig",
@@ -29,16 +26,6 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.MSE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.MSEMetric
-
 
 class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
@@ -53,16 +40,6 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.MAE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.MAEMetric
-
 
 class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
@@ -76,13 +53,3 @@ class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         super().__init__(
             reduction=reduction,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.RMSE.value
-
-    def _get_class(self) -> type[metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return metrics.RMSEMetric

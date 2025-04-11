@@ -164,8 +164,8 @@ def test_good_inputs(args: dict, configs):
 )
 def test_get_object(config, loss):
     c = config()
-    transform_from_config = c.get_object()
-    assert isinstance(transform_from_config, loss)
+    loss_from_config = c.get_object()
+    assert isinstance(loss_from_config, loss)
 
 
 @pytest.mark.parametrize(

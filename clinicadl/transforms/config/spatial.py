@@ -2,11 +2,9 @@ from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy as np
-import torchio as tio
 from pydantic import (
     PositiveFloat,
     PositiveInt,
-    computed_field,
     field_validator,
     model_validator,
 )
@@ -14,7 +12,7 @@ from torchio import Image
 
 from clinicadl.utils.config import DefaultFromLibrary
 
-from .base import Bounds, ImplementedTransform, TransformConfig
+from .base import Bounds, TransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 
 __all__ = [
@@ -67,16 +65,6 @@ class CropOrPadConfig(TransformConfig):
             labels=labels,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.CROP_OR_PAD.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.CropOrPad
-
     @model_validator(mode="after")
     def check_shape(self):
         """Checks consistency between 'target_shape', 'mask_name' and 'labels'."""
@@ -95,16 +83,6 @@ class ToCanonicalConfig(TransformConfig):
     """
     Config class for :py:class:`torchio.transforms.ToCanonical`.
     """
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.TO_CANONICAL.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.ToCanonical
 
 
 class ResizeConfig(TransformConfig):
@@ -131,16 +109,6 @@ class ResizeConfig(TransformConfig):
             image_interpolation=image_interpolation,
             label_interpolation=label_interpolation,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RESIZE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Resize
 
     @field_validator("target_shape", mode="after")
     @classmethod
@@ -207,16 +175,6 @@ class ResampleConfig(TransformConfig):
             scalars_only=scalars_only,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RESAMPLE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Resample
-
     @field_validator("pre_affine_name", mode="before")
     @classmethod
     def validator_pre_affine_name(cls, v):
@@ -271,16 +229,6 @@ class EnsureShapeMultipleConfig(TransformConfig):
             method=method,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.ENSURE_MULTIPLE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.EnsureShapeMultiple
-
 
 class CropConfig(TransformConfig):
     """
@@ -293,16 +241,6 @@ class CropConfig(TransformConfig):
         super().__init__(
             cropping=cropping,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.CROP.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Crop
 
 
 class PadConfig(TransformConfig):
@@ -324,13 +262,3 @@ class PadConfig(TransformConfig):
             padding=padding,
             padding_mode=padding_mode,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.PAD.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Pad

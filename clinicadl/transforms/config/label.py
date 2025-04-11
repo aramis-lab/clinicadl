@@ -1,11 +1,10 @@
 from typing import Optional, Union
 
-import torchio as tio
-from pydantic import computed_field, field_validator
+from pydantic import field_validator
 
 from clinicadl.utils.config import DefaultFromLibrary
 
-from .base import Bounds, ImplementedTransform, MaskingMethodConfig, TransformConfig
+from .base import Bounds, MaskingMethodConfig, TransformConfig
 from .enum import AnatomicalLabel
 
 __all__ = ["RemapLabelsConfig", "OneHotConfig"]
@@ -30,16 +29,6 @@ class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
             masking_method=masking_method,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.REMAP_LABELS.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RemapLabels
-
 
 class OneHotConfig(TransformConfig):
     """
@@ -54,16 +43,6 @@ class OneHotConfig(TransformConfig):
         super().__init__(
             num_classes=num_classes,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.ONE_HOT.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.OneHot
 
     @field_validator("num_classes", mode="after")
     @classmethod

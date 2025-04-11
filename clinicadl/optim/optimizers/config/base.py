@@ -115,6 +115,11 @@ class OptimizerConfig(NewClinicaDLConfig):
 
         return groups
 
+    @classmethod
+    def _get_class(cls) -> type[optim.Optimizer]:
+        """Returns the optimizer associated to this config class."""
+        return getattr(optim, cls._get_name())
+
     @field_validator("freeze", mode="after")
     @classmethod
     def validator_freeze(cls, v):

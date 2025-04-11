@@ -1,17 +1,14 @@
 from typing import Dict, List, Optional, Tuple, Union
 
-import torch.optim as optim
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
-    computed_field,
     field_validator,
 )
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
-    ImplementedOptimizer,
     OptimizerConfig,
     _CapturableConfig,
     _EpsConfig,
@@ -76,16 +73,6 @@ class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
             differentiable=differentiable,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the optimizer."""
-        return ImplementedOptimizer.ADADELTA.value
-
-    def _get_class(self) -> type[optim.Optimizer]:
-        """Returns the optimizer associated to this config class."""
-        return optim.Adadelta
-
     @field_validator("rho")
     @classmethod
     def validator_rho(cls, v, ctx):
@@ -144,16 +131,6 @@ class AdagradConfig(OptimizerConfig, _EpsConfig, _FusedConfig):
             differentiable=differentiable,
             fused=fused,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the optimizer."""
-        return ImplementedOptimizer.ADAGRAD.value
-
-    def _get_class(self) -> type[optim.Optimizer]:
-        """Returns the optimizer associated to this config class."""
-        return optim.Adagrad
 
 
 class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
@@ -218,16 +195,6 @@ class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
             fused=fused,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the optimizer."""
-        return ImplementedOptimizer.ADAM.value
-
-    def _get_class(self) -> type[optim.Optimizer]:
-        """Returns the optimizer associated to this config class."""
-        return optim.Adam
-
     @field_validator("betas")
     @classmethod
     def validator_betas(cls, v, ctx):
@@ -291,16 +258,6 @@ class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumCon
             differentiable=differentiable,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the optimizer."""
-        return ImplementedOptimizer.RMS_PROP.value
-
-    def _get_class(self) -> type[optim.Optimizer]:
-        """Returns the optimizer associated to this config class."""
-        return optim.RMSprop
-
 
 class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
     """
@@ -354,13 +311,3 @@ class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
             differentiable=differentiable,
             fused=fused,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the optimizer."""
-        return ImplementedOptimizer.SGD.value
-
-    def _get_class(self) -> type[optim.Optimizer]:
-        """Returns the optimizer associated to this config class."""
-        return optim.SGD

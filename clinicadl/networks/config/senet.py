@@ -1,11 +1,16 @@
-from typing import Union
+from typing import Any, Callable, Optional, Sequence, Union
 
-from pydantic import PositiveInt, computed_field, field_validator, model_validator
+import torch.nn as nn
+from pydantic import PositiveInt, field_validator, model_validator
 
+import clinicadl.networks.nn as nets
+from clinicadl.networks.nn.layers.utils import ActivationParameters
+from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.networks.nn.senet import check_se_channels
+from clinicadl.utils.config import _update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, NetworkType, _PreTrainedConfig
+from .base import ImplementedNetwork, _PreTrainedConfig
 from .resnet import ResNetConfig
 
 __all__ = [
@@ -17,23 +22,50 @@ __all__ = [
 
 
 class SEResNetConfig(ResNetConfig):
-    """Config class for Squeeze-and-Excitation ResNet."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet`.
+    """
 
-    se_reduction: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
+    se_reduction: PositiveInt
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.SE_RESNET
+    def __init__(
+        self,
+        spatial_dims: PositiveInt,
+        in_channels: PositiveInt,
+        num_outputs: Optional[PositiveInt],
+        se_reduction: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        block_type: Union[ResNetBlockType, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        n_res_blocks: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        n_features: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        init_conv_size: Union[
+            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
+        ] = (DefaultFromLibrary.YES),
+        init_conv_stride: Union[
+            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
+        ] = (DefaultFromLibrary.YES),
+        bottleneck_reduction: Union[PositiveInt, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        kwargs = locals()
+        del kwargs["self"]
+        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.SEResNet.__init__)
+        kwargs = _update_kwargs_with_defaults(kwargs, function=nets.ResNet.__init__)
+        super(ResNetConfig, self).__init__(**kwargs)
 
     @model_validator(mode="after")
     def check_se_channels(self):
-        if (
-            self.n_features != DefaultFromLibrary.YES
-            and self.se_reduction != DefaultFromLibrary.YES
-        ):
-            check_se_channels(self.n_features, self.se_reduction)
+        check_se_channels(self.n_features, self.se_reduction)
 
         return self
 
@@ -43,47 +75,47 @@ class _PreTrainedSEResNetConfig(_PreTrainedConfig):
 
     pretrained: bool = False
 
-    @property
-    def _type(self) -> NetworkType:
-        """To know where to look for the network."""
-        return NetworkType.SE_RESNET
-
     @field_validator("pretrained")
     @classmethod
     def check_not_pretrained(cls, v):
-        assert (
-            not v
-        ), "Pretrained networks are not yet available for SE-ResNets. Please leave "
-        "'pretrained' to False."
+        assert not v, "Pretrained networks are not yet available for SE-ResNets. Please leave 'pretrained' to False."
 
         return v
 
+    @classmethod
+    def _get_class(cls) -> Callable[[Any], nn.Module]:
+        """Returns the network associated to this config class."""
+        return nets.get_seresnet
+
 
 class SEResNet50Config(_PreTrainedSEResNetConfig):
-    """Config class for SE-ResNet-50."""
+    """
+    Config class for :py:func:`SE-ResNet-50 <clinicadl.networks.nn.get_seresnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.SE_RESNET_50
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.SE_RESNET_50.value
 
 
 class SEResNet101Config(_PreTrainedSEResNetConfig):
-    """Config class for SE-ResNet-101."""
+    """
+    Config class for :py:func:`SE-ResNet-101 <clinicadl.networks.nn.get_seresnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.SE_RESNET_101
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.SE_RESNET_101.value
 
 
 class SEResNet152Config(_PreTrainedSEResNetConfig):
-    """Config class for SE-ResNet-152."""
+    """
+    Config class for :py:func:`SE-ResNet-152 <clinicadl.networks.nn.get_seresnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.SE_RESNET_152
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.SE_RESNET_152.value

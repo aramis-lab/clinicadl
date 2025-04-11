@@ -3,7 +3,6 @@ from typing import Optional
 import monai
 import monai.metrics
 from pydantic import (
-    computed_field,
     field_validator,
     model_validator,
 )
@@ -11,7 +10,7 @@ from pydantic import (
 from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
 
-from .enum import ImplementedMetric, Reduction
+from .enum import Reduction
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -30,6 +29,11 @@ class MetricConfig(NewClinicaDLConfig):
             The MONAI metric.
         """
         return super().get_object()
+
+    @classmethod
+    def _get_class(cls) -> type[monai.metrics.Metric]:
+        """Returns the metric associated to this config class."""
+        return getattr(monai.metrics, cls._get_name())
 
 
 class _IncludeBackgroundConfig(ClinicaDLConfig):
@@ -64,16 +68,6 @@ class LossMetricConfig(MetricConfig):
 
     loss_fn: Loss
     reduction: Optional[Reduction] = None
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return ImplementedMetric.LOSS.value
-
-    def _get_class(self) -> type[monai.metrics.Metric]:
-        """Returns the metric associated to this config class."""
-        return monai.metrics.LossMetric
 
     @model_validator(mode="after")
     def check_reduction(self):

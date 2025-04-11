@@ -43,7 +43,7 @@ def get_metric_config(
         not passed by the user.
     """
     metric = ImplementedMetric(name)
-    config_name = "".join([metric, "Config"])
+    config_name = f"{metric}Config"
     config = globals()[config_name]
 
     return config(**kwargs)

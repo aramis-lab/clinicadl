@@ -1,12 +1,10 @@
 from typing import Dict, List, Optional, Union
 
-import torch.optim as optim
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
-    computed_field,
     field_validator,
     model_validator,
 )
@@ -20,7 +18,7 @@ from .base import (
     _LastEpochConfig,
     _TotalItersConfig,
 )
-from .enum import AnnealingStrategy, ImplementedLRScheduler, Mode, ThresholdMode
+from .enum import AnnealingStrategy, Mode, ThresholdMode
 
 __all__ = [
     "ConstantLRConfig",
@@ -53,16 +51,6 @@ class ConstantLRConfig(
             last_epoch=last_epoch,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.CONSTANT.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.ConstantLR
-
 
 class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """
@@ -78,16 +66,6 @@ class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
             gamma=gamma,
             last_epoch=last_epoch,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.EXPONENTIAL.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.ExponentialLR
 
 
 class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
@@ -112,16 +90,6 @@ class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
             last_epoch=last_epoch,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.LINEAR.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.LinearLR
-
 
 class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """
@@ -142,16 +110,6 @@ class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
             last_epoch=last_epoch,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.STEP.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.StepLR
-
 
 class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """
@@ -171,16 +129,6 @@ class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
             gamma=gamma,
             last_epoch=last_epoch,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.MULTI_STEP.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.MultiStepLR
 
     @field_validator("milestones", mode="after")
     @classmethod
@@ -209,16 +157,6 @@ class PolynomialLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig)
             power=power,
             last_epoch=last_epoch,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.POLYNOMIAL.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.PolynomialLR
 
 
 class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
@@ -259,15 +197,6 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
             min_lr=min_lr,
             eps=eps,
         )
-
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.PLATEAU.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.ReduceLROnPlateau
 
     @field_validator("min_lr", mode="after")
     @classmethod
@@ -341,15 +270,6 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
             three_phase=three_phase,
             last_epoch=last_epoch,
         )
-
-    @property
-    def name(self) -> str:
-        """The name of the scheduler."""
-        return ImplementedLRScheduler.ONE_CYCLE.value
-
-    def _get_class(self) -> type[optim.lr_scheduler.LRScheduler]:
-        """Returns the lr scheduler associated to this config class."""
-        return optim.lr_scheduler.OneCycleLR
 
     @model_validator(mode="after")
     def check_n_steps(self):

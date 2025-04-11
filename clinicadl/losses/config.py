@@ -4,7 +4,6 @@ import torch
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
-    computed_field,
     field_validator,
 )
 
@@ -54,9 +53,14 @@ class LossConfig(NewClinicaDLConfig):
 
         return associated_class(**params)
 
+    @classmethod
+    def _get_class(cls) -> type[torch.nn.Module]:
+        """Returns the loss function associated to this config class."""
+        return getattr(torch.nn, cls._get_name())
+
 
 class _WeightConfig(ClinicaDLConfig):
-    """Base config class for loss functions with 'weight' argument."""
+    """Config class for loss functions with 'weight' argument."""
 
     weight: Optional[List[NonNegativeFloat]]
 
@@ -77,16 +81,6 @@ class NLLLossConfig(LossConfig, _WeightConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
         super().__init__(weight=weight, ignore_index=ignore_index, reduction=reduction)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.NLL.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.NLLLoss
 
     @field_validator("ignore_index")
     @classmethod
@@ -123,16 +117,6 @@ class CrossEntropyLossConfig(NLLLossConfig):
             label_smoothing=label_smoothing,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.CROSS_ENTROPY.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.CrossEntropyLoss
-
     @field_validator("label_smoothing")
     @classmethod
     def validator_label_smoothing(cls, v):
@@ -159,16 +143,6 @@ class BCELossConfig(LossConfig, _WeightConfig):
             weight=weight,
             reduction=reduction,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.BCE.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.BCELoss
 
     @field_validator("weight")
     @classmethod
@@ -202,16 +176,6 @@ class BCEWithLogitsLossConfig(BCELossConfig):
             reduction=reduction,
             pos_weight=pos_weight,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.BCE_LOGITS.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.BCEWithLogitsLoss
 
     @field_validator("pos_weight")
     @classmethod
@@ -256,16 +220,6 @@ class MultiMarginLossConfig(LossConfig, _WeightConfig):
             reduction=reduction,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.MULTI_MARGIN.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.MultiMarginLoss
-
 
 class KLDivLossConfig(LossConfig):
     """
@@ -283,16 +237,6 @@ class KLDivLossConfig(LossConfig):
             reduction=reduction,
             log_target=log_target,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.KLDIV.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.KLDivLoss
 
 
 class HuberLossConfig(LossConfig):
@@ -312,16 +256,6 @@ class HuberLossConfig(LossConfig):
             delta=delta,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.HUBER.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.HuberLoss
-
 
 class SmoothL1LossConfig(LossConfig):
     """
@@ -340,16 +274,6 @@ class SmoothL1LossConfig(LossConfig):
             beta=beta,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.SMOOTH_L1.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.SmoothL1Loss
-
 
 class L1LossConfig(LossConfig):
     """
@@ -364,16 +288,6 @@ class L1LossConfig(LossConfig):
             reduction=reduction,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.L1.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.L1Loss
-
 
 class MSELossConfig(LossConfig):
     """
@@ -387,16 +301,6 @@ class MSELossConfig(LossConfig):
         super().__init__(
             reduction=reduction,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the loss."""
-        return ImplementedLoss.MSE.value
-
-    def _get_class(self) -> type[torch.nn.Module]:
-        """Returns the loss function associated to this config class."""
-        return torch.nn.MSELoss
 
 
 def get_loss_function_config(
@@ -422,7 +326,7 @@ def get_loss_function_config(
         not passed by the user.
     """
     transform = ImplementedLoss(name)
-    config_name = "".join([transform, "Config"])
+    config_name = f"{transform}Config"
     config = globals()[config_name]
 
     return config(**kwargs)
