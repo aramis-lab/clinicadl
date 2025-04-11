@@ -8,14 +8,14 @@ from pydantic import (
 )
 
 from clinicadl.losses.types import Loss
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 from .enum import Reduction
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
 
-class MetricConfig(NewClinicaDLConfig):
+class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
     def get_object(self) -> monai.metrics.Metric:

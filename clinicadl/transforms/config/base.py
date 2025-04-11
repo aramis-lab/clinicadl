@@ -8,7 +8,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 from .enum import AnatomicalLabel
 
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-class TransformConfig(NewClinicaDLConfig):
+class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
 
     def get_object(self) -> tio.Transform:

@@ -10,10 +10,10 @@ from pydantic import (
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 
-class LRSchedulerConfig(NewClinicaDLConfig):
+class LRSchedulerConfig(ObjectConfig):
     """Base config class for the LR scheduler."""
 
     @classmethod

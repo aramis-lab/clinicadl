@@ -10,7 +10,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 from .utils import (
     get_params_in_groups,
@@ -41,7 +41,7 @@ class ImplementedOptimizer(str, Enum):
         )
 
 
-class OptimizerConfig(NewClinicaDLConfig):
+class OptimizerConfig(ObjectConfig):
     """Base config class for the optimizer."""
 
     lr: Union[PositiveFloat, Dict[str, PositiveFloat]]

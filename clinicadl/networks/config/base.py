@@ -12,7 +12,7 @@ import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.config import (
     ClinicaDLConfig,
-    NewClinicaDLConfig,
+    ObjectConfig,
     _update_kwargs_with_defaults,
 )
 from clinicadl.utils.factories import DefaultFromLibrary
@@ -61,7 +61,7 @@ class ImplementedNetwork(str, Enum):
         )
 
 
-class NetworkConfig(NewClinicaDLConfig):
+class NetworkConfig(ObjectConfig):
     """Base config class to configure neural networks."""
 
     def get_object(self) -> nn.Module:

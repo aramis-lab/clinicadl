@@ -7,7 +7,7 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedLoss, Order, Reduction
@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-class LossConfig(NewClinicaDLConfig):
+class LossConfig(ObjectConfig):
     """Base config class for the loss function."""
 
     reduction: Reduction

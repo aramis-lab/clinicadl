@@ -36,7 +36,7 @@ class ClinicaDLConfig(BaseModel):
         return _order_dict(self.model_dump())
 
 
-class NewClinicaDLConfig(ClinicaDLConfig, ABC):
+class ObjectConfig(ClinicaDLConfig, ABC):
     """
     Base config class associated to a Python object.
 
@@ -51,7 +51,7 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
     def __init__(self, **kwargs):
         if not type(self).__name__.endswith(CONFIG):
             raise NameError(
-                f"Invalid name for a NewClinicaDLConfig. The name of the class should end with '{CONFIG}'."
+                f"Invalid name for a ObjectConfig. The name of the class should end with '{CONFIG}'."
             )
 
         associated_class = self._get_class()
