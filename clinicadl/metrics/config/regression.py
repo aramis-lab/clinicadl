@@ -3,7 +3,7 @@ from typing import Union
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import Reduction
+from .enum import Optimum, Reduction
 
 __all__ = [
     "MSEMetricConfig",
@@ -26,6 +26,11 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
+
 
 class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
@@ -40,6 +45,11 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
+
 
 class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
@@ -53,3 +63,8 @@ class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         super().__init__(
             reduction=reduction,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN

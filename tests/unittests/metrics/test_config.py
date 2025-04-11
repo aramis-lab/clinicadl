@@ -387,3 +387,40 @@ def test_get_metric_config(name, config):
 
         with pytest.raises(ValueError):
             get_metric_config("abc")
+
+
+def test_check_reduction():
+    with pytest.raises(ValidationError):
+        LossMetricConfig(loss_fn=lambda x: x, reduction=None)
+    config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction=None)
+    assert config.reduction == "sum"
+
+
+@pytest.mark.parametrize(
+    "config,optimum",
+    [
+        (LossMetricConfig, "min"),
+        (ROCAUCMetricConfig, "max"),
+        (MultiScaleSSIMMetricConfig, "max"),
+        (PSNRMetricConfig, "max"),
+        (SSIMMetricConfig, "max"),
+        (MAEMetricConfig, "min"),
+        (MSEMetricConfig, "min"),
+        (RMSEMetricConfig, "min"),
+        (DiceMetricConfig, "max"),
+        (GeneralizedDiceScoreConfig, "max"),
+        (HausdorffDistanceMetricConfig, "min"),
+        (MeanIoUConfig, "max"),
+        (SurfaceDiceMetricConfig, "max"),
+        (SurfaceDistanceMetricConfig, "min"),
+    ],
+)
+def test_optimum(config, optimum):
+    assert config.optimum() == optimum
+
+
+def test_optimum_confusion_matrix():
+    config = ConfusionMatrixMetricConfig(metric_name="fpr")
+    assert config.optimum() == "min"
+    config = ConfusionMatrixMetricConfig(metric_name="tpr")
+    assert config.optimum() == "max"

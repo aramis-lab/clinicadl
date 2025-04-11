@@ -16,6 +16,7 @@
     "common_masks": [
         "leftHippocampus.nii.gz", "rightHippocampus.nii.gz"
     ],
+    "also": {},
     "transforms": [],
     "spacing": [
         1.3,

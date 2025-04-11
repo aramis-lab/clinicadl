@@ -27,8 +27,8 @@ def get_optimizer_config(
         the configuration object. Default values will be returned for the parameters
         not passed by the user.
     """
-    optimizer = ImplementedOptimizer(name)
-    config_name = "".join([optimizer, "Config"])
+    optimizer = ImplementedOptimizer(name).value
+    config_name = f"{optimizer}Config"
     config = globals()[config_name]
 
     return config(**kwargs)

@@ -60,7 +60,7 @@ def get_transform_config(
         the config object. Default values will be returned for the parameters
         not passed by the user.
     """
-    transform = ImplementedTransform(name)
+    transform = ImplementedTransform(name).value
     config_name = f"{transform}Config"
     config = globals()[config_name]
 

@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Optional
 
 import monai
@@ -10,7 +11,7 @@ from pydantic import (
 from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import Reduction
+from .enum import Optimum, Reduction
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -34,6 +35,11 @@ class MetricConfig(ObjectConfig):
     def _get_class(cls) -> type[monai.metrics.Metric]:
         """Returns the metric associated to this config class."""
         return getattr(monai.metrics, cls._get_name())
+
+    @staticmethod
+    @abstractmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
 
 
 class _IncludeBackgroundConfig(ClinicaDLConfig):
@@ -68,6 +74,11 @@ class LossMetricConfig(MetricConfig):
 
     loss_fn: Loss
     reduction: Optional[Reduction] = None
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
 
     @model_validator(mode="after")
     def check_reduction(self):

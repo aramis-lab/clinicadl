@@ -11,7 +11,7 @@ from pydantic import (
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import Kernel, Reduction
+from .enum import Kernel, Optimum, Reduction
 
 __all__ = [
     "PSNRMetricConfig",
@@ -38,6 +38,11 @@ class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
 
 
 class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
@@ -108,6 +113,11 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
             get_not_nans=get_not_nans,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
     @model_validator(mode="after")
     def validator_win_size(self):
         """Checks coherence between fields."""
@@ -155,6 +165,11 @@ class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
 
     @model_validator(mode="after")
     def validator_kernel_size(self):

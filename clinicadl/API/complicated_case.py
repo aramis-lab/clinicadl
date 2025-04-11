@@ -9,99 +9,113 @@ from clinicadl.data.datatypes.preprocessing import (
     PETLinear,
     T1Linear,
 )
-from clinicadl.experiment_manager.experiment_manager import ExperimentManager
-from clinicadl.losses.config import CrossEntropyLossConfig
+from clinicadl.losses.config import MSELossConfig
+from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
+from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config.resnet import ResNetConfig
 from clinicadl.optim.optimizers.config.configs import AdamConfig
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
-from clinicadl.transforms.extraction import Image
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms import Transforms
+from clinicadl.transforms.extraction import Slice
+from clinicadl.transforms.output_transforms import OutputTransforms
+from clinicadl.utils.computational.computational import ComputationalConfig
 
 caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
 )  # output of clinica pipelines
+sub_ses_t1 = Path(
+    "/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv"
+)  # 64 subjects
 
-sub_ses_t1 = Path("/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv")
+# DEFINE PREPROCESSING
 preprocessing_t1 = T1Linear()
+
+# DEFINE TRANSFORMS
 transforms_image = Transforms(
-    augmentations=[transforms.RandomMotion()],  # type: ignore
-    extraction=Image(),
-    image_transforms=[transforms.Blur((0.5, 0.6, 0.3))],  # type: ignore
+    extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
 )
 
-print("T1 and image ")
-
+# CREATE CAPSDATASET
 dataset_t1_image = CapsDataset(
     caps_directory=caps_directory,
     data=sub_ses_t1,
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
+    label="diagnosis",
 )
-dataset_t1_image.to_tensors(
-    json_name="test.json", n_proc=2
-)  # give random name to the json if not given ?
-
-
-sub_ses_pet_45 = Path(
-    "/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_pet_18FAV45.tsv"
-)
-preprocessing_pet_45 = PETLinear(tracer="18FAV45", suvr_reference_region="pons2")  # type: ignore
-
-dataset_pet_image = CapsDataset(
-    caps_directory=caps_directory,
-    data=sub_ses_pet_45,
-    preprocessing=preprocessing_pet_45,
-    transforms=transforms_image,
-)
-dataset_pet_image.to_tensors(
-    json_name="test_pet.json", n_proc=2
-)  # to extract the tensor of the PET file
-
-
-dataset_multi_modality = ConcatDataset(
-    [
-        dataset_t1_image,
-        dataset_pet_image,
-    ]
-)  # 3 train.tsv en entrée qu'il faut concat et pareil pour les transforms à faire attention
+dataset_t1_image.to_tensors(json_name="test.json", n_proc=2)
 
 
 # CAS CROSS-VALIDATION
 
-split_dir = make_split(sub_ses_t1, n_test=0.2)  # Optional data tsv and output_dir
+split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
-
 splitter = KFold(fold_dir)
 
 
-maps_path = Path("/")
-manager = ExperimentManager(maps_path, overwrite=False)
-
-config_file = Path("config_file")
-trainer = Trainer.from_json(config_file=config_file)
+optim_config = OptimizationConfig(epochs=4)
+comput_config = ComputationalConfig(gpu=False)
+dataloader_config = DataLoaderConfig(batch_size=3)
 
 
+maps_path = Path("maps_test")
+
+# DEFINE MODEL
+model = ClinicaDLModel.from_config(
+    network_config=get_network_config(
+        ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
+    ),
+    loss_config=MSELossConfig(),
+    optimizer_config=AdamConfig(),
+)
+
+
+# DEFINE METRICS
+metrics = Metrics(
+    metrics=[MSEMetricConfig(), MAEMetricConfig()],
+    selection_metrics=[MSEMetricConfig(), "Loss"],
+)
+
+
+trainer = Trainer(
+    maps_path,
+    model=model,
+    comp_config=comput_config,
+    optim_config=optim_config,
+    metrics=metrics,
+)
+
+
+# CROOS VALIDATION LOOP
 for split in splitter.get_splits(dataset=dataset_t1_image):
-    train_loader = split.build_train_loader(batch_size=2)
-    val_loader = split.build_val_loader(DataLoaderConfig())
+    print(f"Training for split {split.index}")
 
-    model = ClinicaDLModel.from_config(
-        network_config=ResNetConfig(num_outputs=1, spatial_dims=1, in_channels=1),
-        loss_config=CrossEntropyLossConfig(),
-        optimizer_config=AdamConfig(),
-    )
+    # BUILD DATALOADER
+    split.build_train_loader(dataloader_config)
+    split.build_val_loader(dataloader_config)
 
-    trainer.train(model, split)
-    # le trainer va instancier un predictor/valdiator dans le train ou dans le init
+    # TRAIN
+    trainer.train(split)
+
 
 # TEST
 
-
 dataset_test = CapsDataset(
     caps_directory=caps_directory,
+    data=split_dir / "test_baseline.tsv",
     preprocessing=preprocessing_t1,
-    data=Path("test.tsv"),  # test only on data from the first dataset
     transforms=transforms_image,
+    label="diagnosis",
 )
+dataset_test.to_tensors(json_name="test_test.json", n_proc=2)
+
+
+output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])  # type: ignore
+
+predictor = Predictor(maps_path, comp_config=comput_config, model=model)
+
+dataloader = dataloader_config.get_dataloader(dataset_test)
+
+predictor.predict(dataloader, metrics=metrics, split=1, data_group="test")

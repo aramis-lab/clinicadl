@@ -66,27 +66,53 @@ def test_extract_sample():
         label=tio.LabelMap(tensor=label, affine=affine),
         participant="sub-000",
         session="ses-M000",
+        image_path="abc.nii.gz",
         mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
-    extracted_data, description = slice.extract_sample(data_point, sample_index=3)
-    assert description == 5
+    extracted_data = slice.extract_sample(data_point, sample_index=3)
     assert isinstance(extracted_data.image, tio.ScalarImage)
     assert (extracted_data.image.tensor == image_tensor[:, :, :, 5:6]).all()
     assert isinstance(extracted_data.label, tio.LabelMap)
     assert (extracted_data.label.tensor == label[:, :, :, 5:6]).all()
-    assert isinstance(extracted_data.mask_1, tio.LabelMap)
-    assert (extracted_data.mask_1.tensor == mask_1[:, :, :, 5:6]).all()
+    assert isinstance(extracted_data["mask_1"], tio.LabelMap)
+    assert (extracted_data["mask_1"].tensor == mask_1[:, :, :, 5:6]).all()
 
     assert np.isclose(extracted_data.image.affine, affine).all()
     assert np.isclose(extracted_data.label.affine, affine).all()
 
+    assert extracted_data.participant == "sub-000"
+    assert extracted_data.session == "ses-M000"
+    assert extracted_data.image_path == "abc.nii.gz"
+
+    assert data_point.image.tensor.shape == (1, 5, 3, 7)
+
+    # test get_tensors
+    tensors = extracted_data.get_tensors()
+    assert (tensors["image"] == image_tensor[:, :, :, 5]).all()
+    assert (tensors["label"] == label[:, :, :, 5]).all()
+    assert (tensors["mask_1"] == mask_1[:, :, :, 5]).all()
+
+    slice = Slice(discarded_slices=[4], borders=1, slice_direction=2, squeeze=False)
+    extracted_data = slice.extract_sample(data_point, sample_index=3)
+    tensors = extracted_data.get_tensors()
+    assert (tensors["image"] == image_tensor[:, :, :, 5:6]).all()
+    assert (tensors["label"] == label[:, :, :, 5:6]).all()
+    assert (tensors["mask_1"] == mask_1[:, :, :, 5:6]).all()
+
+    # test transforms history
+    transform = tio.Clamp(out_min=0, out_max=10)
+    sample = slice.extract_sample(transform(data_point), sample_index=0)
+    assert len(sample.get_applied_transforms()) == 1
+    assert isinstance(sample.get_applied_transforms()[0], tio.Clamp)
+
+    # other tests
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
         participant="sub-000",
         session="ses-M000",
         label=1,
     )
-    extracted_data, _ = slice.extract_sample(data_point, sample_index=1)
+    extracted_data = slice.extract_sample(data_point, sample_index=1)
     assert extracted_data.label == 1
 
     with pytest.raises(IndexError):
@@ -94,57 +120,12 @@ def test_extract_sample():
 
     slice = Slice(slices=[2, 3])
     assert (
-        slice.extract_sample(data_point, sample_index=1)[0].image.tensor
+        slice.extract_sample(data_point, sample_index=1).image.tensor
         == image_tensor[:, 3:4]
     ).all()
 
     slice = Slice(discarded_slices=[0], slice_direction=1)
     assert (
-        slice.extract_sample(data_point, sample_index=0)[0].image.tensor
+        slice.extract_sample(data_point, sample_index=0).image.tensor
         == image_tensor[:, :, 1:2]
     ).all()
-
-
-def test_format_output():
-    slice = Slice(slice_direction=2, squeeze=True)
-    affine = np.diag([3, 2, 1, 1])
-    image_tensor = torch.randn(1, 3, 4, 5)
-    mask_1 = torch.ones(1, 3, 4, 5)
-    label = torch.ones(1, 3, 4, 5)
-
-    sample_data = DataPoint(
-        image=tio.ScalarImage(tensor=image_tensor, affine=affine),
-        label=tio.LabelMap(tensor=label, affine=affine),
-        participant="sub-000",
-        session="ses-M000",
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
-    )
-    output = slice.format_output(
-        sample_data,
-        image_path=Path("sub-000_ses-M000_T1w.nii.gz"),
-        description=1,
-    )
-    assert (output.sample == image_tensor.squeeze(3)).all()
-    assert (output.label == label.squeeze(3)).all()
-    assert np.isclose(output.affine, affine).all()
-    assert output.session == "ses-M000"
-    assert output.participant == "sub-000"
-    assert output.extraction == "slice"
-    assert output.image_path == "sub-000_ses-M000_T1w.nii.gz"
-    assert output.slice_direction == 2
-    assert output.slice_position == 1
-
-    slice = Slice(slice_direction=2, squeeze=False)
-    sample_data = DataPoint(
-        image=tio.ScalarImage(tensor=image_tensor),
-        participant="sub-000",
-        session="ses-M000",
-        label=0.5,
-    )
-    output = slice.format_output(
-        sample_data,
-        image_path=Path("sub-000_ses-M000_T1w.nii.gz"),
-        description=1,
-    )
-    assert (output.sample == image_tensor.squeeze(3)).all()
-    assert output.label == 0.5

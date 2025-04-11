@@ -40,6 +40,13 @@ class ImplementedTransform(str, BaseEnum):
     RANDOM_SWAP = "RandomSwap"
     RANDOM_GAMMA = "RandomGamma"
 
+    @classmethod
+    def _missing_(cls, value):
+        raise ValueError(
+            f"{value} is not implemented. Implemented transforms are: "
+            + ", ".join([repr(m.value) for m in cls])
+        )
+
 
 class AnatomicalLabel(str, Enum):
     """

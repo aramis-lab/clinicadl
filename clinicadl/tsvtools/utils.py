@@ -8,10 +8,37 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import (
+    DATASET_ID,
+    FIRST_INDEX,
+    LAST_INDEX,
+    N_SAMPLES,
+    PARTICIPANT_ID,
+    SESSION_ID,
+)
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl")
+
+
+def remove_non_empty_dir(dir_path: Path):
+    """
+    Remove a non-empty directory using only pathlib.
+
+    Parameters
+    ----------
+    dir_path : Path
+        Path to the directory to remove.
+    """
+    if dir_path.exists() and dir_path.is_dir():
+        for item in dir_path.iterdir():  # Iterate through directory contents
+            if item.is_dir():
+                remove_non_empty_dir(item)  # Recursively remove subdirectories
+            else:
+                item.unlink()  # Remove files
+        dir_path.rmdir()  # Remove the now-empty directory
+    else:
+        print(f"{dir_path} does not exist or is not a directory.")
 
 
 def merged_tsv_reader(merged_tsv_path: Path) -> pd.DataFrame:
@@ -360,6 +387,13 @@ def check_df(df: pd.DataFrame) -> pd.DataFrame:
         raise ClinicaDLTSVError(
             f"The dataframe is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
+        )
+
+    protected_names = {N_SAMPLES, FIRST_INDEX, LAST_INDEX, DATASET_ID}
+    if len(protected_names.intersection(set(df.columns.values))) > 0:
+        raise ClinicaDLTSVError(
+            f"The dataframe contains some protected column names. "
+            f"Please do not use names in {protected_names}"
         )
 
     duplicated_pairs = df[df[[PARTICIPANT_ID, SESSION_ID]].duplicated(keep=False)]

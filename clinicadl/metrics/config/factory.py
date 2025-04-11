@@ -42,7 +42,7 @@ def get_metric_config(
         the config object. Default values will be returned for the parameters
         not passed by the user.
     """
-    metric = ImplementedMetric(name)
+    metric = ImplementedMetric(name).value
     config_name = f"{metric}Config"
     config = globals()[config_name]
 

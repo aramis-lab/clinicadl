@@ -14,7 +14,12 @@ release = "2.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx_design"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx_design",
+    "sphinx.ext.extlinks",
+]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -23,7 +28,15 @@ intersphinx_mapping = {
     "torchio": ("https://torchio.readthedocs.io", None),
     "monai": ("https://docs.monai.io/en/stable", None),
     "torch": ("https://pytorch.org/docs/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
 }
+extlinks = {
+    "pathlib.Path": (
+        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
+        None,
+    )
+}
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

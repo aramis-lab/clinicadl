@@ -53,7 +53,10 @@ class CapsReader(Reader):
 
     @property
     def tensor_conversion_json_dir(self) -> Path:
-        return self.input_directory / CONVERSION_JSON_DIRECTORY
+        out_dir = self.input_directory / CONVERSION_JSON_DIRECTORY
+        if not out_dir.exists():
+            out_dir.mkdir(parents=True, exist_ok=True)
+        return out_dir
 
     def _check_caps_folder(self) -> None:
         """
@@ -374,6 +377,9 @@ class CapsReader(Reader):
             self.subject_directory / "sub-*" / "ses-*" / preprocessing.file_type.pattern
         )
         files_found = insensitive_glob(str(pattern), recursive=True)
+        if len(files_found) == 0:
+            raise ClinicaDLCAPSError("No image found for this preprocessing!")
+
         participants_sessions = set()
         for file in files_found:
             participant_session = (

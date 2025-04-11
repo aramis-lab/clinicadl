@@ -325,8 +325,8 @@ def get_loss_function_config(
         the config object. Default values will be returned for the parameters
         not passed by the user.
     """
-    transform = ImplementedLoss(name)
-    config_name = f"{transform}Config"
+    loss = ImplementedLoss(name).value
+    config_name = f"{loss}Config"
     config = globals()[config_name]
 
     return config(**kwargs)

@@ -4,10 +4,10 @@ from typing import Any, Dict
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.data.config.data import DataConfig as DataBaseConfig
-from clinicadl.experiment_manager.config import (
+from clinicadl.maps.config import (
     MapsManagerConfig as MapsManagerBaseConfig,
 )
-from clinicadl.experiment_manager.maps_manager import MapsManager
+from clinicadl.maps.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.splitter.splitter import SplitterConfig as SplitConfig
 from clinicadl.transforms.config import TransformsConfig

@@ -6,7 +6,7 @@ import torch
 from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.config import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms

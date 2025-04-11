@@ -12,6 +12,7 @@ from .base import (
 )
 from .enum import (
     DistanceMetric,
+    Optimum,
     Reduction,
     WeightType,
 )
@@ -62,6 +63,11 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
             return_with_label=return_with_label,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
     @field_validator("return_with_label", mode="after")
     @classmethod
     def validator_return_with_label(cls, v):
@@ -91,6 +97,11 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
             ignore_empty=ignore_empty,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
+
 
 class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     """
@@ -111,6 +122,11 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
             reduction=reduction,
             weight_type=weight_type,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
 
 
 class _BaseSurfaceDistanceConfig(
@@ -146,6 +162,11 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             get_not_nans=get_not_nans,
         )
 
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
+
 
 class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
     """
@@ -176,6 +197,11 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             reduction=reduction,
             get_not_nans=get_not_nans,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MIN
 
     @field_validator("percentile", mode="after")
     @classmethod
@@ -215,3 +241,8 @@ class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
             get_not_nans=get_not_nans,
             use_subvoxels=use_subvoxels,
         )
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
+        return Optimum.MAX
