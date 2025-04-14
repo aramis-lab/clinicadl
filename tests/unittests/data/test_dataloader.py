@@ -297,7 +297,7 @@ def test_ddp():
     assert batch[0].slice_position == 1
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    assert batch[0].slice_position == 1
+    assert batch[1].slice_position == 0
     with pytest.raises(StopIteration):
         next(dataloader)
 
@@ -309,9 +309,9 @@ def test_ddp():
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-010"
-    assert batch[0].slice_position == 1
+    assert batch[0].slice_position == 0
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    assert batch[1].slice_position == 0
+    assert batch[1].slice_position == 1
     with pytest.raises(StopIteration):
         next(dataloader)
