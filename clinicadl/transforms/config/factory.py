@@ -6,7 +6,6 @@ from .enum import ImplementedTransform
 from .intensity import (
     ClampConfig,
     MaskConfig,
-    NanRemovalConfig,
     RescaleIntensityConfig,
     ZNormalizationConfig,
 )

@@ -23,10 +23,6 @@ Clamp
 *****
 .. autoclass:: ClampConfig
 
-NanRemoval
-**********
-.. autoclass:: NanRemovalConfig
-
 Spatial
 -------
 .. currentmodule:: clinicadl.transforms.config.spatial

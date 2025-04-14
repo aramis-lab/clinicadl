@@ -33,7 +33,6 @@ MANDATORY_ARGS = {
         ("ZNormalization", ZNormalizationConfig),
         ("Mask", MaskConfig),
         ("Clamp", ClampConfig),
-        ("NanRemoval", NanRemovalConfig),
         ("RemapLabels", RemapLabelsConfig),
         ("OneHot", OneHotConfig),
         ("RandomFlip", RandomFlipConfig),
@@ -79,9 +78,8 @@ def test_get_transform_config(name, config):
         assert c.name == name
         assert isinstance(c, config)
 
-    if name == "NanRemoval":
-        config = get_transform_config("NanRemoval", nan=1)
-        assert config.name == "NanRemoval"
-        assert config.nan == 1
-        assert config.posinf is None
-        assert config.neginf is None
+    if name == "RandomNoise":
+        config = get_transform_config("RandomNoise", mean=1)
+        assert config.name == "RandomNoise"
+        assert config.mean == 1
+        assert config.std == (0, 0.25)

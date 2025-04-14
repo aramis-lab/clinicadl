@@ -6,11 +6,9 @@ from pydantic import ValidationError
 from clinicadl.transforms.config.intensity import (
     ClampConfig,
     MaskConfig,
-    NanRemovalConfig,
     RescaleIntensityConfig,
     ZNormalizationConfig,
 )
-from clinicadl.transforms.homemade_transforms import NanRemoval
 
 BAD_INPUTS = [
     ({"out_min_max": -0.5}, RescaleIntensityConfig),
@@ -39,8 +37,6 @@ GOOD_INPUTS = [
     ({"out_min": 0.5, "out_max": 1.0}, ClampConfig),
     ({"out_min": 0.5, "out_max": None}, ClampConfig),
     ({"out_min": None, "out_max": 1.0}, ClampConfig),
-    ({"posinf": 1.2, "neginf": 0.1}, NanRemovalConfig),
-    ({"posinf": None, "neginf": None}, NanRemovalConfig),
 ]
 
 X = tio.Subject(
@@ -68,7 +64,6 @@ def test_good_inputs(args: dict, config):
         ({}, RescaleIntensityConfig, tio.RescaleIntensity),
         ({"masking_method": None}, MaskConfig, tio.Mask),
         ({"out_max": 1.0}, ClampConfig, tio.Clamp),
-        ({}, NanRemovalConfig, NanRemoval),
         ({}, ZNormalizationConfig, tio.ZNormalization),
     ],
 )
