@@ -1,2 +1,2 @@
-from .homemade_transforms import NanRemoval
+from .config import ImplementedTransform
 from .transforms import Transforms

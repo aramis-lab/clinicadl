@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 import pandas as pd
 from monai.metrics.metric import Metric as MonaiMetric
 
-from clinicadl.losses.utils import Loss
+from clinicadl.losses.types import Loss
 from clinicadl.metrics import ImplementedMetric
-from clinicadl.metrics.config import MetricConfig
+from clinicadl.metrics.config import MetricConfig, get_metric_config
 from clinicadl.metrics.config.base import LossMetricConfig
-from clinicadl.metrics.factory import get_metric_config, get_metric_from_config
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
 from clinicadl.utils.json import read_json, write_json
 
 MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
@@ -56,7 +54,7 @@ class GroupMetrics:
             if metric.value == LOSS:
                 self._callable_metrics[metric.value] = self._callable_loss
             else:
-                callable_metric, _ = get_metric_from_config(get_metric_config(metric))
+                callable_metric = get_metric_config(metric).get_object()
                 self._callable_metrics[metric.value] = callable_metric
 
     def _init_df(self):
@@ -115,7 +113,7 @@ class GroupMetrics:
         return metrics_list
 
     def set_loss(self, loss: Loss):
-        self._callable_loss, _ = get_metric_from_config(LossMetricConfig(loss_fn=loss))
+        self._callable_loss = LossMetricConfig(loss_fn=loss).get_object()
 
     def on_train_end(self):
         pass

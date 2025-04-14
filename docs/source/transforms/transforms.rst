@@ -29,6 +29,10 @@ Checkout out the documentation on :ref:`preprocessing transforms <transforms_pre
 :ref:`augmentations <transforms_augmentation>` to know the catalogue of natively supported transforms
 in ClinicaDL.
 
+Nevertheless, you can also pass your own transform to :py:class:`Transforms <clinicadl.transforms.Transforms>`
+(see the :tutorials:`tutorial <transforms/custom_transforms.ipynb>`), or use the transforms implemented by
+the community in :zoo:`ClinicaDL Zoo <clinicadl_zoo/transforms>` (see the :zoo:`tutorial <tutorials/transforms.ipynb>`).
+
 .. toctree::
     :maxdepth: 1
 

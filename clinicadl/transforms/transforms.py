@@ -1,11 +1,10 @@
 from logging import getLogger
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 import torchio as tio
-from pydantic import field_serializer, field_validator, model_validator
+from pydantic import field_serializer, model_validator
 
 from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
-from clinicadl.transforms.config.intensity import NanRemovalConfig
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.utils.config import ClinicaDLConfig
 
@@ -53,7 +52,7 @@ class Transforms(ClinicaDLConfig):
         The extraction applied. See :ref:`extraction`. Default is ``None``, which means
         that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
         will output full images.
-    image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[NanRemovalConfig()])
+    image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
         A list of transformations to apply on the whole image, before extraction.
     sample_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
         A list of transformations to apply on samples (patches or slices).
@@ -82,7 +81,7 @@ class Transforms(ClinicaDLConfig):
     """
 
     extraction: Extraction = Image()
-    image_transforms: list[Union[Transform, TransformConfig]] = [NanRemovalConfig()]
+    image_transforms: list[Union[Transform, TransformConfig]] = []
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
     _image_transforms_processed: list[Transform] = []

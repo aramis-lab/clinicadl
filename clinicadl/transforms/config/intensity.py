@@ -3,15 +3,13 @@ from typing import Optional, Tuple, Union
 import torchio as tio
 from pydantic import (
     NonNegativeFloat,
-    computed_field,
     field_validator,
     model_validator,
 )
 
-from clinicadl.transforms.homemade_transforms import NanRemoval
 from clinicadl.utils.config import DefaultFromLibrary
 
-from .base import Bounds, ImplementedTransform, MaskingMethodConfig, TransformConfig
+from .base import Bounds, MaskingMethodConfig, TransformConfig
 from .enum import AnatomicalLabel
 
 __all__ = [
@@ -19,7 +17,6 @@ __all__ = [
     "ZNormalizationConfig",
     "MaskConfig",
     "ClampConfig",
-    "NanRemovalConfig",
 ]
 
 
@@ -55,16 +52,6 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
             in_min_max=in_min_max,
             masking_method=masking_method,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RESCALE_INTENSITY.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RescaleIntensity
 
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
@@ -110,16 +97,6 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
             masking_method=masking_method,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.Z_NORMALIZATION.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.ZNormalization
-
 
 class MaskConfig(TransformConfig, MaskingMethodConfig):
     """
@@ -141,16 +118,6 @@ class MaskConfig(TransformConfig, MaskingMethodConfig):
             masking_method=masking_method, outside_value=outside_value, labels=labels
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.MASK.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Mask
-
 
 class ClampConfig(TransformConfig):
     """
@@ -167,20 +134,10 @@ class ClampConfig(TransformConfig):
     ):
         super().__init__(out_min=out_min, out_max=out_max)
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.CLAMP.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.Clamp
-
     @model_validator(mode="after")
     def validate_min_max(self):
         """Checks consistency between 'out_min' and 'out_max'."""
-        if not self.out_min and not self.out_max:
+        if self.out_min is None and self.out_max is None:
             raise ValueError("'out_min' and 'out_max' cannot both be None.")
         elif self.out_min and self.out_max and self.out_min > self.out_max:
             raise ValueError(
@@ -188,31 +145,3 @@ class ClampConfig(TransformConfig):
             )
 
         return self
-
-
-class NanRemovalConfig(TransformConfig):
-    """
-    Config class for :py:class:`clinicadl.transforms.NanRemoval <clinicadl.transforms.homemade_transforms.NanRemoval>`.
-    """
-
-    nan: float
-    posinf: Optional[float]
-    neginf: Optional[float]
-
-    def __init__(
-        self,
-        nan: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        posinf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-        neginf: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(nan=nan, posinf=posinf, neginf=neginf)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.NAN_REMOVAL.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return NanRemoval

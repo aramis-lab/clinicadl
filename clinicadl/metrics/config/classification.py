@@ -1,7 +1,5 @@
 from typing import Union
 
-from pydantic import computed_field
-
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
@@ -10,7 +8,7 @@ from .base import (
     _IncludeBackgroundConfig,
     _ReductionConfig,
 )
-from .enum import Average, ImplementedMetric, Optimum
+from .enum import Average, ConfusionMatrixMetricName, Optimum, Reduction
 
 __all__ = [
     "ROCAUCMetricConfig",
@@ -20,15 +18,16 @@ __all__ = [
 
 # TODO : AP is missing
 class ROCAUCMetricConfig(MetricConfig):
-    "Config class for ROC AUC."
+    """
+    Config class for :py:class:`monai.metrics.ROCAUCMetric`.
+    """
 
-    average: Union[Average, DefaultFromLibrary] = DefaultFromLibrary.YES
+    average: Average
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.ROC_AUC
+    def __init__(
+        self, average: Union[Average, DefaultFromLibrary] = DefaultFromLibrary.YES
+    ):
+        super().__init__(average=average)
 
     @staticmethod
     def optimum() -> Optimum:
@@ -39,16 +38,30 @@ class ROCAUCMetricConfig(MetricConfig):
 class ConfusionMatrixMetricConfig(
     MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
 ):
-    "Config class for metrics derived from the confusion matrix."
+    """
+    Config class for :py:class:`monai.metrics.ConfusionMatrixMetric`.
+    """
 
-    metric_name: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES
-    compute_sample: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    metric_name: ConfusionMatrixMetricName
+    compute_sample: bool
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.CONF_MATRIX
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        metric_name: Union[
+            ConfusionMatrixMetricName, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        compute_sample: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            metric_name=metric_name,
+            compute_sample=compute_sample,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
 
     def optimum(self) -> Optimum:  # pylint: disable=arguments-differ
         """The optimum of the metric."""

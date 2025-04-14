@@ -13,7 +13,7 @@ from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
-from clinicadl.networks.factory import ImplementedNetwork, get_network_config
+from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.predictor.predictor import Predictor

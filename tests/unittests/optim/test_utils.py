@@ -4,12 +4,8 @@ import numpy as np
 import pytest
 import torch.nn as nn
 
-from clinicadl.optim import (
-    get_lr_scheduler_config,
-    get_lr_scheduler_from_config,
-    get_optimizer_config,
-    get_optimizer_from_config,
-)
+from clinicadl.optim.lr_schedulers.config import get_lr_scheduler_config
+from clinicadl.optim.optimizers.config import get_optimizer_config
 from clinicadl.optim.utils import check_optimizer_scheduler_consistency
 
 
@@ -54,6 +50,19 @@ from clinicadl.optim.utils import check_optimizer_scheduler_consistency
             {
                 "name": "SGD",
                 "momentum": {"linear1": 2, "ELSE": 1},
+                "dampening": {"linear2": 1, "ELSE": 1},
+            },
+            {
+                "name": "OneCycleLR",
+                "max_lr": {"linear1": 0.1, "ELSE": 0.33},
+                "total_steps": 10,
+            },
+            True,
+        ),
+        (
+            {
+                "name": "SGD",
+                "momentum": {"linear1": 2, "ELSE": 1},
                 "dampening": {"linear2": 1, "ELSE": 0},
             },
             {
@@ -61,6 +70,11 @@ from clinicadl.optim.utils import check_optimizer_scheduler_consistency
                 "min_lr": {"linear1": 0.1, "linear2": 0.2, "ELSE": 0.33},
             },
             False,
+        ),
+        (
+            {"name": "Adadelta"},
+            {"name": "OneCycleLR", "max_lr": 1, "total_steps": 10},
+            True,
         ),
     ],
 )
@@ -92,22 +106,43 @@ def network():
 def test_param_groups(network):
     optimizer_config = get_optimizer_config(
         "SGD",
-        lr=1,
-        weight_decay={"linear1": 0.1, "ELSE": 0},
-        dampening={"linear2": 1, "ELSE": 0},
+        lr={"linear1": 0.1, "ELSE": 0.01},
+        momentum={"linear2": 0.1, "ELSE": 0.01},
     )
+
+    optimizer = optimizer_config.get_object(network)
     scheduler_config = get_lr_scheduler_config(
         "ReduceLROnPlateau",
         factor=0.1,
         patience=0,
-        min_lr={"linear1": 0.01, "linear2": 0.1, "ELSE": 0},
+        min_lr={"linear1": 0.01, "linear2": 0.001, "ELSE": 0},
     )
-    check_optimizer_scheduler_consistency(optimizer_config, scheduler_config)
+    scheduler = scheduler_config.get_object(optimizer)
+    scheduler.step(1)
+    scheduler.step(1)
+    scheduler.step(1)
+    assert np.isclose(optimizer.param_groups[0]["lr"], 0.01)
+    assert np.isclose(optimizer.param_groups[1]["lr"], 0.001)
+    assert np.isclose(optimizer.param_groups[2]["lr"], 0.0001)
+    assert np.isclose(optimizer.param_groups[0]["momentum"], 0.01)
+    assert np.isclose(optimizer.param_groups[1]["momentum"], 0.1)
+    assert np.isclose(optimizer.param_groups[2]["momentum"], 0.01)
 
-    optimizer, _ = get_optimizer_from_config(optimizer_config, network)
-    scheduler, _ = get_lr_scheduler_from_config(scheduler_config, optimizer)
-    scheduler.step(1)
-    scheduler.step(1)
-    scheduler.step(1)
-    scheduler.step(1)
-    assert np.isclose(scheduler.get_last_lr(), [0.01, 0.1, 0.001], rtol=1e-5).all()
+    optimizer = optimizer_config.get_object(network)
+    scheduler_config = get_lr_scheduler_config(
+        "OneCycleLR",
+        total_steps=10,
+        max_lr={"linear1": 0.1, "linear2": 0.01, "ELSE": 0.01},
+        base_momentum={"linear2": 0.1, "linear1": 0.01, "ELSE": 0.01},
+        max_momentum=10,
+    )
+    scheduler = scheduler_config.get_object(optimizer)
+    scheduler.step()
+    scheduler.step()
+    scheduler.step()
+    assert np.isclose(optimizer.param_groups[0]["lr"], 0.09504846320134738)
+    assert np.isclose(optimizer.param_groups[1]["lr"], 0.009504846320134737)
+    assert np.isclose(optimizer.param_groups[2]["lr"], 0.009504846320134737)
+    assert np.isclose(optimizer.param_groups[0]["momentum"], 0.5046605048274166)
+    assert np.isclose(optimizer.param_groups[1]["momentum"], 0.5902041038830248)
+    assert np.isclose(optimizer.param_groups[2]["momentum"], 0.5046605048274166)

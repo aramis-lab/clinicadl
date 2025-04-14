@@ -6,11 +6,11 @@ from clinicadl.utils.enum import BaseEnum
 class ClassificationLoss(str, BaseEnum):
     """Losses that can be used only for classification."""
 
-    CROSS_ENTROPY = "CrossEntropyLoss"  # for multi-class classification, inputs are unormalized logits and targets are int (same dimension without the class channel)
-    NLL = "NLLLoss"  # for multi-class classification, inputs are log-probabilities and targets are int (same dimension without the class channel)
-    MULTI_MARGIN = "MultiMarginLoss"  # no particular restriction on the input, targets are int (same dimension without th class channel)
-    BCE = "BCELoss"  # for binary classification, targets and inputs should be probabilities and have same shape
-    BCE_LOGITS = "BCEWithLogitsLoss"  # for binary classification, targets should be probabilities and inputs logits, and have the same shape. More stable numerically
+    CROSS_ENTROPY = "CrossEntropyLoss"
+    NLL = "NLLLoss"
+    MULTI_MARGIN = "MultiMarginLoss"
+    BCE = "BCELoss"
+    BCE_LOGITS = "BCEWithLogitsLoss"
 
 
 class ImplementedLoss(str, Enum):
@@ -26,7 +26,7 @@ class ImplementedLoss(str, Enum):
     MSE = "MSELoss"
     HUBER = "HuberLoss"
     SMOOTH_L1 = "SmoothL1Loss"
-    KLDIV = "KLDivLoss"  # if log_target=False, target must be positive
+    KLDIV = "KLDivLoss"
 
     @classmethod
     def _missing_(cls, value):

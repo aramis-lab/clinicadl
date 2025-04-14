@@ -1,15 +1,16 @@
-from copy import deepcopy
-
+import monai.metrics as metrics
 import pytest
+from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
 from torch.nn import MSELoss
 
-from clinicadl.metrics.config import ImplementedMetric, create_metric_config
+from clinicadl.metrics.config import get_metric_config
 from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.config.classification import (
     ConfusionMatrixMetricConfig,
     ROCAUCMetricConfig,
 )
+from clinicadl.metrics.config.enum import ConfusionMatrixMetricName
 from clinicadl.metrics.config.reconstruction import (
     MultiScaleSSIMMetricConfig,
     PSNRMetricConfig,
@@ -29,138 +30,326 @@ from clinicadl.metrics.config.segmentation import (
     SurfaceDistanceMetricConfig,
 )
 
-MANDATORY_FIELDS = {
-    "class_thresholds": (0.1, 0),
-    "max_val": 1,
-    "spatial_dims": 2,
-    "loss_fn": lambda x: x,
-}
 BAD_INPUTS = [
-    ("average", "abc"),
-    ("metric_name", 0),
-    ("compute_sample", ""),
-    ("include_background", ""),
-    ("reduction", "abc"),
-    ("get_not_nans", True),
-    ("max_val", 0),
-    ("spatial_dims", 0),
-    ("data_range", 0.0),
-    ("kernel_type", "abc"),
-    ("kernel_sigma", 0),
-    ("k1", -0.1),
-    ("k2", -0.1),
-    ("win_size", 0),
-    ("kernel_size", 0),
-    ("weights", (0.1, -0.2)),
-    ("ignore_empty", ""),
-    ("num_classes", 0),
-    ("return_with_label", True),
-    ("weight_type", "abc"),
-    ("distance_metric", "abc"),
-    ("symmetric", ""),
-    ("directed", ""),
-    ("percentile", -0.1),
-    ("class_thresholds", (0.1, -0.01)),
-    ("use_subvoxels", ""),
-    ("loss_fn", None),
-    ("generalized_dice_reduction", None),
+    ({"average": "abc"}, ROCAUCMetricConfig),
+    ({"metric_name": 0}, ConfusionMatrixMetricConfig),
+    ({"compute_sample": ""}, ConfusionMatrixMetricConfig),
+    (
+        {"include_background": ""},
+        [
+            ConfusionMatrixMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            GeneralizedDiceScoreConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"class_thresholds": (0.1, 0), "include_background": ""}, SurfaceDiceMetricConfig),
+    (
+        {"reduction": "abc"},
+        [
+            ConfusionMatrixMetricConfig,
+            MSEMetricConfig,
+            MAEMetricConfig,
+            RMSEMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            GeneralizedDiceScoreConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"max_val": 1, "reduction": "abc"}, PSNRMetricConfig),
+    ({"class_thresholds": (0.1, 0), "reduction": "abc"}, SurfaceDiceMetricConfig),
+    (
+        {"spatial_dims": 2, "reduction": "abc"},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    (
+        {"get_not_nans": True},
+        [
+            ConfusionMatrixMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"max_val": 1, "get_not_nans": True}, PSNRMetricConfig),
+    ({"class_thresholds": (0.1, 0), "get_not_nans": True}, SurfaceDiceMetricConfig),
+    (
+        {"spatial_dims": 2, "get_not_nans": True},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    ({"max_val": 0}, PSNRMetricConfig),
+    ({"spatial_dims": 1}, [SSIMMetricConfig, MultiScaleSSIMMetricConfig]),
+    (
+        {"spatial_dims": 2, "data_range": 0.0},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    (
+        {"spatial_dims": 2, "kernel_type": "abc"},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    (
+        {"spatial_dims": 2, "kernel_sigma": 0},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    ({"spatial_dims": 2, "k1": -0.1}, [SSIMMetricConfig, MultiScaleSSIMMetricConfig]),
+    ({"spatial_dims": 2, "k2": -0.1}, [SSIMMetricConfig, MultiScaleSSIMMetricConfig]),
+    ({"spatial_dims": 2, "win_size": 0}, SSIMMetricConfig),
+    ({"spatial_dims": 2, "kernel_size": 0}, MultiScaleSSIMMetricConfig),
+    (
+        {"spatial_dims": 2, "weights": (0.1, -0.2)},
+        MultiScaleSSIMMetricConfig,
+    ),
+    ({"ignore_empty": ""}, [DiceMetricConfig, MeanIoUConfig]),
+    ({"num_classes": 0}, DiceMetricConfig),
+    ({"return_with_label": True}, DiceMetricConfig),
+    ({"weight_type": "abc"}, GeneralizedDiceScoreConfig),
+    (
+        {"distance_metric": "abc"},
+        [
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"class_thresholds": (0.1, 0), "distance_metric": "abc"}, SurfaceDiceMetricConfig),
+    ({"symmetric": ""}, SurfaceDistanceMetricConfig),
+    ({"directed": ""}, HausdorffDistanceMetricConfig),
+    ({"percentile": -0.1}, HausdorffDistanceMetricConfig),
+    ({"class_thresholds": (0.1, 0), "use_subvoxels": ""}, SurfaceDiceMetricConfig),
 ]
 
 GOOD_INPUTS = [
-    ("class_thresholds", (0.1, 0)),
-    ("average", "macro"),
-    ("metric_name", "recall"),
-    ("compute_sample", True),
-    ("include_background", True),
-    ("reduction", "sum"),
-    ("get_not_nans", False),
-    ("data_range", 1.0),
-    ("kernel_type", "gaussian"),
-    ("kernel_sigma", 0.1),
-    ("k1", 0),
-    ("k2", 0),
-    ("win_size", 1),
-    ("kernel_size", 1),
-    ("weights", (0.1, 0.2)),
-    ("ignore_empty", True),
-    ("num_classes", 2),
-    ("return_with_label", False),
-    ("generalized_dice_reduction", "mean_batch"),
-    ("weight_type", "square"),
-    ("distance_metric", "euclidean"),
-    ("symmetric", True),
-    ("directed", True),
-    ("percentile", 0),
-    ("use_subvoxels", True),
-    ("average", "micro"),
-    ("compute_sample", False),
-    ("include_background", False),
-    ("reduction", "mean"),
-    ("kernel_type", "uniform"),
-    ("ignore_empty", False),
-    ("num_classes", None),
-    ("generalized_dice_reduction", "sum_batch"),
-    ("weight_type", "simple"),
-    ("distance_metric", "chessboard"),
-    ("symmetric", False),
-    ("directed", False),
-    ("percentile", None),
-    ("use_subvoxels", False),
-    ("average", "weighted"),
-    ("weight_type", "uniform"),
-    ("distance_metric", "taxicab"),
+    ({"class_thresholds": (0.1, 0)}, SurfaceDiceMetricConfig),
+    ({"average": "macro"}, ROCAUCMetricConfig),
+    ({"average": "micro"}, ROCAUCMetricConfig),
+    ({"average": "weighted"}, ROCAUCMetricConfig),
+    (
+        {"metric_name": "sensitivity", "compute_sample": True},
+        ConfusionMatrixMetricConfig,
+    ),
+    (
+        {"include_background": True},
+        [
+            ConfusionMatrixMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            GeneralizedDiceScoreConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    (
+        {"class_thresholds": (0.1, 0), "include_background": True},
+        SurfaceDiceMetricConfig,
+    ),
+    (
+        {"reduction": "sum"},
+        [
+            ConfusionMatrixMetricConfig,
+            MSEMetricConfig,
+            MAEMetricConfig,
+            RMSEMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            GeneralizedDiceScoreConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"max_val": 1, "reduction": "sum"}, PSNRMetricConfig),
+    ({"class_thresholds": (0.1, 0), "reduction": "sum"}, SurfaceDiceMetricConfig),
+    (
+        {"spatial_dims": 2, "reduction": "sum"},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    (
+        {"reduction": "mean"},
+        [
+            ConfusionMatrixMetricConfig,
+            MSEMetricConfig,
+            MAEMetricConfig,
+            RMSEMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            GeneralizedDiceScoreConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"max_val": 1, "reduction": "mean"}, PSNRMetricConfig),
+    ({"class_thresholds": (0.1, 0), "reduction": "mean"}, SurfaceDiceMetricConfig),
+    (
+        {"spatial_dims": 2, "reduction": "mean"},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    (
+        {"get_not_nans": False},
+        [
+            ConfusionMatrixMetricConfig,
+            DiceMetricConfig,
+            MeanIoUConfig,
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    ({"max_val": 1, "get_not_nans": False}, PSNRMetricConfig),
+    ({"class_thresholds": (0.1, 0), "get_not_nans": False}, SurfaceDiceMetricConfig),
+    (
+        {"spatial_dims": 2, "get_not_nans": False},
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    ({"max_val": 1}, PSNRMetricConfig),
+    (
+        {
+            "spatial_dims": 2,
+            "data_range": 1.0,
+            "kernel_type": "gaussian",
+            "kernel_sigma": 0.1,
+            "k1": 0,
+            "k2": 0,
+        },
+        [SSIMMetricConfig, MultiScaleSSIMMetricConfig],
+    ),
+    ({"spatial_dims": 2, "kernel_type": "uniform", "win_size": 1}, SSIMMetricConfig),
+    (
+        {
+            "spatial_dims": 2,
+            "kernel_type": "uniform",
+            "kernel_size": 1,
+            "weights": (0.1, 0.2),
+        },
+        MultiScaleSSIMMetricConfig,
+    ),
+    ({"ignore_empty": True}, [DiceMetricConfig, MeanIoUConfig]),
+    ({"num_classes": 2}, DiceMetricConfig),
+    ({"num_classes": None, "return_with_label": False}, DiceMetricConfig),
+    ({"weight_type": "square"}, GeneralizedDiceScoreConfig),
+    ({"weight_type": "simple"}, GeneralizedDiceScoreConfig),
+    ({"weight_type": "uniform"}, GeneralizedDiceScoreConfig),
+    (
+        {"distance_metric": "euclidean"},
+        [
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    (
+        {"class_thresholds": (0.1, 0), "distance_metric": "euclidean"},
+        SurfaceDiceMetricConfig,
+    ),
+    (
+        {"distance_metric": "taxicab"},
+        [
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    (
+        {"class_thresholds": (0.1, 0), "distance_metric": "taxicab"},
+        SurfaceDiceMetricConfig,
+    ),
+    (
+        {"distance_metric": "chessboard"},
+        [
+            SurfaceDistanceMetricConfig,
+            HausdorffDistanceMetricConfig,
+        ],
+    ),
+    (
+        {"class_thresholds": (0.1, 0), "distance_metric": "chessboard"},
+        SurfaceDiceMetricConfig,
+    ),
+    ({"symmetric": True}, SurfaceDistanceMetricConfig),
+    ({"directed": True, "percentile": 0}, HausdorffDistanceMetricConfig),
+    ({"percentile": None}, HausdorffDistanceMetricConfig),
+    ({"class_thresholds": (0.1, 0), "use_subvoxels": True}, SurfaceDiceMetricConfig),
 ]
 
 
-@pytest.mark.parametrize("arg,value", BAD_INPUTS)
-def test_validation_fail(arg, value):
-    for metric in ImplementedMetric:
-        config = create_metric_config(metric)
-        fields = config.model_fields
-        if arg == "generalized_dice_reduction" and metric == "GeneralizedDiceScore":
-            arg_ = "reduction"
-        elif arg == "reduction" and metric == "GeneralizedDiceScore":
-            continue
-        else:
-            arg_ = arg
+@pytest.mark.parametrize("args,configs", BAD_INPUTS)
+def test_bad_inputs(args, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
+        with pytest.raises(ValidationError):
+            config(**args)
 
-        if arg_ in fields:
-            mandatory_inputs = deepcopy(MANDATORY_FIELDS)
-            if arg_ in mandatory_inputs:
-                del mandatory_inputs[arg_]
 
-            with pytest.raises(ValidationError):
-                config(**{arg_: value}, **mandatory_inputs)
+@pytest.mark.parametrize("args,configs", GOOD_INPUTS)
+def test_good_inputs(args: dict, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
+        c = config(**args)
+        for arg, value in args.items():
+            assert getattr(c, arg) == value
+
+
+def test_confusion_matrix_metric():
+    for metric in ConfusionMatrixMetricName:
+        c = ConfusionMatrixMetricConfig(metric_name=metric)
+        assert isinstance(c.get_object(), ConfusionMatrixMetric)
+
+
+def test_check_spatial_dim():
+    with pytest.raises(ValidationError):
+        SSIMMetricConfig(win_size=(1, 2, 3), spatial_dims=2)
+    with pytest.raises(ValidationError):
+        MultiScaleSSIMMetricConfig(kernel_size=(2, 3), spatial_dims=3)
+
+
+def test_check_loss_metric():
+    with pytest.raises(ValidationError):
+        LossMetricConfig(loss_fn=lambda x: x, reduction=None)
+    config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction=None)
+    assert config.reduction == "sum"
+    c = get_metric_config("LossMetric", loss_fn=lambda x: x, reduction="mean")
+    assert c.name == "LossMetric"
+    assert isinstance(c.get_object(), metrics.LossMetric)
+
+
+MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 2}
 
 
 @pytest.mark.parametrize(
-    "arg,value",
-    GOOD_INPUTS,
-)
-def test_validation_pass(arg, value):
-    for metric in ImplementedMetric:
-        config = create_metric_config(metric)
-        fields = config.model_fields
-        if arg == "generalized_dice_reduction" and metric == "GeneralizedDiceScore":
-            arg_ = "reduction"
-        elif arg == "reduction" and metric == "GeneralizedDiceScore":
-            continue
-        else:
-            arg_ = arg
-
-        if arg_ in fields:
-            mandatory_inputs = deepcopy(MANDATORY_FIELDS)
-            if arg_ in mandatory_inputs:
-                del mandatory_inputs[arg_]
-
-            c = config(**{arg_: value}, **mandatory_inputs)
-            assert getattr(c, arg_) == value
-
-
-@pytest.mark.parametrize(
-    "name,expected_class",
+    "config,expected_class",
     [
-        ("Loss", LossMetricConfig),
+        (ConfusionMatrixMetricConfig, metrics.ConfusionMatrixMetric),
+        (ROCAUCMetricConfig, metrics.ROCAUCMetric),
+        (MultiScaleSSIMMetricConfig, metrics.MultiScaleSSIMMetric),
+        (PSNRMetricConfig, metrics.PSNRMetric),
+        (SSIMMetricConfig, metrics.SSIMMetric),
+        (MAEMetricConfig, metrics.MAEMetric),
+        (MSEMetricConfig, metrics.MSEMetric),
+        (RMSEMetricConfig, metrics.RMSEMetric),
+        (DiceMetricConfig, metrics.DiceMetric),
+        (GeneralizedDiceScoreConfig, metrics.GeneralizedDiceScore),
+        (HausdorffDistanceMetricConfig, metrics.HausdorffDistanceMetric),
+        (MeanIoUConfig, metrics.MeanIoU),
+        (SurfaceDiceMetricConfig, metrics.SurfaceDiceMetric),
+        (SurfaceDistanceMetricConfig, metrics.SurfaceDistanceMetric),
+    ],
+)
+def test_get_object(config, expected_class):
+    try:
+        c = config()
+    except TypeError:
+        for arg, value in MANDATORY_ARGS.items():
+            try:
+                c = config(**{arg: value})
+            except TypeError:
+                continue
+    transform_from_config = c.get_object()
+    assert isinstance(transform_from_config, expected_class)
+
+
+@pytest.mark.parametrize(
+    "name,config",
+    [
         ("ConfusionMatrixMetric", ConfusionMatrixMetricConfig),
         ("ROCAUCMetric", ROCAUCMetricConfig),
         ("MultiScaleSSIMMetric", MultiScaleSSIMMetricConfig),
@@ -177,16 +366,27 @@ def test_validation_pass(arg, value):
         ("SurfaceDistanceMetric", SurfaceDistanceMetricConfig),
     ],
 )
-def test_create_metric_config(name, expected_class):
-    config = create_metric_config(name)
-    assert config == expected_class
+def test_get_metric_config(name, config):
+    try:
+        c = get_metric_config(name)
+    except TypeError:
+        for arg, value in MANDATORY_ARGS.items():
+            try:
+                c = get_metric_config(name, **{arg: value})
+            except TypeError:
+                continue
 
+    assert c.name == name
+    assert isinstance(c, config)
 
-def test_check_spatial_dim():
-    with pytest.raises(ValidationError):
-        SSIMMetricConfig(win_size=(1, 2, 3), spatial_dims=2)
-    with pytest.raises(ValidationError):
-        MultiScaleSSIMMetricConfig(kernel_size=(2, 3), spatial_dims=3)
+    if name == "SSIMMetric":
+        config = get_metric_config("SSIMMetric", spatial_dims=2, data_range=1.5)
+        assert config.name == "SSIMMetric"
+        assert config.data_range == 1.5
+        assert config.win_size == 11
+
+        with pytest.raises(ValueError):
+            get_metric_config("abc")
 
 
 def test_check_reduction():

@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Union
 
-from pydantic import NonNegativeFloat, PositiveInt, computed_field, field_validator
+from pydantic import NonNegativeFloat, PositiveInt, field_validator
 
 from clinicadl.utils.factories import DefaultFromLibrary
 
@@ -12,9 +12,8 @@ from .base import (
 )
 from .enum import (
     DistanceMetric,
-    GeneralizedDiceScoreReduction,
-    ImplementedMetric,
     Optimum,
+    Reduction,
     WeightType,
 )
 
@@ -33,22 +32,36 @@ class _BaseSegmentationMetricConfig(
 ):
     """Base config class for segmentation metrics."""
 
-    ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    ignore_empty: bool
 
 
 class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
-    """Config class for Dice score."""
+    """
+    Config class for :py:class:`monai.metrics.DiceMetric`.
+    """
 
-    num_classes: Union[
-        Optional[PositiveInt], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    num_classes: Optional[PositiveInt]
     return_with_label: bool = False
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.DICE
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        num_classes: Union[
+            Optional[PositiveInt], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        return_with_label: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+            ignore_empty=ignore_empty,
+            num_classes=num_classes,
+            return_with_label=return_with_label,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -60,19 +73,29 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
     def validator_return_with_label(cls, v):
         assert (
             not v
-        ), "return_with_label not supported in ClinicaDL. Please set to False."
+        ), "'return_with_label' not supported in ClinicaDL. Please leave to False."
 
         return v
 
 
 class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
-    """Config class for IoU metric."""
+    """
+    Config class for :py:class:`monai.metrics.MeanIoU`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.IOU
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+            ignore_empty=ignore_empty,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -81,18 +104,24 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
 
 
 class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
-    """Config class for generalized Dice score."""
+    """
+    Config class for :py:class:`monai.metrics.GeneralizedDiceScore`.
+    """
 
-    reduction: Union[
-        GeneralizedDiceScoreReduction, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    weight_type: Union[WeightType, DefaultFromLibrary] = DefaultFromLibrary.YES
+    reduction: Reduction
+    weight_type: WeightType
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.GENERALIZED_DICE
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction] = Reduction.MEAN,
+        weight_type: Union[WeightType, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            reduction=reduction,
+            weight_type=weight_type,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -105,19 +134,33 @@ class _BaseSurfaceDistanceConfig(
 ):
     """Base config class for surface-distance-based metrics."""
 
-    distance_metric: Union[DistanceMetric, DefaultFromLibrary] = DefaultFromLibrary.YES
+    distance_metric: DistanceMetric
 
 
 class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
-    """Config class for Surface Distance metric."""
+    """
+    Config class for :py:class:`monai.metrics.SurfaceDistanceMetric`.
+    """
 
-    symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    symmetric: bool
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.SURF_DIST
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        distance_metric: Union[
+            DistanceMetric, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            symmetric=symmetric,
+            distance_metric=distance_metric,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -126,18 +169,34 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
 
 
 class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
-    """Config class for Hausdorff distance."""
+    """
+    Config class for :py:class:`monai.metrics.HausdorffDistanceMetric`.
+    """
 
-    percentile: Union[
-        Optional[NonNegativeFloat], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    directed: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    percentile: Optional[NonNegativeFloat]
+    directed: bool
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.HAUSDORFF
+    def __init__(
+        self,
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        distance_metric: Union[
+            DistanceMetric, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        percentile: Union[Optional[NonNegativeFloat], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        directed: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            include_background=include_background,
+            distance_metric=distance_metric,
+            percentile=percentile,
+            directed=directed,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -146,7 +205,7 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
 
     @field_validator("percentile", mode="after")
     @classmethod
-    def validator_return_with_label(cls, v):
+    def validator_percentile(cls, v):
         if isinstance(v, float):
             assert (
                 0 <= v <= 100
@@ -156,16 +215,32 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
 
 
 class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
-    """Config class for (normalized) surface Dice score."""
+    """
+    Config class for :py:class:`monai.metrics.SurfaceDiceMetric`.
+    """
 
     class_thresholds: Tuple[NonNegativeFloat, ...]
-    use_subvoxels: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    use_subvoxels: bool
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.SURF_DICE
+    def __init__(
+        self,
+        class_thresholds: Tuple[NonNegativeFloat, ...],
+        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        distance_metric: Union[
+            DistanceMetric, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        use_subvoxels: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            class_thresholds=class_thresholds,
+            include_background=include_background,
+            distance_metric=distance_metric,
+            reduction=reduction,
+            get_not_nans=get_not_nans,
+            use_subvoxels=use_subvoxels,
+        )
 
     @staticmethod
     def optimum() -> Optimum:

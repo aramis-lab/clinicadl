@@ -7,13 +7,10 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 
 from clinicadl.data.dataloader import BatchLoader
-from clinicadl.losses import get_loss_function_config, get_loss_function_from_config
-from clinicadl.losses.config import LossConfig
-from clinicadl.losses.utils import Loss
-from clinicadl.networks import get_network_config, get_network_from_config
-from clinicadl.networks.config import NetworkConfig
-from clinicadl.optim import get_optimizer_config, get_optimizer_from_config
-from clinicadl.optim.optimizers import OptimizerConfig
+from clinicadl.losses.config import LossConfig, get_loss_function_config
+from clinicadl.losses.types import Loss
+from clinicadl.networks.config import NetworkConfig, get_network_config
+from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils.json import read_json
@@ -77,11 +74,9 @@ class ClinicaDLModel:
         loss_config: LossConfig,
         optimizer_config: OptimizerConfig,
     ):
-        loss, loss_config = get_loss_function_from_config(loss_config)
-        network, network_config = get_network_from_config(network_config)
-        optimizer, optimizer_config = get_optimizer_from_config(
-            optimizer_config, network
-        )
+        loss = loss_config.get_object()
+        network = network_config.get_object()
+        optimizer = optimizer_config.get_object(network=network)
 
         model = ClinicaDLModel(network, loss, optimizer)
 

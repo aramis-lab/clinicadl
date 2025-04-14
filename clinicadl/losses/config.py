@@ -1,14 +1,13 @@
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Type, Union
+from typing import Any, List, Optional, Union
 
+import torch
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
-    computed_field,
     field_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .enum import ImplementedLoss, Order, Reduction
@@ -25,40 +24,63 @@ __all__ = [
     "SmoothL1LossConfig",
     "L1LossConfig",
     "MSELossConfig",
-    "create_loss_function_config",
+    "get_loss_function_config",
 ]
 
 
-class LossConfig(ClinicaDLConfig, ABC):
+class LossConfig(ObjectConfig):
     """Base config class for the loss function."""
 
-    reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
+    reduction: Reduction
 
-    @computed_field
-    @property
-    @abstractmethod
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
+    def get_object(self) -> torch.nn.Module:
+        """
+        Returns the loss function associated to this configuration,
+        parametrized with the parameters passed by the user.
+
+        Returns
+        -------
+        torch.nn.Module:
+            The PyTorch loss function.
+        """
+        params = self.model_dump(exclude="name")
+        if "weight" in params and params["weight"]:
+            params["weight"] = torch.Tensor(params["weight"])
+        if "pos_weight" in params and params["pos_weight"]:
+            params["pos_weight"] = torch.Tensor(params["pos_weight"])
+
+        associated_class = self._get_class()
+
+        return associated_class(**params)
+
+    @classmethod
+    def _get_class(cls) -> type[torch.nn.Module]:
+        """Returns the loss function associated to this config class."""
+        return getattr(torch.nn, cls._get_name())
 
 
 class _WeightConfig(ClinicaDLConfig):
-    """Base config class for 'weight' argument."""
+    """Config class for loss functions with 'weight' argument."""
 
-    weight: Union[
-        Optional[List[NonNegativeFloat]], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    weight: Optional[List[NonNegativeFloat]]
 
 
 class NLLLossConfig(LossConfig, _WeightConfig):
-    """Config class for Negative Log Likelihood loss."""
+    """
+    Config class for :py:class:`torch.nn.NLLLoss`.
+    """
 
-    ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
+    ignore_index: int
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.NLL
+    def __init__(
+        self,
+        weight: Union[
+            Optional[List[NonNegativeFloat]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(weight=weight, ignore_index=ignore_index, reduction=reduction)
 
     @field_validator("ignore_index")
     @classmethod
@@ -71,17 +93,29 @@ class NLLLossConfig(LossConfig, _WeightConfig):
 
 
 class CrossEntropyLossConfig(NLLLossConfig):
-    """Config class for Cross Entropy loss."""
+    """
+    Config class for :py:class:`torch.nn.CrossEntropyLoss`.
+    """
 
-    label_smoothing: Union[
-        NonNegativeFloat, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    label_smoothing: NonNegativeFloat
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.CROSS_ENTROPY
+    def __init__(
+        self,
+        weight: Union[
+            Optional[List[NonNegativeFloat]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        label_smoothing: Union[NonNegativeFloat, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        super(NLLLossConfig, self).__init__(
+            weight=weight,
+            ignore_index=ignore_index,
+            reduction=reduction,
+            label_smoothing=label_smoothing,
+        )
 
     @field_validator("label_smoothing")
     @classmethod
@@ -93,37 +127,55 @@ class CrossEntropyLossConfig(NLLLossConfig):
         return v
 
 
-class BCELossConfig(LossConfig):
-    """Config class for Binary Cross Entropy loss."""
+class BCELossConfig(LossConfig, _WeightConfig):
+    """
+    Config class for :py:class:`torch.nn.BCELoss`.
+    """
 
-    weight: Optional[List[NonNegativeFloat]] = None
-
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.BCE
+    def __init__(
+        self,
+        weight: Union[
+            Optional[List[NonNegativeFloat]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            weight=weight,
+            reduction=reduction,
+        )
 
     @field_validator("weight")
     @classmethod
     def validator_weight(cls, v):
         if v is not None:
             raise ValueError(
-                "Cannot use weight with BCEWithLogitsLoss. If you want more flexibility, please use API mode."
+                "'weight' with BCEWithLogitsLoss is not supported by ClinicaDL currently. Please leave it to None."
             )
         return v
 
 
 class BCEWithLogitsLossConfig(BCELossConfig):
-    """Config class for Binary Cross Entropy With Logits loss."""
+    """
+    Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
+    """
 
-    pos_weight: Union[Optional[List[Any]], DefaultFromLibrary] = DefaultFromLibrary.YES
+    pos_weight: Optional[List[Any]]
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.BCE_LOGITS
+    def __init__(
+        self,
+        weight: Union[
+            Optional[List[NonNegativeFloat]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        pos_weight: Union[
+            Optional[List[Any]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super(BCELossConfig, self).__init__(
+            weight=weight,
+            reduction=reduction,
+            pos_weight=pos_weight,
+        )
 
     @field_validator("pos_weight")
     @classmethod
@@ -145,97 +197,136 @@ class BCEWithLogitsLossConfig(BCELossConfig):
 
 
 class MultiMarginLossConfig(LossConfig, _WeightConfig):
-    """Config class for Multi Margin loss."""
+    """
+    Config class for :py:class:`torch.nn.MultiMarginLoss`.
+    """
 
-    p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES
-    margin: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES
+    p: Order
+    margin: float
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.MULTI_MARGIN
+    def __init__(
+        self,
+        p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        margin: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        weight: Union[
+            Optional[List[NonNegativeFloat]], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            p=p,
+            margin=margin,
+            weight=weight,
+            reduction=reduction,
+        )
 
 
 class KLDivLossConfig(LossConfig):
-    """Config class for Kullback-Leibler Divergence loss."""
+    """
+    Config class for :py:class:`torch.nn.KLDivLoss`.
+    """
 
-    log_target: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    log_target: bool
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.KLDIV
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        log_target: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+            log_target=log_target,
+        )
 
 
 class HuberLossConfig(LossConfig):
-    """Config class for Huber loss."""
+    """
+    Config class for :py:class:`torch.nn.HuberLoss`.
+    """
 
-    delta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    delta: PositiveFloat
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.HUBER
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        delta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+            delta=delta,
+        )
 
 
 class SmoothL1LossConfig(LossConfig):
-    """Config class for Smooth L1 loss."""
+    """
+    Config class for :py:class:`torch.nn.SmoothL1Loss`.
+    """
 
-    beta: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES
+    beta: NonNegativeFloat
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.SMOOTH_L1
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        beta: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+            beta=beta,
+        )
 
 
 class L1LossConfig(LossConfig):
-    """Config class for L1 loss."""
+    """
+    Config class for :py:class:`torch.nn.L1Loss`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.L1
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+        )
 
 
 class MSELossConfig(LossConfig):
-    """Config class for Mean Squared Error loss."""
-
-    @computed_field
-    @property
-    def name(self) -> ImplementedLoss:
-        """The name of the loss."""
-        return ImplementedLoss.MSE
-
-
-def create_loss_function_config(
-    loss: Union[str, ImplementedLoss],
-) -> Type[LossConfig]:
     """
-    A factory function to create a config class suited for the loss.
+    Config class for :py:class:`torch.nn.MSELoss`.
+    """
+
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+        )
+
+
+def get_loss_function_config(
+    name: Union[str, ImplementedLoss], **kwargs: Any
+) -> LossConfig:
+    """
+    Factory function to get a loss function configuration object from its name
+    and parameters.
 
     Parameters
     ----------
-    loss : Union[str, ImplementedLoss]
-        The name of the loss.
+    name : Union[str, ImplementedLoss]
+        the name of the loss function. Check our documentation to know
+        available losses.
+    **kwargs : Any
+        any parameter of the loss function. Check our documentation on losses to
+        know these parameters.
 
     Returns
     -------
-    Type[LossConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        If `loss` is not supported.
+    LossConfig
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
-    loss = ImplementedLoss(loss)
-    config_name = "".join([loss, "Config"])
+    loss = ImplementedLoss(name).value
+    config_name = f"{loss}Config"
     config = globals()[config_name]
 
-    return config
+    return config(**kwargs)

@@ -1,7 +1,10 @@
-from typing import Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
-from pydantic import PositiveInt, computed_field, model_validator
+import torch.nn as nn
+from pydantic import PositiveInt, model_validator
 
+import clinicadl.networks.nn as nets
+from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import (
     ResNetBlockType,
     bottleneck_reduce,
@@ -13,7 +16,6 @@ from clinicadl.utils.factories import DefaultFromLibrary
 from .base import (
     ImplementedNetwork,
     NetworkConfig,
-    NetworkType,
     _FullyConvConfig,
     _MandatoryActConfig,
     _OptionalLastLinearLayersConfig,
@@ -38,44 +40,65 @@ class ResNetConfig(
     _MandatoryActConfig,
     _OutputActConfig,
 ):
-    """Config class for ResNet."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet`.
+    """
 
-    block_type: Union[ResNetBlockType, DefaultFromLibrary] = DefaultFromLibrary.YES
-    n_res_blocks: Union[
-        Sequence[PositiveInt], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    n_features: Union[
-        Sequence[PositiveInt], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    init_conv_size: Union[
-        Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    init_conv_stride: Union[
-        Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    bottleneck_reduction: Union[
-        PositiveInt, DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    block_type: ResNetBlockType
+    n_res_blocks: Sequence[PositiveInt]
+    n_features: Sequence[PositiveInt]
+    init_conv_size: Union[Sequence[PositiveInt], PositiveInt]
+    init_conv_stride: Union[Sequence[PositiveInt], PositiveInt]
+    bottleneck_reduction: PositiveInt
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET
+    def __init__(
+        self,
+        spatial_dims: PositiveInt,
+        in_channels: PositiveInt,
+        num_outputs: Optional[PositiveInt],
+        block_type: Union[ResNetBlockType, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        n_res_blocks: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        n_features: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        init_conv_size: Union[
+            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
+        ] = (DefaultFromLibrary.YES),
+        init_conv_stride: Union[
+            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
+        ] = (DefaultFromLibrary.YES),
+        bottleneck_reduction: Union[PositiveInt, DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        super().__init__(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            num_outputs=num_outputs,
+            block_type=block_type,
+            n_res_blocks=n_res_blocks,
+            n_features=n_features,
+            init_conv_size=init_conv_size,
+            init_conv_stride=init_conv_stride,
+            bottleneck_reduction=bottleneck_reduction,
+            act=act,
+            output_act=output_act,
+        )
 
     @model_validator(mode="after")
     def make_checks(self):
-        if self.n_features != DefaultFromLibrary.YES:
-            if self.n_res_blocks != DefaultFromLibrary.YES:
-                check_res_blocks(self.n_res_blocks, self.n_features)
-            if self.bottleneck_reduction != DefaultFromLibrary.YES:
-                _ = bottleneck_reduce(self.n_features, self.bottleneck_reduction)
-        if self.init_conv_size != DefaultFromLibrary.YES:
-            _ = ensure_tuple(self.init_conv_size, self.spatial_dims, "init_conv_size")
-        if self.init_conv_stride != DefaultFromLibrary.YES:
-            _ = ensure_tuple(
-                self.init_conv_stride, self.spatial_dims, "init_conv_stride"
-            )
+        check_res_blocks(self.n_res_blocks, self.n_features)
+        bottleneck_reduce(self.n_features, self.bottleneck_reduction)
+        ensure_tuple(self.init_conv_size, self.spatial_dims, "init_conv_size")
+        ensure_tuple(self.init_conv_stride, self.spatial_dims, "init_conv_stride")
 
         return self
 
@@ -83,57 +106,62 @@ class ResNetConfig(
 class _PreTrainedResNetConfig(_PreTrainedConfig):
     """Base config class for SOTA ResNets."""
 
-    @property
-    def _type(self) -> NetworkType:
-        """To know where to look for the network."""
-        return NetworkType.RESNET
+    @classmethod
+    def _get_class(cls) -> Callable[[Any], nn.Module]:
+        """Returns the network associated to this config class."""
+        return nets.get_resnet
 
 
 class ResNet18Config(_PreTrainedResNetConfig):
-    """Config class for ResNet-18."""
+    """
+    Config class for :py:func:`DenseNet-18 <clinicadl.networks.nn.get_resnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET_18
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.RESNET_18.value
 
 
 class ResNet34Config(_PreTrainedResNetConfig):
-    """Config class for ResNet-34."""
+    """
+    Config class for :py:func:`DenseNet-34 <clinicadl.networks.nn.get_resnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET_34
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.RESNET_34.value
 
 
 class ResNet50Config(_PreTrainedResNetConfig):
-    """Config class for ResNet-50."""
+    """
+    Config class for :py:func:`DenseNet-50 <clinicadl.networks.nn.get_resnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET_50
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.RESNET_50.value
 
 
 class ResNet101Config(_PreTrainedResNetConfig):
-    """Config class for ResNet-101."""
+    """
+    Config class for :py:func:`DenseNet-101 <clinicadl.networks.nn.get_resnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET_101
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.RESNET_101.value
 
 
 class ResNet152Config(_PreTrainedResNetConfig):
-    """Config class for ResNet-152."""
+    """
+    Config class for :py:func:`DenseNet-152 <clinicadl.networks.nn.get_resnet>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.RESNET_152
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.RESNET_152.value

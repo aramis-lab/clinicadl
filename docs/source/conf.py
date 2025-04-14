@@ -34,7 +34,15 @@ extlinks = {
     "pathlib.Path": (
         "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
         None,
-    )
+    ),
+    "tutorials": (
+        "https://github.com/aramis-lab/clinicadl/blob/clinicadl_v2/tutorials/%s",
+        None,
+    ),
+    "zoo": (
+        "https://github.com/aramis-lab/clinicadl-zoo/tree/main/%s",
+        None,
+    ),
 }
 
 

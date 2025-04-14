@@ -4,17 +4,13 @@ import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
-    computed_field,
     field_validator,
     model_validator,
 )
 
-from clinicadl.utils.config import NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import (
-    AnatomicalLabel,
-    ImplementedTransform,
-)
+from .enum import AnatomicalLabel
 
 __all__ = [
     "TransformConfig",
@@ -22,7 +18,7 @@ __all__ = [
 ]
 
 
-class TransformConfig(NewClinicaDLConfig):
+class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
 
     def get_object(self) -> tio.Transform:
@@ -36,6 +32,11 @@ class TransformConfig(NewClinicaDLConfig):
             The TorchIO transform.
         """
         return super().get_object()
+
+    @classmethod
+    def _get_class(cls) -> type[tio.Transform]:
+        """Returns the transform associated to this config class."""
+        return getattr(tio.transforms, cls._get_name())
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:
@@ -79,7 +80,7 @@ class OneOfConfig(TransformConfig):
     Config class for :py:class:`torchio.transforms.OneOf`.
     """
 
-    transforms: List[TransformConfig]
+    transforms: List[Union[TransformConfig, List[TransformConfig]]]
     probabilities: Optional[List[NonNegativeFloat]] = None
 
     def __init__(
@@ -92,12 +93,6 @@ class OneOfConfig(TransformConfig):
             probabilities=probabilities,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.ONE_OF.value
-
     def get_object(self) -> tio.Transform:
         """
         Returns the transform associated to this configuration,
@@ -108,16 +103,16 @@ class OneOfConfig(TransformConfig):
         tio.Transform:
             The TorchIO transform.
         """
-        config_dict = {
-            transform.get_object(): proba
-            for transform, proba in zip(self.transforms, self.probabilities)
-        }
+        config_dict = {}
+        for transform, proba in zip(self.transforms, self.probabilities):
+            if isinstance(transform, TransformConfig):
+                config_dict[transform.get_object()] = proba
+            else:
+                transform: List[TransformConfig]
+                config_dict[tio.Compose([t.get_object() for t in transform])] = proba
+
         one_of = self._get_class()(transforms=config_dict)
         return one_of
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.OneOf
 
     @model_validator(mode="after")
     def check_probabilities(self):
@@ -146,7 +141,7 @@ Bounds = Union[
 ]
 
 
-class MaskingMethodConfig(NewClinicaDLConfig):
+class MaskingMethodConfig(ClinicaDLConfig):
     """Base config class 'masking_method' argument."""
 
     masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]

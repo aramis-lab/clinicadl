@@ -1,30 +1,85 @@
 import pytest
+from pydantic import ValidationError
 
-from clinicadl.transforms.config.factory import get_transform_config
+from clinicadl.transforms.config import *
 from clinicadl.transforms.config.intensity_augmentations import (
     RandomBlurConfig,
     RandomNoiseConfig,
 )
 
+MANDATORY_ARGS = {
+    "masking_method": "mask",
+    "remapping": {0: 1},
+    "target_shape": 1,
+    "target_multiple": 1,
+    "cropping": 1,
+    "padding": 1,
+    "out_min": 0,
+}
 
-def test_get_transform_config():
-    config = get_transform_config(
-        "OneOf",
-        transforms=[
-            get_transform_config("RandomBlur"),
-            get_transform_config("RandomNoise"),
-        ],
-        probabilities=[1, 9],
-    )
-    assert config.name == "OneOf"
-    assert config.transforms == [RandomBlurConfig(), RandomNoiseConfig()]
-    assert config.probabilities == [1, 9]
 
-    with pytest.raises(ValueError):
-        get_transform_config("abc")
+@pytest.mark.parametrize(
+    "name,config",
+    [
+        ("RandomMotion", RandomMotionConfig),
+        ("RandomGhosting", RandomGhostingConfig),
+        ("RandomSpike", RandomSpikeConfig),
+        ("RandomBiasField", RandomBiasFieldConfig),
+        ("RandomBlur", RandomBlurConfig),
+        ("RandomNoise", RandomNoiseConfig),
+        ("RandomSwap", RandomSwapConfig),
+        ("RandomGamma", RandomGammaConfig),
+        ("RescaleIntensity", RescaleIntensityConfig),
+        ("ZNormalization", ZNormalizationConfig),
+        ("Mask", MaskConfig),
+        ("Clamp", ClampConfig),
+        ("RemapLabels", RemapLabelsConfig),
+        ("OneHot", OneHotConfig),
+        ("RandomFlip", RandomFlipConfig),
+        ("RandomAffine", RandomAffineConfig),
+        ("RandomElasticDeformation", RandomElasticDeformationConfig),
+        ("RandomAnisotropy", RandomAnisotropyConfig),
+        ("CropOrPad", CropOrPadConfig),
+        ("ToCanonical", ToCanonicalConfig),
+        ("Resize", ResizeConfig),
+        ("Resample", ResampleConfig),
+        ("EnsureShapeMultiple", EnsureShapeMultipleConfig),
+        ("Crop", CropConfig),
+        ("Pad", PadConfig),
+        ("OneOf", OneHotConfig),
+    ],
+)
+def test_get_transform_config(name, config):
+    if name == "OneOf":
+        config = get_transform_config(
+            "OneOf",
+            transforms=[
+                get_transform_config("RandomBlur"),
+                get_transform_config("RandomNoise"),
+            ],
+            probabilities=[1, 9],
+        )
+        assert config.name == "OneOf"
+        assert config.transforms == [RandomBlurConfig(), RandomNoiseConfig()]
+        assert config.probabilities == [1, 9]
 
-    config = get_transform_config("NanRemoval", nan=1)
-    assert config.name == "NanRemoval"
-    assert config.nan == 1
-    assert config.posinf is None
-    assert config.neginf is None
+        with pytest.raises(ValueError):
+            get_transform_config("abc")
+    else:
+        try:
+            c = get_transform_config(name)
+        except (TypeError, ValidationError):
+            for arg, value in MANDATORY_ARGS.items():
+                try:
+                    c = get_transform_config(name, **{arg: value})
+                except (TypeError, ValidationError):
+                    continue
+
+        assert c.name == name
+        assert isinstance(c, config)
+
+    if name == "RandomNoise":
+        config = get_transform_config("RandomNoise", mean=1)
+        assert config.name == "RandomNoise"
+        assert config.mean == 1
+        assert config.std == (0, 0.25)

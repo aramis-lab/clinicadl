@@ -1,11 +1,9 @@
 from typing import Tuple, Union
 
-import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
-    computed_field,
     field_validator,
 )
 
@@ -15,7 +13,6 @@ from .base import TransformConfig
 from .enum import (
     AnatomicalAxis,
     CenterMode,
-    ImplementedTransform,
     InterpolationMode,
     LockedBordersMode,
     NumericalAxis,
@@ -58,16 +55,6 @@ class RandomFlipConfig(TransformConfig):
             axes=axes,
             flip_probability=flip_probability,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_FLIP.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomFlip
 
     @field_validator("flip_probability", mode="after")
     @classmethod
@@ -131,16 +118,6 @@ class RandomAffineConfig(TransformConfig):
             check_shape=check_shape,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_AFFINE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomAffine
-
     @field_validator("scales", "degrees", "translation", mode="after")
     @classmethod
     def validator_ranges(cls, v, field):
@@ -195,16 +172,6 @@ class RandomElasticDeformationConfig(TransformConfig):
             label_interpolation=label_interpolation,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_DEFORMATION.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomElasticDeformation
-
     @field_validator("num_control_points", mode="after")
     @classmethod
     def validator_num_control_points(cls, v):
@@ -246,16 +213,6 @@ class RandomAnisotropyConfig(TransformConfig):
             downsampling=downsampling,
             image_interpolation=image_interpolation,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_ANISOTROPY.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomAnisotropy
 
     @field_validator("downsampling", mode="after")
     @classmethod

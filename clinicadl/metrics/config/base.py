@@ -1,29 +1,40 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Union
+from abc import abstractmethod
+from typing import Optional
 
+import monai
+import monai.metrics
 from pydantic import (
-    computed_field,
     field_validator,
     model_validator,
 )
 
-from clinicadl.losses.utils import Loss
-from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.losses.types import Loss
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import ImplementedMetric, Optimum, Reduction
+from .enum import Optimum, Reduction
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
 
-class MetricConfig(ClinicaDLConfig, ABC):
+class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
-    @computed_field
-    @property
-    @abstractmethod
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
+    def get_object(self) -> monai.metrics.Metric:
+        """
+        Returns the metric associated to this configuration,
+        parametrized with the parameters passed by the user.
+
+        Returns
+        -------
+        monai.metrics.Metric:
+            The MONAI metric.
+        """
+        return super().get_object()
+
+    @classmethod
+    def _get_class(cls) -> type[monai.metrics.Metric]:
+        """Returns the metric associated to this config class."""
+        return getattr(monai.metrics, cls._get_name())
 
     @staticmethod
     @abstractmethod
@@ -32,26 +43,28 @@ class MetricConfig(ClinicaDLConfig, ABC):
 
 
 class _IncludeBackgroundConfig(ClinicaDLConfig):
-    """Base config class for 'include_background' parameter."""
+    """Config class for 'include_background' parameter."""
 
-    include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES
+    include_background: bool
 
 
 class _ReductionConfig(ClinicaDLConfig):
-    """Base config class for 'reduction' parameter."""
+    """Config class for 'reduction' parameter."""
 
-    reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES
+    reduction: Reduction
 
 
 class _GetNotNansConfig(ClinicaDLConfig):
-    """Base config class for 'get_not_nans' parameter."""
+    """Config class for 'get_not_nans' parameter."""
 
     get_not_nans: bool = False
 
     @field_validator("get_not_nans", mode="after")
     @classmethod
     def validator_get_not_nans(cls, v):
-        assert not v, "'get_not_nans' not supported in ClinicaDL. Please set to False."
+        assert (
+            not v
+        ), "'get_not_nans' currently not supported in ClinicaDL. Please leave to False."
 
         return v
 
@@ -61,12 +74,6 @@ class LossMetricConfig(MetricConfig):
 
     loss_fn: Loss
     reduction: Optional[Reduction] = None
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the metric."""
-        return "LossMetric"
 
     @staticmethod
     def optimum() -> Optimum:

@@ -1,7 +1,10 @@
-from typing import Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
-from pydantic import PositiveInt, computed_field, model_validator
+import torch.nn as nn
+from pydantic import PositiveFloat, PositiveInt, model_validator
 
+import clinicadl.networks.nn as nets
+from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.utils import ensure_tuple
 from clinicadl.networks.nn.vit import (
     PosEmbedType,
@@ -13,7 +16,6 @@ from clinicadl.utils.factories import DefaultFromLibrary
 from .base import (
     ImplementedNetwork,
     NetworkConfig,
-    NetworkType,
     _DropOutConfig,
     _OptionalLastLinearLayersConfig,
     _OutputActConfig,
@@ -29,81 +31,107 @@ class ViTConfig(
     _OutputActConfig,
     _DropOutConfig,
 ):
-    """Config class for ViT networks."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViT`.
+    """
 
     patch_size: Union[Sequence[PositiveInt], PositiveInt]
-    embedding_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    num_layers: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    num_heads: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    mlp_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES
-    pos_embed_type: Union[
-        Optional[PosEmbedType], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
+    embedding_dim: PositiveInt
+    num_layers: PositiveInt
+    num_heads: PositiveInt
+    mlp_dim: PositiveInt
+    pos_embed_type: Optional[PosEmbedType]
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VIT
+    def __init__(
+        self,
+        in_shape: Sequence[PositiveInt],
+        patch_size: Union[Sequence[PositiveInt], PositiveInt],
+        num_outputs: Optional[PositiveInt],
+        embedding_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        num_layers: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        num_heads: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        mlp_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        pos_embed_type: Union[Optional[PosEmbedType], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        dropout: Union[
+            Optional[PositiveFloat], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            in_shape=in_shape,
+            patch_size=patch_size,
+            num_outputs=num_outputs,
+            embedding_dim=embedding_dim,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            mlp_dim=mlp_dim,
+            pos_embed_type=pos_embed_type,
+            output_act=output_act,
+            dropout=dropout,
+        )
 
     @model_validator(mode="after")
     def make_checks(self):
         _, *img_size = self.in_shape
         patch_size = ensure_tuple(self.patch_size, dim=len(img_size), name="patch_size")
         check_patch_size(patch_size, img_size)
-        if (
-            self.embedding_dim != DefaultFromLibrary.YES
-            and self.num_heads != DefaultFromLibrary.YES
-        ):
-            check_embedding_dim(self.embedding_dim, self.num_heads)
+        check_embedding_dim(self.embedding_dim, self.num_heads)
 
         return self
 
 
 class _PreTrainedViTConfig(_PreTrainedConfig):
-    """Base config class for SOTA ResNets."""
+    """Base config class for SOTA ViTs."""
 
-    @property
-    def _type(self) -> NetworkType:
-        """To know where to look for the network."""
-        return NetworkType.VIT
+    @classmethod
+    def _get_class(cls) -> Callable[[Any], nn.Module]:
+        """Returns the network associated to this config class."""
+        return nets.get_vit
 
 
 class ViTB16Config(_PreTrainedViTConfig):
-    """Config class for ViT-B/16."""
+    """
+    Config class for :py:func:`ViT-B/16 <clinicadl.networks.nn.get_vit>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VIT_B_16
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.VIT_B_16.value
 
 
 class ViTB32Config(_PreTrainedViTConfig):
-    """Config class for ViT-B/32."""
+    """
+    Config class for :py:func:`ViT-B/32 <clinicadl.networks.nn.get_vit>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VIT_B_32
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.VIT_B_32.value
 
 
 class ViTL16Config(_PreTrainedViTConfig):
-    """Config class for ViT-L/16."""
+    """
+    Config class for :py:func:`ViT-L/16 <clinicadl.networks.nn.get_vit>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VIT_L_16
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.VIT_L_16.value
 
 
 class ViTL32Config(_PreTrainedViTConfig):
-    """Config class for ViT-L/32."""
+    """
+    Config class for :py:func:`ViT-L/32 <clinicadl.networks.nn.get_vit>`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VIT_L_32
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return ImplementedNetwork.VIT_L_32.value

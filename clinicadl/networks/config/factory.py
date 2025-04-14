@@ -1,4 +1,4 @@
-from typing import Type, Union
+from typing import Any, Union
 
 from .base import ImplementedNetwork, NetworkConfig
 
@@ -30,29 +30,30 @@ from .unet import AttentionUNetConfig, UNetConfig
 from .vit import ViTB16Config, ViTB32Config, ViTConfig, ViTL16Config, ViTL32Config
 
 
-def create_network_config(
-    network: Union[str, ImplementedNetwork],
-) -> Type[NetworkConfig]:
+def get_network_config(
+    name: Union[str, ImplementedNetwork], **kwargs: Any
+) -> NetworkConfig:
     """
-    A factory function to create a config class suited for the network.
+    Factory function to get a network configuration object from its name
+    and parameters.
 
     Parameters
     ----------
-    network : Union[str, ImplementedNetwork]
-        The name of the neural network.
+    name : Union[str, ImplementedNetwork]
+        the name of the network. Check our documentation to know
+        available networks.
+    **kwargs : Any
+        any parameter of the network. Check our documentation on networks to
+        know these parameters.
 
     Returns
     -------
-    Type[NetworkConfig]
-        The config class.
-
-    Raises
-    ------
-    ValueError
-        If `network` is not supported.
+    NetworkConfig
+        the config object. Default values will be returned for the parameters
+        not passed by the user.
     """
-    network = ImplementedNetwork(network).value.replace("-", "").replace("/", "")
-    config_name = "".join([network, "Config"])
+    network = ImplementedNetwork(name).value.replace("-", "").replace("/", "")
+    config_name = f"{network}Config"
     config = globals()[config_name]
 
-    return config
+    return config(**kwargs)

@@ -1,7 +1,9 @@
-from pydantic import computed_field
+from typing import Union
+
+from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import ImplementedMetric, Optimum
+from .enum import Optimum, Reduction
 
 __all__ = [
     "MSEMetricConfig",
@@ -12,13 +14,17 @@ __all__ = [
 
 # TODO : R2 missing
 class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
-    "Config class for MSE."
+    """
+    Config class for :py:class:`monai.metrics.MSEMetric`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.MSE
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -27,13 +33,17 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
 
 
 class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
-    "Config class for MAE."
+    """
+    Config class for :py:class:`monai.metrics.MAEMetric`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.MAE
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+        )
 
     @staticmethod
     def optimum() -> Optimum:
@@ -42,13 +52,17 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
 
 
 class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
-    "Config class for RMSE."
+    """
+    Config class for :py:class:`monai.metrics.RMSEMetric`.
+    """
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedMetric:
-        """The name of the metric."""
-        return ImplementedMetric.RMSE
+    def __init__(
+        self,
+        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            reduction=reduction,
+        )
 
     @staticmethod
     def optimum() -> Optimum:

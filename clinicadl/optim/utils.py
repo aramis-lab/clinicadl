@@ -1,5 +1,13 @@
-from .lr_schedulers import LRSchedulerConfig
-from .optimizers import OptimizerConfig
+from .lr_schedulers.config import (
+    LRSchedulerConfig,
+    OneCycleLRConfig,
+)
+from .optimizers.config import (
+    AdamConfig,
+    OptimizerConfig,
+    RMSpropConfig,
+    SGDConfig,
+)
 
 
 def check_optimizer_scheduler_consistency(
@@ -12,16 +20,29 @@ def check_optimizer_scheduler_consistency(
     Parameters
     ----------
     optimizer_config : OptimizerConfig
-        the configuration class for the optimizer.
+        The configuration class for the optimizer.
     lr_scheduler_config : LRSchedulerConfig
-        the configuration class for the LR scheduler.
+        The configuration class for the LR scheduler.
 
     Raises
     ------
     ValueError
+        If the LR scheduler is 'OneCycleLR' with 'cycle_momentum=True' and the optimizer
+        does not have a momentum.
+    ValueError
         If the parameter groups mentioned for the optimizer and the lr scheduler
         don't match.
     """
+    if (
+        isinstance(lr_scheduler_config, OneCycleLRConfig)
+        and lr_scheduler_config.cycle_momentum
+        and not isinstance(OptimizerConfig, (SGDConfig, RMSpropConfig, AdamConfig))
+    ):
+        raise ValueError(
+            "If 'cycle_momentum' is True in OneCycleLR, the optimizer can't be "
+            f"{optimizer_config.name} because it requires a momentum."
+        )
+
     optimizer_groups = optimizer_config.get_all_groups()
     scheduler_groups = lr_scheduler_config.get_all_groups()
     if len(scheduler_groups) > 0 and optimizer_groups != scheduler_groups:

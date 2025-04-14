@@ -1,41 +1,57 @@
 from typing import Optional, Sequence, Union
 
-from pydantic import PositiveInt, computed_field, model_validator
+from pydantic import PositiveInt, model_validator
 
 from clinicadl.networks.nn.autoencoder import check_unpooling_mode
-from clinicadl.networks.nn.layers.utils import UnpoolingMode
+from clinicadl.networks.nn.layers.utils import ActivationParameters, UnpoolingMode
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, NetworkConfig, _InShapeConfig, _OutputActConfig
-from .mlp_conv import ConvDecoderOptions, ConvEncoderOptions, MLPOptions
+from .base import NetworkConfig, _InShapeConfig, _OutputActConfig
+from .mlp_conv import (
+    ConvDecoderOptions,
+    ConvEncoderOptions,
+    MLPOptions,
+)
 
 __all__ = ["CNNConfig", "GeneratorConfig", "AutoEncoderConfig", "VAEConfig"]
 
 
 class _MLPArgsConfig(ClinicaDLConfig):
-    """Base config class for 'mlp_args' option."""
+    """Config class for 'mlp_args' option."""
 
-    mlp_args: Union[Optional[MLPOptions], DefaultFromLibrary] = DefaultFromLibrary.YES
+    mlp_args: Optional[MLPOptions]
 
 
 class _LatentSizeConfig(ClinicaDLConfig):
-    """Base config class for 'latent_size' option."""
+    """Config class for 'latent_size' option."""
 
     latent_size: PositiveInt
 
 
 class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
-    """Config class for CNN."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.CNN`.
+    """
 
     num_outputs: PositiveInt
     conv_args: ConvEncoderOptions
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.CNN
+    def __init__(
+        self,
+        in_shape: Sequence[PositiveInt],
+        num_outputs: PositiveInt,
+        conv_args: ConvEncoderOptions,
+        mlp_args: Union[
+            Optional[MLPOptions], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            in_shape=in_shape,
+            num_outputs=num_outputs,
+            conv_args=conv_args,
+            mlp_args=mlp_args,
+        )
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -47,16 +63,28 @@ class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
 
 
 class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
-    """Config class for Generator."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.Generator`.
+    """
 
     start_shape: Sequence[PositiveInt]
     conv_args: ConvDecoderOptions
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.GENERATOR
+    def __init__(
+        self,
+        latent_size: PositiveInt,
+        start_shape: Sequence[PositiveInt],
+        conv_args: ConvDecoderOptions,
+        mlp_args: Union[
+            Optional[MLPOptions], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            latent_size=latent_size,
+            start_shape=start_shape,
+            conv_args=conv_args,
+            mlp_args=mlp_args,
+        )
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -70,36 +98,53 @@ class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
 class AutoEncoderConfig(
     NetworkConfig, _InShapeConfig, _LatentSizeConfig, _MLPArgsConfig, _OutputActConfig
 ):
-    """Config class for AutoEncoder."""
+    """
+    Config class for :py:class:`clinicadl.networks.nn.AutoEncoder`.
+    """
 
     conv_args: ConvEncoderOptions
-    out_channels: Union[
-        Optional[PositiveInt], DefaultFromLibrary
-    ] = DefaultFromLibrary.YES
-    unpooling_mode: Union[UnpoolingMode, DefaultFromLibrary] = DefaultFromLibrary.YES
+    out_channels: Optional[PositiveInt]
+    unpooling_mode: UnpoolingMode
 
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.AE
+    def __init__(
+        self,
+        in_shape: Sequence[PositiveInt],
+        latent_size: PositiveInt,
+        conv_args: ConvEncoderOptions,
+        mlp_args: Union[
+            Optional[MLPOptions], DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+        out_channels: Union[Optional[PositiveInt], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+        unpooling_mode: Union[
+            UnpoolingMode, DefaultFromLibrary
+        ] = DefaultFromLibrary.YES,
+    ):
+        super().__init__(
+            in_shape=in_shape,
+            latent_size=latent_size,
+            conv_args=conv_args,
+            mlp_args=mlp_args,
+            out_channels=out_channels,
+            output_act=output_act,
+            unpooling_mode=unpooling_mode,
+        )
 
     @model_validator(mode="after")
     def check_dim(self):
         _, *input_size = self.in_shape
         spatial_dims = len(input_size)
         self.conv_args.check_args_dim(spatial_dims)
-        if self.unpooling_mode != DefaultFromLibrary.YES:
-            check_unpooling_mode(self.unpooling_mode, spatial_dims)
+        check_unpooling_mode(self.unpooling_mode, spatial_dims)
 
         return self
 
 
 class VAEConfig(AutoEncoderConfig):
-    """Config class for Variational AutoEncoder."""
-
-    @computed_field
-    @property
-    def name(self) -> ImplementedNetwork:
-        """The name of the network."""
-        return ImplementedNetwork.VAE
+    """
+    Config class for :py:class:`clinicadl.networks.nn.VAE`.
+    """

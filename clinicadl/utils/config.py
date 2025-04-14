@@ -13,8 +13,12 @@ from pydantic import BaseModel, ConfigDict, computed_field
 from clinicadl.dictionary.words import NAME
 from clinicadl.utils.json import read_json, update_json, write_json
 
+CONFIG = "Config"
+
 
 class DefaultFromLibrary(str, Enum):
+    """Argument to get the default values in config classes."""
+
     YES = "DefaultFromLibrary"
 
 
@@ -64,7 +68,7 @@ class ClinicaDLConfig(BaseModel):
         update_json(json_path=json_path, new_data=self.to_dict())
 
 
-class NewClinicaDLConfig(ClinicaDLConfig, ABC):
+class ObjectConfig(ClinicaDLConfig, ABC):
     """
     Base config class associated to a Python object.
 
@@ -73,27 +77,24 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
     passed by the user.
 
     The user can then get the parametrized object with
-    the method `get_object`.
+    the method 'get_object'.
     """
 
     def __init__(self, **kwargs):
+        if not type(self).__name__.endswith(CONFIG):
+            raise NameError(
+                f"Invalid name for a ObjectConfig. The name of the class should end with '{CONFIG}'."
+            )
+
         associated_class = self._get_class()
-        kwargs = _update_kwargs_with_defaults(
-            kwargs, function=associated_class.__init__
-        )
-        super().__init__(**kwargs)
+        kwargs = update_kwargs_with_defaults(kwargs, function=associated_class.__init__)
+        super(ClinicaDLConfig, self).__init__(**kwargs)
 
     @computed_field
     @property
-    @abstractmethod
     def name(self) -> str:
-        """
-        The name of the object associated to this config class.
-        """
-
-    @abstractmethod
-    def _get_class(self) -> Any:
-        """Returns the class associated to this config class."""
+        """The name of the class associated to this config class."""
+        return self._get_name()
 
     def get_object(self) -> Any:
         """
@@ -108,13 +109,49 @@ class NewClinicaDLConfig(ClinicaDLConfig, ABC):
         associated_class = self._get_class()
         return associated_class(**self.model_dump(exclude={"name"}))
 
+    @classmethod
+    @abstractmethod
+    def _get_class(cls) -> Any:
+        """Returns the class associated to this config class."""
+
+    @classmethod
+    def _get_name(cls) -> str:
+        """Returns the name of the class associated to this config class."""
+        return cls.__name__.replace(CONFIG, "")
+
+
+def update_kwargs_with_defaults(
+    config: Dict[str, Any], function: Callable
+) -> Dict[str, Any]:
+    """
+    Updates arguments with the default values from a function.
+
+    Parameters
+    ----------
+    config : Dict[str, Any]
+        The input arguments.
+    function : Callable
+        The function to retrieve the default values from.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The updated arguments.
+    """
+    defaults = _get_defaults(function)
+    for arg, value in config.items():
+        if value == DefaultFromLibrary.YES and arg in defaults:
+            config[arg] = defaults[arg]
+
+    return config
+
 
 def _order_dict(model_or_field: Any) -> Any:
     """
     To always have the field 'name' at the beginning.
 
-    Recursive function to handle fields that themeselves
-    contain 'ClinicaDLConfig' instances.
+    Recursive function to handle fields that
+    contain themselves 'ClinicaDLConfig' instances.
     """
     if isinstance(model_or_field, dict):
         ordered_dict = OrderedDict(**model_or_field)
@@ -136,20 +173,6 @@ def _order_dict(model_or_field: Any) -> Any:
         return ordered_sequence
 
     return model_or_field
-
-
-def _update_kwargs_with_defaults(
-    config: Dict[str, Any], function: Callable
-) -> Dict[str, Any]:
-    """
-    Updates arguments with the default values from a function.
-    """
-    defaults = _get_defaults(function)
-    for arg, value in config.items():
-        if value == DefaultFromLibrary.YES and arg in defaults:
-            config[arg] = defaults[arg]
-
-    return config
 
 
 def _get_defaults(func: Callable) -> Dict[str, Any]:

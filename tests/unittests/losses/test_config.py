@@ -1,4 +1,6 @@
 import pytest
+import torch
+import torch.nn as nn
 from pydantic import ValidationError
 
 from clinicadl.losses.config import (
@@ -12,76 +14,158 @@ from clinicadl.losses.config import (
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
-    create_loss_function_config,
+    get_loss_function_config,
 )
-from clinicadl.losses.enum import ImplementedLoss
 
 BAD_INPUTS = [
-    ("reduction", "none"),
-    ("weight", [1, -1, 2]),
-    ("ignore_index", -1),
-    ("label_smoothing", 1.1),
-    ("pos_weight", [1, -1, 2]),
-    ("delta", 0.0),
-    ("beta", -0.1),
-    ("p", 3),
-    ("margin", None),
-    ("log_target", None),
+    (
+        {"reduction": "none"},
+        [
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+            CrossEntropyLossConfig,
+            HuberLossConfig,
+            KLDivLossConfig,
+            L1LossConfig,
+            MSELossConfig,
+            MultiMarginLossConfig,
+            NLLLossConfig,
+            SmoothL1LossConfig,
+        ],
+    ),
+    (
+        {"reduction": None},
+        [
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+            CrossEntropyLossConfig,
+            HuberLossConfig,
+            KLDivLossConfig,
+            L1LossConfig,
+            MSELossConfig,
+            MultiMarginLossConfig,
+            NLLLossConfig,
+            SmoothL1LossConfig,
+        ],
+    ),
+    (
+        {"weight": [1, -1, 2]},
+        [
+            NLLLossConfig,
+            CrossEntropyLossConfig,
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+            MultiMarginLossConfig,
+        ],
+    ),
+    (
+        {"weight": [1, 1, 2]},
+        [
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+        ],
+    ),
+    ({"ignore_index": -1}, [NLLLossConfig, CrossEntropyLossConfig]),
+    ({"label_smoothing": 1.1}, CrossEntropyLossConfig),
+    ({"pos_weight": [1, -1, 2]}, BCEWithLogitsLossConfig),
+    ({"delta": 0.0}, HuberLossConfig),
+    ({"beta": -0.1}, SmoothL1LossConfig),
+    ({"p": 3}, MultiMarginLossConfig),
+    ({"margin": None}, MultiMarginLossConfig),
+    ({"log_target": None}, KLDivLossConfig),
 ]
 
 GOOD_INPUTS = [
-    ("reduction", "mean"),
-    ("weight", [1, 1, 2]),
-    ("ignore_index", -100),
-    ("label_smoothing", 0.5),
-    ("pos_weight", [1, 1, 2]),
-    ("delta", 0.1),
-    ("beta", 0),
-    ("p", 1),
-    ("margin", -0.5),
-    ("log_target", True),
-    ("reduction", "sum"),
-    ("ignore_index", 0),
-    ("p", 2),
-    ("log_target", False),
+    (
+        {"reduction": "mean"},
+        [
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+            CrossEntropyLossConfig,
+            HuberLossConfig,
+            KLDivLossConfig,
+            L1LossConfig,
+            MSELossConfig,
+            MultiMarginLossConfig,
+            NLLLossConfig,
+            SmoothL1LossConfig,
+        ],
+    ),
+    (
+        {"reduction": "sum"},
+        [
+            BCELossConfig,
+            BCEWithLogitsLossConfig,
+            CrossEntropyLossConfig,
+            HuberLossConfig,
+            KLDivLossConfig,
+            L1LossConfig,
+            MSELossConfig,
+            MultiMarginLossConfig,
+            NLLLossConfig,
+            SmoothL1LossConfig,
+        ],
+    ),
+    (
+        {"weight": [1, 1, 2]},
+        [
+            NLLLossConfig,
+            CrossEntropyLossConfig,
+            MultiMarginLossConfig,
+        ],
+    ),
+    ({"ignore_index": -100}, [NLLLossConfig, CrossEntropyLossConfig]),
+    ({"ignore_index": 0}, [NLLLossConfig, CrossEntropyLossConfig]),
+    ({"label_smoothing": 0.5}, CrossEntropyLossConfig),
+    ({"pos_weight": [1, 1, 2]}, BCEWithLogitsLossConfig),
+    ({"delta": 0.1}, HuberLossConfig),
+    ({"beta": 0}, SmoothL1LossConfig),
+    ({"p": 1}, MultiMarginLossConfig),
+    ({"p": 2}, MultiMarginLossConfig),
+    ({"margin": -0.5}, MultiMarginLossConfig),
+    ({"log_target": True}, KLDivLossConfig),
+    ({"log_target": False}, KLDivLossConfig),
 ]
 
 
-@pytest.mark.parametrize(
-    "arg,value",
-    BAD_INPUTS,
-)
-def test_validation_fail(arg, value):
-    for loss in ImplementedLoss:
-        config = create_loss_function_config(loss)
-        fields = config.model_fields
-        if arg in fields:
-            with pytest.raises(ValidationError):
-                config(**{arg: value})
+@pytest.mark.parametrize("args,configs", BAD_INPUTS)
+def test_bad_inputs(args, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
+        with pytest.raises(ValidationError):
+            config(**args)
+
+
+@pytest.mark.parametrize("args,configs", GOOD_INPUTS)
+def test_good_inputs(args: dict, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
+        c = config(**args)
+        for arg, value in args.items():
+            assert getattr(c, arg) == value
 
 
 @pytest.mark.parametrize(
-    "arg,value",
-    GOOD_INPUTS,
+    "config,loss",
+    [
+        (BCELossConfig, nn.BCELoss),
+        (BCEWithLogitsLossConfig, nn.BCEWithLogitsLoss),
+        (CrossEntropyLossConfig, nn.CrossEntropyLoss),
+        (HuberLossConfig, nn.HuberLoss),
+        (KLDivLossConfig, nn.KLDivLoss),
+        (L1LossConfig, nn.L1Loss),
+        (MSELossConfig, nn.MSELoss),
+        (MultiMarginLossConfig, nn.MultiMarginLoss),
+        (NLLLossConfig, nn.NLLLoss),
+        (SmoothL1LossConfig, nn.SmoothL1Loss),
+    ],
 )
-def test_validation_pass(arg, value):
-    for loss in ImplementedLoss:
-        config = create_loss_function_config(loss)
-        fields = config.model_fields
-
-        if arg in fields:
-            if (loss == "BCELoss" or loss == "BCEWithLogitsLoss") and arg == "weight":
-                value_ = None
-            else:
-                value_ = value
-
-            c = config(**{arg: value_})
-            assert getattr(c, arg) == value_
-
-
-def test_weight_validator():
-    with pytest.raises(ValidationError):
-        BCELossConfig(weight=[1, 2])
+def test_get_object(config, loss):
+    c = config()
+    loss_from_config = c.get_object()
+    assert isinstance(loss_from_config, loss)
 
 
 @pytest.mark.parametrize(
@@ -99,5 +183,23 @@ def test_weight_validator():
         ("SmoothL1Loss", SmoothL1LossConfig),
     ],
 )
-def test_create_loss_function_config(name, config):
-    assert create_loss_function_config(name) == config
+def test_get_transform_config(name, config):
+    c = get_loss_function_config(name)
+    assert c.name == name
+    assert isinstance(c, config)
+    with pytest.raises(ValueError):
+        get_loss_function_config("abc")
+
+    if name == "NLLLoss":
+        config = get_loss_function_config("NLLLoss", weight=[1, 2])
+        assert config.name == "NLLLoss"
+        assert config.weight == [1, 2]
+        assert config.reduction == "mean"
+
+        assert (config.get_object().weight == torch.Tensor([1, 2])).all()
+    elif name == "BCEWithLogitsLoss":
+        config = get_loss_function_config("BCEWithLogitsLoss", pos_weight=[1, 2])
+        assert config.name == "BCEWithLogitsLoss"
+        assert config.pos_weight == [1, 2]
+        assert config.reduction == "mean"
+        assert (config.get_object().pos_weight == torch.Tensor([1, 2])).all()

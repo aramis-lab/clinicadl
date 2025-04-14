@@ -1,18 +1,16 @@
 from typing import Tuple, Union
 
-import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
     PositiveInt,
-    computed_field,
     field_validator,
 )
 
 from clinicadl.utils.config import DefaultFromLibrary
 
 from .base import TransformConfig
-from .enum import ImplementedTransform, InterpolationMode, NumericalAxis
+from .enum import InterpolationMode, NumericalAxis
 
 __all__ = [
     "RandomMotionConfig",
@@ -56,16 +54,6 @@ class RandomMotionConfig(TransformConfig):
             image_interpolation=image_interpolation,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_MOTION.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomMotion
-
     @field_validator("degrees", "translation", mode="after")
     @classmethod
     def validate_tuples(cls, v, field):
@@ -107,16 +95,6 @@ class RandomGhostingConfig(TransformConfig):
             restore=restore,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_GHOSTING.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomGhosting
-
     @field_validator("num_ghosts", "intensity", "restore", mode="after")
     @classmethod
     def validate_tuples(cls, v, field):
@@ -156,16 +134,6 @@ class RandomSpikeConfig(TransformConfig):
             intensity=intensity,
         )
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_SPIKE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomSpike
-
     @field_validator("num_spikes", "intensity", mode="after")
     @classmethod
     def validate_tuples(cls, v, field):
@@ -187,23 +155,13 @@ class RandomBiasFieldConfig(TransformConfig):
         self,
         coefficients: Union[
             NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
+        ] = DefaultFromLibrary.YES,
         order: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
         super().__init__(
             coefficients=coefficients,
             order=order,
         )
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_BIAS_FIELD.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomBiasField
 
     @field_validator("coefficients", mode="after")
     @classmethod
@@ -239,16 +197,6 @@ class RandomBlurConfig(TransformConfig):
     def __init__(self, std: Union[Std, DefaultFromLibrary] = DefaultFromLibrary.YES):
         super().__init__(std=std)
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_BLUR.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomBlur
-
     @field_validator("std", mode="after")
     @classmethod
     def validator_std(cls, v):
@@ -278,16 +226,6 @@ class RandomNoiseConfig(TransformConfig):
         ] = DefaultFromLibrary.YES,
     ):
         super().__init__(mean=mean, std=std)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_NOISE.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomNoise
 
     @field_validator("mean", "std", mode="after")
     @classmethod
@@ -319,16 +257,6 @@ class RandomSwapConfig(TransformConfig):
     ):
         super().__init__(patch_size=patch_size, num_iterations=num_iterations)
 
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_SWAP.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomSwap
-
 
 class RandomGammaConfig(TransformConfig):
     """
@@ -344,13 +272,3 @@ class RandomGammaConfig(TransformConfig):
         ),
     ):
         super().__init__(log_gamma=log_gamma)
-
-    @computed_field
-    @property
-    def name(self) -> str:
-        """The name of the transform."""
-        return ImplementedTransform.RANDOM_GAMMA.value
-
-    def _get_class(self) -> type[tio.Transform]:
-        """Returns the transform associated to this config class."""
-        return tio.RandomGamma

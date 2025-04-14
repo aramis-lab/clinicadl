@@ -12,14 +12,7 @@
     "individual_masks": [],
     "common_masks": [],
     "also": {},
-    "transforms": [
-        {
-            "name": "NanRemoval",
-            "nan": 0.0,
-            "posinf": null,
-            "neginf": null
-        }
-    ],
+    "transforms": [],
     "spacing": [
         1.2999999523162842,
         1.2000000476837158,
