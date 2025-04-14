@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pydantic import PositiveInt
 
-from pydantic import BaseModel, PositiveInt, computed_field
-
-from clinicadl.utils.config import ClinicaDLConfig, NewClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
 
 from .early_stopping import EarlyStopping, EarlyStoppingConfig
