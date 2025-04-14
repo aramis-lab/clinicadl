@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 
 from clinicadl.data.caps_dataset_config import CapsDatasetConfig
 from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.iotools.clinica_utils import RemoteFileStructure, fetch_file
 

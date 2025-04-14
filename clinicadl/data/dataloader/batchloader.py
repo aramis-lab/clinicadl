@@ -1,4 +1,7 @@
+from typing import Any, List, Union
+
 import torch
+import torchio as tio
 
 from clinicadl.transforms.extraction import Sample
 
@@ -39,24 +42,31 @@ class BatchLoader(list):
             torch.Tensor: A tensor containing all the images from the batch.
         """
         # Return the images of the batch
-        return torch.cat([sample.sample for sample in self], dim=0).unsqueeze(1)
+        return torch.stack([sample.image.tensor for sample in self], dim=0)
 
-    def get_labels(self) -> torch.Tensor:
+    def get_labels(self) -> Union[torch.Tensor, List[Any]]:
         """
-        Get the labels from the samples in the batch.
+        Gets the labels from the samples in the batch.
 
         Returns
         -------
-            torch.Tensor: A tensor containing all the labels from the batch.
+        Union[torch.Tensor, List[Any]]
+            A tensor or a list containing all the labels from the batch.
+            It will be a list if the labels are heterogeneous (e.g. a mask and a scalar) or if any
+            of the label is ``None``. Otherwise, it will be a tensor.
         """
-        # Return the labels of the batch
-        if all(isinstance(sample.label, torch.Tensor) for sample in self):
-            list_ = []
-            for sample in self:
-                list_.append(sample.label)
-            return torch.cat(list_, dim=0).unsqueeze(1)
-        else:
+        labels = [
+            sample.label.tensor
+            if isinstance(sample.label, tio.LabelMap)
+            else sample.label
+            for sample in self
+        ]
+        if all(isinstance(label, torch.Tensor) for label in labels):
+            return torch.stack(labels, dim=0)
+        elif all(isinstance(label, (int, float)) for label in labels):
             return torch.tensor(
-                [sample.label for sample in self],
+                labels,
                 dtype=torch.float32,
-            ).unsqueeze(1)  # TODO: check torch.long
+            )
+        else:
+            return labels

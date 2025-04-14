@@ -1,0 +1,6 @@
+{
+    "amp": false,
+    "fully_sharded_data_parallel": false,
+    "gpu": false,
+    "non_blocking": true
+}

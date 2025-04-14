@@ -12,7 +12,6 @@ from clinicadl.generate.generate_utils import (
     write_missing_mods,
 )
 from clinicadl.utils.iotools.iotools import check_and_clean, commandline_to_json
-from clinicadl.utils.iotools.utils import write_preprocessing
 
 
 def generate_shepplogan(generated_caps_directory, n_subjects, n_proc, **kwargs):

@@ -22,7 +22,7 @@ from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
 from clinicadl.transforms.output_transforms import OutputTransforms
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 
 caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"

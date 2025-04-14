@@ -11,6 +11,8 @@ from clinicadl.metrics import ImplementedMetric
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.factory import get_metric_config, get_metric_from_config
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
+from clinicadl.utils.json import read_json, write_json
 
 MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
 
@@ -142,6 +144,14 @@ class Metrics:
         self.compute_train_metrics = compute_train_metrics
 
     @classmethod
+    def from_json(cls, json_path: Path) -> Metrics:
+        """
+        Reads the JSON file and returns a Metrics object.
+        """
+        dict_ = read_json(json_path)
+        return cls.from_dict(dict_)
+
+    @classmethod
     def from_dict(cls, dict_: dict):
         metrics_config = dict_["metrics"]
         metrics = metrics_config["metrics"]
@@ -167,12 +177,11 @@ class Metrics:
     def model_dump(self):
         return self.val.model_dump()
 
-    def save_metrics(self, path: Path):
-        """Save the metrics in the MAPS."""
-        """Creates a training.tsv file."""
-
-        (path.parent).mkdir(parents=True, exist_ok=True)
-        self.training_loss.to_csv(path, sep="\t", index=True)
+    def write_json(self, json_path: Path, overwrite: bool = False) -> None:
+        """
+        Writes the serialized config class to a JSON file.
+        """
+        write_json(json_path=json_path, data=self.model_dump(), overwrite=overwrite)
 
 
 # class RetainBest:

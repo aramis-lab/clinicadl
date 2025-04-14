@@ -21,9 +21,9 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
+from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
 from clinicadl.utils import cluster
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.dlo_jz import Chronometer
 from clinicadl.utils.exceptions import ClinicaDLMAPSError
 from clinicadl.utils.seed import seed_everything
@@ -41,12 +41,9 @@ class Trainer:
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = True,
+        seed: int = 123,
     ) -> None:
         """TO COMPLETE"""
-
-        ## MAPS CONFIG
-        self.maps = Maps(maps_path)
-        self.init_maps(overwrite=_overwrite)
 
         ## CONFIG
         self.model = model
@@ -60,12 +57,17 @@ class Trainer:
         # will be different if resume is called
         self.current_epoch: int = 0
 
+        self.early_stopping = self.optim.init_early_stopping()
+        self.scaler = self.comp.init_scaler()
+
         # seed initialization
-        # TODO: let the user choose a random seed
-        seed_everything(123, deterministic=False, compensation="memory")
+        seed_everything(seed, deterministic=False, compensation="memory")
 
         # Chronometer initialisation
         self.chrono = Chronometer()
+
+        ## MAPS CONFIG
+        self.maps = self.init_maps(maps_path, overwrite=_overwrite)
 
         # Initialize the parallel environment
         # dist.init_process_group(backend='nccl', init_method='env://',
@@ -82,38 +84,6 @@ class Trainer:
 
         # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
 
-    def init_maps(self, overwrite: bool):
-        """TO COMPLETE"""
-        if not self.maps.is_empty() and overwrite:
-            remove_non_empty_dir(self.maps.path)
-        else:
-            raise ClinicaDLMAPSError(
-                f"The maps directory {self.maps.path} is not empty."
-            )
-
-        if not self.maps.exists() or self.maps.is_empty():
-            self.maps.create()
-            self.model.write_info(self.maps.model_json)
-            self.optim.write_info(self.maps.optimization_json)
-            self.comp.write_info(self.maps.computational_json)
-
-    @classmethod
-    def from_json(cls, json_file: PathType) -> Trainer:
-        """TO COMPLETE"""
-        json_file = Path(json_file)
-        if not json_file.is_file():
-            raise FileNotFoundError(f"The json file {json_file} does not exist.")
-
-        with json_file.open(mode="r") as file:
-            try:
-                data = json.load(file)
-            except json.JSONDecodeError:
-                raise ValueError("Invalid JSON format in the maps file.")
-
-        maps_path = data["maps_path"]
-
-        return cls._from_dict(maps_path, data)
-
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
         """TO COMPLETE"""
@@ -122,8 +92,19 @@ class Trainer:
         if not maps.exists():
             raise ValueError(f"Invalid maps file: {maps_path}")
 
-        dict_ = maps.read_maps()  # TODO : read all json files
-        return cls._from_dict(maps_path, dict_)
+        model = ClinicaDLModel.from_json(maps.model_json)
+        metrics = Metrics.from_json(maps.metrics_json)
+        optim = OptimizationConfig.from_json(maps.optimization_json)
+        comp = ComputationalConfig.from_json(maps.computational_json)
+
+        return cls(
+            maps_path,
+            model=model,
+            metrics=metrics,
+            optim_config=optim,
+            comp_config=comp,
+            _overwrite=False,
+        )
 
     @classmethod
     def _from_dict(cls, maps_path: PathType, dict_: dict):
@@ -141,11 +122,38 @@ class Trainer:
             _overwrite=False,
         )
 
+    def init_maps(self, maps_path: PathType, overwrite: bool) -> Maps:
+        """TO COMPLETE"""
+        maps = Maps(maps_path)
+        if overwrite:
+            if maps.exists():
+                remove_non_empty_dir(maps.path)
+        else:
+            if maps.exists():
+                raise ClinicaDLMAPSError(
+                    f"The maps directory {maps.path} already exists. Use overwrite=True to remove it."
+                )
+        return maps
+
+    def write_infos(self):
+        self.maps.create()
+        self.model.write_json(self.maps.model_json)
+        self.optim.write_json(self.maps.optimization_json)
+        self.comp.write_json(self.maps.computational_json)
+        self.metrics.write_json(self.maps.metrics_json)
+
     def resume(self, split: Split):
         """TO COMPLETE"""
 
+        self.maps.load()
+
+        if split.index not in self.maps.splits:
+            raise ClinicaDLMAPSError(
+                f"The split {split.index} does not exist in the maps directory."
+            )
+
         self.model.load_optim_state_dict(self.maps.splits[split.index].tmp.optimizer)
-        self.current_epoch = self.model.load_state_dict(
+        self.current_epoch = self.model.load_network_state_dict(
             self.maps.splits[split.index].tmp.optimizer
         )
         # TODO: need to resume the lr scheduler and the distributed Sampler
@@ -156,6 +164,7 @@ class Trainer:
     def train(self, split: Split):
         """TO COMPLETE"""
 
+        self.write_infos()
         self.on_train_begin(split)
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(
@@ -166,43 +175,27 @@ class Trainer:
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin()
 
-                images = data.get_images().to(self.comp.device)
-                labels = data.get_labels().to(self.comp.device)
-
-                with autocast(self.comp.device.type, enabled=self.comp.amp):
-                    outputs = self.model.network(images)
-                    loss = self.model.loss(outputs, labels)
-
-                    self.metrics.write_training_loss(
-                        epoch=self.epoch, batch=batch_idx, loss=loss.item()
-                    )
+                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
+                    loss = self.model.training_step(data=data, device=self.comp.device)
 
                 self.scaler.scale(loss).backward()
                 self.weights_update()
+
+                self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
             self.on_epoch_end(split)
 
         self.on_train_end(split)
 
-    def weights_update(self):
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.model.optimizer.zero_grad(set_to_none=True)
-
     def on_train_begin(self, split: Split):
         """TO COMPLETE"""
 
-        self._check_split(split)  # not sure if needed
-        self.maps.create_split(split, self.metrics.val.selection_metrics)
-
+        self.create_split(split)  # not sure if needed
         self.model.train()
 
         self.epoch = (
             self.current_epoch
         )  # will be different if resume or transfer learning
-
-        self.early_stopping = self.optim.init_early_stopping()
-        self.scaler = self.comp.init_scaler()
 
         # profiler = init_profiler(maps_path)
         # TODO: init tracker like WandB or MlFlow (callbacks ?)
@@ -220,8 +213,15 @@ class Trainer:
     def on_batch_begin(self):
         pass
 
-    def on_batch_end(self):
-        pass
+    def weights_update(self):
+        self.scaler.step(self.model.optimizer)
+        self.scaler.update()
+        self.model.optimizer.zero_grad(set_to_none=True)
+
+    def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
+        self.metrics.write_training_loss(
+            epoch=self.epoch, batch=batch_idx, loss=loss.item()
+        )
 
     def on_epoch_end(self, split: Split):
         # self.model.network.zero_grad(set_to_none=True)
@@ -251,26 +251,12 @@ class Trainer:
         # TODO: stop tracker like WandB or MlFlow (callbacks ?)
 
         # self.metrics.on_train_end()
-
-        for metric in self.metrics.val.selection_metrics:
-            metric = metric.value
-            self.metrics.train.df.to_csv(
-                self.maps.splits[split.index].best_metrics[metric].train.metrics_tsv,
-                sep="\t",
-                index=False,
-            )
-            self.metrics.val.df.to_csv(
-                self.maps.splits[split.index].best_metrics[metric].val.metrics_tsv,
-                sep="\t",
-                index=False,
-            )
-
-        self.metrics.save_metrics(self.maps.splits[split.index].logs.training_tsv)
+        self.save_metrics(maps=self.maps, split=split.index)
 
         for metric in self.metrics.val.selection_metrics:
             metric = metric.value
 
-            self.model.load_state_dict(
+            self.model.load_network_state_dict(
                 self.maps.splits[split.index].best_metrics[metric].model
             )
 
@@ -289,6 +275,40 @@ class Trainer:
                     split=split.index,
                     data_group="train",
                 )
+
+    ## UTILS
+
+    def save_metrics(self, split: int, maps: Maps):
+        """Save the metrics in the MAPS."""
+        """Creates a training.tsv file."""
+
+        for metric in self.metrics.val.selection_metrics:
+            metric = metric.value
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].train.metrics_tsv,
+                self.metrics.train.df,
+            )
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].val.metrics_tsv,
+                self.metrics.val.df,
+            )
+        training_tsv = maps.splits[split].logs.training_tsv
+        (training_tsv.parent).mkdir(parents=True, exist_ok=True)
+        self.metrics.training_loss.to_csv(training_tsv, sep="\t", index=True)
+
+    def create_split(self, split: Split):
+        """Check if the split is well defined."""
+        if split.train_loader is None:
+            raise ValueError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        if split.val_loader is None:
+            raise ValueError(
+                "The split has no val_loader defined. Please run `get_dataloader()`"
+            )
+
+        self.maps.create_split(split, self.metrics.val.selection_metrics)
+        split.write_json(self.maps.splits[split.index].split_json)
 
     def _save_tmp_weights(self, split: int):
         model_weights = {
@@ -333,13 +353,6 @@ class Trainer:
                 shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
 
     ## INITIALIZATION
-    def _init_validator(self):
-        return Predictor(
-            maps_path=self.maps.path,
-            model=self.model,
-            comp_config=self.comp,
-        )
-
     def _init_scheduler(
         self,
     ):
@@ -369,14 +382,3 @@ class Trainer:
             self.optim.evaluation_steps = max(
                 1, min(self.optim.evaluation_steps, self.n_batch // 2)
             )  # Ajuste pour garder une fréquence raisonnable
-
-    def _check_split(self, split: Split):
-        """Check if the split is well defined."""
-        if split.train_loader is None:
-            raise ValueError(
-                "The split has no train_loader defined. Please run `get_dataloader()`"
-            )
-        if split.val_loader is None:
-            raise ValueError(
-                "The split has no val_loader defined. Please run `get_dataloader()`"
-            )

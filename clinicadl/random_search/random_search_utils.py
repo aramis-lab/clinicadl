@@ -7,7 +7,7 @@ import toml
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.iotools.train_utils import extract_config_from_toml_file
-from clinicadl.utils.iotools.utils import path_decoder, read_preprocessing
+from clinicadl.utils.json import path_decoder
 
 
 def get_space_dict(launch_directory: Path) -> Dict[str, Any]:

@@ -11,7 +11,7 @@ from clinicadl.maps.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
 from clinicadl.splitter.splitter.splitter import SplitterConfig as SplitConfig
 from clinicadl.transforms.config import TransformsConfig
-from clinicadl.utils.computational.computational import ComputationalConfig
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.enum import Task
 from clinicadl.utils.exceptions import ClinicaDLArgumentError  # type: ignore
 

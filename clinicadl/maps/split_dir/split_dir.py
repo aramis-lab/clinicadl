@@ -1,19 +1,20 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Dict
 
 from clinicadl.dictionary.suffixes import JSON, PTH, TAR, TSV
 from clinicadl.dictionary.words import (
+    BEST,
     CHECKPOINT,
     OPTIMIZER,
     SPLIT,
     TMP,
     TRAINING,
 )
-from clinicadl.metrics.metrics import MetricConfig
 from clinicadl.splitter.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.iotools.utils import update_json
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
@@ -41,7 +42,7 @@ class SplitDir(Directory):
             Dict[str, BestMetric]): Dictionary of best models per metric.
     """
 
-    def __init__(self, num: int, best_metrics: list[MetricConfig], maps_path: PathType):
+    def __init__(self, num: int, maps_path: PathType, best_metrics: list[str] = []):
         self.number = num
         super().__init__(path=Path(maps_path) / (SPLIT + "-" + str(num)))
 
@@ -50,11 +51,58 @@ class SplitDir(Directory):
 
         self.best_metrics: Dict[str, BestMetric] = {}
         for metric in best_metrics:
-            self.best_metrics[metric.name] = BestMetric(
-                metric=metric, parent_dir=self.path
-            )
+            self.best_metrics[metric] = BestMetric(metric=metric, parent_dir=self.path)
 
         # TODO: add somethin to write split info
+
+    @classmethod
+    def load(cls, num: int, maps_path: PathType) -> SplitDir:
+        """Loads an existing split directory.
+
+        Parameters
+        ----------
+            num: int
+                The index of the split.
+            maps_path: PathType
+                Path to the MAPS directory.
+
+        Returns
+        -------
+            SplitDir
+                An instance of the SplitDir class.
+        """
+
+        split_dir = cls(num=num, maps_path=maps_path)
+        for metric in split_dir.best_metrics_list:
+            best_metric = BestMetric.load(parent_dir=split_dir.path, metric=metric)
+
+            if not best_metric.exists() or best_metric.is_empty():
+                raise ClinicaDLConfigurationError(
+                    f"The metric at {best_metric.path} doesn't exist or is empty."
+                )
+
+            if not split_dir.logs.exists():
+                raise ClinicaDLConfigurationError(
+                    f"The logs folder at {split_dir.logs.path} doesn't exist."
+                )
+
+            split_dir.best_metrics[best_metric.metric] = best_metric
+
+        return split_dir
+
+    @property
+    def best_metrics_list(self) -> list[str]:
+        """Returns a list of available metrics in the split directory."""
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
+
+        return [
+            x.name.split("-")[1]
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(BEST)
+        ]
 
     @property
     def split_json(self) -> Path:
@@ -76,23 +124,8 @@ class SplitDir(Directory):
         if self.exists():
             raise ClinicaDLConfigurationError(f"Split '{self.number}' already exists.")
         self.path.mkdir(parents=True)
-        self._write_split_json(split=split)
         for metric in self.best_metrics.values():
             metric.create(split=split)
-
-    def _write_split_json(self, split: Split) -> None:
-        """Writes the split.json file."""
-
-        dict_ = split.model_dump(exclude={"train_loader", "val_loader"})
-
-        dict_["val_dataset"] = split.val_dataset.describe()
-        dict_["train_dataset"] = split.train_dataset.describe()
-
-        with open(self.split_json, "w") as json_file:
-            json.dump({}, json_file)
-        update_json(
-            json_path=self.split_json, dict_=dict_
-        )  # called to add data to the split.json
 
 
 class TrainingLogs(Directory):
