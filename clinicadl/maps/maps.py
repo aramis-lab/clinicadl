@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import subprocess
 from pathlib import Path
@@ -15,9 +17,8 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALIDATION,
 )
-from clinicadl.metrics.metrics import MetricConfig
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir
+from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
@@ -61,6 +62,50 @@ class Maps(Directory):
 
         self.splits: Dict[int, SplitDir] = {}
         self.data_groups: Dict[str, Union[Dict[int, DataGroupType], DataGroupType]] = {}
+
+    def load(self):
+        """
+        Loads an existing MAPS directory.
+
+        Parameters
+        ----------
+        maps_path : PathType
+            Path to the MAPS directory.
+
+        Returns
+        -------
+        Maps
+            An instance of the `Maps` class representing the loaded directory.
+        """
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+
+        for split_idx in self.split_list:
+            split_dir = SplitDir.load(num=split_idx, maps_path=self.path)
+
+            if not split_dir.exists() or split_dir.is_empty():
+                raise ClinicaDLConfigurationError(
+                    f"The split at {split_dir.path} doesn't exist or is empty."
+                )
+
+            self.splits[split_idx] = split_dir
+
+        for data_group in self.group_list:
+            if data_group in TRAIN_VAL:
+                for split_idx in self.splits.keys():
+                    group = TrainValDataGroup(
+                        name=data_group, parent_dir=self.groups_dir, split=split_idx
+                    )
+
+                    self.data_groups[group.name] = {split_idx: group}
+
+            else:
+                group = DataGroup(name=data_group, parent_dir=self.groups_dir)
+                if not group.exists():
+                    raise ClinicaDLConfigurationError(
+                        f"The group at {group.path} doesn't exist."
+                    )
+                self.data_groups[group.name] = group
 
     @property
     def groups_dir(self) -> Path:
@@ -145,7 +190,7 @@ class Maps(Directory):
         data_group.create(dataset=dataset)
         self.data_groups[name] = data_group
 
-    def create_split(self, split: Split, best_metrics: list[MetricConfig]) -> None:
+    def create_split(self, split: Split, best_metrics: list[str]) -> None:
         """
         Creates a new split directory within the MAPS directory.
         Creates the train and validation data_group associated to this split.
@@ -154,7 +199,7 @@ class Maps(Directory):
         ----------
             split: Split
                 Split object defining train/validation datasets.
-            best_metrics: list[MetricConfig]
+            best_metrics: list[str]
                 List of metrics used for model selection.
 
         Raises

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
@@ -14,7 +16,6 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALIDATION,
 )
-from clinicadl.metrics.metrics import MetricConfig
 from clinicadl.splitter.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
@@ -105,17 +106,68 @@ class BestMetric(Directory):
             Additional and non-mandatory data groups by name.
     """
 
-    def __init__(self, metric: MetricConfig, parent_dir: PathType):
+    def __init__(self, metric: str, parent_dir: PathType):
         self.metric = metric
-        super().__init__(path=Path(parent_dir) / (BEST + "-" + metric.name))
+        super().__init__(path=Path(parent_dir) / (BEST + "-" + metric))
 
         self.train = BestMetricDataGroup(name=TRAIN, parent_dir=self.path)
         self.val = BestMetricDataGroup(name=VALIDATION, parent_dir=self.path)
         self.data_groups: Dict[str, BestMetricDataGroup] = {}
 
+    @classmethod
+    def load(cls, parent_dir: PathType, metric: str) -> BestMetric:
+        """
+        Load an existing best metric directory.
+
+        Parameters
+        ----------
+            metric: str
+                The metric name.
+            parent_dir: PathType
+                Path to the parent directory.
+
+        Returns
+        -------
+            BestMetric
+                An instance of the BestMetric class.
+        """
+        best_metric = cls(parent_dir=parent_dir, metric=metric)
+        for data_group_name in best_metric.data_group_list:
+            data_group = BestMetricDataGroup(
+                parent_dir=best_metric.path, name=data_group_name
+            )
+
+            if not data_group.exists() or data_group.is_empty():
+                raise ClinicaDLConfigurationError(
+                    f"The data group at {data_group.path} doesn't exist or is empty."
+                )
+            best_metric.data_groups[data_group.name] = data_group
+
+        if not best_metric.train.exists():
+            raise ClinicaDLConfigurationError(
+                f"The train data group at {best_metric.train.path} doesn't exist."
+            )
+        if not best_metric.val.exists():
+            raise ClinicaDLConfigurationError(
+                f"The validation data group at {best_metric.val.path} doesn't exist."
+            )
+        return best_metric
+
     @property
     def model(self) -> Path:
         return (self.path / MODEL).with_suffix(PTH + TAR)
+
+    @property
+    def data_group_list(self) -> list[str]:
+        """
+        Returns a list of available data groups in the best metric directory.
+        """
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
+
+        return [x.name for x in self.path.iterdir() if x.is_dir()]
 
     def create(self, split: Split) -> None:
         """
@@ -133,7 +185,7 @@ class BestMetric(Directory):
 
         if self.exists():
             raise ClinicaDLConfigurationError(
-                f"Best metric '{self.metric.name}' already exists."
+                f"Best metric '{self.metric}' already exists."
             )
 
         self.path.mkdir(parents=True)

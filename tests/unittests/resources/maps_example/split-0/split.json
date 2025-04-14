@@ -1,76 +1,108 @@
 {
     "index": 0,
-    "split_dir": "abc",
+    "split_dir": "/Users/camille.brianceau/aramis/CLINICADL/caps/split_10/2_fold",
     "train_dataset": {
-        "total_samples": 6,
+        "total_samples": 20,
         "participant_session_pairs": [
             [
-                "sub-000",
+                "sub-003",
                 "ses-M000"
             ],
             [
-                "sub-000",
-                "ses-M003"
-            ],
-            [
-                "sub-010",
-                "ses-M003"
-            ],
-            [
-                "sub-010",
-                "ses-M012"
-            ],
-            [
-                "sub-100",
+                "sub-004",
                 "ses-M000"
-            ],
-            [
-                "sub-100",
-                "ses-M012"
             ]
         ],
         "preprocessing": {
-            "use_uncropped_image": true,
-            "tracer": "18FAV45",
-            "reconstruction": null,
-            "suvr_reference_region": "pons2",
-            "modality": "pet",
-            "name": "pet-linear",
+            "name": "t1-linear",
+            "use_uncropped_image": false,
+            "modality": "T1w",
             "file_type": {
-                "pattern": "pet_linear/sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii*",
-                "description": "PET images with tracer '18FAV45', registered to MNI152NLin2009cSym space using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'",
-                "needed_pipeline": "pet-linear"
+                "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*",
+                "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+                "needed_pipeline": "t1-linear"
             }
         },
         "extraction": {
-            "extract_method": "image"
+            "slices": [
+                24,
+                25,
+                26,
+                27,
+                56,
+                57,
+                58,
+                78,
+                96,
+                97
+            ],
+            "discarded_slices": null,
+            "borders": null,
+            "slice_direction": 0,
+            "squeeze": true,
+            "extract_method": "slice"
         }
     },
     "val_dataset": {
-        "total_samples": 1,
+        "total_samples": 20,
         "participant_session_pairs": [
             [
-                "sub-999",
-                "ses-M099"
+                "sub-006",
+                "ses-M006"
+            ],
+            [
+                "sub-007",
+                "ses-M006"
             ]
         ],
         "preprocessing": {
-            "use_uncropped_image": true,
-            "tracer": "18FAV45",
-            "reconstruction": null,
-            "suvr_reference_region": "pons2",
-            "modality": "pet",
-            "name": "pet-linear",
+            "name": "t1-linear",
+            "use_uncropped_image": false,
+            "modality": "T1w",
             "file_type": {
-                "pattern": "pet_linear/sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii*",
-                "description": "PET images with tracer '18FAV45', registered to MNI152NLin2009cSym space using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'",
-                "needed_pipeline": "pet-linear"
+                "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*",
+                "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+                "needed_pipeline": "t1-linear"
             }
         },
         "extraction": {
-            "extract_method": "image"
+            "slices": [
+                24,
+                25,
+                26,
+                27,
+                56,
+                57,
+                58,
+                78,
+                96,
+                97
+            ],
+            "discarded_slices": null,
+            "borders": null,
+            "slice_direction": 0,
+            "squeeze": true,
+            "extract_method": "slice"
         }
     },
-    "train_loader_config": null,
-    "val_loader_config": null
+    "train_loader_config": {
+        "batch_size": 3,
+        "sampling_weights": null,
+        "shuffle": true,
+        "num_workers": 0,
+        "pin_memory": true,
+        "drop_last": false,
+        "prefetch_factor": null,
+        "persistent_workers": false
+    },
+    "val_loader_config": {
+        "batch_size": 3,
+        "sampling_weights": null,
+        "shuffle": true,
+        "num_workers": 0,
+        "pin_memory": true,
+        "drop_last": false,
+        "prefetch_factor": null,
+        "persistent_workers": false
+    }
 }

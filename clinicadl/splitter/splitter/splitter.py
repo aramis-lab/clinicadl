@@ -13,7 +13,7 @@ from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.splitter.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import ClinicaDLTSVError
-from clinicadl.utils.iotools.utils import path_encoder
+from clinicadl.utils.json import path_encoder
 
 
 class SubjectsSessionsSplit(ClinicaDLConfig):

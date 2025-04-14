@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.utils.iotools.utils import path_decoder
+from clinicadl.utils.json import path_decoder
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
