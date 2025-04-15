@@ -22,7 +22,7 @@ from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
-from .base import Directory
+from ..base import Directory
 from .data_group import DataGroup, TrainValDataGroup
 from .split_dir import SplitDir
 

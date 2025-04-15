@@ -12,7 +12,7 @@ from clinicadl.tsvtools.utils import df_to_tsv
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
-from ..base import Directory
+from ...base import Directory
 
 
 class BaseDataGroup(Directory):

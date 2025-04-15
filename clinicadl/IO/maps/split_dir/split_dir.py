@@ -17,7 +17,7 @@ from clinicadl.splitter.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
-from ..base import Directory
+from ...base import Directory
 from .best_metric import BestMetric
 
 
