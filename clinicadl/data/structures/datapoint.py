@@ -305,12 +305,12 @@ class DataPoint(tio.Subject):
         super().plot(**kwargs)
 
     def __copy__(self):
-        return _subject_copy_helper(self, type(self))
+        return _subject_copy_helper(self, DataPoint)
 
 
 def _subject_copy_helper(
-    old_obj: tio.Subject,
-    new_subj_cls: Callable[[Dict[str, Any]], tio.Subject],
+    old_obj: DataPoint,
+    new_subj_cls: Callable[[Dict[str, Any]], DataPoint],
 ):
     """
     Adapted from torchio.data.subject._subject_copy_helper to work
