@@ -45,7 +45,10 @@ urllib3= "<2.0.0"
 nilearn = "^0.9.2"
 pydantic = "^2.7.0"
 monai = "^1.4.0"
+clinicadl-zoo = { git = "https://github.com/aramis-lab/clinicadl-zoo.git", branch = "main", optional = true }
 
+[tool.poetry.extras]
+zoo = ["clinicadl-zoo"]
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "*"
