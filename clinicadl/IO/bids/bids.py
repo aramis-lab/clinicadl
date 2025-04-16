@@ -3,13 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict
 
-from clinicadl.dictionary.suffixes import TSV
+from clinicadl.dictionary.suffixes import NII, NII_GZ, TSV
 from clinicadl.dictionary.words import SES, SUB
-from clinicadl.IO.file_type import FileType
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
+from ..file_type import FileType
 from .file_types.utils import get_file_type
 
 
@@ -36,6 +36,8 @@ class Bids(Directory):
         for subject in self.subjects_list:
             subject_dir = SubjectDir.load(parent_path=self.path, subject_id=subject)
             self.subjects[subject] = subject_dir
+
+        print("loading complete")
 
     @property
     def participants_tsv(self) -> Path:
@@ -131,8 +133,9 @@ class SessionDir(Directory):
                 f"The session at {session_dir.path} doesn't exist or is empty."
             )
 
-        for file in session_dir.files_list:
-            file_type = get_file_type(path=file)
+        for filename in session_dir.filename_list:
+            print(filename)
+            file_type = get_file_type(filename=filename)
             session_dir.file_types[file_type.modality] = file_type
 
         return session_dir
@@ -155,41 +158,23 @@ class SessionDir(Directory):
     @property
     def scans_tsv(self) -> Path:
         """Return the path to the scans.tsv file."""
-        return (self.path / f"sub-{self.subject}_ses-{self.id}_scans").with_suffix(TSV)
+        return (self.path / f"{SUB}-{self.subject}_{SES}-{self.id}_scans").with_suffix(
+            TSV
+        )
 
     @property
-    def files_list(self) -> list[str]:
+    def filename_list(self) -> list[str]:
         """Return a list of data IDs."""
         if not self.exists():
             raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
         if self.is_empty():
             return []
-        list_ = []
-        for x in self.path.iterdir():
-            if x.is_dir():
-                for y in x.iterdir():
-                    if y.is_file() and y.name.endswith((".nii", ".nii.gz")):
-                        list_.append(y.name)
-        return list_
 
-
-bids = Bids(path=Path("/Users/camille.brianceau/aramis/DATA/BIDS_QC"))
-bids.load()
-print(bids.subjects_list)
-print(bids.participants_tsv)
-print(bids.subjects)
-print(bids.subjects["ADNI011S0002"].sessions_list)
-print(bids.subjects["ADNI011S0002"].sessions)
-print(bids.subjects["ADNI011S0002"].id)
-print(bids.subjects["ADNI011S0002"].bids_dir)
-print(
-    bids.subjects["ADNI011S0002"].sessions["M00"].scans_tsv
-)  # Example of accessing the scans.tsv file path
-print(
-    bids.subjects["ADNI011S0002"].sessions["M00"].files_list
-)  # Example of accessing the files list
-print(bids.subjects["ADNI011S0002"].sessions["M00"].bids_dir)
-print(bids.subjects["ADNI011S0002"].sessions["M00"].subject)
-print(bids.subjects["ADNI011S0002"].sessions["M00"].subject_dir)
-print(bids.subjects["ADNI011S0002"].sessions["M00"].id)
-print(bids.subjects["ADNI011S0002"].sessions["M00"].file_types)
+        nii_extensions = (NII, NII_GZ)
+        return [
+            y.stem.removesuffix(NII)
+            for x in self.path.iterdir()
+            if x.is_dir()
+            for y in x.iterdir()
+            if y.is_file() and y.name.endswith(nii_extensions)
+        ]

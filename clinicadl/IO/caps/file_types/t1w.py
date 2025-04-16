@@ -1,10 +1,10 @@
 from clinicadl.dictionary.words import ANAT
 
 from ...file_type import FileType
-from ...modalities import Flair
+from ...modalities import T1w
 
 
-class FlairFileType(FileType, Flair):
+class T1LinearFileType(FileType, T1w):
     """
     Configuration class to handle raw custom imaging data with a user-defined suffix.
     """
@@ -24,7 +24,7 @@ class FlairFileType(FileType, Flair):
         """
         The description of the file type.
         """
-        return "Raw FLAIR T2w MRI NIfTI images"
+        return "Raw T1-weighted MRI NIfTI images"
 
     @property
     def container(self) -> str:

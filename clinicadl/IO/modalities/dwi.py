@@ -15,4 +15,4 @@ class DWI(Modality):
         """
         The modality, always 'dwi' here.
         """
-        return ImageModality.DWI.value
+        return ImageModality.DWI

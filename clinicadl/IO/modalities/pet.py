@@ -69,4 +69,4 @@ class PET(Modality):
         """
         The modality, always 'pet' here.
         """
-        return ImageModality.PET.value
+        return ImageModality.PET

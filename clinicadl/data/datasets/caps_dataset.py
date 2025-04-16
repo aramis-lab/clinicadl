@@ -24,6 +24,7 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
+from clinicadl.IO.caps import Caps
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import (
@@ -38,7 +39,8 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.typing import DataType, PathType
 
 from ..datatypes.preprocessing import Preprocessing, T1Linear
-from ..readers.caps_reader import CapsReader
+
+# from ..readers.caps_reader import CapsReader
 from ..structures import Column, DataPoint, Mask
 from ..tensor_conversion import TensorConversion, TensorConversionInfo
 

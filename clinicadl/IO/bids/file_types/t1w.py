@@ -1,10 +1,10 @@
-from pydantic import computed_field
+from clinicadl.dictionary.words import ANAT
 
-from ...enum import ImageModality
 from ...file_type import FileType
+from ...modalities import T1w
 
 
-class T1WFileType(FileType):
+class T1WFileType(FileType, T1w):
     """
     Configuration class to handle raw custom imaging data with a user-defined suffix.
     """
@@ -17,13 +17,18 @@ class T1WFileType(FileType):
             FileType: A FileType object containing the pattern and description.
         """
 
-        description = "Raw T1w MRI NIfTI images"
-        super().__init__(container="anat", description=description)
+        super().__init__()
 
-    @computed_field
     @property
-    def modality(self) -> str:
+    def description(self) -> str:
         """
-        The modality, always 'custom' here.
+        The description of the file type.
         """
-        return ImageModality.T1W.value
+        return "Raw T1-weighted MRI NIfTI images"
+
+    @property
+    def container(self) -> str:
+        """
+        The name of the folder where the file is stored.
+        """
+        return ANAT

@@ -15,4 +15,4 @@ class T1w(Modality):
         """
         The modality, always 'T1w' here.
         """
-        return ImageModality.T1W.value
+        return ImageModality.T1W

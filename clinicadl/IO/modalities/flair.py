@@ -15,4 +15,4 @@ class Flair(Modality):
         """
         The modality, always 'flair' here.
         """
-        return ImageModality.FLAIR.value
+        return ImageModality.FLAIR

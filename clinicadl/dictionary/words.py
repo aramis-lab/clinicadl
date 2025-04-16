@@ -38,6 +38,7 @@ OTHER = "other"
 OPTIMIZATION = "optimization"
 OPTIMIZER = "optimizer"
 PARTICIPANT = "participant"
+PARTICIPANTS = "participants"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
 PET = "pet"
 PREPARATION = "preparation"

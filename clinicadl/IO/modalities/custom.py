@@ -22,4 +22,4 @@ class Custom(Modality):
         """
         The modality, always 'custom' here.
         """
-        return ImageModality.CUSTOM.value
+        return ImageModality.CUSTOM
