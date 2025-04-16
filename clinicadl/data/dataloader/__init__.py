@@ -1,2 +1,2 @@
-from .batchloader import BatchLoader
+from .batch import Batch
 from .config import DataLoaderConfig

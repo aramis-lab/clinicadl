@@ -6,7 +6,7 @@ import torch
 import torchio as tio
 from pydantic import field_serializer, model_validator
 
-from clinicadl.data.dataloader import BatchLoader
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ClinicaDLConfig
 
@@ -111,7 +111,7 @@ class OutputTransforms(ClinicaDLConfig):
         return output
 
     def batch_apply(
-        self, batch_tensor: torch.Tensor, data: BatchLoader
+        self, batch_tensor: torch.Tensor, data: Batch
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Applies the transformations to a batch of images and samples.

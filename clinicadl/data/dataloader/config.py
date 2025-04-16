@@ -1,63 +1,104 @@
-from typing import Optional
+from typing import Iterator, Optional, Union, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
-from torch.utils.data import DataLoader, DistributedSampler, Sampler
-from torch.utils.data import WeightedRandomSampler as BaseWeightedRandomSampler
+from torch.utils.data import DataLoader as TorchDataLoaader
+from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import BatchLoader
-from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datasets import (
+    CapsDataset,
+    ConcatDataset,
+    PairedDataset,
+    UnpairedDataset,
+)
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
+from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
 
-class WeightedRandomSampler(BaseWeightedRandomSampler):
+SimpleDataset = Union[CapsDataset, ConcatDataset]
+TupleDataset = Union[PairedDataset, UnpairedDataset]
+Dataset = Union[SimpleDataset, TupleDataset]
+
+
+class _SimpleDataLoader(TorchDataLoaader):
+    """To type the iterator."""
+
+    def __iter__(
+        self,
+    ) -> Iterator[SimpleBatch]:
+        return super().__iter__()
+
+
+class _TupleDataLoader(TorchDataLoaader):
+    """To type the iterator."""
+
+    def __iter__(
+        self,
+    ) -> Iterator[tuple[SimpleBatch, ...]]:
+        return super().__iter__()
+
+
+class DataLoader(TorchDataLoaader):
     """
-    Modifies PyTorch's WeightedRandomSampler to have a similar behavior to
-    PyTorch's DistributedSampler.
+    Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
     """
 
     def set_epoch(self, epoch: int) -> None:
         """
-        Fake method to simulate 'set_epoch' of PyTorch's DistributedSampler.
-        To be able to always call sampler.set_epoch(), no matter the sampler.
+        Sets the epoch.
+
+        This ensures a different random ordering for :py:class:`torch.utils.data.distributed.DistributedSampler`
+        and a different random mapping for :py:class:`clinicadl.data.datasets.UnpairedDataset` for each epoch.
+
+        Parameters
+        ----------
+        epoch : int
+            Epoch number.
         """
+        if isinstance(self.sampler, DistributedSampler):
+            self.sampler.set_epoch(epoch)
+        if isinstance(self.dataset, UnpairedDataset):
+            self.dataset.set_epoch(epoch)
 
 
 class DataLoaderConfig(ClinicaDLConfig):
     """
-    Class to configure a PyTorch DataLoader from a CapsDataset.
+    Configuration class for the DataLoader.
 
-    ..sealso::https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+    The DataLoader can then be accessed with :py:meth:`~DataLoaderConfig.get_object`.
+    The DataLoader obtained will be a :py:class:`torch.utils.data.DataLoader`.
 
     Parameters
     ----------
-    dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
-        Pre-configured DataLoader configuration.
     batch_size : PositiveInt (optional, default=1)
         Batch size for the DataLoader.
     sampling_weights : Optional[str] (optional, default=None)
-        Name of the column in the dataframe of the CapsDataset where to find the sampling
+        Name of the column in the dataframe of the dataset where to find the sampling
         weights. The column must contain float values.
     shuffle : bool (optional, default=True)
         Whether to shuffle the data.
-        .. note:: If `sampling_weights` is passed, the data will be fetched randomly with
-        replacement. So, data are shuffled, no matter the argument `shuffle`.
+        .. note::
+            If ``sampling_weights`` is passed, the data will be fetched randomly with
+            replacement, no matter the argument ``shuffle``.
     num_workers : NonNegativeInt (optional, default=0)
         Number of workers for data loading.
     pin_memory : bool (optional, default=True)
-        whether to copy Tensors into device/CUDA pinned memory before returning them.
+        Whether to copy Tensors into device/CUDA pinned memory before returning them.
     drop_last : bool (optional, default=False)
         Whether to drop the last incomplete batch.
     prefetch_factor : Optional[int] (optional, default=None)
-        Number of batches loaded in advance by each worker. Can't be passed if `num_workers` is 0.
+        Number of batches loaded in advance by each worker. Can't be passed if ``num_workers`` is 0.
     persistent_workers : bool (optional, default=False)
         Whether to maintain the worker processes alive at the end of an epoch.
-        Can't be passed if `num_workers` is 0.
+        Can't be passed if ``num_workers`` is 0.
 
     Raises
     ------
     ValueError
-        If `prefetch_factor` or `persistent_workers` is passed, but `num_workers` is 0.
+        If ``prefetch_factor`` or ``persistent_workers`` is passed, but ``num_workers`` is 0.
+
+    Examples
+    --------
     """
 
     batch_size: PositiveInt = 1
@@ -84,40 +125,74 @@ class DataLoaderConfig(ClinicaDLConfig):
             )
         return self
 
-    def get_dataloader(
+    @overload
+    def get_object(
         self,
-        dataset: CapsDataset,
+        dataset: SimpleDataset,
+        dp_degree: Optional[int] = None,
+        rank: Optional[int] = None,
+    ) -> _SimpleDataLoader:
+        ...
+
+    @overload
+    def get_object(
+        self,
+        dataset: TupleDataset,
+        dp_degree: Optional[int] = None,
+        rank: Optional[int] = None,
+    ) -> _TupleDataLoader:
+        ...
+
+    def get_object(
+        self,
+        dataset: Dataset,
         dp_degree: Optional[int] = None,
         rank: Optional[int] = None,
     ) -> DataLoader:
         """
-        To get a dataloader from a dataset. The dataloader is parametrized
+        To get a dataloader from a dataset (:py:class:`~clinicadl.data.datasets.CapsDataset`,
+        :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset` or
+        :py:class:`~clinicadl.data.datasets.UnpairedDataset`). The dataloader is parametrized
         with the options stored in this configuration class.
 
         Parameters
         ----------
-        dataset : CapsDataset
-            The dataset to put in a Dataloader.
+        dataset : Dataset
+            The ClinicaDL dataset to put in a DataLoader.
         dp_degree : Optional[int] (optional, default=None)
-            The degree of data parallelism. None if no data parallelism.
+            The degree of data parallelism. ``None`` if no data parallelism.
         rank : Optional[int] (optional, default=None)
             Process id within the data parallelism communicator.
-            None if no data parallelism.
+            ``None`` if no data parallelism.
 
         Returns
         -------
         DataLoader
             The dataloader that wraps the dataset.
+
+        Raises
+        ------
+        ValueError
+            If only one of ``dp_degree`` and ``rank`` is not ``None``.
+        ValueError
+            If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
+            and ``sampling_weights`` is not ``None``.
+        KeyError
+            If ``sampling_weights`` is not ``None``, but there is no column named like
+            ``sampling_weights`` in the dataframe of the dataset.
+        ValueError
+            If ``sampling_weights`` is not ``None`` and the associated column cannot
+            be converted to float values.
         """
-        loader = DataLoader(
+        return DataLoader(
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
-            collate_fn=lambda x: BatchLoader(x),
-            **self.model_dump(exclude=set(["sampling_weights", "shuffle"])),
+            collate_fn=tuple_collate_fn
+            if isinstance(dataset, TupleDataset)
+            else simple_collate_fn,
+            **self.model_dump(exclude={"sampling_weights", "shuffle"}),
         )
-
-        return loader
 
     def _generate_sampler(
         self,
@@ -158,10 +233,12 @@ class DataLoaderConfig(ClinicaDLConfig):
         return sampler
 
     @staticmethod
-    def _get_weights(dataset: CapsDataset, weights_name: str) -> list[float]:
+    def _get_weights(dataset: Dataset, weights_name: str) -> list[float]:
         """
         Gets the list of weights from the column of the dataframe.
         """
+        if isinstance(dataset, UnpairedDataset):
+            raise ValueError("Can't use 'sampling_weights' with UnpairedDataset.")
         try:
             weights = [
                 dataset.get_sample_info(idx, weights_name)
@@ -169,8 +246,7 @@ class DataLoaderConfig(ClinicaDLConfig):
             ]
         except KeyError as exc:
             raise KeyError(
-                f"Got '{weights_name}' for 'sampling_weights' but there is no "
-                "such column in the metadata dataframe of the dataset."
+                f"Failed to get the column '{weights_name}' in the dataframe of the dataset."
             ) from exc
         try:
             weights = [float(weight) for weight in weights]
