@@ -1,3 +1,5 @@
+import inspect
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -19,6 +21,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_design",
     "sphinx.ext.extlinks",
+    "sphinx_autodoc_typehints",
 ]
 
 templates_path = ["_templates"]
@@ -44,6 +47,30 @@ extlinks = {
         None,
     ),
 }
+
+# -- Hide function with @overload ---------------------------------------
+
+typehints_use_signature = True  # replaces the signature with type hints
+
+
+def is_overload_function(obj):
+    # `overload` sets __code__.co_code to b''
+    if inspect.isfunction(obj) or inspect.ismethod(obj):
+        try:
+            return obj.__code__.co_code == b""
+        except AttributeError:
+            return False
+    return False
+
+
+def skip_overload_members(app, what, name, obj, skip, options):
+    if is_overload_function(obj):
+        return True  # skip this member
+    return None
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip_overload_members)
 
 
 # -- Options for HTML output -------------------------------------------------

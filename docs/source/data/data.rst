@@ -21,9 +21,13 @@ To handle multiple datasets and/or multiple modalities, you may be interested in
 :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset` or
 :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
 
-Finally, the last ClinicaDL object that needs to be introduced here is :py:class:`Transforms <clinicadl.transforms.Transforms>`.
+To transform your data or perform data augmentation, you will use :py:class:`~clinicadl.transforms.Transforms`.
 This object aims to gather all the transforms that will be applied to the images
 when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice extraction).
+
+Once your dataset has been created, you'll probably want to put it in a :py:class:`torch.utils.data.DataLoader`.
+To do this, you can use :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`. This object will help you to
+create a DataLoader suited to ClinicaDL.
 
 .. toctree::
     :maxdepth: 1
@@ -34,3 +38,4 @@ when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice ex
     unpaired_dataset
     caps_datatypes
     ../transforms/transforms
+    dataloader

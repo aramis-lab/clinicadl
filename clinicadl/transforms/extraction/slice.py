@@ -201,7 +201,7 @@ class Slice(Extraction):
         sample = SliceSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            sample_index=slice_position,
+            _sample_index=slice_position,
             slice_position=slice_position,
             slice_direction=self.slice_direction,
             squeeze=self.squeeze,
