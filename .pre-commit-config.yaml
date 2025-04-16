@@ -13,10 +13,7 @@ repos:
     rev: v2.2.6
     hooks:
       - id: codespell
-        exclude: >
-            (?x)^(
-                .*\.ipynb
-            )$
+        exclude: poetry.lock
         additional_dependencies:
           - tomli
         entry: codespell --ignore-words ignore-spelling-words.txt
