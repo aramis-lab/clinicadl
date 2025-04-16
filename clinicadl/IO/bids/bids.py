@@ -68,7 +68,7 @@ class SubjectDir(Directory):
         self.id = subject_id
         self.sessions: Dict[str, SessionDir] = {}
 
-        super().__init__(path=Path(parent_path) / subject_id)
+        super().__init__(path=Path(parent_path) / (SUB + "-" + subject_id))
 
     @classmethod
     def load(cls, parent_path: PathType, subject_id: str) -> SubjectDir:
@@ -119,7 +119,7 @@ class SessionDir(Directory):
         self.id = session_id
         self.file_types: Dict[str, FileType] = {}
 
-        super().__init__(path=Path(parent_path) / session_id)
+        super().__init__(path=Path(parent_path) / (SES + "-" + session_id))
 
     @classmethod
     def load(cls, parent_path: PathType, session_id: str) -> SessionDir:
