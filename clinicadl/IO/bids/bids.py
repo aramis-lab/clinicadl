@@ -1,21 +1,16 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict
 
-from clinicadl.data.datatypes.modalities.pet import ReconstructionMethod, Tracer
 from clinicadl.dictionary.suffixes import TSV
-from clinicadl.dictionary.words import ANAT, DWI, PET, SES, SESSION, SUB, SUBJECTS
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLBIDSError,
-    ClinicaDLConfigurationError,
-)
+from clinicadl.dictionary.words import SES, SUB
+from clinicadl.IO.file_type import FileType
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
+from .file_types.utils import get_file_type
 
 
 class Bids(Directory):
@@ -122,11 +117,7 @@ class SessionDir(Directory):
     def __init__(self, parent_path: PathType, session_id: str):
         """Initialize the SubjectDir class."""
         self.id = session_id
-
-        # self.anat: Optional[AnatDir] = None
-        # self.dwi: Optional[DWIDir] = None
-        # self.pet: Optional[PETDir] = None
-        # self.custom: Optional[CustomDir] = None
+        self.file_types: Dict[str, FileType] = {}
 
         super().__init__(path=Path(parent_path) / session_id)
 
@@ -140,23 +131,9 @@ class SessionDir(Directory):
                 f"The session at {session_dir.path} doesn't exist or is empty."
             )
 
-        for data in session_dir.data_list:
-            if data == ANAT:
-                cls.anat = AnatDir(parent_path=session_dir.path)
-                cls.anat.load()
-            elif data == PET:
-                cls.pet = PETDir(parent_path=session_dir.path)
-                cls.pet.load()
-            elif data == DWI:
-                cls.dwi = DWIDir(parent_path=session_dir.path)
-                cls.dwi.load()
-            elif data == CUSTOM:
-                cls.custom = CustomDir(parent_path=session_dir.path)
-                cls.custom.load()
-            else:
-                raise ClinicaDLArgumentError(f"The data type {data} is not supported.")
-            data_dir = DataDir(parent_path=session_dir.path, data_id=data)
-            session_dir.data[data] = data_dir
+        for file in session_dir.files_list:
+            file_type = get_file_type(path=file)
+            session_dir.file_types[file_type.modality] = file_type
 
         return session_dir
 
@@ -181,248 +158,38 @@ class SessionDir(Directory):
         return (self.path / f"sub-{self.subject}_ses-{self.id}_scans").with_suffix(TSV)
 
     @property
-    def data_list(self) -> list[str]:
+    def files_list(self) -> list[str]:
         """Return a list of data IDs."""
         if not self.exists():
             raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
         if self.is_empty():
             return []
-        return [
-            x.name
-            for x in self.path.iterdir()
-            if x.is_dir() and x in SupportedRawDataDir
-        ]
+        list_ = []
+        for x in self.path.iterdir():
+            if x.is_dir():
+                for y in x.iterdir():
+                    if y.is_file() and y.name.endswith((".nii", ".nii.gz")):
+                        list_.append(y.name)
+        return list_
 
 
-class DataDir(Directory):
-    """Class to handle subject directories in BIDS format.
-
-    This class represents a subject directory within the BIDS data format.
-    It currently does not contain any methods or attributes.
-    """
-
-    def __init__(self, parent_path: PathType, data_id: str):
-        """Initialize the SubjectDir class."""
-        self.id = data_id
-        super().__init__(path=Path(parent_path) / data_id)
-
-
-class SupportedRawDataDir(str, Enum):
-    """Enum class to represent supported raw data directories in BIDS format.
-
-    This class is used to define the supported raw data directories in the BIDS format.
-    """
-
-    ANAT = "anat"
-    PET = "pet"
-    DWI = "dwi"
-    CUSTOM = "custom"
-    FMAP = "fmap"
-    FUNC = "func"
-
-
-bids = Bids(path=Path())
-bids.subjects[sub].sessions[ses].anat.t1w.json
-bids.subjects[sub].sessions[ses].anat.t1w.json
-bids.subjects[sub].sessions[ses].anat.t1w.json
-
-
-class AnatDir(Directory):
-    """Class to handle anatomical directories in BIDS format.
-
-    This class represents a subject directory within the BIDS data format.
-    It currently does not contain any methods or attributes.
-    """
-
-    def __init__(self, parent_path: PathType):
-        """Initialize the SubjectDir class."""
-
-        super().__init__(path=Path(parent_path) / ANAT)
-
-        self.t1w: Optional[T1WFiles] = None
-        self.flair: Optional[FlairFiles] = None
-
-    def load(self):
-        """Load the anatomical data."""
-        if not self.exists() or self.is_empty():
-            raise ClinicaDLConfigurationError(
-                f"The BIDS at {self.path} doesn't exist or is empty."
-            )
-
-        self.t1w.load(path=self.path)
-        self.flair.load(path=self.path)
-
-        if not self.t1w.exists() and not self.flair.exists():
-            raise ClinicaDLConfigurationError(
-                f"The anatomical data directory at {self.path} doesn't exist or is empty."
-            )
-
-
-class PETDir(Directory):
-    """Class to handle PET directories in BIDS format.
-
-    This class represents a subject directory within the BIDS data format.
-    It currently does not contain any methods or attributes.
-    """
-
-    def __init__(self, parent_path: PathType):
-        """Initialize the SubjectDir class."""
-        super().__init__(path=Path(parent_path) / PET)
-        self.pets = {}
-
-    def load(self):
-        """Load the anatomical data."""
-        if not self.exists() or self.is_empty():
-            raise ClinicaDLConfigurationError(
-                f"The BIDS at {self.path} doesn't exist or is empty."
-            )
-
-        patterns = [
-            PETFiles(tracer=tracer, reconstruction=recon)
-            for tracer in Tracer
-            for recon in ReconstructionMethod
-        ]
-        for tracer in Tracer:
-            pet = PETFiles(tracer=tracer)
-            pet.load(path=self.path)
-            if not pet.exists():
-                raise ClinicaDLConfigurationError(
-                    f"The anatomical data directory at {self.path} doesn't exist or is empty."
-                )
-
-
-class DWIDir(Directory):
-    """Class to handle PET directories in BIDS format.
-
-    This class represents a subject directory within the BIDS data format.
-    It currently does not contain any methods or attributes.
-    """
-
-    def __init__(self, parent_path: PathType):
-        """Initialize the SubjectDir class."""
-        super().__init__(path=Path(parent_path) / PET)
-        self.pets = {}
-
-    def load(self):
-        """Load the anatomical data."""
-        if not self.exists() or self.is_empty():
-            raise ClinicaDLConfigurationError(
-                f"The BIDS at {self.path} doesn't exist or is empty."
-            )
-
-        for tracer in Tracer:
-            pet = PETFiles(tracer=tracer)
-            pet.load(path=self.path)
-            if not pet.exists():
-                raise ClinicaDLConfigurationError(
-                    f"The anatomical data directory at {self.path} doesn't exist or is empty."
-                )
-
-
-class Files(ABC):
-    def __init__(self):
-        self.json = None
-        self.nii = None
-
-    def exists(self):
-        """Check if the T1-weighted image and its JSON sidecar file exist."""
-        return self.json or self.nii
-
-    @property
-    @abstractmethod
-    def suffix(self) -> str:
-        """Return the suffix of the image."""
-        raise NotImplementedError("Subclasses must implement this method.")
-
-    @classmethod
-    def load(cls, path: Path) -> None:
-        """Load the T1-weighted image and its JSON sidecar file."""
-        if not path.exists():
-            raise ClinicaDLConfigurationError(
-                f"The anatomical data at {path} doesn't exist or is empty."
-            )
-        subject = path.parent.parent.name
-        session = path.parent.name
-        files = cls()
-        for file in path.iterdir():
-            if file.name.endswith(f"{subject}_{session}_{files.suffix}.json"):
-                files.json = file
-            if file.name.endswith(f"{subject}_{session}_{files.suffix}.nii*"):
-                files.nii = file
-
-
-class T1WFiles(Files):
-    @property
-    def suffix(self) -> str:
-        """Return the suffix of the image."""
-        return "T1w"
-
-
-class FlairFiles(Files):
-    @property
-    def suffix(self) -> str:
-        """Return the suffix of the image."""
-        return "flair"
-
-
-class PETFiles(Files):
-    def __init__(
-        self,
-        tracer: Union[str, Tracer],
-        reconstruction: Optional[Union[str, ReconstructionMethod]] = None,
-    ):
-        """Initialize the PETFiles class."""
-
-        if isinstance(tracer, str):
-            tracer = Tracer(tracer)
-        self.tracer = tracer
-
-        if reconstruction and isinstance(reconstruction, str):
-            reconstruction = ReconstructionMethod(reconstruction)
-        self.reconstruction = reconstruction
-
-        super().__init__()
-
-    @property
-    def suffix(self):
-        """Return the suffix of the image."""
-        return "pet"
-
-    @property
-    def pattern(self) -> str:
-        """Return the suffix of the image."""
-        if self.reconstruction:
-            rec_pattern = f"_rec-{self.reconstruction}"
-        else:
-            rec_pattern = ""
-        return f"trc-{self.tracer}{rec_pattern}_{self.suffix}"
-
-
-class DWIFiles(Files):
-    def __init__(self):
-        super().__init__()
-        self.bval = None
-        self.bvec = None
-
-    def exists(self):
-        """Check if the DWI image and its JSON sidecar file exist."""
-        return super().exists() or self.bval or self.bvec
-
-    @property
-    def suffix(self) -> str:
-        """Return the suffix of the image."""
-        return "dwi"
-
-    def load(self, path: Path) -> None:
-        """Load the DWI image and its JSON sidecar file."""
-
-        super().load(path=path)
-
-        subject = path.parent.parent.name
-        session = path.parent.name
-
-        for file in path.iterdir():
-            if file.name.endswith(f"{subject}_{session}_{self.suffix}.bval"):
-                self.bval = file
-            if file.name.endswith(f"{subject}_{session}_{self.suffix}.bvec"):
-                self.bvec = file
+bids = Bids(path=Path("/Users/camille.brianceau/aramis/DATA/BIDS_QC"))
+bids.load()
+print(bids.subjects_list)
+print(bids.participants_tsv)
+print(bids.subjects)
+print(bids.subjects["ADNI011S0002"].sessions_list)
+print(bids.subjects["ADNI011S0002"].sessions)
+print(bids.subjects["ADNI011S0002"].id)
+print(bids.subjects["ADNI011S0002"].bids_dir)
+print(
+    bids.subjects["ADNI011S0002"].sessions["M00"].scans_tsv
+)  # Example of accessing the scans.tsv file path
+print(
+    bids.subjects["ADNI011S0002"].sessions["M00"].files_list
+)  # Example of accessing the files list
+print(bids.subjects["ADNI011S0002"].sessions["M00"].bids_dir)
+print(bids.subjects["ADNI011S0002"].sessions["M00"].subject)
+print(bids.subjects["ADNI011S0002"].sessions["M00"].subject_dir)
+print(bids.subjects["ADNI011S0002"].sessions["M00"].id)
+print(bids.subjects["ADNI011S0002"].sessions["M00"].file_types)
