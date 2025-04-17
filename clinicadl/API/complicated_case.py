@@ -118,6 +118,6 @@ output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion(
 
 predictor = Predictor(maps_path, comp_config=comput_config, model=model)
 
-dataloader = dataloader_config.get_dataloader(dataset_test)
+dataloader = dataloader_config.get_object(dataset_test)
 
 predictor.predict(dataloader, metrics=metrics, split=1, data_group="test")
