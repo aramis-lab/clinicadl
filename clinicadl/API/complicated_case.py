@@ -11,7 +11,7 @@ from clinicadl.data.datatypes.preprocessing import (
 )
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
@@ -75,9 +75,9 @@ model = ClinicaDLModel.from_config(
 
 
 # DEFINE METRICS
-metrics = Metrics(
+metrics = ClinicaDLMetrics(
     metrics=[MSEMetricConfig(), MAEMetricConfig()],
-    selection_metrics=[MSEMetricConfig(), "Loss"],
+    selection_metrics=[MSEMetricConfig()],
 )
 
 

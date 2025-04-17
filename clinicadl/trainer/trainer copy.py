@@ -2,25 +2,20 @@ from __future__ import annotations
 
 import json
 import shutil
-from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Union
 
-import pandas as pd
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as Metric
 from torch.amp.autocast_mode import autocast
 from torch.amp.grad_scaler import GradScaler
 from torch.nn.parallel import DistributedDataParallel
-from torch.utils.data import DataLoader
 
-from clinicadl.data.dataloader import BatchLoader
-from clinicadl.data.datasets import CapsDataset
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config.enum import Optimum
-from clinicadl.metrics.config.factory import get_metric_config
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.config.factory import create_metric_config
+from clinicadl.metrics.metrics import Metrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.early_stopping import EarlyStoppingConfig
@@ -42,7 +37,7 @@ class Trainer:
         self,
         maps_path: PathType,
         model: ClinicaDLModel,
-        metrics: ClinicaDLMetrics,
+        metrics: Metrics,
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = True,
@@ -54,18 +49,13 @@ class Trainer:
         self.model = model
         self.comp = comp_config
         self.optim = optim_config
+
+        self.val_metrics = metrics
         self.train_metrics = metrics
-        self.metrics = metrics
-
         # METRICS CONFIG
-        self.metrics._init_with_loss(model.loss)
-        if self.metrics.compute_train_metrics:
-            self.train_metrics = deepcopy(metrics)
-            self.train_metrics._init_with_loss(model.loss)
+        self.val_metrics.set_loss_metric(model.loss)
+        self.train_metrics.set_loss_metric(model.loss)
 
-        self.training_loss = pd.DataFrame(columns=["epoch", "batch", "time", "loss"])
-        self.training_loss.set_index(["epoch", "batch"], inplace=True)
-        self.training_loss.at[(0, 0), "time"] = 0.0
         # will be different if resume is called
         self.current_epoch: int = 0
 
@@ -81,6 +71,21 @@ class Trainer:
         ## MAPS CONFIG
         self.maps = self.init_maps(maps_path, overwrite=_overwrite)
 
+        # Initialize the parallel environment
+        # dist.init_process_group(backend='nccl', init_method='env://',
+        #                         world_size=cluster.size, rank=cluster.rank)
+
+        # define model & device
+        # bind the proper GPU to the current process
+        # torch.cuda.set_device('cpu')
+
+        # distribute batch size (mini-batch)
+        # self.num_replica = cluster.size
+        # self.mini_batch_size = self.batch_size
+        # self.global_batch_size = self.mini_batch_size * self.num_replica
+
+        # self.validator = Predictor(self.reader, metrics=me) # need to pass training options
+
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
         """TO COMPLETE"""
@@ -90,7 +95,7 @@ class Trainer:
             raise ValueError(f"Invalid maps file: {maps_path}")
 
         model = ClinicaDLModel.from_json(maps.model_json)
-        metrics = ClinicaDLMetrics.from_json(maps.metrics_json)
+        metrics = Metrics.from_json(maps.metrics_json)
         optim = OptimizationConfig.from_json(maps.optimization_json)
         comp = ComputationalConfig.from_json(maps.computational_json)
 
@@ -106,7 +111,7 @@ class Trainer:
     @classmethod
     def _from_dict(cls, maps_path: PathType, dict_: dict):
         model = ClinicaDLModel.from_dict(dict_)
-        metrics = ClinicaDLMetrics.from_dict(dict_)
+        metrics = Metrics.from_dict(dict_)
         optim = OptimizationConfig(**dict_)
         comp = ComputationalConfig(**dict_)
 
@@ -133,14 +138,11 @@ class Trainer:
         return maps
 
     def write_infos(self):
-        """TO COMPLETE"""
         self.maps.create()
         self.model.write_json(self.maps.model_json)
         self.optim.write_json(self.maps.optimization_json)
         self.comp.write_json(self.maps.computational_json)
-        self.metrics.write_json(
-            self.maps.metrics_json
-        )  # no need to write both train and val metrics
+        self.val_metrics.write_json(self.maps.metrics_json)
 
     def resume(self, split: Split):
         """TO COMPLETE"""
@@ -157,7 +159,7 @@ class Trainer:
             self.maps.splits[split.index].tmp.optimizer
         )
         # TODO: need to resume the lr scheduler and the distributed Sampler
-        # TODO: need to load metrics or not ?
+        # self.metrics.load() TODO:needed if loaded from json ?
 
         self.train(split)
 
@@ -168,7 +170,7 @@ class Trainer:
         self.on_train_begin(split)
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(
-            self.metrics.get_loss()
+            self.val_metrics.get_loss()
         ):
             self.on_epoch_begin()
 
@@ -176,7 +178,7 @@ class Trainer:
                 self.on_batch_begin()
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.training_step(data=data)
+                    loss = self.model.training_step(data=data, device=self.comp.device)
 
                 self.scaler.scale(loss).backward()
                 self.weights_update()
@@ -203,126 +205,31 @@ class Trainer:
         self._init_scheduler()
         self.chrono.start()
 
-        # self.metrics.on_train_begin()
-
     def on_epoch_begin(self):
-        """TO COMPLETE"""
         self.model.network.zero_grad(set_to_none=True)
-        self.chrono.next_iter()
-        # self.evaluation_flag = True
 
     def on_batch_begin(self):
-        """TO COMPLETE"""
         pass
 
-    def training_step(self, data: BatchLoader):
-        """
-        Perform a training step on the model using the provided batch of data and return the computed loss
-        """
-        labels = data.get_labels().to(self.comp.device)
-        images = data.get_images().to(self.comp.device)
-
-        self.chrono.forward()
-
-        outputs = self.model.network(images)
-        loss = self.model.loss(outputs, labels)
-
-        if self.metrics.compute_train_metrics:
-            self.train_metrics(outputs, labels)
-
-        return loss
-
     def weights_update(self):
-        """TO COMPLETE"""
-
-        self.chrono.backward()
-
         self.scaler.step(self.model.optimizer)
         self.scaler.update()
         self.model.optimizer.zero_grad(set_to_none=True)
 
     def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
-        """TO COMPLETE"""
-
-        self.chrono.update()
-
-        if self.metrics.compute_train_metrics:
-            self.train_metrics.aggregate(batch=batch_idx, epoch=self.epoch)
-
-        self.training_loss.at[(self.epoch, batch_idx), "Loss"] = loss.item()
-        self.training_loss.at[(self.epoch, batch_idx), "time"] = self.chrono.elapsed()
+        pass
 
     def on_epoch_end(self, split: Split):
-        """TO COMPLETE"""
-        # self.model.network.zero_grad(set_to_none=True)
-        # Update learning rate based on validation loss
-
-        # PRedictor is initialized here because it depends on the new model
-
-        self.chrono.validation()
-
-        self.validate(split.val_loader)
-
-        self.chrono.validation()
-
         self.scheduler.step()
 
         # Sauvegarde du modèle à la fin de chaque epoch
         self._save_tmp_weights(split.index)
 
         self.epoch += 1
-        self.chrono.next_iter()
-        # profiler.step()  # TODO: check this
 
     def on_train_end(self, split: Split):
         """TO COMPLETE"""
-
-        self.chrono.stop()
-
-        # self.metrics.on_train_end()
-        self.save_metrics(maps=self.maps, split=split.index)
-
-        for name, metric_config in self.metrics.selection_metrics.items():
-            self.model.load_network_state_dict(
-                self.maps.splits[split.index].best_metrics[name].model
-            )
-
-            validator = Predictor(self.maps.path, self.model, self.comp)
-            validator.test(
-                split.val_loader,
-                metric=name,
-                split=split.index,
-                data_group="validation",
-            )
-
-    def validate(
-        self,
-        dataloader: DataLoader[CapsDataset],
-    ):
-        self.model.network.eval()
-        dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
-
-        self.metrics.reset()
-
-        with torch.no_grad():
-            for batch_idx, data in enumerate(dataloader):
-                ############
-                images = data.get_images().to(self.comp.device)
-                labels = data.get_labels().to(self.comp.device)
-                ############
-
-                # initialize the loss list to save the loss components
-                with autocast(self.comp.device.type, enabled=self.comp.amp):
-                    outputs = self.model.network(images)
-                    # loss = self.model.loss(outputs, labels)
-                    # I think loss is one of callable metrics
-
-                    self.metrics(outputs, labels)
-
-            self.metrics.aggregate(epoch=self.epoch)
-
-        self.model.network.train()
-        return None
+        pass
 
     ## UTILS
 
@@ -330,14 +237,19 @@ class Trainer:
         """Save the metrics in the MAPS."""
         """Creates a training.tsv file."""
 
-        for name, _ in self.metrics.selection_metrics.items():
+        for metric in self.metrics.val.selection_metrics:
+            metric = metric.value
             df_to_tsv(
-                maps.splits[split].best_metrics[name].val.metrics_tsv,
-                self.metrics._df,
+                maps.splits[split].best_metrics[metric].train.metrics_tsv,
+                self.metrics.train.df,
+            )
+            df_to_tsv(
+                maps.splits[split].best_metrics[metric].val.metrics_tsv,
+                self.metrics.val.df,
             )
         training_tsv = maps.splits[split].logs.training_tsv
         (training_tsv.parent).mkdir(parents=True, exist_ok=True)
-        self.training_loss.to_csv(training_tsv, sep="\t", index=True)
+        self.metrics.training_loss.to_csv(training_tsv, sep="\t", index=True)
 
     def create_split(self, split: Split):
         """Check if the split is well defined."""
@@ -350,7 +262,7 @@ class Trainer:
                 "The split has no val_loader defined. Please run `get_dataloader()`"
             )
 
-        self.maps.create_split(split, self.metrics.selection_metrics)
+        self.maps.create_split(split, self.metrics.val.selection_metrics)
         split.write_json(self.maps.splits[split.index].split_json)
 
     def _save_tmp_weights(self, split: int):
@@ -358,29 +270,38 @@ class Trainer:
             "model": self.model.network.state_dict(),
             "epoch": self.epoch,
         }
+        # optimizer_weights = {
+        #         "optimizer": self.model.network.optim_state_dict(optimizer),
+        #         "epoch": self.epoch,
+        #     }
+
         checkpoint_path = self.maps.splits[split].tmp.path / "checkpoint.pth.tar"
         torch.save(model_weights, checkpoint_path)
 
-        for name, metric_config in self.metrics.selection_metrics.items():
-            metric_path = self.maps.splits[split].best_metrics[name].path
+        # optim_checkpoint_path = self.reader.tmp_dir_path(split) / "optimizer.pth.tar"
+        # torch.save(optimizer_weights, optim_checkpoint_path)
+
+        for metric_ in self.metrics.train.selection_metrics:
+            metric = metric_.value
+            metric_path = self.maps.splits[split].best_metrics[metric].path
             metric_path.mkdir(parents=True, exist_ok=True)
 
-            optimum = metric_config.optimum()
+            optimum = create_metric_config(metric).optimum()
 
             if (
                 self.epoch == 0
                 or (
                     optimum == Optimum.MAX
                     and (
-                        self.metrics._df.at(self.epoch, name)
-                        > self.metrics._df.at(self.epoch - 1, name)
+                        self.metrics.val.get_value(self.epoch, metric)
+                        > self.metrics.val.get_value(self.epoch - 1, metric)
                     )
                 )
                 or (
                     optimum == Optimum.MIN
                     and (
-                        self.metrics._df.at(self.epoch, name)
-                        < self.metrics._df.at(self.epoch - 1, name)
+                        self.metrics.val.get_value(self.epoch, metric)
+                        < self.metrics.val.get_value(self.epoch - 1, metric)
                     )
                 )
             ):

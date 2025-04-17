@@ -1,197 +1,232 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import time
+from typing import List, Optional
 
 import numpy as np
-
-###############################
-# Author : Bertrand CABOT from IDRIS(CNRS)
-#
-########################
 
 
 class Chronometer:
     """
-    A light profiler to time a pytorch training loop
+    A lightweight profiler for timing a PyTorch training loop.
 
-    Methods
-    -------
-    power_measurement(self)
-        get the power measurement at time point from CUDA nvsmi
-    tac_time(self, clear=False)
-        like a stopwatch, get time difference between each call
-    clear(self)
-        clear all timer
-    display(self)
-        print all the traces (in out log)
-    ...
+    Tracks durations of training phases like data loading, forward pass,
+    backward pass, and validation. Supports summary display and export.
 
     Example
     -------
     chrono = Chronometer()
-
     chrono.start()
-    ...
-    for epoch in range(args.epochs):
+
+    for epoch in range(epochs):
+        chrono.next_iter()
+        for i, (x, y) in enumerate(train_loader):
+            chrono.forward()
+            ...
+            chrono.backward()
+            loss.backward()
+            optimizer.step()
+            chrono.update()
+
+        chrono.validation()
+        for val_x, val_y in val_loader:
+            ...
+        chrono.validation()
 
         chrono.next_iter()
 
-        for i, (samples, labels) in enumerate(train_loader):
-
-            chrono.forward()
-
-            optimizer.zero_grad()
-            outputs = model(samples)
-            loss = criterion(samples, labels)
-
-            chrono.backward()
-
-            loss.backward()
-            optimizer.step()
-
-            chrono.update()
-            ...
-            #### VALIDATION ############
-            chrono.validation()
-            for iv, (val_images, val_labels) in enumerate(val_loader):
-                ....
-            chrono.validation()
-            #### END OF VALIDATION ############
-
-            chrono.next_iter()
-
     chrono.stop()
+    chrono.display()
     """
 
-    def __init__(self):
-        self.time_perf_train = []
-        self.time_perf_load = []
-        self.time_perf_forward = []
-        self.time_perf_backward = []
-        self.power = []
-        self.start_proc = None
-        self.stop_proc = None
-        self.start_training = None
-        self.start_dataload = None
-        self.start_backward = None
-        self.start_forward = None
-        self.start_valid = None
-        self.val_time = None
-        self.time_point = None
+    def __init__(self) -> None:
+        self.time_perf_train: List[float] = []
+        self.time_perf_load: List[float] = []
+        self.time_perf_forward: List[float] = []
+        self.time_perf_backward: List[float] = []
+        self.power: List[float] = []
 
-    def tac_time(self, clear=False):
+        self.start_proc: Optional[datetime] = None
+        self.stop_proc: Optional[datetime] = None
+
+        self.start_training: Optional[float] = None
+        self.start_dataload: Optional[float] = None
+        self.start_backward: Optional[float] = None
+        self.start_forward: Optional[float] = None
+        self.start_valid: Optional[datetime] = None
+
+        self.val_time: Optional[timedelta] = None
+        self.time_point: Optional[float] = None
+
+    def tac_time(self, clear: bool = False) -> Optional[float]:
+        """
+        Measures time elapsed since last call.
+
+        Parameters
+        ----------
+        clear : bool
+            If True, resets the reference point.
+
+        Returns
+        -------
+        float or None
+            Elapsed time in seconds, or None if cleared.
+        """
         if self.time_point is None or clear:
             self.time_point = time()
-            return
+            return None
         else:
             new_time = time() - self.time_point
             self.time_point = time()
             return new_time
 
-    def clear(self):
-        self.time_perf_train = []
-        self.time_perf_load = []
-        self.time_perf_forward = []
-        self.time_perf_backward = []
+    def clear(self) -> None:
+        """Clears all recorded timing data."""
+        self.time_perf_train.clear()
+        self.time_perf_load.clear()
+        self.time_perf_forward.clear()
+        self.time_perf_backward.clear()
 
-    def start(self):
+    def start(self) -> None:
+        """Marks the beginning of the overall training."""
         self.start_proc = datetime.now()
 
-    def stop(self):
+    def stop(self) -> None:
+        """Marks the end of the overall training."""
         self.stop_proc = datetime.now()
 
-    def _dataload(self):
+    def elapsed(self) -> Optional[float]:
+        """
+        Returns time elapsed since `start()` was called.
+
+        Returns
+        -------
+        float or None
+            Elapsed time in seconds, or None if not started.
+        """
+        if self.start_proc is None:
+            return None
+        return (datetime.now() - self.start_proc).total_seconds()
+
+    def _dataload(self) -> None:
         if self.start_dataload is None:
             self.start_dataload = time()
         else:
             self.time_perf_load.append(time() - self.start_dataload)
             self.start_dataload = None
 
-    def _training(self):
+    def _training(self) -> None:
         if self.start_training is None:
             self.start_training = time()
         else:
             self.time_perf_train.append(time() - self.start_training)
             self.start_training = None
 
-    def _forward(self):
+    def _forward(self) -> None:
         if self.start_forward is None:
             self.start_forward = time()
         else:
             self.time_perf_forward.append(time() - self.start_forward)
             self.start_forward = None
 
-    def _backward(self):
+    def _backward(self) -> None:
         if self.start_backward is None:
             self.start_backward = time()
         else:
             self.time_perf_backward.append(time() - self.start_backward)
             self.start_backward = None
 
-    def next_iter(self):
+    def next_iter(self) -> None:
+        """Call this at the end of an iteration to finalize dataload timing."""
         self._dataload()
 
-    def forward(self):
+    def forward(self) -> None:
+        """
+        Call this before and after the forward pass.
+        Handles dataloading, training, and forward time tracking.
+        """
         self._dataload()
         self._training()
         self._forward()
 
-    def backward(self):
+    def backward(self) -> None:
+        """
+        Call this before and after the backward pass.
+        Handles forward and backward time tracking.
+        """
         self._forward()
         self._backward()
 
-    def update(self):
+    def update(self) -> None:
+        """
+        Call this after the optimizer step.
+        Ends backward and training timing.
+        """
         self._backward()
         self._training()
 
-    def validation(self):
+    def validation(self) -> None:
+        """
+        Call this before and after the validation phase.
+        Measures total validation duration.
+        """
         if self.start_valid is None:
             self.start_valid = datetime.now()
         else:
             self.val_time = datetime.now() - self.start_valid
             self.start_valid = None
 
-    def display(self):
+    def display(self) -> None:
+        """
+        Displays collected timing statistics and performance summary.
+        """
         if self.stop_proc and self.start_proc:
-            print(">>> Training complete in: " + str(self.stop_proc - self.start_proc))
-        if len(self.time_perf_train) > 0:
+            print(">>> Training complete in:", str(self.stop_proc - self.start_proc))
+
+        if self.time_perf_train:
             print(
-                ">>> Training performance time: min {} avg {} seconds (+/- {})".format(
+                ">>> Training performance time: min {:.4f}, avg {:.4f} (+/- {:.4f})".format(
                     np.min(self.time_perf_train[1:]),
                     np.median(self.time_perf_train[1:]),
                     np.std(self.time_perf_train[1:]),
                 )
             )
-        if len(self.time_perf_load) > 0:
+
+        if self.time_perf_load:
             print(
-                ">>> Loading performance time: min {} avg {} seconds (+/- {})".format(
+                ">>> Loading performance time: min {:.4f}, avg {:.4f} (+/- {:.4f})".format(
                     np.min(self.time_perf_load[1:]),
                     np.mean(self.time_perf_load[1:]),
                     np.std(self.time_perf_load[1:]),
                 )
             )
-        if len(self.time_perf_forward) > 0:
+
+        if self.time_perf_forward:
             print(
-                ">>> Forward performance time: {} seconds (+/- {})".format(
+                ">>> Forward performance time: avg {:.4f} (+/- {:.4f})".format(
                     np.mean(self.time_perf_forward[1:]),
                     np.std(self.time_perf_forward[1:]),
                 )
             )
-        if len(self.time_perf_backward) > 0:
+
+        if self.time_perf_backward:
             print(
-                ">>> Backward performance time: {} seconds (+/- {})".format(
+                ">>> Backward performance time: avg {:.4f} (+/- {:.4f})".format(
                     np.mean(self.time_perf_backward[1:]),
                     np.std(self.time_perf_backward[1:]),
                 )
             )
-        if len(self.power) > 0:
-            print(">>> Peak Power during training: {} W)".format(np.max(self.power)))
+
+        if self.power:
+            print(">>> Peak Power during training: {:.2f} W".format(np.max(self.power)))
+
         if self.val_time:
-            print(">>> Validation time: {}".format(self.val_time))
-        if len(self.time_perf_train) > 0 and len(self.time_perf_load) > 0:
+            print(">>> Validation time:", self.val_time)
+
+        if self.time_perf_train and self.time_perf_load:
             print(">>> Sortie trace #####################################")
             print(
-                ">>>JSON",
+                ">>> JSON",
                 json.dumps(
                     {
                         "GPU process - Forward/Backward": self.time_perf_train,
