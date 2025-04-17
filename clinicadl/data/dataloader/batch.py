@@ -6,7 +6,7 @@ import torchio as tio
 from clinicadl.transforms.extraction import Sample
 
 
-class SimpleBatch(list):
+class SimpleBatch(list[Sample]):
     """
     A class to manage a batch of samples.
 
@@ -73,7 +73,7 @@ class SimpleBatch(list):
                 labels,
                 dtype=torch.float32,
             )
-        except TypeError:  # e.g. None in labels
+        except (TypeError, ValueError):  # e.g. None in labels
             return labels
 
 

@@ -20,24 +20,6 @@ TupleDataset = Union[PairedDataset, UnpairedDataset]
 Dataset = Union[SimpleDataset, TupleDataset]
 
 
-class _SimpleDataLoader(TorchDataLoaader):
-    """To type the iterator."""
-
-    def __iter__(
-        self,
-    ) -> Iterator[SimpleBatch]:
-        return super().__iter__()
-
-
-class _TupleDataLoader(TorchDataLoaader):
-    """To type the iterator."""
-
-    def __iter__(
-        self,
-    ) -> Iterator[tuple[SimpleBatch, ...]]:
-        return super().__iter__()
-
-
 class DataLoader(TorchDataLoaader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
@@ -59,6 +41,24 @@ class DataLoader(TorchDataLoaader):
             self.sampler.set_epoch(epoch)
         if isinstance(self.dataset, UnpairedDataset):
             self.dataset.set_epoch(epoch)
+
+
+class _SimpleDataLoader(DataLoader):
+    """To type the iterator."""
+
+    def __iter__(
+        self,
+    ) -> Iterator[SimpleBatch]:
+        return super().__iter__()
+
+
+class _TupleDataLoader(DataLoader):
+    """To type the iterator."""
+
+    def __iter__(
+        self,
+    ) -> Iterator[tuple[SimpleBatch, ...]]:
+        return super().__iter__()
 
 
 class DataLoaderConfig(ClinicaDLConfig):

@@ -6,8 +6,14 @@ import torch
 from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader.config import DataLoaderConfig
-from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.datasets import (
+    CapsDataset,
+    ConcatDataset,
+    PairedDataset,
+    UnpairedDataset,
+)
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Sample, Slice
@@ -35,9 +41,9 @@ GOOD_INPUTS = [
     {"sampling_weights": None, "num_workers": 1},
 ]
 
-caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
-data = pd.read_csv(caps_dir / "labels.tsv", sep="\t").drop(7)
-data["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
+CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
+DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t").drop(7)
+DATA["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
 
 
 @pytest.mark.parametrize("args", GOOD_INPUTS)
@@ -53,15 +59,25 @@ def test_bad_inputs(args: dict):
         DataLoaderConfig(**args)
 
 
-def test_get_dataloader():
+def test_get_object():
     caps = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
         label="age",
-        data=data,
+        data=DATA,
     )
+    caps_without_label = CapsDataset(
+        CAPS_DIR,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        data=DATA,
+    )
+    caps.read_tensor_conversion("pet_all")
+    caps_without_label.read_tensor_conversion("pet_all")
+
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         sampling_weights="age",
@@ -71,7 +87,7 @@ def test_get_dataloader():
         pin_memory=True,
         persistent_workers=True,
     )
-    dataloader = dataloader_config.get_dataloader(caps)
+    dataloader = dataloader_config.get_object(caps)
     assert dataloader.batch_size == 2
     assert dataloader.drop_last
     assert dataloader.num_workers == 1
@@ -81,39 +97,54 @@ def test_get_dataloader():
     assert dataloader.worker_init_fn == pl_worker_init_function
 
     # check sampler
+    torch.manual_seed(0)
     assert isinstance(dataloader.sampler, WeightedRandomSampler)
     assert (
         dataloader.sampler.weights == torch.Tensor([0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0])
     ).all()
     assert dataloader.sampler.num_samples == 7
     assert dataloader.sampler.replacement
+    batch = next(iter(dataloader))
+    assert isinstance(batch, SimpleBatch)
+    assert batch[0].participant == "sub-999"
+    assert batch[0].session == "ses-M099"
 
     dataloader_config = DataLoaderConfig(
         shuffle=True,
     )
-    dataloader = dataloader_config.get_dataloader(caps)
+    dataloader = dataloader_config.get_object(PairedDataset([caps, caps_without_label]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
     assert dataloader.sampler.rank == 0
+    batch = next(iter(dataloader))
+    assert isinstance(batch, tuple)
+    assert batch[0][0].participant == "sub-100"
+    assert batch[0][0].session == "ses-M000"
+    assert batch[0].get_labels() == torch.tensor([5.0])
+    assert batch[1].get_labels() == [None]
 
     dataloader_config = DataLoaderConfig(
         shuffle=False,
     )
-    dataloader = dataloader_config.get_dataloader(caps)
+    dataloader = dataloader_config.get_object(ConcatDataset([caps, caps_without_label]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert not dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
     assert dataloader.sampler.rank == 0
+    batch = next(iter(dataloader))
+    assert isinstance(batch, SimpleBatch)
+    assert batch[0].participant == "sub-000"
+    assert batch[0].session == "ses-M000"
 
-    # check weights
+    # checks
     dataloader_config = DataLoaderConfig(
         sampling_weights="sex",
     )
     with pytest.raises(
-        KeyError, match="Got 'sex' for 'sampling_weights' but there is no*"
+        KeyError, match="Failed to get the column 'sex' in the dataframe*"
     ):
-        dataloader_config.get_dataloader(caps)
+        dataloader_config.get_object(caps)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="session_id",
@@ -121,24 +152,44 @@ def test_get_dataloader():
     with pytest.raises(
         ValueError, match="Got 'session_id' for 'sampling_weights' but cannot convert*"
     ):
-        dataloader_config.get_dataloader(caps)
+        dataloader_config.get_object(caps)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="age",
     )
     with pytest.raises(ValueError, match="For data parallelism*"):
-        dataloader_config.get_dataloader(caps, rank=0)
+        dataloader_config.get_object(caps, rank=0)
+
+    with pytest.raises(
+        ValueError, match="Can't use 'sampling_weights' with UnpairedDataset."
+    ):
+        dataloader_config.get_object(UnpairedDataset([caps, caps]))
+
+    # tets other datasets
+    dataloader = DataLoaderConfig(batch_size=2).get_object(
+        UnpairedDataset([caps, caps_without_label])
+    )
+    dataloader.set_epoch(5)
+    batch = next(iter(dataloader))
+    assert isinstance(batch, tuple)
+    assert (batch[0].get_labels() == torch.tensor([1.0, 10.0])).all()
+    assert batch[1].get_labels() == [None, None]
+
+    dataloader = DataLoaderConfig(batch_size=5, shuffle=True).get_object(
+        ConcatDataset([caps, caps_without_label])
+    )
+    batch = next(iter(dataloader))
+    assert batch.get_labels() == [5.0, 1.0, None, 10.0, 1.0]
 
 
 def test_ddp():
-    caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
     caps = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
         label="age",
-        data=data,
+        data=DATA,
         transforms=Transforms(image_transforms=[]),
     )
     caps.read_tensor_conversion("pet_all")
@@ -147,14 +198,14 @@ def test_ddp():
         shuffle=False,
     )
 
-    dataloader = iter(dataloader_config.get_dataloader(caps, dp_degree=2, rank=0))
-    batch: list[Sample] = next(dataloader)
+    dataloader = iter(dataloader_config.get_object(caps, dp_degree=2, rank=0))
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M000"
     assert batch[0].participant == "sub-000"
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M000"
     assert batch[0].participant == "sub-100"
@@ -163,14 +214,14 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = iter(dataloader_config.get_dataloader(caps, dp_degree=2, rank=1))
-    batch: list[Sample] = next(dataloader)
+    dataloader = iter(dataloader_config.get_object(caps, dp_degree=2, rank=1))
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-000"
     assert batch[1].session == "ses-M012"
     assert batch[1].participant == "sub-010"
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2  # extra indices added
     assert batch[0].session == "ses-M012"
     assert batch[0].participant == "sub-100"
@@ -180,41 +231,44 @@ def test_ddp():
         next(dataloader)
 
     # shuffling
-    torch.manual_seed(0)
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         shuffle=True,
     )
 
-    dataloader = iter(dataloader_config.get_dataloader(caps, dp_degree=2, rank=0))
-    batch: list[Sample] = next(dataloader)
-    assert len(batch) == 2
-    assert batch[0].session == "ses-M000"
-    assert batch[0].participant == "sub-100"
-    assert batch[1].session == "ses-M012"
-    assert batch[1].participant == "sub-100"
-    batch: list[Sample] = next(dataloader)
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
+    dataloader.set_epoch(5)
+    dataloader = iter(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
-    assert batch[0].participant == "sub-010"
-    assert batch[1].session == "ses-M003"
-    assert batch[1].participant == "sub-000"
+    assert batch[0].participant == "sub-000"
+    assert batch[1].session == "ses-M000"
+    assert batch[1].participant == "sub-100"
+    batch = next(dataloader)
+    assert len(batch) == 2
+    assert batch[0].session == "ses-M099"
+    assert batch[0].participant == "sub-999"
+    assert batch[1].session == "ses-M012"
+    assert batch[1].participant == "sub-010"
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = iter(dataloader_config.get_dataloader(caps, dp_degree=2, rank=1))
-    batch: list[Sample] = next(dataloader)
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
+    dataloader.set_epoch(5)
+    dataloader = iter(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M000"
     assert batch[0].participant == "sub-000"
-    assert batch[1].session == "ses-M012"
+    assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2  # extra indices added
-    assert batch[0].session == "ses-M099"
-    assert batch[0].participant == "sub-999"
-    assert batch[1].session == "ses-M000"
-    assert batch[1].participant == "sub-100"
+    assert batch[0].session == "ses-M012"
+    assert batch[0].participant == "sub-100"
+    assert batch[1].session == "ses-M003"
+    assert batch[1].participant == "sub-000"
     with pytest.raises(StopIteration):
         next(dataloader)
 
@@ -224,17 +278,17 @@ def test_ddp():
         sampling_weights="age",
     )
 
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
     torch.manual_seed(0)
-    dataloader = dataloader_config.get_dataloader(caps, dp_degree=2, rank=0)
     assert dataloader.sampler.num_samples == 4
     dataloader = iter(dataloader)
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M099"
     assert batch[0].participant == "sub-999"
     assert batch[1].session == "ses-M012"
     assert batch[1].participant == "sub-100"
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M099"
     assert batch[0].participant == "sub-999"
@@ -243,16 +297,16 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = dataloader_config.get_dataloader(caps, dp_degree=2, rank=1)
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
     assert dataloader.sampler.num_samples == 3
     dataloader = iter(dataloader)
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M012"
     assert batch[0].participant == "sub-100"
     assert batch[1].session == "ses-M099"
     assert batch[1].participant == "sub-999"
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 1
     assert batch[0].session == "ses-M012"
     assert batch[0].participant == "sub-100"
@@ -261,7 +315,7 @@ def test_ddp():
 
     # weighting with slice
     sub_data = (
-        data.set_index(["participant_id", "session_id"])
+        DATA.set_index(["participant_id", "session_id"])
         .loc[
             [
                 ("sub-000", "ses-M000"),
@@ -271,7 +325,7 @@ def test_ddp():
         .reset_index()
     )
     caps = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing=T1Linear(use_uncropped_image=True),
         label="seg",
         data=sub_data,
@@ -280,17 +334,17 @@ def test_ddp():
     )
     caps.read_tensor_conversion("t1_without_transform")
 
-    torch.manual_seed(0)
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         sampling_weights="age",
     )
+    torch.manual_seed(0)
 
-    dataloader = dataloader_config.get_dataloader(caps, dp_degree=2, rank=0)
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
     assert (dataloader.sampler.weights == torch.Tensor([0, 0, 1, 1])).all()
     assert dataloader.sampler.num_samples == 2
     dataloader = iter(dataloader)
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-010"
@@ -301,11 +355,11 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = dataloader_config.get_dataloader(caps, dp_degree=2, rank=1)
+    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
     assert (dataloader.sampler.weights == torch.Tensor([0, 0, 1, 1])).all()
     assert dataloader.sampler.num_samples == 2
     dataloader = iter(dataloader)
-    batch: list[Sample] = next(dataloader)
+    batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-010"
