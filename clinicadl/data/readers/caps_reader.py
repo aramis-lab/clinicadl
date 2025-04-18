@@ -1,3 +1,4 @@
+from glob import glob
 from logging import getLogger
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
@@ -16,8 +17,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
 )
 from clinicadl.utils.typing import PathType
-
-from .utils import insensitive_glob
 
 logger = getLogger("clinicadl.data.readers.caps_reader")
 
@@ -234,7 +233,7 @@ class CapsReader(Reader):
         file_pattern = file_pattern.replace("ses-*", session)
         global_pattern = self.get_session_path(participant, session) / file_pattern
 
-        current_glob_found = insensitive_glob(str(global_pattern))
+        current_glob_found = glob(str(global_pattern))
         error_msg = (
             "An error occurred while trying to get images preprocessed with "
             f"'{preprocessing.name}' for ({participant} | {session}): "
@@ -376,7 +375,7 @@ class CapsReader(Reader):
         pattern = (
             self.subject_directory / "sub-*" / "ses-*" / preprocessing.file_type.pattern
         )
-        files_found = insensitive_glob(str(pattern), recursive=True)
+        files_found = glob(str(pattern))
         if len(files_found) == 0:
             raise ClinicaDLCAPSError("No image found for this preprocessing!")
 
