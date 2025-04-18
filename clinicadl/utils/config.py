@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from enum import Enum
@@ -11,6 +10,7 @@ from typing import Any, Callable, Dict
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from clinicadl.dictionary.words import NAME
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.json import read_json, update_json, write_json
 
 CONFIG = "Config"
@@ -55,11 +55,20 @@ class ClinicaDLConfig(BaseModel):
         """
         write_json(json_path=json_path, data=self.to_dict(), overwrite=overwrite)
 
-    def read_json(self, json_path: Path) -> Dict[str, Any]:
+    @classmethod
+    def read_json(cls, json_path: Path) -> Dict[str, Any]:
         """
         Reads the serialized config class from a JSON file.
         """
-        return read_json(json_path=json_path)
+        config_dict = read_json(json_path=json_path)
+
+        if set(config_dict.keys()) != set(cls.model_fields.keys()):
+            raise ClinicaDLArgumentError(
+                f"{json_path} is not a valid json file for {cls.__name__}. "
+                f"A valid file should contain the keys {list(cls.model_fields.keys())}."
+            )
+
+        return config_dict
 
     def update_json(self, json_path: Path) -> None:
         """

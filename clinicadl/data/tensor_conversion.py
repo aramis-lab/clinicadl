@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import json
 import warnings
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import numpy as np
 import torch
@@ -38,7 +37,7 @@ from .structures import DataPoint, Mask
 
 if TYPE_CHECKING:
     from .datasets import CapsDataset
-logger = getLogger("clinicadl.data.tesnor_conversion")
+logger = getLogger("clinicadl.data.tensor_conversion")
 
 
 class TensorConversionInfo(ClinicaDLConfig):
@@ -71,6 +70,40 @@ class TensorConversionInfo(ClinicaDLConfig):
         TransformConfigs.
         """
         return Transforms.serialize_transforms(transforms)
+
+    @classmethod
+    def from_json(cls, json_path: Path) -> TensorConversionInfo:
+        """
+        Reads information on a conversion.
+        """
+        info = cls.read_json(json_path)
+
+        try:
+            if isinstance(info["transforms"], list):
+                transforms = []
+                for transform in info["transforms"]:
+                    if isinstance(transform, dict):
+                        transforms.append(get_transform_config(**transform))
+                    else:  # a str describing the transform (see clinicadl.transforms.transforms.Transforms.serialize_transforms)
+                        transforms.append(transform)
+            else:
+                raise ClinicaDLTensorConversionError(
+                    f"{json_path} is not a valid tensor conversion file."
+                    "Value for 'transforms' should be a list."
+                )
+            del info["transforms"]
+
+            preprocessing = get_preprocessing_config(**info["preprocessing"])
+            del info["preprocessing"]
+
+            return TensorConversionInfo(
+                preprocessing=preprocessing, transforms=transforms, **info
+            )
+        except ValidationError as exc:
+            raise ClinicaDLTensorConversionError(
+                f"{json_path} is not a valid tensor conversion file."
+                "Some values have been corrupted and cannot be read."
+            ) from exc
 
 
 class TensorConversion:
@@ -183,7 +216,7 @@ class TensorConversion:
             all converted, etc.).
         """
         json_path = self._check_json_name(json_name)
-        conversion_info = self._read_json(json_path)
+        conversion_info = TensorConversionInfo.from_json(json_path)
         self._currently_reading = str(json_path)  # for potential error messages
 
         # do we talk about the same preprocessing?
@@ -611,68 +644,11 @@ class TensorConversion:
         self._compute_output_info()
         current_conversion = self.get_info()
         current_conversion.interrupted = interrupted
-        self._save_json(new_json, current_conversion)
-        self._update_old_jsons(current_conversion, new_json)
-
-    @staticmethod
-    def _save_json(json_path: Path, info: TensorConversionInfo) -> None:
-        """
-        Saves information on the conversion in a json file.
-        For reproducibility.
-        """
-        json_path.parent.mkdir(exist_ok=True)
-        with open(json_path, "w+") as f:
-            json.dump(info.to_dict(), f, indent=4)
-
-    @classmethod
-    def _read_json(cls, json_path: Path) -> TensorConversionInfo:
-        """
-        Reads information on a conversion.
-        """
-        info = cls._check_json(json_path)
-
         try:
-            if isinstance(info["transforms"], list):
-                transforms = []
-                for transform in info["transforms"]:
-                    if isinstance(transform, dict):
-                        transforms.append(get_transform_config(**transform))
-                    else:  # a str describing the transform (see clinicadl.transforms.transforms.Transforms.serialize_transforms)
-                        transforms.append(transform)
-            else:
-                raise ClinicaDLTensorConversionError(
-                    f"{json_path} is not a valid tensor conversion file."
-                    "Value for 'transforms' should be a list."
-                )
-            del info["transforms"]
-
-            preprocessing = get_preprocessing_config(**info["preprocessing"])
-            del info["preprocessing"]
-
-            return TensorConversionInfo(
-                preprocessing=preprocessing, transforms=transforms, **info
-            )
-        except ValidationError as exc:
-            raise ClinicaDLTensorConversionError(
-                f"{json_path} is not a valid tensor conversion file."
-                "Some values have been corrupted and cannot be read."
-            ) from exc
-
-    @staticmethod
-    def _check_json(json_path: Path) -> Dict[str, Any]:
-        """
-        Opens and checks a json conversion file.
-        """
-        with open(json_path, "r") as f:
-            info: dict = json.load(f)
-
-        if set(info.keys()) != set(TensorConversionInfo.model_fields.keys()):
-            raise ClinicaDLTensorConversionError(
-                f"{json_path} is not a valid tensor conversion file. "
-                f"Such a file should contain the keys {list(TensorConversionInfo.model_fields.keys())}."
-            )
-
-        return info
+            current_conversion.write_json(new_json)
+        except FileExistsError:  # resuming conversion
+            current_conversion.update_json(new_json)
+        self._update_old_jsons(current_conversion, new_json)
 
     def _update_old_jsons(
         self, current_conversion: TensorConversionInfo, new_json: Path
@@ -681,8 +657,8 @@ class TensorConversion:
         Iterates over all json files in 'tensor_conversion' and updates them.
         """
         for old_json_file in self.save_directory.iterdir():
-            if old_json_file != new_json:
-                old_conversion = self._read_json(old_json_file)
+            if old_json_file != new_json and old_json_file.suffix == JSON:
+                old_conversion = TensorConversionInfo.from_json(old_json_file)
 
                 if old_conversion.preprocessing == current_conversion.preprocessing:
                     self._update_participants_sessions(
@@ -691,7 +667,7 @@ class TensorConversion:
 
                 self._update_masks(old_conversion, current_conversion)
 
-                self._save_json(old_json_file, old_conversion)
+                old_conversion.update_json(old_json_file)
 
     def _update_participants_sessions(
         self,
@@ -784,7 +760,7 @@ class TensorConversion:
         Tries to merge old conversion in `json_path` with the current one.
         Checks beforehand that they match.
         """
-        conversion_info = self._read_json(json_path)
+        conversion_info = TensorConversionInfo.from_json(json_path)
         self._currently_reading = str(json_path)  # for potential error messages
 
         # check that .pt files contain the same things
