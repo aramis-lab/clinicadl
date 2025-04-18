@@ -1,7 +1,7 @@
 from typing import Iterator, Optional, Union, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
-from torch.utils.data import DataLoader as TorchDataLoaader
+from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
