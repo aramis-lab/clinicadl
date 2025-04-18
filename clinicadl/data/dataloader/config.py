@@ -20,7 +20,7 @@ TupleDataset = Union[PairedDataset, UnpairedDataset]
 Dataset = Union[SimpleDataset, TupleDataset]
 
 
-class DataLoader(TorchDataLoaader):
+class DataLoader(TorchDataLoader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
     """
