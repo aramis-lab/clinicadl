@@ -128,6 +128,7 @@ class PairedDataset(StackDataset):
         self,
         datasets: Iterable[CapsDataset],
     ):
+        assert len(datasets) >= 2, "PairedDataset needs at least 2 datasets to pair!"
         self._check_conversion(datasets)
         self.df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)

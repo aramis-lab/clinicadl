@@ -29,7 +29,7 @@ class Sample(DataPoint):
     image_path: PathType
     extraction: str
     preprocessing: Preprocessing
-    sample_index: int
+    _sample_index: int
 
     def get_tensors(self) -> dict[str, torch.Tensor]:
         """

@@ -165,7 +165,7 @@ class Split(ClinicaDLConfig):
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
             )
-        self.train_loader = self.train_loader_config.get_dataloader(
+        self.train_loader = self.train_loader_config.get_object(
             dataset=self.train_dataset,
             dp_degree=self._dp_degree,
             rank=self._rank,
@@ -239,7 +239,7 @@ class Split(ClinicaDLConfig):
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
             )
-        self.val_loader = self.val_loader_config.get_dataloader(
+        self.val_loader = self.val_loader_config.get_object(
             dataset=self.val_dataset,
             dp_degree=self._dp_degree,
             rank=self._rank,

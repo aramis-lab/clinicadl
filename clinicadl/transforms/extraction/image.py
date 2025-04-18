@@ -79,7 +79,7 @@ class Image(Extraction):
         sample = ImageSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            sample_index=sample_index,
+            _sample_index=sample_index,
         )
         sample.applied_transforms = extracted_datapoint.applied_transforms
 

@@ -4,3 +4,4 @@ DataLoader
 ==========
 
 .. autoclass:: clinicadl.data.dataloader.DataLoaderConfig
+    :members: get_object

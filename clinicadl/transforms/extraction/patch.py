@@ -135,7 +135,7 @@ class Patch(Extraction):
         sample = PatchSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            sample_index=sample_index,
+            _sample_index=sample_index,
             patch_index=sample_index,
             patch_size=self.patch_size,
             patch_stride=self.stride,

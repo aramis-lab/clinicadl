@@ -187,6 +187,7 @@ class UnpairedDataset(Dataset):
 
     def __init__(self, datasets: Iterable[CapsDataset], oversample: bool = False):
         super().__init__()
+        assert len(datasets) >= 2, "UnpairedDataset needs at least 2 datasets to stack!"
         self._check_conversion(datasets)
         self.df = self._concat_dfs(list(datasets))
         self.datasets = datasets
