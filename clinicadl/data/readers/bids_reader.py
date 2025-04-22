@@ -1,3 +1,4 @@
+from glob import glob
 from logging import getLogger
 from pathlib import Path
 
@@ -5,7 +6,6 @@ from clinicadl.data.datatypes.file_type import FileType
 from clinicadl.utils.exceptions import ClinicaDLBIDSError
 
 from .reader import Reader
-from .utils import insensitive_glob
 
 logger = getLogger("clinicadl.bids_reader")
 
@@ -140,7 +140,7 @@ class BidsReader(Reader):
         current_pattern = (
             self.get_session_path(participant, session) / "**" / file_type.pattern
         )
-        current_glob_found = insensitive_glob(str(current_pattern), recursive=True)
+        current_glob_found = glob(str(current_pattern))
 
         if len(current_glob_found) > 1:
             error_str = f"\t*  ({participant} | {session}): More than 1 file found:\n"
