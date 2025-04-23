@@ -47,7 +47,7 @@ dataset_t1_image = CapsDataset(
     transforms=transforms_image,
     label="diagnosis",
 )
-dataset_t1_image.to_tensors(json_name="test.json", n_proc=2)
+dataset_t1_image.to_tensors(json_name="test_bis.json", n_proc=2)
 
 
 # CAS CROSS-VALIDATION

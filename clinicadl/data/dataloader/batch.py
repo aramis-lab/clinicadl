@@ -40,7 +40,7 @@ class SimpleBatch(list[Sample]):
             If a tensor is returned, the first dimension is the batch
             dimension.
         """
-        images = [sample.image.tensor for sample in self]
+        images = [sample.image.tensor.squeeze(0) for sample in self]
         try:
             return torch.stack(images, dim=0)
         except RuntimeError:  # not the same shape
@@ -58,7 +58,7 @@ class SimpleBatch(list[Sample]):
             of the label is ``None``. Otherwise, it will be a tensor.
         """
         labels = [
-            sample.label.tensor
+            sample.label.tensor.squeeze(0)
             if isinstance(sample.label, tio.LabelMap)
             else sample.label
             for sample in self
@@ -72,7 +72,7 @@ class SimpleBatch(list[Sample]):
             return torch.tensor(
                 labels,
                 dtype=torch.float32,
-            )
+            ).unsqueeze(-1)
         except (TypeError, ValueError):  # e.g. None in labels
             return labels
 

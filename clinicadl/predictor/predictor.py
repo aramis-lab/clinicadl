@@ -15,15 +15,11 @@ from clinicadl.losses.config import LossConfig
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics import (
     ImplementedMetric,
-    get_metric_config,
-    get_metric_from_config,
 )
 from clinicadl.metrics.config.enum import Optimum
-from clinicadl.metrics.metrics import GroupMetrics, Metrics
 from clinicadl.model import ClinicaDLModel
 from clinicadl.networks.config import NetworkConfig
 from clinicadl.optim.config import OptimizationConfig
-from clinicadl.optim.optimizers import OptimizerConfig
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter import SingleSplit
 from clinicadl.transforms.extraction import Sample
@@ -50,10 +46,10 @@ class Predictor:
 
         self.maps = Maps(maps_path)
 
-        dict_ = self.maps.read_maps()
+        self.maps.load()
 
         if comp_config is None:
-            self.comp = ComputationalConfig(**dict_)
+            self.comp = ComputationalConfig.from_json(self.maps.computational_json)
         else:
             self.comp = comp_config
 
@@ -63,14 +59,14 @@ class Predictor:
                 "please load the model by yourseld and give it as argument to the Predictor"
             )
 
-            self.model = ClinicaDLModel.from_dict(dict_)
+            self.model = ClinicaDLModel.from_json(self.maps.model_json)
         else:
             self.model = model
 
     def validate(
         self,
         dataloader: DataLoader[CapsDataset],
-        metrics: GroupMetrics,
+        metrics,
         epoch: int = 0,
     ):
         self.model.network.eval()
@@ -91,7 +87,7 @@ class Predictor:
                     # loss = self.model.loss(outputs, labels)
                     # I think loss is one of callable metrics
 
-                    for callable_metric in metrics._callable_metrics.values():
+                    for callable_metric in metrics.selection_metrics.values():
                         callable_metric(outputs, labels)
 
             metrics.aggregate(epoch=epoch)
@@ -208,7 +204,7 @@ class Predictor:
     def predict(
         self,
         dataloader: DataLoader[CapsDataset],
-        metrics: Metrics,
+        metrics,
         split: int,
         data_group: str,
         transforms: Optional[OutputTransforms] = None,

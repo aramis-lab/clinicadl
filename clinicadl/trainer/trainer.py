@@ -15,7 +15,7 @@ from torch.amp.grad_scaler import GradScaler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 
-from clinicadl.data.dataloader import BatchLoader
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config.enum import Optimum
@@ -63,11 +63,10 @@ class Trainer:
             self.train_metrics = deepcopy(metrics)
             self.train_metrics._init_with_loss(model.loss)
 
-        self.training_loss = pd.DataFrame(columns=["epoch", "batch", "time", "loss"])
-        self.training_loss.set_index(["epoch", "batch"], inplace=True)
-        self.training_loss.at[(0, 0), "time"] = 0.0
+        self.training_loss = self.init_training_loss()
+
         # will be different if resume is called
-        self.current_epoch: int = 0
+        self.epoch: int = 0
 
         self.early_stopping = self.optim.init_early_stopping()
         self.scaler = self.comp.init_scaler()
@@ -79,7 +78,7 @@ class Trainer:
         self.chrono = Chronometer()
 
         ## MAPS CONFIG
-        self.maps = self.init_maps(maps_path, overwrite=_overwrite)
+        self.init_maps(maps_path, overwrite=_overwrite)
 
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
@@ -119,18 +118,27 @@ class Trainer:
             _overwrite=False,
         )
 
-    def init_maps(self, maps_path: PathType, overwrite: bool) -> Maps:
+    def init_maps(self, maps_path: PathType, overwrite: bool):
         """TO COMPLETE"""
-        maps = Maps(maps_path)
+        self.maps = Maps(maps_path)
         if overwrite:
-            if maps.exists():
-                remove_non_empty_dir(maps.path)
+            if self.maps.exists():
+                remove_non_empty_dir(self.maps.path)
         else:
-            if maps.exists():
+            if self.maps.exists():
                 raise ClinicaDLMAPSError(
-                    f"The maps directory {maps.path} already exists. Use overwrite=True to remove it."
+                    f"The maps directory {self.maps.path} already exists. Use overwrite=True to remove it."
                 )
-        return maps
+
+        self.write_infos()
+
+    def init_training_loss(self) -> pd.DataFrame:
+        """TO COMPLETE"""
+        training_loss = pd.DataFrame(columns=["epoch", "batch", "time", "Loss"])
+        training_loss.set_index(["epoch", "batch"], inplace=True)
+        training_loss.at[(0, 0), "time"] = 0.0
+
+        return training_loss
 
     def write_infos(self):
         """TO COMPLETE"""
@@ -153,7 +161,7 @@ class Trainer:
             )
 
         self.model.load_optim_state_dict(self.maps.splits[split.index].tmp.optimizer)
-        self.current_epoch = self.model.load_network_state_dict(
+        self.epoch = self.model.load_network_state_dict(
             self.maps.splits[split.index].tmp.optimizer
         )
         # TODO: need to resume the lr scheduler and the distributed Sampler
@@ -164,8 +172,9 @@ class Trainer:
     def train(self, split: Split):
         """TO COMPLETE"""
 
-        self.write_infos()
         self.on_train_begin(split)
+        print("self epoch : ", self.epoch)
+        print("self get loss : ", self.metrics.get_loss())
 
         while self.epoch < self.optim.epochs and not self.early_stopping.step(
             self.metrics.get_loss()
@@ -182,7 +191,6 @@ class Trainer:
                 self.weights_update()
 
                 self.on_batch_end(batch_idx=batch_idx, loss=loss)
-
             self.on_epoch_end(split)
 
         self.on_train_end(split)
@@ -193,17 +201,19 @@ class Trainer:
         self.create_split(split)  # not sure if needed
         self.model.train()
 
-        self.epoch = (
-            self.current_epoch
-        )  # will be different if resume or transfer learning
-
         self.n_batch = len(split.train_loader)
         self.n_val_batch = len(split.val_loader)
 
+        self.reset()
         self._init_scheduler()
-        self.chrono.start()
 
         # self.metrics.on_train_begin()
+
+    def reset(self):
+        """TO COMPLETE"""
+        self.epoch = 0
+        self.metrics.reset(df=True)
+        self.chrono.start()
 
     def on_epoch_begin(self):
         """TO COMPLETE"""
@@ -215,7 +225,7 @@ class Trainer:
         """TO COMPLETE"""
         pass
 
-    def training_step(self, data: BatchLoader):
+    def training_step(self, data: Batch):
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
@@ -330,11 +340,8 @@ class Trainer:
         """Save the metrics in the MAPS."""
         """Creates a training.tsv file."""
 
-        for name, _ in self.metrics.selection_metrics.items():
-            df_to_tsv(
-                maps.splits[split].best_metrics[name].val.metrics_tsv,
-                self.metrics._df,
-            )
+        self.metrics.save(maps.splits[split].best_metrics)
+
         training_tsv = maps.splits[split].logs.training_tsv
         (training_tsv.parent).mkdir(parents=True, exist_ok=True)
         self.training_loss.to_csv(training_tsv, sep="\t", index=True)
@@ -359,8 +366,10 @@ class Trainer:
             "epoch": self.epoch,
         }
         checkpoint_path = self.maps.splits[split].tmp.path / "checkpoint.pth.tar"
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(model_weights, checkpoint_path)
-
+        print(split)
+        print(self.epoch)
         for name, metric_config in self.metrics.selection_metrics.items():
             metric_path = self.maps.splits[split].best_metrics[name].path
             metric_path.mkdir(parents=True, exist_ok=True)
@@ -372,15 +381,15 @@ class Trainer:
                 or (
                     optimum == Optimum.MAX
                     and (
-                        self.metrics._df.at(self.epoch, name)
-                        > self.metrics._df.at(self.epoch - 1, name)
+                        self.metrics.get_value(self.epoch, name)
+                        > self.metrics.get_value(self.epoch - 1, name)
                     )
                 )
                 or (
                     optimum == Optimum.MIN
                     and (
-                        self.metrics._df.at(self.epoch, name)
-                        < self.metrics._df.at(self.epoch - 1, name)
+                        self.metrics.get_value(self.epoch, name)
+                        < self.metrics.get_value(self.epoch - 1, name)
                     )
                 )
             ):

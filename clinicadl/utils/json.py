@@ -3,6 +3,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
 
+import torch
+
 
 def read_json(json_path: Path) -> Dict[str, Any]:
     """
@@ -32,7 +34,7 @@ def write_json(json_path: Path, data: Dict[str, Any], overwrite: bool = False) -
     elif json_path.is_file() and overwrite:
         json_path.unlink()
 
-    with open(json_path, "w") as json_file:
+    with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(data, json_file, indent=4, default=path_encoder)
 
 
@@ -62,15 +64,20 @@ def path_encoder(obj):
     Recursively convert Path objects to strings in dicts
     where keys suggest they point to filesystem paths.
     """
+    print(f"Encoding {obj} of type {type(obj)}")
+    if isinstance(obj, list):
+        return [path_encoder(item) for item in obj]
+    if isinstance(obj, torch.nn.modules.Module):
+        return obj.__class__.__name__
     if isinstance(obj, Path):
         return obj.as_posix()
 
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         for key, value in obj.items():
             obj[key] = path_encoder(value)
         return obj
-    else:
-        return obj
+
+    return obj
 
 
 def path_decoder(obj):
