@@ -2,14 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Union
+from typing import List, Union
 
 import pandas as pd
-from pydantic import (
-    field_validator,
-)
+from pydantic import field_validator
 
-from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.dictionary.words import BASELINE
@@ -19,7 +16,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 
 class SubjectsSessionsSplit(ClinicaDLConfig):
     """
-    Dataclass to store train and validation splits for subjects and sessions.
+    Dataclass to store training and validation sets for a split.
     """
 
     training: pd.DataFrame
@@ -124,6 +121,11 @@ class Splitter(ABC):
     split_dir : Path
         The split directory, returned by :py:func:`clinicadl.splitter.make_split`
         or :py:func:`clinicadl.splitter.make_kfold`.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``split_dir`` does not exist or if a required file is missing in this directory.
     """
 
     def __init__(self, split_dir: Path):
@@ -139,32 +141,6 @@ class Splitter(ABC):
     @abstractmethod
     def _associated_config(self) -> type[SplitterConfig]:
         """The config class associated to the splitter."""
-
-    @abstractmethod
-    def get_splits(
-        self, dataset: Dataset, splits: Optional[Sequence[int]] = None
-    ) -> Union[Split, Generator[Split, None, None]]:
-        """
-        Split the dataset and yield splits by their indices.
-
-        Parameters
-        ----------
-        splits : Sequence[int]
-            Indices of the splits to retrieve.
-
-        Yields
-        ------
-        Split
-            A :py:class:`~clinicadl.splitter.Split` object, with the training and validation datasets for
-            the requested split.
-
-        Raises
-        ------
-        ValueError
-            If the requested split indices are out of range or no splits are available.
-        IndexError
-            If one of the requested split indices is out of range.
-        """
 
     def _get_split(
         self,

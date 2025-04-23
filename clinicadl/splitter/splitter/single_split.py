@@ -1,9 +1,8 @@
-from pathlib import Path
-from typing import List, Optional, Sequence, Union
+from typing import List, Union
 
 from pydantic import NonNegativeFloat, field_validator
 
-from clinicadl.data.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.types import Dataset
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter.splitter import (
     Splitter,
@@ -14,7 +13,7 @@ from clinicadl.splitter.splitter.splitter import (
 
 class SingleSplitConfig(SplitterConfig):
     """
-    Configuration for single split.
+    Configuration for simple split.
     """
 
     _json_name: str = "single_split_config"
@@ -37,31 +36,46 @@ class SingleSplitConfig(SplitterConfig):
 
 
 class SingleSplit(Splitter):
+    """
+    To handle a single split, as opposed to :py:class:`~clinicadl.splitter.KFold`.
+
+    This object will read a split directory returned by :py:func:`~clinicadl.splitter.make_split`,
+    and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or
+    :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`,
+    :py:class:`~clinicadl.data.datasets.UnpairedDataset`) using :py:meth:`~SingleSplit.get_split`,
+    provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
+
+    Parameters
+    ----------
+    split_dir : Path
+        The split directory, returned by :py:func:`~clinicadl.splitter.make_split`.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``split_dir`` does not exist or if a required file is missing in this directory.
+    """
+
     @property
     def _associated_config(self) -> type[SingleSplitConfig]:
         """The config class associated to the splitter."""
         return SingleSplit
 
-    def get_splits(
-        self, dataset: CapsDataset, splits: Optional[Sequence[int]] = None
-    ) -> Split:
+    def get_split(self, dataset: Dataset) -> Split:
         """
-        Yield dataset splits by their indices.
+        Splits a dataset according to the split found
+        in the split directory.
 
         Parameters
         ----------
-        splits : Sequence[int]
-            Indices of the splits to retrieve.
+        dataset : Dataset
+            The dataset to split.
 
-        Yields
-        ------
+        Returns
+        -------
         Split
-            The train and validation datasets for each requested split.
-
-        Raises
-        ------
-        ValueError
-            If the requested split indices are out of range or no splits are available.
+            A :py:class:`~clinicadl.splitter.Split` object, with the training and validation datasets for
+            the requested split.
         """
         return self._get_split(dataset)[0]
 

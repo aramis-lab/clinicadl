@@ -33,7 +33,7 @@ def make_kfold(
 
     .. note::
         ``make_kfold`` splits the **participants** in your data. This means that, if all the participants don't have the
-        same number of sessions, you may likely end up with training/validation sets of different sizes across your folds.
+        same number of sessions, you may likely end up with training/validation sets of different sizes across your splits.
         Besides, by default, only one session per participant is kept in the validation sets (see ``longitudinal``).
 
     Parameters
@@ -100,7 +100,6 @@ def make_kfold(
         baseline_df[config.stratification] if config.stratification else None
     )
 
-    # Create K-Fold splits
     if config.stratification:
         skf = StratifiedKFold(n_splits=config.n_splits, shuffle=True, random_state=seed)
     else:
@@ -112,7 +111,7 @@ def make_kfold(
         train_df = baseline_df.iloc[train_idx]
         val_df = baseline_df.iloc[val_idx]
 
-        split_dir = config.get_fold_dir(i)
+        split_dir = config.get_split_subdir(i)
 
         write_to_tsv(val_df, split_dir, config.subset_name, df, config.longitudinal)
         write_to_tsv(

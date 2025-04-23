@@ -3,9 +3,8 @@ from typing import Generator, List, Optional, Sequence, Union
 
 from pydantic import PositiveInt
 
-from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.types import Dataset
-from clinicadl.dictionary.words import FOLD
+from clinicadl.dictionary.words import SPLIT
 from clinicadl.splitter.split import Split
 from clinicadl.splitter.splitter.splitter import (
     Splitter,
@@ -24,35 +23,52 @@ class KFoldConfig(SplitterConfig):
     n_splits: PositiveInt
     stratification: Union[str, bool]
 
-    def get_fold_dir(self, fold: int) -> Path:
+    def get_split_subdir(self, split: int) -> Path:
         """
-        Returns the directory of a fold of a K-Fold, and creates the directory if it does not
+        Returns the subdirectory of a split of a K-Fold, and creates this directory if it does not
         exist yet.
 
         Parameters
         ----------
-        fold : int
-            The index of the fold.
+        split : int
+            The index of the split.
 
         Returns
         -------
         Path
-            The path to the fold directory.
+            The path to the split subdirectory.
         """
-        split_dir = self.split_dir / f"{FOLD}-{fold}"
+        split_dir = self.split_dir / f"{SPLIT}-{split}"
         split_dir.mkdir(parents=True, exist_ok=True)
         return split_dir
 
     def _check_split_dirs(self) -> None:
-        """Checks all the fold directories."""
+        """Checks all the splits directories."""
         for i in range(self.n_splits):
-            self._check_split_dir(self.get_fold_dir(i))
+            self._check_split_dir(self.get_split_subdir(i))
 
 
 class KFold(Splitter):
     """
-    Handles K-Fold cross-validation with optional stratification and demographic balancing.
-    Allows saving, reading, and iterating over splits for reproducibility.
+    To handle a K-Fold cross-validator.
+
+    This object will read a split directory returned by :py:func:`~clinicadl.splitter.make_kfold`,
+    and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or
+    :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`,
+    :py:class:`~clinicadl.data.datasets.UnpairedDataset`) using :py:meth:`~KFold.get_splits`,
+    provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
+
+    Parameters
+    ----------
+    split_dir : Path
+        The split directory, returned by :py:func:`~clinicadl.splitter.make_kfold``
+
+    FileNotFoundError
+        If ``split_dir`` does not exist or if a required file is missing in this directory.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.splitter.SingleSplit`
     """
 
     @property
@@ -64,22 +80,24 @@ class KFold(Splitter):
         self, dataset: Dataset, splits: Optional[Sequence[int]] = None
     ) -> Generator[Split, None, None]:
         """
-        Yield dataset splits by their indices.
+        Splits a dataset according to the splits found in the K-Fold directory, and
+        yields the splits by their indices.
 
         Parameters
         ----------
-        splits : Sequence[int]
-            Indices of the splits to retrieve.
+        splits : Optional[Sequence[int]], (optional, default=None)
+            Indices of the splits to get. If ``None``, will return all the splits.
 
         Yields
         ------
         Split
-            The train and validation datasets for each requested split.
+            The train and validation datasets for each requested split, in a :py:class:`~clinicadl.splitter.Split`
+            object.
 
         Raises
         ------
-        ValueError
-            If the requested split indices are out of range or no splits are available.
+        IndexError
+            If one of the requested split indices is out of range.
         """
         if splits is None:
             splits = list(range(self.config.n_splits))
@@ -87,16 +105,16 @@ class KFold(Splitter):
         for split in splits:
             if split not in range(self.config.n_splits):
                 raise IndexError(
-                    f"Split-{split} doesn't exist. There are {self.config.n_splits} splits, numbered from 0 to {self.config.n_splits - 1}."
+                    f"Split '{split}' doesn't exist. There are {self.config.n_splits} splits, numbered from 0 to {self.config.n_splits - 1}."
                 )
             yield self._get_split(split_id=split, dataset=dataset)
 
     def _read_splits(self) -> List[SubjectsSessionsSplit]:
         """
-        Load all folds in 'split_dir' from the tsv files.
+        Load all splits in 'split_dir' from the tsv files.
         """
         self.config: KFoldConfig
         return [
-            self._read_split(self.config.get_fold_dir(i))
+            self._read_split(self.config.get_split_subdir(i))
             for i in range(self.config.n_splits)
         ]
