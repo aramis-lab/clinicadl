@@ -3,8 +3,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
 
-from clinicadl.dictionary.words import NAME
-
 
 def read_json(json_path: Path) -> Dict[str, Any]:
     """
@@ -12,7 +10,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     """
 
     if not json_path.is_file():
-        raise FileNotFoundError(f"This json file {json_path} does not exist.")
+        raise FileNotFoundError(f"The json file {json_path} does not exist.")
 
     with open(json_path, "r") as json_file:
         try:

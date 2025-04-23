@@ -1,4 +1,4 @@
-from typing import Iterator, Optional, Union, overload
+from typing import Iterator, Optional, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
 from torch.utils.data import DataLoader as TorchDataLoaader
@@ -6,18 +6,14 @@ from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
     CapsDataset,
-    ConcatDataset,
     PairedDataset,
     UnpairedDataset,
 )
+from clinicadl.data.datasets.types import Dataset, SimpleDataset, TupleDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
 from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
-
-SimpleDataset = Union[CapsDataset, ConcatDataset]
-TupleDataset = Union[PairedDataset, UnpairedDataset]
-Dataset = Union[SimpleDataset, TupleDataset]
 
 
 class DataLoader(TorchDataLoaader):

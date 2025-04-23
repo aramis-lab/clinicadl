@@ -26,10 +26,7 @@ from clinicadl.dictionary.words import (
 )
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.tsvtools.utils import (
-    check_df,
-    tsv_to_df,
-)
+from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
@@ -424,7 +421,9 @@ class CapsDataset(Dataset):
         ClinicaDLTSVError
             If some (participant, session) pairs mentioned in ``data`` are not in the current CapsDataset.
         """
-        new_df = self._check_data_instance(data).set_index([PARTICIPANT_ID, SESSION_ID])
+        new_df = read_data(data, check_protected_names=False).set_index(
+            [PARTICIPANT_ID, SESSION_ID]
+        )
 
         try:
             subset_df = (
@@ -621,7 +620,7 @@ class CapsDataset(Dataset):
         """
         if isinstance(label, str):
             if label in self.df.columns:
-                if isinstance(self.df[label].iloc[0], str):
+                if not pd.api.types.is_numeric_dtype(self.df[label]):
                     label_list = self.df[label].unique()
                     if len(label_list) > 5:
                         raise ClinicaDLArgumentError(
@@ -727,23 +726,9 @@ class CapsDataset(Dataset):
                 f"'data' must be a Pandas DataFrame, a path to a TSV file or None. Got {data}"
             )
 
-        df = self._check_data_instance(data)
+        df = read_data(data)
 
         return deepcopy(df)
-
-    @staticmethod
-    def _check_data_instance(data: DataType) -> pd.DataFrame:
-        """
-        Checks the DataFrame passed by the user (either as a DataFrame or
-        as a path to a TSV). Returns the checked DataFrame.
-        """
-        if isinstance(data, (str, Path)):
-            path = Path(data)
-            df = tsv_to_df(path)
-        elif isinstance(data, pd.DataFrame):
-            df = check_df(data)
-
-        return df  # pylint: disable=possibly-used-before-assignment
 
     ### for __getitem__ ###
     def _get_meta_data(self, idx: int) -> Tuple[str, str, int]:

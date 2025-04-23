@@ -4,18 +4,194 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import PositiveFloat
+from pydantic import NonNegativeFloat
 from scipy.stats import chisquare, ttest_ind
 from sklearn.model_selection import ShuffleSplit
 
-from clinicadl.splitter.make_splits.utils import write_to_csv
-from clinicadl.splitter.split import Split
+from clinicadl.dictionary.words import SPLIT
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
-from clinicadl.tsvtools.utils import extract_baseline, tsv_to_df
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import DataType, PathType
 
-logger = getLogger("clinicadl.splitter.single_split")
+from .utils import (
+    extract_baseline,
+    find_available_split_dir,
+    read_and_format_data,
+    write_to_tsv,
+)
+
+logger = getLogger("clinicadl.splitter.make_splits.single_split")
+
+
+def make_split(
+    data: DataType,
+    n_test: NonNegativeFloat = 0.1,
+    output_dir: Optional[PathType] = None,
+    subset_name: str = "test",
+    stratification: Union[List[str], bool] = False,
+    p_categorical_threshold: float = 0.80,
+    p_continuous_threshold: float = 0.80,
+    longitudinal: bool = False,
+    n_try_max: int = 1000,
+    seed: Optional[int] = None,
+) -> Path:
+    """
+    Perform a single train-test split of the dataset with optional stratification.
+
+    Stratification can be performed based on one or several variables present in the DataFrame:
+
+    - If a variable is **categorical**, a `chi-squared test <https://en.wikipedia.org/wiki/Chi-squared_test>`_
+    is performed to check that the train and test sets have the same distribution.
+    - If a variable is **continuous**, a `t-test <https://en.wikipedia.org/wiki/Chi-squared_test>`_ on the means
+    is performed.
+
+    ``make_split`` will try random splits until one split shows p-values greater than ``p_categorical_threshold`` for all
+    categorical variables used for stratification, and greater than ``p_continuous_threshold`` for all continuous variables.
+    So, ``p_categorical_threshold`` and ``p_continuous_threshold`` controls the required level of similarity between the train
+    and the test distribution. The higher the threshold, the more demanding the similarity test. So, too high a threshold may
+    prevent you from finding a valid split.
+
+    Parameters
+    ----------
+    data: Union[pd.DataFrame, Path, str],
+        A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
+        pairs to split.
+    n_test : PositiveFloat, (optional, default=0.1)
+        If ``>= 1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all participants
+        to have in the test data.
+
+        .. note::
+            Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
+            of your data in the training set, but rather that you have 80% of you participants in the training set.
+
+    output_dir : Optional[Path, str], (optional, default=None)
+        Directory where to save the output files of the split. If ``data`` is a path and ``output_dir`` is not passed,
+        the parent directory of the DataFrame will be used.
+    subset_name : str, (optional, default="test")
+        Name for the test subset.
+    stratification : Union[List[str], bool], (optional, default=False)
+        Whether to perform stratification. If ``True``, the columns ``age`` and ``sex`` will be used for stratification.
+        If a list of ``str`` is passed, these columns will be used.
+    p_categorical_threshold : float, (optional, default=0.80)
+        Threshold for acceptable categorical stratification. Must be ``between 0 and 1``.
+    p_continuous_threshold : float, (optional, default=0.80)
+        Threshold for acceptable continuous stratification. Must be ``between 0 and 1``.
+    longitudinal : bool, (optional, default=False)
+        Whether to include only the baseline sessions in the test data (``longitudinal=False``). If ``True``, all the sessions
+        of the test participants will be included. No matter this argument, all sessions are always kept in the training set.
+    n_try_max : int, (optional, default=1000)
+        Maximum number of attempts to find a valid split.
+    seed : Optional[int], (optional, default=None)
+        Seed to control the randomness of the split. Useful for reproducibility.
+
+    Returns
+    -------
+    Path
+        Directory containing the split files.
+
+    Raises
+    ------
+    ValueError
+        If ``data`` is a DataFrame and no ``output_dir`` is passed.
+    ClinicaDLTSVError
+        If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
+    KeyError
+        If the stratification columns mentioned via ``stratification`` cannot be found in the DataFrame.
+    ClinicaDLConfigurationError
+        If no good split was found after ``n_try_max`` tries.
+    """
+    df = read_and_format_data(data)
+
+    if isinstance(data, (str, Path)):
+        output_dir = output_dir or data.parent
+    elif isinstance(data, pd.DataFrame) and not output_dir:
+        raise ValueError("You must specify the output directory.")
+    output_dir = Path(output_dir)
+
+    stratification = _validate_stratification(df, stratification)
+    baseline_df = extract_baseline(df, columns=stratification)
+
+    n_test = int(n_test) if n_test >= 1 else int(n_test * len(baseline_df))
+
+    split_dir = find_available_split_dir(output_dir, SPLIT)
+    config = SingleSplitConfig(
+        split_dir=split_dir,
+        subset_name=subset_name,
+        longitudinal=longitudinal,
+        n_test=n_test,
+        p_continuous_threshold=p_continuous_threshold,
+        p_categorical_threshold=p_categorical_threshold,
+        stratification=stratification,
+    )
+
+    continuous_labels, categorical_labels = _categorize_labels(
+        df=baseline_df,
+        stratification=config.stratification,
+        n_test=config.n_test,
+    )
+
+    if config.n_test == 0:
+        train_df = baseline_df
+
+    else:
+        splits = ShuffleSplit(
+            n_splits=n_try_max, test_size=config.n_test, random_state=seed
+        )
+        for n_try, (train_index, test_index) in enumerate(
+            splits.split(baseline_df), start=1
+        ):
+            p_continuous = _compute_continuous_p_value(
+                continuous_labels,
+                baseline_df,
+                train_index.tolist(),
+                test_index.tolist(),
+            )
+
+            if p_continuous >= p_continuous_threshold:
+                p_categorical = _compute_categorical_p_value(
+                    categorical_labels,
+                    baseline_df,
+                    train_index.tolist(),
+                    test_index.tolist(),
+                )
+
+                if p_categorical >= p_categorical_threshold:
+                    logger.info(f"Valid split found after {n_try} attempts.")
+
+                    test_df = baseline_df.loc[test_index]
+                    train_df = baseline_df.loc[train_index]
+
+                    _write_continuous_stats(
+                        config.split_dir / "split_continuous_stats.tsv",
+                        continuous_labels,
+                        test_df,
+                        train_df,
+                        subset_name,
+                    )
+                    _write_categorical_stats(
+                        config.split_dir / "split_categorical_stats.tsv",
+                        categorical_labels,
+                        test_df,
+                        train_df,
+                        subset_name,
+                    )
+                    write_to_tsv(
+                        test_df, config.split_dir, subset_name, df, longitudinal
+                    )
+                    break
+
+        else:
+            raise ClinicaDLConfigurationError(
+                f"Unable to find a valid split after {n_try_max} attempts. "
+                "Consider lowering thresholds or removing some stratification variables."
+            )
+
+    write_to_tsv(
+        train_df, config.split_dir, config._training_subset_name, df, longitudinal=True
+    )
+    config.write_json()
+
+    return config.split_dir
 
 
 def _validate_stratification(
@@ -36,13 +212,6 @@ def _validate_stratification(
     -------
     List[str], optional
         Validated list of stratification columns or None if no stratification is applied.
-
-    Raises
-    ------
-    ValueError
-        If specified stratification columns are missing or if stratification conflicts with demographic handling.
-    ClinicaDLTSVError
-        If required demographic columns ('age', 'sex') are missing when not ignored.
     """
 
     if isinstance(stratification, bool):
@@ -53,20 +222,20 @@ def _validate_stratification(
 
     if isinstance(stratification, list):
         if not set(stratification).issubset(df.columns):
-            raise ValueError(
-                f"Invalid stratification columns: {set(stratification) - set(df.columns)}"
+            raise KeyError(
+                f"Invalid stratification columns (not found in the dataframe): {set(stratification) - set(df.columns)}"
             )
         return stratification
 
     raise ValueError(
-        "Invalid stratification option. Stratification must be a list of column names or a boolean."
+        f"Invalid stratification option. Stratification must be a list of column names or a boolean. Got: {stratification}"
     )
 
 
 def _categorize_labels(
     df: pd.DataFrame,
     stratification: Union[List[str], bool],
-    n_test: int = 100,
+    n_test: int,
 ) -> Tuple[List[str], List[str]]:
     """
     Categorize stratification columns into continuous and categorical labels.
@@ -85,10 +254,8 @@ def _categorize_labels(
     Tuple[List[str], List[str]]
         Continuous and categorical labels.
     """
-    columns = _validate_stratification(df, stratification)
-
     continuous_labels, categorical_labels = [], []
-    for col in columns:
+    for col in stratification:
         if pd.api.types.is_numeric_dtype(df[col]) and df[col].nunique() >= (n_test / 2):
             continuous_labels.append(col)
         else:
@@ -96,181 +263,7 @@ def _categorize_labels(
     return continuous_labels, categorical_labels
 
 
-def _chi2_test(x_test: List[int], x_train: List[int]) -> float:
-    """
-    Perform the Chi-squared test on categorical data.
-
-    Parameters
-    ----------
-    x_test : np.ndarray
-        Test data.
-    x_train : np.ndarray
-        Train data.
-
-    Returns
-    -------
-    float
-        p-value from the Chi-squared test.
-    """
-    unique_categories = np.unique(np.concatenate([x_test, x_train]))
-
-    # Calculate observed (test) and expected (train) frequencies as raw counts
-    f_obs = np.array([(x_test == category).sum() for category in unique_categories])
-    f_exp = np.array(
-        [
-            (x_train == category).sum() / len(x_train) * len(x_test)
-            for category in unique_categories
-        ]
-    )
-
-    _, p_value = chisquare(f_obs, f_exp)
-
-    return p_value
-
-
-def make_split(
-    data: DataType,
-    output_dir: Optional[PathType] = None,
-    n_test: PositiveFloat = 100,
-    subset_name: str = "test",
-    p_categorical_threshold: float = 0.50,
-    p_continuous_threshold: float = 0.50,
-    stratification: Union[List[str], bool] = False,
-    valid_longitudinal=False,
-    n_try_max: int = 1000,
-):
-    """
-    Perform a single train-test split of the dataset with stratification.
-
-    Parameters
-    ----------
-    data: Union[pd.DataFrame, Path, str],
-        Path to the TSV file or a DataFrame containing participant/session pairs.
-    output_dir : Optional[Path, str]
-        Directory to save the split files.
-    n_test : PositiveFloat
-        If >= 1, specifies the absolute number of test samples. If < 1, treated as a proportion of the dataset.
-    subset_name : str
-        Name for the test subset.
-    p_categorical_threshold : float
-        Threshold for acceptable categorical stratification.
-    p_continuous_threshold : float
-        Threshold for acceptable continuous stratification.
-    stratification : Union[List[str], bool], default=False
-        Columns to use for stratification. If True, columns are 'age' and 'sex', if False, there is no stratification.
-    valid_longitudinal : bool
-        Include longitudinal sessions if True.
-    n_try_max : int
-        Maximum number of attempts to find a valid split.
-
-    Returns
-    -------
-    Path
-        Directory containing the split files.
-    """
-    if isinstance(data, str) or isinstance(data, Path):
-        data = Path(data)
-
-        # Set default output directory
-        output_dir = output_dir or data.parent
-        # Load dataset and preprocess
-        df = tsv_to_df(data)
-
-    elif isinstance(data, pd.DataFrame):
-        if not output_dir:
-            raise ValueError("You must specify the output directory.")
-
-        if data.empty:
-            raise ClinicaDLTSVError(f"The input data is empty: {data}")
-        else:
-            df = data
-
-    output_dir = Path(output_dir)
-    baseline_df = extract_baseline(df)
-
-    n_test = int(n_test) if n_test >= 1 else int(n_test * len(baseline_df))
-
-    continuous_labels, categorical_labels = _categorize_labels(
-        df=baseline_df,
-        stratification=stratification,
-        n_test=n_test,
-    )
-
-    # Initialize SingleSplit configuration
-    config = SingleSplitConfig(
-        split_dir=output_dir,
-        subset_name=subset_name,
-        valid_longitudinal=valid_longitudinal,
-        n_test=n_test,
-        p_continuous_threshold=p_continuous_threshold,
-        p_categorical_threshold=p_categorical_threshold,
-        stratification=stratification,
-    )
-
-    config._check_split_dir()
-    config._write_json()
-
-    if config.n_test > 0:
-        splits = ShuffleSplit(
-            n_splits=n_try_max, test_size=config.n_test, random_state=2
-        )
-        for n_try, (train_index, test_index) in enumerate(
-            splits.split(baseline_df, baseline_df)
-        ):
-            p_continuous = compute_continuous_p_value(
-                continuous_labels,
-                baseline_df,
-                train_index.tolist(),
-                test_index.tolist(),
-            )
-
-            if p_continuous >= p_continuous_threshold:
-                p_categorical = compute_categorical_p_value(
-                    categorical_labels,
-                    baseline_df,
-                    train_index.tolist(),
-                    test_index.tolist(),
-                )
-
-                if p_categorical >= p_categorical_threshold:
-                    logger.info(f"Valid split found after {n_try} attempts.")
-
-                    test_df = baseline_df.loc[test_index]
-                    train_df = baseline_df.loc[train_index]
-
-                    write_continuous_stats(
-                        config.split_dir / "split_continuous_stats.tsv",
-                        continuous_labels,
-                        test_df,
-                        train_df,
-                        subset_name,
-                    )
-                    write_categorical_stats(
-                        config.split_dir / "split_categorical_stats.tsv",
-                        categorical_labels,
-                        test_df,
-                        train_df,
-                        baseline_df,
-                        subset_name,
-                    )
-                    break
-
-            if n_try >= n_try_max - 1:
-                raise ClinicaDLConfigurationError(
-                    f"Unable to find a valid split after {n_try} attempts. "
-                    f"Consider lowering thresholds or reducing stratification variables."
-                )
-
-        write_to_csv(test_df, config.split_dir, df, subset_name, valid_longitudinal)
-    else:
-        train_df = baseline_df
-
-    write_to_csv(train_df, config.split_dir, df)
-
-    return config.split_dir
-
-
-def compute_continuous_p_value(
+def _compute_continuous_p_value(
     continuous_labels: Optional[list[str]],
     baseline_df: pd.DataFrame,
     train_index: list[int],
@@ -299,21 +292,22 @@ def compute_continuous_p_value(
     p_continuous = 1.0
     if continuous_labels:
         for label in continuous_labels:
-            if len(baseline_df[label] != 1):
-                train_values = baseline_df[label].loc[train_index].values.tolist()
-                test_values = baseline_df[label].loc[test_index].values.tolist()
+            train_values = baseline_df.loc[train_index, label]
+            test_values = baseline_df.loc[test_index, label]
 
-                _, new_p_continuous = ttest_ind(
-                    test_values, train_values, nan_policy="omit"
-                )  # ks_2samp, or ttost_ind from statsmodels.stats.weightstats import ttost_ind
+            _, new_p_continuous = ttest_ind(
+                test_values.tolist(), train_values.tolist(), nan_policy="omit"
+            )  # ks_2samp, or ttost_ind from statsmodels.stats.weightstats import ttost_ind
 
-            # Track the minimum p-value
+            if np.isnan(new_p_continuous):
+                return 0.0  # can't compute the p-value so we won't choose this split
+
             p_continuous = min(p_continuous, new_p_continuous)
 
     return p_continuous
 
 
-def compute_categorical_p_value(
+def _compute_categorical_p_value(
     categorical_labels: Optional[list[str]],
     baseline_df: pd.DataFrame,
     train_index: list[int],
@@ -338,29 +332,58 @@ def compute_categorical_p_value(
         The minimum p-value across all categorical labels.
     """
 
-    p_categorical = 1
+    p_categorical = 1.0
     if categorical_labels:
         for label in categorical_labels:
-            if len(baseline_df[label] != 1):
-                mapping = {
-                    val: i for i, val in enumerate(np.unique(baseline_df[label]))
-                }
+            mapping = {
+                val: i for i, val in enumerate(np.unique(baseline_df[label].dropna()))
+            }
 
-                tmp_train_values = baseline_df[label].loc[train_index].values.tolist()
-                tmp_test_values = baseline_df[label].loc[test_index].values.tolist()
+            train_values = baseline_df.loc[train_index, label].apply(
+                lambda val: mapping[val]
+            )
+            test_values = baseline_df.loc[test_index, label].apply(
+                lambda val: mapping[val]
+            )
 
-                train_values = [mapping[val] for val in tmp_train_values]
-                test_values = [mapping[val] for val in tmp_test_values]
+            new_p_categorical = _chi2_test(test_values, train_values)
 
-                new_p_categorical = _chi2_test(test_values, train_values)
-
-            # Track the minimum p-value
             p_categorical = min(p_categorical, new_p_categorical)
 
     return p_categorical
 
 
-def write_continuous_stats(
+def _chi2_test(x_test: np.ndarray, x_train: np.ndarray) -> float:
+    """
+    Perform the Chi-squared test on categorical data.
+
+    Parameters
+    ----------
+    x_test : np.ndarray
+        Test data.
+    x_train : np.ndarray
+        Train data.
+
+    Returns
+    -------
+    float
+        p-value from the Chi-squared test.
+    """
+    unique_categories = np.unique(np.concatenate([x_test, x_train]))
+    unique_categories = unique_categories[~np.isnan(unique_categories)]
+
+    # Calculate observed (test) and expected (train) frequencies as raw counts
+    f_obs = np.array([(x_test == category).sum() for category in unique_categories])
+    f_obs = f_obs / np.sum(f_obs)
+    f_exp = np.array([(x_train == category).sum() for category in unique_categories])
+    f_exp = f_exp / np.sum(f_exp)
+
+    _, p_value = chisquare(f_obs, f_exp)
+
+    return p_value
+
+
+def _write_continuous_stats(
     tsv_path: Path,
     continuous_labels: Optional[list[str]],
     test_df: pd.DataFrame,
@@ -401,12 +424,11 @@ def write_continuous_stats(
     df_stats_continuous.to_csv(tsv_path, sep="\t", index=False)
 
 
-def write_categorical_stats(
+def _write_categorical_stats(
     tsv_path: Path,
     categorical_labels: Optional[list[str]],
     test_df: pd.DataFrame,
     train_df: pd.DataFrame,
-    baseline_df: pd.DataFrame,
     subset_name: str,
 ):
     """
@@ -422,11 +444,8 @@ def write_categorical_stats(
         Test dataset.
     train_df : pd.DataFrame
         Train dataset.
-    baseline_df : pd.DataFrame
-        Baseline dataset (reference for all unique values).
     subset_name : str
-        Name
-
+        Name of the test subset.
     """
 
     if not categorical_labels:
@@ -434,16 +453,16 @@ def write_categorical_stats(
 
     data = []
     for label in categorical_labels:
-        unique_values = baseline_df[label].unique()
-        for val in unique_values:
-            test_count = (test_df[label] == val).sum()
-            train_count = (train_df[label] == val).sum()
+        unique_values = pd.concat([train_df, test_df])[label].unique()
+        for value in unique_values:
+            test_count = (test_df[label] == value).sum()
+            train_count = (train_df[label] == value).sum()
 
             test_proportion = test_count / len(test_df)
             train_proportion = train_count / len(train_df)
 
-            data.append((label, val, "proportion", train_proportion, test_proportion))
-            data.append((label, val, "count", train_count, test_count))
+            data.append((label, value, "proportion", train_proportion, test_proportion))
+            data.append((label, value, "count", train_count, test_count))
 
     df_stats_categorical = pd.DataFrame(
         data, columns=["label", "value", "statistic", "train", subset_name]

@@ -13,6 +13,7 @@ from torch.utils.data import ConcatDataset as TorchConcatDataset
 from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.slice import Slice
+from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 from clinicadl.utils.typing import DataType
 
@@ -166,7 +167,7 @@ class ConcatDataset(TorchConcatDataset):
             If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
             forming the ConcatDataset.
         """
-        data = CapsDataset._check_data_instance(data).set_index(
+        data = read_data(data, check_protected_names=False).set_index(
             [PARTICIPANT_ID, SESSION_ID]
         )
 

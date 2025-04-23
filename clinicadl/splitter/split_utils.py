@@ -9,48 +9,6 @@ from clinicadl.tsvtools.utils import first_session
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 
-def extract_baseline(diagnosis_df, set_index=True):
-    from copy import deepcopy
-
-    if set_index:
-        all_df = deepcopy(diagnosis_df)
-        all_df.set_index(["participant_id", "session_id"], inplace=True)
-    else:
-        all_df = deepcopy(diagnosis_df)
-
-    result_df = pd.DataFrame()
-    for subject, subject_df in all_df.groupby(level=0):
-        if subject != "participant_id":
-            baseline = first_session(subject_df)
-
-            subject_baseline_df = pd.DataFrame(
-                data=[
-                    [subject, baseline] + subject_df.loc[(subject, baseline)].tolist()
-                ],
-                columns=["participant_id", "session_id"]
-                + subject_df.columns.values.tolist(),
-            )
-            result_df = pd.concat([result_df, subject_baseline_df])
-
-    result_df.reset_index(inplace=True, drop=True)
-    return result_df
-
-
-def chi2(x_test, x_train):
-    from scipy.stats import chisquare
-
-    # Look for chi2 computation
-    total_categories = np.concatenate([x_test, x_train])
-    unique_categories = np.unique(total_categories)
-    f_obs = [(x_test == category).sum() / len(x_test) for category in unique_categories]
-    f_exp = [
-        (x_train == category).sum() / len(x_train) for category in unique_categories
-    ]
-    T, p = chisquare(f_obs, f_exp)
-
-    return T, p
-
-
 def add_demographics(df, demographics_df, diagnosis) -> pd.DataFrame:
     out_df = pd.DataFrame()
     tmp_demo_df = copy(demographics_df)
@@ -103,16 +61,6 @@ def find_label(labels_list, target_label):
             )
 
         return found_label
-
-
-def retrieve_longitudinal(df, diagnosis_df):
-    final_df = pd.DataFrame()
-    for idx in df.index.values:
-        subject = df.loc[idx, "participant_id"]
-        row_df = diagnosis_df[diagnosis_df.participant_id == subject]
-        final_df = pd.concat([final_df, row_df])
-
-    return final_df
 
 
 def find_splits(maps_path: Path) -> List[int]:
