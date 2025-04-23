@@ -1,40 +1,29 @@
 from __future__ import annotations
 
-import json
 import shutil
 from copy import deepcopy
-from logging import getLogger
-from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 import torch
-from monai.metrics.metric import CumulativeIterationMetric as Metric
 from torch.amp.autocast_mode import autocast
-from torch.amp.grad_scaler import GradScaler
-from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
+from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config.enum import Optimum
-from clinicadl.metrics.config.factory import get_metric_config
 from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
-from clinicadl.optim.early_stopping import EarlyStoppingConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
-from clinicadl.tsvtools.utils import df_to_tsv, remove_non_empty_dir, tsv_to_df
-from clinicadl.utils import cluster
+from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.dlo_jz import Chronometer
 from clinicadl.utils.exceptions import ClinicaDLMAPSError
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
-
-logger = getLogger("clinicadl.trainer")
 
 
 class Trainer:
@@ -134,9 +123,9 @@ class Trainer:
 
     def init_training_loss(self) -> pd.DataFrame:
         """TO COMPLETE"""
-        training_loss = pd.DataFrame(columns=["epoch", "batch", "time", "Loss"])
-        training_loss.set_index(["epoch", "batch"], inplace=True)
-        training_loss.at[(0, 0), "time"] = 0.0
+        training_loss = pd.DataFrame(columns=[EPOCH, BATCH, TIME, LOSS])
+        training_loss.set_index([EPOCH, BATCH], inplace=True)
+        training_loss.at[(0, 0), TIME] = 0.0
 
         return training_loss
 
@@ -176,24 +165,32 @@ class Trainer:
         print("self epoch : ", self.epoch)
         print("self get loss : ", self.metrics.get_loss())
 
-        while self.epoch < self.optim.epochs and not self.early_stopping.step(
-            self.metrics.get_loss()
-        ):
-            self.on_epoch_begin()
-
-            for batch_idx, data in enumerate(split.train_loader):
-                self.on_batch_begin()
-
-                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.training_step(data=data)
-
-                self.scaler.scale(loss).backward()
-                self.weights_update()
-
-                self.on_batch_end(batch_idx=batch_idx, loss=loss)
-            self.on_epoch_end(split)
+        while self.epoch < self.optim.epochs:
+            loss = self.metrics.get_loss()
+            if self.early_stopping.step(loss):
+                logger.info("Early stopping triggered.")
+                break
+            self.train_one_epoch(split)
 
         self.on_train_end(split)
+
+    def train_one_epoch(self, split: Split) -> None:
+        self.on_epoch_begin()
+
+        for batch_idx, data in enumerate(split.train_loader):
+            self.train_one_batch(data, batch_idx)
+
+        self.on_epoch_end(split)
+
+    def train_one_batch(self, data: Batch, batch_idx: int) -> None:
+        self.on_batch_begin()
+
+        with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
+            loss = self.training_step(data=data)
+
+        self.scaler.scale(loss).backward()
+        self.weights_update()
+        self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
     def on_train_begin(self, split: Split):
         """TO COMPLETE"""
@@ -259,8 +256,8 @@ class Trainer:
         if self.metrics.compute_train_metrics:
             self.train_metrics.aggregate(batch=batch_idx, epoch=self.epoch)
 
-        self.training_loss.at[(self.epoch, batch_idx), "Loss"] = loss.item()
-        self.training_loss.at[(self.epoch, batch_idx), "time"] = self.chrono.elapsed()
+        self.training_loss.at[(self.epoch, batch_idx), LOSS] = loss.item()
+        self.training_loss.at[(self.epoch, batch_idx), TIME] = self.chrono.elapsed()
 
     def on_epoch_end(self, split: Split):
         """TO COMPLETE"""
@@ -363,7 +360,7 @@ class Trainer:
     def _save_tmp_weights(self, split: int):
         model_weights = {
             "model": self.model.network.state_dict(),
-            "epoch": self.epoch,
+            EPOCH: self.epoch,
         }
         checkpoint_path = self.maps.splits[split].tmp.path / "checkpoint.pth.tar"
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
