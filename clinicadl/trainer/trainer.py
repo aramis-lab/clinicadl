@@ -9,7 +9,7 @@ import torch
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
-from clinicadl.callbacks.callbacks import CallbacksHandler
+from clinicadl.callbacks.base import CallbacksHandler
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME

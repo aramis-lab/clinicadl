@@ -1,39 +1,7 @@
 from typing import Optional, Union
 
-
-class Callback:
-    def __init__(self):
-        pass
-
-    def on_train_begin(self):
-        pass
-
-    def on_train_end(self):
-        pass
-
-    def on_epoch_begin(self):
-        pass
-
-    def on_epoch_end(self):
-        pass
-
-    def on_batch_begin(self):
-        pass
-
-    def on_batch_end(self):
-        pass
-
-    def on_loss_begin(self):
-        pass
-
-    def on_loss_end(self):
-        pass
-
-    def on_step_begin(self):
-        pass
-
-    def on_step_end(self):
-        pass
+from .factory import CodeCarbonCallback, LoggerCallback, MLFLOWCallback, WandBCallback
+from .factory.base import Callback
 
 
 class CallbacksHandler:
@@ -120,38 +88,6 @@ class CallbacksHandler:
             result = getattr(callback, event)(
                 **kwargs,
             )
-
-
-class CodeCarbonCallback(Callback):
-    def on_train_begin(self, **kwargs):
-        pass
-
-    def on_train_end(self, **kwargs):
-        pass
-
-
-class LoggerCallback(Callback):
-    def on_train_begin(self, **kwargs):
-        pass
-
-    def on_train_end(self, **kwargs):
-        pass
-
-
-class WandBCallback(Callback):
-    def on_train_begin(self, **kwargs):
-        pass
-
-    def on_train_end(self, **kwargs):
-        pass
-
-
-class MLFLOWCallback(Callback):
-    def on_train_begin(self, **kwargs):
-        pass
-
-    def on_train_end(self, **kwargs):
-        pass
 
 
 # TODO: add WandB, MLFLOW, CodeCarbon, Tensorboard, LearningRateScheduler, EarlyStopping, ModelCheckpoint etc...
