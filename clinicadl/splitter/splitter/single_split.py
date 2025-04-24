@@ -37,7 +37,8 @@ class SingleSplitConfig(SplitterConfig):
 
 class SingleSplit(Splitter):
     """
-    To handle a single split, as opposed to :py:class:`~clinicadl.splitter.KFold`.
+    To handle a single training-validation split, as opposed to :py:class:`~clinicadl.splitter.KFold`
+    that can handle several splits.
 
     This object will read a split directory returned by :py:func:`~clinicadl.splitter.make_split`,
     and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or

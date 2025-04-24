@@ -291,6 +291,8 @@ class DataLoaderConfig(ClinicaDLConfig):
         ValueError
             If only one of ``dp_degree`` and ``rank`` is not ``None``.
         ValueError
+            If ``rank`` is greater than ``dp_degree``.
+        ValueError
             If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
             and ``sampling_weights`` is not ``None``.
         KeyError
@@ -300,6 +302,11 @@ class DataLoaderConfig(ClinicaDLConfig):
             If ``sampling_weights`` is not ``None`` and the associated column cannot
             be converted to float values.
         """
+        if rank >= dp_degree:
+            raise ValueError(
+                "'rank' must be strictly smaller than 'dp_degree'. Got "
+                f"dp_degree={dp_degree} and rank={rank}"
+            )
         return DataLoader(
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),

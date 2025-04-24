@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Generator, List, Optional, Sequence, Union
 
-from pydantic import PositiveInt
+from pydantic import PositiveInt, field_validator
 
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.dictionary.words import SPLIT
@@ -22,6 +22,13 @@ class KFoldConfig(SplitterConfig):
 
     n_splits: PositiveInt
     stratification: Union[str, bool]
+
+    @field_validator("n_splits", mode="after")
+    @classmethod
+    def n_splits_validator(cls, v: int) -> int:
+        """Checks that 'n_splits' is greater than 2."""
+        assert v >= 2, "'n_splits' must be at least 2."
+        return v
 
     def get_split_subdir(self, split: int) -> Path:
         """

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from enum import Enum

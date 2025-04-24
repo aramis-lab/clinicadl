@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import NonNegativeFloat
 from scipy.stats import chisquare, ttest_ind
 from sklearn.model_selection import ShuffleSplit
 
@@ -25,7 +24,7 @@ logger = getLogger("clinicadl.splitter.make_splits.single_split")
 
 def make_split(
     data: DataType,
-    n_test: NonNegativeFloat = 0.1,
+    n_test: float = 0.2,
     output_dir: Optional[PathType] = None,
     subset_name: str = "test",
     stratification: Union[List[str], bool] = False,
@@ -35,20 +34,19 @@ def make_split(
     n_try_max: int = 1000,
     seed: Optional[int] = None,
 ) -> Path:
-    """
-    Perform a single train-test split of the dataset with optional stratification.
+    r"""
+    Performs a single train-test split on a DataFrame with optional stratification.
 
     Stratification can be performed based on one or several variables present in the DataFrame:
 
     - If a variable is **categorical**, a `chi-squared test <https://en.wikipedia.org/wiki/Chi-squared_test>`_
-    is performed to check that the train and test sets have the same distribution.
-    - If a variable is **continuous**, a `t-test <https://en.wikipedia.org/wiki/Chi-squared_test>`_ on the means
-    is performed.
+      is performed to check that the train and test sets have the same distribution.
+    - If a variable is **continuous**, a `t-test <https://en.wikipedia.org/wiki/Student%27s_t-test>`_ is performed.
 
-    ``make_split`` will try random splits until one split shows p-values greater than ``p_categorical_threshold`` for all
+    ``make_split`` will try random splits until one split shows a p-values greater than ``p_categorical_threshold`` for all
     categorical variables used for stratification, and greater than ``p_continuous_threshold`` for all continuous variables.
     So, ``p_categorical_threshold`` and ``p_continuous_threshold`` controls the required level of similarity between the train
-    and the test distribution. The higher the threshold, the more demanding the similarity test. So, too high a threshold may
+    and the test distributions. The higher the threshold, the more demanding the similarity test. So, too high a threshold may
     prevent you from finding a valid split.
 
     Parameters
@@ -57,27 +55,27 @@ def make_split(
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to split.
     n_test : PositiveFloat, (optional, default=0.1)
-        If ``>= 1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all participants
-        to have in the test data.
+        A positive float. If ``>=1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all
+        participants to have in the test data.
 
         .. note::
             Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
             of your data in the training set, but rather that you have 80% of you participants in the training set.
 
     output_dir : Optional[Path, str], (optional, default=None)
-        Directory where to save the output files of the split. If ``data`` is a path and ``output_dir`` is not passed,
-        the parent directory of the DataFrame will be used.
+        Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
+        If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
     subset_name : str, (optional, default="test")
         Name for the test subset.
     stratification : Union[List[str], bool], (optional, default=False)
-        Whether to perform stratification. If ``True``, the columns ``age`` and ``sex`` will be used for stratification.
+        Whether to perform stratification. If ``True``, the columns ``"age"`` and ``"sex"`` will be used for stratification.
         If a list of ``str`` is passed, these columns will be used.
     p_categorical_threshold : float, (optional, default=0.80)
-        Threshold for acceptable categorical stratification. Must be ``between 0 and 1``.
+        Threshold for acceptable categorical stratification. Must be **between 0 and 1**.
     p_continuous_threshold : float, (optional, default=0.80)
-        Threshold for acceptable continuous stratification. Must be ``between 0 and 1``.
+        Threshold for acceptable continuous stratification. Must be **between 0 and 1**.
     longitudinal : bool, (optional, default=False)
-        Whether to include only the baseline sessions in the test data (``longitudinal=False``). If ``True``, all the sessions
+        Whether to include only the baseline sessions in the test set (``longitudinal=False``). If ``True``, all the sessions
         of the test participants will be included. No matter this argument, all sessions are always kept in the training set.
     n_try_max : int, (optional, default=1000)
         Maximum number of attempts to find a valid split.
@@ -92,13 +90,87 @@ def make_split(
     Raises
     ------
     ValueError
-        If ``data`` is a DataFrame and no ``output_dir`` is passed.
+        If ``data`` is a :py:class:`pandas.DataFrame` and no ``output_dir`` is passed.
     ClinicaDLTSVError
-        If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
+        If the DataFrame does not contain the columns ``"participant_id"`` and ``"session_id"``.
     KeyError
         If the stratification columns mentioned via ``stratification`` cannot be found in the DataFrame.
     ClinicaDLConfigurationError
         If no good split was found after ``n_try_max`` tries.
+
+    See Also
+    --------
+    - :py:func:`~clinicadl.splitter.make_kfold`
+
+    Examples
+    --------
+    >>> df.head(5)  # quick look at the data
+        participant_id	session_id	age	sex	diagnosis
+    0	sub-003	        ses-M000	40	M	MCI
+    1	sub-004	        ses-M000	56	M	CN
+    2	sub-004	        ses-M054	75	F	MCI
+    3	sub-005	        ses-M006	85	F	CN
+    4	sub-005	        ses-M018	64	M	AD
+    >>> len(df)
+    64
+
+    >>> from clinicadl.splitter import make_split
+    >>> split_dir = make_split(
+            df,
+            output_dir="splits",
+            stratification=["sex", "age"],
+            p_categorical_threshold=0.9,
+            p_continuous_threshold=0.9,
+        )
+    >>> split_dir
+    PosixPath('splits/split')
+    # splits/split
+    # ├── single_split_config.json
+    # ├── split_categorical_stats.tsv
+    # ├── split_continuous_stats.tsv
+    # ├── test_baseline.tsv
+    # ├── train.tsv
+    # └── train_baseline.tsv
+
+    >>> pd.read_csv(split_dir / "train.tsv", sep="\t").head(5)
+        participant_id	session_id
+    0	sub-005	        ses-M006
+    1	sub-005	        ses-M018
+    2	sub-065	        ses-M006
+    3	sub-065	        ses-M018
+    4	sub-044	        ses-M000
+    >>> train_baseline = pd.read_csv(split_dir / "train_baseline.tsv", sep="\t")
+    >>> train_baseline.head(5)
+        participant_id	session_id	sex	age
+    0	sub-005	        ses-M006	F	85
+    1	sub-065	        ses-M006	F	58
+    2	sub-044	        ses-M000	M	64
+    3	sub-014	        ses-M000	M	56
+    4	sub-043	        ses-M000	M	71
+    >>> len(train_baseline)
+    32
+    >>> test_baseline = pd.read_csv(split_dir / "test_baseline.tsv", sep="\t")
+    >>> test_baseline.head(5)
+        participant_id	session_id	sex	age
+    0	sub-037	        ses-M006	F	56
+    1	sub-003	        ses-M000	M	40
+    2	sub-077	        ses-M006	F	23
+    3	sub-023	        ses-M000	M	69
+    4	sub-057	        ses-M006	F	77
+    >>> len(test_baseline)
+    8
+
+    >>> pd.read_csv(split_dir / "split_continuous_stats.tsv", sep="\t")
+        label	statistic	train	test
+    0	age	    mean	62.8	63.6
+    1	age	    std	        18.0	22.4
+    >>> pd.read_csv(split_dir / "split_categorical_stats.tsv", sep="\t")
+        label	value	statistic	train	test
+    0	sex	    F	    proportion	0.41	0.38
+    1	sex	    F	    count	13.0	3.0
+    2	sex	    M	    proportion	0.59	0.62
+    3	sex	    M	    count	19.0	5.0
+
     """
     df = read_and_format_data(data)
 
@@ -111,8 +183,6 @@ def make_split(
     stratification = _validate_stratification(df, stratification)
     baseline_df = extract_baseline(df, columns=stratification)
 
-    n_test = int(n_test) if n_test >= 1 else int(n_test * len(baseline_df))
-
     split_dir = find_available_split_dir(output_dir, SPLIT)
     config = SingleSplitConfig(
         split_dir=split_dir,
@@ -122,21 +192,22 @@ def make_split(
         p_continuous_threshold=p_continuous_threshold,
         p_categorical_threshold=p_categorical_threshold,
         stratification=stratification,
+        seed=seed,
     )
+
+    n_test = int(n_test) if n_test >= 1 else int(n_test * len(baseline_df))
 
     continuous_labels, categorical_labels = _categorize_labels(
         df=baseline_df,
         stratification=config.stratification,
-        n_test=config.n_test,
+        n_test=n_test,
     )
 
-    if config.n_test == 0:
+    if n_test == 0:
         train_df = baseline_df
 
     else:
-        splits = ShuffleSplit(
-            n_splits=n_try_max, test_size=config.n_test, random_state=seed
-        )
+        splits = ShuffleSplit(n_splits=n_try_max, test_size=n_test, random_state=seed)
         for n_try, (train_index, test_index) in enumerate(
             splits.split(baseline_df), start=1
         ):
@@ -455,8 +526,8 @@ def _write_categorical_stats(
     for label in categorical_labels:
         unique_values = pd.concat([train_df, test_df])[label].unique()
         for value in unique_values:
-            test_count = (test_df[label] == value).sum()
-            train_count = (train_df[label] == value).sum()
+            test_count = int((test_df[label] == value).sum())
+            train_count = int((train_df[label] == value).sum())
 
             test_proportion = test_count / len(test_df)
             train_proportion = train_count / len(train_df)

@@ -179,7 +179,11 @@ def _retrieve_longitudinal(
     longitudinal_df = (
         all_df.set_index([PARTICIPANT_ID]).loc[baselin_df[PARTICIPANT_ID]].reset_index()
     )
-    return longitudinal_df[[PARTICIPANT_ID, SESSION_ID]].drop_duplicates().reset_index()
+    return (
+        longitudinal_df[[PARTICIPANT_ID, SESSION_ID]]
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
 
 
 def find_available_split_dir(source_dir: Path, split_name: str) -> Path:

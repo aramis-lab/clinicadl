@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pandas as pd
 from pydantic import field_validator
@@ -35,7 +35,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
     subset_name: str
     stratification: Union[str, List[str], bool]
     longitudinal: bool
-    seed: int
+    seed: Optional[int]
 
     @field_validator("split_dir", mode="after")
     @classmethod
