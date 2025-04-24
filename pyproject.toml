@@ -73,7 +73,7 @@ codecarbon = "^2.3.1"
 optional = true
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7"
-sphinx-book-theme = "^1.1.3"
+furo = "^2024.8"
 sphinx-design = "^0.6"
 sphinx-autodoc-typehints = "^2"
 

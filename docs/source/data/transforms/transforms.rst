@@ -31,7 +31,7 @@ in ClinicaDL.
 
 Nevertheless, you can also pass your own transform to :py:class:`Transforms <clinicadl.transforms.Transforms>`
 (see the :tutorials:`tutorial <transforms/custom_transforms.ipynb>`), or use the transforms implemented by
-the community in :zoo:`ClinicaDL Zoo <clinicadl_zoo/transforms>` (see the :zoo:`tutorial <tutorials/transforms.ipynb>`).
+the community in :zoo:`ClinicaDL Zoo <>`.
 
 .. toctree::
     :maxdepth: 1

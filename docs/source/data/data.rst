@@ -29,13 +29,17 @@ Once your dataset has been created, you'll probably want to put it in a :py:clas
 To do this, you can use :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`. This object will help you to
 create a DataLoader suited to ClinicaDL.
 
+Finally, before training a Deep Learning model, you will split your data between training, validation and test sets.
+To do this, you will manipulate our :ref:`splitting tools <splitter>`.
+
 .. toctree::
     :maxdepth: 1
 
-    caps_dataset
-    concat_dataset
-    paired_dataset
-    unpaired_dataset
-    caps_datatypes
-    ../transforms/transforms
+    datasets/caps_dataset
+    datasets/concat_dataset
+    datasets/paired_dataset
+    datasets/unpaired_dataset
+    datatypes
+    transforms/transforms
     dataloader
+    splitter/splits
