@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from copy import deepcopy
+from typing import Any, Dict
 
 import pandas as pd
 import torch
@@ -66,10 +67,10 @@ class Trainer:
         self.metrics = metrics
 
         # METRICS CONFIG
-        self.metrics._init_with_loss(model.loss)
+        self.metrics._configure_loss_tracking(model.loss)
         if self.metrics.compute_train_metrics:
             self.train_metrics = deepcopy(metrics)
-            self.train_metrics._init_with_loss(model.loss)
+            self.train_metrics._configure_loss_tracking(model.loss)
 
         self.training_loss = self.init_training_loss()
 
@@ -186,8 +187,14 @@ class Trainer:
         training_loss = pd.DataFrame(columns=[EPOCH, BATCH, TIME, LOSS])
         training_loss.set_index([EPOCH, BATCH], inplace=True)
         training_loss.at[(0, 0), TIME] = 0.0
+        training_loss.at[(0, 0), LOSS] = 1.0
 
+        print(training_loss)
         return training_loss
+
+    @property
+    def loss(self):
+        return self.training_loss[LOSS].iloc[-1]
 
     def write_infos(self) -> None:
         """
@@ -238,14 +245,9 @@ class Trainer:
         """
 
         self.on_train_begin(split)
-        print("self epoch : ", self.epoch)
-        print("self get loss : ", self.metrics.get_loss())
 
         while self.epoch < self.optim.epochs:
-            loss = self.metrics.get_loss()
-            print("self epoch : ", self.epoch)
-            print("self get loss : ", self.metrics.get_loss())
-            if self.early_stopping.step(loss):
+            if self.early_stopping.step(self.loss):
                 print("Early stopping triggered.")  # TODO: put in the logger
                 break
             self.train_one_epoch(split)
@@ -284,62 +286,11 @@ class Trainer:
 
         with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
             loss = self.training_step(data=data)
-            print("batch_idx : ", batch_idx)
-            print("self epoch : ", self.epoch)
-            print("loss : ", loss.item())
-            print("self get loss : ", self.metrics.get_loss())
 
         self.scaler.scale(loss).backward()
         self.weights_update()
 
         self.on_batch_end(batch_idx=batch_idx, loss=loss)
-
-    def on_train_begin(self, split: Split) -> None:
-        """
-        Initialize components before starting the training loop.
-
-        This includes preparing the MAPS split directory and setting up
-        model, optimizer, and data loader for the current split.
-
-        Parameters
-        ----------
-        split : Split
-            The data split (training and validation) used for training.
-        """
-
-        self.create_split(split)  # not sure if needed
-        self.model.train()
-
-        self.n_batch = len(split.train_loader)
-        self.n_val_batch = len(split.val_loader)
-
-        self.reset()
-        self._init_scheduler()
-
-        # self.metrics.on_train_begin()
-
-    def reset(self):
-        """TO COMPLETE"""
-        self.epoch = 0
-        self.metrics.reset(df=True)
-        self.chrono.start()
-
-    def on_epoch_begin(self) -> None:
-        """
-        Set model and data-related configurations before each training epoch.
-
-        Parameters
-        ----------
-        dataloader : DataLoader
-            The training data loader for the current epoch.
-        """
-        self.model.network.zero_grad(set_to_none=True)
-        self.chrono.next_iter()
-        # self.evaluation_flag = True
-
-    def on_batch_begin(self):
-        """TO COMPLETE"""
-        pass
 
     def training_step(self, data: Batch) -> torch.Tensor:
         """
@@ -377,6 +328,47 @@ class Trainer:
         self.scaler.update()
         self.model.optimizer.zero_grad(set_to_none=True)
 
+    def on_train_begin(self, split: Split) -> None:
+        """
+        Initialize components before starting the training loop.
+
+        This includes preparing the MAPS split directory and setting up
+        model, optimizer, and data loader for the current split.
+
+        Parameters
+        ----------
+        split : Split
+            The data split (training and validation) used for training.
+        """
+
+        self.create_split(split)  # not sure if needed
+        self.model.train()
+
+        self.n_batch = len(split.train_loader)
+        self.n_val_batch = len(split.val_loader)
+
+        self.reset()
+        self._init_scheduler()
+
+        # self.metrics.on_train_begin()
+
+    def on_epoch_begin(self) -> None:
+        """
+        Set model and data-related configurations before each training epoch.
+
+        Parameters
+        ----------
+        dataloader : DataLoader
+            The training data loader for the current epoch.
+        """
+        self.model.network.zero_grad(set_to_none=True)
+        self.chrono.next_iter()
+        # self.evaluation_flag = True
+
+    def on_batch_begin(self):
+        """TO COMPLETE"""
+        pass
+
     def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
         """TO COMPLETE"""
 
@@ -397,10 +389,6 @@ class Trainer:
         split : Split
             The data split used for training and validation.
         """
-        # self.model.network.zero_grad(set_to_none=True)
-        # Update learning rate based on validation loss
-
-        # PRedictor is initialized here because it depends on the new model
 
         self.chrono.validation()
 
@@ -425,7 +413,7 @@ class Trainer:
         # self.metrics.on_train_end()
         self.save_metrics(maps=self.maps, split=split.index)
 
-        for name, metric_config in self.metrics.selection_metrics.items():
+        for name, _ in self.metrics.selection_metrics.items():
             self.model.load_network_state_dict(
                 self.maps.splits[split.index].best_metrics[name].model
             )
@@ -437,6 +425,14 @@ class Trainer:
                 split=split.index,
                 data_group="validation",
             )
+
+        self.maps.splits[split.index].tmp.remove()
+
+    def reset(self):
+        """TO COMPLETE"""
+        self.epoch = 0
+        self.metrics.reset(df=True)
+        self.chrono.start()
 
     def validate(
         self,
@@ -461,7 +457,6 @@ class Trainer:
                     # I think loss is one of callable metrics
 
                     self.metrics(outputs, labels)
-                print("teeeeest get loss validate : ", self.metrics.get_loss())
             self.metrics.aggregate(epoch=self.epoch)
 
         self.model.network.train()
@@ -538,23 +533,3 @@ class Trainer:
             steps_per_epoch=self.n_batch,
             epochs=self.optim.epochs,
         )
-
-    ## CHECK
-    def _check_evaluation_steps(self):
-        """Check if the current batch is an evaluation step."""
-        # Vérification de evaluation_steps
-        if self.optim.evaluation_steps >= self.n_batch:
-            print(
-                f"Warning: evaluation_steps ({self.optim.evaluation_steps}) >= N_batch ({self.n_batch}) ! Réduction automatique à N_batch // 2."
-            )
-            self.optim.evaluation_steps = max(
-                1, self.n_batch // 2
-            )  # Évite d'avoir une valeur trop grande
-
-        elif self.n_batch % self.optim.evaluation_steps != 0:
-            print(
-                f"Warning: evaluation_steps ({self.optim.evaluation_steps}) ne divise pas exactement N_batch ({self.n_batch})."
-            )
-            self.optim.evaluation_steps = max(
-                1, min(self.optim.evaluation_steps, self.n_batch // 2)
-            )  # Ajuste pour garder une fréquence raisonnable

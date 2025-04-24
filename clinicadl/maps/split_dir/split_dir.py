@@ -232,3 +232,10 @@ class TmpDir(Directory):
     @property
     def optimizer(self) -> Path:
         return (self.path / OPTIMIZER).with_suffix(PTH + TAR)
+
+    def remove(self) -> None:
+        """Removes the temporary files."""
+        if self.checkpoint.is_file():
+            self.checkpoint.unlink()
+        if self.optimizer.is_file():
+            self.optimizer.unlink()
