@@ -9,6 +9,7 @@ import torch
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
+from clinicadl.callbacks.callbacks import CallbacksHandler
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
@@ -87,6 +88,8 @@ class Trainer:
 
         ## MAPS CONFIG
         self.init_maps(maps_path, overwrite=_overwrite)
+
+        self.callbacks = CallbacksHandler()
 
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
@@ -324,6 +327,8 @@ class Trainer:
         self.reset()
         self._init_scheduler()
 
+        self.callbacks.on_train_begin()
+
         # self.metrics.on_train_begin()
 
     def on_epoch_begin(self) -> None:
@@ -337,15 +342,18 @@ class Trainer:
         """
         self.model.network.zero_grad(set_to_none=True)
         self.chrono.next_iter()
+
+        self.callbacks.on_epoch_begin()
         # self.evaluation_flag = True
 
     def on_batch_begin(self):
         """TO COMPLETE"""
-        pass
+        self.callbacks.on_batch_begin()
 
     def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
         """TO COMPLETE"""
 
+        self.callbacks.on_batch_end()
         self.chrono.update()
 
         if self.metrics.compute_train_metrics:
@@ -363,6 +371,8 @@ class Trainer:
         split : Split
             The data split used for training and validation.
         """
+
+        self.callbacks.on_epoch_end()
 
         self.chrono.validation()
 
@@ -382,6 +392,7 @@ class Trainer:
     def on_train_end(self, split: Split):
         """TO COMPLETE"""
 
+        self.callbacks.on_train_end()
         self.chrono.stop()
 
         # self.metrics.on_train_end()
