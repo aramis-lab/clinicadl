@@ -122,7 +122,7 @@ class ClinicaDLMetrics:
         metrics = [get_metric_config(**m) for m in metrics_dict.get(METRICS, [])]
         selection_metrics = (
             [get_metric_config(**m) for m in metrics_dict.get(SELECTION_METRICS, [])]
-            if selection_metrics in metrics_dict
+            if SELECTION_METRICS in metrics_dict
             else None
         )
         compute_train_metrics = metrics_dict.get("compute_train_metrics", False)

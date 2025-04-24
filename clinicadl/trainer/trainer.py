@@ -189,7 +189,6 @@ class Trainer:
         training_loss.at[(0, 0), TIME] = 0.0
         training_loss.at[(0, 0), LOSS] = 1.0
 
-        print(training_loss)
         return training_loss
 
     @property
@@ -250,47 +249,22 @@ class Trainer:
             if self.early_stopping.step(self.loss):
                 print("Early stopping triggered.")  # TODO: put in the logger
                 break
-            self.train_one_epoch(split)
 
+            self.on_epoch_begin()
+
+            for batch_idx, data in enumerate(split.train_loader):
+                self.on_batch_begin()
+
+                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
+                    loss = self.training_step(data=data)
+
+                self.scaler.scale(loss).backward()
+                self.weights_update()
+
+                self.on_batch_end(batch_idx=batch_idx, loss=loss)
+
+            self.on_epoch_end(split)
         self.on_train_end(split)
-
-    def train_one_epoch(self, split: Split) -> None:
-        """
-        Train the model for a single epoch.
-
-        Parameters
-        ----------
-        split : Split
-            Contains training and validation data loaders.
-        """
-        self.on_epoch_begin()
-
-        for batch_idx, data in enumerate(split.train_loader):
-            self.train_one_batch(data, batch_idx)
-
-        self.on_epoch_end(split)
-
-    def train_one_batch(self, data: Batch, batch_idx: int) -> None:
-        """
-        Train the model on a single batch of data.
-
-        Parameters
-        ----------
-        data : Batch
-            A batch of training data.
-        batch_idx : int
-            Index of the batch in the epoch.
-        """
-
-        self.on_batch_begin()
-
-        with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-            loss = self.training_step(data=data)
-
-        self.scaler.scale(loss).backward()
-        self.weights_update()
-
-        self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
     def training_step(self, data: Batch) -> torch.Tensor:
         """
@@ -496,8 +470,7 @@ class Trainer:
         checkpoint_path = self.maps.splits[split].tmp.path / "checkpoint.pth.tar"
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(model_weights, checkpoint_path)
-        print(split)
-        print(self.epoch)
+
         for name, metric_config in self.metrics.selection_metrics.items():
             metric_path = self.maps.splits[split].best_metrics[name].path
             metric_path.mkdir(parents=True, exist_ok=True)
@@ -532,4 +505,4 @@ class Trainer:
             max_lr=self.model.optimizer.param_groups[0]["lr"],
             steps_per_epoch=self.n_batch,
             epochs=self.optim.epochs,
-        )
+        )  # TODO: check if it stays ina method init
