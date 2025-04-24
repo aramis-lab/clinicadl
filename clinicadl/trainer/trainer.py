@@ -37,7 +37,26 @@ class Trainer:
         _overwrite: bool = True,
         seed: int = 123,
     ) -> None:
-        """TO COMPLETE"""
+        """
+        Initialize the training environment including model, metrics, and configuration setups.
+
+        Parameters
+        ----------
+        maps_path : PathType
+            Path to the MAPS directory where training artifacts are saved.
+        model : ClinicaDLModel
+            Model to be trained.
+        metrics : ClinicaDLMetrics
+            Metrics configuration to evaluate model performance.
+        optim_config : OptimizationConfig, optional
+            Configuration for the optimizer, by default OptimizationConfig().
+        comp_config : ComputationalConfig, optional
+            Computational resource settings, by default ComputationalConfig().
+        _overwrite : bool, optional
+            Whether to overwrite existing MAPS folder, by default True.
+        seed : int, optional
+            Random seed for reproducibility, by default 123.
+        """
 
         ## CONFIG
         self.model = model
@@ -54,7 +73,6 @@ class Trainer:
 
         self.training_loss = self.init_training_loss()
 
-        # will be different if resume is called
         self.epoch: int = 0
 
         self.early_stopping = self.optim.init_early_stopping()
@@ -71,8 +89,19 @@ class Trainer:
 
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
-        """TO COMPLETE"""
+        """
+        Initialize Trainer from existing MAPS directory.
 
+        Parameters
+        ----------
+        maps_path : PathType
+            Path to the MAPS directory.
+
+        Returns
+        -------
+        Trainer
+            An instance of Trainer initialized with MAPS config.
+        """
         maps = Maps(maps_path)
         if not maps.exists():
             raise ValueError(f"Invalid maps file: {maps_path}")
@@ -92,7 +121,22 @@ class Trainer:
         )
 
     @classmethod
-    def _from_dict(cls, maps_path: PathType, dict_: dict):
+    def _from_dict(cls, maps_path: PathType, dict_: Dict[str, Any]) -> Trainer:
+        """
+        Initialize Trainer from a dictionary configuration.
+
+        Parameters
+        ----------
+        maps_path : PathType
+            Path to the MAPS directory.
+        dict_ : Dict[str, Any]
+            Dictionary containing model, metrics, and config values.
+
+        Returns
+        -------
+        Trainer
+            An instance of Trainer initialized from dictionary.
+        """
         model = ClinicaDLModel.from_dict(dict_)
         metrics = ClinicaDLMetrics.from_dict(dict_)
         optim = OptimizationConfig(**dict_)
@@ -107,8 +151,17 @@ class Trainer:
             _overwrite=False,
         )
 
-    def init_maps(self, maps_path: PathType, overwrite: bool):
-        """TO COMPLETE"""
+    def init_maps(self, maps_path: PathType, overwrite: bool) -> None:
+        """
+        Initialize the MAPS folder for saving training results and config files.
+
+        Parameters
+        ----------
+        maps_path : PathType
+            Path to the MAPS directory.
+        overwrite : bool
+            Whether to overwrite the directory if it exists.
+        """
         self.maps = Maps(maps_path)
         if overwrite:
             if self.maps.exists():
@@ -122,15 +175,24 @@ class Trainer:
         self.write_infos()
 
     def init_training_loss(self) -> pd.DataFrame:
-        """TO COMPLETE"""
+        """
+        Initialize the dataframe to record training loss and time.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe to log loss and computation time per epoch and batch.
+        """
         training_loss = pd.DataFrame(columns=[EPOCH, BATCH, TIME, LOSS])
         training_loss.set_index([EPOCH, BATCH], inplace=True)
         training_loss.at[(0, 0), TIME] = 0.0
 
         return training_loss
 
-    def write_infos(self):
-        """TO COMPLETE"""
+    def write_infos(self) -> None:
+        """
+        Write model, optimizer, computational, and metrics configurations to JSON files in the MAPS directory.
+        """
         self.maps.create()
         self.model.write_json(self.maps.model_json)
         self.optim.write_json(self.maps.optimization_json)
@@ -139,8 +201,15 @@ class Trainer:
             self.maps.metrics_json
         )  # no need to write both train and val metrics
 
-    def resume(self, split: Split):
-        """TO COMPLETE"""
+    def resume(self, split: Split) -> None:
+        """
+        Resume training from a checkpoint in the MAPS directory.
+
+        Parameters
+        ----------
+        split : Split
+            Split object with dataloaders and split index.
+        """
 
         self.maps.load()
 
@@ -158,8 +227,15 @@ class Trainer:
 
         self.train(split)
 
-    def train(self, split: Split):
-        """TO COMPLETE"""
+    def train(self, split: Split) -> None:
+        """
+        Train the model on the specified split.
+
+        Parameters
+        ----------
+        split : Split
+            Contains dataloaders for training and validation.
+        """
 
         self.on_train_begin(split)
         print("self epoch : ", self.epoch)
@@ -167,14 +243,24 @@ class Trainer:
 
         while self.epoch < self.optim.epochs:
             loss = self.metrics.get_loss()
+            print("self epoch : ", self.epoch)
+            print("self get loss : ", self.metrics.get_loss())
             if self.early_stopping.step(loss):
-                logger.info("Early stopping triggered.")
+                print("Early stopping triggered.")  # TODO: put in the logger
                 break
             self.train_one_epoch(split)
 
         self.on_train_end(split)
 
     def train_one_epoch(self, split: Split) -> None:
+        """
+        Train the model for a single epoch.
+
+        Parameters
+        ----------
+        split : Split
+            Contains training and validation data loaders.
+        """
         self.on_epoch_begin()
 
         for batch_idx, data in enumerate(split.train_loader):
@@ -183,17 +269,43 @@ class Trainer:
         self.on_epoch_end(split)
 
     def train_one_batch(self, data: Batch, batch_idx: int) -> None:
+        """
+        Train the model on a single batch of data.
+
+        Parameters
+        ----------
+        data : Batch
+            A batch of training data.
+        batch_idx : int
+            Index of the batch in the epoch.
+        """
+
         self.on_batch_begin()
 
         with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
             loss = self.training_step(data=data)
+            print("batch_idx : ", batch_idx)
+            print("self epoch : ", self.epoch)
+            print("loss : ", loss.item())
+            print("self get loss : ", self.metrics.get_loss())
 
         self.scaler.scale(loss).backward()
         self.weights_update()
+
         self.on_batch_end(batch_idx=batch_idx, loss=loss)
 
-    def on_train_begin(self, split: Split):
-        """TO COMPLETE"""
+    def on_train_begin(self, split: Split) -> None:
+        """
+        Initialize components before starting the training loop.
+
+        This includes preparing the MAPS split directory and setting up
+        model, optimizer, and data loader for the current split.
+
+        Parameters
+        ----------
+        split : Split
+            The data split (training and validation) used for training.
+        """
 
         self.create_split(split)  # not sure if needed
         self.model.train()
@@ -212,8 +324,15 @@ class Trainer:
         self.metrics.reset(df=True)
         self.chrono.start()
 
-    def on_epoch_begin(self):
-        """TO COMPLETE"""
+    def on_epoch_begin(self) -> None:
+        """
+        Set model and data-related configurations before each training epoch.
+
+        Parameters
+        ----------
+        dataloader : DataLoader
+            The training data loader for the current epoch.
+        """
         self.model.network.zero_grad(set_to_none=True)
         self.chrono.next_iter()
         # self.evaluation_flag = True
@@ -222,9 +341,19 @@ class Trainer:
         """TO COMPLETE"""
         pass
 
-    def training_step(self, data: Batch):
+    def training_step(self, data: Batch) -> torch.Tensor:
         """
-        Perform a training step on the model using the provided batch of data and return the computed loss
+        Perform a training step on the model using the provided batch of data and return the computed loss.
+
+        Parameters
+        ----------
+        data : Batch
+            Batch of data including images and labels.
+
+        Returns
+        -------
+        torch.Tensor
+            Computed loss for the batch.
         """
         labels = data.get_labels().to(self.comp.device)
         images = data.get_images().to(self.comp.device)
@@ -259,8 +388,15 @@ class Trainer:
         self.training_loss.at[(self.epoch, batch_idx), LOSS] = loss.item()
         self.training_loss.at[(self.epoch, batch_idx), TIME] = self.chrono.elapsed()
 
-    def on_epoch_end(self, split: Split):
-        """TO COMPLETE"""
+    def on_epoch_end(self, split: Split) -> None:
+        """
+        Handle end-of-epoch tasks such as evaluation, saving checkpoints, and logging.
+
+        Parameters
+        ----------
+        split : Split
+            The data split used for training and validation.
+        """
         # self.model.network.zero_grad(set_to_none=True)
         # Update learning rate based on validation loss
 
@@ -325,7 +461,7 @@ class Trainer:
                     # I think loss is one of callable metrics
 
                     self.metrics(outputs, labels)
-
+                print("teeeeest get loss validate : ", self.metrics.get_loss())
             self.metrics.aggregate(epoch=self.epoch)
 
         self.model.network.train()

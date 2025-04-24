@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 from typing import Dict
 
+import matplotlib.pyplot as plt
+import pandas as pd
+
 from clinicadl.dictionary.suffixes import JSON, PTH, TAR, TSV
 from clinicadl.dictionary.words import (
     BEST,
@@ -127,6 +130,10 @@ class SplitDir(Directory):
         for metric in self.best_metrics.values():
             metric.create(split=split)
 
+    def plot_loss(self):
+        """Plots the training loss over time using the data from the training log file."""
+        self.logs.plot_loss()
+
 
 class TrainingLogs(Directory):
     """Handles training logs for a given split.
@@ -153,6 +160,51 @@ class TrainingLogs(Directory):
     @property
     def training_tsv(self) -> Path:
         return (self.path / TRAINING).with_suffix(TSV)
+
+    def plot_loss(self):
+        if not self.training_tsv.is_file():
+            raise ClinicaDLConfigurationError(
+                f"The training log file at {self.training_tsv} doesn't exist."
+            )
+        df = pd.read_csv(self.training_tsv, sep="\t")
+        plt.figure(figsize=(12, 6))
+        plt.plot(df["time"], df["loss"], label="Loss", color="blue", linewidth=2)
+
+        # Ajouter les epochs en fond (vertical lines)
+        epoch_changes = df[df["batch"] == 0]
+        for _, row in epoch_changes.iterrows():
+            plt.axvline(x=row["time"], color="gray", linestyle="--", alpha=0.3)
+            plt.text(
+                row["time"],
+                max(df["loss"]),
+                f"Epoch {int(row['epoch'])}",
+                rotation=90,
+                verticalalignment="top",
+                fontsize=8,
+                color="gray",
+            )
+
+        # Annotations optionnelles des batchs (plus denses)
+        for i in range(
+            0, len(df), 10
+        ):  # afficher 1 batch sur 10 pour éviter la surcharge
+            row = df.iloc[i]
+            plt.text(
+                row["time"],
+                row["loss"],
+                f"B{int(row['batch'])}",
+                fontsize=6,
+                alpha=0.6,
+                rotation=45,
+            )
+
+        plt.xlabel("Time (s)")
+        plt.ylabel("Loss")
+        plt.title("Loss(Time)")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
 
 
 class TmpDir(Directory):
