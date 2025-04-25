@@ -118,6 +118,7 @@ def test_param_groups(network):
         min_lr={"linear1": 0.01, "linear2": 0.001, "ELSE": 0},
     )
     scheduler = scheduler_config.get_object(optimizer)
+    optimizer.step()
     scheduler.step(1)
     scheduler.step(1)
     scheduler.step(1)
@@ -137,6 +138,7 @@ def test_param_groups(network):
         max_momentum=10,
     )
     scheduler = scheduler_config.get_object(optimizer)
+    optimizer.step()
     scheduler.step()
     scheduler.step()
     scheduler.step()
