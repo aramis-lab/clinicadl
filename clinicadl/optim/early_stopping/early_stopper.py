@@ -2,10 +2,12 @@ import math
 
 import numpy as np
 
+from clinicadl.callbacks.base import Callback
+
 from .config import EarlyStoppingConfig, Mode
 
 
-class EarlyStopping(object):
+class EarlyStopping(Callback):
     """
     To perform early stopping.
 
@@ -33,7 +35,7 @@ class EarlyStopping(object):
             self.best = -np.inf
         self.num_bad_epochs = 0
 
-    def step(self, value: float) -> bool:
+    def on_epoch_end(self, value: float) -> bool:
         """
         Decides whether to stop the training or not, depending
         on the value of the last epoch.

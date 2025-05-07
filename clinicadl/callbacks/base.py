@@ -51,39 +51,51 @@ class CallbacksHandler:
 
     @property
     def callback_list(self):
+        """TO COMPLETE"""
         return [cb.__class__.__name__ for cb in self.callbacks]
 
     def on_train_begin(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_train_begin", **kwargs)
 
     def on_train_end(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_train_end", **kwargs)
 
     def on_epoch_begin(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_epoch_begin", **kwargs)
 
     def on_epoch_end(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_epoch_end", **kwargs)
 
     def on_batch_begin(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_batch_begin", **kwargs)
 
     def on_batch_end(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_batch_end", **kwargs)
 
     def on_loss_begin(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_loss_begin", **kwargs)
 
     def on_loss_end(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_loss_end", **kwargs)
 
     def on_step_begin(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_step_begin", **kwargs)
 
     def on_step_end(self, **kwargs):
+        """TO COMPLETE"""
         self.call_event("on_step_end", **kwargs)
 
     def call_event(self, event, **kwargs):
+        """TO COMPLETE"""
         for callback in self.callbacks:
             result = getattr(callback, event)(
                 **kwargs,

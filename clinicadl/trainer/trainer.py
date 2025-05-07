@@ -67,6 +67,9 @@ class Trainer:
         self.train_metrics = metrics
         self.metrics = metrics
 
+        # CALLBACKS
+        self.callbacks = CallbacksHandler()
+
         # METRICS CONFIG
         self.metrics._configure_loss_tracking(model.loss)
         if self.metrics.compute_train_metrics:
@@ -77,7 +80,7 @@ class Trainer:
 
         self.epoch: int = 0
 
-        self.early_stopping = self.optim.init_early_stopping()
+        self.callbacks.add_callback(self.optim.init_early_stopping())
         self.scaler = self.comp.init_scaler()
 
         # seed initialization
@@ -88,8 +91,6 @@ class Trainer:
 
         ## MAPS CONFIG
         self.init_maps(maps_path, overwrite=_overwrite)
-
-        self.callbacks = CallbacksHandler()
 
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
@@ -249,9 +250,9 @@ class Trainer:
         self.on_train_begin(split)
 
         while self.epoch < self.optim.epochs:
-            if self.early_stopping.step(self.loss):
-                print("Early stopping triggered.")  # TODO: put in the logger
-                break
+            # if self.early_stopping.step(self.loss):
+            #     print("Early stopping triggered.")  # TODO: put in the logger
+            #     break
 
             self.on_epoch_begin()
 
