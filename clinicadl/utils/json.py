@@ -64,7 +64,6 @@ def path_encoder(obj):
     Recursively convert Path objects to strings in dicts
     where keys suggest they point to filesystem paths.
     """
-    print(f"Encoding {obj} of type {type(obj)}")
     if isinstance(obj, list):
         return [path_encoder(item) for item in obj]
     if isinstance(obj, torch.nn.modules.Module):
