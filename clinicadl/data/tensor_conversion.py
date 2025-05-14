@@ -39,7 +39,6 @@ from .structures import DataPoint, Mask
 
 if TYPE_CHECKING:
     from .datasets import CapsDataset
-
 logger = getLogger("clinicadl.data.tensor_conversion")
 
 
