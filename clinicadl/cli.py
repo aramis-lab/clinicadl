@@ -1,9 +1,6 @@
 import argparse
-from logging import getLogger
 
 from clinicadl import __version__
-
-logger = getLogger("clinicadl.cli")
 
 
 def main():
@@ -25,5 +22,5 @@ def main():
     args = parser.parse_args()
 
     if not vars(args):
-        logger.info("ClinicaDL is a deep learning library for neuroimaging analysis.")
-        logger.info("Use `clinicadl --help` to see available options.")
+        print("ClinicaDL is a deep learning library for neuroimaging analysis.")
+        print("Use `clinicadl --help` to see available options.")
