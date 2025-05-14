@@ -1,6 +1,12 @@
 from typing import Optional, Union
 
-from .factory import CodeCarbonCallback, LoggerCallback, MLFLOWCallback, WandBCallback
+from .factory import (
+    Chronometer,
+    CodeCarbonCallback,
+    LoggerCallback,
+    MLFLOWCallback,
+    WandBCallback,
+)
 from .factory.base import Callback
 
 
@@ -15,6 +21,7 @@ class CallbacksHandler:
         wandb: bool = False,
         codecarbon: bool = True,
         logger: bool = True,
+        chronometer: bool = True,
         custom_callback: Optional[Union[Callback, list[Callback]]] = None,
     ):
         self.callbacks = []
@@ -22,6 +29,8 @@ class CallbacksHandler:
             self.callbacks.append(CodeCarbonCallback())
         if logger:
             self.callbacks.append(LoggerCallback())
+        if chronometer:
+            self.callbacks.append(Chronometer())
         if mlflow:
             self.callbacks.append(MLFLOWCallback())
         if wandb:
@@ -78,21 +87,29 @@ class CallbacksHandler:
         """TO COMPLETE"""
         self.call_event("on_batch_end", **kwargs)
 
-    def on_loss_begin(self, **kwargs):
+    def on_backward_begin(self, **kwargs):
         """TO COMPLETE"""
-        self.call_event("on_loss_begin", **kwargs)
+        self.call_event("on_backward_begin", **kwargs)
 
-    def on_loss_end(self, **kwargs):
+    def on_validation_begin(self, **kwargs):
         """TO COMPLETE"""
-        self.call_event("on_loss_end", **kwargs)
+        self.call_event("on_validation_begin", **kwargs)
 
-    def on_step_begin(self, **kwargs):
+    def on_validation_end(self, **kwargs):
         """TO COMPLETE"""
-        self.call_event("on_step_begin", **kwargs)
+        self.call_event("on_validation_end", **kwargs)
 
-    def on_step_end(self, **kwargs):
-        """TO COMPLETE"""
-        self.call_event("on_step_end", **kwargs)
+    # def on_loss_end(self, **kwargs):
+    #     """TO COMPLETE"""
+    #     self.call_event("on_loss_end", **kwargs)
+
+    # def on_step_begin(self, **kwargs):
+    #     """TO COMPLETE"""
+    #     self.call_event("on_step_begin", **kwargs)
+
+    # def on_step_end(self, **kwargs):
+    #     """TO COMPLETE"""
+    #     self.call_event("on_step_end", **kwargs)
 
     def call_event(self, event, **kwargs):
         """TO COMPLETE"""

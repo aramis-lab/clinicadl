@@ -20,14 +20,11 @@ class Callback:
     def on_batch_end(self, batch: int, **kwargs):
         pass
 
-    def on_loss_begin(self, **kwargs):
+    def on_backward_begin(self, **kwargs):
         pass
 
-    def on_loss_end(self, **kwargs):
+    def on_validation_begin(self, **kwargs):
         pass
 
-    def on_step_begin(self, **kwargs):
-        pass
-
-    def on_step_end(self, **kwargs):
+    def on_validation_end(self, **kwargs):
         pass

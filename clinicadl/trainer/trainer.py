@@ -262,6 +262,8 @@ class Trainer:
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
                     loss = self.training_step(data=data)
 
+                self.callbacks.on_backward_begin()
+
                 self.scaler.scale(loss).backward()
                 self.weights_update()
 
@@ -287,7 +289,7 @@ class Trainer:
         labels = data.get_labels().to(self.comp.device)
         images = data.get_images().to(self.comp.device)
 
-        self.chrono.forward()
+        # self.chrono.forward()
 
         outputs = self.model.network(images)
         loss = self.model.loss(outputs, labels)
@@ -300,7 +302,7 @@ class Trainer:
     def weights_update(self):
         """TO COMPLETE"""
 
-        self.chrono.backward()
+        # self.chrono.backward()
 
         self.scaler.step(self.model.optimizer)
         self.scaler.update()
@@ -342,8 +344,6 @@ class Trainer:
             The training data loader for the current epoch.
         """
         self.model.network.zero_grad(set_to_none=True)
-        self.chrono.next_iter()
-
         self.callbacks.on_epoch_begin(epoch=self.epoch)
         # self.evaluation_flag = True
 
@@ -355,7 +355,6 @@ class Trainer:
         """TO COMPLETE"""
 
         self.callbacks.on_batch_end(batch=batch_idx)
-        self.chrono.update()
 
         if self.metrics.compute_train_metrics:
             self.train_metrics.aggregate(batch=batch_idx, epoch=self.epoch)
@@ -373,28 +372,20 @@ class Trainer:
             The data split used for training and validation.
         """
 
-        self.callbacks.on_epoch_end(epoch=self.epoch)
-
-        self.chrono.validation()
-
         self.validate(split.val_loader)
 
-        self.chrono.validation()
-
-        self.scheduler.step()
+        self.scheduler.step()  # TODO : to put in callbacks ?
 
         # Sauvegarde du modèle à la fin de chaque epoch
         self._save_tmp_weights(split.index)
 
+        self.callbacks.on_epoch_end(epoch=self.epoch)
         self.epoch += 1
-        self.chrono.next_iter()
-        # profiler.step()  # TODO: check this
 
     def on_train_end(self, split: Split):
         """TO COMPLETE"""
 
         self.callbacks.on_train_end()
-        self.chrono.stop()
 
         # self.metrics.on_train_end()
         self.save_metrics(maps=self.maps, split=split.index)
@@ -418,12 +409,12 @@ class Trainer:
         """TO COMPLETE"""
         self.epoch = 0
         self.metrics.reset(df=True)
-        self.chrono.start()
 
     def validate(
         self,
         dataloader: DataLoader[CapsDataset],
     ):
+        self.callbacks.on_validation_begin()
         self.model.network.eval()
         dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
 
@@ -446,6 +437,8 @@ class Trainer:
             self.metrics.aggregate(epoch=self.epoch)
 
         self.model.network.train()
+
+        self.callbacks.on_validation_end()
         return None
 
     ## UTILS
