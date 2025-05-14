@@ -711,7 +711,7 @@ class CapsDataset(Dataset):
         """
         if data is None:
             data = self.caps_reader.create_subjects_sessions_tsv(self.preprocessing)
-            print(f"Creating a TSV file at {data}")
+            logger.info(f"Creating a TSV file at {data}")
 
         if not isinstance(data, (str, Path, pd.DataFrame)):
             raise ClinicaDLArgumentError(

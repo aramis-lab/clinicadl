@@ -22,7 +22,6 @@ from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter.split import Split
 from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.dlo_jz import Chronometer
 from clinicadl.utils.exceptions import ClinicaDLMAPSError
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
@@ -85,9 +84,6 @@ class Trainer:
 
         # seed initialization
         seed_everything(seed, deterministic=False, compensation="memory")
-
-        # Chronometer initialisation
-        self.chrono = Chronometer()
 
         ## MAPS CONFIG
         self.init_maps(maps_path, overwrite=_overwrite)
@@ -289,8 +285,6 @@ class Trainer:
         labels = data.get_labels().to(self.comp.device)
         images = data.get_images().to(self.comp.device)
 
-        # self.chrono.forward()
-
         outputs = self.model.network(images)
         loss = self.model.loss(outputs, labels)
 
@@ -301,8 +295,6 @@ class Trainer:
 
     def weights_update(self):
         """TO COMPLETE"""
-
-        # self.chrono.backward()
 
         self.scaler.step(self.model.optimizer)
         self.scaler.update()
@@ -360,7 +352,7 @@ class Trainer:
             self.train_metrics.aggregate(batch=batch_idx, epoch=self.epoch)
 
         self.training_loss.at[(self.epoch, batch_idx), LOSS] = loss.item()
-        self.training_loss.at[(self.epoch, batch_idx), TIME] = self.chrono.elapsed()
+        self.training_loss.at[(self.epoch, batch_idx), TIME] = 3.5
 
     def on_epoch_end(self, split: Split) -> None:
         """

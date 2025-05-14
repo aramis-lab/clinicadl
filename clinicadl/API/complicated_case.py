@@ -92,8 +92,6 @@ trainer = Trainer(
 
 # CROOS VALIDATION LOOP
 for split in splitter.get_splits(dataset=dataset_t1_image):
-    print(f"Training for split {split.index}")
-
     # BUILD DATALOADER
     split.build_train_loader(dataloader_config)
     split.build_val_loader(dataloader_config)

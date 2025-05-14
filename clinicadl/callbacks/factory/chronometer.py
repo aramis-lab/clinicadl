@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from clinicadl.callbacks.base import Callback
+from .base import Callback
 
 logger = getLogger("clinicadl.chronometer")
 
