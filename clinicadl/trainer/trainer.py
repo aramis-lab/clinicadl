@@ -257,7 +257,7 @@ class Trainer:
             self.on_epoch_begin()
 
             for batch_idx, data in enumerate(split.train_loader):
-                self.on_batch_begin()
+                self.on_batch_begin(batch_idx=batch_idx)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
                     loss = self.training_step(data=data)
@@ -328,7 +328,7 @@ class Trainer:
         self.reset()
         self._init_scheduler()
 
-        self.callbacks.on_train_begin()
+        self.callbacks.on_train_begin(device=self.comp.device.type)
 
         # self.metrics.on_train_begin()
 
@@ -344,17 +344,17 @@ class Trainer:
         self.model.network.zero_grad(set_to_none=True)
         self.chrono.next_iter()
 
-        self.callbacks.on_epoch_begin()
+        self.callbacks.on_epoch_begin(epoch=self.epoch)
         # self.evaluation_flag = True
 
-    def on_batch_begin(self):
+    def on_batch_begin(self, batch_idx: int):
         """TO COMPLETE"""
-        self.callbacks.on_batch_begin()
+        self.callbacks.on_batch_begin(batch=batch_idx)
 
     def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
         """TO COMPLETE"""
 
-        self.callbacks.on_batch_end()
+        self.callbacks.on_batch_end(batch=batch_idx)
         self.chrono.update()
 
         if self.metrics.compute_train_metrics:
@@ -373,7 +373,7 @@ class Trainer:
             The data split used for training and validation.
         """
 
-        self.callbacks.on_epoch_end()
+        self.callbacks.on_epoch_end(epoch=self.epoch)
 
         self.chrono.validation()
 
