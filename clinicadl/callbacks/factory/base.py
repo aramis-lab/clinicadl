@@ -8,16 +8,16 @@ class Callback:
     def on_train_end(self):
         pass
 
-    def on_epoch_begin(self):
+    def on_epoch_begin(self, epoch: int):
         pass
 
-    def on_epoch_end(self):
+    def on_epoch_end(self, epoch: int):
         pass
 
-    def on_batch_begin(self):
+    def on_batch_begin(self, batch: int):
         pass
 
-    def on_batch_end(self):
+    def on_batch_end(self, batch: int):
         pass
 
     def on_loss_begin(self):
