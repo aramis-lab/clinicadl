@@ -25,6 +25,7 @@ def write_json(json_path: Path, data: Dict[str, Any], overwrite: bool = False) -
     """
     Writes the serialized config class to a JSON file.
     """
+    json_path.parent.mkdir(exist_ok=True, parents=True)
 
     if json_path.is_file() and not overwrite:
         raise FileExistsError(f"The JSON file already exists: {json_path}")

@@ -25,6 +25,7 @@ from clinicadl.utils.exceptions import (
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
 full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
 
 
 class CustomTransform:
@@ -90,6 +91,28 @@ def copy_dir(tmp_dir: Path):
     Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
 
 
+def test_convert_and_read():
+    copy_dir(tmp_dir)
+
+    sub_ses = [
+        ("sub-100", "ses-M000"),
+    ]
+    data = sub_data(sub_ses)
+    preprocessing = PETLinear(
+        tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=False
+    )
+    caps_dataset = CapsDataset(
+        tmp_dir,
+        preprocessing=preprocessing,
+        data=data,
+    )
+    converter = TensorConversion(caps_dataset)
+    converter.convert_to_tensors("pet_tmp")
+    converter.read_conversion("pet_tmp")
+
+    shutil.rmtree(tmp_dir)
+
+
 def test_read_conversion():
     sub_ses = [
         ("sub-000", "ses-M000"),
@@ -126,7 +149,7 @@ def test_read_conversion():
         converter.read_conversion("pet_ref_corrupted")
     with pytest.raises(ClinicaDLTensorConversionError):
         converter.read_conversion("pet_ref_corrupted_bis")
-    with pytest.raises(ClinicaDLTensorConversionError):
+    with pytest.raises(ClinicaDLArgumentError):
         converter.read_conversion("pet_ref_missing_field")
 
     # check preprocessing
@@ -331,8 +354,6 @@ def test_read_conversion():
 
 
 def test_convert_to_tensors():
-    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
-
     copy_dir(tmp_dir)
     delete_pt_files(tmp_dir)
 
@@ -740,8 +761,6 @@ def test_convert_to_tensors():
 
 
 def test_merge_conversions():
-    tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
-
     copy_dir(tmp_dir)
     (
         tmp_dir
@@ -776,9 +795,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
-        )
+        converter.convert_to_tensors("t1_ref_interrupted")
     with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
         conversion_info = json.load(f)
     assert sorted(conversion_info["participants_sessions"]) == sorted(
@@ -830,9 +847,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     copy_json_dir(tmp_dir)
     with pytest.raises(ClinicaDLArgumentError):
-        converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
-        )
+        converter.convert_to_tensors("t1_ref_interrupted")
 
     # check label
     caps_dataset = CapsDataset(
@@ -846,12 +861,8 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     copy_json_dir(tmp_dir)
     with pytest.raises(ClinicaDLArgumentError):
-        converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
-        )
-    converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
-    )
+        converter.convert_to_tensors("t1_ref_interrupted")
+    converter.convert_to_tensors("t1_masks_interrupted")
     with open(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json", "r") as f:
         conversion_info = json.load(f)
     assert sorted(conversion_info["participants_sessions"]) == sorted(
@@ -871,9 +882,7 @@ def test_merge_conversions():
     )
     converter = TensorConversion(caps_dataset)
     copy_json_dir(tmp_dir)
-    converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
-    )
+    converter.convert_to_tensors("t1_masks_interrupted")
     with open(tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json", "r") as f:
         conversion_info = json.load(f)
     assert sorted(conversion_info["common_masks"]) == sorted(
@@ -898,9 +907,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     copy_json_dir(tmp_dir)
     with pytest.raises(ClinicaDLArgumentError):
-        converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_masks_interrupted.json"
-        )
+        converter.convert_to_tensors("t1_masks_interrupted")
 
     # check also
     caps_dataset = CapsDataset(
@@ -912,7 +919,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     with pytest.raises(ClinicaDLArgumentError):
         converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+            "t1_custom_interrupted",
             check_transforms=False,
         )
 
@@ -925,7 +932,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     with pytest.raises(ClinicaDLArgumentError):
         converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+            "t1_custom_interrupted",
             check_transforms=False,
         )
 
@@ -937,7 +944,7 @@ def test_merge_conversions():
     )
     converter = TensorConversion(caps_dataset)
     converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json",
+        "t1_custom_interrupted",
         check_transforms=False,
     )
     with open(tmp_dir / "tensor_conversion" / "t1_custom_interrupted.json", "r") as f:
@@ -967,7 +974,7 @@ def test_merge_conversions():
     converter = TensorConversion(caps_dataset)
     copy_json_dir(tmp_dir)
     converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json",
+        "t1_transform_interrupted",
     )
     with open(
         tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json", "r"
@@ -982,16 +989,14 @@ def test_merge_conversions():
 
     copy_json_dir(tmp_dir)
     with pytest.raises(ClinicaDLArgumentError):
-        converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json"
-        )
+        converter.convert_to_tensors("t1_ref_interrupted")
     with pytest.raises(ClinicaDLArgumentError):
         converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json",
+            "t1_transform_interrupted",
             save_transforms=False,
         )
     converter.convert_to_tensors(
-        tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json",
+        "t1_ref_interrupted",
         save_transforms=False,
     )
     with open(tmp_dir / "tensor_conversion" / "t1_ref_interrupted.json", "r") as f:
@@ -1013,7 +1018,7 @@ def test_merge_conversions():
     copy_json_dir(tmp_dir)
     with pytest.raises(ClinicaDLArgumentError):
         converter.convert_to_tensors(
-            tmp_dir / "tensor_conversion" / "t1_transform_interrupted.json",
+            "t1_transform_interrupted",
         )
 
     # spacing and shape
