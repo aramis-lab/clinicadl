@@ -70,7 +70,8 @@ class SingleSplit(Splitter):
         Parameters
         ----------
         dataset : Dataset
-            The dataset to split.
+            The dataset to split. Can be a :py:class:`~clinicadl.data.datasets.CapsDataset`, :py:class:`~clinicadl.data.datasets.ConcatDataset`,
+            :py:class:`~clinicadl.data.datasets.PairedDataset`, or :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
 
         Returns
         -------
