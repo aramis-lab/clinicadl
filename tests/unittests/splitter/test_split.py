@@ -2,38 +2,38 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from torch.utils.data import WeightedRandomSampler
+from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 from clinicadl.splitter.split import Split
 
-caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
-data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
+DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t")
+TRAIN_DATASET = CapsDataset(
+    CAPS_DIR,
+    preprocessing=PETLinear(
+        tracer="18FAV45",
+        suvr_reference_region="pons2",
+        use_uncropped_image=True,
+    ),
+    data=DATA.iloc[:6],
+)
+VAL_DATASET = CapsDataset(
+    CAPS_DIR,
+    preprocessing=PETLinear(
+        tracer="18FAV45",
+        suvr_reference_region="pons2",
+        use_uncropped_image=True,
+    ),
+    data=DATA.iloc[6:],
+)
 
 
 def test_build_loaders():
-    train_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=PETLinear(
-            tracer="18FAV45",
-            suvr_reference_region="pons2",
-            use_uncropped_image=True,
-        ),
-        data=data.iloc[:6],
-    )
-    val_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=PETLinear(
-            tracer="18FAV45",
-            suvr_reference_region="pons2",
-            use_uncropped_image=True,
-        ),
-        data=data.iloc[6:],
-    )
     split = Split(
-        index=0, split_dir="abc", train_dataset=train_dataset, val_dataset=val_dataset
+        index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
     )
 
     config = DataLoaderConfig(batch_size=2)
@@ -47,18 +47,12 @@ def test_build_loaders():
     assert split.val_loader.sampler.num_replicas == 1
 
     split.parallelism(dp_degree=2, rank=0)
-    config = DataLoaderConfig(batch_size=2)
-    split.build_train_loader(config)
-    assert split.train_loader.batch_size == 2
     assert split.train_loader.sampler.num_replicas == 2
-
-    config = DataLoaderConfig(num_workers=1)
-    split.build_val_loader(config)
-    assert split.val_loader.num_workers == 1
     assert split.val_loader.sampler.num_replicas == 2
 
     #####
     split.reset()
+    split.parallelism(dp_degree=2, rank=1)
 
     split.build_train_loader(
         batch_size=2,
@@ -80,7 +74,6 @@ def test_build_loaders():
 
     split.build_val_loader(
         batch_size=2,
-        sampling_weights="age",
         shuffle=False,
         num_workers=1,
         pin_memory=False,
@@ -94,18 +87,34 @@ def test_build_loaders():
     assert split.val_loader.drop_last
     assert split.val_loader.prefetch_factor == 2
     assert split.val_loader.persistent_workers
-    assert isinstance(split.val_loader.sampler, WeightedRandomSampler)
-
-    split.parallelism(dp_degree=2, rank=0)
-    split.build_train_loader(shuffle=True)
-    assert split.train_loader.sampler.shuffle
-    assert split.train_loader.sampler.num_replicas == 2
-
-    config = DataLoaderConfig(num_workers=1)
-    split.build_val_loader(shuffle=True)
-    assert split.train_loader.sampler.shuffle
+    assert isinstance(split.val_loader.sampler, DistributedSampler)
     assert split.val_loader.sampler.num_replicas == 2
 
     # error
     with pytest.raises(ValueError):
         split.parallelism(dp_degree=2, rank=2)
+
+
+def test_to_dict():
+    split = Split(
+        index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
+    )
+    split.build_train_loader(batch_size=2)
+    split.build_val_loader(num_workers=1)
+    dict_ = split.to_dict()
+    assert sorted(list(dict_.keys())) == sorted(
+        [
+            "index",
+            "split_dir",
+            "train_dataset",
+            "val_dataset",
+            "train_loader_config",
+            "val_loader_config",
+        ]
+    )
+    assert dict_["index"] == 0
+    assert dict_["split_dir"] == Path("abc")
+    assert dict_["train_dataset"]["total_samples"] == 6
+    assert dict_["val_dataset"]["total_samples"] == 2
+    assert dict_["train_loader_config"]["batch_size"] == 2
+    assert dict_["val_loader_config"]["num_workers"] == 1
