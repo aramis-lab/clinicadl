@@ -1,4 +1,5 @@
 import warnings
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -20,7 +21,7 @@ def sub_data(
     participants_sessions: Optional[list[tuple[str, str]]] = None,
 ) -> pd.DataFrame:
     if not participants_sessions:
-        return FULL_DATA
+        return deepcopy(FULL_DATA)
     data = FULL_DATA.set_index(["participant_id", "session_id"])
     data = data.loc[participants_sessions]
     return data.reset_index()
@@ -109,6 +110,8 @@ def test_get_sample_info():
     assert multimodal_dataset.get_sample_info(7, "age") == 4
     with pytest.raises(IndexError):
         multimodal_dataset.get_sample_info(8, "age")
+    with pytest.raises(IndexError):
+        multimodal_dataset.get_sample_info(-1, "age")
     with pytest.raises(KeyError):
         multimodal_dataset.get_sample_info(0, "diagnosis")
 
