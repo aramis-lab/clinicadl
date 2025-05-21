@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import ConcatDataset as TorchConcatDataset
 
-from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import DATASET_ID, PARTICIPANT_ID, SESSION_ID
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.slice import Slice
 from clinicadl.tsvtools.utils import read_data
@@ -358,16 +358,14 @@ class ConcatDataset(TorchConcatDataset):
         """
         Concatenates the dataframes from all the datasets.
         """
-        df = pd.concat(
-            [
-                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
-                for dataset in self.datasets
-            ],
+        df: pd.DataFrame = pd.concat(
+            [dataset.df for dataset in self.datasets],
             keys=range(len(self.datasets)),
-            names=["dataset_id"],
+            names=[DATASET_ID],
         )
+        CapsDataset._map_indices_to_images(df)
 
         return df.reset_index(
             drop=False,
-            level=0,
+            level=DATASET_ID,
         ).reset_index(drop=True)
