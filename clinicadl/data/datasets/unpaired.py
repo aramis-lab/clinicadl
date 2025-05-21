@@ -7,7 +7,13 @@ from typing import Any, Dict, Iterable, Tuple
 import pandas as pd
 from torch.utils.data import Dataset
 
-from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import (
+    DATASET_ID,
+    FIRST_INDEX,
+    LAST_INDEX,
+    PARTICIPANT_ID,
+    SESSION_ID,
+)
 from clinicadl.transforms.extraction import Sample
 from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
@@ -244,7 +250,7 @@ class UnpairedDataset(Dataset):
             If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
             forming the UnpairedDataset.
         """
-        data = read_data(data, check_protected_names=False)(data).set_index(
+        data = read_data(data, check_protected_names=False).set_index(
             [PARTICIPANT_ID, SESSION_ID]
         )
 
@@ -445,7 +451,7 @@ class UnpairedDataset(Dataset):
         """
         df = pd.concat(
             [
-                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
+                dataset.df.drop(columns=[FIRST_INDEX, LAST_INDEX])
                 for dataset in datasets
             ],
             axis=1,
