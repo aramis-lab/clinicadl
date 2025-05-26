@@ -2,20 +2,24 @@ from __future__ import annotations
 
 import shutil
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 import torch
+from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
-from clinicadl.callbacks.base import CallbacksHandler
+from clinicadl.callbacks.handler import Callback, CallbacksHandler
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
+from clinicadl.losses.config import LossConfig
+from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps
+from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.config.enum import Optimum
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.metrics import ClinicaDLMetrics, LossMetricConfig, MetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
@@ -32,61 +36,50 @@ class Trainer:
         self,
         maps_path: PathType,
         model: ClinicaDLModel,
-        metrics: ClinicaDLMetrics,
+        callbacks: Optional[list[Callback]] = None,
+        metrics: Optional[
+            list[Union[MetricConfig, MonaiMetric, LossConfig, Loss]]
+        ] = None,
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = True,
         seed: int = 123,
     ) -> None:
-        """
-        Initialize the training environment including model, metrics, and configuration setups.
-
-        Parameters
-        ----------
-        maps_path : PathType
-            Path to the MAPS directory where training artifacts are saved.
-        model : ClinicaDLModel
-            Model to be trained.
-        metrics : ClinicaDLMetrics
-            Metrics configuration to evaluate model performance.
-        optim_config : OptimizationConfig, optional
-            Configuration for the optimizer, by default OptimizationConfig().
-        comp_config : ComputationalConfig, optional
-            Computational resource settings, by default ComputationalConfig().
-        _overwrite : bool, optional
-            Whether to overwrite existing MAPS folder, by default True.
-        seed : int, optional
-            Random seed for reproducibility, by default 123.
-        """
+        """TO COMPLETE"""
 
         ## CONFIG
         self.model = model
         self.comp = comp_config
         self.optim = optim_config
-        self.train_metrics = metrics
         self.metrics = metrics
 
-        # CALLBACKS
-        self.callbacks = CallbacksHandler()
-
-        # METRICS CONFIG
-        self.metrics._configure_loss_tracking(model.loss)
-        if self.metrics.compute_train_metrics:
-            self.train_metrics = deepcopy(metrics)
-            self.train_metrics._configure_loss_tracking(model.loss)
-
         self.training_loss = self.init_training_loss()
-
         self.epoch: int = 0
+        self.scaler = self.comp.get_scaler()
 
-        self.callbacks.add_callback(self.optim.init_early_stopping())
-        self.scaler = self.comp.init_scaler()
-
-        # seed initialization
+        # seed initialization # TODO : check if some arguments can be chosen by the user
         seed_everything(seed, deterministic=False, compensation="memory")
 
         ## MAPS CONFIG
-        self.init_maps(maps_path, overwrite=_overwrite)
+        self.maps = self.create_maps(maps_path, overwrite=_overwrite)
+
+        # CALLBACKS
+        self.callbacks = CallbacksHandler(
+            callbacks=callbacks, maps=self.maps, model=self.model
+        )
+        self.check_metrics()
+
+    def check_metrics(self):
+        if self.metrics:
+            if not isinstance(self.metrics, list):
+                self.metrics = [self.metrics]
+            for i, metric in enumerate(self.metrics):
+                if isinstance(metric, LossConfig):
+                    self.metrics[i] = LossMetricConfig(loss_fn=metric.get_object())
+                elif isinstance(metric, Loss):
+                    self.metrics[i] = LossMetricConfig(loss_fn=metric)
+        else:
+            self.metrics = [LossMetricConfig(loss_fn=self.model.loss)]
 
     @classmethod
     def from_maps(cls, maps_path: PathType) -> Trainer:
@@ -152,7 +145,7 @@ class Trainer:
             _overwrite=False,
         )
 
-    def init_maps(self, maps_path: PathType, overwrite: bool) -> None:
+    def create_maps(self, maps_path: PathType, overwrite: bool) -> Maps:
         """
         Initialize the MAPS folder for saving training results and config files.
 
@@ -163,17 +156,26 @@ class Trainer:
         overwrite : bool
             Whether to overwrite the directory if it exists.
         """
-        self.maps = Maps(maps_path)
+        maps = Maps(maps_path)
         if overwrite:
-            if self.maps.exists():
-                remove_non_empty_dir(self.maps.path)
+            if maps.exists():
+                remove_non_empty_dir(maps.path)
         else:
-            if self.maps.exists():
+            if maps.exists():
                 raise ClinicaDLMAPSError(
-                    f"The maps directory {self.maps.path} already exists. Use overwrite=True to remove it."
+                    f"The maps directory {maps.path} already exists. Use overwrite=True to remove it."
                 )
 
-        self.write_infos()
+        maps.create()
+
+        self.model.write_json(maps.model_json)
+        self.optim.write_json(maps.optimization_json)
+        self.comp.write_json(maps.computational_json)
+        self.metrics.write_json(
+            maps.metrics_json
+        )  # no need to write both train and val metrics
+
+        return maps
 
     def init_training_loss(self) -> pd.DataFrame:
         """
@@ -194,18 +196,6 @@ class Trainer:
     @property
     def loss(self):
         return self.training_loss[LOSS].iloc[-1]
-
-    def write_infos(self) -> None:
-        """
-        Write model, optimizer, computational, and metrics configurations to JSON files in the MAPS directory.
-        """
-        self.maps.create()
-        self.model.write_json(self.maps.model_json)
-        self.optim.write_json(self.maps.optimization_json)
-        self.comp.write_json(self.maps.computational_json)
-        self.metrics.write_json(
-            self.maps.metrics_json
-        )  # no need to write both train and val metrics
 
     def resume(self, split: Split) -> None:
         """
@@ -229,7 +219,7 @@ class Trainer:
             self.maps.splits[split.index].tmp.optimizer
         )
         # TODO: need to resume the lr scheduler and the distributed Sampler
-        # TODO: need to load metrics or not ?
+        # TODO: need to load metrics or not ? yes needed
 
         self.train(split)
 
@@ -242,13 +232,12 @@ class Trainer:
         split : Split
             Contains dataloaders for training and validation.
         """
-
-        self.on_train_begin(split)
+        break_ = False
+        self.on_train_begin(split, metrics=metrics)
 
         while self.epoch < self.optim.epochs:
-            # if self.early_stopping.step(self.loss):
-            #     print("Early stopping triggered.")  # TODO: put in the logger
-            #     break
+            if break_:
+                break
 
             self.on_epoch_begin()
 
@@ -268,39 +257,9 @@ class Trainer:
             self.on_epoch_end(split)
         self.on_train_end(split)
 
-    def training_step(self, data: Batch) -> torch.Tensor:
-        """
-        Perform a training step on the model using the provided batch of data and return the computed loss.
-
-        Parameters
-        ----------
-        data : Batch
-            Batch of data including images and labels.
-
-        Returns
-        -------
-        torch.Tensor
-            Computed loss for the batch.
-        """
-        labels = data.get_labels().to(self.comp.device)
-        images = data.get_images().to(self.comp.device)
-
-        outputs = self.model.network(images)
-        loss = self.model.loss(outputs, labels)
-
-        if self.metrics.compute_train_metrics:
-            self.train_metrics(outputs, labels)
-
-        return loss
-
-    def weights_update(self):
-        """TO COMPLETE"""
-
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.model.optimizer.zero_grad(set_to_none=True)
-
-    def on_train_begin(self, split: Split) -> None:
+    def on_train_begin(
+        self, split: Split, metrics: Optional[list[Union[MetricConfig, MonaiMetric]]]
+    ) -> None:
         """
         Initialize components before starting the training loop.
 
@@ -314,13 +273,14 @@ class Trainer:
         """
 
         self.create_split(split)  # not sure if needed
+
         self.model.train()
 
-        self.n_batch = len(split.train_loader)
-        self.n_val_batch = len(split.val_loader)
+        # self.n_batch = len(split.train_loader)
+        # self.n_val_batch = len(split.val_loader)
 
         self.reset()
-        self._init_scheduler()
+        self._init_scheduler(n_batch=len(split.train_loader))
 
         self.callbacks.on_train_begin(device=self.comp.device.type)
 
@@ -343,16 +303,44 @@ class Trainer:
         """TO COMPLETE"""
         self.callbacks.on_batch_begin(batch=batch_idx)
 
+    def training_step(self, data: Batch) -> torch.Tensor:
+        """
+        Perform a training step on the model using the provided batch of data and return the computed loss.
+
+        Parameters
+        ----------
+        data : Batch
+            Batch of data including images and labels.
+
+        Returns
+        -------
+        torch.Tensor
+            Computed loss for the batch.
+        """
+        labels = data.get_labels().to(self.comp.device)
+        images = data.get_images().to(self.comp.device)
+
+        outputs = self.model.network(images)
+        loss = self.model.loss(outputs, labels)
+
+        return loss
+
+    def weights_update(self):
+        """TO COMPLETE"""
+
+        self.scaler.step(self.model.optimizer)
+        self.scaler.update()
+        self.model.optimizer.zero_grad(set_to_none=True)
+
     def on_batch_end(self, batch_idx: int, loss: torch.Tensor):
         """TO COMPLETE"""
 
         self.callbacks.on_batch_end(batch=batch_idx)
 
-        if self.metrics.compute_train_metrics:
-            self.train_metrics.aggregate(batch=batch_idx, epoch=self.epoch)
-
         self.training_loss.at[(self.epoch, batch_idx), LOSS] = loss.item()
-        self.training_loss.at[(self.epoch, batch_idx), TIME] = 3.5
+        self.training_loss.at[(self.epoch, batch_idx), TIME] = self.callbacks.callbacks[
+            Chronometer()
+        ].time
 
     def on_epoch_end(self, split: Split) -> None:
         """
@@ -369,7 +357,7 @@ class Trainer:
         self.scheduler.step()  # TODO : to put in callbacks ?
 
         # Sauvegarde du modèle à la fin de chaque epoch
-        self._save_tmp_weights(split.index)
+        self._save_tmp_weights(split.index)  # to put in a callback model_selection
 
         self.callbacks.on_epoch_end(epoch=self.epoch)
         self.epoch += 1
@@ -402,7 +390,7 @@ class Trainer:
         self.epoch = 0
         self.metrics.reset(df=True)
 
-    def validate(
+    def evaluate(
         self,
         dataloader: DataLoader[CapsDataset],
     ):
@@ -433,6 +421,23 @@ class Trainer:
         self.callbacks.on_validation_end()
         return None
 
+    def predict(
+        self,
+        dataloader: DataLoader[CapsDataset],
+        split: int,
+        output_transforms: list[Transforms],
+        data_group: Optional[str] = None,
+    ):
+        """TO COMPLETE"""
+
+        validator = Predictor(self.maps.path, self.model, self.comp)
+        validator.test(
+            dataloader=dataloader,
+            additionnal_metrics=[],
+            split=split,
+            data_group=data_group if data_group else "test",
+        )
+
     ## UTILS
 
     def save_metrics(self, split: int, maps: Maps):
@@ -459,47 +464,14 @@ class Trainer:
         self.maps.create_split(split, self.metrics.selection_metrics)
         split.write_json(self.maps.splits[split.index].split_json)
 
-    def _save_tmp_weights(self, split: int):
-        model_weights = {
-            "model": self.model.network.state_dict(),
-            EPOCH: self.epoch,
-        }
-        checkpoint_path = self.maps.splits[split].tmp.path / "checkpoint.pth.tar"
-        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save(model_weights, checkpoint_path)
-
-        for name, metric_config in self.metrics.selection_metrics.items():
-            metric_path = self.maps.splits[split].best_metrics[name].path
-            metric_path.mkdir(parents=True, exist_ok=True)
-
-            optimum = metric_config.optimum()
-
-            if (
-                self.epoch == 0
-                or (
-                    optimum == Optimum.MAX
-                    and (
-                        self.metrics.get_value(self.epoch, name)
-                        > self.metrics.get_value(self.epoch - 1, name)
-                    )
-                )
-                or (
-                    optimum == Optimum.MIN
-                    and (
-                        self.metrics.get_value(self.epoch, name)
-                        < self.metrics.get_value(self.epoch - 1, name)
-                    )
-                )
-            ):
-                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
-
     ## INITIALIZATION
     def _init_scheduler(
         self,
+        n_batch: int,
     ):
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
             self.model.optimizer,
             max_lr=self.model.optimizer.param_groups[0]["lr"],
-            steps_per_epoch=self.n_batch,
+            steps_per_epoch=n_batch,
             epochs=self.optim.epochs,
         )  # TODO: check if it stays ina method init

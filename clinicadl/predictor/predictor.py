@@ -98,7 +98,7 @@ class Predictor:
     def test(
         self,
         dataloader: DataLoader,
-        metric: str,
+        additionnal_metrics,
         split: int,
         data_group: str,
     ):

@@ -905,6 +905,29 @@ class CapsDataset(Dataset):
                 f"An error occurred while counting samples in images of ({participant}, {session})."
             ) from exc
 
+    # def get_dataloader(self, dataloader_config):
+    #     """
+    #     Returns a PyTorch DataLoader for the CapsDataset.
+
+    #     Parameters
+    #     ----------
+    #     dataloader_config : DataloaderConfig
+    #         Configuration for the DataLoader, including batch size, shuffling, etc.
+
+    #     Returns
+    #     -------
+    #     DataLoader
+    #         A PyTorch DataLoader for the CapsDataset.
+    #     """
+
+    #     if not self.converted:
+    #         raise ClinicaDLCAPSError(
+    #             "Cannot create a DataLoader. Please convert your CapsDataset "
+    #             "to tensors using 'to_tensors', or use 'read_tensor_conversion' if it has "
+    #             "already be done."
+    #         )
+    #     return dataloader_config.get_object(self)
+
     @staticmethod
     def _map_indices_to_images(df: pd.DataFrame) -> None:
         """

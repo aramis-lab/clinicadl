@@ -20,26 +20,26 @@ class Chronometer(Callback):
     Example
     -------
     chrono = Chronometer()
-    chrono.start()
+    chrono.on_train_begin()
 
     for epoch in range(epochs):
-        chrono.next_iter()
+        chrono.on_epoch_begin()
         for i, (x, y) in enumerate(train_loader):
-            chrono.forward()
+            chrono.on_batch_begin()
             ...
-            chrono.backward()
+            chrono.on_backward_begin()
             loss.backward()
             optimizer.step()
-            chrono.update()
+            chrono.on_batch_end()
 
         chrono.validation()
         for val_x, val_y in val_loader:
             ...
         chrono.validation()
 
-        chrono.next_iter()
+        chrono.on_epoch_end()
 
-    chrono.stop()
+    chrono.on_train_end()
     chrono.display()
     """
 
@@ -93,7 +93,7 @@ class Chronometer(Callback):
 
     def elapsed(self) -> Optional[float]:
         """
-        Returns time elapsed since `start()` was called.
+        Returns time elapsed since `on_train_begin()` was called.
 
         Returns
         -------
@@ -132,10 +132,6 @@ class Chronometer(Callback):
             self.time_perf_backward.append(time() - self.start_backward)
             self.start_backward = None
 
-    def next_iter(self) -> None:
-        """Call this at the end of an iteration to finalize dataload timing."""
-        self._dataload()
-
     def validation(self) -> None:
         """
         Call this before and after the validation phase.
@@ -152,7 +148,7 @@ class Chronometer(Callback):
         self.start_proc = datetime.now()
 
     def on_epoch_begin(self, epoch: int, **kwargs):
-        self.next_iter()
+        self._dataload()
 
     def on_batch_begin(self, batch: int, **kwargs):
         """
@@ -186,7 +182,7 @@ class Chronometer(Callback):
         self.validation()
 
     def on_epoch_end(self, epoch: int, **kwargs):
-        self.next_iter()
+        self._dataload()
 
     def on_train_end(self, **kwargs):
         """Marks the end of the overall training."""

@@ -1,12 +1,10 @@
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from .factory import (
-    Chronometer,
-    CodeCarbonCallback,
-    LoggerCallback,
-    MLFLOWCallback,
-    WandBCallback,
-)
+from clinicadl.maps.maps import Maps
+from clinicadl.metrics.utils import metric_config_equals
+from clinicadl.model.clinicadl_model import ClinicaDLModel
+
+from .factory import *
 from .factory.base import Callback
 
 
@@ -14,70 +12,72 @@ class CallbacksHandler:
     """
     Manages a collection of callback instances to be used during a training pipeline.
 
-    Built-in support for optional callbacks such as:
-    - MLFlow
-    - Weights & Biases (WandB)
-    - CodeCarbon
-    - Logger
-    - Chronometer
-
-    Parameters
-    ----------
-    mlflow : bool, default=False
-        Whether to enable MLFLOWCallback.
-
-    wandb : bool, default=False
-        Whether to enable WandBCallback.
-
-    codecarbon : bool, default=True
-        Whether to enable CodeCarbonCallback.
-
-    logger : bool, default=True
-        Whether to enable LoggerCallback.
-
-    chronometer : bool, default=True
-        Whether to enable Chronometer.
-
-    custom_callback : Callback or list of Callback, optional
-        Custom callback(s) provided by the user.
     """
 
     def __init__(
         self,
-        mlflow: bool = False,
-        wandb: bool = False,
-        codecarbon: bool = True,
-        logger: bool = True,
-        chronometer: bool = True,
-        custom_callback: Optional[Union[Callback, list[Callback]]] = None,
+        maps: Maps,
+        model: ClinicaDLModel,
+        callbacks: Optional[List[Callback]] = None,
     ):
-        self.callbacks: List[Callback] = []
+        if callbacks is None:
+            callbacks = []
 
-        if codecarbon:
-            self.callbacks.append(CodeCarbonCallback())
-        if logger:
-            self.callbacks.append(LoggerCallback())
-        if chronometer:
-            self.callbacks.append(Chronometer())
-        if mlflow:
-            self.callbacks.append(MLFLOWCallback())
-        if wandb:
-            self.callbacks.append(WandBCallback())
+        self.callbacks: Dict[type[Callback], Callback] = {
+            type(callback): callback for callback in callbacks
+        }
 
-        if custom_callback is not None:
-            if isinstance(custom_callback, list):
-                for cb in custom_callback:
-                    if not isinstance(cb, Callback):
-                        raise TypeError(
-                            f"Each custom callback must be a Callback instance, got {type(cb)}"
-                        )
-                    self.callbacks.append(cb)
-            elif isinstance(custom_callback, Callback):
-                self.callbacks.append(custom_callback)
-            else:
+        self.add_callback(Chronometer())
+
+        self.maps = maps
+        self.model = model
+
+        for cb in self.callbacks:
+            if not isinstance(cb, Callback):
                 raise TypeError(
-                    f"custom_callback must be a Callback or list of Callback, got {type(custom_callback)}"
+                    f"Each custom callback must be a Callback instance, got {type(cb)}"
                 )
+
+        if EarlyStopping in self.callbacks.keys():
+            if ModelCheckpoint in self.callbacks.keys():
+                metrics1 = self.callbacks[EarlyStopping].metrics
+                metrics2 = self.callbacks[ModelCheckpoint].metrics
+                if not metric_config_equals(metrics1, metrics2):
+                    raise ValueError(
+                        "EarlyStopping and ModelCheckpoint callbacks must have the same metrics"
+                    )
+
+    def add_callback(self, callback):
+        cb = callback() if isinstance(callback, type) else callback
+        cb_class = callback if isinstance(callback, type) else callback.__class__
+        if cb_class in [c.__class__ for c in self.callbacks]:
+            logger.warning(
+                f"You are adding a {cb_class} to the callbacks of this Trainer, but there is already one. The current"
+                + "list of callbacks is\n:"
+                + self.callback_list
+            )
+        self.callbacks.append(cb)
+
+    def pop_callback(self, callback):
+        if isinstance(callback, type):
+            for cb in self.callbacks:
+                if isinstance(cb, callback):
+                    self.callbacks.remove(cb)
+                    return cb
+        else:
+            for cb in self.callbacks:
+                if cb == callback:
+                    self.callbacks.remove(cb)
+                    return cb
+
+    def remove_callback(self, callback):
+        if isinstance(callback, type):
+            for cb in self.callbacks:
+                if isinstance(cb, callback):
+                    self.callbacks.remove(cb)
+                    return
+        else:
+            self.callbacks.remove(callback)
 
     def add_callback(self, callback: Callback):
         """
@@ -94,24 +94,7 @@ class CallbacksHandler:
             )
 
         if callback not in self.callbacks:
-            self.callbacks.append(callback)
-
-    def remove_callback(self, callback: Callback):
-        """
-        Remove a single callback to the handler.
-
-        Parameters
-        ----------
-        callback : Callback
-            Callback instance to be added.
-        """
-        if isinstance(callback, type):
-            for cb in self.callbacks:
-                if isinstance(cb, callback):
-                    self.callbacks.remove(cb)
-                    return
-        else:
-            self.callbacks.remove(callback)
+            self.callbacks[type(callback)] = callback
 
     @property
     def callback_list(self):

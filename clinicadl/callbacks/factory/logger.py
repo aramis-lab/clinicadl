@@ -101,7 +101,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     return logger
 
 
-class LoggerCallback(Callback):
+class Logger(Callback):
     """
     Callback that logs major training events to console and/or file.
 
@@ -128,7 +128,7 @@ class LoggerCallback(Callback):
         self.logger.info("Epoch %d completed", epoch)
 
     def on_batch_begin(self, batch: int, **kwargs):
-        self.logger.info("Beginning of batch %d", batch)
+        self.logger.debug("Beginning of batch %d", batch)
 
     def on_batch_end(self, batch: int, **kwargs):
-        self.logger.info("Batch %d completed", batch)
+        self.logger.debug("Batch %d completed", batch)

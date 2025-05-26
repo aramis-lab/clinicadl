@@ -1,1 +1,1 @@
-from .base import CallbacksHandler
+from .handler import CallbacksHandler

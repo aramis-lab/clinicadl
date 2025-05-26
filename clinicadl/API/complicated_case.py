@@ -1,7 +1,9 @@
 from pathlib import Path
 
 import torchio.transforms as transforms
+from monai.metrics.regression import MAEMetric
 
+from clinicadl.callbacks.factory import EarlyStopping, Logger, WandB
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -63,30 +65,34 @@ dataloader_config = DataLoaderConfig(batch_size=3)
 
 
 maps_path = Path("maps_test")
+loss = MSELossConfig()
 
 # DEFINE MODEL
-model = ClinicaDLModel.from_config(
-    network_config=get_network_config(
+model = ClinicaDLModel(
+    network=get_network_config(
         ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
     ),
-    loss_config=MSELossConfig(),
-    optimizer_config=AdamConfig(),
+    loss=loss,
+    optimizer=AdamConfig(),
 )
 
 
-# DEFINE METRICS
-metrics = ClinicaDLMetrics(
-    metrics=[MSEMetricConfig(), MAEMetricConfig()],
-    selection_metrics=[MSEMetricConfig()],
-)
+mae = MAEMetric()
 
+callbacks = [
+    EarlyStopping(metrics=[mae, MSEMetricConfig(), loss]),
+    Logger(),
+    WandB(),
+    ModelCheckpoint(metrics=[mae, MSEMetricConfig(), loss]),
+]
 
 trainer = Trainer(
     maps_path,
     model=model,
     comp_config=comput_config,
     optim_config=optim_config,
-    metrics=metrics,
+    callbacks=callbacks,
+    metrics=[MSEMetricConfig(), mae, loss],
 )
 
 
@@ -110,12 +116,16 @@ dataset_test = CapsDataset(
     label="diagnosis",
 )
 dataset_test.to_tensors(json_name="test_test.json", n_proc=2)
-
+# dataloader = dataset_test.get_dataloader(dataloader_config)
 
 output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])  # type: ignore
 
-predictor = Predictor(maps_path, comp_config=comput_config, model=model)
-
 dataloader = dataloader_config.get_object(dataset_test)
 
-predictor.predict(dataloader, metrics=metrics, split=1, data_group="test")
+trainer.predict(
+    dataloader,
+    additional_metrics=add_metrics,
+    split=1,
+    data_group="test",
+    output_transforms=output_transforms,
+)
