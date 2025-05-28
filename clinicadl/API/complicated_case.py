@@ -12,8 +12,15 @@ from clinicadl.data.datatypes.preprocessing import (
     T1Linear,
 )
 from clinicadl.losses.config import MSELossConfig
-from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.config.factory import (
+    ConfusionMatrixMetricConfig,
+    MAEMetricConfig,
+    MSEMetricConfig,
+    SensitivityMetricConfig,
+    SpecificityMetricConfig,
+    SSIMMetricConfig,
+)
+from clinicadl.metrics.metrics import ClinicaDLMetrics, MetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
@@ -29,19 +36,12 @@ from clinicadl.utils.computational.config import ComputationalConfig
 caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
 )  # output of clinica pipelines
-sub_ses_t1 = Path(
-    "/Users/camille.brianceau/aramis/CLINICADL/caps/subjects_t1.tsv"
-)  # 64 subjects
+sub_ses_t1 = caps_directory / "subjects_t1.tsv"  # 64 subjects
 
-# DEFINE PREPROCESSING
 preprocessing_t1 = T1Linear()
-
-# DEFINE TRANSFORMS
 transforms_image = Transforms(
     extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
 )
-
-# CREATE CAPSDATASET
 dataset_t1_image = CapsDataset(
     caps_directory=caps_directory,
     data=sub_ses_t1,
@@ -50,9 +50,6 @@ dataset_t1_image = CapsDataset(
     label="diagnosis",
 )
 dataset_t1_image.to_tensors(json_name="test_bis.json", n_proc=2)
-
-
-# CAS CROSS-VALIDATION
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
@@ -63,11 +60,9 @@ optim_config = OptimizationConfig(epochs=5)
 comput_config = ComputationalConfig(gpu=False)
 dataloader_config = DataLoaderConfig(batch_size=3)
 
-
 maps_path = Path("maps_test")
 loss = MSELossConfig()
 
-# DEFINE MODEL
 model = ClinicaDLModel(
     network=get_network_config(
         ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
@@ -78,6 +73,11 @@ model = ClinicaDLModel(
 
 
 mae = MAEMetric()
+ssim = SSIMMetricConfig(spatial_dims=2)
+sensitivity = SensitivityMetricConfig(include_background=False)
+specificity = SpecificityMetricConfig(include_background=True)
+matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
+
 
 callbacks = [
     EarlyStopping(metrics=[mae, MSEMetricConfig(), loss]),
@@ -92,7 +92,7 @@ trainer = Trainer(
     comp_config=comput_config,
     optim_config=optim_config,
     callbacks=callbacks,
-    metrics=[MSEMetricConfig(), mae, loss],
+    metrics=[ssim, sensitivity, specificity, mae, matrix, loss],
 )
 
 
@@ -116,14 +116,14 @@ dataset_test = CapsDataset(
     label="diagnosis",
 )
 dataset_test.to_tensors(json_name="test_test.json", n_proc=2)
-# dataloader = dataset_test.get_dataloader(dataloader_config)
+dataloader_test = dataloader_config.get_object(dataset_test)
 
 output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])  # type: ignore
+add_metrics = []
 
-dataloader = dataloader_config.get_object(dataset_test)
 
 trainer.predict(
-    dataloader,
+    dataloader_test,
     additional_metrics=add_metrics,
     split=1,
     data_group="test",

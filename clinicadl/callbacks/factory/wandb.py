@@ -2,6 +2,8 @@ from importlib.util import find_spec
 
 import numpy as np
 
+from clinicadl.trainer.config import _TrainingConfig
+
 from .base import Callback
 
 
@@ -66,7 +68,7 @@ class WandB(Callback):  # pragma: no cover
         self._wandb.define_metric("train/global_step")
         self._wandb.define_metric("*", step_metric="train/global_step", step_sync=True)
 
-    def on_train_begin(self, **kwargs):
+    def on_train_begin(self, config: _TrainingConfig, **kwargs):
         model_config = kwargs.pop("model_config", None)
         if not self.is_initialized:
             self.setup(training_config, model_config=model_config)
@@ -125,5 +127,5 @@ class WandB(Callback):  # pragma: no cover
 
             self._wandb.log({"my_val_table": val_table})
 
-    def on_train_end(self, **kwargs):
+    def on_train_end(self, config: _TrainingConfig, **kwargs):
         self.run.finish()

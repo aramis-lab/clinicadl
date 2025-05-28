@@ -8,10 +8,11 @@ from pydantic import (
     model_validator,
 )
 
+from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import Optimum, Reduction
+from .enum import Optimum
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -19,7 +20,7 @@ __all__ = ["MetricConfig", "LossMetricConfig"]
 class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
-    def get_object(self) -> monai.metrics.CumulativeIterationMetric:
+    def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
         """
         Returns the metric associated to this configuration,
         parametrized with the parameters passed by the user.
@@ -32,7 +33,7 @@ class MetricConfig(ObjectConfig):
         return super().get_object()
 
     @classmethod
-    def _get_class(cls) -> type[monai.metrics.CumulativeIterationMetric]:
+    def _get_class(cls) -> type[monai.metrics.metric.CumulativeIterationMetric]:
         """Returns the metric associated to this config class."""
         return getattr(monai.metrics, cls._get_name())
 
@@ -93,3 +94,24 @@ class LossMetricConfig(MetricConfig):
                 ) from exc
 
         return self
+
+
+class MonaiMetricConfig(MetricConfig):
+    """Config class to use MONAI metrics."""
+
+    metric: monai.metrics.metric.CumulativeIterationMetric
+
+    def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
+        return self.metric
+
+    @staticmethod
+    def optimum():
+        """The optimum of the metric."""
+        raise NotImplementedError(
+            "Optimum for MONAI metrics is not defined. Please use the specific metric config class."
+        )
+
+    @property
+    def name(self) -> str:
+        """The name of the MONAI metric."""
+        return self.metric.__class__.__name__

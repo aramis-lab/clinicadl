@@ -1,17 +1,18 @@
-def metric_config_equals(metric1, metric2, keys_to_compare=None):
-    if type(metric1) != type(metric2):
-        return False
+def metric_config_equals(metrics1: list, metrics2: list, keys_to_compare=None):
+    for metric1 in metrics1:
+        if type(metric1) != type(metrics2):
+            return False
 
     # Récupère tous les attributes non-callables, non-privés (exclut _xyz, methods, etc.)
-    def get_public_attrs(metric):
+    def get_public_attrs(metrics):
         return {
             k: v
-            for k, v in vars(metric).items()
+            for k, v in vars(metrics).items()
             if not k.startswith("_") and not callable(v)
         }
 
-    attrs1 = get_public_attrs(metric1)
-    attrs2 = get_public_attrs(metric2)
+    attrs1 = get_public_attrs(metrics1)
+    attrs2 = get_public_attrs(metrics2)
 
     if keys_to_compare is not None:
         # Restreint la comparison à certains paramètres

@@ -36,6 +36,7 @@ class ImplementedMetric(str, Enum):
 class Optimum(str, Enum):
     MIN = "min"
     MAX = "max"
+    NONE = "none"
 
 
 class ConfusionMatrixMetricName(str, Enum):
@@ -105,13 +106,6 @@ class ConfusionMatrixMetricName(str, Enum):
     MARKEDNESS = "markedness"
     DELTAP = "deltap"
     MK = "mk"
-
-
-class Reduction(str, Enum):
-    """Supported reduction for the metrics."""
-
-    MEAN = "mean"
-    SUM = "sum"
 
 
 class Average(str, Enum):

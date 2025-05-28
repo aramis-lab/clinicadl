@@ -56,7 +56,7 @@ class MLFlow(Callback):  # pragma: no cover
         )
         self._mlflow.log_params({})
 
-    def on_train_begin(self, **kwargs):
+    def on_train_begin(self, config: _TrainingConfig, **kwargs):
         model_config = kwargs.pop("model_config", None)
         if not self.is_initialized:
             self.setup(training_config, model_config=model_config)
@@ -72,7 +72,7 @@ class MLFlow(Callback):  # pragma: no cover
 
         self._mlflow.log_metrics(metrics=metrics, step=global_step)
 
-    def on_train_end(self, **kwargs):
+    def on_train_end(self, config: _TrainingConfig, **kwargs):
         self._mlflow.end_run()
 
     def __del__(self):
