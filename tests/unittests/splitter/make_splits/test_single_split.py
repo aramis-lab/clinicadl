@@ -4,16 +4,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-from pydantic import ValidationError
 
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
-from clinicadl.splitter.make_splits import make_kfold, make_split
-from clinicadl.tsvtools.utils import extract_baseline
-from clinicadl.utils.exceptions import (
-    ClinicaDLConfigurationError,
-    ClinicaDLTSVError,
-)
+from clinicadl.splitter.make_splits import make_split
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 
 def remove_non_empty_dir(dir_path: Path):
@@ -36,65 +29,169 @@ def remove_non_empty_dir(dir_path: Path):
         print(f"{dir_path} does not exist or is not a directory.")
 
 
-caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
-data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
+TMP_DIR = Path(__file__).parents[2] / "resources" / "tmp"
 
-sub_ses_t1 = caps_dir / "subjects_t1.tsv"
-sub_ses_df = pd.read_csv(sub_ses_t1, sep="\t")
-
-split_dir = caps_dir / "split"
-train_path = split_dir / "train.tsv"
+DF_PATH = CAPS_DIR / "tsv" / "test_df.tsv"
+DF = pd.read_csv(DF_PATH, sep="\t")
 
 
 def test_good_split():
-    n_test = 15
     stratification = ["age", "sex", "test", "diagnosis"]
-    subset_name = "test_test"
-
     split_dir = make_split(
-        sub_ses_t1,
-        output_dir=caps_dir / "test",
-        subset_name=subset_name,
+        DF_PATH,
+        output_dir=TMP_DIR,
+        subset_name="test",
         stratification=stratification,
-        n_test=n_test,
+        p_categorical_threshold=0.9,
+        p_continuous_threshold=0.9,
+        n_test=15,
+        seed=0,
     )
 
-    train_path = split_dir / "train_baseline.tsv"
-    test_path = split_dir / f"{subset_name}_baseline.tsv"
-
-    assert train_path.exists()
-    assert test_path.exists()
-
+    assert split_dir == TMP_DIR / "split"
     assert (split_dir / "single_split_config.json").is_file
     with (split_dir / "single_split_config.json").open(mode="r") as file:
         dict_ = json.load(file)
-
-    assert dict_["json_name"] == "single_split_config.json"
     assert dict_["split_dir"] == str(split_dir)
-    assert dict_["subset_name"] == subset_name
+    assert dict_["subset_name"] == "test"
     assert dict_["stratification"] == stratification
-    assert dict_["valid_longitudinal"] is False
-    assert dict_["n_test"] == n_test
-    assert np.isclose(dict_["p_categorical_threshold"], 0.5, rtol=1e-09, atol=1e-09)
-    assert np.isclose(dict_["p_continuous_threshold"], 0.5, rtol=1e-09, atol=1e-09)
+    assert dict_["longitudinal"] is False
+    assert dict_["n_test"] == 15
+    assert dict_["seed"] == 0
+    assert np.isclose(dict_["p_categorical_threshold"], 0.9, rtol=1e-09, atol=1e-09)
+    assert np.isclose(dict_["p_continuous_threshold"], 0.9, rtol=1e-09, atol=1e-09)
 
-    train_df = pd.read_csv(train_path, sep="\t")
-    test_df = pd.read_csv(test_path, sep="\t")
-
+    test_df = pd.read_csv(split_dir / "test_baseline.tsv", sep="\t")
     assert len(test_df) == 15
-    assert set(stratification).issubset(set(test_df.columns))
+    assert set(test_df.columns) == set(
+        ["participant_id", "session_id"] + stratification
+    )
+    assert test_df.iloc[11][["participant_id", "session_id"]].to_list() == [
+        "sub-076",
+        "ses-M006",
+    ]
 
-    assert (split_dir / "split_continuous_stats.tsv").is_file()
-    assert (split_dir / "split_categorical_stats.tsv").is_file()
+    train_baseline_df = pd.read_csv(split_dir / "train_baseline.tsv", sep="\t")
+    assert len(train_baseline_df) == 25
+    assert set(train_baseline_df.columns) == set(
+        ["participant_id", "session_id"] + stratification
+    )
+    assert train_baseline_df.iloc[7][["participant_id", "session_id"]].to_list() == [
+        "sub-013",
+        "ses-M000",
+    ]
 
-    split_dir_bis = make_split(sub_ses_t1, n_test=n_test)
+    train_df = pd.read_csv(split_dir / "train.tsv", sep="\t")
+    assert len(train_df) == 39
+    assert set(train_df.columns) == {"participant_id", "session_id"}
+    assert train_df.iloc[22][["participant_id", "session_id"]].to_list() == [
+        "sub-045",
+        "ses-M018",
+    ]
 
-    assert split_dir_bis == sub_ses_t1.parent / "split"
+    continuous_stats = pd.read_csv(split_dir / "split_continuous_stats.tsv", sep="\t")
+    categorical_stats = pd.read_csv(split_dir / "split_categorical_stats.tsv", sep="\t")
+    ref_continuous_stats = pd.read_csv(
+        CAPS_DIR / "tsv" / "ref_continuous_stats.tsv", sep="\t"
+    )
+    ref_categorical_stats = pd.read_csv(
+        CAPS_DIR / "tsv" / "ref_categorical_stats.tsv", sep="\t"
+    )
 
-    split_dir_bis_bis = make_split(sub_ses_t1, n_test=n_test, stratification=False)
+    assert (categorical_stats == ref_categorical_stats).all().all()
+    assert (continuous_stats == ref_continuous_stats).all().all()
 
-    assert split_dir_bis_bis == sub_ses_t1.parent / "split_2"
+    # test other args
+    split_dir = make_split(
+        DF,
+        output_dir=TMP_DIR,
+        subset_name="val",
+        stratification=True,
+        longitudinal=True,
+        n_test=0.25,
+        seed=1,
+    )
 
-    remove_non_empty_dir(split_dir)
-    remove_non_empty_dir(split_dir_bis)
-    remove_non_empty_dir(split_dir_bis_bis)
+    assert split_dir == TMP_DIR / "split_2"
+    val_baseline_df = pd.read_csv(split_dir / "val_baseline.tsv", sep="\t")
+    assert len(val_baseline_df) == 10
+    assert set(val_baseline_df.columns) == {
+        "participant_id",
+        "session_id",
+        "age",
+        "sex",
+    }
+    val_df = pd.read_csv(split_dir / "val.tsv", sep="\t")
+    assert len(val_df) == 16
+    assert set(val_df.columns) == {"participant_id", "session_id"}
+
+    # test other args
+    split_dir = make_split(
+        split_dir / "train.tsv",
+        output_dir=None,
+        stratification=False,
+    )
+    assert split_dir == TMP_DIR / "split_2" / "split"
+    assert (split_dir / "test_baseline.tsv").exists()
+    assert not (split_dir / "split_continuous_stats.tsv").exists()
+    assert not (split_dir / "split_categorical_stats.tsv").exists()
+
+    remove_non_empty_dir(TMP_DIR)
+
+
+def test_special_cases():
+    # no output dir
+    with pytest.raises(ValueError, match="You must specify the output directory."):
+        make_split(
+            DF,
+            output_dir=None,
+        )
+
+    # n_test=0
+    split_dir = make_split(
+        DF,
+        output_dir=TMP_DIR,
+        stratification=True,
+        n_test=0,
+    )
+    assert (
+        (
+            pd.read_csv(split_dir / "train.tsv", sep="\t")
+            == DF[["participant_id", "session_id"]]
+        )
+        .all()
+        .all()
+    )
+    assert (
+        (
+            pd.read_csv(split_dir / "test_baseline.tsv", sep="\t")
+            == pd.DataFrame(columns=["participant_id", "session_id", "age", "sex"])
+        )
+        .all()
+        .all()
+    )
+
+    # not enough tries
+    with pytest.raises(
+        ClinicaDLConfigurationError, match="Unable to find a valid split after*"
+    ):
+        split_dir = make_split(
+            DF,
+            output_dir=TMP_DIR,
+            stratification=True,
+            n_test=10,
+            p_categorical_threshold=0.99,
+            p_continuous_threshold=0.99,
+            n_try_max=10,
+        )
+
+    # stratification columns
+    with pytest.raises(
+        KeyError, match="Invalid stratification columns (not found in the dataframe)*"
+    ):
+        split_dir = make_split(
+            DF,
+            output_dir=TMP_DIR,
+            stratification=["abc"],
+        )

@@ -40,10 +40,14 @@ def read_and_format_data(data: DataType) -> pd.DataFrame:
     ClinicaDLTSVError
         If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
     """
-    df = read_data(data, check_duplicates=False, check_protected_names=False)
+    if (
+        isinstance(data, pd.DataFrame) and DATASET_ID in data.columns.names
+    ):  # for unpaired datasets
+        data = (
+            data.stack(DATASET_ID).reset_index(level=DATASET_ID).reset_index(drop=True)
+        )
 
-    if DATASET_ID in df.columns.names:
-        df = df.stack(DATASET_ID).reset_index(level=DATASET_ID).reset_index(drop=True)
+    df = read_data(data, check_duplicates=False, check_protected_names=False)
 
     return df
 
@@ -87,14 +91,14 @@ def extract_baseline(
 
     baseline = baseline.merge(df[columns], how="left", on=[PARTICIPANT_ID, SESSION_ID])
 
-    baseline.groupby([PARTICIPANT_ID, SESSION_ID], group_keys=False).apply(
-        _find_unique_values
+    baseline = baseline.groupby([PARTICIPANT_ID, SESSION_ID], group_keys=False).apply(
+        _resolve
     )
 
     return baseline.reset_index(drop=True)
 
 
-def _find_unique_values(df: pd.DataFrame):
+def _resolve(df: pd.DataFrame) -> pd.DataFrame:
     """
     df is the dataframe for a baseline session.
     Checks that df has at most one value for each column. Otherwise an error is raised.
@@ -182,6 +186,7 @@ def _retrieve_longitudinal(
     return (
         longitudinal_df[[PARTICIPANT_ID, SESSION_ID]]
         .drop_duplicates()
+        .sort_values([PARTICIPANT_ID, SESSION_ID])
         .reset_index(drop=True)
     )
 

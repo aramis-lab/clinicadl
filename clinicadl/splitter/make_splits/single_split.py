@@ -205,6 +205,7 @@ def make_split(
 
     if n_test == 0:
         train_df = baseline_df
+        test_df = pd.DataFrame(columns=train_df.columns)
 
     else:
         splits = ShuffleSplit(n_splits=n_try_max, test_size=n_test, random_state=seed)
@@ -246,9 +247,6 @@ def make_split(
                         train_df,
                         subset_name,
                     )
-                    write_to_tsv(
-                        test_df, config.split_dir, subset_name, df, longitudinal
-                    )
                     break
 
         else:
@@ -257,6 +255,7 @@ def make_split(
                 "Consider lowering thresholds or removing some stratification variables."
             )
 
+    write_to_tsv(test_df, config.split_dir, subset_name, df, longitudinal)
     write_to_tsv(
         train_df, config.split_dir, config._training_subset_name, df, longitudinal=True
     )
@@ -305,7 +304,7 @@ def _validate_stratification(
 
 def _categorize_labels(
     df: pd.DataFrame,
-    stratification: Union[List[str], bool],
+    stratification: List[str],
     n_test: int,
 ) -> Tuple[List[str], List[str]]:
     """
@@ -315,8 +314,8 @@ def _categorize_labels(
     ----------
     df : pd.DataFrame
         Input dataset.
-    stratification : Union[List[str], bool]
-        Columns to use for stratification. If True, columns are 'age' and 'sex', if False, there is no stratification.
+    stratification : List[str]
+        Columns to use for stratification.
     n_test : int
         Number of test samples.
 
@@ -335,7 +334,7 @@ def _categorize_labels(
 
 
 def _compute_continuous_p_value(
-    continuous_labels: Optional[list[str]],
+    continuous_labels: List[str],
     baseline_df: pd.DataFrame,
     train_index: list[int],
     test_index: list[int],
@@ -345,8 +344,8 @@ def _compute_continuous_p_value(
 
     Parameters
     ----------
-    continuous_labels : Optional[List[str]]
-        List of continuous variable names.
+    continuous_labels : List[str]
+        List of continuous variable names (can be empty).
     baseline_df : pd.DataFrame
         Dataframe containing the baseline data.
     train_index : List[int]
@@ -379,7 +378,7 @@ def _compute_continuous_p_value(
 
 
 def _compute_categorical_p_value(
-    categorical_labels: Optional[list[str]],
+    categorical_labels: list[str],
     baseline_df: pd.DataFrame,
     train_index: list[int],
     test_index: list[int],
@@ -389,8 +388,8 @@ def _compute_categorical_p_value(
 
     Parameters
     ----------
-    categorical_labels : Optional[List[str]]
-        List of categorical variable names.
+    categorical_labels : List[str]
+        List of categorical variable names (can be empty).
     baseline_df : pd.DataFrame
         Dataframe containing the baseline data.
     train_index : List[int]
@@ -456,7 +455,7 @@ def _chi2_test(x_test: np.ndarray, x_train: np.ndarray) -> float:
 
 def _write_continuous_stats(
     tsv_path: Path,
-    continuous_labels: Optional[list[str]],
+    continuous_labels: list[str],
     test_df: pd.DataFrame,
     train_df: pd.DataFrame,
     subset_name: str,
@@ -468,7 +467,7 @@ def _write_continuous_stats(
     ----------
     tsv_path : Path
         Path to save the output TSV file.
-    continuous_labels : Optional[List[str]]
+    continuous_labels : List[str]
         List of continuous variable names.
     test_df : pd.DataFrame
         Test dataset.
@@ -497,7 +496,7 @@ def _write_continuous_stats(
 
 def _write_categorical_stats(
     tsv_path: Path,
-    categorical_labels: Optional[list[str]],
+    categorical_labels: list[str],
     test_df: pd.DataFrame,
     train_df: pd.DataFrame,
     subset_name: str,
@@ -509,7 +508,7 @@ def _write_categorical_stats(
     ----------
     tsv_path : Path
         Path to save the output TSV file.
-    categorical_labels : Optional[List[str]]
+    categorical_labels : List[str]
         List of categorical variable names.
     test_df : pd.DataFrame
         Test dataset.

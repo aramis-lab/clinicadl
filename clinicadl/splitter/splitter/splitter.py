@@ -33,7 +33,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
 
     split_dir: Path
     subset_name: str
-    stratification: Union[str, List[str], bool]
+    stratification: Optional[Union[str, List[str]]]
     longitudinal: bool
     seed: Optional[int]
 

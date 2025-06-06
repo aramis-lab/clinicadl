@@ -21,7 +21,7 @@ class KFoldConfig(SplitterConfig):
     _json_name: str = "kfold_config"
 
     n_splits: PositiveInt
-    stratification: Union[str, bool]
+    stratification: Optional[str]
 
     @field_validator("n_splits", mode="after")
     @classmethod

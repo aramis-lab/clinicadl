@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 from pydantic import NonNegativeFloat, field_validator
 
@@ -19,7 +19,7 @@ class SingleSplitConfig(SplitterConfig):
     _json_name: str = "single_split_config"
 
     n_test: NonNegativeFloat
-    stratification: Union[List[str], bool]
+    stratification: Optional[List[str]]
     p_categorical_threshold: NonNegativeFloat
     p_continuous_threshold: NonNegativeFloat
 
