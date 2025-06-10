@@ -1,14 +1,12 @@
 from importlib.util import find_spec
+from typing import Optional
 
 import numpy as np
 
+from clinicadl.dictionary.words import CLINICADL
 from clinicadl.trainer.config import _TrainingConfig
 
 from .base import Callback
-
-
-def wandb_is_available() -> bool:
-    return find_spec("wandb") is not None
 
 
 class WandB(Callback):  # pragma: no cover
@@ -34,20 +32,24 @@ class WandB(Callback):  # pragma: no cover
     """
 
     def __init__(self):
-        if not wandb_is_available():
+        if not self.is_available():
             raise ModuleNotFoundError(
                 "`wandb` package must be installed. Run `pip install wandb`"
             )
 
         else:
-            import wandb
+            import wandb  # type: ignore # pragma: no cover
 
             self._wandb = wandb
+
+    @staticmethod
+    def is_available() -> bool:
+        return find_spec("wandb") is not None
 
     def setup(
         self,
         project_name: str = "clinicadl_experiment",
-        entity_name: str = None,
+        entity_name: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -69,15 +71,8 @@ class WandB(Callback):  # pragma: no cover
         self._wandb.define_metric("*", step_metric="train/global_step", step_sync=True)
 
     def on_train_begin(self, config: _TrainingConfig, **kwargs):
-        model_config = kwargs.pop("model_config", None)
         if not self.is_initialized:
-            self.setup(training_config, model_config=model_config)
-
-    def on_log(self, logs, **kwargs):
-        global_step = kwargs.pop("global_step", None)
-        logs = rename_logs(logs)
-
-        self._wandb.log({**logs, "train/global_step": global_step})
+            self.setup(project_name=CLINICADL, entity_name=config.maps.path.name)
 
     def on_prediction_step(self, **kwargs):
         kwargs.pop("global_step", None)

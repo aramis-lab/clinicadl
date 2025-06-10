@@ -4,4 +4,6 @@ from .early_stopping import EarlyStopping
 from .logger import Logger
 from .mlflow import MLFlow
 from .model_checkpoint import ModelCheckpoint
+from .progress_bar import ProgressBarCallback
+from .training_loss import TrainingLoss
 from .wandb import WandB

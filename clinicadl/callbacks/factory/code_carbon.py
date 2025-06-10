@@ -1,35 +1,52 @@
 from importlib.util import find_spec
-from pathlib import Path
 
 from clinicadl.trainer.config import _TrainingConfig
 
 from .base import Callback
 
 
-def codecarbon_is_available() -> bool:
-    return find_spec("codecarbon") is not None
-
-
 class CodeCarbon(Callback):
-    def __init__(self, maps_path: Path):
-        if not codecarbon_is_available():
+    """
+    CodeCarbon callback to estimate and track carbon emissions from your computer, quantify and analyze their impact.
+    See https://codecarbon.io/ for more information.
+    """
+
+    def __init__(self):
+        if not self.is_available():
             raise ModuleNotFoundError(
                 "`codecarbon` package must be installed. Run `pip install codecarbon`"
             )
-        else:
-            from codecarbon import EmissionsTracker
 
-            codecarbon_dir = maps_path / "codecarbon"
+    @staticmethod
+    def is_available() -> bool:
+        """Check if codecarbon package is installed and available"""
+        return find_spec("codecarbon") is not None
 
-            if not codecarbon_dir.exists():
-                codecarbon_dir.mkdir(parents=True, exist_ok=True)
+    def set_tracker(self, config: _TrainingConfig):
+        """Set the tracker
 
-            self.tracker = EmissionsTracker(
-                project_name="clinicadl",
-                output_dir=str(codecarbon_dir),
-            )
+        Parameters
+        ----------
+        config : _TrainingConfig
+            The training config
+        """
+
+        from codecarbon import (
+            EmissionsTracker,  # pylint: disable=import-outside-toplevel
+        )
+
+        codecarbon_dir = config.maps.path / "codecarbon"
+
+        if not codecarbon_dir.exists():
+            codecarbon_dir.mkdir(parents=True, exist_ok=True)
+
+        self.tracker = EmissionsTracker(  # pylint: disable=attribute-defined-outside-init
+            project_name="clinicadl",
+            output_dir=str(codecarbon_dir),
+        )
 
     def on_train_begin(self, config: _TrainingConfig, **kwargs):
+        self.set_tracker(config)
         self.tracker.start()
         self.tracker.start_task("train")
 

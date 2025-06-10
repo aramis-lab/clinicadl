@@ -31,9 +31,7 @@ from clinicadl.utils.json import read_json, write_json
 class Metrics(ABC):
     @staticmethod
     def check_metrics(
-        metrics: list[
-            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
-        ],
+        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
     ) -> list[MetricConfig]:
         """TO COMPLETE"""
 

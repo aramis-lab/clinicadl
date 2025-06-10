@@ -1,9 +1,7 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
-from clinicadl.maps.maps import Maps
 from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.metrics.utils import metric_config_equals
-from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.trainer.config import _TrainingConfig
 
 from .factory import *
@@ -38,14 +36,14 @@ class CallbacksHandler:
                 )
 
         if EarlyStopping in self.callbacks.keys():
-            metrics1 = self.callbacks[EarlyStopping].metrics
+            metrics1 = self.callbacks[EarlyStopping].metrics  # type: ignore
             if not metrics.contains(metrics1):
                 metrics.add_metrics(
                     [metric for metric in metrics1 if metric not in metrics]
                 )
 
             if ModelCheckpoint in self.callbacks.keys():
-                metrics2 = self.callbacks[ModelCheckpoint].metrics
+                metrics2 = self.callbacks[ModelCheckpoint].metrics  # type: ignore
                 if not metric_config_equals(metrics1, metrics2):
                     raise ValueError(
                         "EarlyStopping and ModelCheckpoint callbacks must have the same metrics"
@@ -138,6 +136,3 @@ class CallbacksHandler:
             method = getattr(callback, event, None)
             if callable(method):
                 method(**kwargs)
-
-
-# TODO: add WandB, MLFLOW, CodeCarbon, Tensorboard, LearningRateScheduler, EarlyStopping, ModelCheckpoint etc...

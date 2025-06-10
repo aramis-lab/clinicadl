@@ -13,7 +13,7 @@ from clinicadl.metrics.config.base import (
     MetricConfig,
     MonaiMetricConfig,
 )
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics.metrics import ClinicaDLMetrics, Metrics
 from clinicadl.trainer.config import _TrainingConfig
 
 from .base import Callback
@@ -27,6 +27,8 @@ class Mode(str, Enum):
 
 
 class OneMetricEarlyStopping(Callback):
+    """TO COMPLETE"""
+
     def __init__(
         self,
         metric: MetricConfig,
@@ -125,6 +127,10 @@ class OneMetricEarlyStopping(Callback):
 
 
 class EarlyStopping(Callback, Metrics):
+    """
+    TO COMPLETE
+    """
+
     def __init__(
         self,
         metrics: list[

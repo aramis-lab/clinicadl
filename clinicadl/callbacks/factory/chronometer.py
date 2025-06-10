@@ -107,6 +107,12 @@ class Chronometer(Callback):
         return (datetime.now() - self.start_proc).total_seconds()
 
     def _dataload(self) -> None:
+        """
+        Internal method to track data loading duration.
+
+        Called by `on_batch_begin()` and `on_batch_end()`. Records the time
+        spent loading the current batch.
+        """
         if self.start_dataload is None:
             self.start_dataload = time()
         else:
@@ -114,6 +120,12 @@ class Chronometer(Callback):
             self.start_dataload = None
 
     def _training(self) -> None:
+        """
+        Internal method to track training duration.
+
+        Called by `on_batch_begin()` and `on_batch_end()`. Records the time
+        spent training the current batch.
+        """
         if self.start_training is None:
             self.start_training = time()
         else:
@@ -121,6 +133,12 @@ class Chronometer(Callback):
             self.start_training = None
 
     def _forward(self) -> None:
+        """
+        Internal method to track forward pass duration.
+
+        Called by `on_batch_begin()` and `on_batch_end()`. Records the time
+        spent in the forward pass of the current batch.
+        """
         if self.start_forward is None:
             self.start_forward = time()
         else:
@@ -128,6 +146,12 @@ class Chronometer(Callback):
             self.start_forward = None
 
     def _backward(self) -> None:
+        """
+        Internal method to track backward pass duration.
+
+        Called by `on_batch_begin()` and `on_batch_end()`. Records the time
+        spent in the backward pass of the current batch.
+        """
         if self.start_backward is None:
             self.start_backward = time()
         else:
@@ -237,6 +261,6 @@ class Chronometer(Callback):
             logger.info(">>> Validation time: %f", self.val_time)
 
         if self.time_perf_train and self.time_perf_load:
-            logger.info(">>> Sortie trace #####################################")
+            logger.info(">>> Sortie trace:")
             logger.info("GPU process - Forward/Backward : %f ", self.time_perf_train)
             logger.info("CPU process - Dataloader : %f", self.time_perf_load)

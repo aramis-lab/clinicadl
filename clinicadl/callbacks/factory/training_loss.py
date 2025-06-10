@@ -3,8 +3,12 @@ import pandas as pd
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
 from clinicadl.trainer.config import _TrainingConfig
 
+from .base import Callback
 
-class Callback:
+
+class TrainingLoss(Callback):
+    """TO COMPLETE"""
+
     def __init__(self):
         """
         Initialize the dataframe to record training loss and time.

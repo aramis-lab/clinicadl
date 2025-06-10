@@ -4,26 +4,24 @@ from typing import Union
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
-from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
+from clinicadl.dictionary.suffixes import PTH, TAR
+from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
-from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config.enum import Optimum
 from clinicadl.metrics.metrics import (
-    ClinicaDLMetrics,
     CustomMetric,
-    LossMetricConfig,
     MetricConfig,
     Metrics,
 )
-from clinicadl.model import ClinicaDLModel
 from clinicadl.trainer.config import _TrainingConfig
-from clinicadl.utils.config import ClinicaDLConfig
 
 from .base import Callback
 
 
 class ModelCheckpoint(Callback, Metrics):
+    """TO COMPLETE"""
+
     def __init__(
         self,
         metrics: list[Union[MetricConfig, CustomMetric, MonaiMetric, Loss, LossConfig]],
@@ -31,12 +29,14 @@ class ModelCheckpoint(Callback, Metrics):
         self.metrics = self.check_metrics(metrics)
 
     def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+        """TO COMPLETE"""
+
         model_weights = {
-            "model": config.model.network.state_dict(),
+            MODEL: config.model.network.state_dict(),
             EPOCH: config.epoch,
         }
-        checkpoint_path = (
-            config.maps.splits[config.split].tmp.path / "checkpoint.pth.tar"
+        checkpoint_path = config.maps.splits[config.split].tmp.path / (
+            CHECKPOINT + PTH + TAR
         )
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(model_weights, checkpoint_path)
@@ -66,4 +66,4 @@ class ModelCheckpoint(Callback, Metrics):
                     )
                 )
             ):
-                shutil.copyfile(checkpoint_path, metric_path / "model.pth.tar")
+                shutil.copyfile(checkpoint_path, metric_path / (MODEL + PTH + TAR))

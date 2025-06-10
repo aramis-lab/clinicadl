@@ -1,10 +1,9 @@
 from importlib.util import find_spec
+from typing import Optional
+
+from clinicadl.trainer.config import _TrainingConfig
 
 from .base import Callback
-
-
-def mlflow_is_available() -> bool:
-    return find_spec("mlflow") is not None
 
 
 class MLFlow(Callback):  # pragma: no cover
@@ -23,7 +22,7 @@ class MLFlow(Callback):  # pragma: no cover
     """
 
     def __init__(self):
-        if not mlflow_is_available():
+        if not self.is_available():
             raise ModuleNotFoundError(
                 "`mlflow` package must be installed. Run `pip install mlflow`"
             )
@@ -33,44 +32,28 @@ class MLFlow(Callback):  # pragma: no cover
 
             self._mlflow = mlflow
 
+    @staticmethod
+    def is_available() -> bool:
+        """TO COMPLETE"""
+        return find_spec("mlflow") is not None
+
     def setup(
         self,
-        run_name: str = None,
+        run_name: Optional[str] = None,
         **kwargs,
     ):
         """
         Setup the MLflowCallback.
 
-        args:
-            training_config (BaseTrainerConfig): The training configuration used in the run.
-
-            model_config (BaseAEConfig): The model configuration used in the run.
-
-            run_name (str): The name to apply to the current run.
         """
         self.is_initialized = True
         self._mlflow.start_run(run_name=run_name)
 
-        logger.info(
-            f"MLflow run started with run_id={self._mlflow.active_run().info.run_id}"
-        )
         self._mlflow.log_params({})
 
     def on_train_begin(self, config: _TrainingConfig, **kwargs):
-        model_config = kwargs.pop("model_config", None)
         if not self.is_initialized:
-            self.setup(training_config, model_config=model_config)
-
-    def on_log(self, logs, **kwargs):
-        global_step = kwargs.pop("global_step", None)
-
-        logs = rename_logs(logs)
-        metrics = {}
-        for k, v in logs.items():
-            if isinstance(v, (int, float)):
-                metrics[k] = v
-
-        self._mlflow.log_metrics(metrics=metrics, step=global_step)
+            self.setup(run_name=config.maps.path.name)
 
     def on_train_end(self, config: _TrainingConfig, **kwargs):
         self._mlflow.end_run()

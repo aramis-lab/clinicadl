@@ -2,6 +2,8 @@ from clinicadl.trainer.trainer import _TrainingConfig
 
 
 class Callback:
+    """Base class for callbacks."""
+
     def __init__(self):
         pass
 

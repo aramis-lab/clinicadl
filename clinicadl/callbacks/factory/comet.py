@@ -6,10 +6,6 @@ import numpy as np
 from .base import Callback
 
 
-def comet_is_available():
-    return find_spec("comet_ml") is not None
-
-
 class Comet(Callback):
     """
     A :class:`TrainingCallback` integrating the experiment tracking tool
@@ -27,7 +23,7 @@ class Comet(Callback):
     """
 
     def __init__(self):
-        if not comet_is_available():
+        if not self.is_available():
             raise ModuleNotFoundError(
                 "`comet_ml` package must be installed. Run `pip install comet_ml`"
             )
@@ -37,6 +33,11 @@ class Comet(Callback):
 
             self._comet_ml = comet_ml
             self.is_initialized = False
+
+    @staticmethod
+    def is_available():
+        """TO COMPLETE"""
+        return find_spec("comet_ml") is not None
 
     def setup(
         self,
