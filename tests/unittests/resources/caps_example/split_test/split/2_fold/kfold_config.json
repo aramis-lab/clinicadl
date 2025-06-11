@@ -1,8 +1,0 @@
-{
-    "json_name": "kfold_config.json",
-    "split_dir": "../resources/caps_example/split_test/split/2_fold",
-    "subset_name": "validation",
-    "stratification": "sex",
-    "valid_longitudinal": false,
-    "n_splits": 2
-}

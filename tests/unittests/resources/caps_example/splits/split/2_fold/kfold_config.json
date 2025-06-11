@@ -1,0 +1,7 @@
+{
+    "subset_name": "validation",
+    "stratification": null,
+    "longitudinal": true,
+    "seed": 3,
+    "n_splits": 2
+}

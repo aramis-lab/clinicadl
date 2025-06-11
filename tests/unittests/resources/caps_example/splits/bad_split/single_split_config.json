@@ -1,0 +1,11 @@
+{
+    "subset_name": "test",
+    "stratification": [
+        "diagnosis"
+    ],
+    "longitudinal": false,
+    "seed": 3,
+    "n_test": 2.0,
+    "p_categorical_threshold": 0.0,
+    "p_continuous_threshold": 0.8
+}
