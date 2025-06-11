@@ -26,6 +26,7 @@ extensions = [
     "sphinx_design",
     "sphinx.ext.extlinks",
     "sphinx_autodoc_typehints",
+    "sphinx_gallery.gen_gallery",
 ]
 
 templates_path = ["_templates"]
@@ -53,6 +54,11 @@ extlinks = {
 }
 language = "en"
 # pygments_style = "friendly"
+
+sphinx_gallery_conf = {
+    "examples_dirs": "../../examples",  # path to scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+}
 
 # -- Hide function with @overload ---------------------------------------
 

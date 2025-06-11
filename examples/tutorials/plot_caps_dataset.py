@@ -14,8 +14,10 @@ from pathlib import Path
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 
-caps_path = Path("../../") / "tests" / "unittests" / "resources" / "caps_example"
-data = caps_path / "labels.tsv"
+caps_path = (
+    Path("../../") / "tests" / "unittests" / "resources" / "caps_example"
+).resolve()
+data = caps_path / "tsv" / "labels.tsv"
 caps = CapsDataset(
     caps_path,
     data=data,

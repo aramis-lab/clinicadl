@@ -19,3 +19,4 @@ ClinicaDL documentation
    api
    data/data
    losses
+   auto_examples/index.rst
