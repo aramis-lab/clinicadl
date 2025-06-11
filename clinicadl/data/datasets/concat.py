@@ -164,38 +164,28 @@ class ConcatDataset(TorchConcatDataset):
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
         ClinicaDLCAPSError
-            If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
-            forming the ConcatDataset.
+            If no (participant, session) pairs mentioned in ``data`` are at least in one of the underlying datasets.
+            This would lead to an empty ConcatDataset.
         """
-        data = read_data(data, check_protected_names=False).set_index(
-            [PARTICIPANT_ID, SESSION_ID]
-        )
-
-        in_a_df = {(participant, session): False for participant, session in data.index}
-        datasets = []
+        sub_datasets = []
+        not_empty = False
         for dataset in self.datasets:
-            participants_sessions = dataset.get_participant_session_couples()
-            participants_sessions = data.index.intersection(participants_sessions)
-
-            for participant_session in participants_sessions:
-                in_a_df[participant_session] = True
-
-            sub_data = data.loc[participants_sessions]
             try:
-                datasets.append(dataset.subset(sub_data.reset_index()))
-            except ClinicaDLTSVError:
+                sub_datasets.append(dataset.subset(data))
+                not_empty = True
+            except ClinicaDLCAPSError:  # empty dataset
                 continue
 
-        raise_error = False
-        err_message = "Some couples (participant, session) are not in any of the datasets forming the ConcatDataset:\n"
-        for participant_session in in_a_df:
-            if not in_a_df[participant_session]:
-                raise_error = True
-                err_message += f" - {participant_session} \n"
-        if raise_error:
-            raise ClinicaDLCAPSError(err_message)
+        if not not_empty:
+            raise ClinicaDLCAPSError(
+                "No (participant, session) pairs mentioned in 'data' are in the ConcatDataset. This would lead to an empty dataset!"
+            )
 
-        return ConcatDataset(datasets, ignore_spacing=True, raise_warnings=False)
+        return ConcatDataset(
+            sub_datasets,
+            ignore_spacing=True,
+            raise_warnings=False,
+        )
 
     def describe(self) -> tuple[Dict[str, Any], ...]:
         """

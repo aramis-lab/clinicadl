@@ -418,30 +418,20 @@ class CapsDataset(Dataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in the current CapsDataset.
+        ClinicaDLCAPSError
+            If no (participant, session) pairs mentioned in ``data`` are in the current CapsDataset
+            (this would lead to an empty dataset).
         """
         new_df = read_data(data, check_protected_names=False).set_index(
             [PARTICIPANT_ID, SESSION_ID]
         )
+        df = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
+        subset_df = df.loc[new_df.index.intersection(df.index)].reset_index()
 
-        try:
-            subset_df = (
-                self.df.set_index([PARTICIPANT_ID, SESSION_ID])
-                .loc[new_df.index]
-                .reset_index()
+        if len(subset_df) == 0:
+            raise ClinicaDLCAPSError(
+                "No (participant, session) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!"
             )
-        except KeyError as exc:
-            missing_pairs = new_df.index.difference(
-                self.df.set_index([PARTICIPANT_ID, SESSION_ID]).index
-            )
-
-            err_message = (
-                "Some couples (participant, session) are not in the dataset:\n"
-            )
-            for pair in missing_pairs:
-                err_message += f" - {pair} \n"
-            raise ClinicaDLTSVError(err_message) from exc
 
         dataset = deepcopy(self)
         dataset.df = subset_df

@@ -184,8 +184,9 @@ class PairedDataset(StackDataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in the PairedDataset.
+        ClinicaDLCAPSError
+            If no (participant, session) pairs mentioned in ``data`` are in the current PairedDataset
+            (this would lead to an empty dataset).
         """
         return PairedDataset([dataset.subset(data) for dataset in self.datasets])
 
