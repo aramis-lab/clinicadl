@@ -155,7 +155,8 @@ def test_extract_baseline():
 
 
 def test_write_to_tsv():
-    shutil.rmtree(TMP_DIR)
+    if TMP_DIR.exists():
+        shutil.rmtree(TMP_DIR)
 
     (TMP_DIR / "split").mkdir(parents=True)
     (TMP_DIR / "split_2").mkdir(parents=True)
