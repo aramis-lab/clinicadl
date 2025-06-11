@@ -82,7 +82,7 @@ def test_get_object():
         batch_size=2,
         sampling_weights="age",
         drop_last=True,
-        num_workers=1,
+        # num_workers=1,
         # prefetch_factor=2,
         pin_memory=True,
         # persistent_workers=True,

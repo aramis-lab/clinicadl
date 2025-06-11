@@ -1,3 +1,5 @@
+import multiprocessing as mp
+import platform
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +10,7 @@ from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 from clinicadl.splitter.split import Split
+from tests.utils import safe_multiprocessing
 
 CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -32,6 +35,8 @@ VAL_DATASET = CapsDataset(
 
 
 def test_build_loaders():
+    safe_multiprocessing()
+
     split = Split(
         index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
     )
@@ -99,6 +104,8 @@ def test_build_loaders():
 
 
 def test_to_dict():
+    safe_multiprocessing()
+
     split = Split(
         index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
     )
