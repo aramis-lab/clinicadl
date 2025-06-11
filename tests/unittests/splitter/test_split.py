@@ -41,8 +41,8 @@ def test_build_loaders():
     assert split.train_loader.batch_size == 2
     assert split.train_loader.sampler.num_replicas == 1
 
-    # config = DataLoaderConfig(num_workers=1)
-    config = DataLoaderConfig(num_workers=0)
+    config = DataLoaderConfig(num_workers=1)
+    # config = DataLoaderConfig(num_workers=0)
     split.build_val_loader(config, num_workers=0)
     # assert split.val_loader.num_workers == 1
     assert split.val_loader.sampler.num_replicas == 1
@@ -59,7 +59,7 @@ def test_build_loaders():
         batch_size=2,
         sampling_weights="age",
         shuffle=False,
-        # num_workers=1,
+        num_workers=1,
         pin_memory=False,
         drop_last=True,
         # prefetch_factor=2,
@@ -76,7 +76,7 @@ def test_build_loaders():
     split.build_val_loader(
         batch_size=2,
         shuffle=False,
-        # num_workers=1,
+        num_workers=1,
         pin_memory=False,
         drop_last=True,
         # prefetch_factor=2,
@@ -103,8 +103,8 @@ def test_to_dict():
         index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
     )
     split.build_train_loader(batch_size=2)
-    # split.build_val_loader(num_workers=1)
-    split.build_val_loader(num_workers=0)
+    split.build_val_loader(num_workers=1)
+    # split.build_val_loader(num_workers=0)
     dict_ = split.to_dict()
     assert sorted(list(dict_.keys())) == sorted(
         [
