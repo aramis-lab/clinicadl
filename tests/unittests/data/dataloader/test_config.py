@@ -1,3 +1,4 @@
+import platform
 from pathlib import Path
 
 import pandas as pd
@@ -45,6 +46,24 @@ CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t").drop(7)
 DATA["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
 
+CAPS = CapsDataset(
+    CAPS_DIR,
+    preprocessing=PETLinear(
+        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+    ),
+    label="age",
+    data=DATA,
+)
+CAPS_WITHOUT_LABEL = CapsDataset(
+    CAPS_DIR,
+    preprocessing=PETLinear(
+        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+    ),
+    data=DATA,
+)
+CAPS.read_tensor_conversion("pet_all")
+CAPS_WITHOUT_LABEL.read_tensor_conversion("pet_all")
+
 
 @pytest.mark.parametrize("args", GOOD_INPUTS)
 def test_good_inputs(args: dict):
@@ -60,40 +79,16 @@ def test_bad_inputs(args: dict):
 
 
 def test_get_object():
-    caps = CapsDataset(
-        CAPS_DIR,
-        preprocessing=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        label="age",
-        data=DATA,
-    )
-    caps_without_label = CapsDataset(
-        CAPS_DIR,
-        preprocessing=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        data=DATA,
-    )
-    caps.read_tensor_conversion("pet_all")
-    caps_without_label.read_tensor_conversion("pet_all")
-
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         sampling_weights="age",
         drop_last=True,
-        num_workers=1,
-        prefetch_factor=2,
         pin_memory=True,
-        persistent_workers=True,
     )
-    dataloader = dataloader_config.get_object(caps)
+    dataloader = dataloader_config.get_object(CAPS)
     assert dataloader.batch_size == 2
     assert dataloader.drop_last
-    assert dataloader.num_workers == 1
-    assert dataloader.prefetch_factor == 2
     assert dataloader.pin_memory
-    assert dataloader.persistent_workers
     assert dataloader.worker_init_fn == pl_worker_init_function
 
     # check sampler
@@ -112,7 +107,7 @@ def test_get_object():
     dataloader_config = DataLoaderConfig(
         shuffle=True,
     )
-    dataloader = dataloader_config.get_object(PairedDataset([caps, caps_without_label]))
+    dataloader = dataloader_config.get_object(PairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
@@ -127,7 +122,7 @@ def test_get_object():
     dataloader_config = DataLoaderConfig(
         shuffle=False,
     )
-    dataloader = dataloader_config.get_object(ConcatDataset([caps, caps_without_label]))
+    dataloader = dataloader_config.get_object(ConcatDataset([CAPS, CAPS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert not dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
@@ -144,7 +139,7 @@ def test_get_object():
     with pytest.raises(
         KeyError, match="Failed to get the column 'sex' in the dataframe*"
     ):
-        dataloader_config.get_object(caps)
+        dataloader_config.get_object(CAPS)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="session_id",
@@ -152,22 +147,22 @@ def test_get_object():
     with pytest.raises(
         ValueError, match="Got 'session_id' for 'sampling_weights' but cannot convert*"
     ):
-        dataloader_config.get_object(caps)
+        dataloader_config.get_object(CAPS)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="age",
     )
     with pytest.raises(ValueError, match="For data parallelism*"):
-        dataloader_config.get_object(caps, rank=0)
+        dataloader_config.get_object(CAPS, rank=0)
 
     with pytest.raises(
         ValueError, match="Can't use 'sampling_weights' with UnpairedDataset."
     ):
-        dataloader_config.get_object(UnpairedDataset([caps, caps]))
+        dataloader_config.get_object(UnpairedDataset([CAPS, CAPS]))
 
     # tets other datasets
     dataloader = DataLoaderConfig(batch_size=2).get_object(
-        UnpairedDataset([caps, caps_without_label])
+        UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL])
     )
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
@@ -176,10 +171,25 @@ def test_get_object():
     assert batch[1].get_labels() == [None, None]
 
     dataloader = DataLoaderConfig(batch_size=5, shuffle=True).get_object(
-        ConcatDataset([caps, caps_without_label])
+        ConcatDataset([CAPS, CAPS_WITHOUT_LABEL])
     )
     batch = next(iter(dataloader))
     assert batch.get_labels() == [5.0, 1.0, None, 10.0, 1.0]
+
+
+@pytest.mark.skipif(
+    platform.system() == "Darwin", reason="Avoid persistent_workers on macOS"
+)
+def test_workers():
+    dataloader_config = DataLoaderConfig(
+        num_workers=1,
+        prefetch_factor=2,
+        persistent_workers=True,
+    )
+    dataloader = dataloader_config.get_object(CAPS)
+    assert dataloader.num_workers == 1
+    assert dataloader.prefetch_factor == 2
+    assert dataloader.persistent_workers
 
 
 def test_ddp():
