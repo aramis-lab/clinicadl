@@ -82,18 +82,18 @@ def test_get_object():
         batch_size=2,
         sampling_weights="age",
         drop_last=True,
-        # num_workers=1,
-        # prefetch_factor=2,
+        num_workers=1,
+        prefetch_factor=2,
         pin_memory=True,
-        # persistent_workers=True,
+        persistent_workers=True,
     )
     dataloader = dataloader_config.get_object(caps)
     assert dataloader.batch_size == 2
     assert dataloader.drop_last
-    # assert dataloader.num_workers == 1
-    # assert dataloader.prefetch_factor == 2
+    assert dataloader.num_workers == 1
+    assert dataloader.prefetch_factor == 2
     assert dataloader.pin_memory
-    # assert dataloader.persistent_workers
+    assert dataloader.persistent_workers
     assert dataloader.worker_init_fn == pl_worker_init_function
 
     # check sampler

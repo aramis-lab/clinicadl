@@ -199,8 +199,8 @@ def test_special_cases():
             output_dir=TMP_DIR,
             stratification=True,
             n_test=10,
-            p_categorical_threshold=0.99,
-            p_continuous_threshold=0.99,
+            p_categorical_threshold=1.0,
+            p_continuous_threshold=1.0,
             n_try_max=10,
         )
 

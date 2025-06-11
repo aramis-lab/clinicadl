@@ -1,5 +1,3 @@
-import multiprocessing as mp
-import platform
 from pathlib import Path
 
 import pandas as pd
@@ -47,9 +45,8 @@ def test_build_loaders():
     assert split.train_loader.sampler.num_replicas == 1
 
     config = DataLoaderConfig(num_workers=1)
-    # config = DataLoaderConfig(num_workers=0)
     split.build_val_loader(config, num_workers=0)
-    # assert split.val_loader.num_workers == 1
+    assert split.val_loader.num_workers == 1
     assert split.val_loader.sampler.num_replicas == 1
 
     split.parallelism(dp_degree=2, rank=0)
@@ -67,15 +64,15 @@ def test_build_loaders():
         num_workers=1,
         pin_memory=False,
         drop_last=True,
-        # prefetch_factor=2,
-        # persistent_workers=True,
+        prefetch_factor=2,
+        persistent_workers=True,
     )
     assert split.train_loader.batch_size == 2
-    # assert split.train_loader.num_workers == 1
+    assert split.train_loader.num_workers == 1
     assert not split.train_loader.pin_memory
     assert split.train_loader.drop_last
-    # assert split.train_loader.prefetch_factor == 2
-    # assert split.train_loader.persistent_workers
+    assert split.train_loader.prefetch_factor == 2
+    assert split.train_loader.persistent_workers
     assert isinstance(split.train_loader.sampler, WeightedRandomSampler)
 
     split.build_val_loader(
@@ -84,23 +81,21 @@ def test_build_loaders():
         num_workers=1,
         pin_memory=False,
         drop_last=True,
-        # prefetch_factor=2,
-        # persistent_workers=True,
+        prefetch_factor=2,
+        persistent_workers=True,
     )
     assert split.val_loader.batch_size == 2
-    # assert split.val_loader.num_workers == 1
+    assert split.val_loader.num_workers == 1
     assert not split.val_loader.pin_memory
     assert split.val_loader.drop_last
-    # assert split.val_loader.prefetch_factor == 2
-    # assert split.val_loader.persistent_workers
+    assert split.val_loader.prefetch_factor == 2
+    assert split.val_loader.persistent_workers
     assert isinstance(split.val_loader.sampler, DistributedSampler)
     assert split.val_loader.sampler.num_replicas == 2
 
     # error
     with pytest.raises(ValueError):
         split.parallelism(dp_degree=2, rank=2)
-
-    del split  # to end multiprocessing
 
 
 def test_to_dict():
@@ -111,7 +106,6 @@ def test_to_dict():
     )
     split.build_train_loader(batch_size=2)
     split.build_val_loader(num_workers=1)
-    # split.build_val_loader(num_workers=0)
     dict_ = split.to_dict()
     assert sorted(list(dict_.keys())) == sorted(
         [
@@ -128,5 +122,4 @@ def test_to_dict():
     assert dict_["train_dataset"]["total_samples"] == 6
     assert dict_["val_dataset"]["total_samples"] == 2
     assert dict_["train_loader_config"]["batch_size"] == 2
-    # assert dict_["val_loader_config"]["num_workers"] == 1
-    # assert dict_["val_loader_config"]["num_workers"] == 0
+    assert dict_["val_loader_config"]["num_workers"] == 1
