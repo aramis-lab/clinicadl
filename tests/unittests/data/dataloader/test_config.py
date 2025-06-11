@@ -16,7 +16,7 @@ from clinicadl.data.datasets import (
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
-from clinicadl.transforms.extraction import Sample, Slice
+from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.seed import pl_worker_init_function
 
 BAD_INPUTS = [
