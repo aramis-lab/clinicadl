@@ -94,6 +94,8 @@ def test_build_loaders():
     with pytest.raises(ValueError):
         split.parallelism(dp_degree=2, rank=2)
 
+    del split
+
 
 def test_to_dict():
     split = Split(
