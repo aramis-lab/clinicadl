@@ -30,7 +30,8 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = []
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
 autodoc_member_order = "bysource"
 intersphinx_mapping = {
     "torchio": ("https://torchio.readthedocs.io", None),
@@ -56,7 +57,7 @@ language = "en"
 # pygments_style = "friendly"
 
 sphinx_gallery_conf = {
-    "examples_dirs": "../../examples",  # path to scripts
+    "examples_dirs": "../examples",  # path to scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
 }
 
@@ -65,31 +66,6 @@ sphinx_gallery_conf = {
 typehints_use_signature = True  # replaces the signature with type hints
 typehints_use_signature_return = True
 typehints_document_rtype = False
-
-
-def is_overload_function(obj):
-    # `overload` sets __code__.co_code to b''
-    if inspect.isfunction(obj) or inspect.ismethod(obj):
-        try:
-            return obj.__code__.co_code == b""
-        except AttributeError:
-            return False
-    return False
-
-
-def skip_overload_members(app, what, name, obj, skip, options):
-    if is_overload_function(obj):
-        return True  # skip this member
-    return None
-
-
-def setup(app):
-    app.connect("autodoc-skip-member", skip_overload_members)
-
-
-# -- Hide function with @overload ---------------------------------------
-
-typehints_use_signature = True  # replaces the signature with type hints
 
 
 def is_overload_function(obj):
