@@ -40,6 +40,10 @@ def test_build_loaders():
     split.build_train_loader(config, batch_size=1)
     assert split.train_loader.batch_size == 2
     assert split.train_loader.sampler.num_replicas == 1
+
+    config = DataLoaderConfig(num_workers=1)
+    split.build_val_loader(config, num_workers=0)
+    assert split.val_loader.num_workers == 1
     assert split.val_loader.sampler.num_replicas == 1
 
     split.parallelism(dp_degree=2, rank=0)
@@ -90,6 +94,8 @@ def test_build_loaders():
     with pytest.raises(ValueError):
         split.parallelism(dp_degree=2, rank=2)
 
+    del split  # to end multiprocessing
+
 
 def test_to_dict():
     split = Split(
@@ -113,6 +119,4 @@ def test_to_dict():
     assert dict_["train_dataset"]["total_samples"] == 6
     assert dict_["val_dataset"]["total_samples"] == 2
     assert dict_["train_loader_config"]["batch_size"] == 2
-    assert dict_["val_loader_config"]["num_workers"] == 0
-
-    del split
+    assert dict_["val_loader_config"]["num_workers"] == 1
