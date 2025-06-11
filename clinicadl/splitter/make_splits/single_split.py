@@ -54,7 +54,7 @@ def make_split(
     data: Union[pd.DataFrame, Path, str],
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to split.
-    n_test : PositiveFloat, (optional, default=0.1)
+    n_test : PositiveFloat, (optional, default=0.2)
         A positive float. If ``>=1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all
         participants to have in the test data.
 
