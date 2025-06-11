@@ -191,22 +191,13 @@ def test_subset():
     )
 
     with pytest.raises(
-        ClinicaDLCAPSError, match="Dataset 0 does not contain any of the*"
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
     ):
         subset = unpaired.subset(
             sub_data(
                 [
                     ("sub-999", "ses-M099"),
-                ]
-            )
-        )
-
-    with pytest.raises(ClinicaDLCAPSError, match="Some couples*"):
-        subset = unpaired.subset(
-            sub_data(
-                [
-                    ("sub-999", "ses-M999"),
-                    ("sub-000", "ses-M000"),
                 ]
             )
         )

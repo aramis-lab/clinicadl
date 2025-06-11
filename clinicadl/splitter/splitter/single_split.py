@@ -60,7 +60,7 @@ class SingleSplit(Splitter):
     @property
     def _associated_config(self) -> type[SingleSplitConfig]:
         """The config class associated to the splitter."""
-        return SingleSplit
+        return SingleSplitConfig
 
     def get_split(self, dataset: Dataset) -> Split:
         """
@@ -79,7 +79,7 @@ class SingleSplit(Splitter):
             A :py:class:`~clinicadl.splitter.Split` object, with the training and validation datasets for
             the requested split.
         """
-        return self._get_split(dataset)[0]
+        return self._get_split(dataset)
 
     def _read_splits(self) -> List[SubjectsSessionsSplit]:
         """

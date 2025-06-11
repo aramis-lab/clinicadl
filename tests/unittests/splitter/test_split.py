@@ -10,7 +10,7 @@ from clinicadl.data.datatypes import PETLinear
 from clinicadl.splitter.split import Split
 
 CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
-DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t")
+DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
 TRAIN_DATASET = CapsDataset(
     CAPS_DIR,
     preprocessing=PETLinear(

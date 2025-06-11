@@ -106,7 +106,7 @@ BASELINE_DF = pd.DataFrame(
 
 
 def test_read_and_format_data():
-    df = read_and_format_data(CAPS_DIR / "tsv" / "test_df.tsv")
+    df = read_and_format_data(CAPS_DIR / "tsv" / "small_test_df.tsv")
     assert set(df.columns) == {"participant_id", "session_id", "age", "diagnosis"}
     assert len(df) == 3
 
@@ -198,7 +198,7 @@ def test_write_to_tsv():
     assert (
         (
             longitudinal
-            == DF.drop(columns=["diagnosis", "age"])
+            == DF.drop(columns=["diagnosis"])
             .drop_duplicates()
             .sort_values(["participant_id", "session_id"])
             .reset_index(drop=True)
@@ -211,5 +211,5 @@ def test_write_to_tsv():
 
 
 def test_find_available_split_dir():
-    split_path = find_available_split_dir(CAPS_DIR / "split_test", split_name="split")
-    assert split_path == CAPS_DIR / "split_test" / "split_2"
+    split_path = find_available_split_dir(CAPS_DIR / "splits", split_name="split")
+    assert split_path == CAPS_DIR / "splits" / "split_2"

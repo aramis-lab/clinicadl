@@ -308,7 +308,7 @@ def read_data(
     data: Union[str, Path, pd.DataFrame],
     check_protected_names: bool = True,
     check_duplicates: bool = True,
-):
+) -> pd.DataFrame:
     """
     Reads an input dataframe, passed directly as a dataframe or via a path, and
     performs checks on it.

@@ -42,7 +42,7 @@ GOOD_INPUTS = [
 ]
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t").drop(7)
+DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t").drop(7)
 DATA["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
 
 

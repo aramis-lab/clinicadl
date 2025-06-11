@@ -138,16 +138,16 @@ def make_kfold(
     df = read_and_format_data(data)
 
     if isinstance(data, (str, Path)):
-        output_dir = output_dir or data.parent
+        output_dir = output_dir or Path(data).parent
     elif isinstance(data, pd.DataFrame) and not output_dir:
         raise ValueError("You must specify the output directory.")
     output_dir = Path(output_dir)
 
     stratification = _validate_stratification(df, stratification)
 
-    split_dir = find_available_split_dir(output_dir, f"{n_splits}_{FOLD}")
+    kfold_dir = find_available_split_dir(output_dir, f"{n_splits}_{FOLD}")
     config = KFoldConfig(
-        split_dir=split_dir,
+        split_dir=kfold_dir,
         subset_name=subset_name,
         longitudinal=longitudinal,
         n_splits=n_splits,
@@ -173,16 +173,16 @@ def make_kfold(
         train_df = baseline_df.iloc[train_idx]
         val_df = baseline_df.iloc[val_idx]
 
-        split_dir = config.get_split_subdir(i)
+        split_subdir = config.get_split_subdir(i, create=True)
 
-        write_to_tsv(val_df, split_dir, config.subset_name, df, config.longitudinal)
+        write_to_tsv(val_df, split_subdir, config.subset_name, df, config.longitudinal)
         write_to_tsv(
-            train_df, split_dir, config._training_subset_name, df, longitudinal=True
+            train_df, split_subdir, config._training_subset_name, df, longitudinal=True
         )
 
     config.write_json()
 
-    return config.split_dir
+    return kfold_dir
 
 
 def _validate_stratification(

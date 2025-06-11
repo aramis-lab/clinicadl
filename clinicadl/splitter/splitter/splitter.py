@@ -50,10 +50,10 @@ class SplitterConfig(ClinicaDLConfig, ABC):
         """
         Reads a split directory.
         """
-        json_path = (split_dir / cls._json_name).with_suffix(JSON)
+        json_path = (split_dir / cls._json_name.default).with_suffix(JSON)
 
         try:
-            config = cls.from_json(json_path)
+            config = cls.from_json(json_path, split_dir=split_dir)
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"No configuration file found in '{split_dir}'. It was expected at {json_path}. "
@@ -70,7 +70,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
         Saves the split configuration in a json file.
         """
         out_json_file = (self.split_dir / self._json_name).with_suffix(JSON)
-        super().write_json(out_json_file)
+        super().write_json(out_json_file, exclude="split_dir")
 
     @abstractmethod
     def _check_split_dirs(self) -> None:

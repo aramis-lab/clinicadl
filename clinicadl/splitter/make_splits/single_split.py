@@ -175,7 +175,7 @@ def make_split(
     df = read_and_format_data(data)
 
     if isinstance(data, (str, Path)):
-        output_dir = output_dir or data.parent
+        output_dir = output_dir or Path(data).parent
     elif isinstance(data, pd.DataFrame) and not output_dir:
         raise ValueError("You must specify the output directory.")
     output_dir = Path(output_dir)
@@ -234,14 +234,14 @@ def make_split(
                     train_df = baseline_df.loc[train_index]
 
                     _write_continuous_stats(
-                        config.split_dir / "split_continuous_stats.tsv",
+                        split_dir / "split_continuous_stats.tsv",
                         continuous_labels,
                         test_df,
                         train_df,
                         subset_name,
                     )
                     _write_categorical_stats(
-                        config.split_dir / "split_categorical_stats.tsv",
+                        split_dir / "split_categorical_stats.tsv",
                         categorical_labels,
                         test_df,
                         train_df,
@@ -255,13 +255,13 @@ def make_split(
                 "Consider lowering thresholds or removing some stratification variables."
             )
 
-    write_to_tsv(test_df, config.split_dir, subset_name, df, longitudinal)
+    write_to_tsv(test_df, split_dir, subset_name, df, longitudinal)
     write_to_tsv(
-        train_df, config.split_dir, config._training_subset_name, df, longitudinal=True
+        train_df, split_dir, config._training_subset_name, df, longitudinal=True
     )
     config.write_json()
 
-    return config.split_dir
+    return split_dir
 
 
 def _validate_stratification(

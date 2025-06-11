@@ -53,7 +53,6 @@ def test_good_split():
     assert (split_dir / "single_split_config.json").is_file
     with (split_dir / "single_split_config.json").open(mode="r") as file:
         dict_ = json.load(file)
-    assert dict_["split_dir"] == str(split_dir)
     assert dict_["subset_name"] == "test"
     assert dict_["stratification"] == stratification
     assert dict_["longitudinal"] is False
@@ -84,7 +83,9 @@ def test_good_split():
 
     train_df = pd.read_csv(split_dir / "train.tsv", sep="\t")
     assert len(train_df) == 39
-    assert set(train_df.columns) == {"participant_id", "session_id"}
+    assert set(train_df.columns) == set(
+        ["participant_id", "session_id"] + stratification
+    )
     assert train_df.iloc[22][["participant_id", "session_id"]].to_list() == [
         "sub-045",
         "ses-M018",
@@ -124,7 +125,12 @@ def test_good_split():
     }
     val_df = pd.read_csv(split_dir / "val.tsv", sep="\t")
     assert len(val_df) == 16
-    assert set(val_df.columns) == {"participant_id", "session_id"}
+    assert set(val_df.columns) == {
+        "participant_id",
+        "session_id",
+        "age",
+        "sex",
+    }
 
     # test other args
     split_dir = make_split(
@@ -148,6 +154,18 @@ def test_special_cases():
             output_dir=None,
         )
 
+    # bad thresholds
+    with pytest.raises(
+        ValueError, match="'p_categorical_threshold' must be between 0 and 1*"
+    ):
+        make_split(
+            DF,
+            output_dir=TMP_DIR,
+            stratification=True,
+            p_categorical_threshold=1.1,
+            n_test=3,
+        )
+
     # n_test=0
     split_dir = make_split(
         DF,
@@ -158,7 +176,7 @@ def test_special_cases():
     assert (
         (
             pd.read_csv(split_dir / "train.tsv", sep="\t")
-            == DF[["participant_id", "session_id"]]
+            == DF[["participant_id", "session_id", "age", "sex"]]
         )
         .all()
         .all()
@@ -195,3 +213,5 @@ def test_special_cases():
             output_dir=TMP_DIR,
             stratification=["abc"],
         )
+
+    remove_non_empty_dir(TMP_DIR)

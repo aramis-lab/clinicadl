@@ -55,8 +55,6 @@ def test_output_shape(
     input_tensor, kernel_size, stride, padding, dilation, pooling, pooling_indices
 ):
     latent_size = 3
-    print(pooling_indices)
-    print(type(pooling_indices))
     net = VAE(
         in_shape=input_tensor.shape[1:],
         latent_size=latent_size,

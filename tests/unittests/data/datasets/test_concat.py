@@ -225,12 +225,14 @@ def test_subset():
     )
     assert len(subset.datasets) == 1
 
-    with pytest.raises(ClinicaDLCAPSError):
+    with pytest.raises(
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the ConcatDataset. This would lead to an empty dataset!",
+    ):
         multimodal_dataset.subset(
             sub_data(
                 [
-                    ("sub-999", "ses-M099"),
-                    ("sub-000", "ses-M003"),
+                    ("sub-010", "ses-M012"),
                 ]
             )
         )

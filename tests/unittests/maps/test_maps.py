@@ -22,7 +22,7 @@ from clinicadl.utils.exceptions import (
 maps_test = Path(__file__).parents[1] / "resources" / "maps_test"
 maps_example = Path(__file__).parents[1] / "resources" / "maps_example"
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
-data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+data = pd.read_csv(caps_dir / "tsv" / "labels.tsv", sep="\t")
 
 train_dataset = CapsDataset(
     caps_dir,

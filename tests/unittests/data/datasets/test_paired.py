@@ -276,12 +276,14 @@ def test_subset():
         .all()
     )
 
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
+    ):
         paired.subset(
             sub_data(
                 [
-                    ("sub-010", "ses-M003"),
-                    ("sub-010", "ses-M012"),
+                    ("sub-999", "ses-M099"),
                 ]
             )
         )

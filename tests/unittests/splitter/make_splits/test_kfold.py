@@ -7,7 +7,6 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.splitter.make_splits import make_kfold
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 
 def remove_non_empty_dir(dir_path: Path):
@@ -56,7 +55,6 @@ def test_good_split():
     assert (split_dir / "kfold_config.json").is_file
     with (split_dir / "kfold_config.json").open(mode="r") as file:
         dict_ = json.load(file)
-    assert dict_["split_dir"] == str(split_dir)
     assert dict_["subset_name"] == "val"
     assert dict_["stratification"] == "diagnosis"
     assert dict_["longitudinal"] is False
@@ -97,7 +95,7 @@ def test_good_split():
 
     train_df = pd.read_csv(split_dir / "split-0" / "train.tsv", sep="\t")
     assert len(train_df) == 40
-    assert set(train_df.columns) == {"participant_id", "session_id"}
+    assert set(train_df.columns) == {"participant_id", "session_id", "diagnosis"}
     assert train_df.iloc[22][["participant_id", "session_id"]].to_list() == [
         "sub-046",
         "ses-M006",
@@ -124,7 +122,7 @@ def test_good_split():
     }
     val_df = pd.read_csv(split_dir / "split-4" / "val.tsv", sep="\t")
     assert len(val_df) == 13
-    assert set(val_df.columns) == {"participant_id", "session_id"}
+    assert set(val_df.columns) == {"participant_id", "session_id", "sex"}
 
     # test other args
     shutil.copy(DF_PATH, TMP_DIR / "test_df.tsv")
@@ -186,3 +184,5 @@ def test_special_cases():
             output_dir=TMP_DIR,
             stratification="age",
         )
+
+    remove_non_empty_dir(TMP_DIR)

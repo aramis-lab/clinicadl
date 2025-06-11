@@ -184,7 +184,7 @@ def _retrieve_longitudinal(
         all_df.set_index([PARTICIPANT_ID]).loc[baselin_df[PARTICIPANT_ID]].reset_index()
     )
     return (
-        longitudinal_df[[PARTICIPANT_ID, SESSION_ID]]
+        longitudinal_df[baselin_df.columns]
         .drop_duplicates()
         .sort_values([PARTICIPANT_ID, SESSION_ID])
         .reset_index(drop=True)

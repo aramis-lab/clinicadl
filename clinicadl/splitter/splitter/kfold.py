@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Union
+from typing import Generator, List, Optional, Sequence
 
 from pydantic import PositiveInt, field_validator
 
@@ -30,7 +30,7 @@ class KFoldConfig(SplitterConfig):
         assert v >= 2, "'n_splits' must be at least 2."
         return v
 
-    def get_split_subdir(self, split: int) -> Path:
+    def get_split_subdir(self, split: int, create: bool = False) -> Path:
         """
         Returns the subdirectory of a split of a K-Fold, and creates this directory if it does not
         exist yet.
@@ -39,6 +39,8 @@ class KFoldConfig(SplitterConfig):
         ----------
         split : int
             The index of the split.
+        create : bool (optional, default=False)
+            Create the directory if it doesn't exist.
 
         Returns
         -------
@@ -46,7 +48,9 @@ class KFoldConfig(SplitterConfig):
             The path to the split subdirectory.
         """
         split_dir = self.split_dir / f"{SPLIT}-{split}"
-        split_dir.mkdir(parents=True, exist_ok=True)
+        if create:
+            split_dir.mkdir(parents=True, exist_ok=True)
+
         return split_dir
 
     def _check_split_dirs(self) -> None:
