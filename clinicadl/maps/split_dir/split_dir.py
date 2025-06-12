@@ -11,6 +11,7 @@ from clinicadl.dictionary.suffixes import JSON, PTH, TAR, TSV
 from clinicadl.dictionary.words import (
     BEST,
     CHECKPOINT,
+    METRICS,
     OPTIMIZER,
     SPLIT,
     TMP,
@@ -112,6 +113,10 @@ class SplitDir(Directory):
         """Returns the path to the `split.json` file storing the split configuration."""
         return (self.path / SPLIT).with_suffix(JSON)
 
+    @property
+    def metrics_tsv(self) -> Path:
+        return (self.path / METRICS).with_suffix(TSV)
+
     def create(self, split: Split) -> None:
         """Creates the directory structure for the split and initializes required files.
 
@@ -125,7 +130,9 @@ class SplitDir(Directory):
             ClinicaDLConfigurationError: If the split directory already exists.
         """
         if self.exists():
-            raise ClinicaDLConfigurationError(f"Split '{self.number}' already exists.")
+            raise ClinicaDLConfigurationError(
+                f"Split '{self.number}' already exists at {self.path}."
+            )
         self.path.mkdir(parents=True)
         for metric in self.best_metrics.values():
             metric.create(split=split)

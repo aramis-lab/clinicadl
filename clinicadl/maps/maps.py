@@ -57,9 +57,10 @@ class Maps(Directory):
         per split. For other data groups, they are stored individually.
     """
 
-    def __init__(self, maps_path: PathType):
+    def __init__(self, maps_path: PathType, overwrite: bool = False):
         super().__init__(path=maps_path)
 
+        self._overwrite = overwrite
         self.splits: Dict[int, SplitDir] = {}
         self.data_groups: Dict[str, Union[Dict[int, DataGroupType], DataGroupType]] = {}
 
@@ -234,10 +235,12 @@ class Maps(Directory):
         Raises:
             ClinicaDLConfigurationError: If the directory already exists.
         """
-        if self.exists():
+        if self.exists() and not self._overwrite:
             raise ClinicaDLConfigurationError(
                 f"Maps directory ({self.path})already exists."
             )
+        elif self._overwrite and self.exists():
+            self.remove()
 
         self.path.mkdir(parents=True, exist_ok=True)
         self.groups_dir.mkdir(parents=True)

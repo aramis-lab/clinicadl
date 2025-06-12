@@ -97,8 +97,6 @@ class ConfusionMatrixMetricConfig(
 class SensitivityMetricConfig(ConfusionMatrixMetricConfig):
     """Config class for Sensitivity metric."""
 
-    metric_name: ConfusionMatrixMetricName = ConfusionMatrixMetricName.SE
-
     def __init__(
         self,
         include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
@@ -111,6 +109,8 @@ class SensitivityMetricConfig(ConfusionMatrixMetricConfig):
         (Sensitivity is also known as True Positive Rate (TPR), Hit Rate or Recall.) \n
         More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.ConfusionMatrixMetric
         """
+
+        self.metric_name: ConfusionMatrixMetricName = ConfusionMatrixMetricName.SE
 
         super().__init__(
             include_background=include_background,

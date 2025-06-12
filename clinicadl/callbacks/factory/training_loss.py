@@ -1,7 +1,7 @@
 import pandas as pd
 
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 
@@ -24,7 +24,7 @@ class TrainingLoss(Callback):
         self.df.at[(0, 0), LOSS] = 1.0
 
     def on_train_end(self, config: _TrainingConfig, **kwargs):
-        training_tsv = config.maps.splits[config.split].logs.training_tsv
+        training_tsv = config.maps.splits[config.split.index].logs.training_tsv
         (training_tsv.parent).mkdir(parents=True, exist_ok=True)
         self.df.to_csv(training_tsv, sep="\t", index=True)
 

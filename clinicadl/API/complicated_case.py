@@ -3,7 +3,7 @@ from pathlib import Path
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric
 
-from clinicadl.callbacks.factory import EarlyStopping, Logger, WandB
+from clinicadl.callbacks.factory import EarlyStopping, Logger, ModelCheckpoint, WandB
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datasets.concat import ConcatDataset
@@ -23,6 +23,7 @@ from clinicadl.metrics.config.factory import (
 from clinicadl.metrics.metrics import ClinicaDLMetrics, MetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
+from clinicadl.networks.nn.resnet import ResNet
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.predictor.predictor import Predictor
@@ -74,16 +75,15 @@ model = ClinicaDLModel(
 
 mae = MAEMetric()
 ssim = SSIMMetricConfig(spatial_dims=2)
-sensitivity = SensitivityMetricConfig(include_background=False)
-specificity = SpecificityMetricConfig(include_background=True)
+# sensitivity = SensitivityMetricConfig(include_background=False)
+# specificity = SpecificityMetricConfig(include_background=True)
 matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
 
 
 callbacks = [
-    EarlyStopping(metrics=[mae, MSEMetricConfig(), loss]),
+    EarlyStopping(metrics=[MSEMetricConfig(), loss]),
     Logger(),
-    WandB(),
-    ModelCheckpoint(metrics=[mae, MSEMetricConfig(), loss]),
+    ModelCheckpoint(metrics=[MSEMetricConfig(), loss]),
 ]
 
 trainer = Trainer(
@@ -92,7 +92,8 @@ trainer = Trainer(
     comp_config=comput_config,
     optim_config=optim_config,
     callbacks=callbacks,
-    metrics=[ssim, sensitivity, specificity, mae, matrix, loss],
+    metrics=[mae, matrix, loss],
+    _overwrite=True,
 )
 
 

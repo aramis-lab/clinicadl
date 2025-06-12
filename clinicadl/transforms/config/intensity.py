@@ -7,7 +7,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import DefaultFromLibrary
+from clinicadl.utils.config.base import DefaultFromLibrary
 
 from .base import Bounds, MaskingMethodConfig, TransformConfig
 from .enum import AnatomicalLabel

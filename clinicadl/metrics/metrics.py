@@ -4,31 +4,32 @@ from abc import ABC
 from pathlib import Path
 from typing import Dict, Optional, Union
 
-import numpy as np
 import pandas as pd
 import torch
 from monai.metrics.confusion_matrix import ConfusionMatrixMetric
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
-from clinicadl.dictionary.words import EPOCH, LOSS_METRIC, METRICS, SELECTION_METRICS
+from clinicadl.dictionary.words import EPOCH, LOSS_METRIC, METRICS
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
-from clinicadl.maps.split_dir.best_metric import BestMetric
 from clinicadl.metrics.config import (
     ConfusionMatrixMetricConfig,
     CustomMetric,
     MetricConfig,
-    get_metric_config,
 )
 from clinicadl.metrics.config.base import (
     LossMetricConfig,
     MetricConfig,
-    MonaiMetricConfig,
 )
-from clinicadl.utils.json import read_json, write_json
+from clinicadl.metrics.config.factory import get_metric_config
+from clinicadl.utils.json import write_json
 
 
 class Metrics(ABC):
+    """
+    Abstract base class for metrics.
+    """
+
     @staticmethod
     def check_metrics(
         metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
@@ -42,7 +43,8 @@ class Metrics(ABC):
             metrics = [metrics]
         for metric in metrics:
             if isinstance(metric, MonaiMetric):
-                metrics_config.append(MonaiMetricConfig(metric=metric))
+                config = get_metric_config(name=metric.__class__.__name__)
+                metrics_config.append(config)
 
             elif isinstance(metric, LossConfig):
                 metrics_config.append(
@@ -56,6 +58,9 @@ class Metrics(ABC):
             ):
                 metrics_config.append(metric)
 
+            elif isinstance(metric, type(CustomMetric)):
+                metrics_config.append(metric)
+
             elif isinstance(metric, type(Loss)):
                 metrics_config.append(LossMetricConfig(loss_fn=metric))
 
@@ -63,6 +68,8 @@ class Metrics(ABC):
 
 
 class ClinicaDLMetrics(Metrics):
+    """TO COMPLETE"""
+
     def __init__(
         self,
         metrics: Optional[
@@ -110,9 +117,7 @@ class ClinicaDLMetrics(Metrics):
 
     def contains(
         self,
-        metrics: list[
-            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
-        ],
+        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
     ) -> bool:
         """TO COMPLETE"""
         metrics = self.check_metrics(metrics)
@@ -196,7 +201,7 @@ class ClinicaDLMetrics(Metrics):
                 for i, _name in enumerate(metric.metric_name):
                     self.df.at[epoch, _name] = value[i].item()
             else:
-                self.df.at[epoch, name] = value
+                self.df.at[epoch, name] = value.item()
 
     def __call__(
         self, y_pred: torch.Tensor, y: Optional[torch.Tensor] = None, **kwargs
@@ -232,19 +237,16 @@ class ClinicaDLMetrics(Metrics):
             raise ValueError("Loss not found in training metrics.")
         return self._callable_metrics[LOSS_METRIC].aggregate().item()
 
-    # def save(self, best_metrics: Dict[str, BestMetric]) -> None:
-    #     """
-    #     Persist the metrics to disk using selection metric file paths.
+    def save(self, path: Path) -> None:
+        """
+        Persist the metrics to disk using selection metric file paths.
 
-    #     Parameters
-    #     ----------
-    #     best_metrics : Dict[str, BestMetric]
-    #         Mapping of metric names to their best-tracking wrappers.
-    #     """
-    #     if not self.selection_metrics:
-    #         raise RuntimeError("Cannot save metrics without selection_metrics.")
-    #     for name in self.selection_metrics:
-    #         self.df.to_csv(best_metrics[name].val.metrics_tsv, sep="\t", index=True)
+        Parameters
+        ----------
+        best_metrics : Dict[str, BestMetric]
+            Mapping of metric names to their best-tracking wrappers.
+        """
+        self.df.to_csv(path, sep="\t", index=True)
 
     def to_dict(self) -> Dict[str, Optional[list[dict]]]:
         """

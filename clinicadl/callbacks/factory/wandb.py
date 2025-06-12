@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 
 from clinicadl.dictionary.words import CLINICADL
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 

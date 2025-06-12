@@ -11,10 +11,9 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config.base import (
     LossMetricConfig,
     MetricConfig,
-    MonaiMetricConfig,
 )
 from clinicadl.metrics.metrics import ClinicaDLMetrics, Metrics
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 
@@ -80,24 +79,12 @@ class OneMetricEarlyStopping(Callback):
         Decides whether to stop the training or not, depending
         on the value of the last epoch.
 
-        Parameters
-        ----------
-        value : float
-            The value obtained during the last epoch.
-
-        Returns
-        -------
-        bool
-            The decision.
         """
-        df = kwargs.get(
-            "val_df", None
-        )  # TODO : something to get the write metric value in a df
-
+        df = config.metrics.df
         if df is not None and isinstance(df, pd.DataFrame) and not df.empty:
-            value = df[
-                self.metric.name, config.epoch
-            ].item()  # TODO: check if the df has the right columns and rows
+            value = df.loc[
+                config.epoch, self.metric.name
+            ]  # TODO: check if the df has the right columns and rows
             if value is None or pd.isna(value):
                 raise ValueError(
                     f"Metric '{self.metric.name}' not found in DataFrame for epoch {config.epoch}."
@@ -126,7 +113,7 @@ class OneMetricEarlyStopping(Callback):
         raise ValueError("No df provided")
 
 
-class EarlyStopping(Callback, Metrics):
+class EarlyStopping(Metrics, Callback):
     """
     TO COMPLETE
     """

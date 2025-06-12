@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 
@@ -117,7 +117,7 @@ class Logger(Callback):
         self.logger = setup_logging(verbose=verbose)
 
     def on_train_begin(self, config: _TrainingConfig, **kwargs):
-        self.logger.info("Beginning of the training")
+        self.logger.info("Beginning of the training for split %s", config.split.index)
         self.logger.info("Training on %s", kwargs.get("device", "unknown device"))
 
     def on_train_end(self, config: _TrainingConfig, **kwargs):

@@ -1,12 +1,11 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from typing import Optional
 
 import monai
 import monai.metrics
-from pydantic import (
-    field_validator,
-    model_validator,
-)
+from pydantic import ConfigDict, field_validator, model_validator
 
 from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
@@ -96,22 +95,26 @@ class LossMetricConfig(MetricConfig):
         return self
 
 
-class MonaiMetricConfig(MetricConfig):
-    """Config class to use MONAI metrics."""
+# class MonaiMetricConfig(MetricConfig):
+#     """Config class to use MONAI metrics."""
 
-    metric: monai.metrics.metric.CumulativeIterationMetric
+#     metric: monai.metrics.metric.CumulativeIterationMetric
 
-    def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
-        return self.metric
+#     def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
+#         return self.metric
 
-    @staticmethod
-    def optimum():
-        """The optimum of the metric."""
-        raise NotImplementedError(
-            "Optimum for MONAI metrics is not defined. Please use the specific metric config class."
-        )
+#     @staticmethod
+#     def optimum():
+#         """The optimum of the metric."""
+#         raise NotImplementedError(
+#             "Optimum for MONAI metrics is not defined. Please use the specific metric config class."
+#         )
 
-    @property
-    def name(self) -> str:
-        """The name of the MONAI metric."""
-        return self.metric.__class__.__name__
+#     def _get_class(self) -> type[monai.metrics.metric.CumulativeIterationMetric]:
+#         """Returns the metric associated to this config class."""
+#         return self.metric.__class__
+
+#     @property
+#     def name(self) -> str:
+#         """The name of the MONAI metric."""
+#         return self.metric.__class__.__name__

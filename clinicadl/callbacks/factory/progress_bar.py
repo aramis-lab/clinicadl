@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 

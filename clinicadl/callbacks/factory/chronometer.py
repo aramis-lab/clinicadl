@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 
@@ -258,9 +258,6 @@ class Chronometer(Callback):
             logger.info(">>> Peak Power during training: %f W", np.max(self.power))
 
         if self.val_time:
-            logger.info(">>> Validation time: %f", self.val_time)
-
-        if self.time_perf_train and self.time_perf_load:
-            logger.info(">>> Sortie trace:")
-            logger.info("GPU process - Forward/Backward : %f ", self.time_perf_train)
-            logger.info("CPU process - Dataloader : %f", self.time_perf_load)
+            logger.info(
+                ">>> Validation time: %f sec", self.val_time.total_seconds() / 60
+            )

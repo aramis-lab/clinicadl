@@ -14,7 +14,7 @@ from clinicadl.metrics.metrics import (
     MetricConfig,
     Metrics,
 )
-from clinicadl.trainer.config import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback
 
@@ -28,6 +28,25 @@ class ModelCheckpoint(Callback, Metrics):
     ):
         self.metrics = self.check_metrics(metrics)
 
+    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+        """TO COMPLETE"""
+
+        if config.split.train_loader is None:
+            raise ValueError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        if config.split.val_loader is None:
+            raise ValueError(
+                "The split has no val_loader defined. Please run `get_dataloader()`"
+            )
+
+        metrics_name = [
+            metric.name
+            for metric in self.metrics  # TODO: maybe we need to remove the metric of the name of the directory ?
+        ]
+        config.maps.create_split(config.split, metrics_name)
+        config.split.write_json(config.maps.splits[config.split.index].split_json)
+
     def on_epoch_end(self, config: _TrainingConfig, **kwargs):
         """TO COMPLETE"""
 
@@ -35,7 +54,7 @@ class ModelCheckpoint(Callback, Metrics):
             MODEL: config.model.network.state_dict(),
             EPOCH: config.epoch,
         }
-        checkpoint_path = config.maps.splits[config.split].tmp.path / (
+        checkpoint_path = config.maps.splits[config.split.index].tmp.path / (
             CHECKPOINT + PTH + TAR
         )
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -43,7 +62,7 @@ class ModelCheckpoint(Callback, Metrics):
 
         for metric in self.metrics:
             metric_path = (
-                config.maps.splits[config.split].best_metrics[metric.name].path
+                config.maps.splits[config.split.index].best_metrics[metric.name].path
             )
             metric_path.mkdir(parents=True, exist_ok=True)
 
@@ -54,15 +73,15 @@ class ModelCheckpoint(Callback, Metrics):
                 or (
                     optimum == Optimum.MAX
                     and (
-                        config.metrics.df.at(config.epoch, metric.name)
-                        > config.metrics.df.at(config.epoch - 1, metric.name)
+                        config.metrics.df.at[config.epoch, metric.name]
+                        > config.metrics.df.at[config.epoch - 1, metric.name]
                     )
                 )
                 or (
                     optimum == Optimum.MIN
                     and (
-                        config.metrics.df.at(config.epoch, metric.name)
-                        < config.metrics.df.at(config.epoch - 1, metric.name)
+                        config.metrics.df.at[config.epoch, metric.name]
+                        < config.metrics.df.at[config.epoch - 1, metric.name]
                     )
                 )
             ):
