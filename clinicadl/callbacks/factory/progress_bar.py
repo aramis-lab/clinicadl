@@ -16,8 +16,8 @@ class ProgressBarCallback(Callback):
 
     def on_train_begin(self, config: _TrainingConfig, **kwargs):
         """TO COMPLETE"""
-        epoch = kwargs.pop("epoch", None)
-        train_loader = kwargs.pop("train_loader", None)
+        epoch = config.epoch
+        train_loader = config.split.train_loader
         rank = kwargs.pop("rank", -1)
         if train_loader is not None and (rank == 0 or rank == -1):
             self.train_progress_bar = tqdm(
@@ -28,12 +28,12 @@ class ProgressBarCallback(Callback):
 
     def on_batch_begin(self, config: _TrainingConfig, **kwargs):
         """TO COMPLETE"""
-        epoch = kwargs.pop("epoch", None)
-        eval_loader = kwargs.pop("eval_loader", None)
+        epoch = config.epoch
+        val_loader = config.split.val_loader
         rank = kwargs.pop("rank", -1)
-        if eval_loader is not None and (rank == 0 or rank == -1):
+        if val_loader is not None and (rank == 0 or rank == -1):
             self.eval_progress_bar = tqdm(
-                total=len(eval_loader),
+                total=len(val_loader),
                 unit="batch",
                 desc=f"Eval of epoch {epoch}/{config.optim.epochs}",
             )

@@ -94,6 +94,9 @@ class ConfusionMatrixMetricConfig(
         return Optimum.MAX
 
 
+# FOLLOWING METRICS ARE NOT MEANT TO BE USED FOR NOW
+
+
 class SensitivityMetricConfig(ConfusionMatrixMetricConfig):
     """Config class for Sensitivity metric."""
 

@@ -73,10 +73,6 @@ class SimpleBatch(list[Sample]):
                 labels,
                 dtype=torch.float32,
             )
-        # return torch.tensor(
-        #         labels,
-        #         dtype=torch.float32,
-        #     ).unsqueeze(-1)
         except (TypeError, ValueError):  # e.g. None in labels
             return labels
 

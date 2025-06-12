@@ -3,30 +3,20 @@ from pathlib import Path
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric
 
-from clinicadl.callbacks.factory import EarlyStopping, Logger, ModelCheckpoint, WandB
+from clinicadl.callbacks.factory import EarlyStopping, Logger, ModelCheckpoint
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
-from clinicadl.data.datasets.concat import ConcatDataset
-from clinicadl.data.datatypes.preprocessing import (
-    PETLinear,
-    T1Linear,
-)
+from clinicadl.data.datatypes.preprocessing import T1Linear
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config.factory import (
     ConfusionMatrixMetricConfig,
-    MAEMetricConfig,
     MSEMetricConfig,
-    SensitivityMetricConfig,
-    SpecificityMetricConfig,
     SSIMMetricConfig,
 )
-from clinicadl.metrics.metrics import ClinicaDLMetrics, MetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
-from clinicadl.networks.nn.resnet import ResNet
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
-from clinicadl.predictor.predictor import Predictor
 from clinicadl.splitter import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms import Transforms
@@ -75,10 +65,7 @@ model = ClinicaDLModel(
 
 mae = MAEMetric()
 ssim = SSIMMetricConfig(spatial_dims=2)
-# sensitivity = SensitivityMetricConfig(include_background=False)
-# specificity = SpecificityMetricConfig(include_background=True)
 matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
-
 
 callbacks = [
     EarlyStopping(metrics=[MSEMetricConfig(), loss]),
@@ -97,7 +84,7 @@ trainer = Trainer(
 )
 
 
-# CROOS VALIDATION LOOP
+# CROSS VALIDATION LOOP
 for split in splitter.get_splits(dataset=dataset_t1_image):
     # BUILD DATALOADER
     split.build_train_loader(dataloader_config)

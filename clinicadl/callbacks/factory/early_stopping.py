@@ -12,7 +12,7 @@ from clinicadl.metrics.config.base import (
     LossMetricConfig,
     MetricConfig,
 )
-from clinicadl.metrics.metrics import ClinicaDLMetrics, Metrics
+from clinicadl.metrics.metrics import Metrics
 from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback

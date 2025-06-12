@@ -1,6 +1,6 @@
 import pandas as pd
 
-from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
+from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
 from clinicadl.utils.config.training import _TrainingConfig
 
 from .base import Callback

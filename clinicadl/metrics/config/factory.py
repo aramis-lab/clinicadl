@@ -2,29 +2,7 @@ from typing import Any, Union
 
 # pylint: disable=unused-import
 from .base import LossMetricConfig, MetricConfig
-from .classification import (
-    AccuracyMetricConfig,
-    Average,
-    BalancedAccuracyMetricConfig,
-    ConfusionMatrixMetricConfig,
-    ConfusionMatrixMetricName,
-    F1ScoreMetricConfig,
-    FallOutMetricConfig,
-    FalseDiscoveryRateMetricConfig,
-    FalseOmissionRateMetricConfig,
-    FowlkesMallowsMetricConfig,
-    InformednessMetricConfig,
-    MarkednessMetricConfig,
-    MatthewsCoeffMetricConfig,
-    MissRateMetricConfig,
-    NegativePredictiveValueMetricConfig,
-    PrecisionMetricConfig,
-    PrevalenceThresholdMetricConfig,
-    ROCAUCMetricConfig,
-    SensitivityMetricConfig,
-    SpecificityMetricConfig,
-    ThreatScoreMetricConfig,
-)
+from .classification import ConfusionMatrixMetricConfig, ROCAUCMetricConfig
 from .enum import ImplementedMetric
 from .reconstruction import (
     MultiScaleSSIMMetricConfig,

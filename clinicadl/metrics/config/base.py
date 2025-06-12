@@ -93,28 +93,3 @@ class LossMetricConfig(MetricConfig):
                 ) from exc
 
         return self
-
-
-# class MonaiMetricConfig(MetricConfig):
-#     """Config class to use MONAI metrics."""
-
-#     metric: monai.metrics.metric.CumulativeIterationMetric
-
-#     def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
-#         return self.metric
-
-#     @staticmethod
-#     def optimum():
-#         """The optimum of the metric."""
-#         raise NotImplementedError(
-#             "Optimum for MONAI metrics is not defined. Please use the specific metric config class."
-#         )
-
-#     def _get_class(self) -> type[monai.metrics.metric.CumulativeIterationMetric]:
-#         """Returns the metric associated to this config class."""
-#         return self.metric.__class__
-
-#     @property
-#     def name(self) -> str:
-#         """The name of the MONAI metric."""
-#         return self.metric.__class__.__name__

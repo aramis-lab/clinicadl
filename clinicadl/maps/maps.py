@@ -249,30 +249,15 @@ class Maps(Directory):
 
     def _write_requirements_version(self) -> None:
         """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
-        # try:
-        #     # Utilisation de subprocess.run (plus moderne et sûr)
-        #     result = subprocess.run(
-        #         ["pip", "freeze"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        #     )
-        #     print(result.stdout.decode("utf-8"))
-        #     env_variables = result.stdout.decode("utf-8")
-        #     with (self.requirements_txt).open(mode="w") as file:
-        #         file.write(env_variables)
-        # except subprocess.CalledProcessError as e:
-        #     # Afficher l'erreur d'exécution de la commande
-        #     error_message = e.stderr.decode("utf-8") if e.stderr else "No error message"
-        #     print(f"Error executing pip freeze: {error_message}")
-        #     raise ClinicaDLConfigurationError(
-        #         f"Error executing pip freeze: {error_message}. Your environment will not be written"
-        #     )
-        # except Exception as ex:
-        #     # Attraper toutes autres exceptions
-        #     print(f"Unexpected error: {str(ex)}")
-        #     raise ClinicaDLConfigurationError(
-        #         f"Unexpected error: {str(ex)}. Your environment will not be written"
-        #     )
-        with (self.requirements_txt).open(mode="w") as file:
-            file.write("pip freeze")
+        try:
+            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
+                "utf-8"
+            )
+            with (self.requirements_txt).open(mode="w") as file:
+                file.write(env_variables)
+        except subprocess.CalledProcessError:
+            with (self.requirements_txt).open(mode="w") as file:
+                file.write("pip freeze")
 
     def read_json(self) -> dict:
         return dict()
