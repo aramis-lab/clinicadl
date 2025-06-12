@@ -1,4 +1,4 @@
-.. _single_split:
+.. _api_single_split:
 
 Single split
 ============

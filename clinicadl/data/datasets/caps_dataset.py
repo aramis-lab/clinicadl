@@ -55,7 +55,7 @@ class CapsDataset(Dataset):
     ``.pt`` format with the ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
     must be called.
 
-    The :ref:`outputs of the CapsDataset <capsdataset_outputs>` (i.e. what you get when you call ``dataset[i]``) depend
+    The :ref:`outputs of the CapsDataset <api_dataset_output>` (i.e. what you get when you call ``dataset[i]``) depend
     on the type of elements of the image you are working on (the whole image, patches or slices. This is defined via the
     argument ``transforms``).
 
@@ -74,7 +74,7 @@ class CapsDataset(Dataset):
         Path to the CAPS directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
     preprocessing : Preprocessing, (optional, default=T1Linear())
         Description of the preprocessing steps applied to the data. Default is Clinica's ``t1-linear``
-        pipeline. See :ref:`caps_datatypes` to know supported preprocessings.
+        pipeline. See :ref:`api_data_types` to know supported preprocessings.
     data : Optional[DataType], (optional, default=None)
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
@@ -451,7 +451,7 @@ class CapsDataset(Dataset):
             * ``total_samples``: the size of the dataset, i.e. the total number of samples.
             * ``participant_session_pairs``: the list of participant/session pairs in the dataset.
             * ``preprocessing``: the preprocessing parameters.
-            * ``extraction``: the extraction parameters.
+            * ``api_extraction``: the extraction parameters.
 
         Raises
         ------

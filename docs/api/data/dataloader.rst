@@ -1,7 +1,7 @@
-.. _data_dataloader:
+.. _api_data_loader:
 
-DataLoader
-==========
+``clinicadl.data.dataloader``
+=============================
 
 .. autoclass:: clinicadl.data.dataloader.DataLoaderConfig
     :members: get_object

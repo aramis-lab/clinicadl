@@ -1,4 +1,4 @@
-.. _concat:
+.. _api_concat_dataset:
 
 ConcatDataset
 =============

@@ -1,5 +1,7 @@
-Loss functions
-==============
+.. _api_losses:
+
+``clinicadl.losses``
+====================
 .. currentmodule:: clinicadl.losses.config
 
 Natively supported loss functions in ClinicaDL

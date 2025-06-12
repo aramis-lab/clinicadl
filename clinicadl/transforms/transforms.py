@@ -21,7 +21,7 @@ class Transforms(ClinicaDLConfig):
     Configuration class to gather all the transforms applied to images.
 
     ClinicaDL defines 4 types of transforms:\n
-    - ``extraction``: defines on what type of elements of the image we want to work
+    - ``api_extraction``: defines on what type of elements of the image we want to work
       (the whole image, patches or slices).
     - ``image_transforms``: transforms applied on the whole image, **before**
       potential extraction is applied. This is typically where you want to
@@ -30,11 +30,11 @@ class Transforms(ClinicaDLConfig):
     - ``sample_transforms``: transforms applied on a sample (a patch or a slice),
       **after** extraction. This is typically where you want to
       resize your sample so that it fits in your network.
-    - ``augmentations``: transforms applied after ``image_transforms``, ``extraction``
+    - ``augmentations``: transforms applied after ``image_transforms``, ``api_extraction``
       and ``sample_transforms``, only during training.
 
     .. note::
-        :ref:`Extraction objects <extraction>` are not exactly transforms since
+        :ref:`Extraction objects <api_extraction>` are not exactly transforms since
         they modify the size of the datasets: if you have 10 images with 100 slices each and you want to work on slices
         (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
 
@@ -49,7 +49,7 @@ class Transforms(ClinicaDLConfig):
     Parameters
     ----------
     extraction : Optional[Extraction], (optional, default=None)
-        The extraction applied. See :ref:`extraction`. Default is ``None``, which means
+        The extraction applied. See :ref:`api_extraction`. Default is ``None``, which means
         that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
         will output full images.
     image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
@@ -93,7 +93,7 @@ class Transforms(ClinicaDLConfig):
         """
         Validates and adjusts the transformation configuration when image and sample transformations overlap.
 
-        If the `extraction` is of type `Image` and sample transformations or augmentations are provided,
+        If the `api_extraction` is of type `Image` and sample transformations or augmentations are provided,
         they will be merged into the image transformations and augmentations. A warning is logged for
         potential configuration conflicts.
 

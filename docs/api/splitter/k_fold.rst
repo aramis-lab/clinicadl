@@ -1,4 +1,4 @@
-.. _k_fold:
+.. _api_k_fold:
 
 K-Fold
 ======

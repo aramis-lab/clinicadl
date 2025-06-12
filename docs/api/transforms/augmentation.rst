@@ -1,4 +1,4 @@
-.. _transforms_augmentation:
+.. _api_augmentation:
 
 .. currentmodule:: clinicadl.transforms.config
 

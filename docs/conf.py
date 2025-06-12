@@ -22,6 +22,7 @@ version = "2.0"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx_design",
     "sphinx.ext.extlinks",
@@ -52,6 +53,10 @@ extlinks = {
         "https://github.com/aramis-lab/clinicadl-zoo/tree/main/%s",
         None,
     ),
+    "torchio": ("https://torchio.readthedocs.io/%s", None),
+    "torch": ("https://pytorch.org/docs/stable/%s", None),
+    "monai": ("https://docs.monai.io/en/stable/%s", None),
+    "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
 }
 language = "en"
 # pygments_style = "friendly"

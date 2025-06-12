@@ -13,7 +13,7 @@ with some specificities.
 
 A CAPS structure can contain different kinds of data (e.g. different modalities or
 preprocessings). To define the type of data you want to manipulate, you must pass
-to the ``CapsDataset`` a :ref:`CAPS datatype <caps_datatypes>`, which is a
+to the ``CapsDataset`` a :ref:`CAPS datatype <api_data_types>`, which is a
 representation of these data. ``CapsDataset`` will use this object to get the
 right images in your CAPS structure.
 
@@ -30,16 +30,13 @@ To do this, you can use :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
 create a DataLoader suited to ClinicaDL.
 
 Finally, before training a Deep Learning model, you will split your data between training, validation and test sets.
-To do this, you will manipulate our :ref:`splitting tools <splitter>`.
+To do this, you will manipulate our :ref:`splitting tools <api_splitter>`.
 
 .. toctree::
     :maxdepth: 1
-
-    datasets/caps_dataset
-    datasets/concat_dataset
-    datasets/paired_dataset
-    datasets/unpaired_dataset
-    datatypes
-    transforms/transforms
-    dataloader
-    splitter/splits
+    
+    dataset
+    stacking_pairing
+    patch_slice
+    transforms
+    split

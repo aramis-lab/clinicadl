@@ -1,4 +1,4 @@
-.. _data_structures:
+.. _api_data_point:
 
 DataPoint
 =========

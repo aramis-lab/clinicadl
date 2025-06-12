@@ -43,11 +43,11 @@ class UnpairedDataset(Dataset):
     size of the smallest dataset if ``oversample=False``. This randomness is also controlled via
     :py:meth:`~UnpairedDataset.set_epoch`.
 
-    An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
+    An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <api_dataset_output>`, whose length is equal
     to the number of datasets forming the UnpairedDataset.
 
     To use UnpairedDataset, you must **previously perform tensor conversion** for each underlying CapsDataset
-    (see :ref:`caps_dataset`).
+    (see :ref:`api_caps_dataset`).
 
     .. note::
         ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.

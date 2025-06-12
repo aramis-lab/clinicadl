@@ -36,12 +36,12 @@ class PairedDataset(StackDataset):
     but if the second dataset now contains two slices of the images, this will raise an error because the second dataset
     will thus be two times bigger than the first one, and the two datasets cannot be paired.
 
-    A PairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
+    A PairedDataset will return a tuple of :ref:`CapsDataset outputs <api_dataset_output>`, whose length is equal
     to the number of datasets forming the PairedDataset.
 
     PairedDataset inherits from :py:class:`torch.utils.data.StackDataset`.
 
-    To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
+    To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`api_caps_dataset`).
 
     .. note::
         ``PairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.

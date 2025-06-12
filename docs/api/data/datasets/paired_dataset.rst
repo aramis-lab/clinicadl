@@ -1,4 +1,4 @@
-.. _paired:
+.. _api_paired_dataset:
 
 PairedDataset
 =============

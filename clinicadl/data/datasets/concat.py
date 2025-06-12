@@ -30,7 +30,7 @@ class ConcatDataset(TorchConcatDataset):
 
     ConcatDataset inherits from :py:class:`torch.utils.data.ConcatDataset`.
 
-    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
+    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`api_caps_dataset`).
 
     Parameters
     ----------

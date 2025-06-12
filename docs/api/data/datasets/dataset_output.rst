@@ -1,4 +1,4 @@
-.. _capsdataset_outputs:
+.. _api_dataset_output:
 
 Outputs of CapsDataset
 ======================

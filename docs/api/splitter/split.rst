@@ -1,4 +1,4 @@
-.. _split:
+.. _api_split:
 
 Split
 =====

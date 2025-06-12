@@ -1,4 +1,4 @@
-.. _transforms_preprocessing:
+.. _api_preprocessing:
 
 Preprocessing
 =============

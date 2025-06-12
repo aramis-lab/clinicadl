@@ -1,7 +1,6 @@
-.. _splitter:
+Split data into training, validation and test sets
+==================================================
 
-Splits
-======
 
 To split a :py:class:`~clinicadl.data.datasets.CapsDataset` (or its derivatives:
 :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`, and
@@ -90,9 +89,3 @@ data format accepted by ClinicaDL's ``Trainer``.
 
     However, if you want to use ClinicaDL's ``Trainer``, you'll have to use the
     :py:class:`~clinicadl.splitter.Split` object.
-
-.. toctree::
-    :maxdepth: 1
-
-    single_split
-    k_fold

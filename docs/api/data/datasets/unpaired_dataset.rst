@@ -1,4 +1,4 @@
-.. _unpaired:
+.. _api_unpaired_dataset:
 
 UnpairedDataset
 ===============

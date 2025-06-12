@@ -54,7 +54,7 @@ configuration class in ClinicaDL is fairly comprehensive, the user may
 want to use objects that are not included.
 That's why, to allow full flexibility to the user, ClinicaDL objects
 also accept custom objects. For example, let's take ClinicaDL's ``Transforms``,
-whose aim is to gather all the transforms applied to the images (see :ref:`transforms`).
+whose aim is to gather all the transforms applied to the images (see :ref:`api_transforms`).
 ``Transforms`` accept configuration classes:
 
 .. code-block:: python
