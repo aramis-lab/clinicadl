@@ -29,6 +29,8 @@ caps = CapsDataset(
 # %%
 # Convert your images to tensors
 # ------------------------------
+
+# This is a python comment
 caps.read_tensor_conversion("pet_all")
 
 
