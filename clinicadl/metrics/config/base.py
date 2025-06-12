@@ -53,6 +53,12 @@ class _ReductionConfig(ClinicaDLConfig):
 
     reduction: Reduction
 
+    @field_validator("reduction", mode="after")
+    @classmethod
+    def validator_reduction(cls, v):
+        if v == "mean_batch":
+            return Reduction.MEAN
+
 
 class _GetNotNansConfig(ClinicaDLConfig):
     """Config class for 'get_not_nans' parameter."""
