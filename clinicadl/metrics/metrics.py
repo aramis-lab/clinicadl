@@ -91,9 +91,10 @@ class ClinicaDLMetrics(Metrics):
             metrics = []  # TODO: which default metrics should we add?
 
         self.metrics = self.check_metrics(metrics)
+        self._loss_metric = LossMetricConfig(loss_fn=loss)
 
-        if LossMetricConfig(loss_fn=loss) not in self.metrics:
-            self.metrics.append(LossMetricConfig(loss_fn=loss))
+        if self._loss_metric not in self.metrics:
+            self.metrics.append(self._loss_metric)
             # TODO : check if 2 lossconifg, one for the loss and one as a metric, how to handle the name ? because a loss is a function and doesn't have a name
 
         self._callable_metrics = self.get_callable_metrics()

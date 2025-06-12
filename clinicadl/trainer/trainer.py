@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import shutil
-from copy import deepcopy
-from typing import Any, Dict, Optional, Union
+from typing import Optional, Union
 
-import pandas as pd
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 from torch.amp.autocast_mode import autocast
@@ -13,7 +10,6 @@ from torch.utils.data import DataLoader
 from clinicadl.callbacks.handler import Callback, CallbacksHandler
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.dictionary.words import BATCH, EPOCH, LOSS, TIME
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps

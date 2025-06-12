@@ -132,12 +132,12 @@ class OutputTransforms(ClinicaDLConfig):
         transformed_labels = []
 
         for i in range(batch_tensor.shape[0]):
-            output_sample = deepcopy(data[i])
-            output_sample.sample = batch_tensor[
+            # output_sample = deepcopy(data[i])
+            output_sample = batch_tensor[
                 i
             ]  # Assuming batch_tensor has the same shape as the image in the samples
 
-            output_datapoint = output_sample.get_datapoint()
+            output_datapoint = output_sample
             transformed_output_datapoint = self.apply(output_datapoint)
 
             transformed_outputs.append(transformed_output_datapoint.image)

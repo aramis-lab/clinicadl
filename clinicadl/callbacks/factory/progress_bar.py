@@ -14,7 +14,7 @@ class ProgressBarCallback(Callback):
         self.train_progress_bar = None
         self.eval_progress_bar = None
 
-    def on_train_step_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingConfig, **kwargs):
         """TO COMPLETE"""
         epoch = kwargs.pop("epoch", None)
         train_loader = kwargs.pop("train_loader", None)

@@ -246,3 +246,5 @@ class TmpDir(Directory):
             self.checkpoint.unlink()
         if self.optimizer.is_file():
             self.optimizer.unlink()
+        if self.path.is_dir():
+            self.path.rmdir()

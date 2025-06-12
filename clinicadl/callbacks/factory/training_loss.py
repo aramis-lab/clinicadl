@@ -18,9 +18,8 @@ class TrainingLoss(Callback):
         pd.DataFrame
             A dataframe to log loss and computation time per epoch and batch.
         """
-        self.df = pd.DataFrame(columns=[EPOCH, BATCH, TIME, LOSS])
+        self.df = pd.DataFrame(columns=[EPOCH, BATCH, LOSS])
         self.df.set_index([EPOCH, BATCH], inplace=True)
-        self.df.at[(0, 0), TIME] = 0.0
         self.df.at[(0, 0), LOSS] = 1.0
 
     def on_train_end(self, config: _TrainingConfig, **kwargs):

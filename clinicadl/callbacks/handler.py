@@ -28,6 +28,15 @@ class CallbacksHandler:
         if Chronometer() not in self.callbacks:
             self.callbacks[Chronometer] = Chronometer()
 
+        if TrainingLoss() not in self.callbacks:
+            self.callbacks[TrainingLoss] = TrainingLoss()
+
+        if Logger() not in self.callbacks:
+            self.callbacks[Logger] = Logger()
+
+        if ProgressBarCallback() not in self.callbacks:
+            self.callbacks[ProgressBarCallback] = ProgressBarCallback()
+
         for cb in self.callbacks.values():
             if not isinstance(cb, Callback):
                 raise TypeError(
@@ -36,6 +45,11 @@ class CallbacksHandler:
 
     def check_metrics(self, metrics: ClinicaDLMetrics):
         """TO COMPLETE"""
+
+        if ModelCheckpoint not in self.callbacks.keys():
+            self.callbacks[ModelCheckpoint] = ModelCheckpoint(
+                metrics=[metrics._loss_metric]
+            )
 
         if EarlyStopping in self.callbacks.keys():
             metrics1 = self.callbacks[EarlyStopping].metrics  # type: ignore

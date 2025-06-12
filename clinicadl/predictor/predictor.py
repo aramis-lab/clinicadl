@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import nibabel as nib
+import numpy as np
 import pandas as pd
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
@@ -104,8 +105,8 @@ class Predictor:
         additionnal_metrics: Optional[
             list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
         ] = None,
-        output_transforms: Optional[Union[Transforms, OutputTransforms]] = None,
-        metric: str = LOSS,
+        output_transforms: Optional[OutputTransforms] = None,
+        metric: str = "LossMetric",
     ):
         # TODO : check dataloader with dataloader from training
 
@@ -116,7 +117,11 @@ class Predictor:
         # TODO : retrieve the metrics from the maps and add the additional metrics
         # metrics = ClinicaDLMetrics.from_maps(additionnal_metrics= additionnal_metrics)
 
-        # TODO : aaply the outputs transforms before calculating the metrics ?
+        # TODO : check that the Transforms is of Type OutputsTransforms, if not put the transforms in an OutputsTransforms Object
+
+        self.maps.create_data_group(name=data_group, dataset=dataloader.dataset)
+        self.maps.splits[split].best_metrics[metric].create_data_group(name=data_group)
+        # TODO : create a new method to create a new datagroup
 
         self.model.network.eval()
         is_caps_output = False
@@ -124,9 +129,11 @@ class Predictor:
         with torch.no_grad():
             for batch_idx, data in enumerate(dataloader):
                 if batch_idx == 0:
-                    if isinstance(data[0].label, Union[float, int]):
+                    if isinstance(data[0].label, (float, int, np.floating, np.integer)):
                         prediction_df = self.create_prediction_df()
-                    elif isinstance(data[0].label, Union[torch.Tensor, None]):
+                    elif isinstance(data[0].label, torch.Tensor) or (
+                        data[0].label is None
+                    ):
                         is_caps_output = True
                         caps_reader = self.create_caps_output(
                             split=split, metric=metric, data_group=data_group
@@ -140,6 +147,11 @@ class Predictor:
                 with autocast(self.comp.device.type, enabled=self.comp.amp):
                     images = data.get_images().to(self.comp.device)
                     outputs = self.model.network(images)
+
+                # if output_transforms is not None: # TODO: apply the output transforms
+                #     outputs = output_transforms.batch_apply(outputs, data)
+
+                # metrics=(outputs, labels) # TODO: check what we wanrt to pass to the metrics
 
                 for i, sample in enumerate(data):
                     if is_caps_output:
