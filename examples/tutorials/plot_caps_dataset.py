@@ -2,7 +2,7 @@
 Building a basic CapsDataset
 ============================
 
-This example shows how to build a CapsDataset to manipulate your data.
+This example shows how to build a :py:class:`~clinicadl.data.datasets.CapsDataset` to manipulate your data.
 """
 
 # %%
@@ -11,17 +11,16 @@ This example shows how to build a CapsDataset to manipulate your data.
 
 from pathlib import Path
 
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import PETLinear
+from clinicadl.data import datasets, datatypes
 
 caps_path = (
     Path("../../") / "tests" / "unittests" / "resources" / "caps_example"
 ).resolve()
 data = caps_path / "tsv" / "labels.tsv"
-caps = CapsDataset(
+caps = datasets.CapsDataset(
     caps_path,
     data=data,
-    preprocessing=PETLinear(
+    preprocessing=datatypes.PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
 )
