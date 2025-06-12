@@ -20,9 +20,9 @@ def test_SimpleBatch():
     ]
     batch = SimpleBatch(list_samples)
     images = batch.get_images()
-    assert images.size() == (3, 1, 3, 4, 5)
+    assert images.size() == (3, 3, 4, 5)
     labels = batch.get_labels()
-    assert labels.size() == (3, 1, 3, 4, 5)
+    assert labels.size() == (3, 3, 4, 5)
 
     batch.append(
         ImageSample(
