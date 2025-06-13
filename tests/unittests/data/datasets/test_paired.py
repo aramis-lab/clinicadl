@@ -1,6 +1,8 @@
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -11,14 +13,14 @@ from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-FULL_DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t")
+FULL_DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
 
 
 def sub_data(
     participants_sessions: Optional[list[tuple[str, str]]] = None,
 ) -> pd.DataFrame:
     if not participants_sessions:
-        return FULL_DATA
+        return deepcopy(FULL_DATA)
     data = FULL_DATA.set_index(["participant_id", "session_id"])
     data = data.loc[participants_sessions]
     return data.reset_index()
@@ -32,9 +34,14 @@ def create_caps_datasets(pet_all: bool = False):
         ]
     )
     if not pet_all:
-        pet_data = t1_data
+        pet_data = deepcopy(t1_data)
     else:
         pet_data = sub_data()
+
+    t1_data.loc[0, "age"] = np.nan
+    t1_data = t1_data.drop(columns=["diagnosis", "category"])
+    pet_data.loc[0, "diagnosis"] = np.nan
+    pet_data = pet_data.drop(columns="category")
 
     caps_t1 = CapsDataset(
         CAPS_DIR,
@@ -72,7 +79,7 @@ def test_checks():
     _, caps_pet = create_caps_datasets(pet_all=True)
     caps_pet.read_tensor_conversion("pet_all")
     with pytest.raises(
-        ClinicaDLCAPSError, match="To stack datasets, they must have exactly the same*"
+        ClinicaDLCAPSError, match="To pair datasets, they must have exactly the same*"
     ):
         PairedDataset([caps_t1, caps_pet])
 
@@ -86,7 +93,8 @@ def test_checks():
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
     with pytest.raises(
-        ClinicaDLCAPSError, match="To stack datasets, they must have exactly the same*"
+        ClinicaDLCAPSError,
+        match=r"For \(sub-000, ses-M000\), different values found for 'n_samples'*",
     ):
         PairedDataset([caps_t1, caps_pet])
 
@@ -95,43 +103,58 @@ def test_df():
     caps_t1, caps_pet = create_caps_datasets()
     caps_t1.read_tensor_conversion("t1_all")
     caps_pet.read_tensor_conversion("pet_all")
-    assert caps_t1.df[
-        ["participant_id", "session_id", "age", "n_samples", "first_idx", "last_idx"]
-    ].equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-010", "sub-000"],
-                "session_id": ["ses-M003", "ses-M000"],
-                "age": [2, 1],
-                "n_samples": [1, 1],
-                "first_idx": [0, 1],
-                "last_idx": [0, 1],
-            }
+    assert (
+        (
+            caps_t1.df.fillna(-1)
+            == pd.DataFrame(
+                {
+                    "participant_id": ["sub-010", "sub-000"],
+                    "session_id": ["ses-M003", "ses-M000"],
+                    "age": [-1, 1],
+                    "n_samples": [1, 1],
+                    "first_idx": [0, 1],
+                    "last_idx": [0, 1],
+                }
+            )
         )
+        .all()
+        .all()
     )
     paired = PairedDataset([caps_t1, caps_pet])
-    assert paired.df.equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-000", "sub-010"],
-                "session_id": ["ses-M000", "ses-M003"],
-                "n_samples": [1, 1],
-            }
+    assert (
+        (
+            paired.df.fillna(-1)
+            == pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-010"],
+                    "session_id": ["ses-M000", "ses-M003"],
+                    "age": [1, 2],
+                    "n_samples": [1, 1],
+                    "first_idx": [0, 1],
+                    "last_idx": [0, 1],
+                    "diagnosis": ["CN", -1],
+                }
+            )
         )
+        .all()
+        .all()
     )
-    assert caps_t1.df[
-        ["participant_id", "session_id", "age", "n_samples", "first_idx", "last_idx"]
-    ].equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-000", "sub-010"],
-                "session_id": ["ses-M000", "ses-M003"],
-                "age": [1, 2],
-                "n_samples": [1, 1],
-                "first_idx": [0, 1],
-                "last_idx": [0, 1],
-            }
+    assert (
+        (
+            caps_t1.df.fillna(-1)
+            == pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-010"],
+                    "session_id": ["ses-M000", "ses-M003"],
+                    "age": [1, -1],
+                    "n_samples": [1, 1],
+                    "first_idx": [0, 1],
+                    "last_idx": [0, 1],
+                }
+            )
         )
+        .all()
+        .all()
     )
 
 
@@ -160,14 +183,6 @@ def test_get_sample_info():
         paired.get_sample_info(-1, "age")
     with pytest.raises(KeyError):
         paired.get_sample_info(0, "abc")
-    caps_t1.df.loc[0, "age"] = 2
-    with pytest.raises(ClinicaDLCAPSError):
-        paired.get_sample_info(0, "age")
-    caps_t1.df.drop(columns="age", inplace=True)
-    assert paired.get_sample_info(0, "age") == 1
-    caps_pet.df.drop(columns="age", inplace=True)
-    with pytest.raises(KeyError):
-        paired.get_sample_info(0, "age")
 
 
 def test_describe():
@@ -200,29 +215,21 @@ def test_subset():
     caps_pet.read_tensor_conversion("pet_all")
     paired = PairedDataset([caps_t1, caps_pet])
     assert (
-        paired.datasets[0]
-        .df[
-            [
-                "participant_id",
-                "session_id",
-                "age",
-                "n_samples",
-                "first_idx",
-                "last_idx",
-            ]
-        ]
-        .equals(
-            pd.DataFrame(
+        (
+            paired.datasets[0].df.fillna(-1)
+            == pd.DataFrame(
                 {
                     "participant_id": ["sub-000", "sub-010"],
                     "session_id": ["ses-M000", "ses-M003"],
-                    "age": [1, 2],
+                    "age": [1, -1],
                     "n_samples": [1, 1],
                     "first_idx": [0, 1],
                     "last_idx": [0, 1],
                 }
             )
         )
+        .all()
+        .all()
     )
 
     subset = paired.subset(
@@ -233,29 +240,10 @@ def test_subset():
         )
     )
     assert len((subset)) == 1
-    assert subset.df.equals(
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-010"],
-                "session_id": ["ses-M003"],
-                "n_samples": [1],
-            }
-        )
-    )
     assert (
-        subset.datasets[0]
-        .df[
-            [
-                "participant_id",
-                "session_id",
-                "age",
-                "n_samples",
-                "first_idx",
-                "last_idx",
-            ]
-        ]
-        .equals(
-            pd.DataFrame(
+        (
+            subset.df.fillna(-1)
+            == pd.DataFrame(
                 {
                     "participant_id": ["sub-010"],
                     "session_id": ["ses-M003"],
@@ -263,17 +251,39 @@ def test_subset():
                     "n_samples": [1],
                     "first_idx": [0],
                     "last_idx": [0],
+                    "diagnosis": [-1],
                 }
             )
         )
+        .all()
+        .all()
+    )
+    assert (
+        (
+            subset.datasets[0].df.fillna(-1)
+            == pd.DataFrame(
+                {
+                    "participant_id": ["sub-010"],
+                    "session_id": ["ses-M003"],
+                    "age": [-1],
+                    "n_samples": [1],
+                    "first_idx": [0],
+                    "last_idx": [0],
+                }
+            )
+        )
+        .all()
+        .all()
     )
 
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
+    ):
         paired.subset(
             sub_data(
                 [
-                    ("sub-010", "ses-M003"),
-                    ("sub-010", "ses-M012"),
+                    ("sub-999", "ses-M099"),
                 ]
             )
         )

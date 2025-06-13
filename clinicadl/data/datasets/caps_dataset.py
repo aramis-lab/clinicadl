@@ -26,14 +26,10 @@ from clinicadl.dictionary.words import (
 )
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.tsvtools.utils import (
-    check_df,
-    tsv_to_df,
-)
+from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
-    ClinicaDLTSVError,
 )
 from clinicadl.utils.typing import DataType, PathType
 
@@ -332,7 +328,10 @@ class CapsDataset(Dataset):
         self._count_samples()
 
     def read_tensor_conversion(
-        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
+        self,
+        json_name: str,
+        check_transforms: bool = True,
+        load_also: Optional[list[str]] = None,
     ) -> None:
         """
         To read an old tensor conversion. The function will check that
@@ -365,7 +364,7 @@ class CapsDataset(Dataset):
             .. warning::
                 **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
-        load_also : list[str] (optional, default=[])
+        load_also : list[str] (optional, default=None)
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
             mentioned in the argument ``masks`` of the CapsDataset will be loaded.
 
@@ -421,28 +420,20 @@ class CapsDataset(Dataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in the current CapsDataset.
+        ClinicaDLCAPSError
+            If no (participant, session) pairs mentioned in ``data`` are in the current CapsDataset
+            (this would lead to an empty dataset).
         """
-        new_df = self._check_data_instance(data).set_index([PARTICIPANT_ID, SESSION_ID])
+        new_df = read_data(data, check_protected_names=False).set_index(
+            [PARTICIPANT_ID, SESSION_ID]
+        )
+        df = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
+        subset_df = df.loc[new_df.index.intersection(df.index)].reset_index()
 
-        try:
-            subset_df = (
-                self.df.set_index([PARTICIPANT_ID, SESSION_ID])
-                .loc[new_df.index]
-                .reset_index()
+        if len(subset_df) == 0:
+            raise ClinicaDLCAPSError(
+                "No (participant, session) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!"
             )
-        except KeyError as exc:
-            missing_pairs = new_df.index.difference(
-                self.df.set_index([PARTICIPANT_ID, SESSION_ID]).index
-            )
-
-            err_message = (
-                "Some couples (participant, session) are not in the dataset:\n"
-            )
-            for pair in missing_pairs:
-                err_message += f" - {pair} \n"
-            raise ClinicaDLTSVError(err_message) from exc
 
         dataset = deepcopy(self)
         dataset.df = subset_df
@@ -621,7 +612,7 @@ class CapsDataset(Dataset):
         """
         if isinstance(label, str):
             if label in self.df.columns:
-                if isinstance(self.df[label].iloc[0], str):
+                if not pd.api.types.is_numeric_dtype(self.df[label]):
                     label_list = self.df[label].unique()
                     if len(label_list) > 5:
                         raise ClinicaDLArgumentError(
@@ -727,23 +718,9 @@ class CapsDataset(Dataset):
                 f"'data' must be a Pandas DataFrame, a path to a TSV file or None. Got {data}"
             )
 
-        df = self._check_data_instance(data)
+        df = read_data(data)
 
         return deepcopy(df)
-
-    @staticmethod
-    def _check_data_instance(data: DataType) -> pd.DataFrame:
-        """
-        Checks the DataFrame passed by the user (either as a DataFrame or
-        as a path to a TSV). Returns the checked DataFrame.
-        """
-        if isinstance(data, (str, Path)):
-            path = Path(data)
-            df = tsv_to_df(path)
-        elif isinstance(data, pd.DataFrame):
-            df = check_df(data)
-
-        return df  # pylint: disable=possibly-used-before-assignment
 
     ### for __getitem__ ###
     def _get_meta_data(self, idx: int) -> Tuple[str, str, int]:

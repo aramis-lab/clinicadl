@@ -10,10 +10,10 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import ConcatDataset as TorchConcatDataset
 
-from clinicadl.dictionary.words import N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import DATASET_ID, PARTICIPANT_ID, SESSION_ID
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.slice import Slice
-from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
 from .caps_dataset import CapsDataset
@@ -163,38 +163,28 @@ class ConcatDataset(TorchConcatDataset):
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
         ClinicaDLCAPSError
-            If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
-            forming the ConcatDataset.
+            If no (participant, session) pairs mentioned in ``data`` are at least in one of the underlying datasets.
+            This would lead to an empty ConcatDataset.
         """
-        data = CapsDataset._check_data_instance(data).set_index(
-            [PARTICIPANT_ID, SESSION_ID]
-        )
-
-        in_a_df = {(participant, session): False for participant, session in data.index}
-        datasets = []
+        sub_datasets = []
+        not_empty = False
         for dataset in self.datasets:
-            participants_sessions = dataset.get_participant_session_couples()
-            participants_sessions = data.index.intersection(participants_sessions)
-
-            for participant_session in participants_sessions:
-                in_a_df[participant_session] = True
-
-            sub_data = data.loc[participants_sessions]
             try:
-                datasets.append(dataset.subset(sub_data.reset_index()))
-            except ClinicaDLTSVError:
+                sub_datasets.append(dataset.subset(data))
+                not_empty = True
+            except ClinicaDLCAPSError:  # empty dataset
                 continue
 
-        raise_error = False
-        err_message = "Some couples (participant, session) are not in any of the datasets forming the ConcatDataset:\n"
-        for participant_session in in_a_df:
-            if not in_a_df[participant_session]:
-                raise_error = True
-                err_message += f" - {participant_session} \n"
-        if raise_error:
-            raise ClinicaDLCAPSError(err_message)
+        if not not_empty:
+            raise ClinicaDLCAPSError(
+                "No (participant, session) pairs mentioned in 'data' are in the ConcatDataset. This would lead to an empty dataset!"
+            )
 
-        return ConcatDataset(datasets, ignore_spacing=True, raise_warnings=False)
+        return ConcatDataset(
+            sub_datasets,
+            ignore_spacing=True,
+            raise_warnings=False,
+        )
 
     def describe(self) -> tuple[Dict[str, Any], ...]:
         """
@@ -357,16 +347,14 @@ class ConcatDataset(TorchConcatDataset):
         """
         Concatenates the dataframes from all the datasets.
         """
-        df = pd.concat(
-            [
-                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
-                for dataset in self.datasets
-            ],
+        df: pd.DataFrame = pd.concat(
+            [dataset.df for dataset in self.datasets],
             keys=range(len(self.datasets)),
-            names=["dataset_id"],
+            names=[DATASET_ID],
         )
+        CapsDataset._map_indices_to_images(df)
 
         return df.reset_index(
             drop=False,
-            level=0,
+            level=DATASET_ID,
         ).reset_index(drop=True)

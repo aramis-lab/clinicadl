@@ -1,26 +1,22 @@
-from typing import Iterator, Optional, Union, overload
+from typing import Iterator, Optional, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
-from torch.utils.data import DataLoader as TorchDataLoader
+from torch.utils.data import DataLoader as TorchDataLoaader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
     CapsDataset,
-    ConcatDataset,
     PairedDataset,
     UnpairedDataset,
 )
+from clinicadl.data.datasets.types import Dataset, SimpleDataset, TupleDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
 from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
 
-SimpleDataset = Union[CapsDataset, ConcatDataset]
-TupleDataset = Union[PairedDataset, UnpairedDataset]
-Dataset = Union[SimpleDataset, TupleDataset]
 
-
-class DataLoader(TorchDataLoader):
+class DataLoader(TorchDataLoaader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
     """
@@ -295,6 +291,8 @@ class DataLoaderConfig(ClinicaDLConfig):
         ValueError
             If only one of ``dp_degree`` and ``rank`` is not ``None``.
         ValueError
+            If ``rank`` is greater than ``dp_degree``.
+        ValueError
             If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
             and ``sampling_weights`` is not ``None``.
         KeyError
@@ -304,6 +302,24 @@ class DataLoaderConfig(ClinicaDLConfig):
             If ``sampling_weights`` is not ``None`` and the associated column cannot
             be converted to float values.
         """
+        if (rank is not None and dp_degree is None) or (
+            dp_degree is not None and rank is None
+        ):
+            raise ValueError(
+                "For data parallelism, none of 'dp_degree' and 'rank' can be None. "
+                f"Got rank={rank} and dp_degree={dp_degree}"
+            )
+
+        if dp_degree is None:
+            dp_degree = 1
+            rank = 0
+
+        if rank >= dp_degree:
+            raise ValueError(
+                "'rank' must be strictly smaller than 'dp_degree'. Got "
+                f"dp_degree={dp_degree} and rank={rank}"
+            )
+
         return DataLoader(
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
@@ -317,8 +333,8 @@ class DataLoaderConfig(ClinicaDLConfig):
     def _generate_sampler(
         self,
         dataset: CapsDataset,
-        dp_degree: Optional[int],
-        rank: Optional[int],
+        dp_degree: int,
+        rank: int,
     ) -> Sampler:
         """
         Returns a WeightedRandomSampler if self.sampling_weights is not None, otherwise a
@@ -326,17 +342,6 @@ class DataLoaderConfig(ClinicaDLConfig):
         the degree of data parallelism is set to 1, so it is equivalent to a simple PyTorch
         RandomSampler if self.shuffle is True or no sampler if self.shuffle is False).
         """
-        if (rank is not None and dp_degree is None) or (
-            dp_degree is not None and rank is None
-        ):
-            raise ValueError(
-                "For data parallelism, none of 'dp_degree' and 'rank' can be None. "
-                f"Got rank={rank} and dp_degree={dp_degree}"
-            )
-        if dp_degree is None:
-            dp_degree = 1
-            rank = 0
-
         if self.sampling_weights and rank is not None:
             weights = self._get_weights(dataset, self.sampling_weights)
             length = len(weights) // dp_degree + int(rank < len(weights) % dp_degree)

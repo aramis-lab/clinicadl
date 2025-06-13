@@ -20,7 +20,7 @@ from clinicadl.utils.exceptions import (
 )
 
 caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+full_data = pd.read_csv(caps_dir / "tsv" / "labels.tsv", sep="\t")
 
 
 class CustomTransform:
@@ -393,6 +393,10 @@ def test_subset():
         sub_data(
             [
                 ("sub-010", "ses-M003"),
+                (
+                    "sub-999",
+                    "ses-M099",
+                ),  # not in the dataset, this shouldn't raise an error
             ]
         )
     )
@@ -401,11 +405,14 @@ def test_subset():
     assert subset[0].participant == "sub-010"
     assert subset[0].session == "ses-M003"
 
-    with pytest.raises(ClinicaDLTSVError):
+    with pytest.raises(
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
+    ):
         caps_dataset.subset(
             sub_data(
                 [
-                    ("sub-010", "ses-M012"),
+                    ("sub-999", "ses-M099"),
                 ]
             )
         )

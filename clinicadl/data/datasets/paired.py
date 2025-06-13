@@ -4,10 +4,16 @@ from __future__ import annotations
 from logging import getLogger
 from typing import Any, Dict, Iterable, Tuple
 
+import numpy as np
 import pandas as pd
 from torch.utils.data import StackDataset
 
-from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import (
+    FIRST_INDEX,
+    LAST_INDEX,
+    PARTICIPANT_ID,
+    SESSION_ID,
+)
 from clinicadl.transforms.extraction import Sample
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
@@ -178,8 +184,9 @@ class PairedDataset(StackDataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in the PairedDataset.
+        ClinicaDLCAPSError
+            If no (participant, session) pairs mentioned in ``data`` are in the current PairedDataset
+            (this would lead to an empty dataset).
         """
         return PairedDataset([dataset.subset(data) for dataset in self.datasets])
 
@@ -208,9 +215,6 @@ class PairedDataset(StackDataset):
         See :py:meth:`CapsDataset.get_sample_info <clinicadl.data.datasets.CapsDataset.get_sample_info>`
         for more details.
 
-        The method will look for the information in the DataFrames of all the datasets forming the
-        PairedDataset. If different values are found across datasets, it will raise an error.
-
         Parameters
         ----------
         idx : int
@@ -231,31 +235,18 @@ class PairedDataset(StackDataset):
             the length of the dataset.
         KeyError
             If ``column`` is not in any DataFrame of the datasets forming the PairedDataset.
-        ClinicaDLCAPSError
-            If different values are found across the datasets forming the PairedDataset.
         """
         self._check_idx(idx)
 
-        list_info = {}
-        for i, dataset in enumerate(self.datasets):
-            try:
-                list_info[i] = dataset.get_sample_info(idx, column)
-            except KeyError:
-                continue
-
-        if len(list_info) == 0:
+        if column not in self.df.columns:
             raise KeyError(
-                f"No column named {column} in any DataFrame of the datasets forming the PairedDataset."
+                f"No column named '{column}' in any dataset of the PairedDataset. Present columns are: "
+                f"{list(self.df.columns)}"
             )
-        else:
-            ref_idx = list(list_info.keys())[0]
-            for dataset_idx in list(list_info.keys())[1:]:
-                if list_info[dataset_idx] != list_info[ref_idx]:
-                    raise ClinicaDLCAPSError(
-                        f"Different values found for '{column}' across the datasets forming the PairedDataset: "
-                        f"'{list_info[ref_idx]}' for dataset 0 and '{list_info[dataset_idx]}' for dataset {dataset_idx}."
-                    )
-            return list_info[ref_idx]
+
+        row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
+
+        return row[column].iloc[0]
 
     def get_participant_session_couples(self) -> list[Tuple[str, str]]:
         """
@@ -316,12 +307,12 @@ class PairedDataset(StackDataset):
                     "'to_tensors' or 'read_tensor_conversion' for each dataset."
                 )
 
-    @staticmethod
-    def _merge_dfs(datasets: list[CapsDataset]) -> pd.DataFrame:
+    @classmethod
+    def _merge_dfs(cls, datasets: list[CapsDataset]) -> pd.DataFrame:
         """
-        Checks that "participant_id", "session_id" and "n_samples" are equal across the datasets,
-        and returns the list of (participant, session).
+        Checks that consistency between dataframes and merge them.
         """
+        # reorder all datasets
         for i, dataset in enumerate(datasets):
             df = dataset.df[[PARTICIPANT_ID, SESSION_ID]]
             if df.duplicated().any():
@@ -334,18 +325,47 @@ class PairedDataset(StackDataset):
             ).reset_index(drop=True)
             CapsDataset._map_indices_to_images(dataset.df)
 
-        ref_df = datasets[0].df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
-        for i, dataset in enumerate(datasets[1:], start=1):
-            df = dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
-
-            if not ref_df.equals(df):
-                difference = pd.concat(
-                    [ref_df, df], keys=[0, i], names=[DATASET_ID]
-                ).drop_duplicates(keep=False)
+        # check (participant, session) pairs consistency
+        particpants_sessions = [
+            set(
+                dataset.df[[PARTICIPANT_ID, SESSION_ID]].itertuples(
+                    index=False, name=None
+                )
+            )
+            for dataset in datasets
+        ]
+        for i in range(len(datasets))[1:]:
+            if particpants_sessions[i] != particpants_sessions[0]:
+                difference = particpants_sessions[0].symmetric_difference(
+                    particpants_sessions[i]
+                )
                 raise ClinicaDLCAPSError(
-                    "To stack datasets, they must have exactly the same (participant, session) pairs and "
-                    f"the same number of samples per image. Differences were found for between dataset 0 and dataset {i}:\n"
+                    "To pair datasets, they must have exactly the same (participant, session) pairs. "
+                    f"Differences were found for between dataset 0 and dataset {i}:\n"
                     f"{difference}"
                 )
 
-        return ref_df
+        # check consistency on other columns and merge
+        stacked: pd.DataFrame = pd.concat(
+            [dataset.df for dataset in datasets], keys=range(len(datasets))
+        )
+
+        def _resolve(group: pd.Series) -> Any:
+            values = group.dropna().unique()
+            if len(values) == 0:
+                return np.nan
+            elif len(values) == 1:
+                return values[0]
+            else:
+                idx, column = group.name
+                raise ClinicaDLCAPSError(
+                    f"For ({datasets[0].df.loc[idx, PARTICIPANT_ID]}, {datasets[0].df.loc[idx, SESSION_ID]}), "
+                    f"different values found for '{column}' across the datasets forming the PairedDataset: {values}"
+                )
+
+        return (
+            stacked.stack(dropna=False)
+            .groupby(level=[1, 2], sort=False)
+            .apply(_resolve)
+            .unstack()
+        )

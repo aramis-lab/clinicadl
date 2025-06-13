@@ -33,27 +33,30 @@ class ClinicaDLConfig(BaseModel):
     )
 
     @classmethod
-    def from_json(cls, json_path: Path):
+    def from_json(cls, json_path: Path, **kwargs):
         """
         Reads the serialized config class from a JSON file.
         """
         json_path = Path(json_path)
         dict_ = read_json(json_path=json_path)
+        dict_.update(kwargs)
         return cls(**dict_)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, **kwargs) -> Dict[str, Any]:
         """
         Customized version of 'model_dump'.
 
         Returns the serialized config class.
         """
-        return _order_dict(self.model_dump())
+        return _order_dict(self.model_dump(**kwargs))
 
-    def write_json(self, json_path: Path, overwrite: bool = False) -> None:
+    def write_json(self, json_path: Path, overwrite: bool = False, **kwargs) -> None:
         """
         Writes the serialized config class to a JSON file.
         """
-        write_json(json_path=json_path, data=self.to_dict(), overwrite=overwrite)
+        write_json(
+            json_path=json_path, data=self.to_dict(**kwargs), overwrite=overwrite
+        )
 
     @classmethod
     def read_json(cls, json_path: Path) -> Dict[str, Any]:

@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -9,10 +8,10 @@ from clinicadl.data.datasets import CapsDataset, ConcatDataset, UnpairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
-from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-FULL_DATA = pd.read_csv(CAPS_DIR / "labels.tsv", sep="\t")
+FULL_DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
 
 
 def sub_data(
@@ -39,6 +38,8 @@ def create_caps_datasets():
             ("sub-000", "ses-M000"),
         ]
     )
+    t1_data = t1_data.drop(columns=["diagnosis", "category"])
+    pet_data = pet_data.drop(columns="category")
 
     caps_t1 = CapsDataset(
         CAPS_DIR,
@@ -71,9 +72,12 @@ def test_df():
         {
             (0, "participant_id"): ["sub-010", "sub-000", "nan"],
             (0, "session_id"): ["ses-M003", "ses-M000", "nan"],
+            (0, "age"): [2, 1, "nan"],
             (0, "n_samples"): [2, 2, "nan"],
             (1, "participant_id"): ["sub-010", "sub-999", "sub-000"],
             (1, "session_id"): ["ses-M003", "ses-M099", "ses-M000"],
+            (1, "age"): [2, 4, 1],
+            (1, "diagnosis"): ["AD", "MCI", "CN"],
             (1, "n_samples"): [1, 1, 1],
         }
     ).rename_axis(columns=["dataset_id", None])
@@ -175,31 +179,25 @@ def test_subset():
             {
                 (0, "participant_id"): ["sub-000", "nan"],
                 (0, "session_id"): ["ses-M000", "nan"],
+                (0, "age"): [1, "nan"],
                 (0, "n_samples"): [2, "nan"],
                 (1, "participant_id"): ["sub-999", "sub-000"],
                 (1, "session_id"): ["ses-M099", "ses-M000"],
+                (1, "age"): [4, 1],
+                (1, "diagnosis"): ["MCI", "CN"],
                 (1, "n_samples"): [1, 1],
             }
         ).rename_axis(columns=["dataset_id", None])
     )
 
     with pytest.raises(
-        ClinicaDLCAPSError, match="Dataset 0 does not contain any of the*"
+        ClinicaDLCAPSError,
+        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
     ):
         subset = unpaired.subset(
             sub_data(
                 [
                     ("sub-999", "ses-M099"),
-                ]
-            )
-        )
-
-    with pytest.raises(ClinicaDLCAPSError, match="Some couples*"):
-        subset = unpaired.subset(
-            sub_data(
-                [
-                    ("sub-999", "ses-M999"),
-                    ("sub-000", "ses-M000"),
                 ]
             )
         )

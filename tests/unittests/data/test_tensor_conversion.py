@@ -24,7 +24,7 @@ from clinicadl.utils.exceptions import (
 )
 
 caps_dir = Path(__file__).parents[1] / "resources" / "caps_example"
-full_data = pd.read_csv(caps_dir / "labels.tsv", sep="\t")
+full_data = pd.read_csv(caps_dir / "tsv" / "labels.tsv", sep="\t")
 tmp_dir = Path(__file__).parents[1] / "resources" / "caps_tmp"
 
 

@@ -1,256 +1,188 @@
-import json
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence, Union
+from typing import List, Optional, Union
 
 import pandas as pd
-from pydantic import (
-    computed_field,
-    field_validator,
-)
+from pydantic import field_validator
 
-from clinicadl.data.datasets.caps_dataset import CapsDataset
+from clinicadl.data.datasets.types import Dataset
+from clinicadl.dictionary.suffixes import JSON, TSV
+from clinicadl.dictionary.words import BASELINE, TRAIN
 from clinicadl.splitter.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.exceptions import ClinicaDLTSVError
-from clinicadl.utils.json import path_encoder
 
 
 class SubjectsSessionsSplit(ClinicaDLConfig):
     """
-    Dataclass to store train and validation splits for subjects and sessions.
+    Dataclass to store training and validation sets for a split.
     """
 
-    train: pd.DataFrame
+    training: pd.DataFrame
     validation: pd.DataFrame
 
-    @computed_field
-    @property
-    def train_val_df(self) -> pd.DataFrame:
-        return pd.concat([self.train, self.validation], ignore_index=True)
 
+class SplitterConfig(ClinicaDLConfig, ABC):
+    """
+    Base abstract config class for splitters.
+    """
 
-class SplitterConfig(ClinicaDLConfig):
-    json_name: str
+    _training_subset_name: str = TRAIN
+    _json_name: str
+
     split_dir: Path
     subset_name: str
-    stratification: Union[str, List[str], bool] = False
-    valid_longitudinal: bool = False
+    stratification: Optional[Union[str, List[str]]]
+    longitudinal: bool
+    seed: Optional[int]
 
     @field_validator("split_dir", mode="after")
     @classmethod
-    def validate_split_dir(cls, v):
-        if not isinstance(v, Path):
-            v = Path(v)
-        if v and not v.is_dir():
+    def validate_split_dir(cls, v: Path) -> Path:
+        """Creates 'split_dir' if it doesn't exist."""
+        if not v.is_dir():
             v.mkdir(parents=True, exist_ok=True)
         return v
 
-    def _check_split_dir(self):
-        split_numero = 1
-        folder_name = self.pattern
-        while (self.split_dir / folder_name).is_dir():
-            split_numero += 1
-            folder_name = f"{self.pattern}_{split_numero}"
+    @classmethod
+    def from_split_dir(cls, split_dir: Path) -> SplitterConfig:
+        """
+        Reads a split directory.
+        """
+        json_path = (split_dir / cls._json_name.default).with_suffix(JSON)
 
-        self.split_dir = self.split_dir / folder_name
+        try:
+            config = cls.from_json(json_path, split_dir=split_dir)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"No configuration file found in '{split_dir}'. It was expected at {json_path}. "
+                "Please rerun clinicadl.splitter.make_split or clinicadl.splitter.make_kfold "
+                "to have a proper split directory."
+            ) from exc
 
-    @property
+        config._check_split_dirs()
+
+        return config
+
+    def write_json(self) -> None:  # pylint: disable=arguments-differ
+        """
+        Saves the split configuration in a json file.
+        """
+        out_json_file = (self.split_dir / self._json_name).with_suffix(JSON)
+        super().write_json(out_json_file, exclude="split_dir")
+
     @abstractmethod
-    def pattern(self) -> str:
-        pass
+    def _check_split_dirs(self) -> None:
+        """Checks all subdirectories in the current split directory."""
 
-    def _write_json(self) -> None:
+    def _check_split_dir(self, split_path: Path) -> None:
         """
-        Save KFold configuration to JSON.
+        Checks that a split directory exists and contains the required
+        tsv files.
         """
-        if not self.split_dir:
-            raise ValueError(
-                "No split directory specified, use the method 'write' to save your splits."
-            )
+        error_msg = ""
 
-        out_json_file = self.split_dir / self.json_name
-        if out_json_file.is_file():
-            raise FileExistsError(
-                f"File {out_json_file} already exists, your splits may have already been written."
-            )
+        if not split_path.is_dir():
+            error_msg = f"No such directory: {split_path}."
 
-        with out_json_file.open(mode="w") as json_file:
-            json.dump(
-                self.model_dump(),
-                json_file,
-                skipkeys=True,
-                indent=4,
-                default=path_encoder,
+        else:
+            required_files = [
+                (split_path / f"{self._training_subset_name}_{BASELINE}").with_suffix(
+                    TSV
+                ),
+                (split_path / f"{self.subset_name}_{BASELINE}").with_suffix(TSV),
+                (split_path / f"{self._training_subset_name}").with_suffix(TSV),
+            ]
+            if self.longitudinal:
+                required_files.append(
+                    (split_path / f"{self.subset_name}").with_suffix(TSV)
+                )
+
+            for file in required_files:
+                if not file.is_file():
+                    error_msg = f"Required file missing: {str(file)}."
+                    break
+
+        if error_msg:
+            error_msg += (
+                " Please rerun clinicadl.splitter.make_split or clinicadl.splitter.make_kfold to have a proper "
+                "split directory."
             )
+            raise FileNotFoundError(error_msg)
 
 
 class Splitter(ABC):
+    """
+    Base abstract class for splitters.
+
+    Parameters
+    ----------
+    split_dir : Path
+        The split directory, returned by :py:func:`clinicadl.splitter.make_split`
+        or :py:func:`clinicadl.splitter.make_kfold`.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``split_dir`` does not exist or if a required file is missing in this directory.
+    """
+
     def __init__(self, split_dir: Path):
-        """
-        Initialize Split with a dataset.
-
-        Parameters
-        ----------
-        dataset : CapsDataset
-            Dataset to split for cross-validation.
-        """
         split_dir = Path(split_dir)
-
         if not split_dir.is_dir():
-            raise FileNotFoundError(f"No such directory: {split_dir}")
+            raise FileNotFoundError(f"No such directory: {str(split_dir)}")
 
         self.split_dir = split_dir
-        self._init_config(**self._read_json())
+        self.config = self._associated_config.from_split_dir(self.split_dir)
         self.subjects_sessions_split = self._read_splits()
 
+    @property
     @abstractmethod
-    def _init_config(self, **args):
-        self.config: SplitterConfig
-
-    def _read_json(self):
-        """
-        Load KFold configuration from a JSON file.
-
-        Parameters
-        ----------
-        split_dir : Path
-            Directory containing the JSON configuration file.
-
-        Returns
-        -------
-        KFoldConfig
-            The configuration object loaded from the JSON file.
-        """
-
-        json_file = [json for json in self.split_dir.glob("*.json")]
-
-        if len(json_file) > 1:
-            raise ValueError(
-                f"Multiple JSON files found in {self.split_dir}, please remove or rename them."
-            )
-
-        elif len(json_file) == 0:
-            raise FileNotFoundError(f"No JSON file found in {self.split_dir}")
-
-        if not json_file[0].is_file():
-            raise FileNotFoundError(f"No such file: {json_file}")
-
-        with json_file[0].open(mode="r") as file:
-            dict_ = json.load(file)
-
-            return dict_
-
-    def _read_split(self, split_path: Path) -> SubjectsSessionsSplit:
-        """
-        Load a single split's train and validation sets from files.
-
-        Parameters
-        ----------
-        split_dir : Path
-            Directory containing split data.
-        split_number : int
-            The split index to load.
-
-        Returns
-        -------
-        SubjectsSessionsSplit
-            Object containing train and validation sets as DataFrames.
-        """
-
-        if not split_path.is_dir():
-            raise FileNotFoundError(f"No such directory: {split_path}")
-
-        try:
-            train = pd.read_csv(split_path / "train_baseline.tsv", sep="\t")
-            validation = pd.read_csv(
-                split_path / f"{self.config.subset_name}_baseline.tsv", sep="\t"
-            )  # type: ignore
-
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(
-                f"One or more of the required files are missing: 'train_baseline.tsv', '{self.config.subset_name}_baseline.tsv'"
-            ) from exc  # type: ignore
-
-        return SubjectsSessionsSplit(
-            train=train,
-            validation=validation,
-        )
-
-    @abstractmethod
-    def _read_splits(self) -> List[SubjectsSessionsSplit]:
-        """
-        Load all splits and configuration from a directory.
-
-        Parameters
-        ----------
-        split_dir : Path
-            Directory containing the splits and configuration JSON file.
-
-        Returns
-        -------
-        None
-            Populates `subjects_sessions_split` and `config` attributes.
-        """
-
-    def check_dataset_and_tsv_consistency(self, dataset: CapsDataset):
-        df1 = self.subjects_sessions_split[0].train_val_df
-        df2 = dataset.df
-        pairs_df1 = set(zip(df1["participant_id"], df1["session_id"]))
-        pairs_df2 = set(zip(df2["participant_id"], df2["session_id"]))
-
-        # Vérification que toutes les paires de df1 sont dans df2
-        if not pairs_df1.issubset(pairs_df2):
-            raise ClinicaDLTSVError(
-                "Not all pairs of participants and sessions from the TSV file are present in the dataset."
-                "Please check the TSV file and make sure all participants and sessions are unique."
-            )
-
-    @abstractmethod
-    def get_splits(
-        self, dataset: CapsDataset, splits: Optional[Sequence[int]] = None
-    ) -> Union[Split, Generator[Split, None, None]]:
-        """
-        Yield dataset splits by their indices.
-
-        Parameters
-        ----------
-        splits : Sequence[int]
-            Indices of the splits to retrieve.
-
-        Yields
-        ------
-        Split
-            The train and validation datasets for each requested split.
-
-        Raises
-        ------
-        ValueError
-            If the requested split indices are out of range or no splits are available.
-        """
+    def _associated_config(self) -> type[SplitterConfig]:
+        """The config class associated to the splitter."""
 
     def _get_split(
         self,
-        dataset: CapsDataset,
+        dataset: Dataset,
         split_id: int = 0,
     ) -> Split:
         """
-        Retrieve a single dataset split.
-
-        Parameters
-        ----------
-        split_id : int
-            Index of the split to retrieve.
-
-        Returns
-        -------
-        Split
-            Object containing train and validation datasets for the specified split.
+        Splits a dataset.
         """
         subjects_sessions = self.subjects_sessions_split[split_id]
         return Split(
             index=split_id,
             split_dir=self.split_dir,
-            train_dataset=dataset.subset(subjects_sessions.train),
+            train_dataset=dataset.subset(subjects_sessions.training),
             val_dataset=dataset.subset(subjects_sessions.validation),
+        )
+
+    @abstractmethod
+    def _read_splits(self) -> List[SubjectsSessionsSplit]:
+        """
+        Load all splits in 'split_dir' from the tsv files.
+        """
+
+    def _read_split(self, split_path: Path) -> SubjectsSessionsSplit:
+        """
+        Load a single split from the tsv files in 'split_path'.
+        """
+        training_df = pd.read_csv(
+            (split_path / f"{self.config._training_subset_name}").with_suffix(TSV),
+            sep="\t",
+        )
+        if self.config.longitudinal:
+            validation_df = pd.read_csv(
+                (split_path / f"{self.config.subset_name}").with_suffix(TSV), sep="\t"
+            )
+        else:
+            validation_df = pd.read_csv(
+                (split_path / f"{self.config.subset_name}_{BASELINE}").with_suffix(TSV),
+                sep="\t",
+            )
+
+        return SubjectsSessionsSplit(
+            training=training_df,
+            validation=validation_df,
         )

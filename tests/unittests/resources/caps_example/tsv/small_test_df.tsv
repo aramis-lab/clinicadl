@@ -1,0 +1,4 @@
+participant_id	session_id	age	diagnosis
+sub-000	ses-M000	1	CN
+sub-010	ses-M003	2	AD
+sub-999	ses-M099	3	AD

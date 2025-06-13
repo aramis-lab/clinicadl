@@ -1,0 +1,7 @@
+label	value	statistic	train	test
+diagnosis	CN	proportion	0.5	0.0
+diagnosis	CN	count	1.0	0.0
+diagnosis	AD	proportion	0.5	0.5
+diagnosis	AD	count	1.0	1.0
+diagnosis	MCI	proportion	0.0	0.5
+diagnosis	MCI	count	0.0	1.0

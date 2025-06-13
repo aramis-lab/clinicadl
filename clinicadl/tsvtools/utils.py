@@ -3,7 +3,7 @@
 from copy import copy
 from logging import getLogger
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -113,48 +113,6 @@ def next_session(subject_df, session_orig):
         raise IndexError("The argument session is the last session")
 
 
-def extract_baseline(diagnosis_df, set_index=True):
-    from copy import deepcopy
-
-    if set_index:
-        all_df = deepcopy(diagnosis_df)
-        all_df.set_index(["participant_id", "session_id"], inplace=True)
-    else:
-        all_df = deepcopy(diagnosis_df)
-
-    result_df = pd.DataFrame()
-    for subject, subject_df in all_df.groupby(level=0):
-        if subject != "participant_id":
-            baseline = first_session(subject_df)
-
-            subject_baseline_df = pd.DataFrame(
-                data=[
-                    [subject, baseline] + subject_df.loc[(subject, baseline)].tolist()
-                ],
-                columns=["participant_id", "session_id"]
-                + subject_df.columns.values.tolist(),
-            )
-            result_df = pd.concat([result_df, subject_baseline_df])
-
-    result_df.reset_index(inplace=True, drop=True)
-    return result_df
-
-
-def chi2(x_test, x_train):
-    from scipy.stats import chisquare
-
-    # Look for chi2 computation
-    total_categories = np.concatenate([x_test, x_train])
-    unique_categories = np.unique(total_categories)
-    f_obs = [(x_test == category).sum() / len(x_test) for category in unique_categories]
-    f_exp = [
-        (x_train == category).sum() / len(x_train) for category in unique_categories
-    ]
-    T, p = chisquare(f_obs, f_exp)
-
-    return T, p
-
-
 def add_demographics(df, demographics_df, diagnosis) -> pd.DataFrame:
     out_df = pd.DataFrame()
     tmp_demo_df = copy(demographics_df)
@@ -207,16 +165,6 @@ def find_label(labels_list, target_label):
             )
 
         return found_label
-
-
-def retrieve_longitudinal(df, diagnosis_df):
-    final_df = pd.DataFrame()
-    for idx in df.index.values:
-        subject = df.loc[idx, "participant_id"]
-        row_df = diagnosis_df[diagnosis_df.participant_id == subject]
-        final_df = pd.concat([final_df, row_df])
-
-    return final_df
 
 
 def remove_sub_labels(
@@ -356,14 +304,58 @@ def tsv_to_df(tsv_path: Path) -> pd.DataFrame:
     return df
 
 
-def check_df(df: pd.DataFrame) -> pd.DataFrame:
+def read_data(
+    data: Union[str, Path, pd.DataFrame],
+    check_protected_names: bool = True,
+    check_duplicates: bool = True,
+) -> pd.DataFrame:
     """
-    Checks if the DataFrame contains the required columns 'participant_id' and 'session_id',
-    and that the pairs (participant_id, session_id) are unique.
+    Reads an input dataframe, passed directly as a dataframe or via a path, and
+    performs checks on it.
 
     Parameters
     ----------
-    df : pd.DataFrame)
+    data : Union[str, Path, pd.DataFrame]
+        The DataFrame as a pandas DataFrame or a path.
+
+    Returns
+    -------
+    pd.DataFrame
+        The dataframe, read and checked.
+
+    Raises
+    ------
+    ValueError
+        If 'data' is not a str, a Path or a pandas DataFrame.
+    ClinicaDLTSVError
+        If the DataFrame is empty.
+    ClinicaDLTSVError
+        If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
+    ClinicaDLTSVError
+        If 'check_protected_names' is True and the dataframe contains columns named 'n_samples',
+        'first_idx', 'last_idx' or 'dataset_id'.
+    ClinicaDLTSVError
+        If 'check_duplicates' is True and the dataframe contains duplicated (participant_id, session_id) pairs.
+    """
+    if isinstance(data, (str, Path)):
+        data = Path(data)
+        data = pd.read_csv(data, sep="\t")
+
+    elif not isinstance(data, pd.DataFrame):
+        raise ValueError(f"'data' must be a path or a DataFrame. Got: {data}")
+
+    return check_df(data, check_protected_names, check_duplicates)
+
+
+def check_df(
+    df: pd.DataFrame, check_protected_names: bool = True, check_duplicates: bool = True
+) -> pd.DataFrame:
+    """
+    Checks the DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
         The DataFrame to check.
 
     Returns
@@ -378,7 +370,10 @@ def check_df(df: pd.DataFrame) -> pd.DataFrame:
     ClinicaDLTSVError
         If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
     ClinicaDLTSVError
-        If the dataframe contains duplicated (participant_id, session_id) pairs.
+        If 'check_protected_names' is True and the dataframe contains columns named 'n_samples',
+        'first_idx', 'last_idx' or 'dataset_id'.
+    ClinicaDLTSVError
+        If 'check_duplicates' is True and the dataframe contains duplicated (participant_id, session_id) pairs.
     """
     if len(df) == 0:
         raise ClinicaDLTSVError(f"The dataframe is empty!")
@@ -388,19 +383,20 @@ def check_df(df: pd.DataFrame) -> pd.DataFrame:
             f"The dataframe is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
+    if check_protected_names:
+        protected_names = {N_SAMPLES, FIRST_INDEX, LAST_INDEX, DATASET_ID}
+        if len(protected_names.intersection(set(df.columns.values))) > 0:
+            raise ClinicaDLTSVError(
+                f"The dataframe contains some protected column names. "
+                f"Please do not use names in {protected_names}"
+            )
 
-    protected_names = {N_SAMPLES, FIRST_INDEX, LAST_INDEX, DATASET_ID}
-    if len(protected_names.intersection(set(df.columns.values))) > 0:
-        raise ClinicaDLTSVError(
-            f"The dataframe contains some protected column names. "
-            f"Please do not use names in {protected_names}"
-        )
-
-    duplicated_pairs = df[df[[PARTICIPANT_ID, SESSION_ID]].duplicated(keep=False)]
-    if len(duplicated_pairs) > 0:
-        raise ClinicaDLTSVError(
-            f"The dataframe contains duplicated (participant, session) pairs:\n"
-            f"{duplicated_pairs}"
-        )
+    if check_duplicates:
+        duplicated_pairs = df[df[[PARTICIPANT_ID, SESSION_ID]].duplicated(keep=False)]
+        if len(duplicated_pairs) > 0:
+            raise ClinicaDLTSVError(
+                f"The dataframe contains duplicated (participant, session) pairs:\n"
+                f"{duplicated_pairs}"
+            )
 
     return df

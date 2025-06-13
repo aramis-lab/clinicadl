@@ -7,7 +7,13 @@ from typing import Any, Dict, Iterable, Tuple
 import pandas as pd
 from torch.utils.data import Dataset
 
-from clinicadl.dictionary.words import DATASET_ID, N_SAMPLES, PARTICIPANT_ID, SESSION_ID
+from clinicadl.dictionary.words import (
+    DATASET_ID,
+    FIRST_INDEX,
+    LAST_INDEX,
+    PARTICIPANT_ID,
+    SESSION_ID,
+)
 from clinicadl.transforms.extraction import Sample
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
@@ -239,42 +245,10 @@ class UnpairedDataset(Dataset):
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
-        ClinicaDLTSVError
-            If some (participant, session) pairs mentioned in ``data`` are not in any of the CapsDatasets
-            forming the UnpairedDataset.
+        ClinicaDLCAPSError
+            If the subset of one of the datasets forming the UnpairedDataset is empty.
         """
-        data = CapsDataset._check_data_instance(data).set_index(
-            [PARTICIPANT_ID, SESSION_ID]
-        )
-
-        in_a_df = {(participant, session): False for participant, session in data.index}
-        datasets = []
-        for i, dataset in enumerate(self.datasets):
-            participants_sessions = dataset.get_participant_session_couples()
-            participants_sessions = data.index.intersection(participants_sessions)
-
-            if len(participants_sessions) == 0:
-                raise ClinicaDLCAPSError(
-                    f"Dataset {i} does not contain any of the (participant, session) couples "
-                    "passed in 'data'. This would lead to an empty dataset!"
-                )
-
-            for participant_session in participants_sessions:
-                in_a_df[participant_session] = True
-
-            sub_data = data.loc[participants_sessions]
-            datasets.append(dataset.subset(sub_data.reset_index()))
-
-        raise_error = False
-        err_message = "Some couples (participant, session) are not in any of the datasets forming the UnpairedDataset:\n"
-        for participant_session in in_a_df:
-            if not in_a_df[participant_session]:
-                raise_error = True
-                err_message += f" - {participant_session} \n"
-        if raise_error:
-            raise ClinicaDLCAPSError(err_message)
-
-        return UnpairedDataset(datasets)
+        return UnpairedDataset([dataset.subset(data) for dataset in self.datasets])
 
     def describe(self) -> tuple[Dict[str, Any], ...]:
         """
@@ -444,7 +418,7 @@ class UnpairedDataset(Dataset):
         """
         df = pd.concat(
             [
-                dataset.df[[PARTICIPANT_ID, SESSION_ID, N_SAMPLES]]
+                dataset.df.drop(columns=[FIRST_INDEX, LAST_INDEX])
                 for dataset in datasets
             ],
             axis=1,
