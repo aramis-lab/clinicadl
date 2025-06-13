@@ -19,7 +19,7 @@ class SingleSplitConfig(SplitterConfig):
     _json_name: str = "single_split_config"
 
     n_test: NonNegativeFloat
-    stratification: Optional[List[str]]
+    stratification: List[str]
     p_categorical_threshold: NonNegativeFloat
     p_continuous_threshold: NonNegativeFloat
 

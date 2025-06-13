@@ -13,8 +13,7 @@ from torch.utils.data import ConcatDataset as TorchConcatDataset
 from clinicadl.dictionary.words import DATASET_ID, PARTICIPANT_ID, SESSION_ID
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.slice import Slice
-from clinicadl.tsvtools.utils import read_data
-from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
 from .caps_dataset import CapsDataset

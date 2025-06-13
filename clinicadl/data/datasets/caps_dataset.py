@@ -30,7 +30,6 @@ from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
-    ClinicaDLTSVError,
 )
 from clinicadl.utils.typing import DataType, PathType
 
@@ -329,7 +328,10 @@ class CapsDataset(Dataset):
         self._count_samples()
 
     def read_tensor_conversion(
-        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
+        self,
+        json_name: str,
+        check_transforms: bool = True,
+        load_also: Optional[list[str]] = None,
     ) -> None:
         """
         To read an old tensor conversion. The function will check that
@@ -362,7 +364,7 @@ class CapsDataset(Dataset):
             .. warning::
                 **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
-        load_also : list[str] (optional, default=[])
+        load_also : list[str] (optional, default=None)
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
             mentioned in the argument ``masks`` of the CapsDataset will be loaded.
 

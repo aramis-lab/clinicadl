@@ -9,7 +9,7 @@ from pydantic import field_validator
 
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.dictionary.suffixes import JSON, TSV
-from clinicadl.dictionary.words import BASELINE
+from clinicadl.dictionary.words import BASELINE, TRAIN
 from clinicadl.splitter.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 
@@ -28,7 +28,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
     Base abstract config class for splitters.
     """
 
-    _training_subset_name: str = "train"
+    _training_subset_name: str = TRAIN
     _json_name: str
 
     split_dir: Path

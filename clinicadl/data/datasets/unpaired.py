@@ -15,7 +15,6 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import Sample
-from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 

@@ -7,7 +7,20 @@ import pandas as pd
 from scipy.stats import chisquare, ttest_ind
 from sklearn.model_selection import ShuffleSplit
 
-from clinicadl.dictionary.words import SPLIT
+from clinicadl.dictionary.words import (
+    AGE,
+    COUNT,
+    LABEL,
+    MEAN,
+    PROPORTION,
+    SEX,
+    SPLIT,
+    STATISTIC,
+    STD,
+    TEST,
+    TRAIN,
+    VALUE,
+)
 from clinicadl.splitter.splitter.single_split import SingleSplitConfig
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import DataType, PathType
@@ -26,7 +39,7 @@ def make_split(
     data: DataType,
     n_test: float = 0.2,
     output_dir: Optional[PathType] = None,
-    subset_name: str = "test",
+    subset_name: str = TEST,
     stratification: Union[List[str], bool] = False,
     p_categorical_threshold: float = 0.80,
     p_continuous_threshold: float = 0.80,
@@ -228,7 +241,7 @@ def make_split(
                 )
 
                 if p_categorical >= p_categorical_threshold:
-                    logger.info(f"Valid split found after {n_try} attempts.")
+                    logger.info("Valid split found after %f attempts.", n_try)
 
                     test_df = baseline_df.loc[test_index]
                     train_df = baseline_df.loc[train_index]
@@ -286,7 +299,7 @@ def _validate_stratification(
 
     if isinstance(stratification, bool):
         if stratification:
-            stratification = ["age", "sex"]
+            stratification = [AGE, SEX]
         else:
             return []
 
@@ -481,15 +494,15 @@ def _write_continuous_stats(
         return
 
     data = [
-        (label, "mean", train_df[label].mean(), test_df[label].mean())
+        (label, MEAN, train_df[label].mean(), test_df[label].mean())
         for label in continuous_labels
     ] + [
-        (label, "std", train_df[label].std(), test_df[label].std())
+        (label, STD, train_df[label].std(), test_df[label].std())
         for label in continuous_labels
     ]
 
     df_stats_continuous = pd.DataFrame(
-        data, columns=["label", "statistic", "train", subset_name]
+        data, columns=[LABEL, STATISTIC, TRAIN, subset_name]
     )
     df_stats_continuous.to_csv(tsv_path, sep="\t", index=False)
 
@@ -531,10 +544,10 @@ def _write_categorical_stats(
             test_proportion = test_count / len(test_df)
             train_proportion = train_count / len(train_df)
 
-            data.append((label, value, "proportion", train_proportion, test_proportion))
-            data.append((label, value, "count", train_count, test_count))
+            data.append((label, value, PROPORTION, train_proportion, test_proportion))
+            data.append((label, value, COUNT, train_count, test_count))
 
     df_stats_categorical = pd.DataFrame(
-        data, columns=["label", "value", "statistic", "train", subset_name]
+        data, columns=[LABEL, VALUE, STATISTIC, TRAIN, subset_name]
     )
     df_stats_categorical.to_csv(tsv_path, sep="\t", index=False)

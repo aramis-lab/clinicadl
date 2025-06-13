@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 import pandas as pd
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from clinicadl.dictionary.words import FOLD
+from clinicadl.dictionary.words import FOLD, VALIDATION
 from clinicadl.splitter.splitter.kfold import KFoldConfig
 from clinicadl.utils.typing import DataType, PathType
 
@@ -20,7 +20,7 @@ def make_kfold(
     data: DataType,
     n_splits: int = 5,
     output_dir: Optional[PathType] = None,
-    subset_name: str = "validation",
+    subset_name: str = VALIDATION,
     stratification: Union[str, bool] = False,
     longitudinal: bool = False,
     seed: Optional[int] = None,
@@ -143,7 +143,7 @@ def make_kfold(
         raise ValueError("You must specify the output directory.")
     output_dir = Path(output_dir)
 
-    stratification = _validate_stratification(df, stratification)
+    _stratification = _validate_stratification(df, stratification)
 
     kfold_dir = find_available_split_dir(output_dir, f"{n_splits}_{FOLD}")
     config = KFoldConfig(
@@ -151,7 +151,7 @@ def make_kfold(
         subset_name=subset_name,
         longitudinal=longitudinal,
         n_splits=n_splits,
-        stratification=stratification,
+        stratification=_stratification,
         seed=seed,
     )
 

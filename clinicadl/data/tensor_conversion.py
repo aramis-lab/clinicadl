@@ -20,7 +20,9 @@ from clinicadl.dictionary.words import (
     MASK,
     OTHER,
     PARTICIPANT,
+    PREPROCESSING,
     SESSION,
+    TRANSFORMS,
 )
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import TransformConfig, get_transform_config
@@ -79,9 +81,9 @@ class TensorConversionInfo(ClinicaDLConfig):
         info = cls.read_json(json_path)
 
         try:
-            if isinstance(info["transforms"], list):
+            if isinstance(info[TRANSFORMS], list):
                 transforms = []
-                for transform in info["transforms"]:
+                for transform in info[TRANSFORMS]:
                     if isinstance(transform, dict):
                         transforms.append(get_transform_config(**transform))
                     else:  # a str describing the transform (see clinicadl.transforms.transforms.Transforms.serialize_transforms)
@@ -91,10 +93,10 @@ class TensorConversionInfo(ClinicaDLConfig):
                     f"{json_path} is not a valid tensor conversion file."
                     "Value for 'transforms' should be a list."
                 )
-            del info["transforms"]
+            del info[TRANSFORMS]
 
-            preprocessing = get_preprocessing_config(**info["preprocessing"])
-            del info["preprocessing"]
+            preprocessing = get_preprocessing_config(**info[PREPROCESSING])
+            del info[PREPROCESSING]
 
             return TensorConversionInfo(
                 preprocessing=preprocessing, transforms=transforms, **info
@@ -176,7 +178,10 @@ class TensorConversion:
         )
 
     def read_conversion(
-        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
+        self,
+        json_name: str,
+        check_transforms: bool = True,
+        load_also: Optional[list[str]] = None,
     ):
         """
         To read an old tensor conversion json and updates the states of the
@@ -199,7 +204,7 @@ class TensorConversion:
             .. warning::
                 **To use carefully**. You must be sure that the transforms match.
 
-        load_also : list[str] (optional, default=[])
+        load_also : list[str] (optional, default=None)
             to load additional information potentially stored in `.pt` files. By default, only the image, the label, and masks
             mentioned in ``masks`` of the CapsDataset will be loaded.
 
@@ -234,7 +239,7 @@ class TensorConversion:
         self._compare_common_masks(conversion_info)
 
         # do we have the information in 'load_also'?
-        self._check_load_also(conversion_info, load_also)
+        load_also = self._check_load_also(conversion_info, load_also)
 
         # are all (participant, session)s converted?
         self._compare_participants_sessions(conversion_info)
@@ -900,17 +905,21 @@ class TensorConversion:
             )
 
     def _check_load_also(
-        self, old_conversion: TensorConversionInfo, also: list[str]
-    ) -> None:
+        self, old_conversion: TensorConversionInfo, also: Optional[list[str]]
+    ) -> list[str]:
         """
         Checks that the information in 'load_also' is effectively in the `.pt` files.
         """
+        also = [] if also is None else also
+
         for info in also:
             if info not in old_conversion.also:
                 raise ClinicaDLTensorConversionError(
                     f"You passed '{info}' in 'load_also', but no such information was stored during "
                     f"the conversion associated to '{self._currently_reading}'"
                 )
+
+        return also
 
     def _compare_also(self, old_conversion: TensorConversionInfo) -> None:
         """
