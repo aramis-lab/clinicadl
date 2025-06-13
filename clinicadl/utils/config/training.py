@@ -10,7 +10,7 @@ from clinicadl.utils.computational.config import ComputationalConfig
 from .base import ClinicaDLConfig
 
 
-class _TrainingConfig(ClinicaDLConfig):
+class _TrainingState(ClinicaDLConfig):
     maps: Maps
     metrics: ClinicaDLMetrics
     model: ClinicaDLModel

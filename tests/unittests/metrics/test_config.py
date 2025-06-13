@@ -279,14 +279,14 @@ def test_bad_inputs(args, configs):
             config(**args)
 
 
-# @pytest.mark.parametrize("args,configs", GOOD_INPUTS)
-# def test_good_inputs(args: dict, configs):
-#     if not isinstance(configs, list):
-#         configs = [configs]
-#     for config in configs:
-#         c = config(**args)
-#         for arg, value in args.items():
-#             assert getattr(c, arg) == value
+@pytest.mark.parametrize("args,configs", GOOD_INPUTS)
+def test_good_inputs(args: dict, configs):
+    if not isinstance(configs, list):
+        configs = [configs]
+    for config in configs:
+        c = config(**args)
+        for arg, value in args.items():
+            assert getattr(c, arg) == value
 
 
 def test_confusion_matrix_metric():
@@ -327,7 +327,7 @@ MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 
         (MSEMetricConfig, metrics.MSEMetric),
         (RMSEMetricConfig, metrics.RMSEMetric),
         (DiceMetricConfig, metrics.DiceMetric),
-        # (GeneralizedDiceScoreConfig, metrics.GeneralizedDiceScore),
+        (GeneralizedDiceScoreConfig, metrics.GeneralizedDiceScore),
         (HausdorffDistanceMetricConfig, metrics.HausdorffDistanceMetric),
         (MeanIoUConfig, metrics.MeanIoU),
         (SurfaceDiceMetricConfig, metrics.SurfaceDiceMetric),
@@ -359,7 +359,7 @@ def test_get_object(config, expected_class):
         ("MSEMetric", MSEMetricConfig),
         ("RMSEMetric", RMSEMetricConfig),
         ("DiceMetric", DiceMetricConfig),
-        # ("GeneralizedDiceScore", GeneralizedDiceScoreConfig),
+        ("GeneralizedDiceScore", GeneralizedDiceScoreConfig),
         ("HausdorffDistanceMetric", HausdorffDistanceMetricConfig),
         ("MeanIoU", MeanIoUConfig),
         ("SurfaceDiceMetric", SurfaceDiceMetricConfig),

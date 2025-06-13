@@ -22,7 +22,7 @@ from clinicadl.splitter.split import Split
 from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
 
@@ -47,7 +47,7 @@ class Trainer:
         maps = Maps(maps_path, _overwrite)
         maps.create()
 
-        self.config = _TrainingConfig(
+        self.config = _TrainingState(
             maps=maps,
             metrics=train_metrics,
             model=model,

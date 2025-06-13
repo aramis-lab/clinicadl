@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -14,7 +14,7 @@ class ProgressBarCallback(Callback):
         self.train_progress_bar = None
         self.eval_progress_bar = None
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         """TO COMPLETE"""
         epoch = config.epoch
         train_loader = config.split.train_loader
@@ -26,7 +26,7 @@ class ProgressBarCallback(Callback):
                 desc=f"Training of epoch {epoch}/{config.optim.epochs}",
             )
 
-    def on_batch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs):
         """TO COMPLETE"""
         epoch = config.epoch
         val_loader = config.split.val_loader
@@ -38,15 +38,15 @@ class ProgressBarCallback(Callback):
                 desc=f"Eval of epoch {epoch}/{config.optim.epochs}",
             )
 
-    def on_batch_end(self, config: _TrainingConfig, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs):
         if self.train_progress_bar is not None:
             self.train_progress_bar.update(1)
 
-    def on_validation_end(self, config: _TrainingConfig, **kwargs):
+    def on_validation_end(self, config: _TrainingState, **kwargs):
         if self.eval_progress_bar is not None:
             self.eval_progress_bar.update(1)
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwags):
+    def on_epoch_end(self, config: _TrainingState, **kwags):
         if self.train_progress_bar is not None:
             self.train_progress_bar.close()
 

@@ -14,7 +14,7 @@ from clinicadl.metrics.metrics import (
     MetricConfig,
     Metrics,
 )
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -28,7 +28,7 @@ class ModelCheckpoint(Callback, Metrics):
     ):
         self.metrics = self.check_metrics(metrics)
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         """TO COMPLETE"""
 
         if config.split.train_loader is None:
@@ -47,7 +47,7 @@ class ModelCheckpoint(Callback, Metrics):
         config.maps.create_split(config.split, metrics_name)
         config.split.write_json(config.maps.splits[config.split.index].split_json)
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         """TO COMPLETE"""
 
         model_weights = {

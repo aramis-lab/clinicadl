@@ -6,7 +6,7 @@ from typing import Optional
 import numpy as np
 
 from clinicadl.dictionary.words import CLINICADL
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -72,7 +72,7 @@ class WandB(Callback):  # pragma: no cover
         self._wandb.define_metric("train/global_step")
         self._wandb.define_metric("*", step_metric="train/global_step", step_sync=True)
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         if not self.is_initialized:
             self.setup(project_name=CLINICADL, entity_name=config.maps.path.name)
 
@@ -124,5 +124,5 @@ class WandB(Callback):  # pragma: no cover
 
             self._wandb.log({"my_val_table": val_table})
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         self.run.finish()

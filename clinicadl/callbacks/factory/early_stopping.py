@@ -13,7 +13,7 @@ from clinicadl.metrics.config.base import (
     MetricConfig,
 )
 from clinicadl.metrics.metrics import Metrics
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -74,7 +74,7 @@ class OneMetricEarlyStopping(Callback):
             raise ValueError(f"Unknown mode: {self.mode}")
         self.num_bad_epochs = 0
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         """
         Decides whether to stop the training or not, depending
         on the value of the last epoch.
@@ -109,6 +109,8 @@ class OneMetricEarlyStopping(Callback):
 
             if self.num_bad_epochs >= self.patience:
                 return True
+
+            return False
 
         raise ValueError("No df provided")
 
@@ -169,6 +171,6 @@ class EarlyStopping(Metrics, Callback):
                 )
             )
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         for metric in self.early_config_list:
             metric.on_epoch_end(config=config, **kwargs)

@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -116,21 +116,21 @@ class Logger(Callback):
     def __init__(self, verbose: bool = False):
         self.logger = setup_logging(verbose=verbose)
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         self.logger.info("Beginning of the training for split %s", config.split.index)
         self.logger.info("Training on %s", kwargs.get("device", "unknown device"))
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         self.logger.info("End of the training")
 
-    def on_epoch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_begin(self, config: _TrainingState, **kwargs):
         self.logger.info("Beginning of epoch %d", config.epoch)
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         self.logger.info("Epoch %d completed", config.epoch)
 
-    def on_batch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs):
         self.logger.debug("Beginning of batch %d", config.batch)
 
-    def on_batch_end(self, config: _TrainingConfig, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs):
         self.logger.debug("Batch %d completed", config.batch)

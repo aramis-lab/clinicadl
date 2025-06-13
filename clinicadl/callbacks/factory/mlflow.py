@@ -4,7 +4,7 @@
 from importlib.util import find_spec
 from typing import Optional
 
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -54,11 +54,11 @@ class MLFlow(Callback):  # pragma: no cover
 
         self._mlflow.log_params({})
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         if not self.is_initialized:
             self.setup(run_name=config.maps.path.name)
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         self._mlflow.end_run()
 
     def __del__(self):

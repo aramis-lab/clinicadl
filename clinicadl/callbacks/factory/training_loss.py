@@ -1,7 +1,7 @@
 import pandas as pd
 
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -22,10 +22,10 @@ class TrainingLoss(Callback):
         self.df.set_index([EPOCH, BATCH], inplace=True)
         self.df.at[(0, 0), LOSS] = 1.0
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         training_tsv = config.maps.splits[config.split.index].logs.training_tsv
         (training_tsv.parent).mkdir(parents=True, exist_ok=True)
         self.df.to_csv(training_tsv, sep="\t", index=True)
 
-    def on_batch_end(self, config: _TrainingConfig, loss: float, **kwargs):
+    def on_batch_end(self, config: _TrainingState, loss: float, **kwargs):
         self.df.at[(config.epoch, config.batch), LOSS] = loss

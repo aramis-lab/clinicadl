@@ -123,7 +123,7 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     def __init__(
         self,
         include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        reduction: Reduction = Reduction.MEAN,  # TODO: check how to deal with mean_batch before MONAI 1.5
         weight_type: Union[WeightType, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
         """

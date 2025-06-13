@@ -42,7 +42,7 @@ class SimpleBatch(list[Sample]):
         """
         images = [sample.image.tensor for sample in self]
         try:
-            return torch.cat(images, dim=0)
+            return torch.stack(images, dim=0)
         except RuntimeError:  # not the same shape
             return images
 
@@ -65,7 +65,7 @@ class SimpleBatch(list[Sample]):
         ]
         if all(isinstance(label, torch.Tensor) for label in labels):
             try:
-                return torch.cat(labels, dim=0)
+                return torch.stack(labels, dim=0)
             except RuntimeError:  # not the same shape
                 pass
         try:

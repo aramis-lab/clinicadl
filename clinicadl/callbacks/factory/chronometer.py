@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .base import Callback
 
@@ -169,14 +169,14 @@ class Chronometer(Callback):
             self.val_time = datetime.now() - self.start_valid
             self.start_valid = None
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         """Marks the beginning of the overall training."""
         self.start_proc = datetime.now()
 
-    def on_epoch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_begin(self, config: _TrainingState, **kwargs):
         self._dataload()
 
-    def on_batch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs):
         """
         Call this before and after the forward pass.
         Handles dataloading, training, and forward time tracking.
@@ -185,7 +185,7 @@ class Chronometer(Callback):
         self._training()
         self._forward()
 
-    def on_backward_begin(self, config: _TrainingConfig, **kwargs):
+    def on_backward_begin(self, config: _TrainingState, **kwargs):
         """
         Call this before and after the backward pass.
         Handles forward and backward time tracking.
@@ -193,7 +193,7 @@ class Chronometer(Callback):
         self._forward()
         self._backward()
 
-    def on_batch_end(self, config: _TrainingConfig, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs):
         """
         Call this after the optimizer step.
         Ends backward and training timing.
@@ -201,16 +201,16 @@ class Chronometer(Callback):
         self._backward()
         self._training()
 
-    def on_validation_begin(self, config: _TrainingConfig, **kwargs):
+    def on_validation_begin(self, config: _TrainingState, **kwargs):
         self.validation()
 
-    def on_validation_end(self, config: _TrainingConfig, **kwargs):
+    def on_validation_end(self, config: _TrainingState, **kwargs):
         self.validation()
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         self._dataload()
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         """Marks the end of the overall training."""
         self.stop_proc = datetime.now()
         self.display()

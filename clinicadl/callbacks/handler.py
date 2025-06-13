@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.metrics.utils import metric_config_equals
-from clinicadl.utils.config.training import _TrainingConfig
+from clinicadl.utils.config.training import _TrainingState
 
 from .factory import *
 from .factory.base import Callback
@@ -82,61 +82,61 @@ class CallbacksHandler:
         """
         return [cb.__name__ for cb in self.callbacks.keys()]
 
-    def on_train_begin(self, config: _TrainingConfig, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_train_begin` method of each callback.
         """
         self.call_event("on_train_begin", config=config, **kwargs)
 
-    def on_train_end(self, config: _TrainingConfig, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_train_end` method of each callback.
         """
         self.call_event("on_train_end", config=config, **kwargs)
 
-    def on_epoch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_begin(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_epoch_begin` method of each callback.
         """
         self.call_event("on_epoch_begin", config=config, **kwargs)
 
-    def on_epoch_end(self, config: _TrainingConfig, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_epoch_end` method of each callback.
         """
         self.call_event("on_epoch_end", config=config, **kwargs)
 
-    def on_batch_begin(self, config: _TrainingConfig, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_batch_begin` method of each callback.
         """
         self.call_event("on_batch_begin", config=config, **kwargs)
 
-    def on_batch_end(self, config: _TrainingConfig, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_batch_end` method of each callback.
         """
         self.call_event("on_batch_end", config=config, **kwargs)
 
-    def on_backward_begin(self, config: _TrainingConfig, **kwargs):
+    def on_backward_begin(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_backward_begin` method of each callback.
         """
         self.call_event("on_backward_begin", config=config, **kwargs)
 
-    def on_validation_begin(self, config: _TrainingConfig, **kwargs):
+    def on_validation_begin(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_validation_begin` method of each callback.
         """
         self.call_event("on_validation_begin", config=config, **kwargs)
 
-    def on_validation_end(self, config: _TrainingConfig, **kwargs):
+    def on_validation_end(self, config: _TrainingState, **kwargs):
         """
         Trigger the `on_validation_end` method of each callback.
         """
         self.call_event("on_validation_end", config=config, **kwargs)
 
-    def call_event(self, event, config: _TrainingConfig, **kwargs):
+    def call_event(self, event, config: _TrainingState, **kwargs):
         """
         Call a specific event method on all callbacks.
 
