@@ -21,9 +21,10 @@ class SimpleBatch(list[Sample]):
         If the provided list of samples is empty.
     """
 
-    def __init__(self, samples: list[Sample]):
+    def __init__(self, samples: list[Sample], df):
         super().__init__(samples)
 
+        sefl.df = df
         if len(self) == 0:
             raise ValueError("The batch is empty")
 
@@ -80,9 +81,9 @@ class SimpleBatch(list[Sample]):
 Batch = Union[SimpleBatch, tuple[SimpleBatch, ...]]
 
 
-def simple_collate_fn(batch: list[Sample]) -> SimpleBatch:
+def simple_collate_fn(batch: list[Sample], df) -> SimpleBatch:
     """For datasets that returns a single Sample."""
-    return SimpleBatch(batch)
+    return SimpleBatch(batch, df=dataloader.dataset.df)
 
 
 def tuple_collate_fn(batch: list[tuple[Sample, ...]]) -> tuple[SimpleBatch, ...]:

@@ -1,5 +1,6 @@
 from enum import Enum
 from logging import getLogger
+from typing import Union
 
 from pydantic import computed_field
 
@@ -51,7 +52,7 @@ class PETLinear(PET, _LinearPreprocessing):
             ``suvr-{suvr_reference_region}_pet.nii*``
     """
 
-    suvr_reference_region: SUVRReferenceRegion = SUVRReferenceRegion.PONS
+    suvr_reference_region: Union[str, SUVRReferenceRegion] = SUVRReferenceRegion.PONS
 
     @computed_field
     @property

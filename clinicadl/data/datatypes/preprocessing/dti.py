@@ -1,5 +1,6 @@
 from enum import Enum
 from logging import getLogger
+from typing import Union
 
 from pydantic import computed_field
 
@@ -49,8 +50,8 @@ class DWIDTI(Preprocessing, DWI):
           in the CAPS structure will be considered.
     """
 
-    measure: DTIMeasure
-    space: DTISpace
+    measure: Union[str, DTIMeasure]
+    space: Union[str, DTISpace]
 
     @computed_field
     @property

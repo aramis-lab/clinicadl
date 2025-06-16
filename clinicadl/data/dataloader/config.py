@@ -1,7 +1,7 @@
 from typing import Iterator, Optional, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
-from torch.utils.data import DataLoader as TorchDataLoaader
+from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
@@ -16,7 +16,7 @@ from clinicadl.utils.seed import pl_worker_init_function
 from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
 
 
-class DataLoader(TorchDataLoaader):
+class DataLoader(TorchDataLoader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
     """
