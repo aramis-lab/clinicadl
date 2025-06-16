@@ -117,7 +117,9 @@ class ClinicaDLModel:
 
         return model_state["epoch"]
 
-    def training_step(self, data: Batch, device: torch.device):
+    def training_step(
+        self, data: Batch, device: torch.device
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
@@ -125,9 +127,8 @@ class ClinicaDLModel:
         images = data.get_images().to(device)
 
         outputs = self.network(images)
-        loss = self.loss(outputs, labels)
 
-        return loss
+        return outputs, labels
 
     def train(self):
         self.network.to(self.device)
