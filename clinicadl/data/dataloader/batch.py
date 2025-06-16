@@ -80,9 +80,9 @@ class SimpleBatch(list[Sample]):
 Batch = Union[SimpleBatch, tuple[SimpleBatch, ...]]
 
 
-def simple_collate_fn(batch: list[Sample], df) -> SimpleBatch:
+def simple_collate_fn(batch: list[Sample]) -> SimpleBatch:
     """For datasets that returns a single Sample."""
-    return SimpleBatch(batch, df=dataloader.dataset.df)
+    return SimpleBatch(batch)
 
 
 def tuple_collate_fn(batch: list[tuple[Sample, ...]]) -> tuple[SimpleBatch, ...]:
