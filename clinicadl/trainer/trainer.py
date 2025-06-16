@@ -98,7 +98,9 @@ class Trainer:
                 self.on_batch_begin(batch_idx=batch_idx)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    outputs, labels = self.training_step(data=data)
+                    outputs, labels = self.model.training_step(
+                        data=data, device=self.comp.device
+                    )
                     loss = self.model.loss(outputs, labels)
 
                 self.callbacks.on_backward_begin(config=self.config)
@@ -134,17 +136,6 @@ class Trainer:
         """TO COMPLETE"""
         self.config.batch = batch_idx
         self.callbacks.on_batch_begin(config=self.config)
-
-    def training_step(self, data: Batch) -> tuple[torch.Tensor, torch.Tensor]:
-        """TO COMPLETE"""
-
-        labels = data.get_labels().to(self.comp.device)
-        images = data.get_images().to(self.comp.device)
-
-        labels = labels.unsqueeze(dim=1)  # TODO : check why it is needed?
-        outputs = self.model.network(images)
-
-        return outputs, labels
 
     def weights_update(self):
         """TO COMPLETE"""
@@ -192,7 +183,9 @@ class Trainer:
 
         with torch.no_grad():
             for _, data in enumerate(dataloader):
-                outputs, labels = self.training_step(data=data)
+                outputs, labels = self.model.training_step(
+                    data=data, device=self.comp.device
+                )
                 self.metrics(outputs, labels)
             self.metrics.aggregate(epoch=self.config.epoch)
 
