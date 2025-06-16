@@ -21,10 +21,9 @@ class SimpleBatch(list[Sample]):
         If the provided list of samples is empty.
     """
 
-    def __init__(self, samples: list[Sample], df):
+    def __init__(self, samples: list[Sample]):
         super().__init__(samples)
 
-        sefl.df = df
         if len(self) == 0:
             raise ValueError("The batch is empty")
 
