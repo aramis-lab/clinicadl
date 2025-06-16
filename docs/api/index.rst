@@ -8,10 +8,12 @@ Please refer to the :doc:`user guide <../user_guide/index>` and the :doc:`exampl
 for more information and usage examples, as the raw specifications of classes and
 functions may not be enough to give full guidelines on their use.
 
-.. toctree::
-   :maxdepth: 1
+-----
 
-   data/index
-   transforms/index
-   splitter/index
-   losses
+.. toctree::
+.. autosummary::
+      :toctree: generated/
+   :caption: Top-level Submodules
+
+   clinicadl.losses
+   clinicadl.transforms

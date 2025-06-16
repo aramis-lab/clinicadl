@@ -11,4 +11,4 @@ that you can run, please have a look at our :doc:`example gallery <../auto_examp
    :maxdepth: 2
    
    introduction
-   data/index
+   datasets
