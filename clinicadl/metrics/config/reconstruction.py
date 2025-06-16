@@ -8,10 +8,11 @@ from pydantic import (
     model_validator,
 )
 
+from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import Kernel, Optimum, Reduction
+from .enum import Kernel, Optimum
 
 __all__ = [
     "PSNRMetricConfig",
@@ -33,6 +34,10 @@ class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Peak Signal-to-Noise Ratio (PSNR) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.PSNRMetric
+        """
         super().__init__(
             max_val=max_val,
             reduction=reduction,
@@ -58,8 +63,8 @@ class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
     @field_validator("spatial_dims", mode="after")
     @classmethod
     def validator_spatial_dims(cls, v):
+        """Validates the spatial dimensions."""
         assert v == 2 or v == 3, f"spatial_dims must be 2 or 3. You passed: {v}."
-
         return v
 
     @model_validator(mode="after")
@@ -101,6 +106,10 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Structural Similarity Index Measure (SSIM) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#structural-similarity-index-measure
+        """
         super().__init__(
             spatial_dims=spatial_dims,
             data_range=data_range,
@@ -153,6 +162,10 @@ class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Multi-Scale Structural Similarity Index Measure (MS-SSIM) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#multi-scale-structural-similarity-index-measure
+        """
         super().__init__(
             spatial_dims=spatial_dims,
             data_range=data_range,

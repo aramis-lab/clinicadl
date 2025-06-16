@@ -332,9 +332,9 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     def _generate_sampler(
         self,
-        dataset: CapsDataset,
-        dp_degree: int,
-        rank: int,
+        dataset: Dataset,
+        dp_degree: Optional[int],
+        rank: Optional[int],
     ) -> Sampler:
         """
         Returns a WeightedRandomSampler if self.sampling_weights is not None, otherwise a

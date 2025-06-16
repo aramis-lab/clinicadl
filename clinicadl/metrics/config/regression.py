@@ -1,9 +1,10 @@
 from typing import Union
 
+from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import Optimum, Reduction
+from .enum import Optimum
 
 __all__ = [
     "MSEMetricConfig",
@@ -22,6 +23,10 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         self,
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Mean Squared Error (MSE) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.MSEMetric
+        """
         super().__init__(
             reduction=reduction,
         )
@@ -41,6 +46,10 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         self,
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Mean Absolute Error (MAE) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.MAEMetric
+        """
         super().__init__(
             reduction=reduction,
         )
@@ -60,6 +69,11 @@ class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         self,
         reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Root Mean Squared Error (RMSE) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.RMSEMetric
+        """
+
         super().__init__(
             reduction=reduction,
         )

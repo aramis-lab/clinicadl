@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union
 
 from pydantic import NonNegativeFloat, PositiveInt, field_validator
 
+from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
@@ -13,7 +14,6 @@ from .base import (
 from .enum import (
     DistanceMetric,
     Optimum,
-    Reduction,
     WeightType,
 )
 
@@ -54,6 +54,10 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
         ] = DefaultFromLibrary.YES,
         return_with_label: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Dice metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.DiceMetric
+        """
         super().__init__(
             include_background=include_background,
             reduction=reduction,
@@ -90,6 +94,11 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
         ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Mean Intersection over Union (MeanIoU) metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.MeanIoU
+        """
+
         super().__init__(
             include_background=include_background,
             reduction=reduction,
@@ -114,9 +123,13 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
     def __init__(
         self,
         include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction] = Reduction.MEAN,
+        reduction: Reduction = Reduction.MEAN,  # TODO: check how to deal with mean_batch before MONAI 1.5
         weight_type: Union[WeightType, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Generalized Dice Score metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.GeneralizedDiceScore
+        """
         super().__init__(
             include_background=include_background,
             reduction=reduction,
@@ -154,6 +167,10 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Surface Distance metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.SurfaceDistanceMetric
+        """
         super().__init__(
             include_background=include_background,
             symmetric=symmetric,
@@ -189,6 +206,10 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Hausdorff Distance metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.HausdorffDistanceMetric
+        """
         super().__init__(
             include_background=include_background,
             distance_metric=distance_metric,
@@ -233,6 +254,11 @@ class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
         use_subvoxels: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
+        """
+        Config class for the Surface Dice metric. \n
+        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.SurfaceDiceMetric
+        """
+
         super().__init__(
             class_thresholds=class_thresholds,
             include_background=include_background,

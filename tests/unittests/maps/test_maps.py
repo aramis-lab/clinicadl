@@ -63,10 +63,11 @@ split = Split(
 
 def test_good_maps():
     maps = Maps(maps_test)
-    maps.remove()
+    if maps.exists():
+        maps.remove()
 
-    assert maps.splits == {}
-    assert maps.data_groups == {}
+    assert not maps.splits
+    assert not maps.data_groups
     assert maps.groups_dir == maps_test / "groups"
     assert maps.train_val_tsv == maps_test / "train+validation.tsv"
     assert maps.requirements_txt == maps_test / "environment.txt"
@@ -114,7 +115,8 @@ def test_good_maps():
 
 def test_good_split_dir():
     maps = Maps(maps_test)
-    maps.remove()
+    if maps.exists():
+        maps.remove()
     maps.create()
     maps.create_split(
         split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
@@ -150,7 +152,8 @@ def test_good_split_dir():
 
 def test_good_best_metrics():
     maps = Maps(maps_test)
-    maps.remove()
+    if maps.exists():
+        maps.remove()
     maps.create()
     maps.create_split(
         split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
@@ -279,7 +282,8 @@ def test_bad_load():
 
 def test_bad_best_metrics():
     maps = Maps(maps_test)
-    maps.remove()
+    if maps.exists():
+        maps.remove()
     maps.create()
     maps.create_split(
         split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
@@ -298,7 +302,8 @@ def test_bad_best_metrics():
 
 def test_bad_split_dir():
     maps = Maps(maps_test)
-    maps.remove()
+    if maps.exists():
+        maps.remove()
     maps.create()
     maps.create_split(
         split=split, best_metrics=[MSEMetricConfig().name, MAEMetricConfig().name]
@@ -312,7 +317,8 @@ def test_bad_split_dir():
 
 def test_bad_maps():
     maps = Maps("maps_test")
-    maps.remove()
+    if maps.exists():
+        maps.remove()
 
     with pytest.raises(ClinicaDLConfigurationError):
         maps.split_list

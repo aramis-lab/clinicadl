@@ -1,17 +1,17 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from typing import Optional
 
 import monai
 import monai.metrics
-from pydantic import (
-    field_validator,
-    model_validator,
-)
+from pydantic import ConfigDict, field_validator, model_validator
 
+from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import Optimum, Reduction
+from .enum import Optimum
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -19,7 +19,7 @@ __all__ = ["MetricConfig", "LossMetricConfig"]
 class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
-    def get_object(self) -> monai.metrics.Metric:
+    def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
         """
         Returns the metric associated to this configuration,
         parametrized with the parameters passed by the user.
@@ -32,7 +32,7 @@ class MetricConfig(ObjectConfig):
         return super().get_object()
 
     @classmethod
-    def _get_class(cls) -> type[monai.metrics.Metric]:
+    def _get_class(cls) -> type[monai.metrics.metric.CumulativeIterationMetric]:
         """Returns the metric associated to this config class."""
         return getattr(monai.metrics, cls._get_name())
 

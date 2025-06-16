@@ -34,5 +34,6 @@ class ComputationalConfig(ClinicaDLConfig):
     def device(self):
         return torch.device("cuda") if self.gpu else torch.device("cpu")
 
-    def init_scaler(self):
+    def get_scaler(self):
+        """TO COMPLETE"""
         return GradScaler(device=self.device.type, enabled=self.amp)

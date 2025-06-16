@@ -1,258 +1,274 @@
 from __future__ import annotations
 
+from abc import ABC
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 import pandas as pd
-from monai.metrics.metric import Metric as MonaiMetric
+import torch
+from monai.metrics.confusion_matrix import ConfusionMatrixMetric
+from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
+from clinicadl.dictionary.words import EPOCH, LOSS_METRIC, METRICS
+from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
-from clinicadl.metrics import ImplementedMetric
-from clinicadl.metrics.config import MetricConfig, get_metric_config
-from clinicadl.metrics.config.base import LossMetricConfig
-from clinicadl.utils.json import read_json, write_json
+from clinicadl.metrics.config import (
+    ConfusionMatrixMetricConfig,
+    CustomMetric,
+    MetricConfig,
+)
+from clinicadl.metrics.config.base import (
+    LossMetricConfig,
+    MetricConfig,
+)
+from clinicadl.metrics.config.factory import get_metric_config
+from clinicadl.utils.json import write_json
 
-MetricsTypes = Union[MonaiMetric, MetricConfig, ImplementedMetric, str]
 
-LOSS = "Loss"
-
-
-class GroupMetrics:
-    def __init__(
-        self,
-        metrics: Union[MetricsTypes, list[MetricsTypes]],
-        selection_metrics: Union[MetricsTypes, list[MetricsTypes]] = LOSS,
-    ):
-        self.metrics = self.check_metrics(metrics)
-
-        if ImplementedMetric.LOSS not in self.metrics:
-            self.metrics.append(ImplementedMetric.LOSS)
-
-        self.selection_metrics = self.check_metrics(selection_metrics)
-
-        if not set(self.selection_metrics).issubset(set(self.metrics)):
-            raise ValueError(
-                f"Selection metrics ({self.selection_metrics}) must be one of the provided metrics ({self.metrics})."
-            )
-
-        self.df = self._init_df()
-
-    def get_loss(self, epoch: Optional[int] = None):
-        if epoch:
-            return self.df.at[epoch, LOSS]
-        else:
-            return self.df[LOSS].iloc[-1]
-
-    def aggregate(self, epoch: int = 0):
-        for metric, callable_metric in self._callable_metrics.items():
-            value = callable_metric.aggregate()
-            self.df.at[epoch, metric] = value.item()
-
-    def reset(self):
-        self._callable_metrics = {}
-        for metric in self.metrics:
-            if metric.value == LOSS:
-                self._callable_metrics[metric.value] = self._callable_loss
-            else:
-                callable_metric = get_metric_config(metric).get_object()
-                self._callable_metrics[metric.value] = callable_metric
-
-    def _init_df(self):
-        df = pd.DataFrame(
-            columns=["epoch", "time"] + [metric.value for metric in self.metrics]
-        )
-        df.set_index(["epoch"], inplace=True)
-        df.at[0, "time"] = 0.0
-        df.at[0, LOSS] = 1
-
-        return df
-
-    def get_value(self, epoch: int, metric: str):
-        try:
-            return self.df.at[epoch, metric]
-        except KeyError:
-            raise KeyError(f"Metric '{metric}' not found in the provided metrics.")
+class Metrics(ABC):
+    """
+    Abstract base class for metrics.
+    """
 
     @staticmethod
     def check_metrics(
-        metrics: Union[MetricsTypes, list[MetricsTypes]],
-    ) -> list[ImplementedMetric]:
-        """Check that all metrics are of the correct type and have the required attributes."""
-        if isinstance(metrics, MetricsTypes):
+        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
+    ) -> list[MetricConfig]:
+        """TO COMPLETE"""
+
+        metrics_config = []
+        _confusion_metrics_name = []
+
+        if not isinstance(metrics, list):
             metrics = [metrics]
-
-        if len(metrics) == 0:
-            raise ValueError("At least one metric must be provided.")
-
-        metrics_list = []
-
-        # Check that all MetricConfig instances have the required attributes
         for metric in metrics:
             if isinstance(metric, MonaiMetric):
-                ImplementedMetric._missing_(
-                    metric.__class__.__name__
-                )  # raise an error if missing
-                metric = ImplementedMetric(metric.__class__.__name__)
+                config = get_metric_config(name=metric.__class__.__name__)
+                metrics_config.append(config)
 
-            elif isinstance(metric, str):
-                metric = ImplementedMetric(metric)
+            elif isinstance(metric, LossConfig):
+                metrics_config.append(
+                    LossMetricConfig(
+                        loss_fn=metric.get_object(), reduction=metric.reduction
+                    )
+                )
 
-            elif isinstance(metric, MetricConfig):
-                metric = metric.name
+            elif isinstance(metric, MetricConfig) or isinstance(
+                metric, LossMetricConfig
+            ):
+                metrics_config.append(metric)
 
-            elif not isinstance(metric, ImplementedMetric):
-                raise ValueError(f"Metric '{metric}' is not an implemented metric.")
+            elif isinstance(metric, type(CustomMetric)):
+                metrics_config.append(metric)
 
-            metrics_list.append(metric)
+            elif isinstance(metric, type(Loss)):
+                metrics_config.append(LossMetricConfig(loss_fn=metric))
 
-        if not all(isinstance(metric, ImplementedMetric) for metric in metrics_list):
-            raise ValueError(
-                "All metrics must be implemented in ClinicaDL in order to be used."
-            )
-
-        return metrics_list
-
-    def set_loss(self, loss: Loss):
-        self._callable_loss = LossMetricConfig(loss_fn=loss).get_object()
-
-    def on_train_end(self):
-        pass
-
-    def model_dump(self):
-        dict_ = {}
-        dict_["metrics"] = {
-            "metrics": self.metrics,
-            "selection_metrics": self.selection_metrics,
-        }
-        return dict_
+        return metrics_config
 
 
-class Metrics:
+class ClinicaDLMetrics(Metrics):
+    """TO COMPLETE"""
+
     def __init__(
         self,
-        metrics: Union[MetricsTypes, list[MetricsTypes]],
-        selection_metrics: Union[MetricsTypes, list[MetricsTypes]] = LOSS,
-        compute_train_metrics: bool = True,
+        metrics: Optional[
+            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
+        ],
+        loss: Loss,
     ):
-        self.train = GroupMetrics(metrics=metrics, selection_metrics=selection_metrics)
-        self.val = GroupMetrics(metrics=metrics, selection_metrics=selection_metrics)
-
-        self.training_loss = self._init_training_df()
-
-        self.compute_train_metrics = compute_train_metrics
-
-    @classmethod
-    def from_json(cls, json_path: Path) -> Metrics:
         """
-        Reads the JSON file and returns a Metrics object.
+        Initialize the ClinicaDLMetrics instance.
+
+        Parameters
+        ----------
+        metrics : MetricType
+            Metric configuration or list of configurations.
+        compute_train_metrics : bool
+            Flag to compute training metrics.
         """
-        dict_ = read_json(json_path)
-        return cls.from_dict(dict_)
+        if metrics is None:
+            metrics = []  # TODO: which default metrics should we add?
 
-    @classmethod
-    def from_dict(cls, dict_: dict):
-        metrics_config = dict_["metrics"]
-        metrics = metrics_config["metrics"]
-        selection_metrics = metrics_config["selection_metrics"]
+        self.metrics = self.check_metrics(metrics)
+        self._loss_metric = LossMetricConfig(loss_fn=loss)
 
-        return cls(metrics=metrics, selection_metrics=selection_metrics)
+        if self._loss_metric not in self.metrics:
+            self.metrics.append(self._loss_metric)
+            # TODO : check if 2 lossconifg, one for the loss and one as a metric, how to handle the name ? because a loss is a function and doesn't have a name
 
-    def write_training_loss(self, epoch: int, batch: int, loss: float):
-        self.training_loss.at[(epoch, batch), LOSS] = loss
+        self._callable_metrics = self.get_callable_metrics()
+        self.df = self.init_df()
 
-    def _init_training_df(self):
-        df = pd.DataFrame(columns=["epoch", "batch", "time"])
-        df.set_index(["epoch", "batch"], inplace=True)
-        df.at[(0, 0), "time"] = 0.0
-        df.at[(0, 0), LOSS] = 1
+    def init_df(self) -> pd.DataFrame:
+        """TO COMPLETE"""
 
+        columns = [EPOCH]
+
+        for metric in self._callable_metrics.values():
+            if isinstance(metric, ConfusionMatrixMetric):
+                for confusion_metric in metric.metric_name:
+                    columns.append(confusion_metric)
+            else:
+                columns.append(metric.__class__.__name__)
+
+        df = pd.DataFrame(columns=columns)
+        df.set_index(EPOCH, inplace=True)
         return df
 
-    def set_loss(self, loss: Loss):
-        self.train.set_loss(loss)
-        self.val.set_loss(loss)
+    def contains(
+        self,
+        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
+    ) -> bool:
+        """TO COMPLETE"""
+        metrics = self.check_metrics(metrics)
+        return all(metric in self.metrics for metric in metrics)
 
-    def model_dump(self):
-        return self.val.model_dump()
-
-    def write_json(self, json_path: Path, overwrite: bool = False) -> None:
+    def add_metrics(
+        self,
+        metrics: list[
+            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
+        ],
+    ) -> None:
         """
-        Writes the serialized config class to a JSON file.
+        Add metrics to the ClinicaDLMetrics instance.
         """
-        write_json(json_path=json_path, data=self.model_dump(), overwrite=overwrite)
+        self.metrics.extend(self.check_metrics(metrics))
+        self._callable_metrics = self.get_callable_metrics()
+        self.df = self.init_df()
 
+    def get_callable_metrics(self) -> Dict[str, MonaiMetric]:
+        """
+        Retrieve the callable metrics.
 
-# class RetainBest:
-#     """
-#     A class to retain the best and overfitting values for a set of wanted metrics.
-#     """
+        Returns
+        -------
+        Dict[str, MonaiMetric]
+            Dictionary of callable metrics.
+        """
+        _callable_metrics: Dict[str, MonaiMetric] = {}
 
-#     def __init__(self, selection_metrics: List[str], n_classes: int = 0):
-#         self.selection_metrics = selection_metrics
+        for metric in self.metrics:
+            if isinstance(metric, ConfusionMatrixMetricConfig):
+                _callable_metrics[
+                    metric.name
+                ] = metric.get_object()  # TODO: for now same as others but need to check if several ConfusionMatrixMetricConfig are proposed with diofferent args
+            elif isinstance(metric, LossMetricConfig):
+                _callable_metrics[
+                    metric.name
+                ] = metric.get_object()  # TODO: handle loss name
+            elif isinstance(metric, MetricConfig):
+                _callable_metrics[metric.name] = metric.get_object()
+            else:
+                raise TypeError(
+                    f"Unsupported metric type: {type(metric)}. Expected MetricConfig."
+                )
+        return _callable_metrics
 
-#         if LOSS in selection_metrics:
-#             selection_metrics.remove(LOSS)
-#             metric_module = MetricModule(selection_metrics)
-#             selection_metrics.append(LOSS)
-#         else:
-#             metric_module = MetricModule(selection_metrics)
+    def _resetdf(self) -> None:
+        """
+        Initialize or reset the internal DataFrame for storing aggregated metric values.
+        """
+        self.df.drop(self.df.index, inplace=True)
 
-#         implemented_metrics = set(metric_optimum.keys())
-#         if not set(self.selection_metrics).issubset(implemented_metrics):
-#             raise NotImplementedError(
-#                 f"The selection metrics {self.selection_metrics} are not all implemented. "
-#                 f"Available metrics are {implemented_metrics}."
-#             )
-#         self.best_metrics = dict()
-#         for selection in self.selection_metrics:
-#             if n_classes > 2:
-#                 metric_fn = metric_module.metrics[selection]
-#                 metric_args = list(metric_fn.__code__.co_varnames)
-#                 if "class_number" in metric_args:
-#                     for class_number in range(n_classes):
-#                         self.set_optimum(f"{selection}-{class_number}")
-#                 else:
-#                     self.set_optimum(selection)
-#             else:
-#                 self.set_optimum(selection)
+    def reset(self, df: bool = False) -> None:
+        """
+        Reset all metric states.
 
-#     def set_optimum(self, selection: str):
-#         if metric_optimum[selection] == "min":
-#             self.best_metrics[selection] = np.inf
-#         elif metric_optimum[selection] == "max":
-#             self.best_metrics[selection] = -np.inf
-#         else:
-#             raise ValueError(
-#                 f"Objective {metric_optimum[selection]} unknown for metric {selection}."
-#                 f"Please choose between 'min' and 'max'."
-#             )
+        Parameters
+        ----------
+        df : bool
+            If True, also reset the DataFrame.
+        """
+        for metric in self._callable_metrics.values():
+            metric.reset()
+        if df:
+            self._resetdf()
 
-#     def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
-#         """
-#         Computes for each metric if this is the best value ever seen.
+    def aggregate(self, epoch: int) -> None:
+        """
+        Aggregate and store metric results.
 
-#         Args:
-#             metrics_valid: metrics computed on the validation set
-#         Returns:
-#             metric is associated to True if it is the best value ever seen.
-#         """
+        Parameters
+        ----------
+        epoch : int
+            Current epoch.
+        batch : Optional[int]
+            Current batch (optional).
+        """
+        for name, metric in self._callable_metrics.items():
+            value = metric.aggregate()
+            if isinstance(metric, ConfusionMatrixMetric):
+                for i, _name in enumerate(metric.metric_name):
+                    self.df.at[epoch, _name] = value[i].item()
+            else:
+                self.df.at[epoch, name] = value.item()
 
-#         metrics_dict = dict()
-#         for selection in self.selection_metrics:
-#             if metric_optimum[selection] == "min":
-#                 metrics_dict[selection] = (
-#                     metrics_valid[selection] < self.best_metrics[selection]
-#                 )
-#                 self.best_metrics[selection] = min(
-#                     metrics_valid[selection], self.best_metrics[selection]
-#                 )
+    def __call__(
+        self, y_pred: torch.Tensor, y: Optional[torch.Tensor] = None, **kwargs
+    ) -> None:
+        """
+        Update metrics using model predictions and ground truth.
 
-#             else:
-#                 metrics_dict[selection] = (
-#                     metrics_valid[selection] > self.best_metrics[selection]
-#                 )
-#                 self.best_metrics[selection] = max(
-#                     metrics_valid[selection], self.best_metrics[selection]
-#                 )
+        Parameters
+        ----------
+        y_pred : torch.Tensor
+            Predictions.
+        y : torch.Tensor
+            Ground truth labels.
+        """
+        for metric in self._callable_metrics.values():
+            metric(y_pred, y)
 
-#         return metrics_dict
+    def get_loss(self) -> float:
+        """
+        Get the latest loss value.
+
+        Returns
+        -------
+        float
+            Aggregated loss.
+
+        Raises
+        ------
+        ValueError
+            If the loss metric is not present.
+        """
+        if LOSS_METRIC not in self._callable_metrics:
+            raise ValueError("Loss not found in training metrics.")
+        return self._callable_metrics[LOSS_METRIC].aggregate().item()
+
+    def save(self, path: Path) -> None:
+        """
+        Persist the metrics to disk using selection metric file paths.
+
+        Parameters
+        ----------
+        best_metrics : Dict[str, BestMetric]
+            Mapping of metric names to their best-tracking wrappers.
+        """
+        self.df.to_csv(path, sep="\t", index=True)
+
+    def to_dict(self) -> Dict[str, Optional[list[dict]]]:
+        """
+        Serialize the configuration to a dictionary.
+
+        Returns
+        -------
+        dict
+            Serialized metrics
+        """
+        return {
+            METRICS: [metric.to_dict() for metric in self.metrics],
+        }
+
+    def write_json(self, json_path: Path) -> None:
+        """
+        Save the configuration to a JSON file.
+
+        Parameters
+        ----------
+        json_path : Path
+            Destination file path.
+        """
+        write_json(json_path, self.to_dict())
