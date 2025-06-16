@@ -212,7 +212,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         intensity_only : bool (optional, default=True)
-            To get only the images (:py:class:`torchio.ScalarImage`) and the not the
+            To get only the images (:py:class:`torchio.ScalarImage`) and not the
             masks (:py:class:`torchio.LabelMap`).
         include : Optional[Sequence[str]] (optional, default=None)
             Names of the images to include. If ``None``, will return all the images
