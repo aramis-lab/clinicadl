@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Self, Union
 
-from pydantic import computed_field
+from pydantic import computed_field, model_validator
 
 from ..enum import ImageModality
 from .base import Modality
@@ -60,8 +60,8 @@ class PET(Modality):
         the method used to reconstruct the image.
     """
 
-    tracer: Union[str, Tracer] = Tracer.FDG
-    reconstruction: Optional[Union[str, ReconstructionMethod]] = None
+    tracer: Tracer = Tracer.FDG
+    reconstruction: Optional[ReconstructionMethod] = None
 
     @computed_field
     @property

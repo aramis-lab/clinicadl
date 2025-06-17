@@ -50,8 +50,8 @@ class DWIDTI(Preprocessing, DWI):
           in the CAPS structure will be considered.
     """
 
-    measure: Union[str, DTIMeasure]
-    space: Union[str, DTISpace]
+    measure: DTIMeasure
+    space: DTISpace
 
     @computed_field
     @property

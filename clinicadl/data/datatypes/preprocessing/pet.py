@@ -52,7 +52,7 @@ class PETLinear(PET, _LinearPreprocessing):
             ``suvr-{suvr_reference_region}_pet.nii*``
     """
 
-    suvr_reference_region: Union[str, SUVRReferenceRegion] = SUVRReferenceRegion.PONS
+    suvr_reference_region: SUVRReferenceRegion = SUVRReferenceRegion.PONS
 
     @computed_field
     @property
