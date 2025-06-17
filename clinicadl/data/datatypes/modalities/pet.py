@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional, Self, Union
+from typing import Optional
 
-from pydantic import computed_field, model_validator
+from pydantic import computed_field
 
 from ..enum import ImageModality
 from .base import Modality
