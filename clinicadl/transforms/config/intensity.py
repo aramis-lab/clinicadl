@@ -7,10 +7,9 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.config import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
-from .base import Bounds, MaskingMethodConfig, TransformConfig
-from .enum import AnatomicalLabel
+from .base import MaskingMethodConfig, TransformConfig
 
 __all__ = [
     "RescaleIntensityConfig",
@@ -19,39 +18,25 @@ __all__ = [
     "ClampConfig",
 ]
 
+RESCALE_INTENSITY_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RescaleIntensity)
+MASK_CONFIG_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Mask)
+CLAMP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Clamp)
+
 
 class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.RescaleIntensity`.
     """
 
-    out_min_max: Union[NonNegativeFloat, Tuple[float, float]]
-    percentiles: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
-    in_min_max: Union[Optional[Union[NonNegativeFloat, Tuple[float, float]]]]
-
-    def __init__(
-        self,
-        out_min_max: Union[
-            NonNegativeFloat, Tuple[float, float], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        percentiles: Union[
-            NonNegativeFloat,
-            Tuple[NonNegativeFloat, NonNegativeFloat],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        in_min_max: Union[
-            Optional[Union[NonNegativeFloat, Tuple[float, float]]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        masking_method: Optional[
-            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            out_min_max=out_min_max,
-            percentiles=percentiles,
-            in_min_max=in_min_max,
-            masking_method=masking_method,
-        )
+    out_min_max: Union[
+        NonNegativeFloat, Tuple[float, float]
+    ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["out_min_max"]
+    percentiles: Union[
+        NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]
+    ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["percentiles"]
+    in_min_max: Optional[
+        Union[NonNegativeFloat, Tuple[float, float]]
+    ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["in_min_max"]
 
     @field_validator("out_min_max", "percentiles", "in_min_max", mode="after")
     @classmethod
@@ -87,36 +72,14 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
     Config class for :py:class:`torchio.transforms.ZNormalization`.
     """
 
-    def __init__(
-        self,
-        masking_method: Optional[
-            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            masking_method=masking_method,
-        )
-
 
 class MaskConfig(TransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.Mask`.
     """
 
-    outside_value: float
-    labels: Optional[Tuple[int, ...]]
-
-    def __init__(
-        self,
-        masking_method: Optional[Union[str, AnatomicalLabel, Bounds]],
-        outside_value: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        labels: Union[Optional[Tuple[int, ...]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            masking_method=masking_method, outside_value=outside_value, labels=labels
-        )
+    outside_value: float = MASK_CONFIG_TORCHIO_DEFAULTS["outside_value"]
+    labels: Optional[Tuple[int, ...]] = MASK_CONFIG_TORCHIO_DEFAULTS["labels"]
 
 
 class ClampConfig(TransformConfig):
@@ -124,15 +87,8 @@ class ClampConfig(TransformConfig):
     Config class for :py:class:`torchio.transforms.Clamp`.
     """
 
-    out_min: Optional[float]
-    out_max: Optional[float]
-
-    def __init__(
-        self,
-        out_min: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-        out_max: Union[Optional[float], DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(out_min=out_min, out_max=out_max)
+    out_min: Optional[float] = CLAMP_TORCHIO_DEFAULTS["out_min"]
+    out_max: Optional[float] = CLAMP_TORCHIO_DEFAULTS["out_max"]
 
     @model_validator(mode="after")
     def validate_min_max(self):

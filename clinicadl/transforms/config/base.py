@@ -84,16 +84,6 @@ class OneOfConfig(TransformConfig):
     transforms: List[Union[TransformConfig, List[TransformConfig]]]
     probabilities: Optional[List[NonNegativeFloat]] = None
 
-    def __init__(
-        self,
-        transforms: List[Union[TransformConfig, List[TransformConfig]]],
-        probabilities: Optional[List[NonNegativeFloat]] = None,
-    ):
-        super().__init__(
-            transforms=transforms,
-            probabilities=probabilities,
-        )
-
     def get_object(self) -> tio.Transform:
         """
         Returns the transform associated to this configuration,
@@ -145,7 +135,7 @@ Bounds = Union[
 class MaskingMethodConfig(ClinicaDLConfig):
     """Base config class 'masking_method' argument."""
 
-    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
+    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]] = None
 
     @field_validator("masking_method", mode="before")
     @classmethod

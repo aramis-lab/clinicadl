@@ -1,5 +1,6 @@
 import inspect
 from enum import Enum
+from inspect import signature
 from typing import Any, Callable, Dict, List, Tuple
 
 from pydantic import BaseModel
@@ -26,14 +27,30 @@ def get_args_and_defaults(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
     Dict[str, Any]
         The default values in a dict.
     """
-    signature = inspect.signature(func)
-    args = list(signature.parameters.keys())
-    defaults = {
-        k: v.default
-        for k, v in signature.parameters.items()
-        if v.default is not inspect.Parameter.empty
-    }
+    args = list(signature(func).parameters.keys())
+    defaults = get_defaults_from(func=func)
     return args, defaults
+
+
+def get_defaults_from(func: Callable) -> Dict[str, Any]:
+    """
+    Gets the default values of a function's parameters.
+
+    Parameters
+    ----------
+    func : Callable
+        The functiin
+
+    Returns
+    -------
+    Dict[str, Any]
+        The default values in a dict.
+    """
+    return {
+        k: v.default
+        for k, v in signature(func).parameters.items()
+        if v.default is not v.empty
+    }
 
 
 def update_config_with_defaults(config: BaseModel, function: Callable) -> None:

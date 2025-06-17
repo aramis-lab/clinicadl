@@ -1,5 +1,7 @@
 from typing import Tuple, Union
 
+import monai
+import monai.metrics
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
@@ -9,7 +11,7 @@ from pydantic import (
 )
 
 from clinicadl.losses.enum import Reduction
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
 from .enum import Kernel, Optimum
@@ -20,6 +22,12 @@ __all__ = [
     "MultiScaleSSIMMetricConfig",
 ]
 
+PSNR_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.PSNRMetric)
+SSIM_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.SSIMMetric)
+MULTI_SCALE_SSIM_MONAI_DEFAULTS = get_defaults_from(
+    monai.metrics.regression.MultiScaleSSIMMetric
+)
+
 
 class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
@@ -27,22 +35,8 @@ class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
     """
 
     max_val: PositiveFloat
-
-    def __init__(
-        self,
-        max_val: PositiveFloat,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        """
-        Config class for the Peak Signal-to-Noise Ratio (PSNR) metric. \n
-        More info: https://docs.monai.io/en/latest/metrics.html#monai.metrics.PSNRMetric
-        """
-        super().__init__(
-            max_val=max_val,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    reduction: Reduction = PSNR_MONAI_DEFAULTS["reduction"]
+    get_not_nans: bool = PSNR_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -88,39 +82,19 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     Config class for :py:class:`monai.metrics.SSIMMetric`.
     """
 
-    win_size: Union[PositiveInt, Tuple[PositiveInt, ...]]
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        win_size: Union[PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        kernel_sigma: Union[
-            PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        """
-        Config class for the Structural Similarity Index Measure (SSIM) metric. \n
-        More info: https://docs.monai.io/en/latest/metrics.html#structural-similarity-index-measure
-        """
-        super().__init__(
-            spatial_dims=spatial_dims,
-            data_range=data_range,
-            kernel_type=kernel_type,
-            win_size=win_size,
-            kernel_sigma=kernel_sigma,
-            k1=k1,
-            k2=k2,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    spatial_dims: PositiveInt
+    win_size: Union[PositiveInt, Tuple[PositiveInt, ...]] = SSIM_MONAI_DEFAULTS[
+        "win_size"
+    ]
+    data_range: PositiveFloat = SSIM_MONAI_DEFAULTS["data_range"]
+    kernel_type: Kernel = SSIM_MONAI_DEFAULTS["kernel_type"]
+    kernel_sigma: Union[PositiveFloat, Tuple[PositiveFloat, ...]] = SSIM_MONAI_DEFAULTS[
+        "kernel_sigma"
+    ]
+    k1: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k1"]
+    k2: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k2"]
+    reduction: Reduction = SSIM_MONAI_DEFAULTS["reduction"]
+    get_not_nans: bool = SSIM_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -140,44 +114,20 @@ class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     Config class for :py:class:`monai.metrics.MultiScaleSSIMMetric`.
     """
 
-    kernel_size: Union[PositiveInt, Tuple[PositiveInt, ...]]
-    weights: Tuple[PositiveFloat, ...]
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        data_range: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        kernel_type: Union[Kernel, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        kernel_size: Union[PositiveInt, Tuple[PositiveInt, ...], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        kernel_sigma: Union[
-            PositiveFloat, Tuple[PositiveFloat, ...], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        k1: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        k2: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        weights: Union[Tuple[PositiveFloat, ...], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        """
-        Config class for the Multi-Scale Structural Similarity Index Measure (MS-SSIM) metric. \n
-        More info: https://docs.monai.io/en/latest/metrics.html#multi-scale-structural-similarity-index-measure
-        """
-        super().__init__(
-            spatial_dims=spatial_dims,
-            data_range=data_range,
-            kernel_type=kernel_type,
-            kernel_size=kernel_size,
-            kernel_sigma=kernel_sigma,
-            k1=k1,
-            k2=k2,
-            weights=weights,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    spatial_dims: PositiveInt
+    kernel_size: Union[
+        PositiveInt, Tuple[PositiveInt, ...]
+    ] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_size"]
+    weights: Tuple[PositiveFloat, ...] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["weights"]
+    data_range: PositiveFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["data_range"]
+    kernel_type: Kernel = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_type"]
+    kernel_sigma: Union[
+        PositiveFloat, Tuple[PositiveFloat, ...]
+    ] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_sigma"]
+    k1: NonNegativeFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["k1"]
+    k2: NonNegativeFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["k2"]
+    reduction: Reduction = MULTI_SCALE_SSIM_MONAI_DEFAULTS["reduction"]
+    get_not_nans: bool = MULTI_SCALE_SSIM_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:

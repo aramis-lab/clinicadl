@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy as np
+import torchio as tio
 from pydantic import (
     PositiveFloat,
     PositiveInt,
@@ -10,7 +11,7 @@ from pydantic import (
 )
 from torchio import Image
 
-from clinicadl.utils.config import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import Bounds, TransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
@@ -25,6 +26,16 @@ __all__ = [
     "PadConfig",
 ]
 
+CROP_OR_PAD_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.CropOrPad)
+TO_CANONICAL_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.ToCanonical)
+RESIZE_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Resize)
+RESAMPLE_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Resample)
+ENSURE_SHAPE_MULTIPLE_TORCHIO_DEFAULTS = get_defaults_from(
+    tio.transforms.EnsureShapeMultiple
+)
+CROP_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Crop)
+PAD_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Pad)
+
 
 class CropOrPadConfig(TransformConfig):
     """
@@ -37,33 +48,11 @@ class CropOrPadConfig(TransformConfig):
             Tuple[PositiveInt, PositiveInt, PositiveInt],
         ]
     ]
-    padding_mode: Union[float, PaddingMode]
-    mask_name: Optional[str]
-    labels: Optional[Tuple[int, ...]]
-
-    def __init__(
-        self,
-        target_shape: Optional[
-            Union[
-                PositiveInt,
-                Tuple[PositiveInt, PositiveInt, PositiveInt],
-                DefaultFromLibrary,
-            ]
-        ] = DefaultFromLibrary.YES,
-        padding_mode: Union[
-            float, PaddingMode, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        mask_name: Optional[Union[str, DefaultFromLibrary]] = DefaultFromLibrary.YES,
-        labels: Union[
-            Optional[Tuple[int, ...]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            target_shape=target_shape,
-            padding_mode=padding_mode,
-            mask_name=mask_name,
-            labels=labels,
-        )
+    padding_mode: Union[float, PaddingMode] = CROP_OR_PAD_TORCHIO_DEFAULTS[
+        "padding_mode"
+    ]
+    mask_name: Optional[str] = CROP_OR_PAD_TORCHIO_DEFAULTS["mask_name"]
+    labels: Optional[Tuple[int, ...]] = CROP_OR_PAD_TORCHIO_DEFAULTS["labels"]
 
     @model_validator(mode="after")
     def check_shape(self):
@@ -91,24 +80,12 @@ class ResizeConfig(TransformConfig):
     """
 
     target_shape: Union[int, Tuple[int, int, int]]
-    image_interpolation: InterpolationMode
-    label_interpolation: InterpolationMode
-
-    def __init__(
-        self,
-        target_shape: Union[int, Tuple[int, int, int]],
-        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            target_shape=target_shape,
-            image_interpolation=image_interpolation,
-            label_interpolation=label_interpolation,
-        )
+    image_interpolation: InterpolationMode = RESIZE_TORCHIO_DEFAULTS[
+        "image_interpolation"
+    ]
+    label_interpolation: InterpolationMode = RESIZE_TORCHIO_DEFAULTS[
+        "label_interpolation"
+    ]
 
     @field_validator("target_shape", mode="after")
     @classmethod
@@ -142,38 +119,15 @@ class ResampleConfig(TransformConfig):
         str,
         Path,
         Tuple[Tuple[PositiveInt, PositiveInt, PositiveInt], np.ndarray],
+    ] = RESAMPLE_TORCHIO_DEFAULTS["target"]
+    pre_affine_name: Optional[str] = RESAMPLE_TORCHIO_DEFAULTS["pre_affine_name"]
+    image_interpolation: InterpolationMode = RESAMPLE_TORCHIO_DEFAULTS[
+        "image_interpolation"
     ]
-    pre_affine_name: Optional[str] = None
-    image_interpolation: InterpolationMode
-    label_interpolation: InterpolationMode
-    scalars_only: bool
-
-    def __init__(
-        self,
-        target: Union[
-            PositiveFloat,
-            Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
-            str,
-            Path,
-            Tuple[Tuple[PositiveInt, PositiveInt, PositiveInt], np.ndarray],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        pre_affine_name: Optional[DefaultFromLibrary] = DefaultFromLibrary.YES,
-        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        scalars_only: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            target=target,
-            pre_affine_name=pre_affine_name,
-            image_interpolation=image_interpolation,
-            label_interpolation=label_interpolation,
-            scalars_only=scalars_only,
-        )
+    label_interpolation: InterpolationMode = RESAMPLE_TORCHIO_DEFAULTS[
+        "label_interpolation"
+    ]
+    scalars_only: bool = RESAMPLE_TORCHIO_DEFAULTS["scalars_only"]
 
     @field_validator("pre_affine_name", mode="before")
     @classmethod
@@ -213,21 +167,7 @@ class EnsureShapeMultipleConfig(TransformConfig):
     """
 
     target_multiple: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
-    method: EnsureShapeMultipleMode
-
-    def __init__(
-        self,
-        target_multiple: Union[
-            PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]
-        ],
-        method: Union[
-            EnsureShapeMultipleMode, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            target_multiple=target_multiple,
-            method=method,
-        )
+    method: EnsureShapeMultipleMode = ENSURE_SHAPE_MULTIPLE_TORCHIO_DEFAULTS["method"]
 
 
 class CropConfig(TransformConfig):
@@ -237,11 +177,6 @@ class CropConfig(TransformConfig):
 
     cropping: Bounds
 
-    def __init__(self, cropping: Bounds):
-        super().__init__(
-            cropping=cropping,
-        )
-
 
 class PadConfig(TransformConfig):
     """
@@ -249,16 +184,4 @@ class PadConfig(TransformConfig):
     """
 
     padding: Bounds
-    padding_mode: Union[float, PaddingMode]
-
-    def __init__(
-        self,
-        padding: Bounds,
-        padding_mode: Union[
-            float, PaddingMode, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            padding=padding,
-            padding_mode=padding_mode,
-        )
+    padding_mode: Union[float, PaddingMode] = PAD_TORCHIO_DEFAULT["padding_mode"]

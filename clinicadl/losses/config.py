@@ -8,7 +8,7 @@ from pydantic import (
 )
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .enum import ImplementedLoss, Order, Reduction
 
@@ -26,6 +26,17 @@ __all__ = [
     "MSELossConfig",
     "get_loss_function_config",
 ]
+
+NLL_TORCH_DEFAULTS = get_defaults_from(torch.nn.NLLLoss)
+CROSS_ENTROPY_TORCH_DEFAULTS = get_defaults_from(torch.nn.CrossEntropyLoss)
+BCE_TORCH_DEFAULTS = get_defaults_from(torch.nn.BCELoss)
+BCE_LOGITS_TORCH_DEFAULTS = get_defaults_from(torch.nn.BCEWithLogitsLoss)
+MULTI_MARGIN_LOSS_TORCH_DEFAULTS = get_defaults_from(torch.nn.MultiMarginLoss)
+KL_DIV_LOSS_TORCH_DEFAULTS = get_defaults_from(torch.nn.KLDivLoss)
+HUBER_LOSS_TORCH_DEFAULTS = get_defaults_from(torch.nn.HuberLoss)
+SMOOTH_L1_LOSS_TORCH_DEFAULTS = get_defaults_from(torch.nn.SmoothL1Loss)
+L1_TORCH_DEFAULT = get_defaults_from(torch.nn.L1Loss)
+MSE_TORCH_DEFAULT = get_defaults_from(torch.nn.MSELoss)
 
 
 class LossConfig(ObjectConfig):
@@ -70,17 +81,9 @@ class NLLLossConfig(LossConfig, _WeightConfig):
     Config class for :py:class:`torch.nn.NLLLoss`.
     """
 
-    ignore_index: int
-
-    def __init__(
-        self,
-        weight: Union[
-            Optional[List[NonNegativeFloat]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(weight=weight, ignore_index=ignore_index, reduction=reduction)
+    ignore_index: int = NLL_TORCH_DEFAULTS["ignore_index"]
+    reduction: Reduction = NLL_TORCH_DEFAULTS["reduction"]
+    weight: Optional[List[NonNegativeFloat]] = NLL_TORCH_DEFAULTS["weight"]
 
     @field_validator("ignore_index")
     @classmethod
@@ -97,25 +100,10 @@ class CrossEntropyLossConfig(NLLLossConfig):
     Config class for :py:class:`torch.nn.CrossEntropyLoss`.
     """
 
-    label_smoothing: NonNegativeFloat
-
-    def __init__(
-        self,
-        weight: Union[
-            Optional[List[NonNegativeFloat]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        ignore_index: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        label_smoothing: Union[NonNegativeFloat, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super(NLLLossConfig, self).__init__(
-            weight=weight,
-            ignore_index=ignore_index,
-            reduction=reduction,
-            label_smoothing=label_smoothing,
-        )
+    label_smoothing: NonNegativeFloat = CROSS_ENTROPY_TORCH_DEFAULTS["label_smoothing"]
+    weight: Optional[List[NonNegativeFloat]] = CROSS_ENTROPY_TORCH_DEFAULTS["weight"]
+    ignore_index: int = CROSS_ENTROPY_TORCH_DEFAULTS["ignore_index"]
+    reduction: Reduction = CROSS_ENTROPY_TORCH_DEFAULTS["reduction"]
 
     @field_validator("label_smoothing")
     @classmethod
@@ -132,17 +120,8 @@ class BCELossConfig(LossConfig, _WeightConfig):
     Config class for :py:class:`torch.nn.BCELoss`.
     """
 
-    def __init__(
-        self,
-        weight: Union[
-            Optional[List[NonNegativeFloat]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            weight=weight,
-            reduction=reduction,
-        )
+    weight: Optional[List[NonNegativeFloat]] = BCE_TORCH_DEFAULTS["weight"]
+    reduction: Reduction = BCE_TORCH_DEFAULTS["reduction"]
 
     @field_validator("weight")
     @classmethod
@@ -159,23 +138,9 @@ class BCEWithLogitsLossConfig(BCELossConfig):
     Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
     """
 
-    pos_weight: Optional[List[Any]]
-
-    def __init__(
-        self,
-        weight: Union[
-            Optional[List[NonNegativeFloat]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        pos_weight: Union[
-            Optional[List[Any]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super(BCELossConfig, self).__init__(
-            weight=weight,
-            reduction=reduction,
-            pos_weight=pos_weight,
-        )
+    pos_weight: Optional[List[Any]] = BCE_LOGITS_TORCH_DEFAULTS["pos_weight"]
+    weight: Optional[List[NonNegativeFloat]] = BCE_LOGITS_TORCH_DEFAULTS["weight"]
+    reduction: Reduction = BCE_LOGITS_TORCH_DEFAULTS["reduction"]
 
     @field_validator("pos_weight")
     @classmethod
@@ -201,24 +166,12 @@ class MultiMarginLossConfig(LossConfig, _WeightConfig):
     Config class for :py:class:`torch.nn.MultiMarginLoss`.
     """
 
-    p: Order
-    margin: float
-
-    def __init__(
-        self,
-        p: Union[Order, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        margin: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        weight: Union[
-            Optional[List[NonNegativeFloat]], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            p=p,
-            margin=margin,
-            weight=weight,
-            reduction=reduction,
-        )
+    p: Order = MULTI_MARGIN_LOSS_TORCH_DEFAULTS["p"]
+    margin: float = MULTI_MARGIN_LOSS_TORCH_DEFAULTS["margin"]
+    weight: Optional[List[NonNegativeFloat]] = MULTI_MARGIN_LOSS_TORCH_DEFAULTS[
+        "weight"
+    ]
+    reduction: Reduction = MULTI_MARGIN_LOSS_TORCH_DEFAULTS["reduction"]
 
 
 class KLDivLossConfig(LossConfig):
@@ -226,17 +179,8 @@ class KLDivLossConfig(LossConfig):
     Config class for :py:class:`torch.nn.KLDivLoss`.
     """
 
-    log_target: bool
-
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        log_target: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-            log_target=log_target,
-        )
+    log_target: bool = KL_DIV_LOSS_TORCH_DEFAULTS["log_target"]
+    reduction: Reduction = KL_DIV_LOSS_TORCH_DEFAULTS["reduction"]
 
 
 class HuberLossConfig(LossConfig):
@@ -244,17 +188,8 @@ class HuberLossConfig(LossConfig):
     Config class for :py:class:`torch.nn.HuberLoss`.
     """
 
-    delta: PositiveFloat
-
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        delta: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-            delta=delta,
-        )
+    delta: PositiveFloat = HUBER_LOSS_TORCH_DEFAULTS["delta"]
+    reduction: Reduction = HUBER_LOSS_TORCH_DEFAULTS["reduction"]
 
 
 class SmoothL1LossConfig(LossConfig):
@@ -262,17 +197,8 @@ class SmoothL1LossConfig(LossConfig):
     Config class for :py:class:`torch.nn.SmoothL1Loss`.
     """
 
-    beta: NonNegativeFloat
-
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        beta: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-            beta=beta,
-        )
+    beta: NonNegativeFloat = SMOOTH_L1_LOSS_TORCH_DEFAULTS["beta"]
+    reduction: Reduction = SMOOTH_L1_LOSS_TORCH_DEFAULTS["reduction"]
 
 
 class L1LossConfig(LossConfig):
@@ -280,13 +206,7 @@ class L1LossConfig(LossConfig):
     Config class for :py:class:`torch.nn.L1Loss`.
     """
 
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-        )
+    reduction: Reduction = L1_TORCH_DEFAULT["reduction"]
 
 
 class MSELossConfig(LossConfig):
@@ -294,13 +214,7 @@ class MSELossConfig(LossConfig):
     Config class for :py:class:`torch.nn.MSELoss`.
     """
 
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-        )
+    reduction: Reduction = MSE_TORCH_DEFAULT["reduction"]
 
 
 def get_loss_function_config(

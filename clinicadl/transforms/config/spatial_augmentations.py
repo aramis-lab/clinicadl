@@ -1,5 +1,6 @@
 from typing import Tuple, Union
 
+import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
@@ -7,8 +8,9 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.utils.config import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
+from ..types import SpatialRange
 from .base import TransformConfig
 from .enum import (
     AnatomicalAxis,
@@ -26,6 +28,13 @@ __all__ = [
     "RandomAnisotropyConfig",
 ]
 
+RANDOM_FLIP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomFlip)
+RANDOM_AFFINE_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomAffine)
+RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS = get_defaults_from(
+    tio.transforms.RandomElasticDeformation
+)
+RANDOM_ANISOTROPY_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomAnisotropy)
+
 
 class RandomFlipConfig(TransformConfig):
     """
@@ -37,24 +46,8 @@ class RandomFlipConfig(TransformConfig):
         Tuple[NumericalAxis, ...],
         AnatomicalAxis,
         Tuple[AnatomicalAxis, ...],
-    ]
-    flip_probability: float
-
-    def __init__(
-        self,
-        axes: Union[
-            NumericalAxis,
-            Tuple[NumericalAxis, ...],
-            AnatomicalAxis,
-            Tuple[AnatomicalAxis, ...],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        flip_probability: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            axes=axes,
-            flip_probability=flip_probability,
-        )
+    ] = RANDOM_FLIP_TORCHIO_DEFAULTS["axes"]
+    flip_probability: float = RANDOM_FLIP_TORCHIO_DEFAULTS["flip_probability"]
 
     @field_validator("flip_probability", mode="after")
     @classmethod
@@ -65,58 +58,26 @@ class RandomFlipConfig(TransformConfig):
         return v
 
 
-SpatialRange = Union[
-    NonNegativeFloat,
-    tuple[float, float],
-    Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
-    Tuple[float, float, float, float, float, float],
-]
-
-
 class RandomAffineConfig(TransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomAffine`.
     """
 
-    scales: SpatialRange
-    degrees: SpatialRange
-    translation: SpatialRange
-    isotropic: bool
-    center: CenterMode
-    default_pad_value: Union[float, RandomAffinePaddingMode]
-    image_interpolation: InterpolationMode
-    label_interpolation: InterpolationMode
-    check_shape: bool
-
-    def __init__(
-        self,
-        scales: Union[SpatialRange, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        degrees: Union[SpatialRange, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        translation: Union[SpatialRange, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        isotropic: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        center: Union[CenterMode, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        default_pad_value: Union[float, RandomAffinePaddingMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        check_shape: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            scales=scales,
-            degrees=degrees,
-            translation=translation,
-            isotropic=isotropic,
-            center=center,
-            default_pad_value=default_pad_value,
-            image_interpolation=image_interpolation,
-            label_interpolation=label_interpolation,
-            check_shape=check_shape,
-        )
+    scales: SpatialRange = RANDOM_AFFINE_TORCHIO_DEFAULTS["scales"]
+    degrees: SpatialRange = RANDOM_AFFINE_TORCHIO_DEFAULTS["degrees"]
+    translation: SpatialRange = RANDOM_AFFINE_TORCHIO_DEFAULTS["translation"]
+    isotropic: bool = RANDOM_AFFINE_TORCHIO_DEFAULTS["isotropic"]
+    center: CenterMode = RANDOM_AFFINE_TORCHIO_DEFAULTS["center"]
+    default_pad_value: Union[
+        float, RandomAffinePaddingMode
+    ] = RANDOM_AFFINE_TORCHIO_DEFAULTS["default_pad_value"]
+    image_interpolation: InterpolationMode = RANDOM_AFFINE_TORCHIO_DEFAULTS[
+        "image_interpolation"
+    ]
+    label_interpolation: InterpolationMode = RANDOM_AFFINE_TORCHIO_DEFAULTS[
+        "label_interpolation"
+    ]
+    check_shape: bool = RANDOM_AFFINE_TORCHIO_DEFAULTS["check_shape"]
 
     @field_validator("scales", "degrees", "translation", mode="after")
     @classmethod
@@ -133,44 +94,22 @@ class RandomElasticDeformationConfig(TransformConfig):
     Config class for :py:class:`torchio.transforms.RandomElasticDeformation`.
     """
 
-    num_control_points: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
+    num_control_points: Union[
+        PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]
+    ] = RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS["num_control_points"]
     max_displacement: Union[
         NonNegativeFloat,
         Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
+    ] = RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS["max_displacement"]
+    locked_borders: LockedBordersMode = RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS[
+        "locked_borders"
     ]
-    locked_borders: LockedBordersMode
-    image_interpolation: InterpolationMode
-    label_interpolation: InterpolationMode
-
-    def __init__(
-        self,
-        num_control_points: Union[
-            PositiveInt,
-            Tuple[PositiveInt, PositiveInt, PositiveInt],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        max_displacement: Union[
-            NonNegativeFloat,
-            Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        locked_borders: Union[LockedBordersMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        label_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            num_control_points=num_control_points,
-            max_displacement=max_displacement,
-            locked_borders=locked_borders,
-            image_interpolation=image_interpolation,
-            label_interpolation=label_interpolation,
-        )
+    image_interpolation: InterpolationMode = (
+        RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS["image_interpolation"]
+    )
+    label_interpolation: InterpolationMode = (
+        RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS["label_interpolation"]
+    )
 
     @field_validator("num_control_points", mode="after")
     @classmethod
@@ -192,27 +131,15 @@ class RandomAnisotropyConfig(TransformConfig):
     Config class for :py:class:`torchio.transforms.RandomAnisotropy`.
     """
 
-    axes: Union[NumericalAxis, Tuple[NumericalAxis, ...]]
-    downsampling: Union[PositiveFloat, Tuple[PositiveFloat, PositiveFloat]]
-    image_interpolation: Union[InterpolationMode]
-
-    def __init__(
-        self,
-        axes: Union[NumericalAxis, Tuple[NumericalAxis, ...], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        downsampling: Union[
-            PositiveFloat, Tuple[PositiveFloat, PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        image_interpolation: Union[InterpolationMode, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            axes=axes,
-            downsampling=downsampling,
-            image_interpolation=image_interpolation,
-        )
+    axes: Union[
+        NumericalAxis, Tuple[NumericalAxis, ...]
+    ] = RANDOM_ANISOTROPY_TORCHIO_DEFAULTS["axes"]
+    downsampling: Union[
+        PositiveFloat, Tuple[PositiveFloat, PositiveFloat]
+    ] = RANDOM_ANISOTROPY_TORCHIO_DEFAULTS["downsampling"]
+    image_interpolation: InterpolationMode = RANDOM_ANISOTROPY_TORCHIO_DEFAULTS[
+        "image_interpolation"
+    ]
 
     @field_validator("downsampling", mode="after")
     @classmethod

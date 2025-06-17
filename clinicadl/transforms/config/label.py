@@ -1,13 +1,17 @@
 from typing import Optional, Union
 
+import torchio as tio
 from pydantic import field_validator
 
-from clinicadl.utils.config import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import Bounds, MaskingMethodConfig, TransformConfig
 from .enum import AnatomicalLabel
 
 __all__ = ["RemapLabelsConfig", "OneHotConfig"]
+
+REMAP_LABELS_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RemapLabels)
+ONE_HOT_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.OneHot)
 
 
 class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
@@ -17,32 +21,13 @@ class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
 
     remapping: dict[int, int]
 
-    def __init__(
-        self,
-        remapping: dict[int, int],
-        masking_method: Optional[
-            Union[str, AnatomicalLabel, Bounds, DefaultFromLibrary]
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            remapping=remapping,
-            masking_method=masking_method,
-        )
-
 
 class OneHotConfig(TransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneHot`.
     """
 
-    num_classes: int
-
-    def __init__(
-        self, num_classes: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES
-    ):
-        super().__init__(
-            num_classes=num_classes,
-        )
+    num_classes: int = ONE_HOT_TORCHIO_DEFAULTS["num_classes"]
 
     @field_validator("num_classes", mode="after")
     @classmethod
