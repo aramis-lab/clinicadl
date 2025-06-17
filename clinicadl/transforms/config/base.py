@@ -78,6 +78,7 @@ class TransformConfig(ObjectConfig):
 class OneOfConfig(TransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneOf`.
+    TODO: Explain why 2 lists are used for transforms and probabilities instead of a dictionary
     """
 
     transforms: List[Union[TransformConfig, List[TransformConfig]]]
@@ -85,7 +86,7 @@ class OneOfConfig(TransformConfig):
 
     def __init__(
         self,
-        transforms: List[TransformConfig],
+        transforms: List[Union[TransformConfig, List[TransformConfig]]],
         probabilities: Optional[List[NonNegativeFloat]] = None,
     ):
         super().__init__(

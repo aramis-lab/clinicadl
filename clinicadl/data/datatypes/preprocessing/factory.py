@@ -6,7 +6,7 @@ from .custom import Custom
 from .dti import DWIDTI
 from .flair import FlairLinear
 from .pet import PETLinear
-from .t1 import T1Linear
+from .t1w import T1Linear
 
 
 def get_preprocessing_config(

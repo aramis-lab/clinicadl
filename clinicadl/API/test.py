@@ -30,6 +30,7 @@ caps_directory = Path(
 sub_ses_t1 = caps_directory / "subjects_t1.tsv"  # 64 subjects
 
 preprocessing_t1 = T1Linear()
+
 transforms_image = Transforms(
     extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
 )
@@ -41,6 +42,7 @@ dataset_t1_image = CapsDataset(
     label="diagnosis",
 )
 dataset_t1_image.to_tensors(json_name="test_bis.json", n_proc=2)
+
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
