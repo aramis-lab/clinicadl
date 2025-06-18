@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Union
 
+import torch
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
@@ -31,6 +32,17 @@ __all__ = [
     "OneCycleLRConfig",
 ]
 
+CONSTANT_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.ConstantLR)
+EXPO_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.ExponentialLR)
+LINEAR_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.LinearLR)
+STEP_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.StepLR)
+MULTI_STEP_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.MultiStepLR)
+POLY_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.PolynomialLR)
+REDUCE_LR_ON_PLATEAU_DEFAULTS = get_defaults_from(
+    torch.optim.lr_scheduler.ReduceLROnPlateau
+)
+ONE_CYCLE_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.OneCycleLR)
+
 
 class ConstantLRConfig(
     LRSchedulerConfig, _FactorConfig, _TotalItersConfig, _LastEpochConfig
@@ -39,17 +51,9 @@ class ConstantLRConfig(
     Config class for :py:class:`torch.optim.lr_scheduler.ConstantLR`.
     """
 
-    def __init__(
-        self,
-        factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            factor=factor,
-            total_iters=total_iters,
-            last_epoch=last_epoch,
-        )
+    factor: PositiveFloat = CONSTANT_LR_DEFAULTS["factor"]
+    total_iters: PositiveInt = CONSTANT_LR_DEFAULTS["total_iters"]
+    last_epoch: int = CONSTANT_LR_DEFAULTS["last_epoch"]
 
 
 class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
@@ -57,15 +61,8 @@ class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     Config class for :py:class:`torch.optim.lr_scheduler.ExponentialLR`.
     """
 
-    def __init__(
-        self,
-        gamma: PositiveFloat,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            gamma=gamma,
-            last_epoch=last_epoch,
-        )
+    gamma: PositiveFloat
+    last_epoch: int = EXPO_LR_DEFAULTS["last_epoch"]
 
 
 class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
@@ -73,22 +70,10 @@ class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
     Config class for :py:class:`torch.optim.lr_scheduler.LinearLR`.
     """
 
-    start_factor: PositiveFloat
-    end_factor: PositiveFloat
-
-    def __init__(
-        self,
-        start_factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        end_factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            start_factor=start_factor,
-            end_factor=end_factor,
-            total_iters=total_iters,
-            last_epoch=last_epoch,
-        )
+    start_factor: PositiveFloat = LINEAR_LR_DEFAULTS["start_factor"]
+    end_factor: PositiveFloat = LINEAR_LR_DEFAULTS["end_factor"]
+    total_iters: PositiveInt = LINEAR_LR_DEFAULTS["total_iters"]
+    last_epoch: int = LINEAR_LR_DEFAULTS["last_epoch"]
 
 
 class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
@@ -97,18 +82,8 @@ class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """
 
     step_size: PositiveInt
-
-    def __init__(
-        self,
-        step_size: PositiveInt,
-        gamma: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            step_size=step_size,
-            gamma=gamma,
-            last_epoch=last_epoch,
-        )
+    gamma: PositiveFloat = STEP_LR_DEFAULTS["gamma"]
+    last_epoch: int = STEP_LR_DEFAULTS["last_epoch"]
 
 
 class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
@@ -117,18 +92,8 @@ class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     """
 
     milestones: List[PositiveInt]
-
-    def __init__(
-        self,
-        milestones: List[PositiveInt],
-        gamma: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            milestones=milestones,
-            gamma=gamma,
-            last_epoch=last_epoch,
-        )
+    gamma: PositiveFloat = MULTI_STEP_LR_DEFAULTS["gamma"]
+    last_epoch: int = MULTI_STEP_LR_DEFAULTS["last_epoch"]
 
     @field_validator("milestones", mode="after")
     @classmethod
@@ -144,19 +109,9 @@ class PolynomialLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig)
     Config class for :py:class:`torch.optim.lr_scheduler.PolynomialLR`.
     """
 
-    power: float
-
-    def __init__(
-        self,
-        total_iters: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        power: Union[float, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            total_iters=total_iters,
-            power=power,
-            last_epoch=last_epoch,
-        )
+    power: float = POLY_LR_DEFAULTS["power"]
+    total_iters: PositiveInt = POLY_LR_DEFAULTS["total_iters"]
+    last_epoch: int = POLY_LR_DEFAULTS["last_epoch"]
 
 
 class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
@@ -164,39 +119,16 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
     Config class for :py:class:`torch.optim.lr_scheduler.ReduceLROnPlateau`.
     """
 
-    mode: Mode
-    patience: NonNegativeInt
-    threshold: NonNegativeFloat
-    threshold_mode: ThresholdMode
-    cooldown: NonNegativeInt
-    min_lr: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    eps: NonNegativeFloat
-
-    def __init__(
-        self,
-        mode: Union[Mode, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        factor: Union[PositiveFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        patience: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        threshold: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        threshold_mode: Union[
-            ThresholdMode, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        cooldown: Union[NonNegativeInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        min_lr: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        eps: Union[NonNegativeFloat, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            mode=mode,
-            factor=factor,
-            patience=patience,
-            threshold=threshold,
-            threshold_mode=threshold_mode,
-            cooldown=cooldown,
-            min_lr=min_lr,
-            eps=eps,
-        )
+    mode: Mode = REDUCE_LR_ON_PLATEAU_DEFAULTS["mode"]
+    factor: PositiveFloat = REDUCE_LR_ON_PLATEAU_DEFAULTS["factor"]
+    patience: NonNegativeInt = REDUCE_LR_ON_PLATEAU_DEFAULTS["patience"]
+    threshold: NonNegativeFloat = REDUCE_LR_ON_PLATEAU_DEFAULTS["threshold"]
+    threshold_mode: ThresholdMode = REDUCE_LR_ON_PLATEAU_DEFAULTS["threshold_mode"]
+    cooldown: NonNegativeInt = REDUCE_LR_ON_PLATEAU_DEFAULTS["cooldown"]
+    min_lr: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = REDUCE_LR_ON_PLATEAU_DEFAULTS["min_lr"]
+    eps: NonNegativeFloat = REDUCE_LR_ON_PLATEAU_DEFAULTS["eps"]
 
     @field_validator("min_lr", mode="after")
     @classmethod
@@ -211,65 +143,22 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
 
     max_lr: Union[PositiveFloat, Dict[str, PositiveFloat]]
-    total_steps: Optional[PositiveInt]
-    epochs: Optional[PositiveInt]
-    steps_per_epoch: Optional[PositiveInt]
-    pct_start: NonNegativeFloat
-    anneal_strategy: AnnealingStrategy
-    cycle_momentum: bool
-    base_momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    max_momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    div_factor: PositiveFloat
-    final_div_factor: PositiveFloat
-    three_phase: bool
-
-    def __init__(
-        self,
-        max_lr: Union[PositiveFloat, Dict[str, PositiveFloat]],
-        total_steps: Union[Optional[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        epochs: Union[Optional[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        steps_per_epoch: Union[Optional[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pct_start: Union[NonNegativeFloat, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        anneal_strategy: Union[AnnealingStrategy, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        cycle_momentum: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        base_momentum: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        max_momentum: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        div_factor: Union[PositiveFloat, DefaultFromLibrary] = (DefaultFromLibrary.YES),
-        final_div_factor: Union[PositiveFloat, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        three_phase: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        last_epoch: Union[int, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            max_lr=max_lr,
-            total_steps=total_steps,
-            epochs=epochs,
-            steps_per_epoch=steps_per_epoch,
-            pct_start=pct_start,
-            anneal_strategy=anneal_strategy,
-            cycle_momentum=cycle_momentum,
-            base_momentum=base_momentum,
-            max_momentum=max_momentum,
-            div_factor=div_factor,
-            final_div_factor=final_div_factor,
-            three_phase=three_phase,
-            last_epoch=last_epoch,
-        )
+    total_steps: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["total_steps"]
+    epochs: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["epochs"]
+    steps_per_epoch: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["steps_per_epoch"]
+    pct_start: NonNegativeFloat = ONE_CYCLE_LR_DEFAULTS["pct_start"]
+    anneal_strategy: AnnealingStrategy = ONE_CYCLE_LR_DEFAULTS["anneal_strategy"]
+    cycle_momentum: bool = ONE_CYCLE_LR_DEFAULTS["cycle_momentum"]
+    base_momentum: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = ONE_CYCLE_LR_DEFAULTS["base_momentum"]
+    max_momentum: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = ONE_CYCLE_LR_DEFAULTS["max_momentum"]
+    div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["div_factor"]
+    final_div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["final_div_factor"]
+    three_phase: bool = ONE_CYCLE_LR_DEFAULTS["three_phase"]
+    last_epoch: int = ONE_CYCLE_LR_DEFAULTS["last_epoch"]
 
     @model_validator(mode="after")
     def check_n_steps(self):

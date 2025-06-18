@@ -7137,4 +7137,4 @@ zoo = ["clinicadl-zoo"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
-content-hash = "e9495d7d674860ff96543bc4063fdbdc3389b4b4a1057dbd954a1a3bd3d82f17"
+content-hash = "146189a31aa7b976fb720b7b7441fee2246859dc03ceea21028c28104ca4932e"

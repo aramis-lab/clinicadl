@@ -1,12 +1,13 @@
 from typing import Dict, List, Optional, Tuple, Union
 
+import torch
 from pydantic import (
     NonNegativeFloat,
     PositiveFloat,
     field_validator,
 )
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     OptimizerConfig,
@@ -23,6 +24,11 @@ __all__ = [
     "RMSpropConfig",
     "SGDConfig",
 ]
+ADA_DELTA_DEFAULTS = get_defaults_from(torch.optim.Adadelta)
+ADAGRAD_DEFAULTS = get_defaults_from(torch.optim.Adagrad)
+ADAM_DEFAULTS = get_defaults_from(torch.optim.Adam)
+RMSPROP_DEFAULTS = get_defaults_from(torch.optim.RMSprop)
+SGD_DEFAULTS = get_defaults_from(torch.optim.SGD)
 
 
 class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
@@ -30,48 +36,23 @@ class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
     Config class for :py:class:`torch.optim.Adadelta`.
     """
 
-    rho: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-
-    def __init__(
-        self,
-        *,
-        lr: Union[PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        freeze: Optional[Union[str, List[str]]] = None,
-        rho: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        eps: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        weight_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        foreach: Union[
-            Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        capturable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        maximize: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        differentiable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            lr=lr,
-            freeze=freeze,
-            rho=rho,
-            eps=eps,
-            weight_decay=weight_decay,
-            foreach=foreach,
-            capturable=capturable,
-            maximize=maximize,
-            differentiable=differentiable,
-        )
+    lr: Union[PositiveFloat, Dict[str, PositiveFloat]] = ADA_DELTA_DEFAULTS["lr"]
+    freeze: Optional[Union[str, List[str]]] = None
+    rho: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADA_DELTA_DEFAULTS[
+        "rho"
+    ]
+    eps: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADA_DELTA_DEFAULTS[
+        "eps"
+    ]
+    weight_decay: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = ADA_DELTA_DEFAULTS["weight_decay"]
+    foreach: Union[Optional[bool], Dict[str, Optional[bool]]] = ADA_DELTA_DEFAULTS[
+        "foreach"
+    ]
+    capturable: Union[bool, Dict[str, bool]] = ADA_DELTA_DEFAULTS["capturable"]
+    maximize: Union[bool, Dict[str, bool]] = ADA_DELTA_DEFAULTS["maximize"]
+    differentiable: Union[bool, Dict[str, bool]] = ADA_DELTA_DEFAULTS["differentiable"]
 
     @field_validator("rho")
     @classmethod
@@ -84,53 +65,24 @@ class AdagradConfig(OptimizerConfig, _EpsConfig, _FusedConfig):
     Config class for :py:class:`torch.optim.Adagrad`.
     """
 
-    lr_decay: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    initial_accumulator_value: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-
-    def __init__(
-        self,
-        *,
-        lr: Union[PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        freeze: Optional[Union[str, List[str]]] = None,
-        lr_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        weight_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        initial_accumulator_value: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        eps: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        foreach: Union[
-            Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        maximize: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        differentiable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        fused: Union[Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            lr=lr,
-            freeze=freeze,
-            lr_decay=lr_decay,
-            weight_decay=weight_decay,
-            initial_accumulator_value=initial_accumulator_value,
-            eps=eps,
-            foreach=foreach,
-            maximize=maximize,
-            differentiable=differentiable,
-            fused=fused,
-        )
+    lr: Union[PositiveFloat, Dict[str, PositiveFloat]] = ADAGRAD_DEFAULTS["lr"]
+    freeze: Optional[Union[str, List[str]]] = None
+    lr_decay: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADAGRAD_DEFAULTS[
+        "lr_decay"
+    ]
+    weight_decay: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = ADAGRAD_DEFAULTS["weight_decay"]
+    initial_accumulator_value: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = ADAGRAD_DEFAULTS["initial_accumulator_value"]
+    eps: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADAGRAD_DEFAULTS["eps"]
+    foreach: Union[Optional[bool], Dict[str, Optional[bool]]] = ADAGRAD_DEFAULTS[
+        "foreach"
+    ]
+    maximize: Union[bool, Dict[str, bool]] = ADAGRAD_DEFAULTS["maximize"]
+    differentiable: Union[bool, Dict[str, bool]] = ADAGRAD_DEFAULTS["differentiable"]
+    fused: Union[Optional[bool], Dict[str, Optional[bool]]] = ADAGRAD_DEFAULTS["fused"]
 
 
 class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
@@ -138,62 +90,22 @@ class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
     Config class for :py:class:`torch.optim.Adam`.
     """
 
+    lr: Union[PositiveFloat, Dict[str, PositiveFloat]] = ADAM_DEFAULTS["lr"]
+    freeze: Optional[Union[str, List[str]]] = None
     betas: Union[
         Tuple[NonNegativeFloat, NonNegativeFloat],
         Dict[str, Tuple[NonNegativeFloat, NonNegativeFloat]],
+    ] = ADAM_DEFAULTS["betas"]
+    eps: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADAM_DEFAULTS["eps"]
+    weight_decay: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = ADAM_DEFAULTS[
+        "weight_decay"
     ]
-    amsgrad: Union[bool, Dict[str, bool]]
-
-    def __init__(
-        self,
-        *,
-        lr: Union[PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        freeze: Optional[Union[str, List[str]]] = None,
-        betas: Union[
-            Tuple[NonNegativeFloat, NonNegativeFloat],
-            Dict[str, Tuple[NonNegativeFloat, NonNegativeFloat]],
-            DefaultFromLibrary,
-        ] = DefaultFromLibrary.YES,
-        eps: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        weight_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        amsgrad: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        foreach: Union[
-            Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        maximize: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        capturable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        differentiable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        fused: Union[Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            lr=lr,
-            freeze=freeze,
-            betas=betas,
-            eps=eps,
-            weight_decay=weight_decay,
-            amsgrad=amsgrad,
-            foreach=foreach,
-            capturable=capturable,
-            maximize=maximize,
-            differentiable=differentiable,
-            fused=fused,
-        )
+    amsgrad: Union[bool, Dict[str, bool]] = ADAM_DEFAULTS["amsgrad"]
+    foreach: Union[Optional[bool], Dict[str, Optional[bool]]] = ADAM_DEFAULTS["foreach"]
+    maximize: Union[bool, Dict[str, bool]] = ADAM_DEFAULTS["maximize"]
+    capturable: Union[bool, Dict[str, bool]] = ADAM_DEFAULTS["capturable"]
+    differentiable: Union[bool, Dict[str, bool]] = ADAM_DEFAULTS["differentiable"]
+    fused: Union[Optional[bool], Dict[str, Optional[bool]]] = ADAM_DEFAULTS["fused"]
 
     @field_validator("betas")
     @classmethod
@@ -206,57 +118,25 @@ class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumCon
     Config class for :py:class:`torch.optim.RMSprop`.
     """
 
-    alpha: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    centered: Union[bool, Dict[str, bool]]
-
-    def __init__(
-        self,
-        *,
-        lr: Union[PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        freeze: Optional[Union[str, List[str]]] = None,
-        alpha: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        eps: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        weight_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        momentum: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        centered: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        capturable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        foreach: Union[
-            Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        maximize: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        differentiable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            lr=lr,
-            freeze=freeze,
-            alpha=alpha,
-            eps=eps,
-            weight_decay=weight_decay,
-            momentum=momentum,
-            centered=centered,
-            capturable=capturable,
-            foreach=foreach,
-            maximize=maximize,
-            differentiable=differentiable,
-        )
+    lr: Union[PositiveFloat, Dict[str, PositiveFloat]] = RMSPROP_DEFAULTS["lr"]
+    freeze: Optional[Union[str, List[str]]] = None
+    alpha: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = RMSPROP_DEFAULTS[
+        "alpha"
+    ]
+    eps: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = RMSPROP_DEFAULTS["eps"]
+    weight_decay: Union[
+        NonNegativeFloat, Dict[str, NonNegativeFloat]
+    ] = RMSPROP_DEFAULTS["weight_decay"]
+    momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = RMSPROP_DEFAULTS[
+        "momentum"
+    ]
+    centered: Union[bool, Dict[str, bool]] = RMSPROP_DEFAULTS["centered"]
+    capturable: Union[bool, Dict[str, bool]] = RMSPROP_DEFAULTS["capturable"]
+    foreach: Union[Optional[bool], Dict[str, Optional[bool]]] = RMSPROP_DEFAULTS[
+        "foreach"
+    ]
+    maximize: Union[bool, Dict[str, bool]] = RMSPROP_DEFAULTS["maximize"]
+    differentiable: Union[bool, Dict[str, bool]] = RMSPROP_DEFAULTS["differentiable"]
 
 
 class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
@@ -264,50 +144,17 @@ class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
     Config class for :py:class:`torch.optim.SGD`.
     """
 
-    dampening: Union[float, Dict[str, float]]
-    nesterov: Union[bool, Dict[str, bool]]
-
-    def __init__(
-        self,
-        *,
-        lr: Union[PositiveFloat, Dict[str, PositiveFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        freeze: Optional[Union[str, List[str]]] = None,
-        momentum: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        dampening: Union[
-            float, Dict[str, float], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        weight_decay: Union[
-            NonNegativeFloat, Dict[str, NonNegativeFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        nesterov: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        maximize: Union[
-            bool, Dict[str, bool], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        foreach: Union[
-            Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        differentiable: Union[bool, Dict[str, bool], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        fused: Union[Optional[bool], Dict[str, Optional[bool]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            lr=lr,
-            freeze=freeze,
-            momentum=momentum,
-            dampening=dampening,
-            weight_decay=weight_decay,
-            nesterov=nesterov,
-            maximize=maximize,
-            foreach=foreach,
-            differentiable=differentiable,
-            fused=fused,
-        )
+    lr: Union[PositiveFloat, Dict[str, PositiveFloat]] = SGD_DEFAULTS["lr"]
+    freeze: Optional[Union[str, List[str]]] = None
+    momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = SGD_DEFAULTS[
+        "momentum"
+    ]
+    dampening: Union[float, Dict[str, float]] = SGD_DEFAULTS["dampening"]
+    weight_decay: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]] = SGD_DEFAULTS[
+        "weight_decay"
+    ]
+    nesterov: Union[bool, Dict[str, bool]] = SGD_DEFAULTS["nesterov"]
+    maximize: Union[bool, Dict[str, bool]] = SGD_DEFAULTS["maximize"]
+    foreach: Union[Optional[bool], Dict[str, Optional[bool]]] = SGD_DEFAULTS["foreach"]
+    differentiable: Union[bool, Dict[str, bool]] = SGD_DEFAULTS["differentiable"]
+    fused: Union[Optional[bool], Dict[str, Optional[bool]]] = SGD_DEFAULTS["fused"]
