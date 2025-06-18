@@ -70,8 +70,8 @@ def test_attentionunet(
 
         for i in range(1, len(channels)):
             down = getattr(net, f"down{i}").doubleconv
-            up = getattr(net, f"doubleconv{i}")
-            att = getattr(net, f"attention{i}")
+            up = getattr(net, f"up{i}").doubleconv
+            att = getattr(net, f"up{i}").attention
             assert down[0].conv.in_channels == channels[i - 1]
             assert down[1].conv.out_channels == channels[i]
             assert att.W_g[0].out_channels == channels[i - 1] // 2
@@ -87,9 +87,7 @@ def test_attentionunet(
         with pytest.raises(AttributeError):
             down = getattr(net, f"down{i+1}")
         with pytest.raises(AttributeError):
-            getattr(net, f"doubleconv{i+1}")
-        with pytest.raises(AttributeError):
-            getattr(net, f"attention{i+1}")
+            getattr(net, f"up{i+1}")
 
 
 @pytest.mark.parametrize("act", [act for act in ActFunction])
@@ -124,11 +122,11 @@ def test_activation_parameters():
     assert isinstance(net.down1.doubleconv[0].adn.A, torch.nn.ELU)
     assert net.down1.doubleconv[0].adn.A.alpha == 0.1
 
-    assert isinstance(net.upsample1[1].adn.A, torch.nn.ELU)
-    assert net.upsample1[1].adn.A.alpha == 0.1
+    assert isinstance(net.up1.upsample[1].adn.A, torch.nn.ELU)
+    assert net.up1.upsample[1].adn.A.alpha == 0.1
 
-    assert isinstance(net.doubleconv1[1].adn.A, torch.nn.ELU)
-    assert net.doubleconv1[1].adn.A.alpha == 0.1
+    assert isinstance(net.up1.doubleconv[1].adn.A, torch.nn.ELU)
+    assert net.up1.doubleconv[1].adn.A.alpha == 0.1
 
     assert isinstance(net.output_act, torch.nn.ELU)
     assert net.output_act.alpha == 0.2

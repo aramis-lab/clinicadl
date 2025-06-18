@@ -33,9 +33,9 @@ class PosEmbedType(str, Enum):
 
 class ViT(nn.Module):
     """
-    Vision Transformer based on the [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale]
-    (https://arxiv.org/pdf/2010.11929) paper.
-    Adapted from [torchvision's implementation](https://pytorch.org/vision/main/models/vision_transformer.html).
+    Vision Transformer, based on :footcite:t:`Dosovitskiy2021`.
+
+    Adapted from :torchvision:`torchvision's implementation <models/vision_transformer.html>`.
 
     The user can customize the patch size, the embedding dimension, the number of transformer blocks, the number of
     attention heads, as well as other parameters like the type of position embedding.
@@ -43,86 +43,96 @@ class ViT(nn.Module):
     Parameters
     ----------
     in_shape : Sequence[int]
-        sequence of integers stating the dimension of the input tensor (minus batch dimension).
+        Dimensions of the input tensor (without batch dimension).
     patch_size : Union[Sequence[int], int]
-        sequence of integers stating the patch size (minus batch and channel dimensions). If int, the same
+        Patch size (without batch and channel dimensions). If ``int``, the same
         patch size will be used for all dimensions.
-        Patch size must divide image size in all dimensions.
+        ``patch_size`` must divide ``in_shape`` in all spatial dimensions.
     num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the patch embeddings after the last transformer block will be returned.
+        Number of output variables after the last linear layer.\n
+        If ``None``, the patch embeddings after the last transformer block will be returned.
     embedding_dim : int (optional, default=768)
-        size of the embedding vectors. Must be divisible by `num_heads` as each head will be responsible for
-        a part of the embedding vectors. Default to 768, as for 'ViT-Base' in the original paper.
+        Size of the embedding vectors. Must be divisible by ``num_heads`` as each head will be responsible for
+        a part of the embedding vectors. Default to ``768``, as ``ViT-Base`` in the original paper.
     num_layers : int (optional, default=12)
-        number of consecutive transformer blocks. Default to 12, as for 'ViT-Base' in the original paper.
+        Number of consecutive transformer blocks. Default to ``12``, as ``ViT-Base`` in the original paper.
     num_heads : int (optional, default=12)
-        number of heads in the self-attention block. Must divide `embedding_size`.
-        Default to 12, as for 'ViT-Base' in the original paper.
+        Number of heads in the self-attention blocks. Must divide ``embedding_dim``.
+        Default to ``12``, as ``ViT-Base`` in the original paper.
     mlp_dim : int (optional, default=3072)
-        size of the hidden layer in the MLP part of the transformer block. Default to 3072, as for 'ViT-Base'
+        Size of the hidden layer in the MLP part of the transformer block. Default to ``3072``, as ``ViT-Base``
         in the original paper.
     pos_embed_type : Optional[Union[str, PosEmbedType]] (optional, default="learnable")
-        type of position embedding. Can be either `"learnable"`, `"sincos"` or `None`.\n
-        - `learnable`: the position embeddings are parameters that will be learned during the training
-        process.
-        - `sincos`: the position embeddings are fixed and determined with sinus and cosinus formulas (based on Dosovitskiy et al.,
-        'Attention Is All You Need, https://arxiv.org/pdf/1706.03762). Only implemented for 2D and 3D images. With `sincos`
-        position embedding, `embedding_dim` must be divisible by 4 for 2D images and by 6 for 3D images.
-        - `None`: no position embeddings are used.\n
-        Default to `"learnable"`, as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default=ActFunction.TANH)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
-        and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.\n
-        Default to `"tanh"`, as in the original paper.
+        Type of position embedding. Can be either ``learnable``, ``sincos`` or ``None``:
+
+        - ``learnable``: the position embeddings are parameters that will be learned during the training
+          process.
+        - ``sincos``: the position embeddings are fixed and determined with sinus and cosinus formulas described in
+          :footcite:t:`Vaswani2023`. Only implemented for 2D and 3D images. With ``sincos``
+          position embedding, ``embedding_dim`` must be divisible by ``4`` for 2D images, and by ``6`` for 3D images.
+        - ``None``: no position embeddings are used.\n
+
+        Default to ``learnable``, as in the original paper.
+    output_act : Optional[ActivationParameters] (optional, default="tanh")
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.\n
+        Default is ``tanh``, as in the original paper.
     dropout : Optional[float] (optional, default=None)
-        dropout ratio. If None, no dropout.
+        Dropout ratio. If ``None``, no dropout.
 
     Examples
     --------
-    >>> ViT(
-            in_shape=(3, 60, 64),
-            patch_size=4,
-            num_outputs=2,
-            embedding_dim=32,
-            num_layers=2,
-            num_heads=4,
-            mlp_dim=128,
-            output_act="softmax",
-        )
-    ViT(
-        (conv_proj): Conv2d(3, 32, kernel_size=(4, 4), stride=(4, 4))
-        (encoder): Encoder(
-            (dropout): Dropout(p=0.0, inplace=False)
-            (layers): ModuleList(
-                (0-1): 2 x EncoderBlock(
-                    (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
-                    (self_attention): MultiheadAttention(
-                        (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
-                    )
-                    (dropout): Dropout(p=0.0, inplace=False)
-                    (norm2): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
-                    (mlp): MLPBlock(
-                        (0): Linear(in_features=32, out_features=128, bias=True)
-                        (1): GELU(approximate='none')
-                        (2): Dropout(p=0.0, inplace=False)
-                        (3): Linear(in_features=128, out_features=32, bias=True)
-                        (4): Dropout(p=0.0, inplace=False)
+
+    .. code-block:: python
+
+        >>> ViT(
+                in_shape=(3, 60, 64),
+                patch_size=4,
+                num_outputs=2,
+                embedding_dim=32,
+                num_layers=2,
+                num_heads=4,
+                mlp_dim=128,
+                output_act="softmax",
+            )
+        ViT(
+            (conv_proj): Conv2d(3, 32, kernel_size=(4, 4), stride=(4, 4))
+            (encoder): Encoder(
+                (dropout): Dropout(p=0.0, inplace=False)
+                (layers): ModuleList(
+                    (0-1): 2 x EncoderBlock(
+                        (norm1): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                        (self_attention): MultiheadAttention(
+                            (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+                        )
+                        (dropout): Dropout(p=0.0, inplace=False)
+                        (norm2): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+                        (mlp): MLPBlock(
+                            (0): Linear(in_features=32, out_features=128, bias=True)
+                            (1): GELU(approximate='none')
+                            (2): Dropout(p=0.0, inplace=False)
+                            (3): Linear(in_features=128, out_features=32, bias=True)
+                            (4): Dropout(p=0.0, inplace=False)
+                        )
                     )
                 )
+                (norm): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
             )
-            (norm): LayerNorm((32,), eps=1e-06, elementwise_affine=True)
+            (fc): Sequential(
+                (out): Linear(in_features=32, out_features=2, bias=True)
+                (output_act): Softmax(dim=None)
+            )
         )
-        (fc): Sequential(
-            (out): Linear(in_features=32, out_features=2, bias=True)
-            (output_act): Softmax(dim=None)
-        )
-    )
+
+    References
+    ----------
+    .. footbibliography::
+
     """
 
     def __init__(

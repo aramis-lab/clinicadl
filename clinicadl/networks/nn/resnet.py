@@ -283,7 +283,7 @@ def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> 
 
 class ResNet(GeneralResNet):
     """
-    ResNet, based on the :footcite:t:`He2015`.
+    ResNet, based on :footcite:t:`He2015`.
 
     Adapted from :py:class:`MONAI's implementation <monai.networks.nets.ResNet>`.
 
@@ -310,7 +310,8 @@ class ResNet(GeneralResNet):
         Default to ``(2, 2, 2, 2)``, as in ``ResNet-18``.
     n_features : Sequence[int] (optional, default=(64, 128, 256, 512))
         Number of output feature maps for each ResNet layer. The length of ``n_features`` must be equal to the length
-        of ``n_res_blocks``. Default to ``(64, 128, 256, 512)``, as in ``ResNet-18``.
+        of ``n_res_blocks``. All elements of ``n_features`` must be divisible by ``bottleneck_reduction``.\n
+        Default to ``(64, 128, 256, 512)``, as in ``ResNet-18``.
     init_conv_size : Union[Sequence[int], int] (optional, default=7)
         Kernel size for the first convolution.
         If ``tuple``, it will be understood as the values for each dimension.
@@ -334,6 +335,13 @@ class ResNet(GeneralResNet):
     output_act : Optional[ActivationParameters] (optional, default=None)
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
+
+    Raises
+    ------
+    ValueError
+        If ``len(n_features)!=len(n_res_blocks)``.
+    ValueError
+        If some elements of ``n_features`` are not divisible by ``bottleneck_reduction``.
 
     Examples
     --------

@@ -58,6 +58,7 @@ extlinks = {
     ),
     "torchio": ("https://torchio.readthedocs.io/%s", None),
     "torch": ("https://pytorch.org/docs/stable/%s", None),
+    "torchvision": ("https://docs.pytorch.org/vision/main/%s", None),
     "monai": ("https://docs.monai.io/en/stable/%s", None),
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
@@ -76,6 +77,7 @@ sphinx_gallery_conf = {
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
+bibtex_reference_style = "author_year"
 
 # -- Hide function with @overload ---------------------------------------
 
