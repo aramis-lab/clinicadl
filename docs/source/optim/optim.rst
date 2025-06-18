@@ -1,7 +1,9 @@
 .. _optim:
 
-Optimization module
-====
+Optimization
+=============
+.. currentmodule:: clinicadl.optim.
+
 TODO : TO COMPLETe
 
 .. toctree::

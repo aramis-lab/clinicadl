@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx_autodoc_typehints",
     "sphinx.ext.napoleon",
-    "matplotlib.sphinxext.plot_directive",
+    # "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.duration",
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
@@ -201,7 +201,6 @@ def rewrite_class_signature(
     for field_name, field_type in annots.items():
         simplified = simplify_type(field_type)
         field = obj.model_fields[field_name]
-        print(field)
         if field.default is not None and field.default != ...:
             default = repr(field.default)
             part = f"{field_name}: {simplified} = {default}"

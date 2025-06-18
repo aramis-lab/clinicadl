@@ -1,5 +1,5 @@
-Optimizers
-==========
+LR schedulers
+==============
 .. currentmodule:: clinicadl.optim.lr_schedulers.config
 
 Natively supported learning rate schedulers in ClinicaDL
