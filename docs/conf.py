@@ -26,6 +26,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
+    "sphinx.ext.napoleon",
     "sphinx_design",
     "sphinx_copybutton",
     "sphinxcontrib.bibtex",
