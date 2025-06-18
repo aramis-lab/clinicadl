@@ -1,4 +1,4 @@
-.. _splitter:
+.. _split:
 
 Splits
 ======
@@ -11,13 +11,13 @@ and then use this split to split the dataset.
 
 1. To find a split from a DataFrame, you may be interested in:
 
-- :py:func:`~clinicadl.splitter.make_split`: to find a single training-validation/test split; 
-- :py:func:`~clinicadl.splitter.make_kfold`: to find multiple training-validation splits for K-Fold
+- :py:func:`~clinicadl.split.make_split`: to find a single training-validation/test split; 
+- :py:func:`~clinicadl.split.make_kfold`: to find multiple training-validation splits for K-Fold
   cross-validation.
 
 .. code:: python
 
-    from clinicadl.splitter import make_split, make_kfold
+    from clinicadl.split import make_split, make_kfold
 
     # 'mycaps/participants_sessions.tsv' looks like this
     #     participant_id	session_id	age sex	diagnosis
@@ -42,16 +42,16 @@ and then use this split to split the dataset.
     )
 
 2. Then, to split a dataset between a training and a validation sets, you will need to read the splits you made with ``make_split``
-or ``make_kfold``, using :py:class:`~clinicadl.splitter.SingleSplit` or
-:py:class:`~clinicadl.splitter.KFold` respectively.
+or ``make_kfold``, using :py:class:`~clinicadl.split.SingleSplit` or
+:py:class:`~clinicadl.split.KFold` respectively.
 
-Both ``SingleSplit`` and ``KFold`` will return a :py:class:`~clinicadl.splitter.Split` object,
-containing the training and validation sets. :py:class:`~clinicadl.splitter.Split` is the only
+Both ``SingleSplit`` and ``KFold`` will return a :py:class:`~clinicadl.split.Split` object,
+containing the training and validation sets. :py:class:`~clinicadl.split.Split` is the only
 data format accepted by ClinicaDL's ``Trainer``.
 
 .. code:: python
 
-    from clinicadl.splitter import KFold, SingleSplit
+    from clinicadl.split import KFold, SingleSplit
     from clinicadl.data.datasets import CapsDataset
 
     dataset = CapsDataset("mycaps", data="mycaps/participants_sessions.tsv")
@@ -72,7 +72,7 @@ data format accepted by ClinicaDL's ``Trainer``.
 
 .. note::
     If you want to split your dataset between a training and a test set, without having to
-    manipulate a :py:class:`~clinicadl.splitter.Split` object, you can just create two different
+    manipulate a :py:class:`~clinicadl.split.Split` object, you can just create two different
     datasets:
 
     .. code::
@@ -89,7 +89,7 @@ data format accepted by ClinicaDL's ``Trainer``.
         test_set = dataset.subset(split_dir / "test_baseline.tsv")
 
     However, if you want to use ClinicaDL's ``Trainer``, you'll have to use the
-    :py:class:`~clinicadl.splitter.Split` object.
+    :py:class:`~clinicadl.split.Split` object.
 
 .. toctree::
     :maxdepth: 1

@@ -1,4 +1,4 @@
-Optimizers
+Metrics
 ==========
 .. currentmodule:: clinicadl.metrics.config
 

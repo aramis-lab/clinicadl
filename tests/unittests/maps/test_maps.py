@@ -14,7 +14,7 @@ from clinicadl.maps.split_dir.best_metric.best_metric import (
 )
 from clinicadl.maps.split_dir.split_dir import SplitDir, TmpDir, TrainingLogs
 from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
-from clinicadl.splitter import Split
+from clinicadl.split import Split
 from clinicadl.utils.exceptions import (
     ClinicaDLConfigurationError,
 )

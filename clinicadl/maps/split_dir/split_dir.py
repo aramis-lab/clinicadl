@@ -17,7 +17,7 @@ from clinicadl.dictionary.words import (
     TMP,
     TRAINING,
 )
-from clinicadl.splitter.split import Split
+from clinicadl.split.split import Split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 

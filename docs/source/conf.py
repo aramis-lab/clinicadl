@@ -32,6 +32,12 @@ extensions = [
     "sphinx_design",
     "sphinx.ext.extlinks",
     "sphinx_autodoc_typehints",
+    "sphinx.ext.napoleon",
+    "matplotlib.sphinxext.plot_directive",
+    "sphinx.ext.duration",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.viewcode",
+    "sphinx_copybutton",
 ]
 
 templates_path = ["_templates"]
@@ -44,9 +50,16 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "torchvision": ("https://pytorch.org/vision/main", None),
+    "nibabel": ("https://nipy.org/nibabel", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
 }
 extlinks = {
     "pathlib.Path": (
+        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
+        None,
+    ),
+    "Path": (
         "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
         None,
     ),
@@ -65,7 +78,7 @@ language = "en"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-# typehints_use_signature = True  # replaces the signature with type hints
+typehints_use_signature = True  # replaces the signature with type hints
 typehints_use_signature_return = True
 typehints_document_rtype = False
 
@@ -127,7 +140,6 @@ def simplify_type(tp):
     # Handle Annotated (Pydantic constraints)
     if origin is Annotated:
         base, *constraints = get_args(tp)
-        print(get_args(tp))
         # Sinon, fallback avec les contraintes explicites
         parts = base.__name__ if hasattr(base, "__name__") else str(base)
         for constraint in constraints:

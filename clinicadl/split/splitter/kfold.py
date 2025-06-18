@@ -5,8 +5,8 @@ from pydantic import PositiveInt, field_validator
 
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.dictionary.words import SPLIT
-from clinicadl.splitter.split import Split
-from clinicadl.splitter.splitter.splitter import (
+from clinicadl.split.split import Split
+from clinicadl.split.splitter.splitter import (
     Splitter,
     SplitterConfig,
     SubjectsSessionsSplit,
@@ -63,7 +63,7 @@ class KFold(Splitter):
     """
     To handle a K-Fold cross-validator.
 
-    This object will read a split directory returned by :py:func:`~clinicadl.splitter.make_kfold`,
+    This object will read a split directory returned by :py:func:`~clinicadl.split.make_kfold`,
     and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or
     :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`,
     :py:class:`~clinicadl.data.datasets.UnpairedDataset`) using :py:meth:`~KFold.get_splits`,
@@ -72,14 +72,14 @@ class KFold(Splitter):
     Parameters
     ----------
     split_dir : Path
-        The split directory, returned by :py:func:`~clinicadl.splitter.make_kfold``
+        The split directory, returned by :py:func:`~clinicadl.split.make_kfold``
 
     FileNotFoundError
         If ``split_dir`` does not exist or if a required file is missing in this directory.
 
     See Also
     --------
-    - :py:class:`~clinicadl.splitter.SingleSplit`
+    - :py:class:`~clinicadl.split.SingleSplit`
     """
 
     @property
@@ -105,7 +105,7 @@ class KFold(Splitter):
         Yields
         ------
         Split
-            The train and validation datasets for each requested split, in a :py:class:`~clinicadl.splitter.Split`
+            The train and validation datasets for each requested split, in a :py:class:`~clinicadl.split.Split`
             object.
 
         Raises

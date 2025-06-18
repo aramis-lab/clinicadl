@@ -7,7 +7,7 @@ import pytest
 
 from clinicadl.data.datasets import CapsDataset, UnpairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.splitter.make_splits.utils import (
+from clinicadl.split.make_splits.utils import (
     extract_baseline,
     find_available_split_dir,
     read_and_format_data,

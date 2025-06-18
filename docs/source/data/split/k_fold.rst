@@ -2,7 +2,7 @@
 
 K-Fold
 ======
-.. currentmodule:: clinicadl.splitter
+.. currentmodule:: clinicadl.split
 
 K-Fold splitter
 ---------------
