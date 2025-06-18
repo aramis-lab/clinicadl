@@ -13,6 +13,6 @@ class Flair(Modality):
     @property
     def modality(self) -> str:
         """
-        The modality, always 'flair' here.
+        The modality, always 'FLAIR' here.
         """
         return ImageModality.FLAIR.value

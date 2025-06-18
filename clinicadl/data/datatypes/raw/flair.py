@@ -16,6 +16,6 @@ class RawFlair(RawData, Flair):
             FileType: A FileType object containing the pattern and description.
         """
         return FileType(
-            pattern="anat/sub-*_ses-*_flair.nii*",
+            pattern="anat/sub-*_ses-*_FLAIR.nii*",
             description="Raw FLAIR T2w MRI NIfTI images",
         )
