@@ -28,7 +28,7 @@ def test_good_flair():
     assert flair_data.name == "flair-linear"
     assert (
         flair_data.file_type.pattern
-        == "flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_flair.nii*"
+        == "flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii*"
     )
     assert (
         flair_data.file_type.description

@@ -17,7 +17,7 @@ def test_good_custom():
 def test_good_flair():
     flair_data = RawFlair()
     assert flair_data.modality == "FLAIR"
-    assert flair_data.file_type.pattern == "anat/sub-*_ses-*_flair.nii*"
+    assert flair_data.file_type.pattern == "anat/sub-*_ses-*_FLAIR.nii*"
     assert flair_data.file_type.description == "Raw FLAIR T2w MRI NIfTI images"
     assert flair_data.file_type.needed_pipeline is None
 
