@@ -17,7 +17,7 @@ def test_good_custom():
 
 def test_good_flair():
     flair_data = Flair()
-    assert flair_data.modality == "flair"
+    assert flair_data.modality == "FLAIR"
 
 
 def test_good_t1():
