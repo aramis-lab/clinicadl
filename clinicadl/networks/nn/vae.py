@@ -25,6 +25,8 @@ class VAE(nn.Module):
     latent distribution, the :wikipedia:`reparametrization trick <Variational_autoencoder#Reparameterization>`
     is performed with :py:func:`~VAE.reparameterize`.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     .. note::
         Please note that the order of Activation, Dropout and Normalization, defined with the
         argument ``adn_ordering`` in ``conv_args``, is the same for the encoder and the decoder.

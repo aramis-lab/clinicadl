@@ -1,10 +1,11 @@
-from enum import Enum
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence
 
 from clinicadl.utils.factories import get_args_and_defaults
 
 from .layers.utils import ActivationParameters
 from .resnet import GeneralResNet, ResNet, ResNetBlockType
+
+__all__ = ["SEResNet", "SEResNet50", "SEResNet101", "SEResNet152", "check_se_channels"]
 
 
 class SEResNet(GeneralResNet):
@@ -13,6 +14,8 @@ class SEResNet(GeneralResNet):
 
     ``SEResNet`` is very similar to :py:class:`~clinicadl.networks.nn.ResNet`, except that
     Squeeze-and-Excitation blocks are added before residual connections.
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
 
     Parameters
     ----------
@@ -94,6 +97,10 @@ class SEResNet(GeneralResNet):
             )
         )
 
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ResNet`
+
     References
     ----------
     .. footbibliography::
@@ -125,6 +132,150 @@ class SEResNet(GeneralResNet):
         )
 
 
+class SEResNet50(ResNet):
+    """
+    SEResNet-50, from :footcite:t:`Hu2019`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.SEResNet`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 4, 6, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+
+
+class SEResNet101(ResNet):
+    """
+    SEResNet-101, from :footcite:t:`Hu2019`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.SEResNet`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 4, 23, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+
+
+class SEResNet152(ResNet):
+    """
+    SEResNet-152, from :footcite:t:`Hu2019`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.SEResNet`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 8, 36, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+
+
 def check_se_channels(n_features: Sequence[int], se_reduction: int) -> None:
     """
     Checks that the output of residual blocks always have a number of channels greater
@@ -136,84 +287,3 @@ def check_se_channels(n_features: Sequence[int], se_reduction: int) -> None:
                 f"elements of n_features must be greater or equal to se_reduction. Got {n} in n_features "
                 f"and se_reduction={se_reduction}"
             )
-
-
-class SOTAResNet(str, Enum):
-    """Supported SEResNet networks."""
-
-    SE_RESNET_50 = "SEResNet-50"
-    SE_RESNET_101 = "SEResNet-101"
-    SE_RESNET_152 = "SEResNet-152"
-
-
-def get_seresnet(
-    name: Union[str, SOTAResNet],
-    num_outputs: Optional[int],
-    output_act: ActivationParameters = None,
-    pretrained: bool = False,
-) -> SEResNet:
-    """
-    To get a Squeeze-and-Excitation ResNet implemented in the [Squeeze-and-Excitation Networks](https://arxiv.org/pdf/
-    1709.01507) paper.
-
-    Only the last fully connected layer will be changed to match `num_outputs`.
-
-    .. warning:: `SEResNet-50`, `SEResNet-101` and `SEResNet-152` only works with 2D images with 3 channels.
-
-    Note: pretrained weights are not yet available for these networks.
-
-    Parameters
-    ----------
-    model : Union[str, SOTAResNet]
-        the name of the SEResNet. Available networks are `SEResNet-50`, `SEResNet-101` and `SEResNet-152`.
-    num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer will be returned.
-    output_act : ActivationParameters (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
-        and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    pretrained : bool (optional, default=False)
-        pretrained networks are not yet available for SE-ResNets. Leave this argument to False.
-
-    Returns
-    -------
-    SEResNet
-        the network.
-    """
-    if pretrained is not False:
-        raise ValueError(
-            "Pretrained networks are not yet available for SE-ResNets. Please leave "
-            "'pretrained' to False."
-        )
-
-    name = SOTAResNet(name)
-    if name == SOTAResNet.SE_RESNET_50:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 4, 6, 3)
-        n_features = (256, 512, 1024, 2048)
-    elif name == SOTAResNet.SE_RESNET_101:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 4, 23, 3)
-        n_features = (256, 512, 1024, 2048)
-    elif name == SOTAResNet.SE_RESNET_152:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 8, 36, 3)
-        n_features = (256, 512, 1024, 2048)
-
-    # pylint: disable=possibly-used-before-assignment
-    resnet = SEResNet(
-        spatial_dims=2,
-        in_channels=3,
-        num_outputs=num_outputs,
-        n_res_blocks=n_res_blocks,
-        block_type=block_type,
-        n_features=n_features,
-        output_act=output_act,
-    )
-
-    return resnet

@@ -13,6 +13,8 @@ class AttentionUNet(UNet):
     The user can customize the number of encoding blocks, the number of channels in each block, as well as other parameters
     like the activation function.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     .. warning::
         ``AttentionUNet`` works only with images whose dimensions are high enough powers of 2. More precisely, if ``n`` is the number
         of max pooling operation in your ``UNet`` (which is equal to ``len(channels)-1``), the image must have :math:`2^{k}`
@@ -158,6 +160,10 @@ class AttentionUNet(UNet):
             )
             (output_act): Softmax(dim=1)
         )
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.UNet`
 
     References
     ----------

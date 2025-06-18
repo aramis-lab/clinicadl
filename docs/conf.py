@@ -38,14 +38,15 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autodoc_member_order = "bysource"
 intersphinx_mapping = {
-    "torchio": ("https://torchio.readthedocs.io", None),
-    "monai": ("https://docs.monai.io/en/stable", None),
-    "torch": ("https://pytorch.org/docs/stable", None),
-    "pandas": ("https://pandas.pydata.org/docs", None),
+    "torchio": ("https://torchio.readthedocs.io/", None),
+    "monai": ("https://docs.monai.io/en/stable/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
+    "torchvision": ("https://pytorch.org/vision/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 extlinks = {
     "pathlib.Path": (
-        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
+        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths/%s",
         None,
     ),
     "tutorials": (

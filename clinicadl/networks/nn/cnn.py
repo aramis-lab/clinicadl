@@ -15,6 +15,8 @@ class CNN(nn.Sequential):
     This network is a simple aggregation of a :py:class:`~clinicadl.networks.nn.ConvEncoder`
     and a :py:class:`~clinicadl.networks.nn.MLP`.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     Parameters
     ----------
     in_shape : Sequence[int]

@@ -44,14 +44,53 @@ Common neural networks
 From literature
 ***************
 
+DenseNets
+^^^^^^^^^
+
 .. autosummary::
    :nosignatures:
-   :template: autosummary/function.rst
+   :template: autosummary/class.rst
 
-    get_densenet
-    get_resnet
-    get_seresnet
-    get_vit
+   DenseNet121
+   DenseNet161
+   DenseNet169
+   DenseNet201
+
+ResNets
+^^^^^^^
+
+.. autosummary::
+   :nosignatures:
+   :template: autosummary/class.rst
+
+   ResNet18
+   ResNet34
+   ResNet50
+   ResNet101
+   ResNet152
+
+Squeeze-and-Excitation ResNets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :nosignatures:
+   :template: autosummary/class.rst
+
+   SEResNet50
+   SEResNet101
+   SEResNet152
+
+Vision Transformers
+^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :nosignatures:
+   :template: autosummary/class.rst
+
+   ViTB16
+   ViTB32
+   ViTL16
+   ViTL32
 
 :mod:`clinicadl.networks.config`
 --------------------------------

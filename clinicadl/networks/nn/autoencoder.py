@@ -37,6 +37,8 @@ class AutoEncoder(nn.Sequential):
     An ``AutoEncoder`` is an aggregation of a :py:class:`~clinicadl.networks.nn.CNN` and a
     :py:class:`~clinicadl.networks.nn.Generator`.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     .. note::
         Please note that the order of Activation, Dropout and Normalization, defined with the
         argument ``adn_ordering`` in ``conv_args``, is the same for the encoder and the decoder.

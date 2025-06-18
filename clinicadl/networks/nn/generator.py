@@ -16,6 +16,8 @@ class Generator(nn.Sequential):
     This network is a simple aggregation of a :py:class:`~clinicadl.networks.nn.MLP`
     and a :py:class:`~clinicadl.networks.nn.ConvDecoder`.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     Parameters
     ----------
     latent_size : int

@@ -34,6 +34,8 @@ class ConvDecoder(nn.Sequential):
     It is the symmetric of :py:class:`~clinicadl.networks.nn.ConvEncoder`, where convolutions are replaced
     by transposed convolutions, and pooling layers by unpooling layers.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     Parameters
     ----------
     spatial_dims : int

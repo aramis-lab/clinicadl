@@ -23,6 +23,16 @@ from .layers.utils import ActFunction, ActivationParameters
 from .layers.vit import Encoder
 from .utils import ensure_tuple
 
+__all__ = [
+    "ViT",
+    "ViTB16",
+    "ViTB32",
+    "ViTL16",
+    "ViTL32",
+    "check_embedding_dim",
+    "check_patch_size",
+]
+
 
 class PosEmbedType(str, Enum):
     """Available position embedding types for ViT."""
@@ -39,6 +49,8 @@ class ViT(nn.Module):
 
     The user can customize the patch size, the embedding dimension, the number of transformer blocks, the number of
     attention heads, as well as other parameters like the type of position embedding.
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
 
     Parameters
     ----------
@@ -272,6 +284,253 @@ class ViT(nn.Module):
         nn.init.trunc_normal_(self.conv_proj.weight, std=math.sqrt(1 / fan_in))
         nn.init.zeros_(self.conv_proj.bias)
 
+    def _load_weights(self, url: str) -> None:
+        """To load weights from torchvision."""
+        pretrained_dict = load_state_dict_from_url(url, progress=True)
+
+        if not self.classification:
+            del pretrained_dict["class_token"]
+            pretrained_dict["encoder.pos_embedding"] = pretrained_dict[
+                "encoder.pos_embedding"
+            ][:, 1:]  # remove class token position embedding
+
+        fc_layers = deepcopy(self.fc)
+        self.fc = None
+        self.load_state_dict(_state_dict_adapter(pretrained_dict))
+        self.fc = fc_layers
+
+
+class ViTB16(ViT):
+    """
+    ViT-B/16, from :footcite:t:`Dosovitskiy2021`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images of size (224, 224), with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool (optional, default=False)
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.vit_b_16`.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ViT`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            in_shape=(3, 224, 224),
+            patch_size=16,
+            num_outputs=num_outputs,
+            embedding_dim=768,
+            mlp_dim=3072,
+            num_heads=12,
+            num_layers=12,
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ViT_B_16_Weights.DEFAULT.url)
+
+
+class ViTB32(ViT):
+    """
+    ViT-B/32, from :footcite:t:`Dosovitskiy2021`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images of size (224, 224), with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool (optional, default=False)
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.vit_b_32`.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ViT`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            in_shape=(3, 224, 224),
+            patch_size=32,
+            num_outputs=num_outputs,
+            embedding_dim=768,
+            mlp_dim=3072,
+            num_heads=12,
+            num_layers=12,
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ViT_B_32_Weights.DEFAULT.url)
+
+
+class ViTL16(ViT):
+    """
+    ViT-L/16, from :footcite:t:`Dosovitskiy2021`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images of size (224, 224), with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool (optional, default=False)
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.vit_l_16`.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ViT`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            in_shape=(3, 224, 224),
+            patch_size=16,
+            num_outputs=num_outputs,
+            embedding_dim=1024,
+            mlp_dim=4096,
+            num_heads=16,
+            num_layers=24,
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ViT_L_16_Weights.DEFAULT.url)
+
+
+class ViTL32(ViT):
+    """
+    ViT-L/32, from :footcite:t:`Dosovitskiy2021`.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images of size (224, 224), with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters] (optional, default=None)
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool (optional, default=False)
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.vit_l_32`.
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ViT`
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            in_shape=(3, 224, 224),
+            patch_size=32,
+            num_outputs=num_outputs,
+            embedding_dim=1024,
+            mlp_dim=4096,
+            num_heads=16,
+            num_layers=24,
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ViT_L_32_Weights.DEFAULT.url)
+
 
 def check_embedding_dim(embedding_dim: int, num_heads: int) -> None:
     """
@@ -294,117 +553,6 @@ def check_patch_size(patch_size: Tuple[int, ...], img_size: Tuple[int, ...]) -> 
                 f"img_size should be divisible by patch_size. Got img_size={img_size} "
                 f" and patch_size={patch_size}"
             )
-
-
-class SOTAViT(str, Enum):
-    """Supported ViT networks."""
-
-    B_16 = "ViT-B/16"
-    B_32 = "ViT-B/32"
-    L_16 = "ViT-L/16"
-    L_32 = "ViT-L/32"
-
-
-def get_vit(
-    name: Union[str, SOTAViT],
-    num_outputs: Optional[int],
-    output_act: ActivationParameters = None,
-    pretrained: bool = False,
-) -> ViT:
-    """
-    To get a Vision Transformer implemented in the [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale]
-    (https://arxiv.org/pdf/2010.11929) paper.
-
-    Only the last fully connected layer will be changed to match `num_outputs`.
-
-    The user can also use the pretrained models from `torchvision`. Note that the last fully connected layer will not
-    used pretrained weights, as it is task specific.
-
-    .. warning:: `ViT-B/16`, `ViT-B/32`, `ViT-L/16` and `ViT-L/32` work with 2D images of size (224, 224), with 3 channels.
-
-    Parameters
-    ----------
-    model : Union[str, SOTAViT]
-        The name of the Vision Transformer. Available networks are `ViT-B/16`, `ViT-B/32`, `ViT-L/16` and `ViT-L/32`.
-    num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer will be returned.
-    output_act : ActivationParameters (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
-        and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    pretrained : bool (optional, default=False)
-        whether to use pretrained weights. The pretrained weights used are the default ones from [torchvision](https://
-        pytorch.org/vision/main/models/vision_transformer.html).
-
-    Returns
-    -------
-    ViT
-        The network, with potentially pretrained weights.
-    """
-    name = SOTAViT(name)
-    if name == SOTAViT.B_16:
-        in_shape = (3, 224, 224)
-        patch_size = 16
-        embedding_dim = 768
-        mlp_dim = 3072
-        num_layers = 12
-        num_heads = 12
-        model_url = ViT_B_16_Weights.DEFAULT.url
-    elif name == SOTAViT.B_32:
-        in_shape = (3, 224, 224)
-        patch_size = 32
-        embedding_dim = 768
-        mlp_dim = 3072
-        num_layers = 12
-        num_heads = 12
-        model_url = ViT_B_32_Weights.DEFAULT.url
-    elif name == SOTAViT.L_16:
-        in_shape = (3, 224, 224)
-        patch_size = 16
-        embedding_dim = 1024
-        mlp_dim = 4096
-        num_layers = 24
-        num_heads = 16
-        model_url = ViT_L_16_Weights.DEFAULT.url
-    elif name == SOTAViT.L_32:
-        in_shape = (3, 224, 224)
-        patch_size = 32
-        embedding_dim = 1024
-        mlp_dim = 4096
-        num_layers = 24
-        num_heads = 16
-        model_url = ViT_L_32_Weights.DEFAULT.url
-
-    # pylint: disable=possibly-used-before-assignment
-    vit = ViT(
-        in_shape=in_shape,
-        patch_size=patch_size,
-        num_outputs=num_outputs,
-        embedding_dim=embedding_dim,
-        mlp_dim=mlp_dim,
-        num_heads=num_heads,
-        num_layers=num_layers,
-        output_act=output_act,
-    )
-
-    if pretrained:
-        pretrained_dict = load_state_dict_from_url(model_url, progress=True)
-        if num_outputs is None:
-            del pretrained_dict["class_token"]
-            pretrained_dict["encoder.pos_embedding"] = pretrained_dict[
-                "encoder.pos_embedding"
-            ][:, 1:]  # remove class token position embedding
-        fc_layers = deepcopy(vit.fc)
-        vit.fc = None
-        vit.load_state_dict(_state_dict_adapter(pretrained_dict))
-        vit.fc = fc_layers
-
-    return vit
 
 
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:

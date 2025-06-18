@@ -31,6 +31,8 @@ class ConvEncoder(nn.Sequential):
     Fully convolutional encoder network with convolutional, pooling, normalization, activation
     and dropout layers.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     Parameters
     ----------
     spatial_dims : int
