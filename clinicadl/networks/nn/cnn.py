@@ -27,7 +27,7 @@ class CNN(nn.Sequential):
         The arguments for the convolutional part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.ConvEncoder`, except ``spatial_dims`` and ``in_channels``
         that are specified here via ``in_shape``. So, the only **mandatory argument is** ``channels``.
-    mlp_args : Optional[Dict[str, Any]] (optional, default=None)
+    mlp_args : Optional[Dict[str, Any]], default=None
         The arguments for the MLP part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is inferred
         from the output of the convolutional part, and ``num_outputs`` that is set here.

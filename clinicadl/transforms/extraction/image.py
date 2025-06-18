@@ -60,7 +60,7 @@ class Image(Extraction):
         ----------
         data_point : DataPoint
             The DataPoint to perform extraction on.
-        sample_index : int (optional, default=0)
+        sample_index : int, default=0
             Index indicating the sample to extract. For compatibility,
             must be left to 0 here.
 

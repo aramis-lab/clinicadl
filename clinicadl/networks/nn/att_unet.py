@@ -28,11 +28,11 @@ class AttentionUNet(UNet):
         Number of channels in the input image.
     out_channels : int
         Number of output channels.
-    channels : Sequence[int] (optional, default=(64, 128, 256, 512, 1024))
+    channels : Sequence[int], default=(64, 128, 256, 512, 1024)
         Number of channels in each UNet block. Thus, this parameter also controls
         the number of UNet blocks (equal to the length of the sequence). The length ``channels`` should be no less than ``2``.\n
         # Default to ``(64, 128, 256, 512, 1024)``, as in the original UNet paper\\ :footcite:p:`Ronneberger2015`.
-    act : ActivationParameters (optional, default="relu")
+    act : ActivationParameters, default="relu"
         The activation function used, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -41,10 +41,10 @@ class AttentionUNet(UNet):
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
-    dropout : Optional[float] (optional, default=None)
+    dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
 
     Examples

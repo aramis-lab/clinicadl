@@ -283,28 +283,28 @@ class ResNet(GeneralResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    block_type : Union[str, ResNetBlockType] (optional, default="basic")
+    block_type : Union[str, ResNetBlockType], default="basic"
         Type of residual block. Either ``basic`` or ``bottleneck``. Default to ``basic``, as in ``ResNet-18``.
-    n_res_blocks : Sequence[int] (optional, default=(2, 2, 2, 2))
+    n_res_blocks : Sequence[int], default=(2, 2, 2, 2)
         Number of residual block in each ResNet layer. A ResNet layer refers here to a set of residual blocks
         between two downsamplings. The length of ``n_res_blocks`` thus determines the number of ResNet layers.
         Default to ``(2, 2, 2, 2)``, as in ``ResNet-18``.
-    n_features : Sequence[int] (optional, default=(64, 128, 256, 512))
+    n_features : Sequence[int], default=(64, 128, 256, 512)
         Number of output feature maps for each ResNet layer. The length of ``n_features`` must be equal to the length
         of ``n_res_blocks``. All elements of ``n_features`` must be divisible by ``bottleneck_reduction``.\n
         Default to ``(64, 128, 256, 512)``, as in ``ResNet-18``.
-    init_conv_size : Union[Sequence[int], int] (optional, default=7)
+    init_conv_size : Union[Sequence[int], int], default=7
         Kernel size for the first convolution.
         If ``tuple``, it will be understood as the values for each dimension.
         Default to ``7``, as in the original paper.
-    init_conv_stride : Union[Sequence[int], int] (optional, default=2)
+    init_conv_stride : Union[Sequence[int], int], default=2
         Stride for the first convolution.
         If ``tuple``, it will be understood as the values for each dimension.
         Default to ``2``, as in the original paper.
-    bottleneck_reduction : int (optional, default=4)
+    bottleneck_reduction : int, default=4
         If ``block_type="bottleneck"``, ``bottleneck_reduction`` determines the reduction factor for the number
         of feature maps in bottleneck layers (1x1 convolutions). Default to ``4``, as in the original paper.
-    act : ActivationParameters (optional, default=("relu", {"inplace": True}))
+    act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -313,7 +313,7 @@ class ResNet(GeneralResNet):
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
 
@@ -473,7 +473,7 @@ class ResNet18(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -481,7 +481,7 @@ class ResNet18(ResNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.resnet18`.
 
@@ -530,7 +530,7 @@ class ResNet34(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -538,7 +538,7 @@ class ResNet34(ResNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.resnet34`.
 
@@ -587,7 +587,7 @@ class ResNet50(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -595,7 +595,7 @@ class ResNet50(ResNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.resnet50`.
 
@@ -644,7 +644,7 @@ class ResNet101(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -652,7 +652,7 @@ class ResNet101(ResNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.resnet101`.
 
@@ -701,7 +701,7 @@ class ResNet152(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -709,7 +709,7 @@ class ResNet152(ResNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.resnet152`.
 

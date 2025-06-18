@@ -56,7 +56,7 @@ class UnpairedDataset(Dataset):
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be stacked.
-    oversample: bool (optional, default=False)
+    oversample: bool, default=False
         Strategy to adopt when the datasets have different sizes:
 
         - if ``oversample=True``: randomly replicate samples in smaller datasets so that they reach the

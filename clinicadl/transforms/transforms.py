@@ -49,20 +49,20 @@ class Transforms(ClinicaDLConfig):
 
     Parameters
     ----------
-    extraction : Optional[Extraction], (optional, default=None)
+    extraction : Optional[Extraction], default=None
         The extraction applied. See :ref:`api_extraction`. Default is ``None``, which means
         that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
         will output full images.
-    image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+    image_transforms : list[Union[Transform, TransformConfig]], default=[]
         A list of transformations to apply on the whole image, before extraction.
-    sample_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+    sample_transforms : list[Union[Transform, TransformConfig]], default=[]
         A list of transformations to apply on samples (patches or slices).
 
     .. note::
         If ``extraction=None``, ``image_transforms`` and ``sample_transforms`` are the same.
         They will therefore be merged in ``image_transforms``.
 
-    augmentations : list[Union[Transform, TransformConfig]], (optional, default=[])
+    augmentations : list[Union[Transform, TransformConfig]], default=[]
         A list of augmentation transforms, to apply on samples, only during training.
 
     .. _examples:

@@ -187,7 +187,7 @@ class TensorConversion:
         json_name : str
             the name of the json file (without `.json` suffix) in the folder 'tensor_extraction'
             of the caps directory.
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             whether to checks if the image transforms potentially applied before tensor conversion
             match the current ones. Useful when you use custom transforms (i.e. transforms
             not in ClinicaDL), which cannot be checked.\n
@@ -199,7 +199,7 @@ class TensorConversion:
             .. warning::
                 **To use carefully**. You must be sure that the transforms match.
 
-        load_also : list[str] (optional, default=[])
+        load_also : list[str], default=[]
             to load additional information potentially stored in `.pt` files. By default, only the image, the label, and masks
             mentioned in ``masks`` of the CapsDataset will be loaded.
 
@@ -270,27 +270,27 @@ class TensorConversion:
 
         Parameters
         ----------
-        json_name : str (optional, default="tensor_conversion")
+        json_name : str, default="tensor_conversion"
             the name of the json file where the information on the conversion
             (e.g. transforms applied) will be stored. The full path of
             the json file will be `{caps_directory}/prepare_data/tensor_conversion/{json_name}.json`.\n
             If the file already exists, TensorConversion will try to merge the old
             tensor conversion with the new one, if they concern the same type of data (e.g. same
             preprocessing, same transforms applied), otherwise an error will be raised.
-        save_transforms : bool (optional, default=True)
+        save_transforms : bool, default=True
             whether to save raw images as tensors (False) or images on which were applied image
             transforms (True).
-        n_proc : int (optional, default=1)
+        n_proc : int, default=1
             number of cores to use to parallelize the conversion.
-        ignore_spacing : bool (optional, default=False)
+        ignore_spacing : bool, default=False
             whether to ignore the check made on voxel spacings. If False, it will make sure that all
             images have the same voxel spacing.
             ..warning::In most medical image applications, all the images should have the same
             voxel spacing. Be sure that you don't care before disabling this check.
-        raise_warnings : bool (optional, default=True)
+        raise_warnings : bool, default=True
             whether to raise different kinds of warnings detected during conversion (e.g. images with
             different shapes).
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             If ``json_name`` already exists, TensorConversion will try to merge the old
             tensor conversion with the new one. ``check_transforms`` determines whether transforms
             should be checked during the merger. If ``True``, TensorConversion will check that

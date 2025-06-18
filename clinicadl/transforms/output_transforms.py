@@ -23,7 +23,7 @@ class OutputTransforms(ClinicaDLConfig):
 
     Attributes
     ----------
-    transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+    transforms : list[Union[Transform, TransformConfig]], default=[]
         A list of transformations to apply on the outputs.
     """
 

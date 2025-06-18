@@ -63,18 +63,18 @@ class ViT(nn.Module):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.\n
         If ``None``, the patch embeddings after the last transformer block will be returned.
-    embedding_dim : int (optional, default=768)
+    embedding_dim : int, default=768
         Size of the embedding vectors. Must be divisible by ``num_heads`` as each head will be responsible for
         a part of the embedding vectors. Default to ``768``, as ``ViT-Base`` in the original paper.
-    num_layers : int (optional, default=12)
+    num_layers : int, default=12
         Number of consecutive transformer blocks. Default to ``12``, as ``ViT-Base`` in the original paper.
-    num_heads : int (optional, default=12)
+    num_heads : int, default=12
         Number of heads in the self-attention blocks. Must divide ``embedding_dim``.
         Default to ``12``, as ``ViT-Base`` in the original paper.
-    mlp_dim : int (optional, default=3072)
+    mlp_dim : int, default=3072
         Size of the hidden layer in the MLP part of the transformer block. Default to ``3072``, as ``ViT-Base``
         in the original paper.
-    pos_embed_type : Optional[Union[str, PosEmbedType]] (optional, default="learnable")
+    pos_embed_type : Optional[Union[str, PosEmbedType]], default="learnable"
         Type of position embedding. Can be either ``learnable``, ``sincos`` or ``None``:
 
         - ``learnable``: the position embeddings are parameters that will be learned during the training
@@ -85,7 +85,7 @@ class ViT(nn.Module):
         - ``None``: no position embeddings are used.\n
 
         Default to ``learnable``, as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default="tanh")
+    output_act : Optional[ActivationParameters], default="tanh"
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -94,7 +94,7 @@ class ViT(nn.Module):
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``tanh``, as in the original paper.
-    dropout : Optional[float] (optional, default=None)
+    dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
 
     Examples
@@ -316,7 +316,7 @@ class ViTB16(ViT):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -324,7 +324,7 @@ class ViTB16(ViT):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.vit_b_16`.
 
@@ -374,7 +374,7 @@ class ViTB32(ViT):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -382,7 +382,7 @@ class ViTB32(ViT):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.vit_b_32`.
 
@@ -432,7 +432,7 @@ class ViTL16(ViT):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -440,7 +440,7 @@ class ViTL16(ViT):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.vit_l_16`.
 
@@ -490,7 +490,7 @@ class ViTL32(ViT):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -498,7 +498,7 @@ class ViTL32(ViT):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.vit_l_32`.
 

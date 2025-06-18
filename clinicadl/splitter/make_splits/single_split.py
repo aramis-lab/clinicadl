@@ -54,7 +54,7 @@ def make_split(
     data: Union[pd.DataFrame, Path, str],
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to split.
-    n_test : PositiveFloat, (optional, default=0.2)
+    n_test : PositiveFloat, default=0.2
         A positive float. If ``>=1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all
         participants to have in the test data.
 
@@ -62,24 +62,24 @@ def make_split(
             Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
             of your data in the training set, but rather that you have 80% of you participants in the training set.
 
-    output_dir : Optional[Path, str], (optional, default=None)
+    output_dir : Optional[Path, str], default=None
         Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
         If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
-    subset_name : str, (optional, default="test")
+    subset_name : str, default="test"
         Name for the test subset.
-    stratification : Union[List[str], bool], (optional, default=False)
+    stratification : Union[List[str], bool], default=False
         Whether to perform stratification. If ``True``, the columns ``"age"`` and ``"sex"`` will be used for stratification.
         If a list of ``str`` is passed, these columns will be used.
-    p_categorical_threshold : float, (optional, default=0.80)
+    p_categorical_threshold : float, default=0.80
         Threshold for acceptable categorical stratification. Must be **between 0 and 1**.
-    p_continuous_threshold : float, (optional, default=0.80)
+    p_continuous_threshold : float, default=0.80
         Threshold for acceptable continuous stratification. Must be **between 0 and 1**.
-    longitudinal : bool, (optional, default=False)
+    longitudinal : bool, default=False
         Whether to include only the baseline sessions in the test set (``longitudinal=False``). If ``True``, all the sessions
         of the test participants will be included. No matter this argument, all sessions are always kept in the training set.
-    n_try_max : int, (optional, default=1000)
+    n_try_max : int, default=1000
         Maximum number of attempts to find a valid split.
-    seed : Optional[int], (optional, default=None)
+    seed : Optional[int], default=None
         Seed to control the randomness of the split. Useful for reproducibility.
 
     Returns

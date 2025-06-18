@@ -41,17 +41,17 @@ class DenseNet(nn.Sequential):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    n_dense_layers : Sequence[int] (optional, default=(6, 12, 24, 16))
+    n_dense_layers : Sequence[int], default=(6, 12, 24, 16)
         Number of dense layers in each dense block. Thus, this parameter also defines the number of dense blocks
         (equal to the length of the sequence). Default is set to the value of ``DenseNet-121``.
-    init_features : int (optional, default=64)
+    init_features : int, default=64
         Number of feature maps after the initial convolution. Default is set to ``64``, as in the original paper.
-    growth_rate : int (optional, default=32)
+    growth_rate : int, default=32
         How many feature maps to add at each dense layer. Default is set to ``32``, as in the original paper.
-    bottleneck_factor : int (optional, default=4)
+    bottleneck_factor : int, default=4
         Multiplicative factor for bottleneck layers (1x1 convolutions). The output of of these bottleneck layers will
         have ``bottleneck_factor * growth_rate`` feature maps. Default is ``4``, as in the original paper.
-    act : ActivationParameters (optional, default=("relu", {"inplace": True}))
+    act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -60,10 +60,10 @@ class DenseNet(nn.Sequential):
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
-    dropout : Optional[float] (optional, default=None)
+    dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
 
     Examples
@@ -236,7 +236,7 @@ class DenseNet121(DenseNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -244,7 +244,7 @@ class DenseNet121(DenseNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.densenet121`.
 
@@ -293,7 +293,7 @@ class DenseNet161(DenseNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -301,7 +301,7 @@ class DenseNet161(DenseNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.densenet161`.
 
@@ -350,7 +350,7 @@ class DenseNet169(DenseNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -358,7 +358,7 @@ class DenseNet169(DenseNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.densenet169`.
 
@@ -407,7 +407,7 @@ class DenseNet201(DenseNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -415,7 +415,7 @@ class DenseNet201(DenseNet):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    pretrained : bool (optional, default=False)
+    pretrained : bool, default=False
         Whether to use pretrained weights. The pretrained weights used are the default ones
         from :py:func:`torchvision.models.densenet201`.
 

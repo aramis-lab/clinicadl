@@ -136,13 +136,13 @@ class Split(ClinicaDLConfig):
 
         Parameters
         ----------
-        dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
+        dataloader_config : Optional[DataLoaderConfig], default=None
             A pre-configured :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
             If passed, the arguments in this configuration object will prevail, otherwise
             the following arguments will be used.
-        batch_size : int (optional, default=1)
+        batch_size : int, default=1
             Batch size for the DataLoader. Used if ``dataloader_config`` is not provided.
-        sampling_weights : Optional[str] (optional, default=None)
+        sampling_weights : Optional[str], default=None
             Name of the column in the dataframe of the dataset where to find the sampling
             weights. The column must contain ``float`` values.
 
@@ -150,7 +150,7 @@ class Split(ClinicaDLConfig):
             in this column of the dataframe.
 
             Used if ``dataloader_config`` is not provided.
-        shuffle : bool (optional, default=True)
+        shuffle : bool, default=True
             Whether to shuffle the data.
 
             .. note::
@@ -159,17 +159,17 @@ class Split(ClinicaDLConfig):
                 replacement, no matter the value of ``shuffle``.
 
             Used if ``dataloader_config`` is not provided.
-        num_workers : int (optional, default=0)
+        num_workers : int, default=0
             Number of workers for data loading. Used if ``dataloader_config`` is not provided.
-        pin_memory : bool (optional, default=True)
+        pin_memory : bool, default=True
             Whether to copy Tensors into device/CUDA pinned memory before returning them.
             Used if ``dataloader_config`` is not provided.
-        drop_last : bool (optional, default=False)
+        drop_last : bool, default=False
             Whether to drop the last incomplete batch. Used if ``dataloader_config`` is not provided.
-        prefetch_factor : Optional[int] (optional, default=None)
+        prefetch_factor : Optional[int], default=None
             Number of batches loaded in advance by each worker. Can't be passed if ``num_workers=0``.
             Used if ``dataloader_config`` is not provided.
-        persistent_workers : bool (optional, default=False)
+        persistent_workers : bool, default=False
             Whether to maintain the worker processes alive at the end of an epoch.
             Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
 
@@ -224,13 +224,13 @@ class Split(ClinicaDLConfig):
 
         Parameters
         ----------
-        dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
+        dataloader_config : Optional[DataLoaderConfig], default=None
             A pre-configured :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
             If passed, the arguments in this configuration object will prevail, otherwise
             the following arguments will be used.
-        batch_size : int (optional, default=1)
+        batch_size : int, default=1
             Batch size for the DataLoader. Used if ``dataloader_config`` is not provided.
-        sampling_weights : Optional[str] (optional, default=None)
+        sampling_weights : Optional[str], default=None
             Name of the column in the dataframe of the dataset where to find the sampling
             weights. The column must contain ``float`` values.
 
@@ -238,7 +238,7 @@ class Split(ClinicaDLConfig):
             in this column of the dataframe.
 
             Used if ``dataloader_config`` is not provided.
-        shuffle : bool (optional, default=False)
+        shuffle : bool, default=False
             Whether to shuffle the data.
 
             .. note::
@@ -247,17 +247,17 @@ class Split(ClinicaDLConfig):
                 replacement, no matter the value of ``shuffle``.
 
             Used if ``dataloader_config`` is not provided.
-        num_workers : int (optional, default=0)
+        num_workers : int, default=0
             Number of workers for data loading. Used if ``dataloader_config`` is not provided.
-        pin_memory : bool (optional, default=True)
+        pin_memory : bool, default=True
             Whether to copy Tensors into device/CUDA pinned memory before returning them.
             Used if ``dataloader_config`` is not provided.
-        drop_last : bool (optional, default=False)
+        drop_last : bool, default=False
             Whether to drop the last incomplete batch. Used if ``dataloader_config`` is not provided.
-        prefetch_factor : Optional[int] (optional, default=None)
+        prefetch_factor : Optional[int], default=None
             Number of batches loaded in advance by each worker. Can't be passed if ``num_workers=0``.
             Used if ``dataloader_config`` is not provided.
-        persistent_workers : bool (optional, default=False)
+        persistent_workers : bool, default=False
             Whether to maintain the worker processes alive at the end of an epoch.
             Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
 

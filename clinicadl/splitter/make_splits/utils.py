@@ -63,7 +63,7 @@ def extract_baseline(
     ----------
     df : pd.DataFrame
         Input dataframe, with at least two columns "participant_id" and "session_id".
-    columns : Optional[list[str]], (optional, default=None)
+    columns : Optional[list[str]], default=None
         Which column to include in the output dataframe. As ``df`` can contain several times
         the same (participant_id, baseline_session) (e.g. for ConcatDataset), extract_baseline will
         check that there is indeed a unique value per column for each (participant_id, baseline_session).
@@ -134,9 +134,9 @@ def write_to_tsv(
         Directory where the TSV files will be saved.
     subset_name : str
         Name of the subset (e.g., "train", "test", etc.) used in the output filenames.
-    all_df : Optional[pd.DataFrame], (optional, default=None)
+    all_df : Optional[pd.DataFrame], default=None
         Full dataset including all sessions, used to retrieve longitudinal data.
-    longitudinal : bool, (optional, default=True)
+    longitudinal : bool, default=True
         Whether to save the longitudinal data subset.
 
     Raises

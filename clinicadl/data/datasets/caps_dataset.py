@@ -72,10 +72,10 @@ class CapsDataset(Dataset):
     ----------
     caps_directory : PathType
         Path to the CAPS directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
-    preprocessing : Preprocessing, (optional, default=T1Linear())
+    preprocessing : Preprocessing, default=T1Linear()
         Description of the preprocessing steps applied to the data. Default is Clinica's ``t1-linear``
         pipeline. See :ref:`api_data_types` to know supported preprocessings.
-    data : Optional[DataType], (optional, default=None)
+    data : Optional[DataType], default=None
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
         regression).\n
@@ -90,7 +90,7 @@ class CapsDataset(Dataset):
         Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not
         to name your own TSV files with a name starting with "overview".
 
-    label : Optional[str], (optional, default=None)
+    label : Optional[str], default=None
         A potential label related to the image.\n
         If ``label`` and ``data`` are not ``None``, CapsDataset will look for a column with that name in ``data``.
         It expects to find the associated column, with floats (regression) or integers (classification).\n
@@ -100,10 +100,10 @@ class CapsDataset(Dataset):
         ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz`` and ``label="seg"``, it will look for the associated
         mask in ``sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz``.\n
         If ``None``, no label will be used (e.g. reconstruction).
-    transforms : Transforms, (optional, default=Transforms())
+    transforms : Transforms, default=Transforms()
         Transformation pipeline to apply to the data during loading. Default will only apply NaN removal
         to images. Have a look at :py:class:`clinicadl.transforms.Transforms`.
-    masks : Optional[list[str | PathType]], (optional, default=None)
+    masks : Optional[list[str | PathType]], default=None
         Potential masks that are useful to compute some transforms.
         A mask can be either a suffix (image-specific masks) or a file in the ``masks`` folder of
         ``caps_directory`` (common masks).\n
@@ -268,13 +268,13 @@ class CapsDataset(Dataset):
             If the file already exists, ClinicaDL will try to merge the old
             tensor conversion with the new one, if they concern the same type of data (same
             preprocessing, same transforms applied, etc.), otherwise an error will be raised.
-        save_transforms : bool (optional, default=True)
+        save_transforms : bool, default=True
             Whether to save raw images as tensors (``False``) or images on which were applied image
             transforms (``True``). Saving transformed images will speed up dataloading. However transformed
             images are specific to a set of transforms, so they cannot be used by any future CapsDataset.
-        n_proc : int (optional, default=1)
+        n_proc : int, default=1
             Number of cores to use to parallelize the conversion.
-        ignore_spacing : bool (optional, default=False)
+        ignore_spacing : bool, default=False
             Whether to ignore the check made on voxel spacings. If ``False``, it will make sure that all
             images have the same voxel spacing before converting them.
 
@@ -282,11 +282,11 @@ class CapsDataset(Dataset):
                 In most medical image applications, all the images should have the same
                 voxel spacing. Be sure that you don't care before disabling this check.
 
-        raise_warnings : bool (optional, default=True)
+        raise_warnings : bool, default=True
             Whether to raise warnings during conversion, related to different kinds of events ClinicaDL thinks
             the user should be aware of (e.g. images with different shapes, files overwritten, etc.).
 
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             If ``json_name`` already exists, the CapsDataset will try to merge the old
             tensor conversion with the new one. ``check_transforms`` determines whether transforms
             will be checked during the merger. If ``True``, the CapsDataset will check that
@@ -350,7 +350,7 @@ class CapsDataset(Dataset):
             The name of the json file (**without** ``.json`` suffix) in the folder ``tensor_extraction``
             of the CAPS directory describing the tensor conversion. The file must then be located
             at ``{caps_directory}/prepare_data/tensor_conversion/{json_name}.json``
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             Whether to check if the image transforms potentially applied before tensor conversion
             match the current ones. Useful when you use custom transforms (i.e. transforms
             not in ClinicaDL), which cannot be read by ClinicaDL and thus cannot be checked.\n
@@ -362,7 +362,7 @@ class CapsDataset(Dataset):
             .. warning::
                 **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
-        load_also : list[str] (optional, default=[])
+        load_also : list[str], default=[]
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
             mentioned in the argument ``masks`` of the CapsDataset will be loaded.
 

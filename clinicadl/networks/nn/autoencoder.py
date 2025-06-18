@@ -53,16 +53,16 @@ class AutoEncoder(nn.Sequential):
         The arguments for the convolutional part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.ConvEncoder`, except ``spatial_dims`` and ``in_channels``
         that are specified here via ``in_shape``. So, the only **mandatory argument is** ``channels``.
-    mlp_args : Optional[Dict[str, Any]] (optional, default=None)
+    mlp_args : Optional[Dict[str, Any]], default=None
         The arguments for the MLP part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is inferred
         from the output of the convolutional part, and ``num_outputs`` that is equal to ``latent_size`` here.
         So, the only **mandatory argument is** ``hidden_dims``.\n
         If ``None``, the MLP part will be reduced to a single linear layer.
-    out_channels : Optional[int] (optional, default=None)
+    out_channels : Optional[int], default=None
         Number of output channels. If ``None``, the output will have the same number of channels as the
         input.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -70,7 +70,7 @@ class AutoEncoder(nn.Sequential):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    unpooling_mode : Union[str, UnpoolingMode] (optional, default=UnpoolingMode.NEAREST)
+    unpooling_mode : Union[str, UnpoolingMode], default=UnpoolingMode.NEAREST
         Type of unpooling. Can be any value in {``nearest``, ``linear``, ``bilinear``, ``bicubic``, ``trilinear`` or
         ``convtranspose``}:
 

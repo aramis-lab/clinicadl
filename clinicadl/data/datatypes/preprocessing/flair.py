@@ -17,7 +17,7 @@ class FlairLinear(_LinearPreprocessing, Flair):
 
     Parameters
     ----------
-    use_uncropped_image : bool (optional, default=False)
+    use_uncropped_image : bool, default=False
         Whether to use the uncropped images returned by Clinica:\n
         - if ``use_uncropped_image=True``: only the files that match the pattern
           ``flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_flair.nii*``

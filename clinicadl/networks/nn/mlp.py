@@ -30,7 +30,7 @@ class MLP(BaseMLP):
     hidden_dims : Sequence[int]
         Number of outputs for each hidden layer. Thus, this parameter also controls the number of hidden layers
         (equal to the length of the sequence).
-    act : Optional[ActivationParameters] (optional, default="prelu")
+    act : Optional[ActivationParameters], default="prelu"
         The activation function used after a linear layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -38,10 +38,10 @@ class MLP(BaseMLP):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions<nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
-    norm : Optional[NormalizationParameters] (optional, default="batch")
+    norm : Optional[NormalizationParameters], default="batch"
         The normalization layer used after a linear layer, and optionally its arguments.
         Must be passed as ``norm_type`` or ``(norm_type, parameters)``. If ``None``, no normalization will be
         performed.\n
@@ -52,11 +52,11 @@ class MLP(BaseMLP):
             Please note that there's no need to pass the arguments ``num_channels``, ``num_features`` and ``normalized_shape``
             of the normalization layer, as they are automatically inferred from the output of the previous layer in the network.
 
-    dropout : Optional[float] (optional, default=None)
+    dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
-    bias : bool (optional, default=True)
+    bias : bool, default=True
         Whether to have a bias term in linear layers.
-    adn_ordering : str (optional, default="NDA")
+    adn_ordering : str, default="NDA"
         Order of operations Activation, Dropout and Normalization, after a linear layer (except the last
         one). **Cannot contain duplicated letters**.
         For example if ``"ND"`` is passed, Normalization and then Dropout will be performed (without Activation).\n

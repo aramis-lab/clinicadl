@@ -65,9 +65,9 @@ def get_unpool_layer(
         the unpooling type, potentially with arguments in a dict.
     spatial_dims : int
         number of spatial dimensions of the input.
-    in_channels : Optional[int] (optional, default=None)
+    in_channels : Optional[int], default=None
         number of input channels if the unpool layer requires this parameter.
-    out_channels : Optional[int] (optional, default=None)
+    out_channels : Optional[int], default=None
         number of output channels if the unpool layer requires this parameter.
 
     Returns

@@ -39,7 +39,7 @@ class KFoldConfig(SplitterConfig):
         ----------
         split : int
             The index of the split.
-        create : bool (optional, default=False)
+        create : bool, default=False
             Create the directory if it doesn't exist.
 
         Returns
@@ -99,7 +99,7 @@ class KFold(Splitter):
         dataset : Dataset
             The dataset to split. Can be a :py:class:`~clinicadl.data.datasets.CapsDataset`, :py:class:`~clinicadl.data.datasets.ConcatDataset`,
             :py:class:`~clinicadl.data.datasets.PairedDataset`, or :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
-        splits : Optional[Sequence[int]], (optional, default=None)
+        splits : Optional[Sequence[int]], default=None
             Indices of the splits to get. If ``None``, will return all the splits.
 
         Yields

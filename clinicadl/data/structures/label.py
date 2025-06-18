@@ -147,7 +147,7 @@ class Mask:
 
         Parameters
         ----------
-        filename : Optional[PathType], (optional, default=None)
+        filename : Optional[PathType], default=None
             the image whose associated mask is to be found.
             Can be None if the mask is a common mask (thus it does not depend
             on 'filename').

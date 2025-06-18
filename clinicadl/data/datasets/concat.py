@@ -36,11 +36,11 @@ class ConcatDataset(TorchConcatDataset):
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be concatenated.
-    ignore_spacing : bool, (optional, default=False)
+    ignore_spacing : bool, default=False
         Whether to ignore checks made on voxel spacing. If ``False``, ConcatDataset will check that the voxel spacing
         is consistent across all the datasets (if the information is provided in the ``.json`` file of the tensor
         conversion).
-    raise_warnings : bool, (optional, default=True)
+    raise_warnings : bool, default=True
         Whether to raise warnings during concatenation, related to different kinds of issues ClinicaDL thinks
         the user should be aware of (e.g. datasets of different dimensionality).
 

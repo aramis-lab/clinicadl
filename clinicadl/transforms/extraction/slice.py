@@ -90,19 +90,19 @@ class Slice(Extraction):
 
     Parameters
     ----------
-    slices : Optional[List[NonNegativeInt]] (optional, default=None)
+    slices : Optional[List[NonNegativeInt]], default=None
         The slices to select. If ``None``, slices will be selected with ``discarded_slices``
         and/or ``borders``. If all these three parameters are ``None``, all slices will be
         kept.
-    discarded_slices : Optional[List[NonNegativeInt]] (optional, default=None)
+    discarded_slices : Optional[List[NonNegativeInt]], default=None
         Indices of the slices to discard. Cannot be used with ``slices``.
-    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] (optional, default=None)
+    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
         The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
         ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
         ``a`` slices and the last ``b`` slices will be filtered out.
-    slice_direction : SliceDirection (optional, default=SliceDirection.SAGITTAL)
+    slice_direction : SliceDirection, default=SliceDirection.SAGITTAL
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
-    squeeze : bool (optional, default=True)
+    squeeze : bool, default=True
         Whether to squeeze slices to have images with 2 spatial dimensions.
         If ``False``, slices will still have 3 spatial dimensions.
 

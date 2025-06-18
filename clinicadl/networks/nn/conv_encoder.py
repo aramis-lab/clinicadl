@@ -42,7 +42,7 @@ class ConvEncoder(nn.Sequential):
     channels : Sequence[int]
         Number of output channels of each convolutional layer. Thus, this
         parameter also controls the number of convolutional layers (equal to the length of the sequence).
-    kernel_size : ConvParameters (optional, default=3)
+    kernel_size : ConvParameters, default=3
         Kernel size of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``:
 
         - ``int``: the value will be used for all layers and all dimensions;
@@ -50,26 +50,26 @@ class ConvEncoder(nn.Sequential):
           will be used for all the layers;
         - ``list`` (e.g. ``[(3, 3, 2), 3]``): it will be interpreted as the kernel sizes for each layer.
           The length of the list must be equal to the number of convolutional layers (i.e. ``len(channels)``).
-    stride : ConvParameters (optional, default=1)
+    stride : ConvParameters, default=1
         Stride of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
         as ``kernel_size``.\n
-    padding : ConvParameters (optional, default=0)
+    padding : ConvParameters, default=0
         Padding of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
         as ``kernel_size``.\n
-    dilation : ConvParameters (optional, default=1)
+    dilation : ConvParameters, default=1
         Dilation factor of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
         as ``kernel_size``.\n
-    pooling : Optional[PoolingParameters] (optional, default=("max", {"kernel_size": 2}))
+    pooling : Optional[PoolingParameters], default=("max", {"kernel_size": 2})
         The pooling mode and the arguments of the pooling layer, passed as ``(pooling_mode, arguments)``,  where ``arguments`` is a dictionary.
         If ``None``, no pooling will be performed in the network.\n
         ``pooling_mode`` can be any value in {``max``, ``avg``, ``adaptivemax``, ``adaptiveavg``}. Please refer to
         :torch:`PyTorch pooling layers <nn.html#pooling-layers>` to know the arguments for each of them.\n
         If a ``list`` is passed, it will be understood as the pooling for each pooling layer.
-    pooling_indices : Optional[Sequence[int]] (optional, default=None)
+    pooling_indices : Optional[Sequence[int]], default=None
         Indices of the convolutional layers after which pooling should be performed.
         If ``None``, no pooling will be performed. An index equal to ``-1`` will be understood as a pooling layer before
         the first convolution.
-    act : Optional[ActivationParameters] (optional, default="prelu")
+    act : Optional[ActivationParameters], default="prelu"
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -77,10 +77,10 @@ class ConvEncoder(nn.Sequential):
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
         If ``None``, no last activation will be applied.
-    norm : Optional[ConvNormalizationParameters] (optional, default="instance")
+    norm : Optional[ConvNormalizationParameters], default="instance"
         The normalization layer used after a convolutional layer, and optionally its arguments.
         Must be passed as ``norm_type`` or ``(norm_type, arguments)`` where ``arguments`` is a dictionary.
         If ``None``, no normalization will be performed.\n
@@ -91,11 +91,11 @@ class ConvEncoder(nn.Sequential):
             Please note that there's no need to pass the arguments ``num_channels`` and ``num_features``
             of the normalization layer, as they are automatically inferred from the output of the previous layer in the network.
 
-    dropout : Optional[float] (optional, default=None)
+    dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
-    bias : bool (optional, default=True)
+    bias : bool, default=True
         Whether to have a bias term in linear layers.
-    adn_ordering : str (optional, default="NDA")
+    adn_ordering : str, default="NDA"
         Order of operations Activation, Dropout and Normalization, after a linear layer (except the last
         one).  **Cannot contain duplicated letters**.
         For example if ``"ND"`` is passed, Normalization and then Dropout will be performed (without Activation).\n

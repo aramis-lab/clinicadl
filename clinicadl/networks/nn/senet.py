@@ -26,7 +26,7 @@ class SEResNet(GeneralResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    se_reduction : int (optional, default=16)
+    se_reduction : int, default=16
         Reduction ratio in the bottelneck layer of the excitation modules. Default to ``16``, as in the original
         paper.
     kwargs : Any
@@ -145,7 +145,7 @@ class SEResNet50(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -193,7 +193,7 @@ class SEResNet101(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
@@ -241,7 +241,7 @@ class SEResNet152(ResNet):
     num_outputs : Optional[int]
         Number of output variables after the last linear layer.
         If ``None``, the feature map before the last fully connected layer will be returned.
-    output_act : Optional[ActivationParameters] (optional, default=None)
+    output_act : Optional[ActivationParameters], default=None
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
