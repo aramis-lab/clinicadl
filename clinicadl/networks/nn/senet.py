@@ -142,7 +142,7 @@ class SOTAResNet(str, Enum):
 def get_seresnet(
     name: Union[str, SOTAResNet],
     num_outputs: Optional[int],
-    output_act: ActivationParameters = None,
+    output_act: Optional[ActivationParameters] = None,
     pretrained: bool = False,
 ) -> SEResNet:
     """

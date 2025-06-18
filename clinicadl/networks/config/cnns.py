@@ -2,10 +2,11 @@ from typing import Optional, Sequence, Union
 
 from pydantic import PositiveInt, model_validator
 
+import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.autoencoder import check_unpooling_mode
 from clinicadl.networks.nn.layers.utils import ActivationParameters, UnpoolingMode
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import NetworkConfig, _InShapeConfig, _OutputActConfig
 from .mlp_conv import (
@@ -15,6 +16,11 @@ from .mlp_conv import (
 )
 
 __all__ = ["CNNConfig", "GeneratorConfig", "AutoEncoderConfig", "VAEConfig"]
+
+CNN_DEFAULTS = get_defaults_from(nets.CNN)
+GENERATOR_DEFAULTS = get_defaults_from(nets.Generator)
+AUTOENCODER_DEFAULTS = get_defaults_from(nets.AutoEncoder)
+VAE_DEFAULTS = get_defaults_from(nets.VAE)
 
 
 class _MLPArgsConfig(ClinicaDLConfig):
@@ -34,24 +40,10 @@ class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
     Config class for :py:class:`clinicadl.networks.nn.CNN`.
     """
 
+    in_shape: Sequence[PositiveInt]
     num_outputs: PositiveInt
     conv_args: ConvEncoderOptions
-
-    def __init__(
-        self,
-        in_shape: Sequence[PositiveInt],
-        num_outputs: PositiveInt,
-        conv_args: ConvEncoderOptions,
-        mlp_args: Union[
-            Optional[MLPOptions], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            in_shape=in_shape,
-            num_outputs=num_outputs,
-            conv_args=conv_args,
-            mlp_args=mlp_args,
-        )
+    mlp_args: Optional[MLPOptions] = CNN_DEFAULTS["mlp_args"]
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -67,24 +59,10 @@ class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
     Config class for :py:class:`clinicadl.networks.nn.Generator`.
     """
 
+    latent_size: PositiveInt
     start_shape: Sequence[PositiveInt]
     conv_args: ConvDecoderOptions
-
-    def __init__(
-        self,
-        latent_size: PositiveInt,
-        start_shape: Sequence[PositiveInt],
-        conv_args: ConvDecoderOptions,
-        mlp_args: Union[
-            Optional[MLPOptions], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            latent_size=latent_size,
-            start_shape=start_shape,
-            conv_args=conv_args,
-            mlp_args=mlp_args,
-        )
+    mlp_args: Optional[MLPOptions] = GENERATOR_DEFAULTS["mlp_args"]
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -102,37 +80,13 @@ class AutoEncoderConfig(
     Config class for :py:class:`clinicadl.networks.nn.AutoEncoder`.
     """
 
+    in_shape: Sequence[PositiveInt]
+    latent_size: PositiveInt
     conv_args: ConvEncoderOptions
-    out_channels: Optional[PositiveInt]
-    unpooling_mode: UnpoolingMode
-
-    def __init__(
-        self,
-        in_shape: Sequence[PositiveInt],
-        latent_size: PositiveInt,
-        conv_args: ConvEncoderOptions,
-        mlp_args: Union[
-            Optional[MLPOptions], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        out_channels: Union[Optional[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        unpooling_mode: Union[
-            UnpoolingMode, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            in_shape=in_shape,
-            latent_size=latent_size,
-            conv_args=conv_args,
-            mlp_args=mlp_args,
-            out_channels=out_channels,
-            output_act=output_act,
-            unpooling_mode=unpooling_mode,
-        )
+    mlp_args: Optional[MLPOptions] = AUTOENCODER_DEFAULTS["mlp_args"]
+    out_channels: Optional[PositiveInt] = AUTOENCODER_DEFAULTS["out_channels"]
+    output_act: Optional[ActivationParameters] = AUTOENCODER_DEFAULTS["output_act"]
+    unpooling_mode: UnpoolingMode = AUTOENCODER_DEFAULTS["unpooling_mode"]
 
     @model_validator(mode="after")
     def check_dim(self):

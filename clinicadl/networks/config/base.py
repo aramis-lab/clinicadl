@@ -15,7 +15,9 @@ from clinicadl.utils.config import (
     ObjectConfig,
     update_kwargs_with_defaults,
 )
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
+
+NN_MODULE_DEFAULTS = get_defaults_from(nn.Module)
 
 __all__ = ["ImplementedNetwork", "NetworkConfig"]
 
@@ -144,15 +146,15 @@ class _PreTrainedConfig(
 ):
     """Base config class for SOTA networks."""
 
-    pretrained: bool
+    num_outputs: Optional[PositiveInt]
+    pretrained: bool  # default ??
+    output_act: Optional[ActivationParameters]  # default ???
 
     def __init__(
         self,
         num_outputs: Optional[PositiveInt],
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
+        output_act: Optional[ActivationParameters],
+        pretrained: bool,
     ):
         kwargs = {
             "num_outputs": num_outputs,

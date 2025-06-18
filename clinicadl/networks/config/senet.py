@@ -7,11 +7,12 @@ import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.networks.nn.senet import check_se_channels
-from clinicadl.utils.config import update_kwargs_with_defaults
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import ImplementedNetwork, _PreTrainedConfig
 from .resnet import ResNetConfig
+
+SERESNET_DEFAULTS = get_defaults_from(nets.SEResNet)
 
 __all__ = [
     "SEResNetConfig",
@@ -27,41 +28,22 @@ class SEResNetConfig(ResNetConfig):
     """
 
     se_reduction: PositiveInt
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        num_outputs: Optional[PositiveInt],
-        se_reduction: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        block_type: Union[ResNetBlockType, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        n_res_blocks: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        n_features: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        init_conv_size: Union[
-            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        init_conv_stride: Union[
-            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        bottleneck_reduction: Union[PositiveInt, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        kwargs = locals()
-        del kwargs["self"]
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.SEResNet.__init__)
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ResNet.__init__)
-        super(ResNetConfig, self).__init__(**kwargs)
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    se_reduction: PositiveInt = SERESNET_DEFAULTS["se_reduction"]
+    block_type: ResNetBlockType = SERESNET_DEFAULTS["block_type"]
+    n_res_blocks: Sequence[PositiveInt] = SERESNET_DEFAULTS["n_res_blocks"]
+    n_features: Sequence[PositiveInt] = SERESNET_DEFAULTS["n_features"]
+    init_conv_size: Union[Sequence[PositiveInt], PositiveInt] = SERESNET_DEFAULTS[
+        "init_conv_size"
+    ]
+    init_conv_stride: Union[Sequence[PositiveInt], PositiveInt] = SERESNET_DEFAULTS[
+        "init_conv_stride"
+    ]
+    bottleneck_reduction: PositiveInt = SERESNET_DEFAULTS["bottleneck_reduction"]
+    act: Optional[ActivationParameters] = SERESNET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = SERESNET_DEFAULTS["output_act"]
 
     @model_validator(mode="after")
     def check_se_channels(self):

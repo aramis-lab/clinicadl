@@ -16,12 +16,6 @@ from clinicadl.utils.json import read_json, update_json, write_json
 CONFIG = "Config"
 
 
-class DefaultFromLibrary(str, Enum):
-    """Argument to get the default values in config classes."""
-
-    YES = "DefaultFromLibrary"
-
-
 class ClinicaDLConfig(BaseModel):
     """Base pydantic dataclass."""
 
@@ -152,7 +146,7 @@ def update_kwargs_with_defaults(
     """
     defaults = _get_defaults(function)
     for arg, value in config.items():
-        if value == DefaultFromLibrary.YES and arg in defaults:
+        if arg in defaults:
             config[arg] = defaults[arg]
 
     return config

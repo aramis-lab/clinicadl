@@ -1,11 +1,11 @@
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence
 
 import torch.nn as nn
 from pydantic import PositiveFloat, PositiveInt
 
 import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     ImplementedNetwork,
@@ -17,6 +17,8 @@ from .base import (
     _OutputActConfig,
     _PreTrainedConfig,
 )
+
+DENSENET_DEFAULTS = get_defaults_from(nets.DenseNet)
 
 __all__ = [
     "DenseNetConfig",
@@ -39,46 +41,16 @@ class DenseNetConfig(
     Config class for :py:class:`clinicadl.networks.nn.DenseNet`.
     """
 
-    n_dense_layers: Sequence[PositiveInt]
-    init_features: PositiveInt
-    growth_rate: PositiveInt
-    bottleneck_factor: PositiveInt
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        num_outputs: Optional[PositiveInt],
-        n_dense_layers: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        bottleneck_factor: Union[
-            PositiveInt, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            num_outputs=num_outputs,
-            n_dense_layers=n_dense_layers,
-            init_features=init_features,
-            growth_rate=growth_rate,
-            bottleneck_factor=bottleneck_factor,
-            act=act,
-            output_act=output_act,
-            dropout=dropout,
-        )
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    n_dense_layers: Sequence[PositiveInt] = DENSENET_DEFAULTS["n_dense_layers"]
+    init_features: PositiveInt = DENSENET_DEFAULTS["init_features"]
+    growth_rate: PositiveInt = DENSENET_DEFAULTS["growth_rate"]
+    bottleneck_factor: PositiveInt = DENSENET_DEFAULTS["bottleneck_factor"]
+    act: Optional[ActivationParameters] = DENSENET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = DENSENET_DEFAULTS["output_act"]
+    dropout: Optional[PositiveFloat] = DENSENET_DEFAULTS["dropout"]
 
 
 class _PreTrainedDenseNetConfig(_PreTrainedConfig):

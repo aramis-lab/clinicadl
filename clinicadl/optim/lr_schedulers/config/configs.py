@@ -9,7 +9,7 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     LRSchedulerConfig,

@@ -6,10 +6,6 @@ from typing import Any, Callable, Dict, List, Tuple
 from pydantic import BaseModel
 
 
-class DefaultFromLibrary(str, Enum):
-    YES = "DefaultFromLibrary"
-
-
 def get_args_and_defaults(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
     """
     Gets the arguments of a function, as well as the default
@@ -66,5 +62,5 @@ def update_config_with_defaults(config: BaseModel, function: Callable) -> None:
     """
     _, defaults = get_args_and_defaults(function)
     for arg, value in config:
-        if value == DefaultFromLibrary.YES and arg in defaults:
+        if arg in defaults:
             setattr(config, arg, defaults[arg])
