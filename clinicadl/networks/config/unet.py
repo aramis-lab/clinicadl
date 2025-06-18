@@ -17,8 +17,9 @@ from .base import (
     _OutputActConfig,
 )
 
-UNET_DEFAULTS = get_defaults_from(nets.UNet)
+BASE_UNET_DEFAULTS = get_defaults_from(nets.unet.BaseUNet)
 ATT_UNET_DEFAULTS = get_defaults_from(nets.AttentionUNet)
+ATT_UNET_DEFAULTS.update(BASE_UNET_DEFAULTS)
 
 __all__ = [
     "UNetConfig",
@@ -40,10 +41,10 @@ class UNetConfig(
     spatial_dims: PositiveInt
     in_channels: PositiveInt
     out_channels: PositiveInt
-    channels: Sequence[PositiveInt] = UNET_DEFAULTS["channels"]
-    act: ActivationParameters = UNET_DEFAULTS["act"]
-    output_act: Optional[ActivationParameters] = UNET_DEFAULTS["output_act"]
-    dropout: Optional[PositiveFloat] = UNET_DEFAULTS["dropout"]
+    channels: Sequence[PositiveInt] = BASE_UNET_DEFAULTS["channels"]
+    act: ActivationParameters = BASE_UNET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = BASE_UNET_DEFAULTS["output_act"]
+    dropout: Optional[PositiveFloat] = BASE_UNET_DEFAULTS["dropout"]
 
     @field_validator("channels")
     @classmethod

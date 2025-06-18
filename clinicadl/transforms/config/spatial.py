@@ -47,7 +47,7 @@ class CropOrPadConfig(TransformConfig):
             PositiveInt,
             Tuple[PositiveInt, PositiveInt, PositiveInt],
         ]
-    ]
+    ] = CROP_OR_PAD_TORCHIO_DEFAULTS["target_shape"]
     padding_mode: Union[float, PaddingMode] = CROP_OR_PAD_TORCHIO_DEFAULTS[
         "padding_mode"
     ]

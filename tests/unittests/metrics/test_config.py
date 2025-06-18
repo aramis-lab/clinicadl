@@ -337,11 +337,11 @@ MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 
 def test_get_object(config, expected_class):
     try:
         c = config()
-    except TypeError:
+    except ValidationError:
         for arg, value in MANDATORY_ARGS.items():
             try:
                 c = config(**{arg: value})
-            except TypeError:
+            except ValidationError:
                 continue
     transform_from_config = c.get_object()
     assert isinstance(transform_from_config, expected_class)
@@ -369,11 +369,11 @@ def test_get_object(config, expected_class):
 def test_get_metric_config(name, config):
     try:
         c = get_metric_config(name)
-    except TypeError:
+    except ValidationError:
         for arg, value in MANDATORY_ARGS.items():
             try:
                 c = get_metric_config(name, **{arg: value})
-            except TypeError:
+            except ValidationError:
                 continue
 
     assert c.name == name

@@ -147,25 +147,25 @@ class _PreTrainedConfig(
     """Base config class for SOTA networks."""
 
     num_outputs: Optional[PositiveInt]
-    pretrained: bool  # default ??
-    output_act: Optional[ActivationParameters]  # default ???
+    pretrained: bool = False  # default ??
+    output_act: Optional[ActivationParameters] = None  # default ???
 
-    def __init__(
-        self,
-        num_outputs: Optional[PositiveInt],
-        output_act: Optional[ActivationParameters],
-        pretrained: bool,
-    ):
-        kwargs = {
-            "num_outputs": num_outputs,
-            "output_act": output_act,
-            "pretrained": pretrained,
-        }
-        associated_getter = (
-            self._get_class()
-        )  # special cas here: _get_class does not return a class
-        kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
-        super().__init__(**kwargs)
+    # def __init__(
+    #     self,
+    #     num_outputs: Optional[PositiveInt],
+    #     output_act: Optional[ActivationParameters] = None,
+    #     pretrained: bool = False,
+    # ):
+    #     kwargs = {
+    #         "num_outputs": num_outputs,
+    #         "output_act": output_act,
+    #         "pretrained": pretrained,
+    #     }
+    #     associated_getter = (
+    #         self._get_class()
+    #     )  # special cas here: _get_class does not return a class
+    #     kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
+    #     super().__init__(**kwargs)
 
     def get_object(self) -> nn.Module:
         """

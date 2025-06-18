@@ -13,6 +13,7 @@ from .base import ImplementedNetwork, _PreTrainedConfig
 from .resnet import ResNetConfig
 
 SERESNET_DEFAULTS = get_defaults_from(nets.SEResNet)
+print(SERESNET_DEFAULTS)
 
 __all__ = [
     "SEResNetConfig",
@@ -32,18 +33,6 @@ class SEResNetConfig(ResNetConfig):
     in_channels: PositiveInt
     num_outputs: Optional[PositiveInt]
     se_reduction: PositiveInt = SERESNET_DEFAULTS["se_reduction"]
-    block_type: ResNetBlockType = SERESNET_DEFAULTS["block_type"]
-    n_res_blocks: Sequence[PositiveInt] = SERESNET_DEFAULTS["n_res_blocks"]
-    n_features: Sequence[PositiveInt] = SERESNET_DEFAULTS["n_features"]
-    init_conv_size: Union[Sequence[PositiveInt], PositiveInt] = SERESNET_DEFAULTS[
-        "init_conv_size"
-    ]
-    init_conv_stride: Union[Sequence[PositiveInt], PositiveInt] = SERESNET_DEFAULTS[
-        "init_conv_stride"
-    ]
-    bottleneck_reduction: PositiveInt = SERESNET_DEFAULTS["bottleneck_reduction"]
-    act: Optional[ActivationParameters] = SERESNET_DEFAULTS["act"]
-    output_act: Optional[ActivationParameters] = SERESNET_DEFAULTS["output_act"]
 
     @model_validator(mode="after")
     def check_se_channels(self):
