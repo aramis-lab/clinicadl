@@ -1,5 +1,9 @@
-:mod:`clinicadl.splitter`: Split data
-=====================================
+.. _api_splitter:
+
+:mod:`clinicadl.splitter`
+=========================
+
+.. automodule:: clinicadl.splitter
 
 .. currentmodule:: clinicadl.splitter
 
@@ -9,7 +13,7 @@ Functions
 .. autosummary::
    :toctree: generated/
    :nosignatures:
-   :template: function.rst
+   :template: autosummary/function.rst
 
    make_split
    make_kfold

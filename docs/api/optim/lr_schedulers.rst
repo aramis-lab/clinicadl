@@ -1,40 +1,22 @@
-Optimizers
-==========
+.. _api_lr_schedulers:
+
+:mod:`clinicadl.optim.lr_schedulers.config`
+===========================================
+
+.. automodule:: clinicadl.optim.lr_schedulers.config
+
 .. currentmodule:: clinicadl.optim.lr_schedulers.config
 
-Natively supported learning rate schedulers in ClinicaDL
-(all from `torch.optim <https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate>`_):
+.. autosummary::
+   :nosignatures:
+   :toctree: ../generated/
+   :template: autosummary/class.rst
 
-(TODO: parameter groups)
-
-ConstantLR
-**********
-.. autoclass:: ConstantLRConfig
-
-ExponentialLR
-*************
-.. autoclass:: ExponentialLRConfig
-
-LinearLR
-********
-.. autoclass:: LinearLRConfig
-
-PolynomialLR
-************
-.. autoclass:: PolynomialLRConfig
-
-StepLRConfig
-************
-.. autoclass:: StepLRConfig
-
-MultiStepLRConfig
-*****************
-.. autoclass:: MultiStepLRConfig
-
-ReduceLROnPlateau
-*****************
-.. autoclass:: ReduceLROnPlateauConfig
-
-OneCycleLR
-**********
-.. autoclass:: OneCycleLRConfig
+    ConstantLRConfig
+    ExponentialLRConfig
+    LinearLRConfig
+    StepLRConfig
+    MultiStepLRConfig
+    PolynomialLRConfig
+    ReduceLROnPlateauConfig
+    OneCycleLRConfig

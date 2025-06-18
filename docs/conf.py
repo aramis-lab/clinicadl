@@ -1,5 +1,6 @@
 import inspect
 from datetime import date
+from pathlib import Path
 
 import clinicadl
 
@@ -24,8 +25,10 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx_design",
     "sphinx.ext.extlinks",
+    "sphinx_design",
+    "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
     "sphinx_autodoc_typehints",
     "sphinx_gallery.gen_gallery",
 ]
@@ -57,6 +60,7 @@ extlinks = {
     "torch": ("https://pytorch.org/docs/stable/%s", None),
     "monai": ("https://docs.monai.io/en/stable/%s", None),
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
+    "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
 }
 language = "en"
 # pygments_style = "friendly"
@@ -64,7 +68,14 @@ language = "en"
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    "backreferences_dir": Path("api", "generated"),  # where mini-galleries are stored
+    "doc_module": (
+        "clinicadl",
+    ),  # generate mini-galleries for all the objects in clinicadl
 }
+
+# sphinxcontrib-bibtex
+bibtex_bibfiles = ["references.bib"]
 
 # -- Hide function with @overload ---------------------------------------
 
@@ -107,3 +118,13 @@ html_favicon = "_static/black_logo.png"
 html_copy_source = False
 html_show_sourcelink = False
 html_title = f"{project} {version}"
+
+# Add custom css instructions from themes/custom.css
+font_awesome = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/"
+html_css_files = [
+    "custom.css",
+    f"{font_awesome}all.min.css",
+    f"{font_awesome}fontawesome.min.css",
+    f"{font_awesome}solid.min.css",
+    f"{font_awesome}brands.min.css",
+]

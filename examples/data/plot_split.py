@@ -28,9 +28,9 @@ pd.read_csv(participants_sessions, sep="\t").head(5)
 # First, let's keep some (participant, session) in an independent test set.
 # To perform a simple split, we will use :py:func:`~clinicadl.splitter.make_split`.
 
-from clinicadl.splitter import make_split
+from clinicadl import splitter
 
-split_dir = make_split(
+split_dir = splitter.make_split(
     participants_sessions,
     n_test=0.25,
     output_dir=Path("../tmp"),
@@ -64,9 +64,7 @@ pd.read_csv(split_dir / "test_baseline.tsv", sep="\t").head(5)
 # Now that we have isolated our test set, we want to make a K-Fold split on the
 # remaining data to perform cross-validation. To do this, we will use :py:func:`~clinicadl.splitter.make_kfold`.
 
-from clinicadl.splitter import make_kfold
-
-kfold_dir = make_kfold(
+kfold_dir = splitter.make_kfold(
     split_dir
     / "train.tsv",  # here the input data is all the data that is not in the test set
     n_splits=2,
@@ -98,20 +96,19 @@ pd.read_csv(split_dir / "2_fold" / "split-0" / "validation.tsv", sep="\t").head(
 # %%
 # It is straightforward to get a test and a training dataset:
 
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import PETLinear
+from clinicadl.data import datasets, datatypes
 
-preprocessing = PETLinear(
+preprocessing = datatypes.PETLinear(
     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
 )
 
-train_set = CapsDataset(
+train_set = datasets.CapsDataset(
     caps_path, preprocessing=preprocessing, data=split_dir / "train.tsv"
 )
 train_set.df
 
 # %%
-test_set = CapsDataset(
+test_set = datasets.CapsDataset(
     caps_path, preprocessing=preprocessing, data=split_dir / "test_baseline.tsv"
 )
 test_set.df
@@ -120,16 +117,14 @@ test_set.df
 # Regarding the validation sets, it would be heavy to do that for each split of the
 # K-Fold. We will rather use :py:class:`~clinicadl.splitter.KFold`, that will handle the splits for us:
 
-from clinicadl.splitter import KFold
-
-splitter = KFold(kfold_dir)
+split_reader = splitter.KFold(kfold_dir)
 
 # %%
 # ``KFold`` reads the split directory. We can then split any ``CapsDataset``, using
 # :py:class:`KFold.get_splits <clinicadl.splitter.KFold.get_splits>`. This method is a generator
 # that enables to iterate over the splits of the K-Fold.
 
-for i, split in enumerate(splitter.get_splits(train_set)):
+for i, split in enumerate(split_reader.get_splits(train_set)):
     print(f"Split {i}")
     print(f"Training set: {len(split.train_dataset)} images")
     print(f"Test set: {len(split.val_dataset)} images")

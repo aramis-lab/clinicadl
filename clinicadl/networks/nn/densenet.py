@@ -19,118 +19,133 @@ from .layers.utils import ActivationParameters
 
 class DenseNet(nn.Sequential):
     """
-    DenseNet based on the [Densely Connected Convolutional Networks](https://arxiv.org/pdf/1608.06993) paper.
-    Adapted from [MONAI's implementation](https://docs.monai.io/en/stable/networks.html#densenet).
+    DenseNet, based on :footcite:t:`Huang2018`.
+
+    Adapted from :py:class:`MONAI's implementation <monai.networks.nets.DenseNet>`.
 
     The user can customize the number of dense blocks, the number of dense layers in each block, as well as
     other parameters like the growth rate.
 
-    DenseNet is a fully convolutional network that can work with input of any size, provided that is it large
+    DenseNet is a fully convolutional network that can work with an input of any size, provided that it is large
     enough not to be reduced to a 1-pixel image (before the adaptative average pooling).
 
     Parameters
     ----------
     spatial_dims : int
-        number of spatial dimensions of the input image.
+        Number of spatial dimensions of the input image.
     in_channels : int
-        number of channels in the input image.
+        Number of channels in the input image.
     num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer will be returned.
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
     n_dense_layers : Sequence[int] (optional, default=(6, 12, 24, 16))
-        number of dense layers in each dense block. Thus, this parameter also defines the number of dense blocks.
-        Default is set to DenseNet-121 parameter.
+        Number of dense layers in each dense block. Thus, this parameter also defines the number of dense blocks
+        (equal to the length of the sequence). Default is set to the value of ``DenseNet-121``.
     init_features : int (optional, default=64)
-        number of feature maps after the initial convolution. Default is set to 64, as in the original paper.
+        Number of feature maps after the initial convolution. Default is set to ``64``, as in the original paper.
     growth_rate : int (optional, default=32)
-        how many feature maps to add at each dense layer. Default is set to 32, as in the original paper.
+        How many feature maps to add at each dense layer. Default is set to ``32``, as in the original paper.
     bottleneck_factor : int (optional, default=4)
-        multiplicative factor for bottleneck layers (1x1 convolutions). The output of of these bottleneck layers will
-        have `bottleneck_factor * growth_rate` feature maps. Default is 4, as in the original paper.
+        Multiplicative factor for bottleneck layers (1x1 convolutions). The output of of these bottleneck layers will
+        have ``bottleneck_factor * growth_rate`` feature maps. Default is ``4``, as in the original paper.
     act : ActivationParameters (optional, default=("relu", {"inplace": True}))
-        the activation function used in the convolutional part, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`.
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.\n
-        Default is "relu", as in the original paper.
+        The activation function used after a convolutional layer, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.\n
+        Default is ``relu``, as in the original paper.
     output_act : Optional[ActivationParameters] (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network.
-        Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
     dropout : Optional[float] (optional, default=None)
-        dropout ratio. If None, no dropout.
+        Dropout ratio. If ``None``, no dropout.
 
     Examples
     --------
-    >>> DenseNet(spatial_dims=2, in_channels=1, num_outputs=2, output_act="softmax", n_dense_layers=(2, 2))
-    DenseNet(
-        (features): Sequential(
-            (conv0): Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-            (norm0): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            (act0): ReLU(inplace=True)
-            (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
-            (denseblock1): _DenseBlock(
-                (denselayer1): _DenseLayer(
-                    (layers): Sequential(
-                        (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act1): ReLU(inplace=True)
-                        (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                        (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act2): ReLU(inplace=True)
-                        (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                    )
-                )
-                (denselayer2): _DenseLayer(
-                    (layers): Sequential(
-                        (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act1): ReLU(inplace=True)
-                        (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                        (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act2): ReLU(inplace=True)
-                        (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                    )
-                )
+
+    .. code-block::
+
+        >>> DenseNet(
+                spatial_dims=2,
+                in_channels=1,
+                num_outputs=2,
+                output_act="softmax",
+                n_dense_layers=(2, 2),
             )
-            (transition1): _Transition(
-                (norm): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        DenseNet(
+            (features): Sequential(
+                (conv0): Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+                (norm0): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (act0): ReLU(inplace=True)
+                (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+                (denseblock1): _DenseBlock(
+                    (denselayer1): _DenseLayer(
+                        (layers): Sequential(
+                            (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act1): ReLU(inplace=True)
+                            (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                            (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act2): ReLU(inplace=True)
+                            (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                        )
+                    )
+                    (denselayer2): _DenseLayer(
+                        (layers): Sequential(
+                            (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act1): ReLU(inplace=True)
+                            (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                            (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act2): ReLU(inplace=True)
+                            (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                        )
+                    )
+                )
+                (transition1): _Transition(
+                    (norm): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act): ReLU(inplace=True)
+                    (conv): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (pool): AvgPool2d(kernel_size=2, stride=2, padding=0)
+                )
+                (denseblock2): _DenseBlock(
+                    (denselayer1): _DenseLayer(
+                        (layers): Sequential(
+                            (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act1): ReLU(inplace=True)
+                            (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                            (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act2): ReLU(inplace=True)
+                            (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                        )
+                    )
+                    (denselayer2): _DenseLayer(
+                        (layers): Sequential(
+                            (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act1): ReLU(inplace=True)
+                            (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                            (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (act2): ReLU(inplace=True)
+                            (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                        )
+                    )
+                )
+                (norm5): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+            (fc): Sequential(
                 (act): ReLU(inplace=True)
-                (conv): Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (pool): AvgPool2d(kernel_size=2, stride=2, padding=0)
+                (pool): AdaptiveAvgPool2d(output_size=1)
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (out): Linear(in_features=128, out_features=2, bias=True)
+                (output_act): Softmax(dim=None)
             )
-            (denseblock2): _DenseBlock(
-                (denselayer1): _DenseLayer(
-                    (layers): Sequential(
-                        (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act1): ReLU(inplace=True)
-                        (conv1): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                        (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act2): ReLU(inplace=True)
-                        (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                    )
-                )
-                (denselayer2): _DenseLayer(
-                    (layers): Sequential(
-                        (norm1): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act1): ReLU(inplace=True)
-                        (conv1): Conv2d(96, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                        (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (act2): ReLU(inplace=True)
-                        (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                    )
-                )
-            )
-            (norm5): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         )
-        (fc): Sequential(
-            (act): ReLU(inplace=True)
-            (pool): AdaptiveAvgPool2d(output_size=1)
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (out): Linear(in_features=128, out_features=2, bias=True)
-            (output_act): Softmax(dim=None)
-        )
-    )
+
+    References
+    ----------
+    .. footbibliography::
+
     """
 
     def __init__(

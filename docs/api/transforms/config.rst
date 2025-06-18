@@ -1,46 +1,17 @@
-.. _api_transforms:
-
-:mod:`clinicadl.transforms`
-===========================
-
-.. automodule:: clinicadl.transforms
-
-.. currentmodule:: clinicadl.transforms
-
-.. autosummary::
-   :toctree: ../generated/
-   :nosignatures:
-   :template: autosummary/class.rst
-
-   Transforms
-
-:mod:`clinicadl.transforms.extraction`
---------------------------------------
-
-.. automodule:: clinicadl.transforms.extraction
-
-.. currentmodule:: clinicadl.transforms.extraction
-
-.. autosummary::
-   :nosignatures:
-   :template: autosummary/class.rst
-
-   Image
-   Patch
-   Slice
+.. _api_transforms_config:
 
 :mod:`clinicadl.transforms.config`
-----------------------------------
+==================================
 
 .. automodule:: clinicadl.transforms.config
 
 .. currentmodule:: clinicadl.transforms.config
 
-
 Preprocessing
 ^^^^^^^^^^^^^
 
 .. autosummary::
+   :toctree: ../generated/
    :nosignatures:
    :template: autosummary/class.rst
 
@@ -62,6 +33,7 @@ Augmentation
 ^^^^^^^^^^^^
 
 .. autosummary::
+   :toctree: ../generated/
    :nosignatures:
    :template: autosummary/class.rst
 
@@ -78,9 +50,3 @@ Augmentation
    RandomAffineConfig
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
-
-.. toctree::
-   :hidden:
-
-   extraction
-   config

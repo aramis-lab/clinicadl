@@ -11,9 +11,11 @@ functions may not be enough to give full guidelines on their use.
 -----
 
 .. toctree::
-.. autosummary::
-      :toctree: generated/
-   :caption: Top-level Submodules
-
-   clinicadl.losses
-   clinicadl.transforms
+   :hidden:
+   
+   losses
+   metrics
+   networks/index
+   optim/index
+   splitter
+   transforms/index

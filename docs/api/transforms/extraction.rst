@@ -1,15 +1,17 @@
-.. _api_extraction:
+.. _api_transforms_extraction:
 
-Extraction
-----------
+:mod:`clinicadl.transforms.extraction`
+======================================
+
+.. automodule:: clinicadl.transforms.extraction
+
 .. currentmodule:: clinicadl.transforms.extraction
 
-Patch
-*****
-.. autoclass:: Patch
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/class.rst
 
-Slice
-*****
-.. autoclass:: Slice
-
-.. _supported_transforms:
+   Image
+   Patch
+   Slice

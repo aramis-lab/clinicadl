@@ -18,7 +18,8 @@ CUSTOM_TRANSFORM = "Custom transform passed by the user"
 
 class Transforms(ClinicaDLConfig):
     """
-    Configuration class to gather all the transforms applied to images.
+    Configuration class to gather all the transforms applied to images
+    (extraction, preprocessing, and augmentation).
 
     ClinicaDL defines 4 types of transforms:\n
     - ``api_extraction``: defines on what type of elements of the image we want to work

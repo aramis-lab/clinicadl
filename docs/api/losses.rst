@@ -1,55 +1,43 @@
 .. _api_losses:
 
-``clinicadl.losses``
-====================
-.. currentmodule:: clinicadl.losses.config
+:mod:`clinicadl.losses`
+=======================
 
-Natively supported loss functions in ClinicaDL
-(all from `torch.nn <https://pytorch.org/docs/stable/nn.html#loss-functions>`_):
+.. automodule:: clinicadl.losses
+
+:mod:`clinicadl.losses.config`
+------------------------------
+
+.. automodule:: clinicadl.losses.config
+
+.. currentmodule:: clinicadl.losses.config
 
 
 Classification / Segmentation
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-BCELoss
-*******
-.. autoclass:: BCELossConfig
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/class.rst
 
-BCEWithLogitsLoss
-*****************
-.. autoclass:: BCEWithLogitsLossConfig
+   BCELossConfig
+   BCEWithLogitsLossConfig
+   CrossEntropyLossConfig
+   NLLLossConfig
+   MultiMarginLossConfig
 
-CrossEntropyLoss
-****************
-.. autoclass:: CrossEntropyLossConfig
-
-NLLLoss
-*******
-.. autoclass:: NLLLossConfig
-
-MultiMarginLoss
-***************
-.. autoclass:: MultiMarginLossConfig
 
 Regression / Reconstruction
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-MSELoss
-*******
-.. autoclass:: MSELossConfig
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/class.rst
 
-L1Loss
-******
-.. autoclass:: L1LossConfig
-
-SmoothL1Loss
-************
-.. autoclass:: SmoothL1LossConfig
-
-HuberLoss
-*********
-.. autoclass:: HuberLossConfig
-
-KLDivLoss
-*********
-.. autoclass:: KLDivLossConfig
+   MSELossConfig
+   L1LossConfig
+   SmoothL1LossConfig
+   HuberLossConfig
+   KLDivLossConfig

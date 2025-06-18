@@ -31,143 +31,152 @@ class ConvDecoder(nn.Sequential):
     Fully convolutional decoder network with transposed convolutions, unpooling, normalization, activation
     and dropout layers.
 
+    It is the symmetric of :py:class:`~clinicadl.networks.nn.ConvEncoder`, where convolutions are replaced
+    by transposed convolutions, and pooling layers by unpooling layers.
+
     Parameters
     ----------
     spatial_dims : int
-        number of spatial dimensions of the input image.
+        Number of spatial dimensions of the input image.
     in_channels : int
-        number of channels in the input image.
+        Number of channels in the input image.
     channels : Sequence[int]
-        sequence of integers stating the output channels of each transposed convolution. Thus, this
-        parameter also controls the number of transposed convolutions.
+        Number of output channels of each transposed convolution. Thus, this
+        parameter also controls the number of transposed convolutions (equal to the length of the sequence).
     kernel_size : ConvParameters (optional, default=3)
-        the kernel size of the transposed convolutions. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the kernel sizes for each layer.
-        The length of the list must be equal to the number of transposed convolution layers (i.e.
-        `len(channels)`).
+        Kernel size of the transposed convolutions. Can be an ``int``, a ``tuple``, or a ``list``:
+
+        - ``int``: the value will be used for all layers and all dimensions;
+        - ``tuple`` (e.g. ``(3, 3, 2)``): it will be interpreted as the values for each dimension. These values
+          will be used for all the layers;
+        - ``list`` (e.g. ``[(3, 3, 2), 3]``): it will be interpreted as the kernel sizes for each layer.
+          The length of the list must be equal to the number of transposed convolutions (i.e. ``len(channels)``).
     stride : ConvParameters (optional, default=1)
-        the stride of the transposed convolutions. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the strides for each layer.
-        The length of the list must be equal to the number of transposed convolution layers (i.e.
-        `len(channels)`).
+        Stride of the transposed convolutions. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
     padding : ConvParameters (optional, default=0)
-        the padding of the transposed convolutions. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the paddings for each layer.
-        The length of the list must be equal to the number of transposed convolution layers (i.e.
-        `len(channels)`).
+        Padding of the transposed convolutions. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
     output_padding : ConvParameters (optional, default=0)
-        the output padding of the transposed convolutions. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the output paddings for each layer.
-        The length of the list must be equal to the number of transposed convolution layers (i.e.
-        `len(channels)`).
+        Output padding of the transposed convolutions. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
     dilation : ConvParameters (optional, default=1)
-        the dilation factor of the transposed convolutions. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the dilations for each layer.
-        The length of the list must be equal to the number of transposed convolution layers (i.e.
-        `len(channels)`).
-    unpooling : Optional[UnpoolingParameters] (optional, default=(UnpoolingLayer.UPSAMPLE, {"scale_factor": 2}))
-        the unpooling mode and the arguments of the unpooling layer, passed as `(unpooling_mode, arguments)`.
-        If None, no unpooling will be performed in the network.\n
-        `unpooling_mode` can be either `upsample` or `convtranspose`. Please refer to PyTorch's [Upsample]
-        (https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html) or [ConvTranspose](https://
-        pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html) to know the mandatory and optional
-        arguments.\n
-        If a list is passed, it will be understood as `(unpooling_mode, arguments)` for each unpooling layer.\n
-        Note: no need to pass `in_channels` and `out_channels` for `convtranspose` because the unpooling
-        layers are not intended to modify the number of channels.
+        Dilation factor of the transposed convolutions. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
+    unpooling : Optional[UnpoolingParameters] (optional, default=("upsample", {"scale_factor": 2}))
+        The unpooling mode and the arguments of the unpooling layer, passed as ``(unpooling_mode, arguments)``,  where ``arguments`` is a dictionary.
+        If ``None``, no unpooling will be performed in the network.\n
+        ``unpooling_mode`` can be either ``upsample`` or ``convtranspose``. Please refer to :py:class:`torch.nn.Upsample`
+        or :py:class:`torch.nn.ConvTranspose3d` to know their arguments.\n
+        If a ``list`` is passed, it will be understood as the unpooling for each unpooling layer.
+
+        .. note::
+            No need to pass ``in_channels`` and ``out_channels`` for ``convtranspose``, because the unpooling
+            layers are not intended to modify the number of channels here.
+
     unpooling_indices : Optional[Sequence[int]] (optional, default=None)
-        indices of the transposed convolution layers after which unpooling should be performed.
-        If None, no unpooling will be performed. An index equal to -1 will be understood as a pooling layer before
+        Indices of the transposed convolutions after which unpooling should be performed.
+        If ``None``, no unpooling will be performed. An index equal to ``-1`` will be understood as a pooling layer before
         the first transposed convolution.
-    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
-        the activation function used after a transposed convolution layer, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
+    act : Optional[ActivationParameters] (optional, default="prelu")
+        The activation function used after a transposed convolution, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
     output_act : Optional[ActivationParameters] (optional, default=None)
-        a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
-    norm : Optional[ConvNormalizationParameters] (optional, default=NormLayer.INSTANCE)
-        the normalization type used after a transposed convolution layer, and optionally the arguments of the normalization
-        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
-        performed.\n
-        `norm_type` can be any value in {`batch`, `group`, `instance`, `syncbatch`}. Please refer to PyTorch's
-        [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
-        optional arguments for each of them.\n
-        Please note that arguments `num_channels`, `num_features` of the normalization layer
-        should not be passed, as they are automatically inferred from the output of the previous layer in the network.
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
+    norm : Optional[ConvNormalizationParameters] (optional, default="instance")
+        The normalization layer used after a transposed convolution, and optionally its arguments.
+        Must be passed as ``norm_type`` or ``(norm_type, arguments)`` where ``arguments`` is a dictionary.
+        If ``None``, no normalization will be performed.\n
+        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``syncbatch``}. Please refer to
+        :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
+
+        .. note::
+            Please note that there's no need to pass the arguments ``num_channels`` and ``num_features``
+            of the normalization layer, as they are automatically inferred from the output of the previous layer in the network.
+
     dropout : Optional[float] (optional, default=None)
-        dropout ratio. If None, no dropout.
+        Dropout ratio. If ``None``, no dropout.
     bias : bool (optional, default=True)
-        whether to have a bias term in transposed convolutions.
+        Whether to have a bias term in linear layers.
     adn_ordering : str (optional, default="NDA")
-        order of operations `Activation`, `Dropout` and `Normalization` after a transposed convolutional layer (except the
-        last one).\n
-        For example if "ND" is passed, `Normalization` and then `Dropout` will be performed (without `Activation`).\n
-        Note: ADN will not be applied after the last convolution.
+        Order of operations Activation, Dropout and Normalization, after a linear layer (except the last
+        one).  **Cannot contain duplicated letters**.
+        For example if ``"ND"`` is passed, Normalization and then Dropout will be performed (without Activation).\n
+
+        .. note::
+            ADN will not be applied after the last linear layer.
+
+    Raises
+    ------
+    ValueError
+        If a ``list`` is passed for ``kernel_size``, ``stride``, ``padding``, ``output_padding``, or ``dilation``, and the size of this
+        list in not equal to ``len(channels)``.
+    ValueError
+        If indices in ``unpooling_indices`` are greater than ``len(channels)-1`` (``len(channels)-1`` being the index of the last
+        transposed convolution).
+    ValueError
+        If a ``list`` is passed for ``unpooling``, and ``len(unpooling)!=len(unpooling_indices)``.
+    ValueError
+        If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
+        in ``act`` or ``norm``).
 
     Examples
     --------
-    >>> ConvDecoder(
-            in_channels=16,
-            spatial_dims=2,
-            channels=[8, 4, 1],
-            kernel_size=(3, 5),
-            stride=2,
-            padding=[1, 0, 0],
-            output_padding=[0, 0, (1, 2)],
-            dilation=1,
-            unpooling=[("upsample", {"scale_factor": 2}), ("upsample", {"size": (32, 32)})],
-            unpooling_indices=[0, 1],
-            act="elu",
-            output_act="relu",
-            norm=("batch", {"eps": 1e-05}),
-            dropout=0.1,
-            bias=True,
-            adn_ordering="NDA",
-        )
-    ConvDecoder(
-        (layer0): Convolution(
-            (conv): ConvTranspose2d(16, 8, kernel_size=(3, 5), stride=(2, 2), padding=(1, 1))
-            (adn): ADN(
-                (N): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (D): Dropout(p=0.1, inplace=False)
-                (A): ELU(alpha=1.0)
-            )
-        )
-        (unpool0): Upsample(scale_factor=2.0, mode='nearest')
-        (layer1): Convolution(
-            (conv): ConvTranspose2d(8, 4, kernel_size=(3, 5), stride=(2, 2))
-            (adn): ADN(
-                (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (D): Dropout(p=0.1, inplace=False)
-                (A): ELU(alpha=1.0)
-            )
-        )
-        (unpool1): Upsample(size=(32, 32), mode='nearest')
-        (layer2): Convolution(
-            (conv): ConvTranspose2d(4, 1, kernel_size=(3, 5), stride=(2, 2), output_padding=(1, 2))
-        )
-        (output_act): ReLU()
-    )
 
+    .. code-block:: python
+
+        >>> ConvDecoder(
+                in_channels=16,
+                spatial_dims=2,
+                channels=[8, 4, 1],
+                kernel_size=(3, 5),
+                stride=2,
+                padding=[1, 0, 0],
+                output_padding=[0, 0, (1, 2)],
+                dilation=1,
+                unpooling=[("upsample", {"scale_factor": 2}), ("upsample", {"size": (32, 32)})],
+                unpooling_indices=[0, 1],
+                act="elu",
+                output_act="relu",
+                norm=("batch", {"eps": 1e-05}),
+                dropout=0.1,
+                bias=True,
+                adn_ordering="NDA",
+            )
+        ConvDecoder(
+            (layer0): Convolution(
+                (conv): ConvTranspose2d(16, 8, kernel_size=(3, 5), stride=(2, 2), padding=(1, 1))
+                (adn): ADN(
+                    (N): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (A): ELU(alpha=1.0)
+                )
+            )
+            (unpool0): Upsample(scale_factor=2.0, mode='nearest')
+            (layer1): Convolution(
+                (conv): ConvTranspose2d(8, 4, kernel_size=(3, 5), stride=(2, 2))
+                (adn): ADN(
+                    (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (A): ELU(alpha=1.0)
+                )
+            )
+            (unpool1): Upsample(size=(32, 32), mode='nearest')
+            (layer2): Convolution(
+                (conv): ConvTranspose2d(4, 1, kernel_size=(3, 5), stride=(2, 2), output_padding=(1, 2))
+            )
+            (output_act): ReLU()
+        )
+
+    See Also
+    --------
+    - :py:class:`~clinicadl.networks.nn.ConvEncoder`
     """
 
     def __init__(
@@ -271,14 +280,14 @@ class ConvDecoder(nn.Sequential):
         self.output_act = get_act_layer(output_act) if output_act else None
 
     @property
-    def final_size(self):
+    def _final_size(self):
         """
         To know the size of an image at the end of the network.
         """
         return self._current_size
 
-    @final_size.setter
-    def final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
+    @_final_size.setter
+    def _final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
         """
         Takes as input the function used to update the current image size.
         """
@@ -299,7 +308,7 @@ class ConvDecoder(nn.Sequential):
         """
         Gets the parametrized TransposedConvolution-ADN block and updates the current output size.
         """
-        self.final_size = lambda size: calculate_convtranspose_out_shape(
+        self._final_size = lambda size: calculate_convtranspose_out_shape(
             size, kernel_size, stride, padding, output_padding, dilation
         )
 
@@ -333,7 +342,7 @@ class ConvDecoder(nn.Sequential):
             in_channels=n_channels,
             out_channels=n_channels,
         )
-        self.final_size = lambda size: calculate_unpool_out_shape(
+        self._final_size = lambda size: calculate_unpool_out_shape(
             unpool_mode=unpooling[0],
             in_shape=size,
             **unpool_layer.__dict__,

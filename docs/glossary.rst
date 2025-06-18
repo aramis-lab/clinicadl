@@ -1,2 +1,4 @@
+.. _glossary:
+
 Glossary
 ========

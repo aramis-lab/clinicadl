@@ -16,7 +16,7 @@ neuroimaging data.
 
         Overview of ClinicaDL's main features
 
-    .. grid-item-card:: :fas:`rocket` User Guide
+    .. grid-item-card:: :fas:`book` User Guide
         :link: user_guide/index
         :link-type: doc
         :columns: 12 12 4 4
@@ -26,7 +26,7 @@ neuroimaging data.
 
         More details on ClinicaDL's features
 
-    .. grid-item-card:: :fas:`rocket` Installation
+    .. grid-item-card:: :fas:`download` Installation
         :link: installation
         :link-type: doc
         :columns: 12 12 4 4
@@ -36,7 +36,10 @@ neuroimaging data.
 
         Install ClinicaDL
 
-    .. grid-item-card:: :fas:`rocket` Examples
+    .. grid-item:: 
+        :columns: 12 12 2 2
+
+    .. grid-item-card:: :fas:`laptop-code` Examples
         :link: auto_examples/index
         :link-type: doc
         :columns: 12 12 4 4
@@ -46,7 +49,7 @@ neuroimaging data.
 
         Run examples to discover ClinicaDL
 
-    .. grid-item-card:: :fas:`rocket` API Reference
+    .. grid-item-card:: :fas:`magnifying-glass` API Reference
         :link: api/index
         :link-type: doc
         :columns: 12 12 4 4
@@ -55,6 +58,9 @@ neuroimaging data.
         :margin: 2 2 0 0
 
         Code with ClinicaDL
+    
+    .. grid-item:: 
+        :columns: 12 12 2 2
 
 .. toctree::
    :maxdepth: 1

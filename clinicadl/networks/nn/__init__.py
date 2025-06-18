@@ -1,3 +1,5 @@
+"""``ClinicaDL`` neural networks."""
+
 from .att_unet import AttentionUNet
 from .autoencoder import AutoEncoder
 from .cnn import CNN

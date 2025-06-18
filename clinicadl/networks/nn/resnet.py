@@ -283,138 +283,147 @@ def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> 
 
 class ResNet(GeneralResNet):
     """
-    ResNet based on the [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385) paper.
-    Adapted from [MONAI's implementation](https://docs.monai.io/en/stable/networks.html#resnet).
+    ResNet, based on the :footcite:t:`He2015`.
+
+    Adapted from :py:class:`MONAI's implementation <monai.networks.nets.ResNet>`.
 
     The user can customize the number of residual blocks, the number of downsampling blocks, the number of channels
     in each block, as well as other parameters like the type of residual block used.
 
-    ResNet is a fully convolutional network that can work with input of any size, provided that is it large
+    ResNet is a fully convolutional network that can work with an input of any size, provided that it is large
     enough not to be reduced to a 1-pixel image (before the adaptative average pooling).
 
     Parameters
     ----------
     spatial_dims : int
-        number of spatial dimensions of the input image.
+        Number of spatial dimensions of the input image.
     in_channels : int
-        number of channels in the input image.
+        Number of channels in the input image.
     num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer (including average pooling) will be returned.
-    block_type : Union[str, ResNetBlockType] (optional, default=ResNetBlockType.BASIC)
-        type of residual block. Either `basic` or `bottleneck`. Default to `basic`, as in `ResNet-18`.
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    block_type : Union[str, ResNetBlockType] (optional, default="basic")
+        Type of residual block. Either ``basic`` or ``bottleneck``. Default to ``basic``, as in ``ResNet-18``.
     n_res_blocks : Sequence[int] (optional, default=(2, 2, 2, 2))
-        number of residual block in each ResNet layer. A ResNet layer refers here to the set of residual blocks
-        between two downsamplings. The length of `n_res_blocks` thus determines the number of ResNet layers.
-        Default to `(2, 2, 2, 2)`, as in `ResNet-18`.
+        Number of residual block in each ResNet layer. A ResNet layer refers here to a set of residual blocks
+        between two downsamplings. The length of ``n_res_blocks`` thus determines the number of ResNet layers.
+        Default to ``(2, 2, 2, 2)``, as in ``ResNet-18``.
     n_features : Sequence[int] (optional, default=(64, 128, 256, 512))
-        number of output feature maps for each ResNet layer. The length of `n_features` must be equal to the length
-        of `n_res_blocks`. Default to `(64, 128, 256, 512)`, as in `ResNet-18`.
+        Number of output feature maps for each ResNet layer. The length of ``n_features`` must be equal to the length
+        of ``n_res_blocks``. Default to ``(64, 128, 256, 512)``, as in ``ResNet-18``.
     init_conv_size : Union[Sequence[int], int] (optional, default=7)
-        kernel_size for the first convolution.
-        If tuple, it will be understood as the values for each dimension.
-        Default to 7, as in the original paper.
+        Kernel size for the first convolution.
+        If ``tuple``, it will be understood as the values for each dimension.
+        Default to ``7``, as in the original paper.
     init_conv_stride : Union[Sequence[int], int] (optional, default=2)
-        stride for the first convolution.
-        If tuple, it will be understood as the values for each dimension.
-        Default to 2, as in the original paper.
+        Stride for the first convolution.
+        If ``tuple``, it will be understood as the values for each dimension.
+        Default to ``2``, as in the original paper.
     bottleneck_reduction : int (optional, default=4)
-        if `block_type='bottleneck'`, `bottleneck_reduction` determines the reduction factor for the number
-        of feature maps in bottleneck layers (1x1 convolutions). Default to 4, as in the original paper.
+        If ``block_type="bottleneck"``, ``bottleneck_reduction`` determines the reduction factor for the number
+        of feature maps in bottleneck layers (1x1 convolutions). Default to ``4``, as in the original paper.
     act : ActivationParameters (optional, default=("relu", {"inplace": True}))
-        the activation function used in the convolutional part, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`.
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.\n
-        Default is "relu", as in the original paper.
+        The activation function used after a convolutional layer, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.\n
+        Default is ``relu``, as in the original paper.
     output_act : Optional[ActivationParameters] (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network.
-        Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
 
     Examples
     --------
-    >>> ResNet(
-            spatial_dims=2,
-            in_channels=1,
-            num_outputs=2,
-            block_type="bottleneck",
-            bottleneck_reduction=4,
-            n_features=(8, 16),
-            n_res_blocks=(2, 2),
-            output_act="softmax",
-            init_conv_size=5,
-        )
-    ResNet(
-        (conv0): Conv2d(1, 2, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
-        (norm0): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (act0): ReLU(inplace=True)
-        (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
-        (layer1): Sequential(
-            (0): ResNetBottleneck(
-                (conv1): Conv2d(2, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (downsample): Sequential(
-                    (0): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                    (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+
+    .. code-block::
+
+        >>> ResNet(
+                spatial_dims=2,
+                in_channels=1,
+                num_outputs=2,
+                block_type="bottleneck",
+                bottleneck_reduction=4,
+                n_features=(8, 16),
+                n_res_blocks=(2, 2),
+                output_act="softmax",
+                init_conv_size=5,
+            )
+        ResNet(
+            (conv0): Conv2d(1, 2, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
+            (norm0): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act0): ReLU(inplace=True)
+            (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+            (layer1): Sequential(
+                (0): ResNetBottleneck(
+                    (conv1): Conv2d(2, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (downsample): Sequential(
+                        (0): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                        (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    )
+                    (act3): ReLU(inplace=True)
                 )
-                (act3): ReLU(inplace=True)
-            )
-            (1): ResNetBottleneck(
-                (conv1): Conv2d(8, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act3): ReLU(inplace=True)
-            )
-        )
-        (layer2): Sequential(
-            (0): ResNetBottleneck(
-                (conv1): Conv2d(8, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (downsample): Sequential(
-                    (0): Conv2d(8, 16, kernel_size=(1, 1), stride=(2, 2), bias=False)
-                    (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (1): ResNetBottleneck(
+                    (conv1): Conv2d(8, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act3): ReLU(inplace=True)
                 )
-                (act3): ReLU(inplace=True)
             )
-            (1): ResNetBottleneck(
-                (conv1): Conv2d(16, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act3): ReLU(inplace=True)
+            (layer2): Sequential(
+                (0): ResNetBottleneck(
+                    (conv1): Conv2d(8, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (downsample): Sequential(
+                        (0): Conv2d(8, 16, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                        (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    )
+                    (act3): ReLU(inplace=True)
+                )
+                (1): ResNetBottleneck(
+                    (conv1): Conv2d(16, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act3): ReLU(inplace=True)
+                )
+            )
+            (fc): Sequential(
+                (pool): AdaptiveAvgPool2d(output_size=(1, 1))
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (out): Linear(in_features=16, out_features=2, bias=True)
+                (output_act): Softmax(dim=None)
             )
         )
-        (fc): Sequential(
-            (pool): AdaptiveAvgPool2d(output_size=(1, 1))
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (out): Linear(in_features=16, out_features=2, bias=True)
-            (output_act): Softmax(dim=None)
-        )
-    )
+
+    References
+    ----------
+    .. footbibliography::
+
     """
 
     def __init__(

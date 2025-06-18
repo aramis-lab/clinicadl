@@ -1,28 +1,19 @@
-Optimizers
-==========
+.. _api_optimizers:
+
+:mod:`clinicadl.optim.optimizers.config`
+========================================
+
+.. automodule:: clinicadl.optim.optimizers.config
+
 .. currentmodule:: clinicadl.optim.optimizers.config
 
-Natively supported optimizers in ClinicaDL
-(all from `torch.optim <https://pytorch.org/docs/stable/optim.html#algorithms>`_):
+.. autosummary::
+   :nosignatures:
+   :toctree: ../generated/
+   :template: autosummary/class.rst
 
-(TODO: parameter groups)
-
-Adadelta
-********
-.. autoclass:: AdadeltaConfig
-
-Adagrad
-*******
-.. autoclass:: AdagradConfig
-
-Adam
-****
-.. autoclass:: AdamConfig
-
-RMSprop
-*******
-.. autoclass:: RMSpropConfig
-
-SGD
-***
-.. autoclass:: SGDConfig
+    AdadeltaConfig
+    AdagradConfig
+    AdamConfig
+    RMSpropConfig
+    SGDConfig

@@ -1,76 +1,63 @@
-Optimizers
-==========
+.. _api_metrics:
+
+:mod:`clinicadl.metrics`
+=======================
+
+.. automodule:: clinicadl.metrics
+
+:mod:`clinicadl.metrics.config`
+-------------------------------
+
+.. automodule:: clinicadl.metrics.config
+
 .. currentmodule:: clinicadl.metrics.config
-
-Natively supported metrics in ClinicaDL
-(all from `monai.metrics <https://docs.monai.io/en/stable/metrics.html>`_):
-
-(TODO: loss as a metric)
 
 Classification
 --------------
 
-ConfusionMatrix
-***************
-.. autoclass:: ConfusionMatrixMetricConfig
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/class.rst
 
-ROCAUCMetric
-************
-.. autoclass:: ROCAUCMetricConfig
+    ConfusionMatrixMetricConfig
+    ROCAUCMetricConfig
 
 Regression
 ----------
 
-MSEMetric
-*********
-.. autoclass:: MSEMetricConfig
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/class.rst
 
-MAEMetric
-*********
-.. autoclass:: MAEMetricConfig
-
-RMSEMetric
-**********
-.. autoclass:: RMSEMetricConfig
-
-Segmentation
-------------
-
-MeanIoU
-*******
-.. autoclass:: MeanIoUConfig
-
-DiceMetric
-**********
-.. autoclass:: DiceMetricConfig
-
-GeneralizedDiceScore
-********************
-.. autoclass:: GeneralizedDiceScoreConfig
-
-SurfaceDiceMetric
-*****************
-.. autoclass:: SurfaceDiceMetricConfig
-
-SurfaceDistanceMetric
-*********************
-.. autoclass:: SurfaceDistanceMetricConfig
-
-HausdorffDistanceMetric
-***********************
-.. autoclass:: HausdorffDistanceMetricConfig
+    MSEMetricConfig
+    MAEMetricConfig
+    RMSEMetricConfig
 
 Reconstruction
 --------------
 
-PSNRMetric
-**********
-.. autoclass:: PSNRMetricConfig
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: class.rst
 
-SSIMMetric
-**********
-.. autoclass:: SSIMMetricConfig
+    PSNRMetricConfig
+    SSIMMetricConfig
+    MultiScaleSSIMMetricConfig
 
-MultiScaleSSIMMetric
-********************
-.. autoclass:: MultiScaleSSIMMetricConfig
+Segmentation
+------------
+
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: class.rst
+
+    MeanIoUConfig
+    DiceMetricConfig
+    GeneralizedDiceScoreConfig
+    SurfaceDiceMetricConfig
+    SurfaceDistanceMetricConfig
+    HausdorffDistanceMetricConfig
