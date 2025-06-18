@@ -100,7 +100,7 @@ def make_split(
 
     See Also
     --------
-    - :py:func:`~clinicadl.splitter.make_kfold`
+    :py:func:`~clinicadl.splitter.make_kfold`
 
     Examples
     --------

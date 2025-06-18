@@ -411,7 +411,7 @@ class ResNet(GeneralResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.SEResNet`
+    :py:class:`~clinicadl.networks.nn.SEResNet`
 
     References
     ----------
@@ -487,7 +487,7 @@ class ResNet18(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------
@@ -544,7 +544,7 @@ class ResNet34(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------
@@ -601,7 +601,7 @@ class ResNet50(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------
@@ -658,7 +658,7 @@ class ResNet101(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------
@@ -715,7 +715,7 @@ class ResNet152(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------

@@ -34,6 +34,9 @@ extensions = [
     "sphinx_gallery.gen_gallery",
 ]
 
+napoleon_use_admonition_for_references = True
+napoleon_use_admonition_for_notes = True
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 

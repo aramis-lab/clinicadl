@@ -99,7 +99,7 @@ class SEResNet(GeneralResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ResNet`
+    :py:class:`~clinicadl.networks.nn.ResNet`
 
     References
     ----------
@@ -156,7 +156,7 @@ class SEResNet50(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.SEResNet`
+    :py:class:`~clinicadl.networks.nn.SEResNet`
 
     References
     ----------
@@ -204,7 +204,7 @@ class SEResNet101(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.SEResNet`
+    :py:class:`~clinicadl.networks.nn.SEResNet`
 
     References
     ----------
@@ -252,7 +252,7 @@ class SEResNet152(ResNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.SEResNet`
+    :py:class:`~clinicadl.networks.nn.SEResNet`
 
     References
     ----------

@@ -76,7 +76,7 @@ def make_kfold(
 
     See Also
     --------
-    - :py:func:`~clinicadl.splitter.make_split`
+    :py:func:`~clinicadl.splitter.make_split`
 
     Examples
     --------

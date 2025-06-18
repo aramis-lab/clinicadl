@@ -167,8 +167,8 @@ class AutoEncoder(nn.Sequential):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.CNN`
-    - :py:class:`~clinicadl.networks.nn.Generator`
+    :py:class:`~clinicadl.networks.nn.CNN`
+    :py:class:`~clinicadl.networks.nn.Generator`
     """
 
     def __init__(

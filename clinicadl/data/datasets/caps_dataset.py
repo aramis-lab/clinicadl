@@ -188,9 +188,9 @@ class CapsDataset(Dataset):
 
     See Also
     --------
-    - :py:class:`~clinicadl.data.datasets.ConcatDataset`
-    - :py:class:`~clinicadl.data.datasets.PairedDataset`
-    - :py:class:`~clinicadl.data.datasets.UnpairedDataset`
+    :py:class:`~clinicadl.data.datasets.ConcatDataset`
+    :py:class:`~clinicadl.data.datasets.PairedDataset`
+    :py:class:`~clinicadl.data.datasets.UnpairedDataset`
     """
 
     def __init__(

@@ -31,7 +31,7 @@ class AttentionUNet(UNet):
     channels : Sequence[int], default=(64, 128, 256, 512, 1024)
         Number of channels in each UNet block. Thus, this parameter also controls
         the number of UNet blocks (equal to the length of the sequence). The length ``channels`` should be no less than ``2``.\n
-        # Default to ``(64, 128, 256, 512, 1024)``, as in the original UNet paper\\ :footcite:p:`Ronneberger2015`.
+        Default to ``(64, 128, 256, 512, 1024)``, as in the original UNet paper\\ :footcite:p:`Ronneberger2015`.
     act : ActivationParameters, default="relu"
         The activation function used, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
@@ -163,7 +163,7 @@ class AttentionUNet(UNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.UNet`
+    :py:class:`~clinicadl.networks.nn.UNet`
 
     References
     ----------

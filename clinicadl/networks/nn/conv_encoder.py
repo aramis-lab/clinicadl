@@ -166,7 +166,7 @@ class ConvEncoder(nn.Sequential):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ConvDecoder`
+    :py:class:`~clinicadl.networks.nn.ConvDecoder`
     """
 
     def __init__(

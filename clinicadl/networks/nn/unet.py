@@ -149,7 +149,7 @@ class UNet(nn.Module):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.AttentionUNet`
+    :py:class:`~clinicadl.networks.nn.AttentionUNet`
 
     References
     ----------

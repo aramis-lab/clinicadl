@@ -141,7 +141,7 @@ class VAE(nn.Module):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.AutoEncoder`
+    :py:class:`~clinicadl.networks.nn.AutoEncoder`
     """
 
     def __init__(

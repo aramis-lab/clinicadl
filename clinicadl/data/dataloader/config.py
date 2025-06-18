@@ -123,7 +123,7 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     See Also
     --------
-    - :py:class:`torch.utils.data.DataLoader` for more details on the parameters.
+    :py:class:`torch.utils.data.DataLoader` for more details on the parameters.
 
     Examples
     --------

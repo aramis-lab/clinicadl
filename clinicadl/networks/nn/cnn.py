@@ -102,8 +102,8 @@ class CNN(nn.Sequential):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ConvEncoder`
-    - :py:class:`~clinicadl.networks.nn.MLP`
+    :py:class:`~clinicadl.networks.nn.ConvEncoder`
+    :py:class:`~clinicadl.networks.nn.MLP`
     """
 
     def __init__(

@@ -330,7 +330,7 @@ class ViTB16(ViT):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ViT`
+    :py:class:`~clinicadl.networks.nn.ViT`
 
     References
     ----------
@@ -388,7 +388,7 @@ class ViTB32(ViT):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ViT`
+    :py:class:`~clinicadl.networks.nn.ViT`
 
     References
     ----------
@@ -446,7 +446,7 @@ class ViTL16(ViT):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ViT`
+    :py:class:`~clinicadl.networks.nn.ViT`
 
     References
     ----------
@@ -504,7 +504,7 @@ class ViTL32(ViT):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.ViT`
+    :py:class:`~clinicadl.networks.nn.ViT`
 
     References
     ----------

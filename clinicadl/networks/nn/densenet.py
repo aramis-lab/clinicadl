@@ -250,7 +250,7 @@ class DenseNet121(DenseNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.DenseNet`
+    :py:class:`~clinicadl.networks.nn.DenseNet`
 
     References
     ----------
@@ -307,7 +307,7 @@ class DenseNet161(DenseNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.DenseNet`
+    :py:class:`~clinicadl.networks.nn.DenseNet`
 
     References
     ----------
@@ -364,7 +364,7 @@ class DenseNet169(DenseNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.DenseNet`
+    :py:class:`~clinicadl.networks.nn.DenseNet`
 
     References
     ----------
@@ -421,7 +421,7 @@ class DenseNet201(DenseNet):
 
     See Also
     --------
-    - :py:class:`~clinicadl.networks.nn.DenseNet`
+    :py:class:`~clinicadl.networks.nn.DenseNet`
 
     References
     ----------

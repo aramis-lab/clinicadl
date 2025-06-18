@@ -79,7 +79,7 @@ class KFold(Splitter):
 
     See Also
     --------
-    - :py:class:`~clinicadl.splitter.SingleSplit`
+    :py:class:`~clinicadl.splitter.SingleSplit`
     """
 
     @property
