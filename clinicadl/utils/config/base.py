@@ -86,6 +86,9 @@ class ObjectConfig(ClinicaDLConfig, ABC):
     the method 'get_object'.
     """
 
+    def __init__(self):
+        super().__init__()
+
     @computed_field
     @property
     def name(self) -> str:
