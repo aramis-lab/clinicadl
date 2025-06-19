@@ -262,7 +262,7 @@ class GeneralResNet(nn.Module):
 
 class ResNet(GeneralResNet):
     """
-    ResNet, based on :footcite:t:`He2015`.
+    ResNet, based on `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Adapted from :py:class:`MONAI's implementation <monai.networks.nets.ResNet>`.
 
@@ -413,10 +413,6 @@ class ResNet(GeneralResNet):
     --------
     :py:class:`~clinicadl.networks.nn.SEResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -459,7 +455,7 @@ class ResNet(GeneralResNet):
 
 class ResNet18(ResNet):
     """
-    ResNet-18, from :footcite:t:`He2015`.
+    ResNet-18, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -489,10 +485,6 @@ class ResNet18(ResNet):
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -516,7 +508,7 @@ class ResNet18(ResNet):
 
 class ResNet34(ResNet):
     """
-    ResNet-34, from :footcite:t:`He2015`.
+    ResNet-34, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -546,10 +538,6 @@ class ResNet34(ResNet):
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -573,7 +561,7 @@ class ResNet34(ResNet):
 
 class ResNet50(ResNet):
     """
-    ResNet-50, from :footcite:t:`He2015`.
+    ResNet-50, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -603,10 +591,6 @@ class ResNet50(ResNet):
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -630,7 +614,7 @@ class ResNet50(ResNet):
 
 class ResNet101(ResNet):
     """
-    ResNet-101, from :footcite:t:`He2015`.
+    ResNet-101, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -660,10 +644,6 @@ class ResNet101(ResNet):
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -687,7 +667,7 @@ class ResNet101(ResNet):
 
 class ResNet152(ResNet):
     """
-    ResNet-152, from :footcite:t:`He2015`.
+    ResNet-152, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -716,10 +696,6 @@ class ResNet152(ResNet):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 

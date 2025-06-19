@@ -20,7 +20,7 @@ __all__ = ["DenseNet", "DenseNet121", "DenseNet161", "DenseNet169", "DenseNet201
 
 class DenseNet(nn.Sequential):
     """
-    DenseNet, based on :footcite:t:`Huang2018`.
+    DenseNet, based on `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
 
     Adapted from :py:class:`MONAI's implementation <monai.networks.nets.DenseNet>`.
 
@@ -145,10 +145,6 @@ class DenseNet(nn.Sequential):
             )
         )
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -222,7 +218,7 @@ class DenseNet(nn.Sequential):
 
 class DenseNet121(DenseNet):
     """
-    DenseNet-121, from :footcite:t:`Huang2018`.
+    DenseNet-121, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -252,10 +248,6 @@ class DenseNet121(DenseNet):
     --------
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -279,7 +271,7 @@ class DenseNet121(DenseNet):
 
 class DenseNet161(DenseNet):
     """
-    DenseNet-161, from :footcite:t:`Huang2018`.
+    DenseNet-161, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -309,10 +301,6 @@ class DenseNet161(DenseNet):
     --------
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -336,7 +324,7 @@ class DenseNet161(DenseNet):
 
 class DenseNet169(DenseNet):
     """
-    DenseNet-161, from :footcite:t:`Huang2018`.
+    DenseNet-161, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -366,10 +354,6 @@ class DenseNet169(DenseNet):
     --------
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -393,7 +377,7 @@ class DenseNet169(DenseNet):
 
 class DenseNet201(DenseNet):
     """
-    DenseNet-201, from :footcite:t:`Huang2018`.
+    DenseNet-201, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -422,10 +406,6 @@ class DenseNet201(DenseNet):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.DenseNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 

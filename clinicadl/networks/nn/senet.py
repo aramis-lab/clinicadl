@@ -10,7 +10,7 @@ __all__ = ["SEResNet", "SEResNet50", "SEResNet101", "SEResNet152", "check_se_cha
 
 class SEResNet(GeneralResNet):
     """
-    Squeeze-and-Excitation ResNet, based on :footcite:t:`Hu2019`.
+    Squeeze-and-Excitation ResNet, based on `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
 
     ``SEResNet`` is very similar to :py:class:`~clinicadl.networks.nn.ResNet`, except that
     Squeeze-and-Excitation blocks are added before residual connections.
@@ -101,10 +101,6 @@ class SEResNet(GeneralResNet):
     --------
     :py:class:`~clinicadl.networks.nn.ResNet`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -134,7 +130,7 @@ class SEResNet(GeneralResNet):
 
 class SEResNet50(ResNet):
     """
-    SEResNet-50, from :footcite:t:`Hu2019`.
+    SEResNet-50, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -157,10 +153,6 @@ class SEResNet50(ResNet):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.SEResNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 
@@ -182,7 +174,7 @@ class SEResNet50(ResNet):
 
 class SEResNet101(ResNet):
     """
-    SEResNet-101, from :footcite:t:`Hu2019`.
+    SEResNet-101, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -205,10 +197,6 @@ class SEResNet101(ResNet):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.SEResNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 
@@ -230,7 +218,7 @@ class SEResNet101(ResNet):
 
 class SEResNet152(ResNet):
     """
-    SEResNet-152, from :footcite:t:`Hu2019`.
+    SEResNet-152, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -253,10 +241,6 @@ class SEResNet152(ResNet):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.SEResNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 

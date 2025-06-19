@@ -114,7 +114,7 @@ class _PreTrainedResNetConfig(_PreTrainedConfig):
 
 class ResNet18Config(_PreTrainedResNetConfig):
     """
-    Config class for :py:func:`DenseNet-18 <clinicadl.networks.nn.get_resnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet18`.
     """
 
     @classmethod
@@ -125,7 +125,7 @@ class ResNet18Config(_PreTrainedResNetConfig):
 
 class ResNet34Config(_PreTrainedResNetConfig):
     """
-    Config class for :py:func:`DenseNet-34 <clinicadl.networks.nn.get_resnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet34`.
     """
 
     @classmethod
@@ -136,7 +136,7 @@ class ResNet34Config(_PreTrainedResNetConfig):
 
 class ResNet50Config(_PreTrainedResNetConfig):
     """
-    Config class for :py:func:`DenseNet-50 <clinicadl.networks.nn.get_resnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet50`.
     """
 
     @classmethod
@@ -147,7 +147,7 @@ class ResNet50Config(_PreTrainedResNetConfig):
 
 class ResNet101Config(_PreTrainedResNetConfig):
     """
-    Config class for :py:func:`DenseNet-101 <clinicadl.networks.nn.get_resnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet101`.
     """
 
     @classmethod
@@ -158,7 +158,7 @@ class ResNet101Config(_PreTrainedResNetConfig):
 
 class ResNet152Config(_PreTrainedResNetConfig):
     """
-    Config class for :py:func:`DenseNet-152 <clinicadl.networks.nn.get_resnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet152`.
     """
 
     @classmethod

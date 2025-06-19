@@ -90,7 +90,7 @@ class _PreTrainedSEResNetConfig(_PreTrainedConfig):
 
 class SEResNet50Config(_PreTrainedSEResNetConfig):
     """
-    Config class for :py:func:`SE-ResNet-50 <clinicadl.networks.nn.get_seresnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet50`.
     """
 
     @classmethod
@@ -101,7 +101,7 @@ class SEResNet50Config(_PreTrainedSEResNetConfig):
 
 class SEResNet101Config(_PreTrainedSEResNetConfig):
     """
-    Config class for :py:func:`SE-ResNet-101 <clinicadl.networks.nn.get_seresnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet101`.
     """
 
     @classmethod
@@ -112,7 +112,7 @@ class SEResNet101Config(_PreTrainedSEResNetConfig):
 
 class SEResNet152Config(_PreTrainedSEResNetConfig):
     """
-    Config class for :py:func:`SE-ResNet-152 <clinicadl.networks.nn.get_seresnet>`.
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet152`.
     """
 
     @classmethod

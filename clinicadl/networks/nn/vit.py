@@ -43,7 +43,7 @@ class PosEmbedType(str, Enum):
 
 class ViT(nn.Module):
     """
-    Vision Transformer, based on :footcite:t:`Dosovitskiy2021`.
+    Vision Transformer, based on `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
 
     Adapted from :torchvision:`torchvision's implementation <models/vision_transformer.html>`.
 
@@ -302,7 +302,7 @@ class ViT(nn.Module):
 
 class ViTB16(ViT):
     """
-    ViT-B/16, from :footcite:t:`Dosovitskiy2021`.
+    ViT-B/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -332,10 +332,6 @@ class ViTB16(ViT):
     --------
     :py:class:`~clinicadl.networks.nn.ViT`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -360,7 +356,7 @@ class ViTB16(ViT):
 
 class ViTB32(ViT):
     """
-    ViT-B/32, from :footcite:t:`Dosovitskiy2021`.
+    ViT-B/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -390,10 +386,6 @@ class ViTB32(ViT):
     --------
     :py:class:`~clinicadl.networks.nn.ViT`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -418,7 +410,7 @@ class ViTB32(ViT):
 
 class ViTL16(ViT):
     """
-    ViT-L/16, from :footcite:t:`Dosovitskiy2021`.
+    ViT-L/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -448,10 +440,6 @@ class ViTL16(ViT):
     --------
     :py:class:`~clinicadl.networks.nn.ViT`
 
-    References
-    ----------
-    .. footbibliography::
-
     """
 
     def __init__(
@@ -476,7 +464,7 @@ class ViTL16(ViT):
 
 class ViTL32(ViT):
     """
-    ViT-L/32, from :footcite:t:`Dosovitskiy2021`.
+    ViT-L/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -505,10 +493,6 @@ class ViTL32(ViT):
     See Also
     --------
     :py:class:`~clinicadl.networks.nn.ViT`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 

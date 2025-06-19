@@ -95,7 +95,7 @@ class _PreTrainedViTConfig(_PreTrainedConfig):
 
 class ViTB16Config(_PreTrainedViTConfig):
     """
-    Config class for :py:func:`ViT-B/16 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTB16`.
     """
 
     @classmethod
@@ -106,7 +106,7 @@ class ViTB16Config(_PreTrainedViTConfig):
 
 class ViTB32Config(_PreTrainedViTConfig):
     """
-    Config class for :py:func:`ViT-B/32 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTB32`.
     """
 
     @classmethod
@@ -117,7 +117,7 @@ class ViTB32Config(_PreTrainedViTConfig):
 
 class ViTL16Config(_PreTrainedViTConfig):
     """
-    Config class for :py:func:`ViT-L/16 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTL16`.
     """
 
     @classmethod
@@ -128,7 +128,7 @@ class ViTL16Config(_PreTrainedViTConfig):
 
 class ViTL32Config(_PreTrainedViTConfig):
     """
-    Config class for :py:func:`ViT-L/32 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTL32`.
     """
 
     @classmethod

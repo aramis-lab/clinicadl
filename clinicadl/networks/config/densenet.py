@@ -92,7 +92,7 @@ class _PreTrainedDenseNetConfig(_PreTrainedConfig):
 
 class DenseNet121Config(_PreTrainedDenseNetConfig):
     """
-    Config class for :py:func:`DenseNet-121 <clinicadl.networks.nn.get_densenet>`.
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet121`.
     """
 
     @classmethod
@@ -103,7 +103,7 @@ class DenseNet121Config(_PreTrainedDenseNetConfig):
 
 class DenseNet161Config(_PreTrainedDenseNetConfig):
     """
-    Config class for :py:func:`DenseNet-161 <clinicadl.networks.nn.get_densenet>`.
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet161`.
     """
 
     @classmethod
@@ -114,7 +114,7 @@ class DenseNet161Config(_PreTrainedDenseNetConfig):
 
 class DenseNet169Config(_PreTrainedDenseNetConfig):
     """
-    Config class for :py:func:`DenseNet-169 <clinicadl.networks.nn.get_densenet>`.
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet169`.
     """
 
     @classmethod
@@ -125,7 +125,7 @@ class DenseNet169Config(_PreTrainedDenseNetConfig):
 
 class DenseNet201Config(_PreTrainedDenseNetConfig):
     """
-    Config class for :py:func:`DenseNet-201 <clinicadl.networks.nn.get_densenet>`.
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet201`.
     """
 
     @classmethod

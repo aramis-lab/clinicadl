@@ -6,7 +6,7 @@ from .unet import UNet
 
 class AttentionUNet(UNet):
     """
-    Attention-UNet, based on :footcite:t:`Oktay2018`.
+    Attention-UNet, based on `Attention U-Net: Learning Where to Look for the Pancreas <https://arxiv.org/abs/1804.03999>`_.
 
     Very similar to :py:class:`~clinicadl.networks.nn.UNet`, but with attention gates in the skip connections.
 
@@ -167,7 +167,6 @@ class AttentionUNet(UNet):
 
     References
     ----------
-
     .. footbibliography::
 
     """

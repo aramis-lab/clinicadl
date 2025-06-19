@@ -11,7 +11,7 @@ from .layers.utils import ActFunction, ActivationParameters
 
 class UNet(nn.Module):
     """
-    UNet, based on :footcite:t:`Ronneberger2015`.
+    UNet, based on `U-Net: Convolutional Networks for Biomedical Image Segmentation <https://arxiv.org/abs/1505.04597>`_.
 
     The user can customize the number of encoding blocks, the number of channels in each block, as well as other parameters
     like the activation function.
@@ -146,14 +146,6 @@ class UNet(nn.Module):
             )
             (output_act): Softmax(dim=1)
         )
-
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.AttentionUNet`
-
-    References
-    ----------
-    .. footbibliography::
 
     """
 
