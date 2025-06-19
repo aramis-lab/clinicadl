@@ -1,5 +1,5 @@
 Optimizers
-==========
+===========
 .. currentmodule:: clinicadl.optim.optimizers.config
 
 Natively supported optimizers in ClinicaDL

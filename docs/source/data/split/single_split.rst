@@ -2,7 +2,7 @@
 
 Single split
 ============
-.. currentmodule:: clinicadl.splitter
+.. currentmodule:: clinicadl.split
 
 Splitter
 --------

@@ -10,7 +10,7 @@ from pydantic import field_validator
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.dictionary.words import BASELINE, TRAIN
-from clinicadl.splitter.split import Split
+from clinicadl.split.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 
 
@@ -57,7 +57,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"No configuration file found in '{split_dir}'. It was expected at {json_path}. "
-                "Please rerun clinicadl.splitter.make_split or clinicadl.splitter.make_kfold "
+                "Please rerun clinicadl.split.make_split or clinicadl.split.make_kfold "
                 "to have a proper split directory."
             ) from exc
 
@@ -106,7 +106,7 @@ class SplitterConfig(ClinicaDLConfig, ABC):
 
         if error_msg:
             error_msg += (
-                " Please rerun clinicadl.splitter.make_split or clinicadl.splitter.make_kfold to have a proper "
+                " Please rerun clinicadl.split.make_split or clinicadl.split.make_kfold to have a proper "
                 "split directory."
             )
             raise FileNotFoundError(error_msg)
@@ -119,8 +119,8 @@ class Splitter(ABC):
     Parameters
     ----------
     split_dir : Path
-        The split directory, returned by :py:func:`clinicadl.splitter.make_split`
-        or :py:func:`clinicadl.splitter.make_kfold`.
+        The split directory, returned by :py:func:`clinicadl.split.make_split`
+        or :py:func:`clinicadl.split.make_kfold`.
 
     Raises
     ------

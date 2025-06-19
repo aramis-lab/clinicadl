@@ -2,8 +2,6 @@ from typing import Set
 
 import torch.optim as optim
 from pydantic import (
-    PositiveFloat,
-    PositiveInt,
     field_validator,
     model_validator,
 )
@@ -97,24 +95,6 @@ class LRSchedulerConfig(ObjectConfig):
     def _get_class(cls) -> type[optim.lr_scheduler.LRScheduler]:
         """Returns the lr scheduler associated to this config class."""
         return getattr(optim.lr_scheduler, cls._get_name())
-
-
-class _GammaConfig(ClinicaDLConfig):
-    """Config class for 'gamma' parameter."""
-
-    gamma: PositiveFloat
-
-
-class _FactorConfig(ClinicaDLConfig):
-    """Config class for 'factor' parameter."""
-
-    factor: PositiveFloat
-
-
-class _TotalItersConfig(ClinicaDLConfig):
-    """Config class for 'total_iters' parameter."""
-
-    total_iters: PositiveInt
 
 
 class _LastEpochConfig(ClinicaDLConfig):

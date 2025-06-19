@@ -19,3 +19,5 @@ ClinicaDL documentation
    api
    data/data
    losses
+   metrics
+   optim/optim

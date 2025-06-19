@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import KFold, StratifiedKFold
 
 from clinicadl.dictionary.words import FOLD, VALIDATION
-from clinicadl.splitter.splitter.kfold import KFoldConfig
+from clinicadl.split.splitter.kfold import KFoldConfig
 from clinicadl.utils.typing import DataType, PathType
 
 from .utils import (
@@ -76,7 +76,7 @@ def make_kfold(
 
     See Also
     --------
-    - :py:func:`~clinicadl.splitter.make_split`
+    - :py:func:`~clinicadl.split.make_split`
 
     Examples
     --------
@@ -90,7 +90,7 @@ def make_kfold(
     >>> len(df)
     64
 
-    >>> from clinicadl.splitter import make_kfold
+    >>> from clinicadl.split import make_kfold
     >>> split_dir = make_kfold(
             df,
             n_splits=5,

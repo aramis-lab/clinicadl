@@ -42,8 +42,8 @@ class Transforms(ClinicaDLConfig):
     ``Transforms`` will compose the transforms in these lists, so **the order in the lists is important**.
 
     Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <supported_transforms>`, but also
-    any custom transform created by the user (see :ref:`examples <examples>`). The only requirement is that this custom transforms
-    works with :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
+    any custom transform created by the user (see examples). The only requirement is that this custom transforms
+    works with :py:class:`~clinicadl.data.structures.DataPoint`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
     you are encouraged to **use transform configuration classes for better reproducibility**.
 
     Parameters
@@ -64,20 +64,22 @@ class Transforms(ClinicaDLConfig):
     augmentations : list[Union[Transform, TransformConfig]], (optional, default=[])
         A list of augmentation transforms, to apply on samples, only during training.
 
-    .. _examples:
 
     Examples
     --------
-    >>> from clinicadl.transforms import Transforms
-    >>> from clinicadl.transforms.extraction import Patch
-    >>> from clinicadl.transforms.config import ZNormalizationConfig, RandomFlipConfig
-    >>> import torchio
-    >>> Transforms(
-            extraction=Patch(patch_size=32, stride=32),
-            image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],  # torchio.CropOrPad is not a config class, so it is a custom transform
-            sample_transforms=[],
-            augmentations=[RandomFlipConfig(flip_probability=0.3)],
-        )
+    .. code-block:: python
+
+        >>> from clinicadl.transforms import Transforms
+        >>> from clinicadl.transforms.extraction import Patch
+        >>> from clinicadl.transforms.config import ZNormalizationConfig, RandomFlipConfig
+        >>> import torchio
+        >>> my_transfo = Transforms(
+                extraction=Patch(patch_size=32, stride=32),
+                image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],  # torchio.CropOrPad is not a config class, so it is a custom transform
+                sample_transforms=[],
+                augmentations=[RandomFlipConfig(flip_probability=0.3)],
+            )
+
     """
 
     extraction: Extraction = Image()

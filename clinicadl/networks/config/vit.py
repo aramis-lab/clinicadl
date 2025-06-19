@@ -11,8 +11,9 @@ from clinicadl.networks.nn.vit import (
     check_embedding_dim,
     check_patch_size,
 )
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
+from ..nn.vit import ViT
 from .base import (
     ImplementedNetwork,
     NetworkConfig,
@@ -22,6 +23,8 @@ from .base import (
     _PreTrainedConfig,
 )
 from .cnns import _InShapeConfig
+
+VIT_DEFAULTS = get_defaults_from(ViT)
 
 
 class ViTConfig(
@@ -35,44 +38,16 @@ class ViTConfig(
     Config class for :py:class:`clinicadl.networks.nn.ViT`.
     """
 
+    in_shape: Sequence[PositiveInt]
     patch_size: Union[Sequence[PositiveInt], PositiveInt]
-    embedding_dim: PositiveInt
-    num_layers: PositiveInt
-    num_heads: PositiveInt
-    mlp_dim: PositiveInt
-    pos_embed_type: Optional[PosEmbedType]
-
-    def __init__(
-        self,
-        in_shape: Sequence[PositiveInt],
-        patch_size: Union[Sequence[PositiveInt], PositiveInt],
-        num_outputs: Optional[PositiveInt],
-        embedding_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        num_layers: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        num_heads: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        mlp_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        pos_embed_type: Union[Optional[PosEmbedType], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            in_shape=in_shape,
-            patch_size=patch_size,
-            num_outputs=num_outputs,
-            embedding_dim=embedding_dim,
-            num_layers=num_layers,
-            num_heads=num_heads,
-            mlp_dim=mlp_dim,
-            pos_embed_type=pos_embed_type,
-            output_act=output_act,
-            dropout=dropout,
-        )
+    num_outputs: Optional[PositiveInt]
+    embedding_dim: PositiveInt = VIT_DEFAULTS["embedding_dim"]
+    num_layers: PositiveInt = VIT_DEFAULTS["num_layers"]
+    num_heads: PositiveInt = VIT_DEFAULTS["num_heads"]
+    mlp_dim: PositiveInt = VIT_DEFAULTS["mlp_dim"]
+    pos_embed_type: Optional[PosEmbedType] = VIT_DEFAULTS["pos_embed_type"]
+    output_act: Optional[ActivationParameters] = VIT_DEFAULTS["output_act"]
+    dropout: Optional[PositiveFloat] = VIT_DEFAULTS["dropout"]
 
     @model_validator(mode="after")
     def make_checks(self):

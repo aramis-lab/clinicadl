@@ -30,7 +30,7 @@ To do this, you can use :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
 create a DataLoader suited to ClinicaDL.
 
 Finally, before training a Deep Learning model, you will split your data between training, validation and test sets.
-To do this, you will manipulate our :ref:`splitting tools <splitter>`.
+To do this, you will manipulate our :ref:`splitting tools <split>`.
 
 .. toctree::
     :maxdepth: 1
@@ -39,7 +39,9 @@ To do this, you will manipulate our :ref:`splitting tools <splitter>`.
     datasets/concat_dataset
     datasets/paired_dataset
     datasets/unpaired_dataset
+    datasets/caps_outputs
     datatypes
+    datapoint
     transforms/transforms
     dataloader
-    splitter/splits
+    split/splits

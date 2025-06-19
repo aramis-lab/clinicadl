@@ -17,7 +17,7 @@ from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
-from clinicadl.splitter import KFold, make_kfold, make_split
+from clinicadl.split import KFold, make_kfold, make_split
 from clinicadl.trainer.trainer import Trainer
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
@@ -42,7 +42,6 @@ dataset_t1_image = CapsDataset(
     label="diagnosis",
 )
 dataset_t1_image.to_tensors(json_name="test_bis.json", n_proc=2)
-
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)

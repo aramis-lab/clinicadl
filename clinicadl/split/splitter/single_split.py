@@ -3,8 +3,8 @@ from typing import List, Optional, Union
 from pydantic import NonNegativeFloat, field_validator
 
 from clinicadl.data.datasets.types import Dataset
-from clinicadl.splitter.split import Split
-from clinicadl.splitter.splitter.splitter import (
+from clinicadl.split.split import Split
+from clinicadl.split.splitter.splitter import (
     Splitter,
     SplitterConfig,
     SubjectsSessionsSplit,
@@ -37,10 +37,10 @@ class SingleSplitConfig(SplitterConfig):
 
 class SingleSplit(Splitter):
     """
-    To handle a single training-validation split, as opposed to :py:class:`~clinicadl.splitter.KFold`
+    To handle a single training-validation split, as opposed to :py:class:`~clinicadl.split.KFold`
     that can handle several splits.
 
-    This object will read a split directory returned by :py:func:`~clinicadl.splitter.make_split`,
+    This object will read a split directory returned by :py:func:`~clinicadl.split.make_split`,
     and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or
     :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`,
     :py:class:`~clinicadl.data.datasets.UnpairedDataset`) using :py:meth:`~SingleSplit.get_split`,
@@ -49,7 +49,7 @@ class SingleSplit(Splitter):
     Parameters
     ----------
     split_dir : Path
-        The split directory, returned by :py:func:`~clinicadl.splitter.make_split`.
+        The split directory, returned by :py:func:`~clinicadl.split.make_split`.
 
     Raises
     ------
@@ -76,7 +76,7 @@ class SingleSplit(Splitter):
         Returns
         -------
         Split
-            A :py:class:`~clinicadl.splitter.Split` object, with the training and validation datasets for
+            A :py:class:`~clinicadl.split.Split` object, with the training and validation datasets for
             the requested split.
         """
         return self._get_split(dataset)

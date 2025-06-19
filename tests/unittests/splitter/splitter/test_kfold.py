@@ -11,7 +11,7 @@ from clinicadl.data.datasets import (
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.data.datatypes.preprocessing import PETLinear
-from clinicadl.splitter.splitter import KFold
+from clinicadl.split.splitter import KFold
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")

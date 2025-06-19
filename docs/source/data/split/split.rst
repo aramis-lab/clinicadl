@@ -2,6 +2,7 @@
 
 Split
 =====
+.. currentmodule:: clinicadl.split.split
 
-.. autoclass:: clinicadl.splitter.Split
+.. autoclass:: Split
     :members: build_train_loader, build_val_loader, parallelism

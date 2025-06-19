@@ -15,7 +15,9 @@ from clinicadl.utils.config import (
     ObjectConfig,
     update_kwargs_with_defaults,
 )
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
+
+NN_MODULE_DEFAULTS = get_defaults_from(nn.Module)
 
 __all__ = ["ImplementedNetwork", "NetworkConfig"]
 
@@ -144,26 +146,27 @@ class _PreTrainedConfig(
 ):
     """Base config class for SOTA networks."""
 
-    pretrained: bool
+    num_outputs: Optional[PositiveInt]
+    pretrained: bool = False  # default ??
+    output_act: Optional[ActivationParameters] = None  # default ???
 
-    def __init__(
-        self,
-        num_outputs: Optional[PositiveInt],
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        kwargs = {
-            "num_outputs": num_outputs,
-            "output_act": output_act,
-            "pretrained": pretrained,
-        }
-        associated_getter = (
-            self._get_class()
-        )  # special cas here: _get_class does not return a class
-        kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
-        super().__init__(**kwargs)
+    # TODO : to remove ??
+    # def __init__(
+    #     self,
+    #     num_outputs: Optional[PositiveInt],
+    #     output_act: Optional[ActivationParameters] = None,
+    #     pretrained: bool = False,
+    # ):
+    #     kwargs = {
+    #         "num_outputs": num_outputs,
+    #         "output_act": output_act,
+    #         "pretrained": pretrained,
+    #     }
+    #     associated_getter = (
+    #         self._get_class()
+    #     )  # special cas here: _get_class does not return a class
+    #     kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
+    #     super().__init__(**kwargs)
 
     def get_object(self) -> nn.Module:
         """

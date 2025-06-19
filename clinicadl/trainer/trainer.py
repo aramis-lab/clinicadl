@@ -18,7 +18,7 @@ from clinicadl.metrics.metrics import ClinicaDLMetrics, LossMetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
-from clinicadl.splitter.split import Split
+from clinicadl.split.split import Split
 from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.config import ComputationalConfig

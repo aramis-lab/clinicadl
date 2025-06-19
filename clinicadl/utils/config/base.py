@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -14,12 +13,6 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.json import read_json, update_json, write_json
 
 CONFIG = "Config"
-
-
-class DefaultFromLibrary(str, Enum):
-    """Argument to get the default values in config classes."""
-
-    YES = "DefaultFromLibrary"
 
 
 class ClinicaDLConfig(BaseModel):
@@ -92,16 +85,6 @@ class ObjectConfig(ClinicaDLConfig, ABC):
     the method 'get_object'.
     """
 
-    def __init__(self, **kwargs):
-        if not type(self).__name__.endswith(CONFIG):
-            raise NameError(
-                f"Invalid name for a ObjectConfig. The name of the class should end with '{CONFIG}'."
-            )
-
-        associated_class = self._get_class()
-        kwargs = update_kwargs_with_defaults(kwargs, function=associated_class.__init__)
-        super(ClinicaDLConfig, self).__init__(**kwargs)
-
     @computed_field
     @property
     def name(self) -> str:
@@ -152,7 +135,7 @@ def update_kwargs_with_defaults(
     """
     defaults = _get_defaults(function)
     for arg, value in config.items():
-        if value == DefaultFromLibrary.YES and arg in defaults:
+        if arg in defaults:
             config[arg] = defaults[arg]
 
     return config

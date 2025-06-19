@@ -8,7 +8,7 @@ from torch.utils.data import DistributedSampler, WeightedRandomSampler
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
-from clinicadl.splitter.split import Split
+from clinicadl.split.split import Split
 
 CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")

@@ -21,7 +21,7 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALUE,
 )
-from clinicadl.splitter.splitter.single_split import SingleSplitConfig
+from clinicadl.split.splitter.single_split import SingleSplitConfig
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import DataType, PathType
 
@@ -32,7 +32,7 @@ from .utils import (
     write_to_tsv,
 )
 
-logger = getLogger("clinicadl.splitter.make_splits.single_split")
+logger = getLogger("clinicadl.split.make_splits.single_split")
 
 
 def make_split(
@@ -75,7 +75,7 @@ def make_split(
             Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
             of your data in the training set, but rather that you have 80% of you participants in the training set.
 
-    output_dir : Optional[Path, str], (optional, default=None)
+    output_dir : Optional[Union[Path, str]], (optional, default=None)
         Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
         If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
     subset_name : str, (optional, default="test")
@@ -113,7 +113,7 @@ def make_split(
 
     See Also
     --------
-    - :py:func:`~clinicadl.splitter.make_kfold`
+    - :py:func:`~clinicadl.split.make_kfold`
 
     Examples
     --------
@@ -127,7 +127,7 @@ def make_split(
     >>> len(df)
     64
 
-    >>> from clinicadl.splitter import make_split
+    >>> from clinicadl.split import make_split
     >>> split_dir = make_split(
             df,
             output_dir="splits",

@@ -84,16 +84,6 @@ class OneOfConfig(TransformConfig):
     transforms: List[Union[TransformConfig, List[TransformConfig]]]
     probabilities: Optional[List[NonNegativeFloat]] = None
 
-    def __init__(
-        self,
-        transforms: List[Union[TransformConfig, List[TransformConfig]]],
-        probabilities: Optional[List[NonNegativeFloat]] = None,
-    ):
-        super().__init__(
-            transforms=transforms,
-            probabilities=probabilities,
-        )
-
     def get_object(self) -> tio.Transform:
         """
         Returns the transform associated to this configuration,
