@@ -3,7 +3,6 @@ from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -85,9 +84,6 @@ class ObjectConfig(ClinicaDLConfig, ABC):
     The user can then get the parametrized object with
     the method 'get_object'.
     """
-
-    def __init__(self):
-        super().__init__()
 
     @computed_field
     @property

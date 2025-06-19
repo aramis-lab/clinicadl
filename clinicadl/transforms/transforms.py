@@ -43,7 +43,7 @@ class Transforms(ClinicaDLConfig):
 
     Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <supported_transforms>`, but also
     any custom transform created by the user (see examples). The only requirement is that this custom transforms
-    works with :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
+    works with :py:class:`~clinicadl.data.structures.DataPoint`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
     you are encouraged to **use transform configuration classes for better reproducibility**.
 
     Parameters
@@ -86,9 +86,9 @@ class Transforms(ClinicaDLConfig):
     image_transforms: list[Union[Transform, TransformConfig]] = []
     sample_transforms: list[Union[Transform, TransformConfig]] = []
     augmentations: list[Union[Transform, TransformConfig]] = []
-    # _image_transforms_processed: list[Transform] = []
-    # _sample_transforms_processed: list[Transform] = []
-    # _augmentations_processed: list[Transform] = []
+    _image_transforms_processed: list[Transform] = []
+    _sample_transforms_processed: list[Transform] = []
+    _augmentations_processed: list[Transform] = []
 
     @model_validator(mode="after")
     def check_transforms(self):

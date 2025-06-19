@@ -56,8 +56,8 @@ class Split(ClinicaDLConfig):
     val_loader: Optional[DataLoader] = None
     train_loader_config: Optional[DataLoaderConfig] = None
     val_loader_config: Optional[DataLoaderConfig] = None
-    # _dp_degree: Optional[PositiveInt] = None
-    # _rank: Optional[NonNegativeInt] = None
+    _dp_degree: Optional[PositiveInt] = None
+    _rank: Optional[NonNegativeInt] = None
 
     def to_dict(self) -> dict[str, Any]:
         """
