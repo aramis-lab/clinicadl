@@ -198,7 +198,7 @@ class AutoEncoder(nn.Sequential):
         inter_channels = (
             conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
         )
-        inter_shape = (inter_channels, *self.encoder.convolutions.final_size)
+        inter_shape = (inter_channels, *self.encoder.convolutions._final_size)
         self.decoder = Generator(
             latent_size=latent_size,
             start_shape=inter_shape,
@@ -242,7 +242,7 @@ class AutoEncoder(nn.Sequential):
         args["unpooling"] = []
         sizes_before_pooling = [
             size
-            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            for size, (layer_name, _) in zip(conv._size_details, conv.named_children())
             if "pool" in layer_name
         ]
         for size, pooling in zip(sizes_before_pooling[::-1], conv.pooling[::-1]):
@@ -342,7 +342,7 @@ class AutoEncoder(nn.Sequential):
         output_padding = []
         size_before_convs = [
             size
-            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            for size, (layer_name, _) in zip(conv._size_details, conv.named_children())
             if "layer" in layer_name
         ]
         for size, k, s, p, d in zip(

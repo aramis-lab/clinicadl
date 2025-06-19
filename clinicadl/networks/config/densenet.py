@@ -1,21 +1,18 @@
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
-import torch.nn as nn
 from pydantic import PositiveFloat, PositiveInt
 
-import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
-    ImplementedNetwork,
     NetworkConfig,
     _DropOutConfig,
     _FullyConvConfig,
     _MandatoryActConfig,
-    _OptionalLastLinearLayersConfig,
+    _OptionalNumOutputsConfig,
     _OutputActConfig,
-    _PreTrainedConfig,
+    _PretrainedFromLiteratureConfig,
 )
 
 __all__ = [
@@ -30,7 +27,7 @@ __all__ = [
 class DenseNetConfig(
     NetworkConfig,
     _FullyConvConfig,
-    _OptionalLastLinearLayersConfig,
+    _OptionalNumOutputsConfig,
     _MandatoryActConfig,
     _OutputActConfig,
     _DropOutConfig,
@@ -81,54 +78,25 @@ class DenseNetConfig(
         )
 
 
-class _PreTrainedDenseNetConfig(_PreTrainedConfig):
-    """Base config class for SOTA DenseNets."""
-
-    @classmethod
-    def _get_class(cls) -> Callable[[Any], nn.Module]:
-        """Returns the network associated to this config class."""
-        return nets.get_densenet
-
-
-class DenseNet121Config(_PreTrainedDenseNetConfig):
+class DenseNet121Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet121`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.DENSENET_121.value
 
-
-class DenseNet161Config(_PreTrainedDenseNetConfig):
+class DenseNet161Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet161`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.DENSENET_161.value
 
-
-class DenseNet169Config(_PreTrainedDenseNetConfig):
+class DenseNet169Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet169`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.DENSENET_169.value
 
-
-class DenseNet201Config(_PreTrainedDenseNetConfig):
+class DenseNet201Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet201`.
     """
-
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.DENSENET_201.value

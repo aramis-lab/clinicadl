@@ -1,10 +1,17 @@
 import pytest
 import torch
+from torchvision.models import resnet18, resnet34, resnet50, resnet101, resnet152
 
-from clinicadl.networks.nn import ResNet, get_resnet
+from clinicadl.networks.nn import (
+    ResNet,
+    ResNet18,
+    ResNet34,
+    ResNet50,
+    ResNet101,
+    ResNet152,
+)
 from clinicadl.networks.nn.layers.resnet import ResNetBlock, ResNetBottleneck
 from clinicadl.networks.nn.layers.utils import ActFunction
-from clinicadl.networks.nn.resnet import SOTAResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)
@@ -86,7 +93,7 @@ def test_resnet(
         with pytest.raises(IndexError):
             layer[k + 1]
     with pytest.raises(AttributeError):
-        getattr(net, f"layer{i+1}")
+        getattr(net, f"layer{i + 1}")
 
     assert (
         net.conv0.kernel_size == init_conv_size
@@ -137,19 +144,17 @@ def test_activation_parameters():
 
 
 @pytest.mark.parametrize(
-    "name,num_outputs,output_act",
+    "net,num_outputs,output_act,getter",
     [
-        (SOTAResNet.RESNET_18, 1, "sigmoid"),
-        (SOTAResNet.RESNET_34, 2, None),
-        (SOTAResNet.RESNET_50, None, "sigmoid"),
-        (SOTAResNet.RESNET_101, None, None),
-        (SOTAResNet.RESNET_152, None, None),
+        (ResNet18, 1, "sigmoid", resnet18),
+        (ResNet34, 2, None, resnet34),
+        (ResNet50, None, None, resnet50),
+        (ResNet101, None, "sigmoid", resnet101),
+        (ResNet152, None, None, resnet152),
     ],
 )
-def test_get_resnet(name, num_outputs, output_act):
-    resnet = get_resnet(
-        name, num_outputs=num_outputs, output_act=output_act, pretrained=True
-    )
+def test_literature(net, num_outputs, output_act, getter):
+    resnet = net(num_outputs=num_outputs, output_act=output_act, pretrained=False)
     if num_outputs:
         assert resnet.fc.out.out_features == num_outputs
     else:
@@ -161,12 +166,9 @@ def test_get_resnet(name, num_outputs, output_act):
         with pytest.raises(AttributeError):
             resnet.fc.output_act
 
-
-def test_get_resnet_output():
-    from torchvision.models import resnet18
-
-    resnet = get_resnet(SOTAResNet.RESNET_18, num_outputs=None, pretrained=True)
-    gt = resnet18(weights="DEFAULT")
+    # weights
+    resnet = net(num_outputs=None, pretrained=True)
+    gt = getter(weights="DEFAULT")
     gt.avgpool = torch.nn.Identity()
     gt.fc = torch.nn.Identity()
     x = torch.randn(1, 3, 128, 128)

@@ -1,10 +1,9 @@
 import pytest
 import torch
 
-from clinicadl.networks.nn import SEResNet, get_seresnet
+from clinicadl.networks.nn import SEResNet, SEResNet50, SEResNet101, SEResNet152
 from clinicadl.networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
 from clinicadl.networks.nn.layers.utils import ActFunction
-from clinicadl.networks.nn.senet import SOTAResNet
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)
@@ -89,7 +88,7 @@ def test_seresnet(
         with pytest.raises(IndexError):
             layer[k + 1]
     with pytest.raises(AttributeError):
-        getattr(net, f"layer{i+1}")
+        getattr(net, f"layer{i + 1}")
 
     assert (
         net.conv0.kernel_size == init_conv_size
@@ -142,16 +141,15 @@ def test_activation_parameters():
 
 
 @pytest.mark.parametrize(
-    "name,num_outputs,output_act",
+    "net,num_outputs,output_act",
     [
-        (SOTAResNet.SE_RESNET_50, 1, "sigmoid"),
-        (SOTAResNet.SE_RESNET_101, 2, None),
-        (SOTAResNet.SE_RESNET_152, None, "sigmoid"),
+        (SEResNet50, 1, "sigmoid"),
+        (SEResNet101, 2, None),
+        (SEResNet152, None, "sigmoid"),
     ],
 )
-def test_get_seresnet(name, num_outputs, output_act):
-    seresnet = get_seresnet(
-        name,
+def test_literature(net, num_outputs, output_act):
+    seresnet = net(
         num_outputs=num_outputs,
         output_act=output_act,
     )
@@ -165,11 +163,6 @@ def test_get_seresnet(name, num_outputs, output_act):
     elif output_act and num_outputs is None:
         with pytest.raises(AttributeError):
             seresnet.fc.output_act
-
-
-def test_get_seresnet_error():
-    with pytest.raises(ValueError):
-        get_seresnet(SOTAResNet.SE_RESNET_50, num_outputs=1, pretrained=True)
 
 
 def test_checks():

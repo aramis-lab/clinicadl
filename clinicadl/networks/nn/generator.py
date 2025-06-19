@@ -148,4 +148,4 @@ class Generator(nn.Sequential):
             if len(conv_args["channels"]) > 0
             else start_shape[0]
         )
-        self.output_shape = (n_channels, *self.convolutions.final_size)
+        self.output_shape = (n_channels, *self.convolutions._final_size)

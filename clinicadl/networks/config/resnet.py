@@ -1,9 +1,7 @@
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
-import torch.nn as nn
 from pydantic import PositiveInt, model_validator
 
-import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import (
     ResNetBlockType,
@@ -14,13 +12,12 @@ from clinicadl.networks.nn.utils import ensure_tuple
 from clinicadl.utils.factories import DefaultFromLibrary
 
 from .base import (
-    ImplementedNetwork,
     NetworkConfig,
     _FullyConvConfig,
     _MandatoryActConfig,
-    _OptionalLastLinearLayersConfig,
+    _OptionalNumOutputsConfig,
     _OutputActConfig,
-    _PreTrainedConfig,
+    _PretrainedFromLiteratureConfig,
 )
 
 __all__ = [
@@ -36,7 +33,7 @@ __all__ = [
 class ResNetConfig(
     NetworkConfig,
     _FullyConvConfig,
-    _OptionalLastLinearLayersConfig,
+    _OptionalNumOutputsConfig,
     _MandatoryActConfig,
     _OutputActConfig,
 ):
@@ -103,65 +100,31 @@ class ResNetConfig(
         return self
 
 
-class _PreTrainedResNetConfig(_PreTrainedConfig):
-    """Base config class for SOTA ResNets."""
-
-    @classmethod
-    def _get_class(cls) -> Callable[[Any], nn.Module]:
-        """Returns the network associated to this config class."""
-        return nets.get_resnet
-
-
-class ResNet18Config(_PreTrainedResNetConfig):
+class ResNet18Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ResNet18`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.RESNET_18.value
 
-
-class ResNet34Config(_PreTrainedResNetConfig):
+class ResNet34Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ResNet34`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.RESNET_34.value
 
-
-class ResNet50Config(_PreTrainedResNetConfig):
+class ResNet50Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ResNet50`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.RESNET_50.value
 
-
-class ResNet101Config(_PreTrainedResNetConfig):
+class ResNet101Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ResNet101`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.RESNET_101.value
 
-
-class ResNet152Config(_PreTrainedResNetConfig):
+class ResNet152Config(_PretrainedFromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ResNet152`.
     """
-
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.RESNET_152.value

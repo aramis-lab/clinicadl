@@ -118,10 +118,10 @@ from clinicadl.networks.config.vit import (
             "DenseNet",
             DenseNetConfig,
         ),
-        ({"num_outputs": None}, "DenseNet-201", DenseNet201Config),
-        ({"num_outputs": None}, "DenseNet-121", DenseNet121Config),
-        ({"num_outputs": None}, "DenseNet-161", DenseNet161Config),
-        ({"num_outputs": None}, "DenseNet-169", DenseNet169Config),
+        ({"num_outputs": None}, "DenseNet201", DenseNet201Config),
+        ({"num_outputs": None}, "DenseNet121", DenseNet121Config),
+        ({"num_outputs": None}, "DenseNet161", DenseNet161Config),
+        ({"num_outputs": None}, "DenseNet169", DenseNet169Config),
         (
             {
                 "spatial_dims": 2,
@@ -131,11 +131,11 @@ from clinicadl.networks.config.vit import (
             "ResNet",
             ResNetConfig,
         ),
-        ({"num_outputs": None}, "ResNet-101", ResNet101Config),
-        ({"num_outputs": None}, "ResNet-152", ResNet152Config),
-        ({"num_outputs": None}, "ResNet-18", ResNet18Config),
-        ({"num_outputs": None}, "ResNet-34", ResNet34Config),
-        ({"num_outputs": None}, "ResNet-50", ResNet50Config),
+        ({"num_outputs": None}, "ResNet101", ResNet101Config),
+        ({"num_outputs": None}, "ResNet152", ResNet152Config),
+        ({"num_outputs": None}, "ResNet18", ResNet18Config),
+        ({"num_outputs": None}, "ResNet34", ResNet34Config),
+        ({"num_outputs": None}, "ResNet50", ResNet50Config),
         (
             {
                 "spatial_dims": 2,
@@ -145,9 +145,9 @@ from clinicadl.networks.config.vit import (
             "SEResNet",
             SEResNetConfig,
         ),
-        ({"num_outputs": None}, "SEResNet-101", SEResNet101Config),
-        ({"num_outputs": None}, "SEResNet-152", SEResNet152Config),
-        ({"num_outputs": None}, "SEResNet-50", SEResNet50Config),
+        ({"num_outputs": None}, "SEResNet101", SEResNet101Config),
+        ({"num_outputs": None}, "SEResNet152", SEResNet152Config),
+        ({"num_outputs": None}, "SEResNet50", SEResNet50Config),
         (
             {
                 "spatial_dims": 2,
@@ -175,10 +175,10 @@ from clinicadl.networks.config.vit import (
             "ViT",
             ViTConfig,
         ),
-        ({"num_outputs": None}, "ViT-B/16", ViTB16Config),
-        ({"num_outputs": None}, "ViT-B/32", ViTB32Config),
-        ({"num_outputs": None}, "ViT-L/16", ViTL16Config),
-        ({"num_outputs": None}, "ViT-L/32", ViTL32Config),
+        ({"num_outputs": None}, "ViTB16", ViTB16Config),
+        ({"num_outputs": None}, "ViTB32", ViTB32Config),
+        ({"num_outputs": None}, "ViTL16", ViTL16Config),
+        ({"num_outputs": None}, "ViTL32", ViTL32Config),
     ],
 )
 def test_get_network_config(args, name, config):

@@ -1,7 +1,6 @@
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
-import torch.nn as nn
-from pydantic import PositiveInt, field_validator, model_validator
+from pydantic import PositiveInt, model_validator
 
 import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
@@ -10,7 +9,11 @@ from clinicadl.networks.nn.senet import check_se_channels
 from clinicadl.utils.config import update_kwargs_with_defaults
 from clinicadl.utils.factories import DefaultFromLibrary
 
-from .base import ImplementedNetwork, _PreTrainedConfig
+from .base import (
+    NetworkConfig,
+    _OptionalNumOutputsConfig,
+    _OutputActConfig,
+)
 from .resnet import ResNetConfig
 
 __all__ = [
@@ -70,52 +73,39 @@ class SEResNetConfig(ResNetConfig):
         return self
 
 
-class _PreTrainedSEResNetConfig(_PreTrainedConfig):
-    """Base config class for SOTA SE-ResNets."""
+class _FromLiteratureConfig(
+    NetworkConfig,
+    _OptionalNumOutputsConfig,
+    _OutputActConfig,
+):
+    """Base config class for networks from literature."""
 
-    pretrained: bool = False
-
-    @field_validator("pretrained")
-    @classmethod
-    def check_not_pretrained(cls, v):
-        assert not v, "Pretrained networks are not yet available for SE-ResNets. Please leave 'pretrained' to False."
-
-        return v
-
-    @classmethod
-    def _get_class(cls) -> Callable[[Any], nn.Module]:
-        """Returns the network associated to this config class."""
-        return nets.get_seresnet
+    def __init__(
+        self,
+        num_outputs: Optional[PositiveInt],
+        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
+            DefaultFromLibrary.YES
+        ),
+    ):
+        super().__init__(
+            num_outputs=num_outputs,
+            output_act=output_act,
+        )
 
 
-class SEResNet50Config(_PreTrainedSEResNetConfig):
+class SEResNet50Config(_FromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet50`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.SE_RESNET_50.value
 
-
-class SEResNet101Config(_PreTrainedSEResNetConfig):
+class SEResNet101Config(_FromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet101`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.SE_RESNET_101.value
 
-
-class SEResNet152Config(_PreTrainedSEResNetConfig):
+class SEResNet152Config(_FromLiteratureConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet152`.
     """
-
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.SE_RESNET_152.value

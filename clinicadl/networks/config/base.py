@@ -31,27 +31,27 @@ class ImplementedNetwork(str, Enum):
     AE = "AutoEncoder"
     VAE = "VAE"
     DENSENET = "DenseNet"
-    DENSENET_121 = "DenseNet-121"
-    DENSENET_161 = "DenseNet-161"
-    DENSENET_169 = "DenseNet-169"
-    DENSENET_201 = "DenseNet-201"
+    DENSENET_121 = "DenseNet121"
+    DENSENET_161 = "DenseNet161"
+    DENSENET_169 = "DenseNet169"
+    DENSENET_201 = "DenseNet201"
     RESNET = "ResNet"
-    RESNET_18 = "ResNet-18"
-    RESNET_34 = "ResNet-34"
-    RESNET_50 = "ResNet-50"
-    RESNET_101 = "ResNet-101"
-    RESNET_152 = "ResNet-152"
+    RESNET_18 = "ResNet18"
+    RESNET_34 = "ResNet34"
+    RESNET_50 = "ResNet50"
+    RESNET_101 = "ResNet101"
+    RESNET_152 = "ResNet152"
     SE_RESNET = "SEResNet"
-    SE_RESNET_50 = "SEResNet-50"
-    SE_RESNET_101 = "SEResNet-101"
-    SE_RESNET_152 = "SEResNet-152"
+    SE_RESNET_50 = "SEResNet50"
+    SE_RESNET_101 = "SEResNet101"
+    SE_RESNET_152 = "SEResNet152"
     UNET = "UNet"
     ATT_UNET = "AttentionUNet"
     VIT = "ViT"
-    VIT_B_16 = "ViT-B/16"
-    VIT_B_32 = "ViT-B/32"
-    VIT_L_16 = "ViT-L/16"
-    VIT_L_32 = "ViT-L/32"
+    VIT_B_16 = "ViTB16"
+    VIT_B_32 = "ViTB32"
+    VIT_L_16 = "ViTL16"
+    VIT_L_32 = "ViTL32"
 
     @classmethod
     def _missing_(cls, value):
@@ -105,7 +105,7 @@ class _InShapeConfig(ClinicaDLConfig):
     in_shape: Sequence[PositiveInt]
 
 
-class _OptionalLastLinearLayersConfig(ClinicaDLConfig):
+class _OptionalNumOutputsConfig(ClinicaDLConfig):
     """Config class for 'num_outputs' option."""
 
     num_outputs: Optional[PositiveInt]
@@ -124,7 +124,7 @@ class _OutputActConfig(ClinicaDLConfig):
 
 
 class _DropOutConfig(ClinicaDLConfig):
-    """Base config class for 'dropout' option."""
+    """Config class for 'dropout' option."""
 
     dropout: Optional[PositiveFloat]
 
@@ -139,12 +139,16 @@ class _DropOutConfig(ClinicaDLConfig):
         return v
 
 
-class _PreTrainedConfig(
-    NetworkConfig, _OptionalLastLinearLayersConfig, _OutputActConfig
-):
-    """Base config class for SOTA networks."""
+class _PretrainedConfig(ClinicaDLConfig):
+    """Config class for 'pretrained' option."""
 
     pretrained: bool
+
+
+class _PretrainedFromLiteratureConfig(
+    NetworkConfig, _OptionalNumOutputsConfig, _OutputActConfig, _PretrainedConfig
+):
+    """Base config class for pretrained networks."""
 
     def __init__(
         self,
@@ -154,28 +158,8 @@ class _PreTrainedConfig(
         ),
         pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
     ):
-        kwargs = {
-            "num_outputs": num_outputs,
-            "output_act": output_act,
-            "pretrained": pretrained,
-        }
-        associated_getter = (
-            self._get_class()
-        )  # special cas here: _get_class does not return a class
-        kwargs = update_kwargs_with_defaults(kwargs, function=associated_getter)
-        super().__init__(**kwargs)
-
-    def get_object(self) -> nn.Module:
-        """
-        Returns the neural network associated to this configuration,
-        parametrized with the parameters passed by the user.
-
-        Returns
-        -------
-        torch.nn.Module:
-            The neural network.
-        """
-        associated_getter = self._get_class()
-        return associated_getter(
-            name=self._get_name(), **self.model_dump(exclude="name")
+        super().__init__(
+            num_outputs=num_outputs,
+            output_act=output_act,
+            pretrained=pretrained,
         )

@@ -1,8 +1,14 @@
 import pytest
 import torch
+from torchvision.models import densenet121, densenet161, densenet169, densenet201
 
-from clinicadl.networks.nn import DenseNet, get_densenet
-from clinicadl.networks.nn.densenet import SOTADenseNet
+from clinicadl.networks.nn import (
+    DenseNet,
+    DenseNet121,
+    DenseNet161,
+    DenseNet169,
+    DenseNet201,
+)
 from clinicadl.networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(3, 1, 16)
@@ -65,9 +71,9 @@ def test_densenet(
             if dropout:
                 assert dense_layer.dropout.p == dropout
         with pytest.raises(AttributeError):
-            getattr(dense_block, f"denseblock{n+1}")
+            getattr(dense_block, f"denseblock{n + 1}")
     with pytest.raises(AttributeError):
-        getattr(dense_block, f"denseblock{i+1}")
+        getattr(dense_block, f"denseblock{i + 1}")
 
     assert features.conv0.out_channels == init_features
 
@@ -103,40 +109,29 @@ def test_activation_parameters():
 
 
 @pytest.mark.parametrize(
-    "name,num_outputs,output_act",
+    "net,num_outputs,output_act,getter",
     [
-        (SOTADenseNet.DENSENET_121, 1, "sigmoid"),
-        (SOTADenseNet.DENSENET_161, 2, None),
-        (SOTADenseNet.DENSENET_169, None, "sigmoid"),
-        (SOTADenseNet.DENSENET_201, None, None),
+        (DenseNet121, 1, "sigmoid", densenet121),
+        (DenseNet161, 2, None, densenet161),
+        (DenseNet169, None, "sigmoid", densenet169),
+        (DenseNet201, None, None, densenet201),
     ],
 )
-def test_get_densenet(name, num_outputs, output_act):
-    pretrained_densenet = get_densenet(
-        name, num_outputs=num_outputs, output_act=output_act, pretrained=True
-    )
-    densenet = get_densenet(
-        name, num_outputs=num_outputs, output_act=output_act, pretrained=False
-    )
-    for network in [pretrained_densenet, densenet]:
-        if num_outputs:
-            assert network.fc.out.out_features == num_outputs
-        else:
-            assert network.fc is None
+def test_literature(net, num_outputs, output_act, getter):
+    densenet = net(num_outputs=num_outputs, output_act=output_act, pretrained=False)
+    if num_outputs:
+        assert densenet.fc.out.out_features == num_outputs
+    else:
+        assert densenet.fc is None
 
-        if output_act and num_outputs:
-            assert network.fc.output_act is not None
-        elif output_act and num_outputs is None:
-            with pytest.raises(AttributeError):
-                network.fc.output_act
+    if output_act and num_outputs:
+        assert densenet.fc.output_act is not None
+    elif output_act and num_outputs is None:
+        with pytest.raises(AttributeError):
+            densenet.fc.output_act
 
-
-def test_get_densenet_output():
-    from torchvision.models import densenet121
-
-    densenet = get_densenet(
-        SOTADenseNet.DENSENET_121, num_outputs=None, pretrained=True
-    ).features
-    gt = densenet121(weights="DEFAULT").features
+    # weights
+    densenet = net(num_outputs=None, pretrained=True).features
+    gt = getter(weights="DEFAULT").features
     x = torch.randn(1, 3, 128, 128)
     assert (densenet(x) == gt(x)).all()

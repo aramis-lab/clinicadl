@@ -264,13 +264,6 @@ class ConvEncoder(nn.Sequential):
         """
         return self._current_size
 
-    @property
-    def _size_details(self):
-        """
-        To know the sizes of intermediate images.
-        """
-        return self._size_details
-
     @_final_size.setter
     def _final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
         """

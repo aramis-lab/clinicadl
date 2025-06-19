@@ -3,8 +3,8 @@ from copy import deepcopy
 import pytest
 from pydantic import ValidationError
 
+import clinicadl.networks.nn as nets
 from clinicadl.networks.config import *
-from clinicadl.networks.config import ImplementedNetwork
 from clinicadl.networks.config.mlp_conv import (
     ConvDecoderOptions,
     ConvEncoderOptions,
@@ -34,22 +34,22 @@ MANDATORY_ARGS = {
     "ResNet": {"spatial_dims": 2, "in_channels": 1, "num_outputs": 1},
     "SEResNet": {"spatial_dims": 2, "in_channels": 1, "num_outputs": 1},
     "ViT": {"in_shape": (1, 3, 3), "patch_size": 1, "num_outputs": 1},
-    "DenseNet-121": {"num_outputs": None},
-    "DenseNet-161": {"num_outputs": None},
-    "DenseNet-169": {"num_outputs": None},
-    "DenseNet-201": {"num_outputs": None},
-    "ResNet-18": {"num_outputs": None},
-    "ResNet-34": {"num_outputs": None},
-    "ResNet-50": {"num_outputs": None},
-    "ResNet-101": {"num_outputs": None},
-    "ResNet-152": {"num_outputs": None},
-    "SEResNet-50": {"num_outputs": None},
-    "SEResNet-101": {"num_outputs": None},
-    "SEResNet-152": {"num_outputs": None},
-    "ViT-B/16": {"num_outputs": None},
-    "ViT-B/32": {"num_outputs": None},
-    "ViT-L/16": {"num_outputs": None},
-    "ViT-L/32": {"num_outputs": None},
+    "DenseNet121": {"num_outputs": None},
+    "DenseNet161": {"num_outputs": None},
+    "DenseNet169": {"num_outputs": None},
+    "DenseNet201": {"num_outputs": None},
+    "ResNet18": {"num_outputs": None},
+    "ResNet34": {"num_outputs": None},
+    "ResNet50": {"num_outputs": None},
+    "ResNet101": {"num_outputs": None},
+    "ResNet152": {"num_outputs": None},
+    "SEResNet50": {"num_outputs": None},
+    "SEResNet101": {"num_outputs": None},
+    "SEResNet152": {"num_outputs": None},
+    "ViTB16": {"num_outputs": None},
+    "ViTB32": {"num_outputs": None},
+    "ViTL16": {"num_outputs": None},
+    "ViTL32": {"num_outputs": None},
 }
 BAD_INPUTS = [
     ({"num_inputs": 0}, MLPConfig),
@@ -662,9 +662,6 @@ def test_vit_checks():
         ResNet50Config,
         ResNet101Config,
         ResNet152Config,
-        SEResNet50Config,
-        SEResNet101Config,
-        SEResNet152Config,
         ViTB16Config,
         ViTB32Config,
         ViTL16Config,
@@ -684,12 +681,8 @@ def test_pretrained(config):
     assert not c.pretrained and c.pretrained is not None
 
     args["pretrained"] = True
-    if "SEResNet" in name:
-        with pytest.raises(ValidationError):
-            config(**args)
-    else:
-        c = config(**args)
-        assert c.pretrained
+    c = config(**args)
+    assert c.pretrained
 
 
 @pytest.mark.parametrize(
@@ -717,9 +710,9 @@ def test_pretrained(config):
         (ResNet50Config, nets.ResNet),
         (ResNet101Config, nets.ResNet),
         (ResNet152Config, nets.ResNet),
-        (SEResNet50Config, nets.SEResNet),
-        (SEResNet101Config, nets.SEResNet),
-        (SEResNet152Config, nets.SEResNet),
+        (SEResNet50Config, nets.SEResNet50),
+        (SEResNet101Config, nets.SEResNet101),
+        (SEResNet152Config, nets.SEResNet152),
         (ViTB16Config, nets.ViT),
         (ViTB32Config, nets.ViT),
         (ViTL16Config, nets.ViT),

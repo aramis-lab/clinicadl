@@ -132,7 +132,7 @@ class CNN(nn.Sequential):
         n_channels = (
             conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
         )
-        flatten_shape = int(np.prod(self.convolutions.final_size) * n_channels)
+        flatten_shape = int(np.prod(self.convolutions._final_size) * n_channels)
         if mlp_args is None:
             mlp_args = {"hidden_dims": []}
         self.mlp = MLP(
