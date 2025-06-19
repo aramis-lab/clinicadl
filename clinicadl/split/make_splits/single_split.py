@@ -75,7 +75,7 @@ def make_split(
             Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
             of your data in the training set, but rather that you have 80% of you participants in the training set.
 
-    output_dir : Union[Path, str], (optional, default=None)
+    output_dir : Optional[Union[Path, str]], (optional, default=None)
         Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
         If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
     subset_name : str, (optional, default="test")
