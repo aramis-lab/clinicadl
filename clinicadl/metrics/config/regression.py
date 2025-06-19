@@ -1,11 +1,9 @@
-from typing import Union
-
 import monai
 
 from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
+from .base import MetricConfig, _GetNotNansConfig
 from .enum import Optimum
 
 __all__ = [
@@ -20,7 +18,7 @@ RMSE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.RMSEMetric)
 
 
 # TODO : R2 missing
-class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class MSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MSEMetric`.
     """
@@ -33,7 +31,7 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         return Optimum.MIN
 
 
-class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class MAEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MAEMetric`.
     """
@@ -46,7 +44,7 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         return Optimum.MIN
 
 
-class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class RMSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.RMSEMetric`.
     """

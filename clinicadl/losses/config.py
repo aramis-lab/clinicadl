@@ -7,7 +7,7 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.factories import get_defaults_from
 
 from .enum import ImplementedLoss, Order, Reduction
@@ -42,8 +42,6 @@ MSE_TORCH_DEFAULT = get_defaults_from(torch.nn.MSELoss)
 class LossConfig(ObjectConfig):
     """Base config class for the loss function."""
 
-    reduction: Reduction
-
     def get_object(self) -> torch.nn.Module:
         """
         Returns the loss function associated to this configuration,
@@ -70,20 +68,14 @@ class LossConfig(ObjectConfig):
         return getattr(torch.nn, cls._get_name())
 
 
-class _WeightConfig(ClinicaDLConfig):
-    """Config class for loss functions with 'weight' argument."""
-
-    weight: Optional[List[NonNegativeFloat]]
-
-
-class NLLLossConfig(LossConfig, _WeightConfig):
+class NLLLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.NLLLoss`.
     """
 
+    weight: Optional[List[NonNegativeFloat]] = NLL_TORCH_DEFAULTS["weight"]
     ignore_index: int = NLL_TORCH_DEFAULTS["ignore_index"]
     reduction: Reduction = NLL_TORCH_DEFAULTS["reduction"]
-    weight: Optional[List[NonNegativeFloat]] = NLL_TORCH_DEFAULTS["weight"]
 
     @field_validator("ignore_index")
     @classmethod
@@ -100,10 +92,10 @@ class CrossEntropyLossConfig(NLLLossConfig):
     Config class for :py:class:`torch.nn.CrossEntropyLoss`.
     """
 
-    label_smoothing: NonNegativeFloat = CROSS_ENTROPY_TORCH_DEFAULTS["label_smoothing"]
     weight: Optional[List[NonNegativeFloat]] = CROSS_ENTROPY_TORCH_DEFAULTS["weight"]
     ignore_index: int = CROSS_ENTROPY_TORCH_DEFAULTS["ignore_index"]
     reduction: Reduction = CROSS_ENTROPY_TORCH_DEFAULTS["reduction"]
+    label_smoothing: NonNegativeFloat = CROSS_ENTROPY_TORCH_DEFAULTS["label_smoothing"]
 
     @field_validator("label_smoothing")
     @classmethod
@@ -115,7 +107,7 @@ class CrossEntropyLossConfig(NLLLossConfig):
         return v
 
 
-class BCELossConfig(LossConfig, _WeightConfig):
+class BCELossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.BCELoss`.
     """
@@ -138,9 +130,9 @@ class BCEWithLogitsLossConfig(BCELossConfig):
     Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
     """
 
-    pos_weight: Optional[List[Any]] = BCE_LOGITS_TORCH_DEFAULTS["pos_weight"]
     weight: Optional[List[NonNegativeFloat]] = BCE_LOGITS_TORCH_DEFAULTS["weight"]
     reduction: Reduction = BCE_LOGITS_TORCH_DEFAULTS["reduction"]
+    pos_weight: Optional[List[Any]] = BCE_LOGITS_TORCH_DEFAULTS["pos_weight"]
 
     @field_validator("pos_weight")
     @classmethod
@@ -161,7 +153,7 @@ class BCEWithLogitsLossConfig(BCELossConfig):
             return (isinstance(item, float) or isinstance(item, int)) and item >= 0
 
 
-class MultiMarginLossConfig(LossConfig, _WeightConfig):
+class MultiMarginLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.MultiMarginLoss`.
     """
@@ -179,8 +171,8 @@ class KLDivLossConfig(LossConfig):
     Config class for :py:class:`torch.nn.KLDivLoss`.
     """
 
-    log_target: bool = KL_DIV_LOSS_TORCH_DEFAULTS["log_target"]
     reduction: Reduction = KL_DIV_LOSS_TORCH_DEFAULTS["reduction"]
+    log_target: bool = KL_DIV_LOSS_TORCH_DEFAULTS["log_target"]
 
 
 class HuberLossConfig(LossConfig):
@@ -188,8 +180,8 @@ class HuberLossConfig(LossConfig):
     Config class for :py:class:`torch.nn.HuberLoss`.
     """
 
-    delta: PositiveFloat = HUBER_LOSS_TORCH_DEFAULTS["delta"]
     reduction: Reduction = HUBER_LOSS_TORCH_DEFAULTS["reduction"]
+    delta: PositiveFloat = HUBER_LOSS_TORCH_DEFAULTS["delta"]
 
 
 class SmoothL1LossConfig(LossConfig):
@@ -197,8 +189,8 @@ class SmoothL1LossConfig(LossConfig):
     Config class for :py:class:`torch.nn.SmoothL1Loss`.
     """
 
-    beta: NonNegativeFloat = SMOOTH_L1_LOSS_TORCH_DEFAULTS["beta"]
     reduction: Reduction = SMOOTH_L1_LOSS_TORCH_DEFAULTS["reduction"]
+    beta: NonNegativeFloat = SMOOTH_L1_LOSS_TORCH_DEFAULTS["beta"]
 
 
 class L1LossConfig(LossConfig):

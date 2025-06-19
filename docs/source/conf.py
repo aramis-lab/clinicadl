@@ -4,11 +4,7 @@ import typing
 from datetime import date
 from typing import Annotated, Union, get_args, get_origin
 
-import pydantic
 from pydantic import BaseModel
-from pydantic.types import NonNegativeFloat, PositiveInt
-
-import clinicadl
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -29,14 +25,13 @@ version = "2.0"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx_design",
     "sphinx.ext.extlinks",
-    "sphinx_autodoc_typehints",
     "sphinx.ext.napoleon",
-    # "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.duration",
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
+    "sphinx_design",
+    "sphinx_autodoc_typehints",
     "sphinx_copybutton",
 ]
 
@@ -126,7 +121,7 @@ ReversePydanticTypes = {
     "float > 0": "NonNegativeFloat",
     "float ≤ 0": "NegativeFloat",
     "float < 0": "NonPositiveFloat",
-    # Tu peux ajouter d’autres types ici
+    # you can add other types here
 }
 
 
@@ -140,7 +135,7 @@ def simplify_type(tp):
     # Handle Annotated (Pydantic constraints)
     if origin is Annotated:
         base, *constraints = get_args(tp)
-        # Sinon, fallback avec les contraintes explicites
+        # otherwise, fallback with explicit constraints
         parts = base.__name__ if hasattr(base, "__name__") else str(base)
         for constraint in constraints:
             if hasattr(constraint, "ge"):

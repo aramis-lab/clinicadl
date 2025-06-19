@@ -135,7 +135,7 @@ Bounds = Union[
 class MaskingMethodConfig(ClinicaDLConfig):
     """Base config class 'masking_method' argument."""
 
-    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]] = None
+    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
 
     @field_validator("masking_method", mode="before")
     @classmethod

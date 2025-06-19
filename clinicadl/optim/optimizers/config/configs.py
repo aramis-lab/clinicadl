@@ -9,13 +9,7 @@ from pydantic import (
 
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import (
-    OptimizerConfig,
-    _CapturableConfig,
-    _EpsConfig,
-    _FusedConfig,
-    _MomentumConfig,
-)
+from .base import OptimizerConfig
 
 __all__ = [
     "AdadeltaConfig",
@@ -31,7 +25,7 @@ RMSPROP_DEFAULTS = get_defaults_from(torch.optim.RMSprop)
 SGD_DEFAULTS = get_defaults_from(torch.optim.SGD)
 
 
-class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
+class AdadeltaConfig(OptimizerConfig):
     """
     Config class for :py:class:`torch.optim.Adadelta`.
     """
@@ -60,7 +54,7 @@ class AdadeltaConfig(OptimizerConfig, _EpsConfig, _CapturableConfig):
         return cls.validator_proba(v, ctx)
 
 
-class AdagradConfig(OptimizerConfig, _EpsConfig, _FusedConfig):
+class AdagradConfig(OptimizerConfig):
     """
     Config class for :py:class:`torch.optim.Adagrad`.
     """
@@ -85,7 +79,7 @@ class AdagradConfig(OptimizerConfig, _EpsConfig, _FusedConfig):
     fused: Union[Optional[bool], Dict[str, Optional[bool]]] = ADAGRAD_DEFAULTS["fused"]
 
 
-class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
+class AdamConfig(OptimizerConfig):
     """
     Config class for :py:class:`torch.optim.Adam`.
     """
@@ -113,7 +107,7 @@ class AdamConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _FusedConfig):
         return cls.validator_proba(v, ctx)
 
 
-class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumConfig):
+class RMSpropConfig(OptimizerConfig):
     """
     Config class for :py:class:`torch.optim.RMSprop`.
     """
@@ -139,7 +133,7 @@ class RMSpropConfig(OptimizerConfig, _EpsConfig, _CapturableConfig, _MomentumCon
     differentiable: Union[bool, Dict[str, bool]] = RMSPROP_DEFAULTS["differentiable"]
 
 
-class SGDConfig(OptimizerConfig, _FusedConfig, _MomentumConfig):
+class SGDConfig(OptimizerConfig):
     """
     Config class for :py:class:`torch.optim.SGD`.
     """

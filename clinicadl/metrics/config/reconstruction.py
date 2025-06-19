@@ -13,7 +13,7 @@ from pydantic import (
 from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
+from .base import MetricConfig, _GetNotNansConfig
 from .enum import Kernel, Optimum
 
 __all__ = [
@@ -29,14 +29,13 @@ MULTI_SCALE_SSIM_MONAI_DEFAULTS = get_defaults_from(
 )
 
 
-class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class PSNRMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.PSNRMetric`.
     """
 
     max_val: PositiveFloat
     reduction: Reduction = PSNR_MONAI_DEFAULTS["reduction"]
-    get_not_nans: bool = PSNR_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -44,7 +43,7 @@ class PSNRMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         return Optimum.MAX
 
 
-class _BaseSSIMConfig(_ReductionConfig, _GetNotNansConfig):
+class _BaseSSIMConfig(_GetNotNansConfig):
     "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt
@@ -83,18 +82,17 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
 
     spatial_dims: PositiveInt
+    data_range: PositiveFloat = SSIM_MONAI_DEFAULTS["data_range"]
+    kernel_type: Kernel = SSIM_MONAI_DEFAULTS["kernel_type"]
     win_size: Union[PositiveInt, Tuple[PositiveInt, ...]] = SSIM_MONAI_DEFAULTS[
         "win_size"
     ]
-    data_range: PositiveFloat = SSIM_MONAI_DEFAULTS["data_range"]
-    kernel_type: Kernel = SSIM_MONAI_DEFAULTS["kernel_type"]
     kernel_sigma: Union[PositiveFloat, Tuple[PositiveFloat, ...]] = SSIM_MONAI_DEFAULTS[
         "kernel_sigma"
     ]
     k1: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k1"]
     k2: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k2"]
     reduction: Reduction = SSIM_MONAI_DEFAULTS["reduction"]
-    get_not_nans: bool = SSIM_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -115,19 +113,18 @@ class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
 
     spatial_dims: PositiveInt
+    data_range: PositiveFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["data_range"]
+    kernel_type: Kernel = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_type"]
     kernel_size: Union[
         PositiveInt, Tuple[PositiveInt, ...]
     ] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_size"]
-    weights: Tuple[PositiveFloat, ...] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["weights"]
-    data_range: PositiveFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["data_range"]
-    kernel_type: Kernel = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_type"]
     kernel_sigma: Union[
         PositiveFloat, Tuple[PositiveFloat, ...]
     ] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["kernel_sigma"]
     k1: NonNegativeFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["k1"]
     k2: NonNegativeFloat = MULTI_SCALE_SSIM_MONAI_DEFAULTS["k2"]
+    weights: Tuple[PositiveFloat, ...] = MULTI_SCALE_SSIM_MONAI_DEFAULTS["weights"]
     reduction: Reduction = MULTI_SCALE_SSIM_MONAI_DEFAULTS["reduction"]
-    get_not_nans: bool = MULTI_SCALE_SSIM_MONAI_DEFAULTS["get_not_nans"]
 
     @staticmethod
     def optimum() -> Optimum:

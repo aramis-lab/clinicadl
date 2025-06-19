@@ -20,6 +20,9 @@ class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
     """
 
     remapping: dict[int, int]
+    masking_method: Optional[
+        Union[str, AnatomicalLabel, Bounds]
+    ] = REMAP_LABELS_TORCHIO_DEFAULTS["masking_method"]
 
 
 class OneHotConfig(TransformConfig):

@@ -9,8 +9,6 @@ from clinicadl.utils.factories import get_defaults_from
 from .base import (
     MetricConfig,
     _GetNotNansConfig,
-    _IncludeBackgroundConfig,
-    _ReductionConfig,
 )
 from .enum import Average, ConfusionMatrixMetricName, Optimum
 
@@ -39,9 +37,7 @@ class ROCAUCMetricConfig(MetricConfig):
         return Optimum.MAX
 
 
-class ConfusionMatrixMetricConfig(
-    MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
-):
+class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.ConfusionMatrixMetric`.
     """
@@ -51,7 +47,6 @@ class ConfusionMatrixMetricConfig(
     ] = CONFUSION_METRICS_DEFAULTS["metric_name"]
     include_background: bool = CONFUSION_METRICS_DEFAULTS["include_background"]
     compute_sample: bool = CONFUSION_METRICS_DEFAULTS["compute_sample"]
-    get_not_nans: bool = CONFUSION_METRICS_DEFAULTS["get_not_nans"]
     reduction: Reduction = CONFUSION_METRICS_DEFAULTS["reduction"]
 
     def optimum(self) -> Optimum:  # pylint: disable=arguments-differ

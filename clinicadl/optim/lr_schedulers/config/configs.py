@@ -14,10 +14,7 @@ from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     LRSchedulerConfig,
-    _FactorConfig,
-    _GammaConfig,
     _LastEpochConfig,
-    _TotalItersConfig,
 )
 from .enum import AnnealingStrategy, Mode, ThresholdMode
 
@@ -44,9 +41,7 @@ REDUCE_LR_ON_PLATEAU_DEFAULTS = get_defaults_from(
 ONE_CYCLE_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.OneCycleLR)
 
 
-class ConstantLRConfig(
-    LRSchedulerConfig, _FactorConfig, _TotalItersConfig, _LastEpochConfig
-):
+class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ConstantLR`.
     """
@@ -56,7 +51,7 @@ class ConstantLRConfig(
     last_epoch: int = CONSTANT_LR_DEFAULTS["last_epoch"]
 
 
-class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
+class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ExponentialLR`.
     """
@@ -65,7 +60,7 @@ class ExponentialLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     last_epoch: int = EXPO_LR_DEFAULTS["last_epoch"]
 
 
-class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
+class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.LinearLR`.
     """
@@ -76,7 +71,7 @@ class LinearLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
     last_epoch: int = LINEAR_LR_DEFAULTS["last_epoch"]
 
 
-class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
+class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.StepLR`.
     """
@@ -86,7 +81,7 @@ class StepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
     last_epoch: int = STEP_LR_DEFAULTS["last_epoch"]
 
 
-class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
+class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.MultiStepLR`.
     """
@@ -104,17 +99,17 @@ class MultiStepLRConfig(LRSchedulerConfig, _GammaConfig, _LastEpochConfig):
         return sorted(v)
 
 
-class PolynomialLRConfig(LRSchedulerConfig, _TotalItersConfig, _LastEpochConfig):
+class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.PolynomialLR`.
     """
 
-    power: float = POLY_LR_DEFAULTS["power"]
     total_iters: PositiveInt = POLY_LR_DEFAULTS["total_iters"]
+    power: float = POLY_LR_DEFAULTS["power"]
     last_epoch: int = POLY_LR_DEFAULTS["last_epoch"]
 
 
-class ReduceLROnPlateauConfig(LRSchedulerConfig, _FactorConfig):
+class ReduceLROnPlateauConfig(LRSchedulerConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ReduceLROnPlateau`.
     """

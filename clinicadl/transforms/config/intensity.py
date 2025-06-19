@@ -9,7 +9,8 @@ from pydantic import (
 
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import MaskingMethodConfig, TransformConfig
+from .base import Bounds, MaskingMethodConfig, TransformConfig
+from .enum import AnatomicalLabel
 
 __all__ = [
     "RescaleIntensityConfig",
@@ -19,7 +20,8 @@ __all__ = [
 ]
 
 RESCALE_INTENSITY_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RescaleIntensity)
-MASK_CONFIG_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Mask)
+Z_NORMALIZATION_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.ZNormalization)
+MASK_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Mask)
 CLAMP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Clamp)
 
 
@@ -34,6 +36,9 @@ class RescaleIntensityConfig(TransformConfig, MaskingMethodConfig):
     percentiles: Union[
         NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]
     ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["percentiles"]
+    masking_method: Optional[
+        Union[str, AnatomicalLabel, Bounds]
+    ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["masking_method"]
     in_min_max: Optional[
         Union[NonNegativeFloat, Tuple[float, float]]
     ] = RESCALE_INTENSITY_TORCHIO_DEFAULTS["in_min_max"]
@@ -72,14 +77,18 @@ class ZNormalizationConfig(TransformConfig, MaskingMethodConfig):
     Config class for :py:class:`torchio.transforms.ZNormalization`.
     """
 
+    masking_method: Optional[
+        Union[str, AnatomicalLabel, Bounds]
+    ] = Z_NORMALIZATION_TORCHIO_DEFAULTS["masking_method"]
+
 
 class MaskConfig(TransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.Mask`.
     """
 
-    outside_value: float = MASK_CONFIG_TORCHIO_DEFAULTS["outside_value"]
-    labels: Optional[Tuple[int, ...]] = MASK_CONFIG_TORCHIO_DEFAULTS["labels"]
+    outside_value: float = MASK_TORCHIO_DEFAULTS["outside_value"]
+    labels: Optional[Tuple[int, ...]] = MASK_TORCHIO_DEFAULTS["labels"]
 
 
 class ClampConfig(TransformConfig):

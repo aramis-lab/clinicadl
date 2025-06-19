@@ -1,15 +1,10 @@
-import inspect
-from enum import Enum
 from inspect import signature
 from typing import Any, Callable, Dict, List, Tuple
 
-from pydantic import BaseModel
 
-
-def get_args_and_defaults(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
+def get_args_from(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
     """
-    Gets the arguments of a function, as well as the default
-    values possibly attached to them.
+    Gets the arguments of a function.
 
     Parameters
     ----------
@@ -20,12 +15,8 @@ def get_args_and_defaults(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
     -------
     List[str]
         The names of the arguments.
-    Dict[str, Any]
-        The default values in a dict.
     """
-    args = list(signature(func).parameters.keys())
-    defaults = get_defaults_from(func=func)
-    return args, defaults
+    return list(signature(func).parameters.keys())
 
 
 def get_defaults_from(func: Callable) -> Dict[str, Any]:
@@ -35,7 +26,7 @@ def get_defaults_from(func: Callable) -> Dict[str, Any]:
     Parameters
     ----------
     func : Callable
-        The functiin
+        The function.
 
     Returns
     -------
@@ -47,20 +38,3 @@ def get_defaults_from(func: Callable) -> Dict[str, Any]:
         for k, v in signature(func).parameters.items()
         if v.default is not v.empty
     }
-
-
-def update_config_with_defaults(config: BaseModel, function: Callable) -> None:
-    """
-    Updates a configuration object with the default values from a function.
-
-    Parameters
-    ----------
-    config : BaseModel
-        the configuration object.
-    function : Callable
-        the function from which the defaults are fetched.
-    """
-    _, defaults = get_args_and_defaults(function)
-    for arg, value in config:
-        if arg in defaults:
-            setattr(config, arg, defaults[arg])

@@ -1,16 +1,14 @@
 from enum import Enum
-from typing import Dict, List, Optional, Set, Union
+from typing import List, Optional, Set, Union
 
 import torch.nn as nn
 import torch.optim as optim
 from pydantic import (
-    NonNegativeFloat,
-    PositiveFloat,
     field_validator,
     model_validator,
 )
 
-from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+from clinicadl.utils.config import ObjectConfig
 
 from .utils import (
     get_params_in_groups,
@@ -44,12 +42,7 @@ class ImplementedOptimizer(str, Enum):
 class OptimizerConfig(ObjectConfig):
     """Base config class for the optimizer."""
 
-    lr: Union[PositiveFloat, Dict[str, PositiveFloat]]
     freeze: Optional[Union[str, List[str]]] = None
-    weight_decay: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-    foreach: Union[Optional[bool], Dict[str, Optional[bool]]]
-    maximize: Union[bool, Dict[str, bool]]
-    differentiable: Union[bool, Dict[str, bool]]
 
     def get_object(self, network: nn.Module) -> optim.Optimizer:  # pylint: disable=arguments-differ
         """
@@ -178,27 +171,3 @@ class OptimizerConfig(ObjectConfig):
                                 "group is also passed in 'freeze'."
                             )
         return self
-
-
-class _CapturableConfig(ClinicaDLConfig):
-    """Config class for 'capturable' option."""
-
-    capturable: Union[bool, Dict[str, bool]]
-
-
-class _FusedConfig(ClinicaDLConfig):
-    """Config class for 'fused' option."""
-
-    fused: Union[Optional[bool], Dict[str, Optional[bool]]]
-
-
-class _EpsConfig(ClinicaDLConfig):
-    """Config class for 'eps' option."""
-
-    eps: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]
-
-
-class _MomentumConfig(ClinicaDLConfig):
-    """Config class 'momentum' option."""
-
-    momentum: Union[NonNegativeFloat, Dict[str, NonNegativeFloat]]

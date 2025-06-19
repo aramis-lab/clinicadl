@@ -5,7 +5,7 @@ from typing import Optional
 
 import monai
 import monai.metrics
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import field_validator, model_validator
 
 from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
@@ -40,18 +40,6 @@ class MetricConfig(ObjectConfig):
     @abstractmethod
     def optimum() -> Optimum:
         """The optimum of the metric."""
-
-
-class _IncludeBackgroundConfig(ClinicaDLConfig):
-    """Config class for 'include_background' parameter."""
-
-    include_background: bool
-
-
-class _ReductionConfig(ClinicaDLConfig):
-    """Config class for 'reduction' parameter."""
-
-    reduction: Reduction
 
 
 class _GetNotNansConfig(ClinicaDLConfig):
