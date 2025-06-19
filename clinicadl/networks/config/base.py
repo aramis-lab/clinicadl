@@ -150,6 +150,7 @@ class _PreTrainedConfig(
     pretrained: bool = False  # default ??
     output_act: Optional[ActivationParameters] = None  # default ???
 
+    # TODO : to remove ??
     # def __init__(
     #     self,
     #     num_outputs: Optional[PositiveInt],

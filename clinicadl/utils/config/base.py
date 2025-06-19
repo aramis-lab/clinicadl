@@ -86,15 +86,8 @@ class ObjectConfig(ClinicaDLConfig, ABC):
     the method 'get_object'.
     """
 
-    # def __init__(self, **kwargs):
-    #     if not type(self).__name__.endswith(CONFIG):
-    #         raise NameError(
-    #             f"Invalid name for a ObjectConfig. The name of the class should end with '{CONFIG}'."
-    #         )
-
-    #     associated_class = self._get_class()
-    #     kwargs = update_kwargs_with_defaults(kwargs, function=associated_class.__init__)
-    #     super(ClinicaDLConfig, self).__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
 
     @computed_field
     @property
