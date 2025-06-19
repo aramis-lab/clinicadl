@@ -43,6 +43,8 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = []
 autodoc_member_order = "bysource"
+
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torchio": ("https://torchio.readthedocs.io", None),
@@ -114,6 +116,12 @@ def skip_overload_members(app, what, name, obj, skip, options):
     return None
 
 
+def skip_private_members(app, what, name, obj, skip, options):
+    if name.startswith("_"):
+        return True
+    return skip
+
+
 # -- Simplify type hints for Pydantic models --------------------------------
 
 
@@ -167,15 +175,20 @@ def simplify_type(tp):
         inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
         return f"tuple[{inner}]"
 
-    # Handle List
-    if origin in (list, typing.List):
+    # Handle Tuple
+    if origin in (dict, typing.Dict):
         inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
-        return f"list[{inner}]"
+        return f"dict[{inner}]"
 
     # Handle Enum
     if inspect.isclass(tp) and issubclass(tp, enum.Enum):
         values = ", ".join([f'"{e.value}"' for e in tp])
         return f"{tp.__name__} ({values})"
+
+    # Handle List
+    if origin in (list, typing.List):
+        inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
+        return f"list[{inner}]"
 
     # Base case
     if hasattr(tp, "__name__"):
@@ -187,6 +200,7 @@ def simplify_type(tp):
 def rewrite_class_signature(
     app, what, name, obj, options, signature, return_annotation
 ):
+    print(obj)
     if not isinstance(obj, type) or not issubclass(obj, BaseModel):
         return
 
@@ -214,4 +228,5 @@ def rewrite_class_signature(
 
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
+    app.connect("autodoc-skip-member", skip_private_members)
     app.connect("autodoc-process-signature", rewrite_class_signature)

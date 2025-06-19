@@ -39,7 +39,9 @@ To do this, you will manipulate our :ref:`splitting tools <split>`.
     datasets/concat_dataset
     datasets/paired_dataset
     datasets/unpaired_dataset
+    datasets/caps_outputs
     datatypes
+    datapoint
     transforms/transforms
     dataloader
     split/splits

@@ -1,4 +1,4 @@
-.. _split:
+.. _splits:
 
 Splits
 ======
@@ -96,3 +96,4 @@ data format accepted by ClinicaDL's ``Trainer``.
 
     single_split
     k_fold
+    split
