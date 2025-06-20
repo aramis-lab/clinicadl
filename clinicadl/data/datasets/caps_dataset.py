@@ -43,16 +43,17 @@ logger = getLogger("clinicadl.caps_dataset")
 
 class CapsDataset(Dataset):
     """
-    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with neuroimaging data in CAPS format.\n
+    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with
+    neuroimaging data in CAPS format.
 
-    The user specifies the type of data he wants to work on via ``preprocessing``, the (participant, session)
-    pairs he wants to work on via ``data``, the transforms he wants to apply on images via ``transforms``, and
+    The user specifies the type of data to work on via ``preprocessing``, the (participant, session)
+    pairs to work on via ``data``, the transforms to apply on images via ``transforms``, and
     where to find the label (scalars or segmentation masks) associated to the images via ``label``. Some transforms may
-    also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.\n
+    also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.
 
-    A CapsDataset works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch's
-    ``.pt`` format with the ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
-    must be called.
+    A ``CapsDataset`` works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch
+    ``.pt`` format with :py:func:`~CapsDataset.to_tensors`. If conversion was already performed,
+    :py:func:`~CapsDataset.read_tensor_conversion` must be called.
 
     The :ref:`outputs of the CapsDataset <api_dataset_output>` (i.e. what you get when you call ``dataset[i]``) depend
     on the type of elements of the image you are working on (the whole image, patches or slices. This is defined via the
@@ -453,7 +454,7 @@ class CapsDataset(Dataset):
             * ``total_samples``: the size of the dataset, i.e. the total number of samples.
             * ``participant_session_pairs``: the list of participant/session pairs in the dataset.
             * ``preprocessing``: the preprocessing parameters.
-            * ``api_extraction``: the extraction parameters.
+            * ``extraction``: the extraction parameters.
 
         Raises
         ------

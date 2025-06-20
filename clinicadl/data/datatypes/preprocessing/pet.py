@@ -23,7 +23,7 @@ class SUVRReferenceRegion(str, Enum):
 class PETLinear(PET, _LinearPreprocessing):
     """
     Configuration class to handle Positron Emission Tomography (PET) images,
-    preprocessed with Clinica's `pet-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/>`_
+    preprocessed with `Clinica pet-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/>`_
     pipeline.
 
     Parameters

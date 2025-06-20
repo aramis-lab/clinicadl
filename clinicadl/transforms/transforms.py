@@ -22,7 +22,7 @@ class Transforms(ClinicaDLConfig):
     (extraction, preprocessing, and augmentation).
 
     ClinicaDL defines 4 types of transforms:\n
-    - ``api_extraction``: defines on what type of elements of the image we want to work
+    - ``extraction``: defines on what type of elements of the image we want to work
       (the whole image, patches or slices).
     - ``image_transforms``: transforms applied on the whole image, **before**
       potential extraction is applied. This is typically where you want to
@@ -31,18 +31,18 @@ class Transforms(ClinicaDLConfig):
     - ``sample_transforms``: transforms applied on a sample (a patch or a slice),
       **after** extraction. This is typically where you want to
       resize your sample so that it fits in your network.
-    - ``augmentations``: transforms applied after ``image_transforms``, ``api_extraction``
+    - ``augmentations``: transforms applied after ``image_transforms``, ``extraction``
       and ``sample_transforms``, only during training.
 
     .. note::
-        :ref:`Extraction objects <api_extraction>` are not exactly transforms since
+        :ref:`Extraction objects <api_transforms_extraction>` are not exactly transforms since
         they modify the size of the datasets: if you have 10 images with 100 slices each and you want to work on slices
         (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
 
     For ``image_transforms``, ``sample_transforms`` and ``augmentations``, the transforms must be passed as lists.
     ``Transforms`` will compose the transforms in these lists, so **the order in the lists is important**.
 
-    Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <supported_transforms>`, but also
+    Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <api_transforms_config>`, but also
     any custom transform created by the user (see examples). The only requirement is that this custom transforms
     works with :py:class:`~clinicadl.data.structures.DataPoint`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
     you are encouraged to **use transform configuration classes for better reproducibility**.
@@ -50,7 +50,7 @@ class Transforms(ClinicaDLConfig):
     Parameters
     ----------
     extraction : Optional[Extraction], default=None
-        The extraction applied. See :ref:`api_extraction`. Default is ``None``, which means
+        The extraction applied. See :ref:`api_transforms_extraction`. Default is ``None``, which means
         that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
         will output full images.
     image_transforms : list[Union[Transform, TransformConfig]], default=[]
@@ -96,7 +96,7 @@ class Transforms(ClinicaDLConfig):
         """
         Validates and adjusts the transformation configuration when image and sample transformations overlap.
 
-        If the `api_extraction` is of type `Image` and sample transformations or augmentations are provided,
+        If the `extraction` is of type `Image` and sample transformations or augmentations are provided,
         they will be merged into the image transformations and augmentations. A warning is logged for
         potential configuration conflicts.
 

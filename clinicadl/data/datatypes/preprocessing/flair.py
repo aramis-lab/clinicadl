@@ -12,7 +12,7 @@ logger = getLogger("clinicadl.data.datatypes.preprocessing.flair")
 class FlairLinear(_LinearPreprocessing, Flair):
     """
     Configuration class to handle Fluid-Attenuated Inversion Recovery (FLAIR) MRI images,
-    preprocessed with Clinica's `flair-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/>`_
+    preprocessed with `Clinica flair-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/>`_
     pipeline.
 
     Parameters

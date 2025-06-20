@@ -10,12 +10,27 @@ functions may not be enough to give full guidelines on their use.
 
 -----
 
+.. currentmodule:: clinicadl
+
+.. autosummary::
+   :nosignatures:
+   :template: module.rst
+
+   data
+   losses
+   metrics
+   networks
+   optim
+   split
+   transforms
+
 .. toctree::
    :hidden:
    
+   data/index
    losses
    metrics
    networks/index
    optim/index
-   splitter
+   split
    transforms/index

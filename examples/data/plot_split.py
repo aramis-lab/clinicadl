@@ -26,11 +26,11 @@ pd.read_csv(participants_sessions, sep="\t").head(5)
 # -----------------------
 #
 # First, let's keep some (participant, session) in an independent test set.
-# To perform a simple split, we will use :py:func:`~clinicadl.splitter.make_split`.
+# To perform a simple split, we will use :py:func:`~clinicadl.split.make_split`.
 
-from clinicadl import splitter
+from clinicadl import split
 
-split_dir = splitter.make_split(
+split_dir = split.make_split(
     participants_sessions,
     n_test=0.25,
     output_dir=Path("../tmp"),
@@ -52,19 +52,19 @@ pd.read_csv(split_dir / "test_baseline.tsv", sep="\t").head(5)
 # %%
 # .. note::
 #   To have a robust estimation of your model performance, it is advised to test your model
-#   on only one image for each participant. By default, :py:func:`~clinicadl.splitter.make_split`
+#   on only one image for each participant. By default, :py:func:`~clinicadl.split.make_split`
 #   will thus only put the baseline session (i.e. the first session) of the test patients in the
 #   test set. This is why the file is named ``test_baseline``. If you want to test your model on
-#   all the sessions of the test participants, put ``longitudinal=True`` in :py:func:`~clinicadl.splitter.make_split`.
+#   all the sessions of the test participants, put ``longitudinal=True`` in :py:func:`~clinicadl.split.make_split`.
 
 # %%
 # Make a K-Fold split for Cross-Validation
 # ----------------------------------------
 #
 # Now that we have isolated our test set, we want to make a K-Fold split on the
-# remaining data to perform cross-validation. To do this, we will use :py:func:`~clinicadl.splitter.make_kfold`.
+# remaining data to perform cross-validation. To do this, we will use :py:func:`~clinicadl.split.make_kfold`.
 
-kfold_dir = splitter.make_kfold(
+kfold_dir = split.make_kfold(
     split_dir
     / "train.tsv",  # here the input data is all the data that is not in the test set
     n_splits=2,
@@ -115,25 +115,25 @@ test_set.df
 
 # %%
 # Regarding the validation sets, it would be heavy to do that for each split of the
-# K-Fold. We will rather use :py:class:`~clinicadl.splitter.KFold`, that will handle the splits for us:
+# K-Fold. We will rather use :py:class:`~clinicadl.split.KFold`, that will handle the splits for us:
 
-split_reader = splitter.KFold(kfold_dir)
+splitter = split.KFold(kfold_dir)
 
 # %%
 # ``KFold`` reads the split directory. We can then split any ``CapsDataset``, using
-# :py:class:`KFold.get_splits <clinicadl.splitter.KFold.get_splits>`. This method is a generator
+# :py:class:`KFold.get_splits <clinicadl.split.KFold.get_splits>`. This method is a generator
 # that enables to iterate over the splits of the K-Fold.
 
-for i, split in enumerate(split_reader.get_splits(train_set)):
+for i, split in enumerate(splitter.get_splits(train_set)):
     print(f"Split {i}")
     print(f"Training set: {len(split.train_dataset)} images")
     print(f"Test set: {len(split.val_dataset)} images")
 
 # %%
-# Manipulate a :py:class:`~clinicadl.splitter.Split`
+# Manipulate a :py:class:`~clinicadl.split.Split`
 # --------------------------------------------------
 #
-# :py:class:`~clinicadl.splitter.KFold.get_splits` returns :py:class:`~clinicadl.splitter.Split` objects.
+# :py:class:`~clinicadl.split.KFold.get_splits` returns :py:class:`~clinicadl.split.Split` objects.
 # A ``Split`` contains the data of the training/validation splits, as well as other relevant information
 # for ClinicaDL. Before passing it to the ``Trainer``, you will have to build the associated :py:class:`~torch.utils.data.DataLoader` s:
 
@@ -150,3 +150,5 @@ split.train_loader
 import shutil
 
 shutil.rmtree(split_dir)
+
+# %%

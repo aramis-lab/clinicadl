@@ -1,11 +1,11 @@
 .. _api_splitter:
 
-:mod:`clinicadl.splitter`
+:mod:`clinicadl.split`
 =========================
 
-.. automodule:: clinicadl.splitter
+.. automodule:: clinicadl.split
 
-.. currentmodule:: clinicadl.splitter
+.. currentmodule:: clinicadl.split
 
 Functions
 ---------

@@ -2,6 +2,7 @@ import enum
 import inspect
 import typing
 from datetime import date
+from pathlib import Path
 from typing import Annotated, Union, get_args, get_origin
 
 from pydantic import BaseModel
@@ -24,16 +25,22 @@ version = "2.0"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "sphinx.ext.napoleon",
     "sphinx.ext.duration",
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
+    "sphinxcontrib.bibtex",
+    "sphinx_gallery.gen_gallery",
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
 ]
+
+napoleon_use_admonition_for_references = True
+napoleon_use_admonition_for_notes = True
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -68,9 +75,28 @@ extlinks = {
         "https://github.com/aramis-lab/clinicadl-zoo/tree/main/%s",
         None,
     ),
+    "torchio": ("https://torchio.readthedocs.io/%s", None),
+    "torch": ("https://pytorch.org/docs/stable/%s", None),
+    "torchvision": ("https://docs.pytorch.org/vision/main/%s", None),
+    "monai": ("https://docs.monai.io/en/stable/%s", None),
+    "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
+    "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
 }
 language = "en"
+# pygments_style = "friendly"
 
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    "backreferences_dir": Path("api", "generated"),  # where mini-galleries are stored
+    "doc_module": (
+        "clinicadl",
+    ),  # generate mini-galleries for all the objects in clinicadl
+}
+
+# sphinxcontrib-bibtex
+bibtex_bibfiles = ["references.bib"]
+bibtex_reference_style = "author_year"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -81,17 +107,27 @@ typehints_document_rtype = False
 
 html_theme = "furo"
 html_theme_options = {
-    "light_logo": "black_logo.png",
-    "dark_logo": "white_logo.png",
+    "light_logo": "logos/black_logo.png",
+    "dark_logo": "logos/white_logo.png",
 }
 
 html_static_path = ["_static"]
-html_favicon = "_static/black_logo.png"
+html_favicon = "_static/logos/black_logo.png"
 html_copy_source = False
 html_show_sourcelink = False
-html_title = f"{project} {version} documentation"
+html_title = f"{project} {version}"
 
 autodoc_typehints = "signature"
+
+# Add custom css instructions from themes/custom.css
+font_awesome = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/"
+html_css_files = [
+    "custom.css",
+    f"{font_awesome}all.min.css",
+    f"{font_awesome}fontawesome.min.css",
+    f"{font_awesome}solid.min.css",
+    f"{font_awesome}brands.min.css",
+]
 
 
 # -- Hide function with @overload ---------------------------------------
@@ -193,7 +229,7 @@ def simplify_type(tp):
 
 
 def rewrite_class_signature(
-    app, what, name, obj, options, signature, return_annotation
+    app, what, name: str, obj, options, signature, return_annotation
 ):
     if not isinstance(obj, type) or not issubclass(obj, BaseModel):
         return
@@ -207,6 +243,8 @@ def rewrite_class_signature(
     parts = []
 
     for field_name, field_type in annots.items():
+        if field_name.startswith("_"):
+            continue
         simplified = simplify_type(field_type)
         field = obj.model_fields[field_name]
         if field.default is not None and field.default != ...:

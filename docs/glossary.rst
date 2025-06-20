@@ -2,3 +2,9 @@
 
 Glossary
 ========
+
+.. glossary::
+    :sorted:
+
+    CAPS
+        To write.

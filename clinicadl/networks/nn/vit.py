@@ -82,7 +82,7 @@ class ViT(nn.Module):
         - ``sincos``: the position embeddings are fixed and determined with sinus and cosinus formulas described in
           :footcite:t:`Vaswani2023`. Only implemented for 2D and 3D images. With ``sincos``
           position embedding, ``embedding_dim`` must be divisible by ``4`` for 2D images, and by ``6`` for 3D images.
-        - ``None``: no position embeddings are used.\n
+        - ``None``: no position embeddings are used.
 
         Default to ``learnable``, as in the original paper.
     output_act : Optional[ActivationParameters], default="tanh"

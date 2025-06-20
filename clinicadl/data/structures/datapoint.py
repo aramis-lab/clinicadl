@@ -11,7 +11,7 @@ from .label import LabelType
 
 class DataPoint(tio.Subject):
     """
-    Dataclass that gathers an image, the associated label, and any other relevant information
+    Data structure that gathers an image, the associated label, and any other relevant information
     associated to the image.
 
     It inherits from :py:class:`torchio.Subject`.

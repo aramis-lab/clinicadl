@@ -12,7 +12,7 @@ logger = getLogger("clinicadl.data.datatypes.preprocessing.t1")
 class T1Linear(_LinearPreprocessing, T1w):
     """
     Configuration class to handle T1-weighted MRI images,
-    preprocessed with Clinica's `t1-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/>`_
+    preprocessed with `Clinica t1-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/>`_
     pipeline.
 
     Parameters
