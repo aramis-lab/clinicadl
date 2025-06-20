@@ -24,15 +24,13 @@ from clinicadl.networks.nn.utils import (
     check_pool_indices,
     ensure_list_of_tuples,
 )
-from clinicadl.utils.config import update_kwargs_with_defaults
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
-from .base import (
-    NetworkConfig,
-    _DropOutConfig,
-    _FullyConvConfig,
-    _OutputActConfig,
-)
+from .base import NetworkConfig, _DropoutConfig, _SpatialDimsConfig
+
+MLP_DEFAULTS = get_defaults_from(nets.MLP)
+CONV_ENCODER_DEFAULTS = get_defaults_from(nets.ConvEncoder)
+CONV_DECODER_DEFAULTS = get_defaults_from(nets.ConvDecoder)
 
 __all__ = [
     "MLPConfig",
@@ -41,13 +39,12 @@ __all__ = [
 ]
 
 
-class _BaseMLPConvConfig(_OutputActConfig, _DropOutConfig):
+class _BaseMLPConvConfig(_DropoutConfig):
     """
     Base config class for MLP, ConvEncoder and ConvDecoder options.
     """
 
-    act: Optional[ActivationParameters]
-    bias: bool
+    norm: Optional[Union[NormalizationParameters, ConvNormalizationParameters]]
     adn_ordering: str
 
     @field_validator("adn_ordering")
@@ -67,30 +64,12 @@ class MLPOptions(_BaseMLPConvConfig):
     """
 
     hidden_dims: Sequence[PositiveInt]
-    norm: Optional[NormalizationParameters]
-
-    def __init__(
-        self,
-        hidden_dims: Sequence[PositiveInt],
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[NormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        kwargs = locals()
-        del kwargs["self"]
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.MLP.__init__)
-        super().__init__(**kwargs)
+    act: Optional[ActivationParameters] = MLP_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = MLP_DEFAULTS["output_act"]
+    norm: Optional[NormalizationParameters] = MLP_DEFAULTS["norm"]
+    dropout: Optional[PositiveFloat] = MLP_DEFAULTS["dropout"]
+    bias: bool = MLP_DEFAULTS["bias"]
+    adn_ordering: str = MLP_DEFAULTS["adn_ordering"]
 
     @field_validator("norm")
     @classmethod
@@ -105,38 +84,6 @@ class MLPConfig(NetworkConfig, MLPOptions):
 
     num_inputs: PositiveInt
     num_outputs: PositiveInt
-
-    def __init__(
-        self,
-        num_inputs: PositiveInt,
-        num_outputs: PositiveInt,
-        hidden_dims: Sequence[PositiveInt],
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[NormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            num_inputs=num_inputs,
-            num_outputs=num_outputs,
-            hidden_dims=hidden_dims,
-            act=act,
-            output_act=output_act,
-            norm=norm,
-            dropout=dropout,
-            bias=bias,
-            adn_ordering=adn_ordering,
-        )
 
 
 class _BaseConvOptions(_BaseMLPConvConfig):
@@ -173,41 +120,19 @@ class ConvEncoderOptions(_BaseConvOptions):
     See for example: :py:class:`clinicadl.networks.nn.CNN`
     """
 
-    pooling: Optional[PoolingParameters]
-    pooling_indices: Optional[Sequence[int]]
-
-    def __init__(
-        self,
-        channels: Sequence[PositiveInt],
-        kernel_size: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        stride: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        padding: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        dilation: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        pooling: Union[Optional[PoolingParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pooling_indices: Union[Optional[Sequence[int]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[ConvNormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        kwargs = locals()
-        del kwargs["self"]
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ConvEncoder.__init__)
-        super().__init__(**kwargs)
+    channels: Sequence[PositiveInt]
+    kernel_size: ConvParameters = CONV_ENCODER_DEFAULTS["kernel_size"]
+    stride: ConvParameters = CONV_ENCODER_DEFAULTS["stride"]
+    padding: ConvParameters = CONV_ENCODER_DEFAULTS["padding"]
+    dilation: ConvParameters = CONV_ENCODER_DEFAULTS["dilation"]
+    pooling: Optional[PoolingParameters] = CONV_ENCODER_DEFAULTS["pooling"]
+    pooling_indices: Optional[Sequence[int]] = CONV_ENCODER_DEFAULTS["pooling_indices"]
+    act: Optional[ActivationParameters] = CONV_ENCODER_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = CONV_ENCODER_DEFAULTS["output_act"]
+    norm: Optional[ConvNormalizationParameters] = CONV_ENCODER_DEFAULTS["norm"]
+    dropout: Optional[PositiveFloat] = CONV_ENCODER_DEFAULTS["dropout"]
+    bias: bool = CONV_ENCODER_DEFAULTS["bias"]
+    adn_ordering: str = CONV_ENCODER_DEFAULTS["adn_ordering"]
 
     @model_validator(mode="after")
     def check_pooling(self):
@@ -217,58 +142,13 @@ class ConvEncoderOptions(_BaseConvOptions):
         return self
 
 
-class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions, _FullyConvConfig):
+class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions, _SpatialDimsConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ConvEncoder`.
     """
 
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        channels: Sequence[PositiveInt],
-        kernel_size: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        stride: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        padding: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        dilation: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        pooling: Union[Optional[PoolingParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pooling_indices: Union[Optional[Sequence[int]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[ConvNormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            channels=channels,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            pooling=pooling,
-            pooling_indices=pooling_indices,
-            act=act,
-            output_act=output_act,
-            norm=norm,
-            dropout=dropout,
-            bias=bias,
-            adn_ordering=adn_ordering,
-        )
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -282,45 +162,22 @@ class ConvDecoderOptions(_BaseConvOptions):
     See for example: :py:class:`clinicadl.networks.nn.Generator`
     """
 
-    output_padding: ConvParameters
-    unpooling: Optional[UnpoolingParameters]
-    unpooling_indices: Optional[Sequence[int]]
-
-    def __init__(
-        self,
-        channels: Sequence[PositiveInt],
-        kernel_size: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        stride: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        padding: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        output_padding: Union[
-            ConvParameters, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        dilation: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        unpooling: Union[Optional[UnpoolingParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        unpooling_indices: Union[Optional[Sequence[int]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[ConvNormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        kwargs = locals()
-        del kwargs["self"]
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ConvDecoder.__init__)
-        super().__init__(**kwargs)
+    channels: Sequence[PositiveInt]
+    kernel_size: ConvParameters = CONV_DECODER_DEFAULTS["kernel_size"]
+    stride: ConvParameters = CONV_DECODER_DEFAULTS["stride"]
+    padding: ConvParameters = CONV_DECODER_DEFAULTS["padding"]
+    output_padding: ConvParameters = CONV_DECODER_DEFAULTS["output_padding"]
+    dilation: ConvParameters = CONV_DECODER_DEFAULTS["dilation"]
+    unpooling: Optional[UnpoolingParameters] = CONV_DECODER_DEFAULTS["unpooling"]
+    unpooling_indices: Optional[Sequence[int]] = CONV_DECODER_DEFAULTS[
+        "unpooling_indices"
+    ]
+    act: Optional[ActivationParameters] = CONV_DECODER_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = CONV_DECODER_DEFAULTS["output_act"]
+    norm: Optional[ConvNormalizationParameters] = CONV_DECODER_DEFAULTS["norm"]
+    dropout: Optional[PositiveFloat] = CONV_DECODER_DEFAULTS["dropout"]
+    bias: bool = CONV_DECODER_DEFAULTS["bias"]
+    adn_ordering: str = CONV_DECODER_DEFAULTS["adn_ordering"]
 
     @model_validator(mode="after")
     def check_unpooling(self):
@@ -336,62 +193,13 @@ class ConvDecoderOptions(_BaseConvOptions):
         )
 
 
-class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions, _FullyConvConfig):
+class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions, _SpatialDimsConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ConvDecoder`.
     """
 
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        channels: Sequence[PositiveInt],
-        kernel_size: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        stride: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        padding: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        output_padding: Union[
-            ConvParameters, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        dilation: Union[ConvParameters, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        unpooling: Union[Optional[UnpoolingParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        unpooling_indices: Union[Optional[Sequence[int]], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        norm: Union[Optional[ConvNormalizationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        bias: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        adn_ordering: Union[str, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super(ConvDecoderConfig, self).__init__(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            channels=channels,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            output_padding=output_padding,
-            dilation=dilation,
-            unpooling=unpooling,
-            unpooling_indices=unpooling_indices,
-            act=act,
-            output_act=output_act,
-            norm=norm,
-            dropout=dropout,
-            bias=bias,
-            adn_ordering=adn_ordering,
-        )
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
 
     @model_validator(mode="after")
     def check_dim(self):

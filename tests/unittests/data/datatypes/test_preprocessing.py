@@ -24,11 +24,11 @@ def test_good_custom():
 
 def test_good_flair():
     flair_data = FlairLinear(use_uncropped_image=True)
-    assert flair_data.modality == "flair"
+    assert flair_data.modality == "FLAIR"
     assert flair_data.name == "flair-linear"
     assert (
         flair_data.file_type.pattern
-        == "flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_flair.nii*"
+        == "flair_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii*"
     )
     assert (
         flair_data.file_type.description

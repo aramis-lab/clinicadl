@@ -9,7 +9,7 @@ from clinicadl.maps.config import (
 )
 from clinicadl.maps.maps_manager import MapsManager
 from clinicadl.predictor.validation import ValidationConfig
-from clinicadl.splitter.splitter.splitter import SplitterConfig as SplitConfig
+from clinicadl.split.splitter.splitter import SplitterConfig as SplitConfig
 from clinicadl.transforms.config import TransformsConfig
 from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.enum import Task
@@ -98,6 +98,6 @@ class PredictConfig(BaseModel):
         )
 
         if self.split.split is None and self.split.n_splits == 0:
-            from clinicadl.splitter.split_utils import find_splits
+            from clinicadl.split.split_utils import find_splits
 
             self.split.split = find_splits(self.maps_manager.maps_dir)

@@ -7,7 +7,7 @@ class ImageModality(str, Enum):
     T1W = "T1w"
     DWI = "dwi"
     PET = "pet"
-    FLAIR = "flair"
+    FLAIR = "FLAIR"
     CUSTOM = "custom"
 
 

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from clinicadl.splitter.make_splits import make_split
+from clinicadl.split.make_splits import make_split
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 

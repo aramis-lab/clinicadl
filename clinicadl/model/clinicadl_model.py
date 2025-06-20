@@ -1,6 +1,5 @@
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -20,14 +19,29 @@ from clinicadl.utils.typing import PathType
 
 
 class ClinicaDLModel:
-    def __init__(self, network: nn.Module, loss: Loss, optimizer: Optimizer):
-        self.network = network
-        self.loss = loss
-        self.optimizer = optimizer
+    def __init__(
+        self,
+        network: Union[nn.Module, NetworkConfig],
+        loss: Union[Loss, LossConfig],
+        optimizer: Union[Optimizer, OptimizerConfig],
+    ):
+        if isinstance(network, NetworkConfig):
+            self.network = network.get_object()
+            self._network_config = network
+        else:
+            self.network = network
 
-        self._network_config: Optional[NetworkConfig] = None
-        self._optimizer_config: Optional[OptimizerConfig] = None
-        self._loss_config: Optional[LossConfig] = None
+        if isinstance(loss, LossConfig):
+            self.loss = loss.get_object()
+            self._loss_config = loss
+        else:
+            self.loss = loss
+
+        if isinstance(optimizer, OptimizerConfig):
+            self.optimizer = optimizer.get_object(self.network)
+            self._optimizer_config = optimizer
+        else:
+            self.optimizer = optimizer
 
         self.memory_format = torch.channels_last
         self.non_blocking: bool = False
@@ -103,7 +117,9 @@ class ClinicaDLModel:
 
         return model_state["epoch"]
 
-    def training_step(self, data: Batch, device: torch.device):
+    def training_step(
+        self, data: Batch, device: torch.device
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
@@ -111,9 +127,8 @@ class ClinicaDLModel:
         images = data.get_images().to(device)
 
         outputs = self.network(images)
-        loss = self.loss(outputs, labels)
 
-        return loss
+        return outputs, labels
 
     def train(self):
         self.network.to(self.device)

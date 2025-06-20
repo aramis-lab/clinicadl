@@ -1,6 +1,6 @@
 from typing import Any, Optional, Sequence
 
-from clinicadl.utils.factories import get_args_and_defaults
+from clinicadl.utils.factories import get_defaults_from
 
 from .layers.utils import ActivationParameters
 from .resnet import GeneralResNet, ResNet, ResNetBlockType
@@ -112,7 +112,7 @@ class SEResNet(GeneralResNet):
         **kwargs: Any,
     ) -> None:
         # get defaults from resnet
-        _, default_resnet_args = get_args_and_defaults(ResNet.__init__)
+        default_resnet_args = get_defaults_from(ResNet.__init__)
         for arg, value in default_resnet_args.items():
             if arg not in kwargs:
                 kwargs[arg] = value

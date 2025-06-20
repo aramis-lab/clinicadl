@@ -6,15 +6,15 @@ import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.resnet import ResNetBlockType
 from clinicadl.networks.nn.senet import check_se_channels
-from clinicadl.utils.config import update_kwargs_with_defaults
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
-from .base import (
-    NetworkConfig,
-    _OptionalNumOutputsConfig,
-    _OutputActConfig,
-)
+from .base import NetworkConfig
 from .resnet import ResNetConfig
+
+SE_RES_NET_DEFAULTS = get_defaults_from(nets.SEResNet)
+SE_RES_NET_50_DEFAULTS = get_defaults_from(nets.SEResNet50)
+SE_RES_NET_101_DEFAULTS = get_defaults_from(nets.SEResNet101)
+SE_RES_NET_152_DEFAULTS = get_defaults_from(nets.SEResNet152)
 
 __all__ = [
     "SEResNetConfig",
@@ -29,42 +29,7 @@ class SEResNetConfig(ResNetConfig):
     Config class for :py:class:`clinicadl.networks.nn.SEResNet`.
     """
 
-    se_reduction: PositiveInt
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        num_outputs: Optional[PositiveInt],
-        se_reduction: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        block_type: Union[ResNetBlockType, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        n_res_blocks: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        n_features: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        init_conv_size: Union[
-            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        init_conv_stride: Union[
-            Sequence[PositiveInt], PositiveInt, DefaultFromLibrary
-        ] = (DefaultFromLibrary.YES),
-        bottleneck_reduction: Union[PositiveInt, DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        kwargs = locals()
-        del kwargs["self"]
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.SEResNet.__init__)
-        kwargs = update_kwargs_with_defaults(kwargs, function=nets.ResNet.__init__)
-        super(ResNetConfig, self).__init__(**kwargs)
+    se_reduction: PositiveInt = SE_RES_NET_DEFAULTS["se_reduction"]
 
     @model_validator(mode="after")
     def check_se_channels(self):
@@ -73,39 +38,28 @@ class SEResNetConfig(ResNetConfig):
         return self
 
 
-class _FromLiteratureConfig(
-    NetworkConfig,
-    _OptionalNumOutputsConfig,
-    _OutputActConfig,
-):
-    """Base config class for networks from literature."""
-
-    def __init__(
-        self,
-        num_outputs: Optional[PositiveInt],
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-    ):
-        super().__init__(
-            num_outputs=num_outputs,
-            output_act=output_act,
-        )
-
-
-class SEResNet50Config(_FromLiteratureConfig):
+class SEResNet50Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet50`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_50_DEFAULTS["output_act"]
 
-class SEResNet101Config(_FromLiteratureConfig):
+
+class SEResNet101Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet101`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_101_DEFAULTS["output_act"]
 
-class SEResNet152Config(_FromLiteratureConfig):
+
+class SEResNet152Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.SEResNet152`.
     """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_152_DEFAULTS["output_act"]

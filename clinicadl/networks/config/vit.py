@@ -2,6 +2,7 @@ from typing import Optional, Sequence, Union
 
 from pydantic import PositiveFloat, PositiveInt, model_validator
 
+import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.networks.nn.utils import ensure_tuple
 from clinicadl.networks.nn.vit import (
@@ -9,67 +10,42 @@ from clinicadl.networks.nn.vit import (
     check_embedding_dim,
     check_patch_size,
 )
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     NetworkConfig,
-    _DropOutConfig,
-    _OptionalNumOutputsConfig,
-    _OutputActConfig,
-    _PretrainedFromLiteratureConfig,
+    _DropoutConfig,
+    _InShapeConfig,
 )
-from .cnns import _InShapeConfig
+
+__all__ = ["ViTConfig", "ViTB16Config", "ViTB32Config", "ViTL16Config", "ViTL32Config"]
+
+VIT_DEFAULTS = get_defaults_from(nets.ViT)
+VIT_B_16_DEFAULTS = get_defaults_from(nets.ViTB16)
+VIT_B_32_DEFAULTS = get_defaults_from(nets.ViTB32)
+VIT_L_16_DEFAULTS = get_defaults_from(nets.ViTL16)
+VIT_L_32_DEFAULTS = get_defaults_from(nets.ViTL32)
 
 
 class ViTConfig(
     NetworkConfig,
     _InShapeConfig,
-    _OptionalNumOutputsConfig,
-    _OutputActConfig,
-    _DropOutConfig,
+    _DropoutConfig,
 ):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViT`.
     """
 
+    in_shape: Sequence[PositiveInt]
     patch_size: Union[Sequence[PositiveInt], PositiveInt]
-    embedding_dim: PositiveInt
-    num_layers: PositiveInt
-    num_heads: PositiveInt
-    mlp_dim: PositiveInt
-    pos_embed_type: Optional[PosEmbedType]
-
-    def __init__(
-        self,
-        in_shape: Sequence[PositiveInt],
-        patch_size: Union[Sequence[PositiveInt], PositiveInt],
-        num_outputs: Optional[PositiveInt],
-        embedding_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        num_layers: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        num_heads: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        mlp_dim: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        pos_embed_type: Union[Optional[PosEmbedType], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            in_shape=in_shape,
-            patch_size=patch_size,
-            num_outputs=num_outputs,
-            embedding_dim=embedding_dim,
-            num_layers=num_layers,
-            num_heads=num_heads,
-            mlp_dim=mlp_dim,
-            pos_embed_type=pos_embed_type,
-            output_act=output_act,
-            dropout=dropout,
-        )
+    num_outputs: Optional[PositiveInt]
+    embedding_dim: PositiveInt = VIT_DEFAULTS["embedding_dim"]
+    num_layers: PositiveInt = VIT_DEFAULTS["num_layers"]
+    num_heads: PositiveInt = VIT_DEFAULTS["num_heads"]
+    mlp_dim: PositiveInt = VIT_DEFAULTS["mlp_dim"]
+    pos_embed_type: Optional[PosEmbedType] = VIT_DEFAULTS["pos_embed_type"]
+    output_act: Optional[ActivationParameters] = VIT_DEFAULTS["output_act"]
+    dropout: Optional[PositiveFloat] = VIT_DEFAULTS["dropout"]
 
     @model_validator(mode="after")
     def make_checks(self):
@@ -81,25 +57,41 @@ class ViTConfig(
         return self
 
 
-class ViTB16Config(_PretrainedFromLiteratureConfig):
+class ViTB16Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViTB16`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_16_DEFAULTS["pretrained"]
 
-class ViTB32Config(_PretrainedFromLiteratureConfig):
+
+class ViTB32Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViTB32`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_32_DEFAULTS["pretrained"]
 
-class ViTL16Config(_PretrainedFromLiteratureConfig):
+
+class ViTL16Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViTL16`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_16_DEFAULTS["pretrained"]
 
-class ViTL32Config(_PretrainedFromLiteratureConfig):
+
+class ViTL32Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViTL32`.
     """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_32_DEFAULTS["pretrained"]

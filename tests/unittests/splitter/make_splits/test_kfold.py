@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.splitter.make_splits import make_kfold
+from clinicadl.split.make_splits import make_kfold
 
 
 def remove_non_empty_dir(dir_path: Path):

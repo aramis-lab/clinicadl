@@ -1,9 +1,10 @@
-from typing import Union
+import monai
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.losses.enum import Reduction
+from clinicadl.utils.factories import get_defaults_from
 
-from .base import MetricConfig, _GetNotNansConfig, _ReductionConfig
-from .enum import Optimum, Reduction
+from .base import MetricConfig, _GetNotNansConfig
+from .enum import Optimum
 
 __all__ = [
     "MSEMetricConfig",
@@ -11,20 +12,18 @@ __all__ = [
     "RMSEMetricConfig",
 ]
 
+MSE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.MSEMetric)
+MAE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.MAEMetric)
+RMSE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.RMSEMetric)
+
 
 # TODO : R2 missing
-class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class MSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MSEMetric`.
     """
 
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-        )
+    reduction: Reduction = MSE_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -32,18 +31,12 @@ class MSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         return Optimum.MIN
 
 
-class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class MAEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MAEMetric`.
     """
 
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-        )
+    reduction: Reduction = MAE_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -51,18 +44,12 @@ class MAEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
         return Optimum.MIN
 
 
-class RMSEMetricConfig(MetricConfig, _ReductionConfig, _GetNotNansConfig):
+class RMSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.RMSEMetric`.
     """
 
-    def __init__(
-        self,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            reduction=reduction,
-        )
+    reduction: Reduction = RMSE_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:

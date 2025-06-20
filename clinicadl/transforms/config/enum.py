@@ -46,7 +46,7 @@ class ImplementedTransform(str, BaseEnum):
         )
 
 
-class AnatomicalLabel(str, Enum):
+class AnatomicalLabel(str, BaseEnum):
     """
     Anatomical regions provided by TorchIO.
     see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.preprocessing.intensity.NormalizationTransform
@@ -60,7 +60,7 @@ class AnatomicalLabel(str, Enum):
     SUPERIOR = "Superior"
 
 
-class InterpolationMode(str, Enum):
+class InterpolationMode(str, BaseEnum):
     """
     Supported interpolation modes in TorchIO.
     see: https://torchio.readthedocs.io/transforms/transforms.html#interpolation
@@ -79,7 +79,7 @@ class InterpolationMode(str, Enum):
     BLACKMAN = "blackman"
 
 
-class EnsureShapeMultipleMode(str, Enum):
+class EnsureShapeMultipleMode(str, BaseEnum):
     """
     Supported modes for TorchIO's EnsureShapeMultiple.
     see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.EnsureShapeMultiple
@@ -89,7 +89,7 @@ class EnsureShapeMultipleMode(str, Enum):
     PAD = "pad"
 
 
-class PaddingMode(str, Enum):
+class PaddingMode(str, BaseEnum):
     """
     Supported padding modes for TorchIO's Pad.
     see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Pad
@@ -106,7 +106,7 @@ class PaddingMode(str, Enum):
     WRAP = "wrap"
 
 
-class CenterMode(str, Enum):
+class CenterMode(str, BaseEnum):
     """
     Supported options for the parameter 'center' in TorchIO's RandomAffine.
     see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAffine
@@ -116,7 +116,7 @@ class CenterMode(str, Enum):
     ORIGIN = "origin"
 
 
-class RandomAffinePaddingMode(str, Enum):
+class RandomAffinePaddingMode(str, BaseEnum):
     """
     Supported options for the parameter 'default_pad_value' in TorchIO's RandomAffine.
     see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAffine
@@ -127,7 +127,7 @@ class RandomAffinePaddingMode(str, Enum):
     OTSU = "otsu"
 
 
-class AnatomicalAxis(str, Enum):
+class AnatomicalAxis(str, BaseEnum):
     """
     Supported names for anatomical axes in TorchIO.
     see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomFlip
@@ -138,7 +138,7 @@ class AnatomicalAxis(str, Enum):
     INFERIOR_SUPERIOR = "IS"
 
 
-class NumericalAxis(int, Enum):
+class NumericalAxis(int, BaseEnum):
     """
     Indexation of spatial axes in 3D.
     """
@@ -148,7 +148,7 @@ class NumericalAxis(int, Enum):
     TWO = 2
 
 
-class LockedBordersMode(int, Enum):
+class LockedBordersMode(int, BaseEnum):
     """
     Modes for 'locked_borders' argument in RandomElasticDeformation.
     see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomElasticDeformation

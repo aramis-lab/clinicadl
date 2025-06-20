@@ -30,7 +30,6 @@ from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
-    ClinicaDLTSVError,
 )
 from clinicadl.utils.typing import DataType, PathType
 
@@ -329,7 +328,10 @@ class CapsDataset(Dataset):
         self._count_samples()
 
     def read_tensor_conversion(
-        self, json_name: str, check_transforms: bool = True, load_also: list[str] = []
+        self,
+        json_name: str,
+        check_transforms: bool = True,
+        load_also: Optional[list[str]] = None,
     ) -> None:
         """
         To read an old tensor conversion. The function will check that
@@ -709,7 +711,7 @@ class CapsDataset(Dataset):
         """
         if data is None:
             data = self.caps_reader.create_subjects_sessions_tsv(self.preprocessing)
-            print(f"Creating a TSV file at {data}")
+            logger.info("Creating a TSV file at %s", data)
 
         if not isinstance(data, (str, Path, pd.DataFrame)):
             raise ClinicaDLArgumentError(

@@ -1,7 +1,7 @@
 from typing import Iterator, Optional, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
-from torch.utils.data import DataLoader as TorchDataLoaader
+from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
@@ -16,7 +16,7 @@ from clinicadl.utils.seed import pl_worker_init_function
 from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
 
 
-class DataLoader(TorchDataLoaader):
+class DataLoader(TorchDataLoader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
     """
@@ -327,12 +327,12 @@ class DataLoaderConfig(ClinicaDLConfig):
             collate_fn=tuple_collate_fn
             if isinstance(dataset, (PairedDataset, UnpairedDataset))
             else simple_collate_fn,
-            **self.model_dump(exclude={"sampling_weights", "shuffle"}),
+            **self.to_dict(exclude={"sampling_weights", "shuffle"}),
         )
 
     def _generate_sampler(
         self,
-        dataset: CapsDataset,
+        dataset: Dataset,
         dp_degree: int,
         rank: int,
     ) -> Sampler:
@@ -342,7 +342,7 @@ class DataLoaderConfig(ClinicaDLConfig):
         the degree of data parallelism is set to 1, so it is equivalent to a simple PyTorch
         RandomSampler if self.shuffle is True or no sampler if self.shuffle is False).
         """
-        if self.sampling_weights and rank is not None:
+        if self.sampling_weights:
             weights = self._get_weights(dataset, self.sampling_weights)
             length = len(weights) // dp_degree + int(rank < len(weights) % dp_degree)
             sampler = WeightedRandomSampler(weights, num_samples=length)  # type: ignore

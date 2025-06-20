@@ -1,19 +1,19 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
+import monai
+import monai.metrics
 from pydantic import NonNegativeFloat, PositiveInt, field_validator
 
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.losses.enum import Reduction
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     MetricConfig,
     _GetNotNansConfig,
-    _IncludeBackgroundConfig,
-    _ReductionConfig,
 )
 from .enum import (
     DistanceMetric,
     Optimum,
-    Reduction,
     WeightType,
 )
 
@@ -26,42 +26,30 @@ __all__ = [
     "SurfaceDiceMetricConfig",
 ]
 
+DICE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.DiceMetric)
+MEAN_IOU_MONAI_DEFAULTS = get_defaults_from(monai.metrics.MeanIoU)
+GENERALIZED_DICE_SCORE_MONAI_DEFAULTS = get_defaults_from(
+    monai.metrics.GeneralizedDiceScore
+)
+SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS = get_defaults_from(
+    monai.metrics.SurfaceDistanceMetric
+)
+HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS = get_defaults_from(
+    monai.metrics.HausdorffDistanceMetric
+)
+SURFACE_DICE_METRIC_MONAI_DEFAULTS = get_defaults_from(monai.metrics.SurfaceDiceMetric)
 
-class _BaseSegmentationMetricConfig(
-    _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
-):
-    """Base config class for segmentation metrics."""
 
-    ignore_empty: bool
-
-
-class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
+class DiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.DiceMetric`.
     """
 
-    num_classes: Optional[PositiveInt]
-    return_with_label: bool = False
-
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        num_classes: Union[
-            Optional[PositiveInt], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        return_with_label: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-            ignore_empty=ignore_empty,
-            num_classes=num_classes,
-            return_with_label=return_with_label,
-        )
+    include_background: bool = DICE_MONAI_DEFAULTS["include_background"]
+    reduction: Reduction = DICE_MONAI_DEFAULTS["reduction"]
+    ignore_empty: bool = DICE_MONAI_DEFAULTS["ignore_empty"]
+    num_classes: Optional[PositiveInt] = DICE_MONAI_DEFAULTS["num_classes"]
+    return_with_label: bool = DICE_MONAI_DEFAULTS["return_with_label"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -78,24 +66,14 @@ class DiceMetricConfig(MetricConfig, _BaseSegmentationMetricConfig):
         return v
 
 
-class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
+class MeanIoUConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MeanIoU`.
     """
 
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        ignore_empty: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-            ignore_empty=ignore_empty,
-        )
+    include_background: bool = MEAN_IOU_MONAI_DEFAULTS["include_background"]
+    reduction: Reduction = MEAN_IOU_MONAI_DEFAULTS["reduction"]
+    ignore_empty: bool = MEAN_IOU_MONAI_DEFAULTS["ignore_empty"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -103,25 +81,16 @@ class MeanIoUConfig(MetricConfig, _BaseSegmentationMetricConfig):
         return Optimum.MAX
 
 
-class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
+class GeneralizedDiceScoreConfig(MetricConfig):
     """
     Config class for :py:class:`monai.metrics.GeneralizedDiceScore`.
     """
 
-    reduction: Reduction
-    weight_type: WeightType
-
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction] = Reduction.MEAN,
-        weight_type: Union[WeightType, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            reduction=reduction,
-            weight_type=weight_type,
-        )
+    include_background: bool = GENERALIZED_DICE_SCORE_MONAI_DEFAULTS[
+        "include_background"
+    ]
+    reduction: Reduction = Reduction.MEAN
+    weight_type: WeightType = GENERALIZED_DICE_SCORE_MONAI_DEFAULTS["weight_type"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -129,38 +98,19 @@ class GeneralizedDiceScoreConfig(MetricConfig, _IncludeBackgroundConfig):
         return Optimum.MAX
 
 
-class _BaseSurfaceDistanceConfig(
-    _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
-):
-    """Base config class for surface-distance-based metrics."""
-
-    distance_metric: DistanceMetric
-
-
-class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
+class SurfaceDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDistanceMetric`.
     """
 
-    symmetric: bool
-
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        symmetric: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        distance_metric: Union[
-            DistanceMetric, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            symmetric=symmetric,
-            distance_metric=distance_metric,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    include_background: bool = SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS[
+        "include_background"
+    ]
+    symmetric: bool = SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS["symmetric"]
+    distance_metric: DistanceMetric = SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS[
+        "distance_metric"
+    ]
+    reduction: Reduction = SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -168,35 +118,22 @@ class SurfaceDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         return Optimum.MIN
 
 
-class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
+class HausdorffDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.HausdorffDistanceMetric`.
     """
 
-    percentile: Optional[NonNegativeFloat]
-    directed: bool
-
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        distance_metric: Union[
-            DistanceMetric, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        percentile: Union[Optional[NonNegativeFloat], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        directed: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = (DefaultFromLibrary.YES),
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            distance_metric=distance_metric,
-            percentile=percentile,
-            directed=directed,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    include_background: bool = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS[
+        "include_background"
+    ]
+    distance_metric: DistanceMetric = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS[
+        "distance_metric"
+    ]
+    percentile: Optional[NonNegativeFloat] = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS[
+        "percentile"
+    ]
+    directed: bool = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS["directed"]
+    reduction: Reduction = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -214,33 +151,18 @@ class HausdorffDistanceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
         return v
 
 
-class SurfaceDiceMetricConfig(MetricConfig, _BaseSurfaceDistanceConfig):
+class SurfaceDiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDiceMetric`.
     """
 
     class_thresholds: Tuple[NonNegativeFloat, ...]
-    use_subvoxels: bool
-
-    def __init__(
-        self,
-        class_thresholds: Tuple[NonNegativeFloat, ...],
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        distance_metric: Union[
-            DistanceMetric, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        use_subvoxels: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            class_thresholds=class_thresholds,
-            include_background=include_background,
-            distance_metric=distance_metric,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-            use_subvoxels=use_subvoxels,
-        )
+    include_background: bool = SURFACE_DICE_METRIC_MONAI_DEFAULTS["include_background"]
+    distance_metric: DistanceMetric = SURFACE_DICE_METRIC_MONAI_DEFAULTS[
+        "distance_metric"
+    ]
+    reduction: Reduction = SURFACE_DICE_METRIC_MONAI_DEFAULTS["reduction"]
+    use_subvoxels: bool = SURFACE_DICE_METRIC_MONAI_DEFAULTS["use_subvoxels"]
 
     @staticmethod
     def optimum() -> Optimum:

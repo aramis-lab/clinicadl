@@ -1,19 +1,26 @@
 from typing import Union
 
-from clinicadl.utils.factories import DefaultFromLibrary
+import monai
+import monai.metrics
+
+from clinicadl.losses.enum import Reduction
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     MetricConfig,
     _GetNotNansConfig,
-    _IncludeBackgroundConfig,
-    _ReductionConfig,
 )
-from .enum import Average, ConfusionMatrixMetricName, Optimum, Reduction
+from .enum import Average, ConfusionMatrixMetricName, Optimum
 
 __all__ = [
     "ROCAUCMetricConfig",
     "ConfusionMatrixMetricConfig",
 ]
+
+ROC_AUC_METRIC_METRICS_DEFAULTS = get_defaults_from(monai.metrics.rocauc.ROCAUCMetric)
+CONFUSION_METRICS_DEFAULTS = get_defaults_from(
+    monai.metrics.confusion_matrix.ConfusionMatrixMetric
+)
 
 
 # TODO : AP is missing
@@ -22,12 +29,7 @@ class ROCAUCMetricConfig(MetricConfig):
     Config class for :py:class:`monai.metrics.ROCAUCMetric`.
     """
 
-    average: Average
-
-    def __init__(
-        self, average: Union[Average, DefaultFromLibrary] = DefaultFromLibrary.YES
-    ):
-        super().__init__(average=average)
+    average: Average = ROC_AUC_METRIC_METRICS_DEFAULTS["average"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -35,33 +37,17 @@ class ROCAUCMetricConfig(MetricConfig):
         return Optimum.MAX
 
 
-class ConfusionMatrixMetricConfig(
-    MetricConfig, _IncludeBackgroundConfig, _GetNotNansConfig, _ReductionConfig
-):
+class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.ConfusionMatrixMetric`.
     """
 
-    metric_name: ConfusionMatrixMetricName
-    compute_sample: bool
-
-    def __init__(
-        self,
-        include_background: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        metric_name: Union[
-            ConfusionMatrixMetricName, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        compute_sample: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        reduction: Union[Reduction, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        get_not_nans: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            include_background=include_background,
-            metric_name=metric_name,
-            compute_sample=compute_sample,
-            reduction=reduction,
-            get_not_nans=get_not_nans,
-        )
+    metric_name: Union[
+        ConfusionMatrixMetricName, list[ConfusionMatrixMetricName]
+    ] = CONFUSION_METRICS_DEFAULTS["metric_name"]
+    include_background: bool = CONFUSION_METRICS_DEFAULTS["include_background"]
+    compute_sample: bool = CONFUSION_METRICS_DEFAULTS["compute_sample"]
+    reduction: Reduction = CONFUSION_METRICS_DEFAULTS["reduction"]
 
     def optimum(self) -> Optimum:  # pylint: disable=arguments-differ
         """The optimum of the metric."""

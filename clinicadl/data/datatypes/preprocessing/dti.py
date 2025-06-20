@@ -1,5 +1,6 @@
 from enum import Enum
 from logging import getLogger
+from typing import Union
 
 from pydantic import computed_field
 

@@ -234,10 +234,7 @@ class CapsReader(Reader):
         global_pattern = self.get_session_path(participant, session) / file_pattern
 
         current_glob_found = glob(str(global_pattern))
-        error_msg = (
-            "An error occurred while trying to get images preprocessed with "
-            f"'{preprocessing.name}' for ({participant} | {session}): "
-        )
+        error_msg = f"For ({participant} | {session}), an error occurred while trying to get {preprocessing}: "
         if len(current_glob_found) > 1:  # e.g. a nii and a nii.gz file
             error_msg += "more than 1 file found:\n"
             for found_file in current_glob_found:

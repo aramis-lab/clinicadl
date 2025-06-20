@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import torch.nn as nn
 from pydantic import (
@@ -9,13 +9,10 @@ from pydantic import (
 )
 
 import clinicadl.networks.nn as nets
-from clinicadl.networks.nn.layers.utils import ActivationParameters
 from clinicadl.utils.config import (
     ClinicaDLConfig,
     ObjectConfig,
-    update_kwargs_with_defaults,
 )
-from clinicadl.utils.factories import DefaultFromLibrary
 
 __all__ = ["ImplementedNetwork", "NetworkConfig"]
 
@@ -82,13 +79,12 @@ class NetworkConfig(ObjectConfig):
         return getattr(nets, cls._get_name())
 
 
-class _FullyConvConfig(ClinicaDLConfig):
+class _SpatialDimsConfig(ClinicaDLConfig):
     """
-    Config class for fully convolutional networks.
+    Config class for 'spatial_dims' option.
     """
 
     spatial_dims: PositiveInt
-    in_channels: PositiveInt
 
     @field_validator("spatial_dims", mode="after")
     @classmethod
@@ -104,31 +100,22 @@ class _InShapeConfig(ClinicaDLConfig):
 
     in_shape: Sequence[PositiveInt]
 
-
-class _OptionalNumOutputsConfig(ClinicaDLConfig):
-    """Config class for 'num_outputs' option."""
-
-    num_outputs: Optional[PositiveInt]
-
-
-class _MandatoryActConfig(ClinicaDLConfig):
-    """Config class for 'output_act' option."""
-
-    act: ActivationParameters
+    @field_validator("in_shape", mode="after")
+    @classmethod
+    def validator_in_shape(cls, v):
+        """Checks that 'in_shape' corresponds to 1D, 2D or 3D images."""
+        assert (
+            2 <= len(v) <= 4
+        ), f"'in_shape' must be of length 2 (1D), 3 (2D image) or 4 (3D image). Don't forget the channel dimension. Got: {v}."
+        return v
 
 
-class _OutputActConfig(ClinicaDLConfig):
-    """Config class for 'output_act' option."""
-
-    output_act: Optional[ActivationParameters]
-
-
-class _DropOutConfig(ClinicaDLConfig):
+class _DropoutConfig(ClinicaDLConfig):
     """Config class for 'dropout' option."""
 
     dropout: Optional[PositiveFloat]
 
-    @field_validator("dropout")
+    @field_validator("dropout", mode="after")
     @classmethod
     def validator_dropout(cls, v):
         """Checks that dropout is between 0 and 1."""
@@ -137,29 +124,3 @@ class _DropOutConfig(ClinicaDLConfig):
                 0 <= v <= 1
             ), f"'dropout' must be between 0 and 1 but it has been set to {v}."
         return v
-
-
-class _PretrainedConfig(ClinicaDLConfig):
-    """Config class for 'pretrained' option."""
-
-    pretrained: bool
-
-
-class _PretrainedFromLiteratureConfig(
-    NetworkConfig, _OptionalNumOutputsConfig, _OutputActConfig, _PretrainedConfig
-):
-    """Base config class for pretrained networks."""
-
-    def __init__(
-        self,
-        num_outputs: Optional[PositiveInt],
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        pretrained: Union[bool, DefaultFromLibrary] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            num_outputs=num_outputs,
-            output_act=output_act,
-            pretrained=pretrained,
-        )

@@ -1,18 +1,15 @@
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 from pydantic import PositiveFloat, PositiveInt
 
+import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.layers.utils import ActivationParameters
-from clinicadl.utils.factories import DefaultFromLibrary
+from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
     NetworkConfig,
-    _DropOutConfig,
-    _FullyConvConfig,
-    _MandatoryActConfig,
-    _OptionalNumOutputsConfig,
-    _OutputActConfig,
-    _PretrainedFromLiteratureConfig,
+    _DropoutConfig,
+    _SpatialDimsConfig,
 )
 
 __all__ = [
@@ -23,80 +20,69 @@ __all__ = [
     "DenseNet201Config",
 ]
 
+DENSE_NET_DEFAULTS = get_defaults_from(nets.DenseNet)
+DENSE_NET_121_DEFAULTS = get_defaults_from(nets.DenseNet121)
+DENSE_NET_161_DEFAULTS = get_defaults_from(nets.DenseNet161)
+DENSE_NET_169_DEFAULTS = get_defaults_from(nets.DenseNet169)
+DENSE_NET_201_DEFAULTS = get_defaults_from(nets.DenseNet201)
+
 
 class DenseNetConfig(
     NetworkConfig,
-    _FullyConvConfig,
-    _OptionalNumOutputsConfig,
-    _MandatoryActConfig,
-    _OutputActConfig,
-    _DropOutConfig,
+    _SpatialDimsConfig,
+    _DropoutConfig,
 ):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet`.
     """
 
-    n_dense_layers: Sequence[PositiveInt]
-    init_features: PositiveInt
-    growth_rate: PositiveInt
-    bottleneck_factor: PositiveInt
-
-    def __init__(
-        self,
-        spatial_dims: PositiveInt,
-        in_channels: PositiveInt,
-        num_outputs: Optional[PositiveInt],
-        n_dense_layers: Union[Sequence[PositiveInt], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        init_features: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        growth_rate: Union[PositiveInt, DefaultFromLibrary] = DefaultFromLibrary.YES,
-        bottleneck_factor: Union[
-            PositiveInt, DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-        act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        output_act: Union[Optional[ActivationParameters], DefaultFromLibrary] = (
-            DefaultFromLibrary.YES
-        ),
-        dropout: Union[
-            Optional[PositiveFloat], DefaultFromLibrary
-        ] = DefaultFromLibrary.YES,
-    ):
-        super().__init__(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            num_outputs=num_outputs,
-            n_dense_layers=n_dense_layers,
-            init_features=init_features,
-            growth_rate=growth_rate,
-            bottleneck_factor=bottleneck_factor,
-            act=act,
-            output_act=output_act,
-            dropout=dropout,
-        )
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    n_dense_layers: Sequence[PositiveInt] = DENSE_NET_DEFAULTS["n_dense_layers"]
+    init_features: PositiveInt = DENSE_NET_DEFAULTS["init_features"]
+    growth_rate: PositiveInt = DENSE_NET_DEFAULTS["growth_rate"]
+    bottleneck_factor: PositiveInt = DENSE_NET_DEFAULTS["bottleneck_factor"]
+    act: Optional[ActivationParameters] = DENSE_NET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = DENSE_NET_DEFAULTS["output_act"]
+    dropout: Optional[PositiveFloat] = DENSE_NET_DEFAULTS["dropout"]
 
 
-class DenseNet121Config(_PretrainedFromLiteratureConfig):
+class DenseNet121Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet121`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_121_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_121_DEFAULTS["pretrained"]
 
-class DenseNet161Config(_PretrainedFromLiteratureConfig):
+
+class DenseNet161Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet161`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_161_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_161_DEFAULTS["pretrained"]
 
-class DenseNet169Config(_PretrainedFromLiteratureConfig):
+
+class DenseNet169Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet169`.
     """
 
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_169_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_169_DEFAULTS["pretrained"]
 
-class DenseNet201Config(_PretrainedFromLiteratureConfig):
+
+class DenseNet201Config(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.DenseNet201`.
     """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_201_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_201_DEFAULTS["pretrained"]

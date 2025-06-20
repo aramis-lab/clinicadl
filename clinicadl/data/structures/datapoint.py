@@ -202,7 +202,7 @@ class DataPoint(tio.Subject):
 
     def get_images_dict(
         self,
-        intensity_only=True,
+        intensity_only: bool = True,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
     ) -> dict[str, tio.Image]:
