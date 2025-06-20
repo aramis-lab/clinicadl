@@ -195,7 +195,6 @@ def simplify_type(tp):
 def rewrite_class_signature(
     app, what, name, obj, options, signature, return_annotation
 ):
-    print(obj)
     if not isinstance(obj, type) or not issubclass(obj, BaseModel):
         return
 

@@ -25,6 +25,10 @@ class ClinicaDLConfig(BaseModel):
         arbitrary_types_allowed=True,
     )
 
+    def __init__(self, **kwargs):
+        """Useless method but needed for the doc (typing)."""
+        super().__init__(**kwargs)
+
     @classmethod
     def from_json(cls, json_path: Path, **kwargs):
         """
