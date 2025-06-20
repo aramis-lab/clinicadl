@@ -4114,7 +4114,7 @@ version = "11.2.1"
 description = "Python Imaging Library (Fork)"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "tracking"]
+groups = ["main", "docs", "tracking"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "pillow-11.2.1-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:d57a75d53922fc20c165016a20d9c44f73305e67c351bbc60d1adaf662e74047"},
@@ -6058,15 +6058,29 @@ theme-sbt = ["sphinx-book-theme (>=1.1,<2.0)"]
 
 [[package]]
 name = "sphinx-gallery"
-version = "0.1.13"
-description = "Sphinx extension to automatically generate an examples gallery"
+version = "0.19.0"
+description = "A Sphinx extension that builds an HTML gallery of examples from any set of Python scripts."
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
-    {file = "sphinx-gallery-0.1.13.tar.gz", hash = "sha256:3e76b6a0cb8190652010c5d0a5f0a974a759c08c7d5a2342a8323826d95c0611"},
+    {file = "sphinx_gallery-0.19.0-py3-none-any.whl", hash = "sha256:4c28751973f81769d5bbbf5e4ebaa0dc49dff8c48eb7f11131eb5f6e4aa25f0e"},
+    {file = "sphinx_gallery-0.19.0.tar.gz", hash = "sha256:8400cb5240ad642e28a612fdba0667f725d0505a9be0222d0243de60e8af2eb3"},
 ]
+
+[package.dependencies]
+pillow = "*"
+sphinx = ">=5"
+
+[package.extras]
+animations = ["sphinxcontrib-video"]
+dev = ["absl-py", "graphviz", "intersphinx-registry", "ipython", "joblib", "jupyterlite-sphinx (>=0.17.1)", "lxml", "matplotlib", "numpy", "packaging", "plotly", "pydata-sphinx-theme", "pytest", "pytest-coverage", "seaborn", "sphinxcontrib-video", "statsmodels"]
+jupyterlite = ["jupyterlite-sphinx"]
+parallel = ["joblib"]
+recommender = ["numpy"]
+show-api-usage = ["graphviz"]
+show-memory = ["memory-profiler"]
 
 [[package]]
 name = "sphinxcontrib-applehelp"
@@ -7219,4 +7233,4 @@ zoo = ["clinicadl-zoo"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
-content-hash = "4f642356d5f9f96788ea774b04d9e691b99223b2de571c79dcb497f915b9cfcb"
+content-hash = "f32c7efc602352075f6b44278521fd4a5b728af9b41ea1be5aca17c950083005"
