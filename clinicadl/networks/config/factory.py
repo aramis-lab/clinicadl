@@ -52,7 +52,7 @@ def get_network_config(
         the config object. Default values will be returned for the parameters
         not passed by the user.
     """
-    network = ImplementedNetwork(name)
+    network = ImplementedNetwork(name).value
     config_name = f"{network}Config"
     config = globals()[config_name]
 

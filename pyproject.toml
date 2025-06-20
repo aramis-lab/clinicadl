@@ -49,7 +49,6 @@ matplotlib =  "^3.9"
 ipykernel = { version = "^6", optional = true }
 notebook = { version = "^7", optional = true }
 clinicadl-zoo = { git = "https://github.com/aramis-lab/clinicadl-zoo.git", branch = "main", optional = true }
-sphinx-copybutton = "^0.5.2"
 
 [tool.poetry.extras]
 zoo = ["clinicadl-zoo"]
@@ -77,6 +76,9 @@ sphinx = "^7"
 furo = "^2024.8"
 sphinx-design = "^0.6"
 sphinx-autodoc-typehints = "^2"
+sphinxcontrib-bibtex = "^2.6.4"
+sphinx-copybutton = "^0.5.2"
+sphinx-gallery = "^0.1.10"
 
 [tool.poetry.scripts]
 clinicadl = "clinicadl.cli:main"

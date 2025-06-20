@@ -19,7 +19,7 @@ version = "0.7.16"
 description = "A light, configurable Sphinx theme"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "alabaster-0.7.16-py3-none-any.whl", hash = "sha256:b46733c07dce03ae4e150330b975c75737fa60f0a7c591b6c8bf4928a28e2c92"},
@@ -253,11 +253,11 @@ description = "Internationalization utilities"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "docs"]
-markers = "sys_platform != \"linux\""
 files = [
     {file = "babel-2.17.0-py3-none-any.whl", hash = "sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2"},
     {file = "babel-2.17.0.tar.gz", hash = "sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d"},
 ]
+markers = {main = "sys_platform != \"linux\" and extra == \"tutorials\"", docs = "sys_platform != \"linux\""}
 
 [package.extras]
 dev = ["backports.zoneinfo ; python_version < \"3.9\"", "freezegun (>=1.0,<2.0)", "jinja2 (>=3.0)", "pytest (>=6.0)", "pytest-cov", "pytz", "setuptools", "tzdata ; sys_platform == \"win32\""]
@@ -655,7 +655,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform != \"linux\" and (sys_platform == \"win32\" or platform_system == \"Windows\")", dev = "sys_platform == \"win32\"", docs = "sys_platform == \"win32\"", tracking = "sys_platform != \"linux\" and platform_system == \"Windows\""}
+markers = {main = "sys_platform == \"win32\" and extra == \"tutorials\" or platform_system == \"Windows\"", dev = "sys_platform == \"win32\"", docs = "sys_platform == \"win32\"", tracking = "sys_platform != \"linux\" and platform_system == \"Windows\""}
 
 [[package]]
 name = "comm"
@@ -1210,7 +1210,7 @@ version = "0.21.2"
 description = "Docutils -- Python Documentation Utilities"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "docutils-0.21.2-py3-none-any.whl", hash = "sha256:dafca5b9e384f0e419294eb4d2ff9fa826435bf15f15b7bd45723e8ad76811b2"},
@@ -1946,7 +1946,7 @@ version = "1.4.1"
 description = "Getting image size from png/jpeg/jpeg2000/gif file"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "imagesize-1.4.1-py2.py3-none-any.whl", hash = "sha256:0d8d18d08f840c19d0ee7ca1fd82490fdc3729b7ac93f49870406ddde8ef8d8b"},
@@ -2760,6 +2760,19 @@ files = [
 markers = {main = "python_version >= \"3.11\" and extra == \"tutorials\"", tracking = "python_version >= \"3.11\""}
 
 [[package]]
+name = "latexcodec"
+version = "3.0.1"
+description = "A lexer and codec to work with LaTeX code in Python."
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+markers = "sys_platform != \"linux\""
+files = [
+    {file = "latexcodec-3.0.1-py3-none-any.whl", hash = "sha256:a9eb8200bff693f0437a69581f7579eb6bca25c4193515c09900ce76451e452e"},
+    {file = "latexcodec-3.0.1.tar.gz", hash = "sha256:e78a6911cd72f9dec35031c6ec23584de6842bfbc4610a9678868d14cdfb0357"},
+]
+
+[[package]]
 name = "lazy-loader"
 version = "0.4"
 description = "Makes it easy to load subpackages and functions on demand."
@@ -2804,7 +2817,7 @@ files = [
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_ppc64le.whl", hash = "sha256:aa837e6ee9534de8d63bc4c1249e83882a7ac22bd24523f83fad68e6ffdf41ae"},
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_s390x.whl", hash = "sha256:da4c9223319400b97a2acdfb10926b807e51b69eb7eb80aad4942c0516934858"},
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:dc0e9bdb3aa4d1de703a437576007d366b54f52c9897cae1a3716bb44fc1fc85"},
-    {file = "lxml-5.3.2-cp310-cp310-win32.win32.whl", hash = "sha256:dd755a0a78dd0b2c43f972e7b51a43be518ebc130c9f1a7c4480cf08b4385486"},
+    {file = "lxml-5.3.2-cp310-cp310-win32.whl", hash = "sha256:5f94909a1022c8ea12711db7e08752ca7cf83e5b57a87b59e8a583c5f35016ad"},
     {file = "lxml-5.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:d64ea1686474074b38da13ae218d9fde0d1dc6525266976808f41ac98d9d7980"},
     {file = "lxml-5.3.2-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:9d61a7d0d208ace43986a92b111e035881c4ed45b1f5b7a270070acae8b0bfb4"},
     {file = "lxml-5.3.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:856dfd7eda0b75c29ac80a31a6411ca12209183e866c33faf46e77ace3ce8a79"},
@@ -4458,6 +4471,44 @@ files = [
 pyasn1 = ">=0.6.1,<0.7.0"
 
 [[package]]
+name = "pybtex"
+version = "0.24.0"
+description = "A BibTeX-compatible bibliography processor in Python"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*"
+groups = ["docs"]
+markers = "sys_platform != \"linux\""
+files = [
+    {file = "pybtex-0.24.0-py2.py3-none-any.whl", hash = "sha256:e1e0c8c69998452fea90e9179aa2a98ab103f3eed894405b7264e517cc2fcc0f"},
+    {file = "pybtex-0.24.0.tar.gz", hash = "sha256:818eae35b61733e5c007c3fcd2cfb75ed1bc8b4173c1f70b56cc4c0802d34755"},
+]
+
+[package.dependencies]
+latexcodec = ">=1.0.4"
+PyYAML = ">=3.01"
+six = "*"
+
+[package.extras]
+test = ["pytest"]
+
+[[package]]
+name = "pybtex-docutils"
+version = "1.0.3"
+description = "A docutils backend for pybtex."
+optional = false
+python-versions = ">=3.7"
+groups = ["docs"]
+markers = "sys_platform != \"linux\""
+files = [
+    {file = "pybtex-docutils-1.0.3.tar.gz", hash = "sha256:3a7ebdf92b593e00e8c1c538aa9a20bca5d92d84231124715acc964d51d93c6b"},
+    {file = "pybtex_docutils-1.0.3-py3-none-any.whl", hash = "sha256:8fd290d2ae48e32fcb54d86b0efb8d573198653c7e2447d5bec5847095f430b9"},
+]
+
+[package.dependencies]
+docutils = ">=0.14"
+pybtex = ">=0.16"
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
@@ -4838,7 +4889,7 @@ version = "6.0.2"
 description = "YAML parser and emitter for Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev", "tracking"]
+groups = ["main", "dev", "docs", "tracking"]
 files = [
     {file = "PyYAML-6.0.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0a9a2848a5b7feac301353437eb7d5957887edbf81d56e903999a75a3d743086"},
     {file = "PyYAML-6.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:29717114e51c84ddfba879543fb232a6ed60086602313ca38cce623c1d62cfbf"},
@@ -4894,7 +4945,7 @@ files = [
     {file = "PyYAML-6.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:39693e1f8320ae4f43943590b49779ffb98acb81f788220ea932a6b6c51004d8"},
     {file = "pyyaml-6.0.2.tar.gz", hash = "sha256:d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"},
 ]
-markers = {main = "sys_platform != \"linux\" and extra == \"tutorials\"", dev = "sys_platform != \"linux\"", tracking = "sys_platform != \"linux\""}
+markers = {main = "sys_platform != \"linux\" and extra == \"tutorials\"", dev = "sys_platform != \"linux\"", docs = "sys_platform != \"linux\"", tracking = "sys_platform != \"linux\""}
 
 [[package]]
 name = "pyzmq"
@@ -5755,7 +5806,7 @@ version = "78.1.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "tracking"]
+groups = ["main", "docs", "tracking"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "setuptools-78.1.0-py3-none-any.whl", hash = "sha256:3e386e96793c8702ae83d17b853fb93d3e09ef82ec62722e61da5cd22376dcd8"},
@@ -5821,7 +5872,7 @@ version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
-groups = ["main", "tracking"]
+groups = ["main", "docs", "tracking"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
@@ -5860,7 +5911,7 @@ version = "2.2.0"
 description = "This package provides 29 stemmers for 28 languages generated from Snowball algorithms."
 optional = false
 python-versions = "*"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "snowballstemmer-2.2.0-py2.py3-none-any.whl", hash = "sha256:c8e1716e83cc398ae16824e5572ae04e0d9fc2c6b985fb0f900f5f0c96ecba1a"},
@@ -5886,7 +5937,7 @@ version = "7.4.7"
 description = "Python documentation generator"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinx-7.4.7-py3-none-any.whl", hash = "sha256:c2419e2135d11f1951cd994d6eb18a1835bd8fdd8429f9ca375dc1f3281bd239"},
@@ -5964,7 +6015,7 @@ version = "0.5.2"
 description = "Add a copy button to each of your code cells."
 optional = false
 python-versions = ">=3.7"
-groups = ["main"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinx-copybutton-0.5.2.tar.gz", hash = "sha256:4cf17c82fb9646d1bc9ca92ac280813a3b605d8c421225fd9913154103ee1fbd"},
@@ -6006,12 +6057,24 @@ theme-rtd = ["sphinx-rtd-theme (>=2.0,<3.0)"]
 theme-sbt = ["sphinx-book-theme (>=1.1,<2.0)"]
 
 [[package]]
+name = "sphinx-gallery"
+version = "0.1.13"
+description = "Sphinx extension to automatically generate an examples gallery"
+optional = false
+python-versions = "*"
+groups = ["docs"]
+markers = "sys_platform != \"linux\""
+files = [
+    {file = "sphinx-gallery-0.1.13.tar.gz", hash = "sha256:3e76b6a0cb8190652010c5d0a5f0a974a759c08c7d5a2342a8323826d95c0611"},
+]
+
+[[package]]
 name = "sphinxcontrib-applehelp"
 version = "2.0.0"
 description = "sphinxcontrib-applehelp is a Sphinx extension which outputs Apple help books"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib_applehelp-2.0.0-py3-none-any.whl", hash = "sha256:4cd3f0ec4ac5dd9c17ec65e9ab272c9b867ea77425228e68ecf08d6b28ddbdb5"},
@@ -6024,12 +6087,36 @@ standalone = ["Sphinx (>=5)"]
 test = ["pytest"]
 
 [[package]]
+name = "sphinxcontrib-bibtex"
+version = "2.6.4"
+description = "Sphinx extension for BibTeX style citations."
+optional = false
+python-versions = ">=3.9"
+groups = ["docs"]
+markers = "sys_platform != \"linux\""
+files = [
+    {file = "sphinxcontrib_bibtex-2.6.4-py3-none-any.whl", hash = "sha256:bfd34d36322ba0ef0624a1bbee44adcedde86e0fa0ce5b2310304a3e68263f6f"},
+    {file = "sphinxcontrib_bibtex-2.6.4.tar.gz", hash = "sha256:aad018b730d324201f09777f6c25c4a2ff7ac1d5e66af187f21fc21840768760"},
+]
+
+[package.dependencies]
+docutils = ">=0.8,<0.18.dev0 || >=0.20.dev0"
+importlib_metadata = {version = ">=3.6", markers = "python_version < \"3.10\""}
+pybtex = ">=0.24"
+pybtex-docutils = ">=1.0.0"
+setuptools = "*"
+Sphinx = ">=3.5"
+
+[package.extras]
+test = ["pytest", "pytest-cov", "sphinx-autoapi"]
+
+[[package]]
 name = "sphinxcontrib-devhelp"
 version = "2.0.0"
 description = "sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp documents"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib_devhelp-2.0.0-py3-none-any.whl", hash = "sha256:aefb8b83854e4b0998877524d1029fd3e6879210422ee3780459e28a1f03a8a2"},
@@ -6047,7 +6134,7 @@ version = "2.1.0"
 description = "sphinxcontrib-htmlhelp is a sphinx extension which renders HTML help files"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib_htmlhelp-2.1.0-py3-none-any.whl", hash = "sha256:166759820b47002d22914d64a075ce08f4c46818e17cfc9470a9786b759b19f8"},
@@ -6065,7 +6152,7 @@ version = "1.0.1"
 description = "A sphinx extension which renders display math in HTML via JavaScript"
 optional = false
 python-versions = ">=3.5"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib-jsmath-1.0.1.tar.gz", hash = "sha256:a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8"},
@@ -6081,7 +6168,7 @@ version = "2.0.0"
 description = "sphinxcontrib-qthelp is a sphinx extension which outputs QtHelp documents"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib_qthelp-2.0.0-py3-none-any.whl", hash = "sha256:b18a828cdba941ccd6ee8445dbe72ffa3ef8cbe7505d8cd1fa0d42d3f2d5f3eb"},
@@ -6099,7 +6186,7 @@ version = "2.0.0"
 description = "sphinxcontrib-serializinghtml is a sphinx extension which outputs \"serialized\" HTML files (json and pickle)"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "docs"]
+groups = ["docs"]
 markers = "sys_platform != \"linux\""
 files = [
     {file = "sphinxcontrib_serializinghtml-2.0.0-py3-none-any.whl", hash = "sha256:6e2cb0eef194e10c27ec0023bfeb25badbbb5868244cf5bc5bdc04e4464bf331"},
@@ -6462,7 +6549,6 @@ description = "A lil' TOML parser"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev", "docs"]
-markers = "sys_platform != \"linux\" and python_version < \"3.11\""
 files = [
     {file = "tomli-2.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:678e4fa69e4575eb77d103de3df8a895e1591b48e740211bd1067378c69e8249"},
     {file = "tomli-2.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:023aa114dd824ade0100497eb2318602af309e5a55595f76b626d6d9f3b7b0a6"},
@@ -6497,6 +6583,7 @@ files = [
     {file = "tomli-2.2.1-py3-none-any.whl", hash = "sha256:cb55c73c5f4408779d0cf3eef9f762b9c9f147a77de7b258bef0a5628adc85cc"},
     {file = "tomli-2.2.1.tar.gz", hash = "sha256:cd45e1dc79c835ce60f7404ec8119f2eb06d38b1deba146f07ced3bbc44505ff"},
 ]
+markers = {main = "sys_platform != \"linux\" and extra == \"tutorials\" and python_version < \"3.11\"", dev = "sys_platform != \"linux\" and python_version < \"3.11\"", docs = "sys_platform != \"linux\" and python_version < \"3.11\""}
 
 [[package]]
 name = "torch"
@@ -6596,11 +6683,6 @@ python-versions = ">=3.9"
 groups = ["main"]
 markers = "sys_platform != \"linux\""
 files = [
-    {file = "torchvision-0.21.0-1-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:5568c5a1ff1b2ec33127b629403adb530fab81378d9018ca4ed6508293f76e2b"},
-    {file = "torchvision-0.21.0-1-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:ff96666b94a55e802ea6796cabe788541719e6f4905fc59c380fed3517b6a64d"},
-    {file = "torchvision-0.21.0-1-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:ffa2a16499508fe6798323e455f312c7c55f2a88901c9a7c0fb1efa86cf7e327"},
-    {file = "torchvision-0.21.0-1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:7e9e9afa150e40cd2a8f0701c43cb82a8d724f512896455c0918b987f94b84a4"},
-    {file = "torchvision-0.21.0-1-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:669575b290ec27304569e188a960d12b907d5173f9cd65e86621d34c4e5b6c30"},
     {file = "torchvision-0.21.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:044ea420b8c6c3162a234cada8e2025b9076fa82504758cd11ec5d0f8cd9fa37"},
     {file = "torchvision-0.21.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:b0c0b264b89ab572888244f2e0bad5b7eaf5b696068fc0b93e96f7c3c198953f"},
     {file = "torchvision-0.21.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:54815e0a56dde95cc6ec952577f67e0dc151eadd928e8d9f6a7f821d69a4a734"},
@@ -7137,4 +7219,4 @@ zoo = ["clinicadl-zoo"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
-content-hash = "146189a31aa7b976fb720b7b7441fee2246859dc03ceea21028c28104ca4932e"
+content-hash = "4f642356d5f9f96788ea774b04d9e691b99223b2de571c79dcb497f915b9cfcb"
