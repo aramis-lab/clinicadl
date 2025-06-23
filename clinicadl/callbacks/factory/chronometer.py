@@ -219,6 +219,7 @@ class Chronometer(Callback):
         """
         Displays collected timing statistics and performance summary.
         """
+        logger.info(">>> Performance summary:")
         if self.stop_proc and self.start_proc:
             logger.info(
                 ">>> Training complete in: %s", str(self.stop_proc - self.start_proc)

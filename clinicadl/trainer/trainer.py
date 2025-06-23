@@ -43,7 +43,14 @@ class Trainer:
     ) -> None:
         """TO COMPLETE"""
 
+        self.callbacks = CallbacksHandler(
+            callbacks=callbacks if callbacks is not None else [],
+        )
+
         train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
+
+        self.callbacks.check_metrics(train_metrics)
+
         maps = Maps(maps_path, _overwrite)
         maps.create()
 
@@ -54,12 +61,9 @@ class Trainer:
             optim=optim_config,
             comp=comp_config,
         )
-        self.callbacks = CallbacksHandler(
-            callbacks=callbacks if callbacks is not None else [],
-        )
-        self.callbacks.check_metrics(train_metrics)
 
         self.scaler = comp_config.get_scaler()
+
         seed_everything(seed=seed, deterministic=False, compensation="memory")
 
     @property
@@ -85,28 +89,19 @@ class Trainer:
     def train(self, split: Split) -> None:
         """TO COMPLETE"""
 
-        break_ = False
         self.on_train_begin(split)
 
-        while self.config.epoch < self.optim.epochs:
-            if break_:
-                break
-
+        while not self.config.stop:
             self.on_epoch_begin()
 
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin(batch_idx=batch_idx)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    outputs, labels = self.model.training_step(
-                        data=data, device=self.comp.device
-                    )
-                    loss = self.model.loss(outputs, labels)
+                    loss = self.model.training_step(data=data, device=self.comp.device)
 
                 self.callbacks.on_backward_begin(config=self.config)
-
                 self.scaler.scale(loss).backward()
-
                 self.weights_update()
 
                 self.on_batch_end(loss=loss)
@@ -118,18 +113,14 @@ class Trainer:
     def on_train_begin(self, split: Split) -> None:
         """TO COMPLETE"""
 
-        self.config.reset(split=split)
-
         self.model.train()
-        self.reset()
-        self._init_scheduler(n_batch=len(split.train_loader))
+        self.reset(split)
 
         self.callbacks.on_train_begin(config=self.config)
 
     def on_epoch_begin(self) -> None:
         """TO COMPLETE"""
 
-        self.model.network.zero_grad(set_to_none=True)
         self.callbacks.on_epoch_begin(config=self.config)
 
     def on_batch_begin(self, batch_idx: int):
@@ -153,26 +144,34 @@ class Trainer:
         """TO COMPLETE"""
 
         self.evaluate(split.val_loader)
-        self.scheduler.step()  # TODO : to put in callbacks ?
 
         self.callbacks.on_epoch_end(config=self.config)
+
+        if self.config.epoch == self.optim.epochs - 1:
+            self.config.stop = True
+
         self.config.epoch += 1
 
     def on_train_end(self, split: Split):
         """TO COMPLETE"""
 
         self.callbacks.on_train_end(config=self.config)
-        self.config.metrics.save(self.maps.splits[split.index].metrics_tsv)
+
+        self.metrics.save(self.maps.splits[split.index].metrics_tsv)
         self.maps.splits[split.index].tmp.remove()
 
-    def reset(self):
+    def reset(self, split: Optional[Split] = None):
         """TO COMPLETE"""
-        self.config.epoch = 0
+        if split:
+            self.config.reset(split=split)
         self.metrics.reset(df=True)
 
     def evaluate(
         self,
         dataloader: DataLoader[CapsDataset],
+        additional_metrics: Optional[
+            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
+        ] = None,
     ):
         """TO COMPLETE"""
         self.callbacks.on_validation_begin(config=self.config)
@@ -180,13 +179,14 @@ class Trainer:
         dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
 
         self.metrics.reset()
+        # self.metrics.add_metrics(additional_metrics)
 
         with torch.no_grad():
             for _, data in enumerate(dataloader):
-                outputs, labels = self.model.training_step(
-                    data=data, device=self.comp.device
+                self.config.metrics = self.model.validation_step(
+                    data=data, device=self.comp.device, metrics=self.metrics
                 )
-                self.metrics(outputs, labels)
+
             self.metrics.aggregate(epoch=self.config.epoch)
 
         self.model.network.train()
@@ -205,6 +205,8 @@ class Trainer:
     ):
         """TO COMPLETE"""
 
+        # TODO : add transforms to output transforms
+
         validator = Predictor(self.maps.path, self.model, self.comp)
         validator.test(
             dataloader=dataloader,
@@ -213,15 +215,3 @@ class Trainer:
             output_transforms=output_transforms,
             data_group=data_group if data_group else "test",
         )
-
-    ## INITIALIZATION
-    def _init_scheduler(
-        self,
-        n_batch: int,
-    ):
-        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            self.model.optimizer,
-            max_lr=self.model.optimizer.param_groups[0]["lr"],
-            steps_per_epoch=n_batch,
-            epochs=self.optim.epochs,
-        )  # TODO: check if it stays ina method init

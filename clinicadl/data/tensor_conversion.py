@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union
@@ -334,13 +335,14 @@ class TensorConversion:
 
         # process images and masks, and manage errors
         try:
+            now = datetime.now().strftime("%H:%M:%S")
             Parallel(n_jobs=n_proc, require="sharedmem")(
                 delayed(self._transform_and_save_images)(participant, session)
                 for participant, session in tqdm(
                     set(self.caps_dataset.get_participant_session_couples()).difference(
                         self._participants_sessions_converted
                     ),
-                    desc="Converting images and image-specific masks",
+                    desc=f"{now} - Converting images and image-specific masks",
                 )
             )
             Parallel(n_jobs=n_proc, require="sharedmem")(
@@ -351,7 +353,7 @@ class TensorConversion:
                         for mask in self.caps_dataset.common_masks
                         if mask.path.name not in self._masks_converted
                     ],
-                    desc="Converting common masks",
+                    desc=f"{now} - Converting common masks",
                 )
             )
         except Exception as exc:

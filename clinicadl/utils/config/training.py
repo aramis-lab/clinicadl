@@ -16,12 +16,16 @@ class _TrainingState(ClinicaDLConfig):
     model: ClinicaDLModel
     optim: OptimizationConfig
     comp: ComputationalConfig
+    stop: bool = False
+    n_batch: int = -1
     split: Optional[Split] = None
     epoch: int = -1
     batch: int = -1
 
     def reset(self, split: Split):
         """TO COMPLETE"""
+        self.n_batch = len(split.train_loader)
         self.split = split
+        self.stop = False
         self.epoch = 0
         self.batch = 0

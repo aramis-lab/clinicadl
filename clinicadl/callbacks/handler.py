@@ -34,9 +34,6 @@ class CallbacksHandler:
         if Logger() not in self.callbacks:
             self.callbacks[Logger] = Logger()
 
-        if ProgressBarCallback() not in self.callbacks:
-            self.callbacks[ProgressBarCallback] = ProgressBarCallback()
-
         for cb in self.callbacks.values():
             if not isinstance(cb, Callback):
                 raise TypeError(
@@ -66,7 +63,7 @@ class CallbacksHandler:
                         "EarlyStopping and ModelCheckpoint callbacks must have the same metrics"
                     )
                 if not metrics.contains(metrics2):
-                    metrics.add_metrics(
+                    metrics.s(
                         [metric for metric in metrics2 if metric not in metrics.metrics]
                     )
 

@@ -1,6 +1,9 @@
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
+
+from tqdm import tqdm
 
 from clinicadl.utils.config.training import _TrainingState
 
@@ -115,22 +118,39 @@ class Logger(Callback):
 
     def __init__(self, verbose: bool = False):
         self.logger = setup_logging(verbose=verbose)
+        self.train_progress_bar = None
 
     def on_train_begin(self, config: _TrainingState, **kwargs):
+        self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.info("Beginning of the training for split %s", config.split.index)
-        self.logger.info("Training on %s", kwargs.get("device", "unknown device"))
+        self.logger.info("Training on %s", config.comp.device)
 
     def on_train_end(self, config: _TrainingState, **kwargs):
+        self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.info("End of the training")
 
     def on_epoch_begin(self, config: _TrainingState, **kwargs):
-        self.logger.info("Beginning of epoch %d", config.epoch)
+        self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
+        train_loader = config.split.train_loader
+        rank = kwargs.pop("rank", -1)
+        if train_loader is not None and (rank == 0 or rank == -1):
+            now = datetime.now().strftime("%H:%M:%S")
+            self.train_progress_bar = tqdm(
+                total=len(train_loader),
+                unit="batch",
+                desc=f"{now} - Training of epoch {config.epoch}/{config.optim.epochs}",
+            )
 
     def on_epoch_end(self, config: _TrainingState, **kwargs):
-        self.logger.info("Epoch %d completed", config.epoch)
+        if self.train_progress_bar is not None:
+            self.train_progress_bar.close()
 
     def on_batch_begin(self, config: _TrainingState, **kwargs):
+        self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.debug("Beginning of batch %d", config.batch)
 
     def on_batch_end(self, config: _TrainingState, **kwargs):
         self.logger.debug("Batch %d completed", config.batch)
+
+        if self.train_progress_bar is not None:
+            self.train_progress_bar.update(1)
