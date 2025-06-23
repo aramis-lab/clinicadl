@@ -41,12 +41,16 @@ extensions = [
 
 napoleon_use_admonition_for_references = True
 napoleon_use_admonition_for_notes = True
+napoleon_numpy_docstring = True
+
+napoleon_custom_sections = [("Returns", "params_style")]
+
 
 templates_path = ["_templates"]
 exclude_patterns = []
 autodoc_member_order = "bysource"
 
-
+autodoc_typehints = "description"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torchio": ("https://torchio.readthedocs.io", None),
