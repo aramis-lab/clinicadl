@@ -2,9 +2,9 @@ from typing import Dict, List, Optional
 
 from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.metrics.utils import metric_config_equals
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
-from .factory import *
+from .factory import Chronometer, EarlyStopping, Logger, ModelCheckpoint, TrainingLoss
 from .factory.base import Callback
 
 
@@ -63,7 +63,7 @@ class CallbacksHandler:
                         "EarlyStopping and ModelCheckpoint callbacks must have the same metrics"
                     )
                 if not metrics.contains(metrics2):
-                    metrics.s(
+                    metrics.add_metrics(
                         [metric for metric in metrics2 if metric not in metrics.metrics]
                     )
 

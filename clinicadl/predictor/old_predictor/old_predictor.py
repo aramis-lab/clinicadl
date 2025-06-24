@@ -24,7 +24,7 @@ from clinicadl.metrics.old_metrics.utils import (
 )
 from clinicadl.networks.old_network.network import Network
 from clinicadl.predictor.config import PredictConfig
-from clinicadl.trainer.tasks_utils import (
+from clinicadl.train.tasks_utils import (
     columns,
     compute_metrics,
     generate_label_code,

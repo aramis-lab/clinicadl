@@ -1,2 +1,1 @@
-from .base import ClinicaDLConfig, ObjectConfig
-from .training import _TrainingState
+from .base import ClinicaDLConfig, ObjectConfig, update_kwargs_with_defaults

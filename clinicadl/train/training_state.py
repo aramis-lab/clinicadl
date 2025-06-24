@@ -7,7 +7,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
 from clinicadl.utils.computational.config import ComputationalConfig
 
-from .base import ClinicaDLConfig
+from ..utils.config.base import ClinicaDLConfig
 
 
 class _TrainingState(ClinicaDLConfig):

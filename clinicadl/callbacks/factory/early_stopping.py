@@ -13,7 +13,7 @@ from clinicadl.metrics.config.base import (
     MetricConfig,
 )
 from clinicadl.metrics.metrics import Metrics
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 

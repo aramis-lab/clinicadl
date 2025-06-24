@@ -19,10 +19,10 @@ from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
+from clinicadl.train.training_state import _TrainingState
 from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.config.training import _TrainingState
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
 
