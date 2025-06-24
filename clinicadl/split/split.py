@@ -9,7 +9,6 @@ from clinicadl.data.datasets.types import Dataset
 from clinicadl.utils.config import ClinicaDLConfig
 
 
-# TODO
 class Split(ClinicaDLConfig):
     """
     Dataclass that contains a split.

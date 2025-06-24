@@ -2,11 +2,10 @@ from .chronometer import Chronometer
 from .code_carbon import CodeCarbon
 from .comet import Comet
 from .early_stopping import EarlyStopping
-from .learning_scheduler import LearningRateScheduler
 from .logger import Logger
+from .lr_scheduler import LRScheduler
 from .mlflow import MLFlow
 from .model_checkpoint import ModelCheckpoint
-from .scheduler import Scheduler
 from .tensorboard import Tensorboard
 from .training_loss import TrainingLoss
 from .wandb import WandB

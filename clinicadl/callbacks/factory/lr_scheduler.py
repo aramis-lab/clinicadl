@@ -5,8 +5,8 @@ from clinicadl.train.training_state import _TrainingState
 from .base import Callback
 
 
-class Scheduler(Callback):
-    """Base class for callbacks."""
+class LRScheduler(Callback):
+    """TO COMPLETE"""
 
     def __init__(self):
         self.scheduler = None
@@ -21,5 +21,5 @@ class Scheduler(Callback):
 
     def on_batch_end(self, config: _TrainingState, **kwargs):
         if self.scheduler is None:
-            raise ValueError("Scheduler is not initialized")
+            raise ValueError("LRScheduler is not initialized")
         self.scheduler.step()
