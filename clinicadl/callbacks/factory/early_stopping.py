@@ -4,14 +4,7 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
-from clinicadl.losses.config import LossConfig
-from clinicadl.losses.types import Loss
-from clinicadl.metrics.config.base import (
-    LossMetricConfig,
-    MetricConfig,
-)
 from clinicadl.metrics.metrics import Metrics
 from clinicadl.train.training_state import _TrainingState
 
@@ -31,7 +24,7 @@ class OneMetricEarlyStopping(Callback):
     def __init__(
         self,
         metric: str,
-        patience: Optional[int] = None,
+        patience: int,
         min_delta: Optional[float] = 0.0,
         mode: Mode = Mode.MIN,
         check_finite: bool = True,
@@ -45,7 +38,6 @@ class OneMetricEarlyStopping(Callback):
         self.check_finite = check_finite
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
-        self.stop = False
 
         self.check_bounds()
         self.is_better = self._get_comparison_function()
@@ -86,21 +78,21 @@ class OneMetricEarlyStopping(Callback):
             value = df.loc[
                 config.epoch, self.metric
             ]  # TODO: check if the df has the right columns and rows
+
+            value = float(value)
+
             if value is None or pd.isna(value):
                 raise ValueError(
                     f"Metric '{self.metric}' not found in DataFrame for epoch {config.epoch}."
                 )
             if self.check_finite and (math.isinf(value) or math.isnan(value)):
-                self.stop = True
+                return True
 
             if self.upper_bound is not None and (value > self.upper_bound):
-                self.stop = True
+                return True
 
             if self.lower_bound is not None and (value < self.lower_bound):
-                self.stop = True
-
-            if self.patience is None:
-                self.stop = False
+                return True
 
             if self.is_better(value, self.best):
                 self.num_bad_epochs = 0
@@ -109,9 +101,9 @@ class OneMetricEarlyStopping(Callback):
                 self.num_bad_epochs += 1
 
             if self.patience is not None and self.num_bad_epochs >= self.patience:
-                self.stop = True
+                return True
 
-            self.stop = False
+            return False
         else:
             raise ValueError("No df provided")
 

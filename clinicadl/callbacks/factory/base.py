@@ -1,7 +1,9 @@
+from abc import ABC
+
 from clinicadl.train.training_state import _TrainingState
 
 
-class Callback:
+class Callback(ABC):
     """Base class for callbacks."""
 
     def __init__(self):

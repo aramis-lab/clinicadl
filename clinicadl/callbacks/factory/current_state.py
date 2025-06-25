@@ -2,7 +2,7 @@ import torch
 
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL, OPTIMIZER
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train import _TrainingState
 
 from .base import Callback
 
@@ -11,7 +11,6 @@ class CurrentState(Callback):
     """Base class for callbacks."""
 
     def __init__(self):
-        "test"
         pass
 
     def on_train_begin(self, config: _TrainingState, **kwargs):
@@ -23,12 +22,6 @@ class CurrentState(Callback):
             raise ValueError(
                 "The split has no val_loader defined. Please run `get_dataloader()`"
             )
-
-    def on_train_end(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_epoch_begin(self, config: _TrainingState, **kwargs):
-        pass
 
     def on_epoch_end(self, config: _TrainingState, **kwargs):
         model_weights = {
@@ -51,21 +44,3 @@ class CurrentState(Callback):
         )
 
         torch.save(optim_weights, optim_path)
-
-    def on_batch_begin(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_batch_end(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_backward_begin(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_backward_end(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_validation_begin(self, config: _TrainingState, **kwargs):
-        pass
-
-    def on_validation_end(self, config: _TrainingState, **kwargs):
-        pass

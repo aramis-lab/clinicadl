@@ -1,10 +1,9 @@
 from typing import Dict, List, Optional
 
 from clinicadl.metrics.metrics import ClinicaDLMetrics
-from clinicadl.metrics.utils import metric_config_equals
 from clinicadl.train.training_state import _TrainingState
 
-from .factory import Chronometer, EarlyStopping, Logger, ModelCheckpoint, TrainingLoss
+from .factory import *
 from .factory.base import Callback
 
 LOSS = "loss"
@@ -136,9 +135,6 @@ class CallbacksHandler:
 
         if Logger.__name__ not in self.callbacks:
             self.callbacks[Logger.__name__] = Logger()
-
-        if ProgressBar.__name__ not in self.callbacks:
-            self.callbacks[ProgressBar.__name__] = ProgressBar()
 
         if CurrentState.__name__ not in self.callbacks:
             self.callbacks[CurrentState.__name__] = CurrentState()

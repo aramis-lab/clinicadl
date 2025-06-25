@@ -3,13 +3,45 @@ from typing import Optional
 
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 
 
 class Checkpoint(Callback):
-    """Base class for callbacks."""
+    """
+    Callback to save model and optimizer checkpoints at specified epochs or intervals.
+
+    This callback copies the current model and optimizer checkpoint files into
+    dedicated epoch folders during training, allowing checkpointing at desired points.
+
+    Parameters
+    ----------
+    patience : int
+        Interval (in epochs) at which to save checkpoints. For example, if patience=5,
+        checkpoints are saved every 5 epochs.
+    epochs : list of int, optional
+        Specific epochs at which to save checkpoints regardless of the patience interval.
+        If not provided, only the patience interval and the final epoch trigger checkpointing.
+
+    Examples
+    --------
+    Save checkpoints every 5 epochs:
+
+    .. code-block:: python
+
+        checkpoint = Checkpoint(patience=5)
+        checkpoint.on_epoch_end(config=config)
+
+
+    Save checkpoints at specific epochs 3 and 7, and every 10 epochs:
+
+    .. code-block:: python
+
+        checkpoint = Checkpoint(patience=10, epochs=[3, 7])
+        checkpoint.on_epoch_end(config=config)
+
+    """
 
     def __init__(self, patience: int, epochs: Optional[list[int]] = None):
         self.epochs = epochs if epochs else []

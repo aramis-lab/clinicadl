@@ -7,8 +7,7 @@ from .early_stopping import EarlyStopping
 from .logger import Logger
 from .lr_scheduler import LRScheduler
 from .mlflow import MLFlow
-from .tensorboard import Tensorboard
 from .model_selection import ModelSelection
-from .progress_bar import ProgressBar
+from .tensorboard import Tensorboard
 from .training_loss import TrainingLoss
 from .wandb import WandB

@@ -21,28 +21,29 @@ class Chronometer(Callback):
 
     Example
     -------
-    chrono = Chronometer()
-    chrono.on_train_begin()
+    .. code-block:: python
+        chrono = Chronometer()
+        chrono.on_train_begin()
 
-    for epoch in range(epochs):
-        chrono.on_epoch_begin()
-        for i, (x, y) in enumerate(train_loader):
-            chrono.on_batch_begin()
-            ...
-            chrono.on_backward_begin()
-            loss.backward()
-            optimizer.step()
-            chrono.on_batch_end()
+        for epoch in range(epochs):
+            chrono.on_epoch_begin()
+            for i, (x, y) in enumerate(train_loader):
+                chrono.on_batch_begin()
+                ...
+                chrono.on_backward_begin()
+                loss.backward()
+                optimizer.step()
+                chrono.on_batch_end()
 
-        chrono.validation()
-        for val_x, val_y in val_loader:
-            ...
-        chrono.validation()
+            chrono.validation()
+            for val_x, val_y in val_loader:
+                ...
+            chrono.validation()
 
-        chrono.on_epoch_end()
+            chrono.on_epoch_end()
 
-    chrono.on_train_end()
-    chrono.display()
+        chrono.on_train_end()
+        chrono.display()
     """
 
     def __init__(self) -> None:
