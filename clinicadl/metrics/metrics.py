@@ -32,8 +32,10 @@ class Metrics(ABC):
 
     @staticmethod
     def check_metrics(
-        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
-    ) -> list[MetricConfig]:
+        metrics: dict[
+            str, Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]
+        ],
+    ) -> dict[str, MetricConfig]:
         """TO COMPLETE"""
 
         metrics_config = []
@@ -73,7 +75,10 @@ class ClinicaDLMetrics(Metrics):
     def __init__(
         self,
         metrics: Optional[
-            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
+            dict[
+                str,
+                Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss],
+            ]
         ],
         loss: Loss,
     ):

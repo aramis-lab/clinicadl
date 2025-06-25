@@ -30,7 +30,7 @@ class OneMetricEarlyStopping(Callback):
 
     def __init__(
         self,
-        metric: MetricConfig,
+        metric: str,
         patience: Optional[int] = None,
         min_delta: Optional[float] = 0.0,
         mode: Mode = Mode.MIN,
@@ -84,11 +84,11 @@ class OneMetricEarlyStopping(Callback):
         df = config.metrics.df
         if df is not None and isinstance(df, pd.DataFrame) and not df.empty:
             value = df.loc[
-                config.epoch, self.metric.name
+                config.epoch, self.metric
             ]  # TODO: check if the df has the right columns and rows
             if value is None or pd.isna(value):
                 raise ValueError(
-                    f"Metric '{self.metric.name}' not found in DataFrame for epoch {config.epoch}."
+                    f"Metric '{self.metric}' not found in DataFrame for epoch {config.epoch}."
                 )
             if self.check_finite and (math.isinf(value) or math.isnan(value)):
                 self.stop = True
@@ -125,9 +125,7 @@ class EarlyStopping(Metrics, Callback):
 
     def __init__(
         self,
-        metrics: list[
-            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
-        ],
+        metrics: Union[str, list[str]],
         patience: Optional[Union[int, list[int]]] = None,
         min_delta: Optional[Union[float, list[float]]] = 0.0,
         mode: Union[Mode, list[Mode]] = Mode.MIN,
@@ -135,7 +133,8 @@ class EarlyStopping(Metrics, Callback):
         upper_bound: Optional[Union[float, list[float]]] = None,
         lower_bound: Optional[Union[float, list[float]]] = None,
     ) -> None:
-        self.metrics: list[MetricConfig] = self.check_metrics(metrics)
+        self.metrics = metrics if isinstance(metrics, list) else [metrics]
+
         len_metrics = len(metrics if isinstance(metrics, list) else [metrics])
 
         def check_list(value) -> list:

@@ -1,0 +1,117 @@
+import shutil
+from typing import Union
+
+from clinicadl.dictionary.suffixes import PTH, TAR
+from clinicadl.dictionary.words import MODEL, OPTIMIZER
+from clinicadl.metrics.config.enum import Optimum
+from clinicadl.metrics.metrics import Metrics
+from clinicadl.utils.config.training import _TrainingState
+
+from .base import Callback
+
+
+class ModelSelection(Callback, Metrics):
+    """
+    Callback that manages model checkpoint selection based on specified metrics.
+
+    At the end of each epoch, this callback evaluates the metrics and saves the model
+    checkpoint corresponding to the best score (minimum or maximum, depending on the
+    metric's optimum criterion).
+
+    This ensures that the model associated with the best performance on each monitored
+    metric is preserved and can be restored later.
+
+    Attributes
+    ----------
+    metrics : list of str
+        List of metric names used to determine whether a new best model should be saved.
+
+    Notes
+    -----
+    .. note:
+        When both `ModelSelection` and `EarlyStopping` are used:
+
+        - `CallbacksHandler` ensures all metrics used by `EarlyStopping` are added to `ModelSelection` if not already present.
+        - This guarantees that any model selected based on a stopping condition is also saved properly.
+
+    .. note:
+        - The logic for determining whether a metric has improved is based on whether it
+        should be maximized or minimized (`Optimum.MAX` or `Optimum.MIN`).
+        - Models are stored in separate folders per metric to avoid overwriting.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        metrics = {"mse_mean": MSEMetricConfig(recution = "mean"), "mse_sum" : MSEMetricConfig(reduction = "sum", "mae" : MAEMetricConfig()}
+        selection = ModelSelection(metrics=["mse_mean", "mse_sum", "mae"])
+
+        trainer = Trainer(
+            maps_path = "maps",
+            metrics=metrics,
+            callbacks=[selection])
+    """
+
+    def __init__(
+        self,
+        metrics: Union[str, list[str]],
+    ):
+        """_summary_
+
+        Parameters
+        ----------
+        metrics : str or list of str
+            Name(s) of the metric(s) to monitor for model selection. These should match
+            keys present in the `ClinicaDLMetrics` dictionary.If a single string is provided,
+            it is converted to a list internally.
+        """
+        self.metrics = metrics if isinstance(metrics, list) else [metrics]
+
+    def on_train_begin(self, config: _TrainingState, **kwargs):
+        """
+        Initialize storage structures for best metrics and create necessary folders.
+        """
+
+        config.maps.create_split(config.split, self.metrics)
+        config.split.write_json(config.maps.splits[config.split.index].split_json)
+
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
+        """
+        At each epoch, check whether any metric has improved. If so, copy the current
+        model and optimizer checkpoints into the best directory for that metric.
+        """
+
+        for metric in self.metrics:
+            metric_path = (
+                config.maps.splits[config.split.index].best_metrics[metric].path
+            )
+            metric_path.mkdir(parents=True, exist_ok=True)
+
+            optimum = config.metrics.metrics[metric].optimum()
+
+            if (
+                config.epoch == 0
+                or (
+                    optimum == Optimum.MAX
+                    and (
+                        config.metrics.df.at[config.epoch, metric]
+                        > config.metrics.df.at[config.epoch - 1, metric]
+                    )
+                )
+                or (
+                    optimum == Optimum.MIN
+                    and (
+                        config.metrics.df.at[config.epoch, metric]
+                        < config.metrics.df.at[config.epoch - 1, metric]
+                    )
+                )
+            ):
+                checkpoint_path = config.maps.splits[config.split.index].tmp.path / (
+                    MODEL + PTH + TAR
+                )
+                shutil.copyfile(checkpoint_path, metric_path / (MODEL + PTH + TAR))
+
+                optim_path = config.maps.splits[config.split.index].tmp.path / (
+                    OPTIMIZER + PTH + TAR
+                )
+                shutil.copyfile(optim_path, metric_path / (OPTIMIZER + PTH + TAR))

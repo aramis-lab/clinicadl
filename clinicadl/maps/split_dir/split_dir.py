@@ -11,7 +11,9 @@ from clinicadl.dictionary.suffixes import JSON, PTH, TAR, TSV
 from clinicadl.dictionary.words import (
     BEST,
     CHECKPOINT,
+    EPOCH,
     METRICS,
+    MODEL,
     OPTIMIZER,
     SPLIT,
     TMP,
@@ -53,6 +55,8 @@ class SplitDir(Directory):
         self.logs = TrainingLogs(parent_dir=self.path)
         self.tmp = TmpDir(parent_dir=self.path)
 
+        self.epochs: Dict[int, EpochDir] = {}
+
         self.best_metrics: Dict[str, BestMetric] = {}
         for metric in best_metrics:
             self.best_metrics[metric] = BestMetric(metric=metric, parent_dir=self.path)
@@ -92,6 +96,15 @@ class SplitDir(Directory):
 
             split_dir.best_metrics[best_metric.metric] = best_metric
 
+        # for epoch in split_dir.epoch_dir_list:
+        #     epoch_dir = EpochDir.load(parent_dir=split_dir.path, epoch=epoch)
+        #     if not epoch_dir.exists() or epoch_dir.is_empty():
+        #         raise ClinicaDLConfigurationError(
+        #             f"The epoch at {epoch_dir.path} doesn't exist or is empty."
+        #         )
+        #     split_dir.epochs[epoch] = epoch_dir
+
+        # TODO : load tmp et training ?
         return split_dir
 
     @property
@@ -106,6 +119,19 @@ class SplitDir(Directory):
             x.name.split("-")[1]
             for x in self.path.iterdir()
             if x.is_dir() and x.name.startswith(BEST)
+        ]
+
+    @property
+    def epoch_dir_list(self) -> list[str]:
+        if not self.exists():
+            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
+
+        return [
+            x.name
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(EPOCH)
         ]
 
     @property
@@ -136,6 +162,11 @@ class SplitDir(Directory):
         self.path.mkdir(parents=True)
         for metric in self.best_metrics.values():
             metric.create(split=split)
+
+    def create_epoch(self, epoch: int):
+        epoch_dir = EpochDir(parent_dir=self.path, epoch=epoch)
+        epoch_dir.path.mkdir(parents=True)
+        self.epochs[epoch] = epoch_dir
 
     def plot_loss(self):
         """Plots the training loss over time using the data from the training log file."""
@@ -248,3 +279,30 @@ class TmpDir(Directory):
             self.optimizer.unlink()
         if self.path.is_dir():
             self.path.rmdir()
+
+
+class EpochDir(Directory):
+    """Handles temporary files related to model training.
+
+    A `TmpDir` directory contains:
+    - Model checkpoints (weights).
+    - Optimizer state files.
+
+    Attributes
+    ----------
+        checkpoint: Path
+            Path to the checkpoint file.
+        optimizer: Path
+            Path to the optimizer state file.
+    """
+
+    def __init__(self, parent_dir: PathType, epoch: int):
+        super().__init__(path=Path(parent_dir) / f"{EPOCH}-{epoch}")
+
+    @property
+    def checkpoint(self) -> Path:
+        return (self.path / MODEL).with_suffix(PTH + TAR)
+
+    @property
+    def optimizer(self) -> Path:
+        return (self.path / OPTIMIZER).with_suffix(PTH + TAR)
