@@ -1,4 +1,4 @@
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 
 class Callback:
