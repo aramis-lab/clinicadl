@@ -173,10 +173,4 @@ class EarlyStopping(Metrics, Callback):
             )
 
     def on_epoch_end(self, config: _TrainingState, **kwargs):
-        all_stop = True
-        for metric in self.early_config_list:
-            metric.on_epoch_end(config=config, **kwargs)
-            if not metric.stop:
-                all_stop = False
-
-        config.stop = all_stop
+        config.stop = all(metric.on_epoch_end(config=config, **kwargs) for metric in self.early_config_list)
