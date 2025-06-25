@@ -115,6 +115,8 @@ class OneMetricEarlyStopping(Callback):
         else:
             raise ValueError("No df provided")
 
+        # TODO : this function will be rewrite in the next PR
+
 
 class EarlyStopping(Metrics, Callback):
     """
@@ -173,4 +175,7 @@ class EarlyStopping(Metrics, Callback):
             )
 
     def on_epoch_end(self, config: _TrainingState, **kwargs):
-        config.stop = all(metric.on_epoch_end(config=config, **kwargs) for metric in self.early_config_list)
+        config.stop = all(
+            metric.on_epoch_end(config=config, **kwargs)
+            for metric in self.early_config_list
+        )
