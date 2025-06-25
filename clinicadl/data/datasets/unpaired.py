@@ -196,11 +196,16 @@ class UnpairedDataset(Dataset):
         super().__init__()
         assert len(datasets) >= 2, "UnpairedDataset needs at least 2 datasets to stack!"
         self._check_conversion(datasets)
-        self.df = self._concat_dfs(list(datasets))
+        self._df = self._concat_dfs(list(datasets))
         self.datasets = datasets
         self.epoch = 0
         self.oversample = oversample
         self.mapping = self._map_datasets()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """

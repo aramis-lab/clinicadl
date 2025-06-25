@@ -116,7 +116,12 @@ class ConcatDataset(TorchConcatDataset):
             self._check_dimensionality()
         if not ignore_spacing:
             self._check_spacing()
-        self.df = self._concat_dfs()
+        self._df = self._concat_dfs()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the concatenation of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """
