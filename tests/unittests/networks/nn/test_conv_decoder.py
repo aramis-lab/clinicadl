@@ -134,7 +134,7 @@ def test_params(
         _input_size=input_size,
     )
     output = net(input_tensor)
-    assert output.shape == (batch_size, 1, *net.final_size)
+    assert output.shape == (batch_size, 1, *net._final_size)
 
     # other checks
     net = ConvDecoder(
@@ -328,7 +328,7 @@ def test_other_dimensions(input_tensor):
         _input_size=input_size,
     )
     output = net(input_tensor)
-    assert output.shape == (batch_size, 1, *net.final_size)
+    assert output.shape == (batch_size, 1, *net._final_size)
 
 
 @pytest.mark.parametrize(

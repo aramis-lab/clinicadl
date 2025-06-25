@@ -1,3 +1,6 @@
+"""Config classes for loss functions natively supported in ``ClinicaDL``. Based on
+:torch:`PyTorch loss functions <nn.html#loss-functions>`."""
+
 from typing import Any, List, Optional, Union
 
 import torch

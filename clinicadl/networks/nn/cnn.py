@@ -12,81 +12,98 @@ class CNN(nn.Sequential):
     """
     A regressor/classifier with first convolutional layers and then fully connected layers.
 
-    This network is a simple aggregation of a Fully Convolutional Network (:py:class:`clinicadl.
-    monai_networks.nn.conv_encoder.ConvEncoder`) and a Multi Layer Perceptron (:py:class:`clinicadl.
-    monai_networks.nn.mlp.MLP`).
+    This network is a simple aggregation of a :py:class:`~clinicadl.networks.nn.ConvEncoder`
+    and a :py:class:`~clinicadl.networks.nn.MLP`.
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
 
     Parameters
     ----------
     in_shape : Sequence[int]
-        sequence of integers stating the dimension of the input tensor (minus batch dimension).
+        Dimensions of the input tensor (without batch dimension).
     num_outputs : int
-        number of variables to predict.
+        Number of variables to predict.
     conv_args : Dict[str, Any]
-        the arguments for the convolutional part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.conv_encoder.ConvEncoder`, except `in_shape`
-        that is specified here. So, the only mandatory argument is `channels`.
-    mlp_args : Optional[Dict[str, Any]] (optional, default=None)
-        the arguments for the MLP part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is inferred
-        from the output of the convolutional part, and `num_outputs` that is set to the `num_outputs`
-        defined here.
-        So, the only mandatory argument is `hidden_dims`.\n
-        If None, the MLP part will be reduced to a single linear layer.
+        The arguments for the convolutional part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.ConvEncoder`, except ``spatial_dims`` and ``in_channels``
+        that are specified here via ``in_shape``. So, the only **mandatory argument is** ``channels``.
+    mlp_args : Optional[Dict[str, Any]], default=None
+        The arguments for the MLP part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is inferred
+        from the output of the convolutional part, and ``num_outputs`` that is set here.
+        So, the only **mandatory argument is** ``hidden_dims``.\n
+        If ``None``, the MLP part will be reduced to a single linear layer.
+
+    Raises
+    ------
+    ValueError
+        If ``conv_args`` doesn't contain the key ``channels``.
+    ValueError
+        If ``mlp_args`` is not ``None`` and doesn't contain the key ``hidden_dims``.
 
     Examples
     --------
-    # a classifier
-    >>> CNN(
-            in_shape=(1, 10, 10),
-            num_outputs=2,
-            conv_args={"channels": [2, 4], "norm": None, "act": None},
-            mlp_args={"hidden_dims": [5], "act": "elu", "norm": None, "output_act": "softmax"},
-        )
-    CNN(
-        (convolutions): ConvEncoder(
-            (layer0): Convolution(
-                (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
+
+    .. code-block:: python
+
+        # a classifier
+        >>> CNN(
+                in_shape=(1, 10, 10),
+                num_outputs=2,
+                conv_args={"channels": [2, 4], "norm": None, "act": None},
+                mlp_args={"hidden_dims": [5], "act": "elu", "norm": None, "output_act": "softmax"},
             )
-            (layer1): Convolution(
-                (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
-            )
-        )
-        (mlp): MLP(
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (hidden0): Sequential(
-                (linear): Linear(in_features=144, out_features=5, bias=True)
-                (adn): ADN(
-                    (A): ELU(alpha=1.0)
+        CNN(
+            (convolutions): ConvEncoder(
+                (layer0): Convolution(
+                    (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
+                )
+                (layer1): Convolution(
+                    (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
                 )
             )
-            (output): Sequential(
-                (linear): Linear(in_features=5, out_features=2, bias=True)
-                (output_act): Softmax(dim=None)
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (hidden0): Sequential(
+                    (linear): Linear(in_features=144, out_features=5, bias=True)
+                    (adn): ADN(
+                        (A): ELU(alpha=1.0)
+                    )
+                )
+                (output): Sequential(
+                    (linear): Linear(in_features=5, out_features=2, bias=True)
+                    (output_act): Softmax(dim=None)
+                )
             )
         )
-    )
 
-    # a regressor
-    >>> CNN(
-            in_shape=(1, 10, 10),
-            num_outputs=2,
-            conv_args={"channels": [2, 4], "norm": None, "act": None},
-        )
-    CNN(
-        (convolutions): ConvEncoder(
-            (layer0): Convolution(
-                (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
+    .. code-block:: python
+
+        # a regressor
+        >>> CNN(
+                in_shape=(1, 10, 10),
+                num_outputs=2,
+                conv_args={"channels": [2, 4], "norm": None, "act": None},
             )
-            (layer1): Convolution(
-                (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
+        CNN(
+            (convolutions): ConvEncoder(
+                (layer0): Convolution(
+                    (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
+                )
+                (layer1): Convolution(
+                    (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
+                )
+            )
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (output): Linear(in_features=144, out_features=2, bias=True)
             )
         )
-        (mlp): MLP(
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (output): Linear(in_features=144, out_features=2, bias=True)
-        )
-    )
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ConvEncoder`
+    :py:class:`~clinicadl.networks.nn.MLP`
     """
 
     def __init__(
@@ -115,7 +132,7 @@ class CNN(nn.Sequential):
         n_channels = (
             conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
         )
-        flatten_shape = int(np.prod(self.convolutions.final_size) * n_channels)
+        flatten_shape = int(np.prod(self.convolutions._final_size) * n_channels)
         if mlp_args is None:
             mlp_args = {"hidden_dims": []}
         self.mlp = MLP(

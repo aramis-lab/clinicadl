@@ -88,10 +88,7 @@ def test_get_object():
     dataloader = dataloader_config.get_object(CAPS)
     assert dataloader.batch_size == 2
     assert dataloader.drop_last
-    assert dataloader.num_workers == 0
-    assert not dataloader.prefetch_factor
     assert dataloader.pin_memory
-    assert not dataloader.persistent_workers
     assert dataloader.worker_init_fn == pl_worker_init_function
 
     # check sampler

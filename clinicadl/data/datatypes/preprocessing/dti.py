@@ -31,7 +31,7 @@ class DTISpace(str, Enum):
 class DWIDTI(Preprocessing, DWI):
     """
     Configuration class to handle Diffusion-Weighted MRI (DWI) images,
-    preprocessed with Clinica's `dwi-dti <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/>`_
+    preprocessed with `Clinica dwi-dti <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/>`_
     pipeline.
 
     Parameters

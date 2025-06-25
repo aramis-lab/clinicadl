@@ -43,23 +43,24 @@ logger = getLogger("clinicadl.caps_dataset")
 
 class CapsDataset(Dataset):
     """
-    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with neuroimaging data in CAPS format.\n
+    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with
+    neuroimaging data in :term:`CAPS` format.
 
-    The user specifies the type of data he wants to work on via ``preprocessing``, the (participant, session)
-    pairs he wants to work on via ``data``, the transforms he wants to apply on images via ``transforms``, and
+    The user specifies the type of data to work on via ``preprocessing``, the (participant, session)
+    pairs to work on via ``data``, the transforms to apply on images via ``transforms``, and
     where to find the label (scalars or segmentation masks) associated to the images via ``label``. Some transforms may
-    also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.\n
+    also need masks (e.g. setting background to 0 outside a mask), which can be specified via ``masks``.
 
-    A CapsDataset works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch's
-    ``.pt`` format with the ``to_tensors`` method. If conversion was already performed, ``read_tensor_conversion``
-    must be called.
+    A ``CapsDataset`` works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch
+    ``.pt`` format with :py:func:`~CapsDataset.to_tensors`. If conversion was already performed,
+    :py:func:`~CapsDataset.read_tensor_conversion` must be called.
 
-    The :ref:`outputs of the CapsDataset <capsdataset_outputs>` (i.e. what you get when you call ``dataset[i]``) depend
-    on the type of elements of the image you are working on (the whole image, patches or slices. This is defined via the
-    argument ``transforms``).
+    The :ref:`outputs of the CapsDataset <api_dataset_output>` (i.e. what you get when you call ``dataset[i]``) depend
+    on the type of elements of the image you are working on (the whole image, patches or slices). This is defined via the
+    argument ``transforms``.
 
     .. note::
-        Some characteristics of the CapsDataset depends on the extraction method used (defined via the parameter
+        The size of the ``CapsDataset`` depends on the extraction method used (defined via the parameter
         ``transforms``). For example, if you have 10 images with 100 slices each, and you want to work on slices
         (so you passed ``transforms=Transforms(extraction=Slice())``), the length of your
         dataset will be :math:`10\\times100=1,000`.
@@ -70,60 +71,53 @@ class CapsDataset(Dataset):
     Parameters
     ----------
     caps_directory : PathType
-        Path to the CAPS directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
-    preprocessing : Preprocessing, (optional, default=T1Linear())
-        Description of the preprocessing steps applied to the data. Default is Clinica's ``t1-linear``
-        pipeline. See :ref:`caps_datatypes` to know supported preprocessings.
-    data : Optional[DataType], (optional, default=None)
-        A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
+        Path to the :term:`CAPS` directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
+    preprocessing : Preprocessing, default=T1Linear()
+        Description of the preprocessing steps applied to the data. See :py:mod:`clinicadl.data.datatypes` to know supported preprocessings.
+    data : Optional[DataType], default=None
+        A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of (participant, session)
         pairs to consider, as well as any other relevant information (e.g. the labels for classification or
         regression).\n
-        Only participant/session pairs in this TSV file will be in the CapsDataset.\n
-        If ``None``, all participant/session pairs in ``caps_directory`` will be used. Besides, a TSV file
-        will be created in ``caps_directory``, with the list of all participant/session
+        Only (participant, session) pairs in this TSV file will be in the ``CapsDataset``.\n
+        If ``None``, all (participant, session) pairs in ``caps_directory`` will be used. Besides, a TSV file
+        will be created in ``caps_directory``, with the list of all (participant, session)
         pairs in the directory that have the wanted ``preprocessing``. The name of the created TSV depends on the preprocessing,
-        but it will always start with "overview" (e.g. `overview_t1-linear_cropped.tsv`,
-        `overview_pet-linear_18FFDG_pons2.tsv`, etc.).
+        but it will always start with "overview" (e.g. ``overview_t1-linear_cropped.tsv``,
+        ``overview_pet-linear_18FFDG_pons2.tsv``).
 
-    .. warning::
-        Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not
-        to name your own TSV files with a name starting with "overview".
+        .. warning::
+            Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not
+            to name your own TSV files with a name starting with "overview".
 
-    label : Optional[str], (optional, default=None)
-        A potential label related to the image.\n
-        If ``label`` and ``data`` are not ``None``, CapsDataset will look for a column with that name in ``data``.
-        It expects to find the associated column, with floats (regression) or integers (classification).\n
-        If there is no such column in ``data`` (or if ``data`` is ``None``), CapsDataset will look for
-        masks with that label as a suffix. The label is thus a mask (segmentation). For example, if
-        the image of the participant ``sub-001`` for the session ``ses-M000`` is in
-        ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz`` and ``label="seg"``, it will look for the associated
-        mask in ``sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz``.\n
-        If ``None``, no label will be used (e.g. reconstruction).
-    transforms : Transforms, (optional, default=Transforms())
-        Transformation pipeline to apply to the data during loading. Default will only apply NaN removal
-        to images. Have a look at :py:class:`clinicadl.transforms.Transforms`.
-    masks : Optional[list[str | PathType]], (optional, default=None)
+    label : Optional[str], default=None
+        A potential label related to the image.
+
+        - If ``label`` and ``data`` are not ``None``, ``CapsDataset`` will look for a column with that name in ``data``.
+          It expects to find the associated column, with floats (regression) or integers (classification).
+        - If there is no such column in ``data`` (or if ``data`` is ``None``), ``CapsDataset`` will look for
+          masks with this label as a suffix. The label is thus a segmentation mask. For example, if
+          the image of the participant ``sub-001`` for the session ``ses-M000`` is in
+          ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz`` and ``label="seg"``, it will look for the associated
+          mask in ``sub-001/ses-M000/sub-001_ses-M000_seg.nii.gz``.
+        - If ``None``, no label will be used (e.g. reconstruction).
+    transforms : Transforms, default=Transforms()
+        Transformation pipeline to apply to the data during loading. See :py:class:`clinicadl.transforms.Transforms`.
+    masks : Optional[list[str | PathType]], default=None
         Potential masks that are useful to compute some transforms.
-        A mask can be either a suffix (image-specific masks) or a file in the ``masks`` folder of
+        A mask can be either a suffix (image-specific masks), or a file in the ``masks`` folder of
         ``caps_directory`` (common masks).\n
         For example, if ``masks=["brain", "leftHippocampus.nii.gz"]``:
 
-        * For the mask ``"leftHippocampus.nii.gz"``, a file is passed. Therefore, it is understood as a mask common
-          to all images. So, CapsDataset will simply get the mask in ``{caps_directory}/masks/leftHippocampus.nii.gz``.
-        * For ``"brain"``, a suffix is passed. Therefore, it is understood as an image-specific mask:
-          if the image is in ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz``, it will look for the mask in
+        * For the mask ``"leftHippocampus.nii.gz"``, a path is passed. Therefore, it is understood as a mask common
+          to all images. So, ``CapsDataset`` will simply get the mask in ``{caps_directory}/masks/leftHippocampus.nii.gz``.
+        * For ``"brain"``, a suffix is passed. Therefore, it is understood as an image-specific mask.
+          If the image is in ``sub-001/ses-M000/sub-001_ses-M000_T1w.nii.gz``, it will look for the mask in
           ``sub-001/ses-M000/sub-001_ses-M000_brain.nii.gz``.\n
 
         To use the masks in transforms, mention ``"brain"`` and ``"leftHippocampus"`` (see examples).
 
     Raises
     ------
-    ClinicaDLArgumentError
-        If ``caps_directory`` if not a directory.
-    ClinicaDLArgumentError
-        If ``data`` is not a :py:class:`pandas.DataFrame`, a :pathlib.Path:`pathlib.Path <>` or ``None``.
-    ClinicaDLTSVError
-        If ``data`` is a TSV file that does not exist.
     ClinicaDLTSVError
         If the DataFrame in ``data`` is empty.
     ClinicaDLTSVError
@@ -134,8 +128,6 @@ class CapsDataset(Dataset):
     ClinicaDLConfigurationError
         If for some (participant, session) pairs, the image corresponding to ``preprocessing``
         cannot be found.
-    ClinicaDLArgumentError
-        If ``label`` is not a ``str`` or ``None``.
     FileNotFoundError
         If ``masks`` contain paths that do not match any files.
 
@@ -180,16 +172,19 @@ class CapsDataset(Dataset):
                     sample_transforms=[],
                     augmentations=[flip],
                 ),
-                label="seg",    # labels are here images (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz")
+                label="seg",
                 masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
-            )                                               # 'brain' is image-specific (in files "sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz")
-                                                            # 'leftHippocampus.nii.gz' is a common mask (in "masks/leftHippocampus.nii.gz")
+            )
+
+    - Labels are here in file ``sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz``;
+    - ``"brain"`` is an image-specific mask in ``sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz``;
+    - ``"leftHippocampus.nii.gz"`` is a common mask in ``masks/leftHippocampus.nii.gz``.
 
     See Also
     --------
-    - :py:class:`~clinicadl.data.datasets.ConcatDataset`
-    - :py:class:`~clinicadl.data.datasets.PairedDataset`
-    - :py:class:`~clinicadl.data.datasets.UnpairedDataset`
+    :py:class:`~clinicadl.data.datasets.ConcatDataset`
+    :py:class:`~clinicadl.data.datasets.PairedDataset`
+    :py:class:`~clinicadl.data.datasets.UnpairedDataset`
     """
 
     def __init__(
@@ -212,7 +207,7 @@ class CapsDataset(Dataset):
             self.augmentation,
         ) = transforms.get_transforms()
         self.extraction = transforms.extraction
-        self.df = self._get_df_from_input(data)
+        self._df = self._get_df_from_input(data)
         self.caps_reader.check_preprocessing(
             self.get_participant_session_couples(), self.preprocessing
         )
@@ -221,6 +216,11 @@ class CapsDataset(Dataset):
         self.tensor_conversion: TensorConversion = TensorConversion(self)
 
         self.common_masks_tensors: list[Mask] = []
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The DataFrame passed in ``data``, with additional information."""
+        return self._df
 
     @property
     def converted(self) -> bool:
@@ -267,13 +267,13 @@ class CapsDataset(Dataset):
             If the file already exists, ClinicaDL will try to merge the old
             tensor conversion with the new one, if they concern the same type of data (same
             preprocessing, same transforms applied, etc.), otherwise an error will be raised.
-        save_transforms : bool (optional, default=True)
+        save_transforms : bool, default=True
             Whether to save raw images as tensors (``False``) or images on which were applied image
             transforms (``True``). Saving transformed images will speed up dataloading. However transformed
             images are specific to a set of transforms, so they cannot be used by any future CapsDataset.
-        n_proc : int (optional, default=1)
+        n_proc : int, default=1
             Number of cores to use to parallelize the conversion.
-        ignore_spacing : bool (optional, default=False)
+        ignore_spacing : bool, default=False
             Whether to ignore the check made on voxel spacings. If ``False``, it will make sure that all
             images have the same voxel spacing before converting them.
 
@@ -281,11 +281,11 @@ class CapsDataset(Dataset):
                 In most medical image applications, all the images should have the same
                 voxel spacing. Be sure that you don't care before disabling this check.
 
-        raise_warnings : bool (optional, default=True)
+        raise_warnings : bool, default=True
             Whether to raise warnings during conversion, related to different kinds of events ClinicaDL thinks
             the user should be aware of (e.g. images with different shapes, files overwritten, etc.).
 
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             If ``json_name`` already exists, the CapsDataset will try to merge the old
             tensor conversion with the new one. ``check_transforms`` determines whether transforms
             will be checked during the merger. If ``True``, the CapsDataset will check that
@@ -352,7 +352,7 @@ class CapsDataset(Dataset):
             The name of the json file (**without** ``.json`` suffix) in the folder ``tensor_extraction``
             of the CAPS directory describing the tensor conversion. The file must then be located
             at ``{caps_directory}/prepare_data/tensor_conversion/{json_name}.json``
-        check_transforms : bool (optional, default=True)
+        check_transforms : bool, default=True
             Whether to check if the image transforms potentially applied before tensor conversion
             match the current ones. Useful when you use custom transforms (i.e. transforms
             not in ClinicaDL), which cannot be read by ClinicaDL and thus cannot be checked.\n
@@ -364,7 +364,7 @@ class CapsDataset(Dataset):
             .. warning::
                 **To use carefully**. You must be sure that the transforms match before setting ``check_transforms=False``.
 
-        load_also : list[str] (optional, default=None)
+        load_also : list[str], default=[]
             To load additional information potentially stored in ``.pt`` files. By default, only the image, the label, and masks
             mentioned in the argument ``masks`` of the CapsDataset will be loaded.
 
@@ -399,24 +399,22 @@ class CapsDataset(Dataset):
 
     def subset(self, data: DataType) -> CapsDataset:
         """
-        To get a subset of the CapsDataset from a list of (participant, session) pairs.
+        To get a subset of the ``CapsDataset`` from a list of (participant, session) pairs.
 
         Parameters
         ----------
         data : DataType
-            A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant-session
+            A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of (participant, session)
             pairs to extract. This list must be passed via two columns named ``"participant_id"``
             and ``"session_id"`` (other columns won't be considered).
 
         Returns
         -------
         CapsDataset
-            A subset of the original CapsDataset, restricted to the (participant, session) pairs mentioned in ``data``.
+            A subset of the original ``CapsDataset``, restricted to the (participant, session) pairs mentioned in ``data``.
 
         Raises
         ------
-        ClinicaDLTSVError
-            If ``data`` is a TSV file that does not exist.
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
@@ -427,7 +425,7 @@ class CapsDataset(Dataset):
         new_df = read_data(data, check_protected_names=False).set_index(
             [PARTICIPANT_ID, SESSION_ID]
         )
-        df = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
+        df = self._df.set_index([PARTICIPANT_ID, SESSION_ID])
         subset_df = df.loc[new_df.index.intersection(df.index)].reset_index()
 
         if len(subset_df) == 0:
@@ -436,7 +434,7 @@ class CapsDataset(Dataset):
             )
 
         dataset = deepcopy(self)
-        dataset.df = subset_df
+        dataset._df = subset_df
         if self.converted:
             self._map_indices_to_images(dataset.df)
 
@@ -444,23 +442,23 @@ class CapsDataset(Dataset):
 
     def describe(self) -> Dict[str, Any]:
         """
-        Returns a description of the CapsDataset.
+        Returns a description of the ``CapsDataset``.
 
         Returns
         -------
         Dict[str, Any]
-            A dictionary containing:\n
-            * ``total_samples``: the size of the dataset, i.e. the total number of samples.
-            * ``participant_session_pairs``: the list of participant/session pairs in the dataset.
-            * ``preprocessing``: the preprocessing parameters.
-            * ``extraction``: the extraction parameters.
+            A dictionary containing:
+                - ``total_samples``: the size of the dataset, i.e. the total number of samples;
+                - ``participant_session_pairs``: the list of (participant, session) pairs in the dataset;
+                - ``preprocessing``: the preprocessing parameters;
+                - ``extraction``: the extraction parameters.
 
         Raises
         ------
         ClinicaDLCAPSError
-            If samples (slices or patches) are extracted from the images and ``to_tensors`` or
+            If slices or patches are extracted from the images, and ``to_tensors`` or
             ``read_tensor_conversion`` has not been run previously (some
-            attributes of the CapsDataset such as its length depends on the
+            attributes of the ``CapsDataset``, such as its length, depends on the
             number of samples per image).
         """
         return {
@@ -497,9 +495,9 @@ class CapsDataset(Dataset):
             If ``idx`` is not a non-negative integer, greater or equal to
             the length of the dataset.
         ClinicaDLCAPSError
-            If samples (slices or patches) are extracted from the images and ``to_tensors`` or
+            If slices or patches are extracted from the images and ``to_tensors`` or
             ``read_tensor_conversion`` has not been run previously (some
-            attributes of the CapsDataset such as its length depends on the
+            attributes of the ``CapsDataset``, such as its length, depends on the
             number of samples per image).
         KeyError
             If ``column`` is not in the metadata DataFrame.
@@ -510,25 +508,25 @@ class CapsDataset(Dataset):
             raise IndexError(
                 f"Index out of range, there are only {len(self)} samples in the dataset."
             )
-        if column not in self.df.columns:
+        if column not in self._df.columns:
             raise KeyError(
                 f"No column named {column} in the metadata DataFrame. Present columns are: "
-                f"{list(self.df.columns)}"
+                f"{list(self._df.columns)}"
             )
 
-        row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
+        row = self._df[(self._df[FIRST_INDEX] <= idx) & (idx <= self._df[LAST_INDEX])]
         return row[column].iloc[0]
 
     def get_participant_session_couples(self) -> List[Tuple[str, str]]:
         """
-        Retrieves all participant-session pairs in the dataset.
+        Retrieves all (participant, session) pairs in the dataset.
 
         Returns
         -------
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
+        return list(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
 
     def __len__(self) -> int:
         """
@@ -543,13 +541,13 @@ class CapsDataset(Dataset):
         Raises
         ------
         ClinicaDLCAPSError
-            If samples (slices or patches) are extracted from the images and ``to_tensors`` or
+            If slices or patches are extracted from the images and ``to_tensors`` or
             ``read_tensor_conversion`` has not been run previously (the length depends on the
             number of samples per image).
         """
-        if N_SAMPLES not in self.df.columns:
+        if N_SAMPLES not in self._df.columns:
             self._count_samples()
-        return int(self.df[N_SAMPLES].sum())
+        return int(self._df[N_SAMPLES].sum())
 
     def __getitem__(self, idx: int) -> Sample:
         """
@@ -611,9 +609,9 @@ class CapsDataset(Dataset):
             If 'label' is not a string or None.
         """
         if isinstance(label, str):
-            if label in self.df.columns:
-                if not pd.api.types.is_numeric_dtype(self.df[label]):
-                    label_list = self.df[label].unique()
+            if label in self._df.columns:
+                if not pd.api.types.is_numeric_dtype(self._df[label]):
+                    label_list = self._df[label].unique()
                     if len(label_list) > 5:
                         raise ClinicaDLArgumentError(
                             f"Column '{label}' contains to many values. "
@@ -744,7 +742,7 @@ class CapsDataset(Dataset):
         participant = self.get_sample_info(idx, PARTICIPANT_ID)
 
         session = self.get_sample_info(idx, SESSION_ID)
-        row = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
+        row = self._df.set_index([PARTICIPANT_ID, SESSION_ID]).loc[
             (participant, session)
         ]
         sample_idx = int(idx - row.at[FIRST_INDEX])
@@ -837,7 +835,7 @@ class CapsDataset(Dataset):
         if self.label is None:
             return None
         elif isinstance(self.label, Column):
-            label = self.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
+            label = self._df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
                 (participant, session), self.label
             ]
             if isinstance(label, str):
@@ -868,7 +866,7 @@ class CapsDataset(Dataset):
         it in the dataframe.
         """
         if self.extraction.extract_method == ExtractionMethod.IMAGE:
-            self.df[N_SAMPLES] = 1
+            self._df[N_SAMPLES] = 1
         else:
             if not self.converted:
                 raise ClinicaDLCAPSError(
@@ -878,18 +876,18 @@ class CapsDataset(Dataset):
                     "already be done."
                 )
             if self._tensor_conversion_info.shape:  # uniform shape across the dataset
-                first_row = self.df.iloc[0]
+                first_row = self._df.iloc[0]
                 participant, session = first_row[PARTICIPANT_ID], first_row[SESSION_ID]
-                self.df[N_SAMPLES] = self._get_n_samples(participant, session)
+                self._df[N_SAMPLES] = self._get_n_samples(participant, session)
             else:
-                for idx, row in self.df.iterrows():
+                for idx, row in self._df.iterrows():
                     participant = row[PARTICIPANT_ID]
                     session = row[SESSION_ID]
-                    self.df.at[idx, N_SAMPLES] = self._get_n_samples(
+                    self._df.at[idx, N_SAMPLES] = self._get_n_samples(
                         participant, session
                     )
 
-        self._map_indices_to_images(self.df)
+        self._map_indices_to_images(self._df)
 
     def _get_n_samples(self, participant: str, session: str) -> int:
         """

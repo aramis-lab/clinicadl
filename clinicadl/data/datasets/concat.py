@@ -23,23 +23,23 @@ logger = getLogger("clinicadl.data.datasets.concat")
 
 class ConcatDataset(TorchConcatDataset):
     """
-    ConcatDataset is a useful class to assemble multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
+    ``ConcatDataset`` is a useful class to assemble multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
     (e.g. from different datasets). ConcatDataset concatenates the input datasets,
     so the length of the new dataset will be equal to the sum of the lengths of each individual dataset.
 
     ConcatDataset inherits from :py:class:`torch.utils.data.ConcatDataset`.
 
-    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
+    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`api_caps_dataset`).
 
     Parameters
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be concatenated.
-    ignore_spacing : bool, (optional, default=False)
+    ignore_spacing : bool, default=False
         Whether to ignore checks made on voxel spacing. If ``False``, ConcatDataset will check that the voxel spacing
         is consistent across all the datasets (if the information is provided in the ``.json`` file of the tensor
         conversion).
-    raise_warnings : bool, (optional, default=True)
+    raise_warnings : bool, default=True
         Whether to raise warnings during concatenation, related to different kinds of issues ClinicaDL thinks
         the user should be aware of (e.g. datasets of different dimensionality).
 
@@ -116,7 +116,12 @@ class ConcatDataset(TorchConcatDataset):
             self._check_dimensionality()
         if not ignore_spacing:
             self._check_spacing()
-        self.df = self._concat_dfs()
+        self._df = self._concat_dfs()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the concatenation of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """

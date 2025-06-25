@@ -33,7 +33,7 @@ class PatchSample(Sample):
     session : str
         The session concerned.
     preprocessing : Preprocessing
-        The proprocessing of the image (see :ref:`caps_datatypes`).
+        The proprocessing of the image (see :ref:`api_data_types`).
     image_path : Union[str, Path]
         The path to the image.
     patch_index : int
@@ -64,10 +64,10 @@ class Patch(Extraction):
 
     Parameters
     ----------
-    patch_size :  Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]] (optional, default=50)
+    patch_size :  Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]], default=50
         The size of each patch. If a single value is passed, the same patch size will be used for the three
         spatial dimensions.
-    stride : Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]] (optional, default=50)
+    stride : Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]], default=50
         The stride or step size used to move the sliding window. If a single value is passed, the same patch
         stride will be used for the three spatial dimensions.
     """

@@ -11,7 +11,7 @@ from .label import LabelType
 
 class DataPoint(tio.Subject):
     """
-    Dataclass that gathers an image, the associated label, and any other relevant information
+    Data structure that gathers an image, the associated label, and any other relevant information
     associated to the image.
 
     It inherits from :py:class:`torchio.Subject`.
@@ -184,13 +184,13 @@ class DataPoint(tio.Subject):
 
         Parameters
         ----------
-        intensity_only : bool (optional, default=True)
+        intensity_only : bool, default=True
             To get only the images (:py:class:`torchio.ScalarImage`) and not the
             masks (:py:class:`torchio.LabelMap`).
-        include : Optional[Sequence[str]] (optional, default=None)
+        include : Optional[Sequence[str]], default=None
             Names of the images to include. If ``None``, will return all the images
             specified by ``intensity_only`` and not in ``exclude``.
-        exclude : Optional[Sequence[str]] (optional, default=None)
+        exclude : Optional[Sequence[str]], default=None
             Names of the images to exclude.
 
         Returns
@@ -211,13 +211,13 @@ class DataPoint(tio.Subject):
 
         Parameters
         ----------
-        intensity_only : bool (optional, default=True)
+        intensity_only : bool, default=True
             To get only the images (:py:class:`torchio.ScalarImage`) and not the
             masks (:py:class:`torchio.LabelMap`).
-        include : Optional[Sequence[str]] (optional, default=None)
+        include : Optional[Sequence[str]], default=None
             Names of the images to include. If ``None``, will return all the images
             specified by ``intensity_only`` and not in ``exclude``.
-        exclude : Optional[Sequence[str]] (optional, default=None)
+        exclude : Optional[Sequence[str]], default=None
             Names of the images to exclude.
 
         Returns

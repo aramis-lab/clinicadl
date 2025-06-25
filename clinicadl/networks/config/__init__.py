@@ -1,3 +1,5 @@
+"""Config classes for :ref:`ClinicaDL neural networks <api_nn>`."""
+
 from .base import ImplementedNetwork, NetworkConfig
 from .cnns import *
 from .densenet import *

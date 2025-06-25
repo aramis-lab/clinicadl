@@ -78,7 +78,7 @@ class _BaseSSIMConfig(_GetNotNansConfig):
 
 class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
-    Config class for :py:class:`monai.metrics.SSIMMetric`.
+    Config class for :py:class:`monai.metrics.regression.SSIMMetric`.
     """
 
     spatial_dims: PositiveInt

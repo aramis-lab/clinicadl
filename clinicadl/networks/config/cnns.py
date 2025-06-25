@@ -1,14 +1,13 @@
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
-from pydantic import PositiveInt, model_validator
+from pydantic import PositiveInt, field_validator, model_validator
 
 import clinicadl.networks.nn as nets
 from clinicadl.networks.nn.autoencoder import check_unpooling_mode
 from clinicadl.networks.nn.layers.utils import ActivationParameters, UnpoolingMode
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import NetworkConfig, _InShapeConfig, _OutputActConfig
+from .base import NetworkConfig, _InShapeConfig
 from .mlp_conv import (
     ConvDecoderOptions,
     ConvEncoderOptions,
@@ -23,19 +22,7 @@ AUTOENCODER_DEFAULTS = get_defaults_from(nets.AutoEncoder)
 VAE_DEFAULTS = get_defaults_from(nets.VAE)
 
 
-class _MLPArgsConfig(ClinicaDLConfig):
-    """Config class for 'mlp_args' option."""
-
-    mlp_args: Optional[MLPOptions]
-
-
-class _LatentSizeConfig(ClinicaDLConfig):
-    """Config class for 'latent_size' option."""
-
-    latent_size: PositiveInt
-
-
-class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
+class CNNConfig(NetworkConfig, _InShapeConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.CNN`.
     """
@@ -54,7 +41,7 @@ class CNNConfig(NetworkConfig, _InShapeConfig, _MLPArgsConfig):
         return self
 
 
-class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
+class GeneratorConfig(NetworkConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.Generator`.
     """
@@ -63,6 +50,15 @@ class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
     start_shape: Sequence[PositiveInt]
     conv_args: ConvDecoderOptions
     mlp_args: Optional[MLPOptions] = GENERATOR_DEFAULTS["mlp_args"]
+
+    @field_validator("start_shape", mode="after")
+    @classmethod
+    def validator_dropout(cls, v):
+        """Checks that 'start_shape' corresponds to 1D, 2D or 3D images."""
+        assert (
+            2 <= len(v) <= 4
+        ), f"'start_shape' must be of length 2 (1D), 3 (2D image) or 4 (3D image). Don't forget the channel dimension. Got: {v}."
+        return v
 
     @model_validator(mode="after")
     def check_dim(self):
@@ -73,9 +69,7 @@ class GeneratorConfig(NetworkConfig, _LatentSizeConfig, _MLPArgsConfig):
         return self
 
 
-class AutoEncoderConfig(
-    NetworkConfig, _InShapeConfig, _LatentSizeConfig, _MLPArgsConfig, _OutputActConfig
-):
+class AutoEncoderConfig(NetworkConfig, _InShapeConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.AutoEncoder`.
     """

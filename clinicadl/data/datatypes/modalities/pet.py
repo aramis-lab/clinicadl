@@ -56,7 +56,7 @@ class PET(Modality):
     ----------
     tracer : Tracer
         radioactive tracer used for acquisition.
-    reconstruction : Optional[ReconstructionMethod] (optional, default=None)
+    reconstruction : Optional[ReconstructionMethod], default=None
         the method used to reconstruct the image.
     """
 

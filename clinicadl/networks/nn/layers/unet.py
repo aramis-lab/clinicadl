@@ -1,8 +1,10 @@
 from typing import Optional
 
+import torch
 import torch.nn as nn
 from monai.networks.blocks.convolutions import Convolution
 from monai.networks.layers.utils import get_pool_layer
+from monai.networks.nets.attentionunet import AttentionBlock
 
 from .utils import ActFunction, ActivationParameters, NormLayer
 
@@ -100,3 +102,83 @@ class DownBlock(nn.Sequential):
             act=act,
             dropout=dropout,
         )
+
+
+class UpBlock(nn.Module):
+    """UNet up block with upsampling, concatenation with skip connection,
+    and two convolutions."""
+
+    def __init__(
+        self,
+        spatial_dims: int,
+        in_channels: int,
+        out_channels: int,
+        act: ActivationParameters = ActFunction.RELU,
+        dropout: Optional[float] = None,
+    ):
+        super().__init__()
+        self.upsample = UpSample(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            act=act,
+            dropout=dropout,
+        )
+        self.doubleconv = ConvBlock(
+            spatial_dims=spatial_dims,
+            in_channels=out_channels * 2,
+            out_channels=out_channels,
+            act=act,
+            dropout=dropout,
+        )
+
+    def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        """'skip' is from the skip connection."""
+        up = self.upsample(x)
+        merged = torch.cat((skip, up), dim=1)
+
+        return self.doubleconv(merged)
+
+
+class AttentionUpBlock(nn.Module):
+    """AttentionUNet up block with upsampling, concatenation with attention skip connection,
+    and two convolutions."""
+
+    def __init__(
+        self,
+        spatial_dims: int,
+        in_channels: int,
+        out_channels: int,
+        act: ActivationParameters = ActFunction.RELU,
+        dropout: Optional[float] = None,
+    ):
+        super().__init__()
+        self.upsample = UpSample(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            act=act,
+            dropout=dropout,
+        )
+        self.attention = AttentionBlock(
+            spatial_dims=spatial_dims,
+            f_l=out_channels,
+            f_g=out_channels,
+            f_int=out_channels // 2,
+            dropout=dropout,
+        )
+        self.doubleconv = ConvBlock(
+            spatial_dims=spatial_dims,
+            in_channels=out_channels * 2,
+            out_channels=out_channels,
+            act=act,
+            dropout=dropout,
+        )
+
+    def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        """'skip' is from the skip connection."""
+        up = self.upsample(x)
+        attentioned_skip = self.attention(g=skip, x=up)
+        merged = torch.cat((attentioned_skip, up), dim=1)
+
+        return self.doubleconv(merged)

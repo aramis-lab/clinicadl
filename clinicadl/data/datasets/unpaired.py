@@ -15,6 +15,7 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import Sample
+from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
@@ -42,11 +43,11 @@ class UnpairedDataset(Dataset):
     size of the smallest dataset if ``oversample=False``. This randomness is also controlled via
     :py:meth:`~UnpairedDataset.set_epoch`.
 
-    An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
+    An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <api_dataset_output>`, whose length is equal
     to the number of datasets forming the UnpairedDataset.
 
     To use UnpairedDataset, you must **previously perform tensor conversion** for each underlying CapsDataset
-    (see :ref:`caps_dataset`).
+    (see :ref:`api_caps_dataset`).
 
     .. note::
         ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.
@@ -55,7 +56,7 @@ class UnpairedDataset(Dataset):
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be stacked.
-    oversample: bool (optional, default=False)
+    oversample: bool, default=False
         Strategy to adopt when the datasets have different sizes:
 
         - if ``oversample=True``: randomly replicate samples in smaller datasets so that they reach the
@@ -195,11 +196,16 @@ class UnpairedDataset(Dataset):
         super().__init__()
         assert len(datasets) >= 2, "UnpairedDataset needs at least 2 datasets to stack!"
         self._check_conversion(datasets)
-        self.df = self._concat_dfs(list(datasets))
+        self._df = self._concat_dfs(list(datasets))
         self.datasets = datasets
         self.epoch = 0
         self.oversample = oversample
         self.mapping = self._map_datasets()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """

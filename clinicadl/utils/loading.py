@@ -16,7 +16,7 @@ def nifti_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     ----------
     path : Path
         The path to the 3D image.
-    int_values : bool (optional, default=False)
+    int_values : bool, default=False
         Whether to have integer values in the output tensor.
 
     Returns
@@ -60,7 +60,7 @@ def pt_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     ----------
     path : Path
         The path to the tensor.
-    int_values : bool (optional, default=False)
+    int_values : bool, default=False
         Whether to have integer values in the output tensor.
 
     Returns

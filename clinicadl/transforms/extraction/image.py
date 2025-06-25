@@ -31,7 +31,7 @@ class ImageSample(Sample):
     session : str
         The session concerned.
     preprocessing : Preprocessing
-        The proprocessing of the image (see :ref:`caps_datatypes`).
+        The proprocessing of the image (see :ref:`api_data_types`).
     image_path : Union[str, Path]
         The path to the image.
     """
@@ -60,7 +60,7 @@ class Image(Extraction):
         ----------
         data_point : DataPoint
             The DataPoint to perform extraction on.
-        sample_index : int (optional, default=0)
+        sample_index : int, default=0
             Index indicating the sample to extract. For compatibility,
             must be left to 0 here.
 

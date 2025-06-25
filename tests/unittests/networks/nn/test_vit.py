@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 import torch
+from torchvision.models import vit_b_16, vit_b_32, vit_l_16, vit_l_32
 
-from clinicadl.networks.nn import ViT, get_vit
+from clinicadl.networks.nn import ViT, ViTB16, ViTB32, ViTL16, ViTL32
 from clinicadl.networks.nn.layers.utils import ActFunction
-from clinicadl.networks.nn.vit import SOTAViT
 
 INPUT_1D = torch.randn(2, 1, 16)
 INPUT_2D = torch.randn(2, 2, 15, 16)
@@ -242,18 +242,18 @@ def test_activation_parameters():
 
 
 @pytest.mark.parametrize(
-    "name,num_outputs,output_act,img_size",
+    "net,num_outputs,output_act,img_size,getter",
     [
-        (SOTAViT.B_16, 1, "sigmoid", (224, 224)),
-        (SOTAViT.B_32, 2, None, (224, 224)),
-        (SOTAViT.L_16, None, "sigmoid", (224, 224)),
-        (SOTAViT.L_32, None, None, (224, 224)),
+        (ViTB16, 1, "sigmoid", (224, 224), vit_b_16),
+        (ViTB32, 2, None, (224, 224), vit_b_32),
+        (ViTL16, None, "sigmoid", (224, 224), vit_l_16),
+        (ViTL32, None, None, (224, 224), vit_l_32),
     ],
 )
-def test_get_vit(name, num_outputs, output_act, img_size):
+def test_get_vit(net, num_outputs, output_act, img_size, getter):
     input_tensor = torch.randn(1, 3, *img_size)
 
-    vit = get_vit(name, num_outputs=num_outputs, output_act=output_act, pretrained=True)
+    vit = net(num_outputs=num_outputs, output_act=output_act, pretrained=False)
     if num_outputs:
         assert vit.fc.out.out_features == num_outputs
     else:
@@ -264,17 +264,12 @@ def test_get_vit(name, num_outputs, output_act, img_size):
     elif output_act and num_outputs is None:
         assert vit.fc is None
 
-    vit(input_tensor)
-
-
-def test_get_vit_output():
-    from torchvision.models import vit_b_16
-
-    gt = vit_b_16(weights="DEFAULT")
+    # weights
+    gt = getter(weights="DEFAULT")
     gt.heads = torch.nn.Identity()
     x = torch.randn(1, 3, 224, 224)
 
-    vit = get_vit(SOTAViT.B_16, num_outputs=1, pretrained=True)
+    vit = net(num_outputs=1, pretrained=True)
     vit.fc = torch.nn.Identity()
     with torch.no_grad():
         assert (vit(x) == gt(x)).all()

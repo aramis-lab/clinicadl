@@ -12,12 +12,12 @@ logger = getLogger("clinicadl.data.datatypes.preprocessing.t1")
 class T1Linear(_LinearPreprocessing, T1w):
     """
     Configuration class to handle T1-weighted MRI images,
-    preprocessed with Clinica's `t1-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/>`_
+    preprocessed with `Clinica t1-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/>`_
     pipeline.
 
     Parameters
     ----------
-    use_uncropped_image : bool (optional, default=False)
+    use_uncropped_image : bool, default=False
         Whether to use the uncropped images returned by Clinica:\n
         - if ``use_uncropped_image=True``: only the files that match the pattern
           ``t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*``

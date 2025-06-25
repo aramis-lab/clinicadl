@@ -23,20 +23,20 @@ class SUVRReferenceRegion(str, Enum):
 class PETLinear(PET, _LinearPreprocessing):
     """
     Configuration class to handle Positron Emission Tomography (PET) images,
-    preprocessed with Clinica's `pet-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/>`_
+    preprocessed with `Clinica pet-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/>`_
     pipeline.
 
     Parameters
     ----------
-    tracer : Tracer (optional, default="18FFDG")
+    tracer : Tracer, default="18FFDG"
         The radioactive tracer used for acquisition, among ``11CPIB``, ``18FAV1451``, ``18FAV45``, ``18FFBB``,
         ``18FFDG`` and ``18FFMM``.
-    reconstruction : Optional[ReconstructionMethod] (optional, default=None)
+    reconstruction : Optional[ReconstructionMethod], default=None
         The method used to reconstruct the image, among ``nacstat``, ``nacdyn``, ``acstat``, ``acdyn``, ``coregdyn``,
         ``coregavg``, ``coregstd`` and ``coregiso``. Leave to ``None`` if not specified.
-    suvr_reference_region : SUVRReferenceRegion (optional, default="pons")
+    suvr_reference_region : SUVRReferenceRegion, default="pons"
         The reference region used to compute SUVR, among ``pons``, ``cerebellumPons``, ``pons2`` and ``cerebellumPons2``.
-    use_uncropped_image : bool (optional, default=False)
+    use_uncropped_image : bool, default=False
         Whether to use the uncropped images returned by Clinica:\n
         - if ``use_uncropped_image=True``: only the files that match the pattern
           ``pet_linear/sub-*_ses-*_trc-{tracer}_space-MNI152NLin2009cSym_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``

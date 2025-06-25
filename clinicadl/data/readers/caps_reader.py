@@ -178,7 +178,7 @@ class CapsReader(Reader):
             ID of the session.
         preprocessing: Preprocessing
             Configuration of the preprocessing steps.
-        check : bool, (optional, default=True)
+        check : bool, default=True
             Whether to check if the tensor path exists.
 
         Returns

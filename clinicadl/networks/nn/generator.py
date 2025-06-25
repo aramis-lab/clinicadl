@@ -11,85 +11,105 @@ from .utils import check_conv_args, check_mlp_args
 
 class Generator(nn.Sequential):
     """
-    A generator with first fully connected layers and then convolutional layers.
+    A generator with first fully-connected layers and then convolutional layers.
 
-    This network is a simple aggregation of a Multi Layer Perceptron (:py:class:
-    `clinicadl.monai_networks.nn.mlp.MLP`) and a Fully Convolutional Network
-    (:py:class:`clinicadl.monai_networks.nn.conv_decoder.ConvDecoder`).
+    This network is a simple aggregation of a :py:class:`~clinicadl.networks.nn.MLP`
+    and a :py:class:`~clinicadl.networks.nn.ConvDecoder`.
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
 
     Parameters
     ----------
     latent_size : int
-        size of the latent vector.
+        Size of the latent vector.
     start_shape : Sequence[int]
-        sequence of integers stating the initial shape of the image, i.e. the shape at the
-        beginning of the convolutional part (minus batch dimension, but including the number
-        of channels).\n
-        Thus, `start_shape` determines the dimension of the output of the generator (the exact
-        shape depends on the convolutional part and can be accessed via the class attribute
-        `output_shape`).
+        Initial shape of the image, i.e. the shape at the
+        beginning of the convolutional part (without batch dimension, but including the channel dimension).\n
+        Thus, ``start_shape`` also determines the dimension of the output of the generator (the exact
+        shape depends on the convolutional part and can be accessed via the attribute
+        ``output_shape``).
     conv_args : Dict[str, Any]
-        the arguments for the convolutional part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.conv_decoder.ConvDecoder`, except `in_shape` that
-        is specified here via `start_shape`. So, the only mandatory argument is `channels`.
-    mlp_args : Optional[Dict[str, Any]] (optional, default=None)
-        the arguments for the MLP part. The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is specified
-        here via `latent_size`, and `hidden_dims` that is inferred from `start_shape`.
-        So, the only mandatory argument is `hidden_dims`.\n
-        If None, the MLP part will be reduced to a single linear layer.
+        The arguments for the convolutional part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.ConvDecoder`, except ``spatial_dims`` and ``in_channels``
+        that are specified here via ``start_shape``. So, the only **mandatory argument is** ``channels``.
+    mlp_args : Optional[Dict[str, Any]], default=None
+        The arguments for the MLP part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is equal here to
+        ``latent_size``, and ``num_outputs`` that is inferred here from ``start_shape``.
+        So, the only **mandatory argument is** ``hidden_dims``.\n
+        If ``None``, the MLP part will be reduced to a single linear layer.
+
+    Attributes
+    ----------
+    output_shape : int
+        The shape of the output image, computed from ``start_shape``.
+
+    Raises
+    ------
+    ValueError
+        If ``conv_args`` doesn't contain the key ``channels``.
+    ValueError
+        If ``mlp_args`` is not ``None`` and doesn't contain the key ``hidden_dims``.
 
     Examples
     --------
-    >>> Generator(
-            latent_size=8,
-            start_shape=(8, 2, 2),
-            conv_args={"channels": [4, 2], "norm": None, "act": None},
-            mlp_args={"hidden_dims": [16], "act": "elu", "norm": None},
-        )
-    Generator(
-        (mlp): MLP(
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (hidden0): Sequential(
-                (linear): Linear(in_features=8, out_features=16, bias=True)
-                (adn): ADN(
-                    (A): ELU(alpha=1.0)
+
+    .. code-block:: python
+
+        >>> Generator(
+                latent_size=8,
+                start_shape=(8, 2, 2),
+                conv_args={"channels": [4, 2], "norm": None, "act": None},
+                mlp_args={"hidden_dims": [16], "act": "elu", "norm": None},
+            )
+        Generator(
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (hidden0): Sequential(
+                    (linear): Linear(in_features=8, out_features=16, bias=True)
+                    (adn): ADN(
+                        (A): ELU(alpha=1.0)
+                    )
+                )
+                (output): Linear(in_features=16, out_features=32, bias=True)
+            )
+            (reshape): Reshape()
+            (convolutions): ConvDecoder(
+                (layer0): Convolution(
+                    (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
+                )
+                (layer1): Convolution(
+                    (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
                 )
             )
-            (output): Linear(in_features=16, out_features=32, bias=True)
         )
-        (reshape): Reshape()
-        (convolutions): ConvDecoder(
-            (layer0): Convolution(
-                (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
-            )
-            (layer1): Convolution(
-                (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
-            )
-        )
-    )
 
-    >>> Generator(
-            latent_size=8,
-            start_shape=(8, 2, 2),
-            conv_args={"channels": [4, 2], "norm": None, "act": None, "output_act": "relu"},
-        )
-    Generator(
-        (mlp): MLP(
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (output): Linear(in_features=8, out_features=32, bias=True)
-        )
-        (reshape): Reshape()
-        (convolutions): ConvDecoder(
-            (layer0): Convolution(
-                (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
+        >>> Generator(
+                latent_size=8,
+                start_shape=(8, 2, 2),
+                conv_args={"channels": [4, 2], "norm": None, "act": None, "output_act": "relu"},
             )
-            (layer1): Convolution(
-                (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
+        Generator(
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (output): Linear(in_features=8, out_features=32, bias=True)
             )
-            (output_act): ReLU()
+            (reshape): Reshape()
+            (convolutions): ConvDecoder(
+                (layer0): Convolution(
+                    (conv): ConvTranspose2d(8, 4, kernel_size=(3, 3), stride=(1, 1))
+                )
+                (layer1): Convolution(
+                    (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
+                )
+                (output_act): ReLU()
+            )
         )
-    )
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ConvDecoder`
+    :py:class:`~clinicadl.networks.nn.MLP`
     """
 
     def __init__(
@@ -128,4 +148,4 @@ class Generator(nn.Sequential):
             if len(conv_args["channels"]) > 0
             else start_shape[0]
         )
-        self.output_shape = (n_channels, *self.convolutions.final_size)
+        self.output_shape = (n_channels, *self.convolutions._final_size)

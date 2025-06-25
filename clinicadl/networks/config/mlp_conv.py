@@ -24,15 +24,9 @@ from clinicadl.networks.nn.utils import (
     check_pool_indices,
     ensure_list_of_tuples,
 )
-from clinicadl.utils.config import update_kwargs_with_defaults
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import (
-    NetworkConfig,
-    _DropOutConfig,
-    _FullyConvConfig,
-    _OutputActConfig,
-)
+from .base import NetworkConfig, _DropoutConfig, _SpatialDimsConfig
 
 MLP_DEFAULTS = get_defaults_from(nets.MLP)
 CONV_ENCODER_DEFAULTS = get_defaults_from(nets.ConvEncoder)
@@ -45,13 +39,12 @@ __all__ = [
 ]
 
 
-class _BaseMLPConvConfig(_OutputActConfig, _DropOutConfig):
+class _BaseMLPConvConfig(_DropoutConfig):
     """
     Base config class for MLP, ConvEncoder and ConvDecoder options.
     """
 
-    act: Optional[ActivationParameters]
-    bias: bool
+    norm: Optional[Union[NormalizationParameters, ConvNormalizationParameters]]
     adn_ordering: str
 
     @field_validator("adn_ordering")
@@ -71,10 +64,10 @@ class MLPOptions(_BaseMLPConvConfig):
     """
 
     hidden_dims: Sequence[PositiveInt]
-    output_act: Optional[ActivationParameters] = MLP_DEFAULTS["output_act"]
-    dropout: Optional[PositiveFloat] = MLP_DEFAULTS["dropout"]
     act: Optional[ActivationParameters] = MLP_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = MLP_DEFAULTS["output_act"]
     norm: Optional[NormalizationParameters] = MLP_DEFAULTS["norm"]
+    dropout: Optional[PositiveFloat] = MLP_DEFAULTS["dropout"]
     bias: bool = MLP_DEFAULTS["bias"]
     adn_ordering: str = MLP_DEFAULTS["adn_ordering"]
 
@@ -149,7 +142,7 @@ class ConvEncoderOptions(_BaseConvOptions):
         return self
 
 
-class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions, _FullyConvConfig):
+class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions, _SpatialDimsConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ConvEncoder`.
     """
@@ -200,7 +193,7 @@ class ConvDecoderOptions(_BaseConvOptions):
         )
 
 
-class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions, _FullyConvConfig):
+class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions, _SpatialDimsConfig):
     """
     Config class for :py:class:`clinicadl.networks.nn.ConvDecoder`.
     """

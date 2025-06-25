@@ -14,7 +14,7 @@ class Custom(Preprocessing, CustomModality):
     """
     Configuration class to handle custom images,
     i.e. images that have not been preprocessed with any of the supported
-    Clinica's pipeline (``t1-linear``, ``flair-linear``, ``pet-linear``
+    ``Clinica`` pipelines (``t1-linear``, ``flair-linear``, ``pet-linear``
     and ``dwi-dti``).
 
     Parameters

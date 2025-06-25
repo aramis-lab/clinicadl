@@ -36,12 +36,12 @@ class PairedDataset(StackDataset):
     but if the second dataset now contains two slices of the images, this will raise an error because the second dataset
     will thus be two times bigger than the first one, and the two datasets cannot be paired.
 
-    A PairedDataset will return a tuple of :ref:`CapsDataset outputs <capsdataset_outputs>`, whose length is equal
+    A PairedDataset will return a tuple of :ref:`CapsDataset outputs <api_dataset_output>`, whose length is equal
     to the number of datasets forming the PairedDataset.
 
     PairedDataset inherits from :py:class:`torch.utils.data.StackDataset`.
 
-    To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`caps_dataset`).
+    To pair CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`api_caps_dataset`).
 
     .. note::
         ``PairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.
@@ -136,9 +136,14 @@ class PairedDataset(StackDataset):
     ):
         assert len(datasets) >= 2, "PairedDataset needs at least 2 datasets to pair!"
         self._check_conversion(datasets)
-        self.df = self._merge_dfs(list(datasets))
+        self._df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)
         self.datasets: tuple[CapsDataset, ...]
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """
@@ -320,7 +325,7 @@ class PairedDataset(StackDataset):
                     "Datasets passed to 'PairedDataset' cannot contain duplicated (participant, session) pairs, "
                     f"but some were founds in dataset {i}:\n {df[df.duplicated(keep=False)]}"
                 )
-            dataset.df = dataset.df.sort_values(
+            dataset._df = dataset.df.sort_values(
                 [PARTICIPANT_ID, SESSION_ID]
             ).reset_index(drop=True)
             CapsDataset._map_indices_to_images(dataset.df)

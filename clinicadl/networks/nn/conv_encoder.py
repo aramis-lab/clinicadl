@@ -31,126 +31,142 @@ class ConvEncoder(nn.Sequential):
     Fully convolutional encoder network with convolutional, pooling, normalization, activation
     and dropout layers.
 
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
     Parameters
     ----------
     spatial_dims : int
-        number of spatial dimensions of the input image.
+        Number of spatial dimensions of the input image.
     in_channels : int
-        number of channels in the input image.
+        Number of channels in the input image.
     channels : Sequence[int]
-        sequence of integers stating the output channels of each convolutional layer. Thus, this
-        parameter also controls the number of convolutional layers.
-    kernel_size : ConvParameters (optional, default=3)
-        the kernel size of the convolutional layers. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the kernel sizes for each layer.
-        The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    stride : ConvParameters (optional, default=1)
-        the stride of the convolutional layers. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the strides for each layer.
-        The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    padding : ConvParameters (optional, default=0)
-        the padding of the convolutional layers. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the paddings for each layer.
-        The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    dilation : ConvParameters (optional, default=1)
-        the dilation factor of the convolutional layers. Can be an integer, a tuple or a list.\n
-        If integer, the value will be used for all layers and all dimensions.\n
-        If tuple (of integers), it will be interpreted as the values for each dimension. These values
-        will be used for all the layers.\n
-        If list (of tuples or integers), it will be interpreted as the dilations for each layer.
-        The length of the list must be equal to the number of convolutional layers (i.e. `len(channels)`).
-    pooling : Optional[PoolingParameters] (optional, default=(PoolingLayer.MAX, {"kernel_size": 2}))
-        the pooling mode and the arguments of the pooling layer, passed as `(pooling_mode, arguments)`.
-        If None, no pooling will be performed in the network.\n
-        `pooling_mode` can be either `max`, `avg`, `adaptivemax` or `adaptiveavg`. Please refer to PyTorch's [documentation]
-        (https://pytorch.org/docs/stable/nn.html#pooling-layers) to know the mandatory and optional arguments.\n
-        If a list is passed, it will be understood as `(pooling_mode, arguments)` for each pooling layer.
-    pooling_indices : Optional[Sequence[int]] (optional, default=None)
-        indices of the convolutional layers after which pooling should be performed.
-        If None, no pooling will be performed. An index equal to -1 will be understood as an unpooling layer before
+        Number of output channels of each convolutional layer. Thus, this
+        parameter also controls the number of convolutional layers (equal to the length of the sequence).
+    kernel_size : ConvParameters, default=3
+        Kernel size of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``:
+
+        - ``int``: the value will be used for all layers and all dimensions;
+        - ``tuple`` (e.g. ``(3, 3, 2)``): it will be interpreted as the values for each dimension. These values
+          will be used for all the layers;
+        - ``list`` (e.g. ``[(3, 3, 2), 3]``): it will be interpreted as the kernel sizes for each layer.
+          The length of the list must be equal to the number of convolutional layers (i.e. ``len(channels)``).
+    stride : ConvParameters, default=1
+        Stride of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
+    padding : ConvParameters, default=0
+        Padding of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
+    dilation : ConvParameters, default=1
+        Dilation factor of the convolutional layers. Can be an ``int``, a ``tuple``, or a ``list``, and is passed in the same way
+        as ``kernel_size``.\n
+    pooling : Optional[PoolingParameters], default=("max", {"kernel_size": 2})
+        The pooling mode and the arguments of the pooling layer, passed as ``(pooling_mode, arguments)``,  where ``arguments`` is a dictionary.
+        If ``None``, no pooling will be performed in the network.\n
+        ``pooling_mode`` can be any value in {``max``, ``avg``, ``adaptivemax``, ``adaptiveavg``}. Please refer to
+        :torch:`PyTorch pooling layers <nn.html#pooling-layers>` to know the arguments for each of them.\n
+        If a ``list`` is passed, it will be understood as the pooling for each pooling layer.
+    pooling_indices : Optional[Sequence[int]], default=None
+        Indices of the convolutional layers after which pooling should be performed.
+        If ``None``, no pooling will be performed. An index equal to ``-1`` will be understood as a pooling layer before
         the first convolution.
-    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
-        the activation function used after a convolutional layer, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    output_act : Optional[ActivationParameters] (optional, default=None)
-        a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
-    norm : Optional[ConvNormalizationParameters] (optional, default=NormLayer.INSTANCE)
-        the normalization type used after a convolutional layer, and optionally the arguments of the normalization
-        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
-        performed.\n
-        `norm_type` can be any value in {`batch`, `group`, `instance`, `syncbatch`}. Please refer to PyTorch's
-        [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
-        optional arguments for each of them.\n
-        Please note that arguments `num_channels`, `num_features` of the normalization layer
-        should not be passed, as they are automatically inferred from the output of the previous layer in the network.
-    dropout : Optional[float] (optional, default=None)
-        dropout ratio. If None, no dropout.
-    bias : bool (optional, default=True)
-        whether to have a bias term in convolutions.
-    adn_ordering : str (optional, default="NDA")
-        order of operations `Activation`, `Dropout` and `Normalization` after a convolutional layer (except the last
-        one).
-        For example if "ND" is passed, `Normalization` and then `Dropout` will be performed (without `Activation`).\n
-        Note: ADN will not be applied after the last convolution.
+    act : Optional[ActivationParameters], default="prelu"
+        The activation function used after a convolutional layer, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
+    norm : Optional[ConvNormalizationParameters], default="instance"
+        The normalization layer used after a convolutional layer, and optionally its arguments.
+        Must be passed as ``norm_type`` or ``(norm_type, arguments)`` where ``arguments`` is a dictionary.
+        If ``None``, no normalization will be performed.\n
+        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``syncbatch``}. Please refer to
+        :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
+
+        .. note::
+            Please note that there's no need to pass the arguments ``num_channels`` and ``num_features``
+            of the normalization layer, as they are automatically inferred from the output of the previous layer in the network.
+
+    dropout : Optional[float], default=None
+        Dropout ratio. If ``None``, no dropout.
+    bias : bool, default=True
+        Whether to have a bias term in linear layers.
+    adn_ordering : str, default="NDA"
+        Order of operations Activation, Dropout and Normalization, after a linear layer (except the last
+        one).  **Cannot contain duplicated letters**.
+        For example if ``"ND"`` is passed, Normalization and then Dropout will be performed (without Activation).\n
+
+        .. note::
+            ADN will not be applied after the last linear layer.
+
+    Raises
+    ------
+    ValueError
+        If a ``list`` is passed for ``kernel_size``, ``stride``, ``padding``, or ``dilation``, and the size of this
+        list in not equal to ``len(channels)``.
+    ValueError
+        If indices in ``pooling_indices`` are greater than ``len(channels)-1`` (``len(channels)-1`` being the index of the last
+        convolution layer).
+    ValueError
+        If a ``list`` is passed for ``pooling``, and ``len(pooling)!=len(pooling_indices)``.
+    ValueError
+        If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
+        in ``act`` or ``norm``).
 
     Examples
     --------
-    >>> ConvEncoder(
-            spatial_dims=2,
-            in_channels=1,
-            channels=[2, 4, 8],
-            kernel_size=(3, 5),
-            stride=1,
-            padding=[1, (0, 1), 0],
-            dilation=1,
-            pooling=[("max", {"kernel_size": 2}), ("avg", {"kernel_size": 2})],
-            pooling_indices=[0, 1],
-            act="elu",
-            output_act="relu",
-            norm=("batch", {"eps": 1e-05}),
-            dropout=0.1,
-            bias=True,
-            adn_ordering="NDA",
-        )
-    ConvEncoder(
-        (layer0): Convolution(
-            (conv): Conv2d(1, 2, kernel_size=(3, 5), stride=(1, 1), padding=(1, 1))
-            (adn): ADN(
-                (N): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (D): Dropout(p=0.1, inplace=False)
-                (A): ELU(alpha=1.0)
-            )
-        )
-        (pool0): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
-        (layer1): Convolution(
-            (conv): Conv2d(2, 4, kernel_size=(3, 5), stride=(1, 1), padding=(0, 1))
-            (adn): ADN(
-                (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (D): Dropout(p=0.1, inplace=False)
-                (A): ELU(alpha=1.0)
-            )
-        )
-        (pool1): AvgPool2d(kernel_size=2, stride=2, padding=0)
-        (layer2): Convolution(
-            (conv): Conv2d(4, 8, kernel_size=(3, 5), stride=(1, 1))
-        )
-        (output_act): ReLU()
-    )
 
+    .. code-block:: python
+
+        >>> ConvEncoder(
+                spatial_dims=2,
+                in_channels=1,
+                channels=[2, 4, 8],
+                kernel_size=(3, 5),
+                stride=1,
+                padding=[1, (0, 1), 0],
+                dilation=1,
+                pooling=[("max", {"kernel_size": 2}), ("avg", {"kernel_size": 2})],
+                pooling_indices=[0, 1],
+                act="elu",
+                output_act="relu",
+                norm=("batch", {"eps": 1e-05}),
+                dropout=0.1,
+                bias=True,
+                adn_ordering="NDA",
+            )
+        ConvEncoder(
+            (layer0): Convolution(
+                (conv): Conv2d(1, 2, kernel_size=(3, 5), stride=(1, 1), padding=(1, 1))
+                (adn): ADN(
+                    (N): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (A): ELU(alpha=1.0)
+                )
+            )
+            (pool0): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+            (layer1): Convolution(
+                (conv): Conv2d(2, 4, kernel_size=(3, 5), stride=(1, 1), padding=(0, 1))
+                (adn): ADN(
+                    (N): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (A): ELU(alpha=1.0)
+                )
+            )
+            (pool1): AvgPool2d(kernel_size=2, stride=2, padding=0)
+            (layer2): Convolution(
+                (conv): Conv2d(4, 8, kernel_size=(3, 5), stride=(1, 1))
+            )
+            (output_act): ReLU()
+        )
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ConvDecoder`
     """
 
     def __init__(
@@ -177,7 +193,7 @@ class ConvEncoder(nn.Sequential):
     ) -> None:
         super().__init__()
 
-        self._current_size = _input_size if _input_size else None
+        self._current_size = _input_size
         self._size_details = [self._current_size] if _input_size else None
 
         self.spatial_dims = spatial_dims
@@ -242,21 +258,14 @@ class ConvEncoder(nn.Sequential):
         self.output_act = get_act_layer(output_act) if output_act else None
 
     @property
-    def final_size(self):
+    def _final_size(self):
         """
         To know the size of an image at the end of the network.
         """
         return self._current_size
 
-    @property
-    def size_details(self):
-        """
-        To know the sizes of intermediate images.
-        """
-        return self._size_details
-
-    @final_size.setter
-    def final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
+    @_final_size.setter
+    def _final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
         """
         Takes as input the function used to update the current image size.
         """
@@ -278,7 +287,7 @@ class ConvEncoder(nn.Sequential):
         """
         Gets the parametrized Convolution-ADN block and updates the current output size.
         """
-        self.final_size = lambda size: calculate_conv_out_shape(
+        self._final_size = lambda size: calculate_conv_out_shape(
             size, kernel_size, stride, padding, dilation
         )
 
@@ -303,14 +312,14 @@ class ConvEncoder(nn.Sequential):
         Gets the parametrized pooling layer and updates the current output size.
         """
         pool_layer = get_pool_layer(pooling, spatial_dims=self.spatial_dims)
-        old_size = self.final_size
-        self.final_size = lambda size: calculate_pool_out_shape(
+        old_size = self._final_size
+        self._final_size = lambda size: calculate_pool_out_shape(
             pool_mode=pooling[0], in_shape=size, **pool_layer.__dict__
         )
 
         if (
-            self.final_size is not None
-            and (np.array(old_size) < np.array(self.final_size)).any()
+            self._final_size is not None
+            and (np.array(old_size) < np.array(self._final_size)).any()
         ):
             raise ValueError(
                 f"You passed {pooling} as a pooling layer. But before this layer, the size of the image "

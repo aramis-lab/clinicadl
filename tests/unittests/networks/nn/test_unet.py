@@ -68,7 +68,7 @@ def test_unet(input_tensor, out_channels, channels, act, output_act, dropout, er
 
         for i in range(1, len(channels)):
             down = getattr(net, f"down{i}").doubleconv
-            up = getattr(net, f"doubleconv{i}")
+            up = getattr(net, f"up{i}").doubleconv
             assert down[0].conv.in_channels == channels[i - 1]
             assert down[1].conv.out_channels == channels[i]
             assert up[0].conv.in_channels == channels[i - 1] * 2
@@ -117,11 +117,11 @@ def test_activation_parameters():
     assert isinstance(net.down1.doubleconv[0].adn.A, torch.nn.ELU)
     assert net.down1.doubleconv[0].adn.A.alpha == 0.1
 
-    assert isinstance(net.upsample1[1].adn.A, torch.nn.ELU)
-    assert net.upsample1[1].adn.A.alpha == 0.1
+    assert isinstance(net.up1.upsample[1].adn.A, torch.nn.ELU)
+    assert net.up1.upsample[1].adn.A.alpha == 0.1
 
-    assert isinstance(net.doubleconv1[1].adn.A, torch.nn.ELU)
-    assert net.doubleconv1[1].adn.A.alpha == 0.1
+    assert isinstance(net.up1.doubleconv[1].adn.A, torch.nn.ELU)
+    assert net.up1.doubleconv[1].adn.A.alpha == 0.1
 
     assert isinstance(net.output_act, torch.nn.ELU)
     assert net.output_act.alpha == 0.2

@@ -23,6 +23,18 @@ from .layers.resnet import ResNetBlock, ResNetBottleneck
 from .layers.senet import SEResNetBlock, SEResNetBottleneck
 from .layers.utils import ActivationParameters
 
+__all__ = [
+    "GeneralResNet",
+    "ResNet",
+    "ResNet18",
+    "ResNet34",
+    "ResNet50",
+    "ResNet101",
+    "ResNet152",
+    "bottleneck_reduce",
+    "check_res_blocks",
+]
+
 
 class ResNetBlockType(str, Enum):
     """Supported ResNet blocks."""
@@ -248,173 +260,159 @@ class GeneralResNet(nn.Module):
                 nn.init.constant_(torch.as_tensor(m.bias), 0)
 
 
-def bottleneck_reduce(
-    n_features: Sequence[int], bottleneck_reduction: int
-) -> Sequence[int]:
-    """
-    Finds number of feature maps for the bottleneck layers.
-    """
-    reduced_features = []
-    for n in n_features:
-        if n % bottleneck_reduction != 0:
-            raise ValueError(
-                "All elements of n_features must be divisible by bottleneck_reduction. "
-                f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
-            )
-        reduced_features.append(n // bottleneck_reduction)
-
-    return reduced_features
-
-
-def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> None:
-    """
-    Checks consistency between `n_res_blocks` and `n_features`.
-    """
-    if not isinstance(n_res_blocks, Sequence):
-        raise ValueError(f"n_res_blocks must be a sequence, got {n_res_blocks}")
-    if not isinstance(n_features, Sequence):
-        raise ValueError(f"n_features must be a sequence, got {n_features}")
-    if len(n_features) != len(n_res_blocks):
-        raise ValueError(
-            f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
-            f"and n_res_blocks={n_res_blocks}"
-        )
-
-
 class ResNet(GeneralResNet):
     """
-    ResNet based on the [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385) paper.
-    Adapted from [MONAI's implementation](https://docs.monai.io/en/stable/networks.html#resnet).
+    ResNet, based on `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+
+    Adapted from :py:class:`MONAI's implementation <monai.networks.nets.ResNet>`.
 
     The user can customize the number of residual blocks, the number of downsampling blocks, the number of channels
     in each block, as well as other parameters like the type of residual block used.
 
-    ResNet is a fully convolutional network that can work with input of any size, provided that is it large
+    ResNet is a fully convolutional network that can work with an input of any size, provided that it is large
     enough not to be reduced to a 1-pixel image (before the adaptative average pooling).
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
 
     Parameters
     ----------
     spatial_dims : int
-        number of spatial dimensions of the input image.
+        Number of spatial dimensions of the input image.
     in_channels : int
-        number of channels in the input image.
+        Number of channels in the input image.
     num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer (including average pooling) will be returned.
-    block_type : Union[str, ResNetBlockType] (optional, default=ResNetBlockType.BASIC)
-        type of residual block. Either `basic` or `bottleneck`. Default to `basic`, as in `ResNet-18`.
-    n_res_blocks : Sequence[int] (optional, default=(2, 2, 2, 2))
-        number of residual block in each ResNet layer. A ResNet layer refers here to the set of residual blocks
-        between two downsamplings. The length of `n_res_blocks` thus determines the number of ResNet layers.
-        Default to `(2, 2, 2, 2)`, as in `ResNet-18`.
-    n_features : Sequence[int] (optional, default=(64, 128, 256, 512))
-        number of output feature maps for each ResNet layer. The length of `n_features` must be equal to the length
-        of `n_res_blocks`. Default to `(64, 128, 256, 512)`, as in `ResNet-18`.
-    init_conv_size : Union[Sequence[int], int] (optional, default=7)
-        kernel_size for the first convolution.
-        If tuple, it will be understood as the values for each dimension.
-        Default to 7, as in the original paper.
-    init_conv_stride : Union[Sequence[int], int] (optional, default=2)
-        stride for the first convolution.
-        If tuple, it will be understood as the values for each dimension.
-        Default to 2, as in the original paper.
-    bottleneck_reduction : int (optional, default=4)
-        if `block_type='bottleneck'`, `bottleneck_reduction` determines the reduction factor for the number
-        of feature maps in bottleneck layers (1x1 convolutions). Default to 4, as in the original paper.
-    act : ActivationParameters (optional, default=("relu", {"inplace": True}))
-        the activation function used in the convolutional part, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`.
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.\n
-        Default is "relu", as in the original paper.
-    output_act : Optional[ActivationParameters] (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network.
-        Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    block_type : Union[str, ResNetBlockType], default="basic"
+        Type of residual block. Either ``basic`` or ``bottleneck``. Default to ``basic``, as in ``ResNet-18``.
+    n_res_blocks : Sequence[int], default=(2, 2, 2, 2)
+        Number of residual block in each ResNet layer. A ResNet layer refers here to a set of residual blocks
+        between two downsamplings. The length of ``n_res_blocks`` thus determines the number of ResNet layers.
+        Default to ``(2, 2, 2, 2)``, as in ``ResNet-18``.
+    n_features : Sequence[int], default=(64, 128, 256, 512)
+        Number of output feature maps for each ResNet layer. The length of ``n_features`` must be equal to the length
+        of ``n_res_blocks``. All elements of ``n_features`` must be divisible by ``bottleneck_reduction``.\n
+        Default to ``(64, 128, 256, 512)``, as in ``ResNet-18``.
+    init_conv_size : Union[Sequence[int], int], default=7
+        Kernel size for the first convolution.
+        If ``tuple``, it will be understood as the values for each dimension.
+        Default to ``7``, as in the original paper.
+    init_conv_stride : Union[Sequence[int], int], default=2
+        Stride for the first convolution.
+        If ``tuple``, it will be understood as the values for each dimension.
+        Default to ``2``, as in the original paper.
+    bottleneck_reduction : int, default=4
+        If ``block_type="bottleneck"``, ``bottleneck_reduction`` determines the reduction factor for the number
+        of feature maps in bottleneck layers (1x1 convolutions). Default to ``4``, as in the original paper.
+    act : ActivationParameters, default=("relu", {"inplace": True})
+        The activation function used after a convolutional layer, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.\n
+        Default is ``relu``, as in the original paper.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
+
+    Raises
+    ------
+    ValueError
+        If ``len(n_features)!=len(n_res_blocks)``.
+    ValueError
+        If some elements of ``n_features`` are not divisible by ``bottleneck_reduction``.
 
     Examples
     --------
-    >>> ResNet(
-            spatial_dims=2,
-            in_channels=1,
-            num_outputs=2,
-            block_type="bottleneck",
-            bottleneck_reduction=4,
-            n_features=(8, 16),
-            n_res_blocks=(2, 2),
-            output_act="softmax",
-            init_conv_size=5,
-        )
-    ResNet(
-        (conv0): Conv2d(1, 2, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
-        (norm0): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        (act0): ReLU(inplace=True)
-        (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
-        (layer1): Sequential(
-            (0): ResNetBottleneck(
-                (conv1): Conv2d(2, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (downsample): Sequential(
-                    (0): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                    (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+
+    .. code-block::
+
+        >>> ResNet(
+                spatial_dims=2,
+                in_channels=1,
+                num_outputs=2,
+                block_type="bottleneck",
+                bottleneck_reduction=4,
+                n_features=(8, 16),
+                n_res_blocks=(2, 2),
+                output_act="softmax",
+                init_conv_size=5,
+            )
+        ResNet(
+            (conv0): Conv2d(1, 2, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2), bias=False)
+            (norm0): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act0): ReLU(inplace=True)
+            (pool0): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+            (layer1): Sequential(
+                (0): ResNetBottleneck(
+                    (conv1): Conv2d(2, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (downsample): Sequential(
+                        (0): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                        (1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    )
+                    (act3): ReLU(inplace=True)
                 )
-                (act3): ReLU(inplace=True)
-            )
-            (1): ResNetBottleneck(
-                (conv1): Conv2d(8, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act3): ReLU(inplace=True)
-            )
-        )
-        (layer2): Sequential(
-            (0): ResNetBottleneck(
-                (conv1): Conv2d(8, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (downsample): Sequential(
-                    (0): Conv2d(8, 16, kernel_size=(1, 1), stride=(2, 2), bias=False)
-                    (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                (1): ResNetBottleneck(
+                    (conv1): Conv2d(8, 2, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(2, 2, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(2, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(2, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act3): ReLU(inplace=True)
                 )
-                (act3): ReLU(inplace=True)
             )
-            (1): ResNetBottleneck(
-                (conv1): Conv2d(16, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act1): ReLU(inplace=True)
-                (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-                (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act2): ReLU(inplace=True)
-                (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
-                (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                (act3): ReLU(inplace=True)
+            (layer2): Sequential(
+                (0): ResNetBottleneck(
+                    (conv1): Conv2d(8, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (downsample): Sequential(
+                        (0): Conv2d(8, 16, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                        (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    )
+                    (act3): ReLU(inplace=True)
+                )
+                (1): ResNetBottleneck(
+                    (conv1): Conv2d(16, 4, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm1): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act1): ReLU(inplace=True)
+                    (conv2): Conv2d(4, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                    (norm2): BatchNorm2d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act2): ReLU(inplace=True)
+                    (conv3): Conv2d(4, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                    (norm3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                    (act3): ReLU(inplace=True)
+                )
+            )
+            (fc): Sequential(
+                (pool): AdaptiveAvgPool2d(output_size=(1, 1))
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (out): Linear(in_features=16, out_features=2, bias=True)
+                (output_act): Softmax(dim=None)
             )
         )
-        (fc): Sequential(
-            (pool): AdaptiveAvgPool2d(output_size=(1, 1))
-            (flatten): Flatten(start_dim=1, end_dim=-1)
-            (out): Linear(in_features=16, out_features=2, bias=True)
-            (output_act): Softmax(dim=None)
-        )
-    )
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.SEResNet`
+
     """
 
     def __init__(
@@ -446,104 +444,311 @@ class ResNet(GeneralResNet):
             output_act=output_act,
         )
 
-
-class SOTAResNet(str, Enum):
-    """Supported ResNet networks."""
-
-    RESNET_18 = "ResNet-18"
-    RESNET_34 = "ResNet-34"
-    RESNET_50 = "ResNet-50"
-    RESNET_101 = "ResNet-101"
-    RESNET_152 = "ResNet-152"
+    def _load_weights(self, url: str) -> None:
+        """To load weights from torchvision."""
+        fc_layers = deepcopy(self.fc)
+        self.fc = None
+        pretrained_dict = load_state_dict_from_url(url, progress=True)
+        self.load_state_dict(_state_dict_adapter(pretrained_dict))
+        self.fc = fc_layers
 
 
-def get_resnet(
-    name: Union[str, SOTAResNet],
-    num_outputs: Optional[int],
-    output_act: ActivationParameters = None,
-    pretrained: bool = False,
-) -> ResNet:
+class ResNet18(ResNet):
     """
-    To get a ResNet implemented in the [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385)
-    paper.
+    ResNet-18, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
 
-    Only the last fully connected layer will be changed to match `num_outputs`.
+    Only the last fully connected layer will be changed to match ``num_outputs``.
 
-    The user can also use the pretrained models from `torchvision`. Note that the last fully connected layer will not
-    used pretrained weights, as it is task specific.
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
 
-    .. warning:: `ResNet-18`, `ResNet-34`, `ResNet-50`, `ResNet-101` and `ResNet-152` only works with 2D images with 3
-    channels.
+    .. warning:: Only works with **2D images with 3 channels**.
 
     Parameters
     ----------
-    model : Union[str, SOTAResNet]
-        The name of the ResNet. Available networks are `ResNet-18`, `ResNet-34`, `ResNet-50`, `ResNet-101` and `ResNet-152`.
     num_outputs : Optional[int]
-        number of output variables after the last linear layer.\n
-        If None, the features before the last fully connected layer will be returned.
-    output_act : ActivationParameters (optional, default=None)
-        if `num_outputs` is not None, a potential activation layer applied to the outputs of the network,
-        and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    pretrained : bool (optional, default=False)
-        whether to use pretrained weights. The pretrained weights used are the default ones from [torchvision](https://
-        pytorch.org/vision/main/models/resnet.html).
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool, default=False
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.resnet18`.
 
-    Returns
-    -------
-    ResNet
-        The network, with potentially pretrained weights.
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
     """
-    name = SOTAResNet(name)
-    if name == SOTAResNet.RESNET_18:
-        block_type = ResNetBlockType.BASIC
-        n_res_blocks = (2, 2, 2, 2)
-        n_features = (64, 128, 256, 512)
-        model_url = ResNet18_Weights.DEFAULT.url
-    elif name == SOTAResNet.RESNET_34:
-        block_type = ResNetBlockType.BASIC
-        n_res_blocks = (3, 4, 6, 3)
-        n_features = (64, 128, 256, 512)
-        model_url = ResNet34_Weights.DEFAULT.url
-    elif name == SOTAResNet.RESNET_50:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 4, 6, 3)
-        n_features = (256, 512, 1024, 2048)
-        model_url = ResNet50_Weights.DEFAULT.url
-    elif name == SOTAResNet.RESNET_101:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 4, 23, 3)
-        n_features = (256, 512, 1024, 2048)
-        model_url = ResNet101_Weights.DEFAULT.url
-    elif name == SOTAResNet.RESNET_152:
-        block_type = ResNetBlockType.BOTTLENECK
-        n_res_blocks = (3, 8, 36, 3)
-        n_features = (256, 512, 1024, 2048)
-        model_url = ResNet152_Weights.DEFAULT.url
 
-    # pylint: disable=possibly-used-before-assignment
-    resnet = ResNet(
-        spatial_dims=2,
-        in_channels=3,
-        num_outputs=num_outputs,
-        n_res_blocks=n_res_blocks,
-        block_type=block_type,
-        n_features=n_features,
-        output_act=output_act,
-    )
-    if pretrained:
-        fc_layers = deepcopy(resnet.fc)
-        resnet.fc = None
-        pretrained_dict = load_state_dict_from_url(model_url, progress=True)
-        resnet.load_state_dict(_state_dict_adapter(pretrained_dict))
-        resnet.fc = fc_layers
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(2, 2, 2, 2),
+            block_type=ResNetBlockType.BASIC,
+            n_features=(64, 128, 256, 512),
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ResNet18_Weights.DEFAULT.url)
 
-    return resnet
+
+class ResNet34(ResNet):
+    """
+    ResNet-34, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool, default=False
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.resnet34`.
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 4, 6, 3),
+            block_type=ResNetBlockType.BASIC,
+            n_features=(64, 128, 256, 512),
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ResNet34_Weights.DEFAULT.url)
+
+
+class ResNet50(ResNet):
+    """
+    ResNet-50, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool, default=False
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.resnet50`.
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 4, 6, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ResNet50_Weights.DEFAULT.url)
+
+
+class ResNet101(ResNet):
+    """
+    ResNet-101, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool, default=False
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.resnet101`.
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 4, 23, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ResNet101_Weights.DEFAULT.url)
+
+
+class ResNet152(ResNet):
+    """
+    ResNet-152, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+
+    Only the last fully connected layer will be changed to match ``num_outputs``.
+
+    The user can use the pretrained models from ``torchvision``. Note that the last fully connected layer will not
+    use pretrained weights, as it is task specific.
+
+    .. warning:: Only works with **2D images with 3 channels**.
+
+    Parameters
+    ----------
+    num_outputs : Optional[int]
+        Number of output variables after the last linear layer.
+        If ``None``, the feature map before the last fully connected layer will be returned.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    pretrained : bool, default=False
+        Whether to use pretrained weights. The pretrained weights used are the default ones
+        from :py:func:`torchvision.models.resnet152`.
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
+    """
+
+    def __init__(
+        self,
+        num_outputs: Optional[int],
+        output_act: Optional[ActivationParameters] = None,
+        pretrained: bool = False,
+    ) -> None:
+        super().__init__(
+            spatial_dims=2,
+            in_channels=3,
+            num_outputs=num_outputs,
+            n_res_blocks=(3, 8, 36, 3),
+            block_type=ResNetBlockType.BOTTLENECK,
+            n_features=(256, 512, 1024, 2048),
+            output_act=output_act,
+        )
+        if pretrained:
+            self._load_weights(ResNet152_Weights.DEFAULT.url)
+
+
+def bottleneck_reduce(
+    n_features: Sequence[int], bottleneck_reduction: int
+) -> Sequence[int]:
+    """
+    Finds number of feature maps for the bottleneck layers.
+    """
+    reduced_features = []
+    for n in n_features:
+        if n % bottleneck_reduction != 0:
+            raise ValueError(
+                "All elements of n_features must be divisible by bottleneck_reduction. "
+                f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
+            )
+        reduced_features.append(n // bottleneck_reduction)
+
+    return reduced_features
+
+
+def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> None:
+    """
+    Checks consistency between `n_res_blocks` and `n_features`.
+    """
+    if not isinstance(n_res_blocks, Sequence):
+        raise ValueError(f"n_res_blocks must be a sequence, got {n_res_blocks}")
+    if not isinstance(n_features, Sequence):
+        raise ValueError(f"n_features must be a sequence, got {n_features}")
+    if len(n_features) != len(n_res_blocks):
+        raise ValueError(
+            f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
+            f"and n_res_blocks={n_res_blocks}"
+        )
 
 
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:

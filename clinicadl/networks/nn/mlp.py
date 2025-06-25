@@ -16,73 +16,99 @@ from .utils import check_adn_ordering, check_norm_layer
 
 
 class MLP(BaseMLP):
-    """Simple full-connected layer neural network (or Multi-Layer Perceptron) with linear, normalization, activation
+    """Simple fully-connected neural network (or Multi-Layer Perceptron) with linear, normalization, activation
     and dropout layers.
+
+    Works with 2D data (including batch dimension).
 
     Parameters
     ----------
     num_inputs : int
-        number of input features.
+        Number of input features.
     num_outputs : int
-        number of outputs.
+        Number of outputs.
     hidden_dims : Sequence[int]
-        number of outputs for each hidden layer. Thus, this parameter also controls the number of hidden layers.
-    act : Optional[ActivationParameters] (optional, default=ActFunction.PRELU)
-        the activation function used after a linear layer, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    output_act : Optional[ActivationParameters] (optional, default=None)
-        a potential activation layer applied to the output of the network. Should be pass in the same way as `act`.
-        If None, no last activation will be applied.
-    norm : Optional[NormalizationParameters] (optional, default=NormLayer.BATCH)
-        the normalization type used after a linear layer, and optionally the arguments of the normalization
-        layer. Should be passed as `norm_type` or `(norm_type, parameters)`. If None, no normalization will be
+        Number of outputs for each hidden layer. Thus, this parameter also controls the number of hidden layers
+        (equal to the length of the sequence).
+    act : Optional[ActivationParameters], default="prelu"
+        The activation function used after a linear layer, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions<nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network. Must be passed in the same way as ``act``.
+        If ``None``, no last activation will be applied.
+    norm : Optional[NormalizationParameters], default="batch"
+        The normalization layer used after a linear layer, and optionally its arguments.
+        Must be passed as ``norm_type`` or ``(norm_type, parameters)``. If ``None``, no normalization will be
         performed.\n
-        `norm_type` can be any value in {`batch`, `group`, `instance`, `layer`, `syncbatch`}. Please refer to PyTorch's
-        [normalization layers](https://pytorch.org/docs/stable/nn.html#normalization-layers) to know the mandatory and
-        optional arguments for each of them.\n
-        Please note that arguments `num_channels`, `num_features` and `normalized_shape` of the normalization layer
-        should not be passed, as they are automatically inferred from the output of the previous layer in the network.
-    dropout : Optional[float] (optional, default=None)
-        dropout ratio. If None, no dropout.
-    bias : bool (optional, default=True)
-        whether to have a bias term in linear layers.
-    adn_ordering : str (optional, default="NDA")
-        order of operations `Activation`, `Dropout` and `Normalization` after a linear layer (except the last
-        one).
-        For example if "ND" is passed, `Normalization` and then `Dropout` will be performed (without `Activation`).\n
-        Note: ADN will not be applied after the last linear layer.
+        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``layer``, ``syncbatch``}. Please refer to
+        :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
+
+        .. note::
+            Please note that there's no need to pass the arguments ``num_channels``, ``num_features`` and ``normalized_shape``
+            of the normalization layer, as they are automatically inferred from the output of the previous layer in the network.
+
+    dropout : Optional[float], default=None
+        Dropout ratio. If ``None``, no dropout.
+    bias : bool, default=True
+        Whether to have a bias term in linear layers.
+    adn_ordering : str, default="NDA"
+        Order of operations Activation, Dropout and Normalization, after a linear layer (except the last
+        one). **Cannot contain duplicated letters**.
+        For example if ``"ND"`` is passed, Normalization and then Dropout will be performed (without Activation).\n
+
+        .. note::
+            ADN will not be applied after the last linear layer.
+
+    Raises
+    ----------
+    ValueError
+        If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
+        in ``act`` or ``norm``).
 
     Examples
     --------
-    >>> MLP(num_inputs=12, num_outputs=2, hidden_dims=[8, 4], dropout=0.1, act=("elu", {"alpha": 0.5}),
-        norm=("group", {"num_groups": 2}), bias=True, adn_ordering="ADN", output_act="softmax")
-    MLP(
-        (flatten): Flatten(start_dim=1, end_dim=-1)
-        (hidden0): Sequential(
-            (linear): Linear(in_features=12, out_features=8, bias=True)
-            (adn): ADN(
-                (A): ELU(alpha=0.5)
-                (D): Dropout(p=0.1, inplace=False)
-                (N): GroupNorm(2, 8, eps=1e-05, affine=True)
+
+    .. code-block:: python
+
+        >>> MLP(
+                num_inputs=12,
+                num_outputs=2,
+                hidden_dims=[8, 4],
+                dropout=0.1,
+                act=("elu", {"alpha": 0.5}),
+                norm=("group", {"num_groups": 2}),
+                bias=True,
+                adn_ordering="ADN",
+                output_act="softmax",
+            )
+        MLP(
+            (flatten): Flatten(start_dim=1, end_dim=-1)
+            (hidden0): Sequential(
+                (linear): Linear(in_features=12, out_features=8, bias=True)
+                (adn): ADN(
+                    (A): ELU(alpha=0.5)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (N): GroupNorm(2, 8, eps=1e-05, affine=True)
+                )
+            )
+            (hidden1): Sequential(
+                (linear): Linear(in_features=8, out_features=4, bias=True)
+                (adn): ADN(
+                    (A): ELU(alpha=0.5)
+                    (D): Dropout(p=0.1, inplace=False)
+                    (N): GroupNorm(2, 4, eps=1e-05, affine=True)
+                )
+            )
+            (output): Sequential(
+                (linear): Linear(in_features=4, out_features=2, bias=True)
+                (output_act): Softmax(dim=None)
             )
         )
-        (hidden1): Sequential(
-            (linear): Linear(in_features=8, out_features=4, bias=True)
-            (adn): ADN(
-                (A): ELU(alpha=0.5)
-                (D): Dropout(p=0.1, inplace=False)
-                (N): GroupNorm(2, 4, eps=1e-05, affine=True)
-            )
-        )
-        (output): Sequential(
-            (linear): Linear(in_features=4, out_features=2, bias=True)
-            (output_act): Softmax(dim=None)
-        )
-    )
     """
 
     def __init__(

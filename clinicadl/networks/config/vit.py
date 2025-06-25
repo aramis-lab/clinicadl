@@ -1,6 +1,5 @@
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
-import torch.nn as nn
 from pydantic import PositiveFloat, PositiveInt, model_validator
 
 import clinicadl.networks.nn as nets
@@ -13,26 +12,25 @@ from clinicadl.networks.nn.vit import (
 )
 from clinicadl.utils.factories import get_defaults_from
 
-from ..nn.vit import ViT
 from .base import (
-    ImplementedNetwork,
     NetworkConfig,
-    _DropOutConfig,
-    _OptionalLastLinearLayersConfig,
-    _OutputActConfig,
-    _PreTrainedConfig,
+    _DropoutConfig,
+    _InShapeConfig,
 )
-from .cnns import _InShapeConfig
 
-VIT_DEFAULTS = get_defaults_from(ViT)
+__all__ = ["ViTConfig", "ViTB16Config", "ViTB32Config", "ViTL16Config", "ViTL32Config"]
+
+VIT_DEFAULTS = get_defaults_from(nets.ViT)
+VIT_B_16_DEFAULTS = get_defaults_from(nets.ViTB16)
+VIT_B_32_DEFAULTS = get_defaults_from(nets.ViTB32)
+VIT_L_16_DEFAULTS = get_defaults_from(nets.ViTL16)
+VIT_L_32_DEFAULTS = get_defaults_from(nets.ViTL32)
 
 
 class ViTConfig(
     NetworkConfig,
     _InShapeConfig,
-    _OptionalLastLinearLayersConfig,
-    _OutputActConfig,
-    _DropOutConfig,
+    _DropoutConfig,
 ):
     """
     Config class for :py:class:`clinicadl.networks.nn.ViT`.
@@ -59,54 +57,41 @@ class ViTConfig(
         return self
 
 
-class _PreTrainedViTConfig(_PreTrainedConfig):
-    """Base config class for SOTA ViTs."""
-
-    @classmethod
-    def _get_class(cls) -> Callable[[Any], nn.Module]:
-        """Returns the network associated to this config class."""
-        return nets.get_vit
-
-
-class ViTB16Config(_PreTrainedViTConfig):
+class ViTB16Config(NetworkConfig):
     """
-    Config class for :py:func:`ViT-B/16 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTB16`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.VIT_B_16.value
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_16_DEFAULTS["pretrained"]
 
 
-class ViTB32Config(_PreTrainedViTConfig):
+class ViTB32Config(NetworkConfig):
     """
-    Config class for :py:func:`ViT-B/32 <clinicadl.networks.nn.get_vit>`.
-    """
-
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.VIT_B_32.value
-
-
-class ViTL16Config(_PreTrainedViTConfig):
-    """
-    Config class for :py:func:`ViT-L/16 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTB32`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.VIT_L_16.value
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_32_DEFAULTS["pretrained"]
 
 
-class ViTL32Config(_PreTrainedViTConfig):
+class ViTL16Config(NetworkConfig):
     """
-    Config class for :py:func:`ViT-L/32 <clinicadl.networks.nn.get_vit>`.
+    Config class for :py:class:`clinicadl.networks.nn.ViTL16`.
     """
 
-    @classmethod
-    def _get_name(cls) -> str:
-        """Returns the name of the class associated to this config class."""
-        return ImplementedNetwork.VIT_L_32.value
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_16_DEFAULTS["pretrained"]
+
+
+class ViTL32Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViTL32`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_32_DEFAULTS["pretrained"]

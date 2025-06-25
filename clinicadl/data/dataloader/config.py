@@ -87,16 +87,16 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     Parameters
     ----------
-    batch_size : PositiveInt (optional, default=1)
+    batch_size : PositiveInt, default=1
         Batch size for the DataLoader.
-    sampling_weights : Optional[str] (optional, default=None)
+    sampling_weights : Optional[str], default=None
         Name of the column in the dataframe of the dataset where to find the sampling
         weights. The column must contain ``float`` values.
 
         The probability of sampling a certain sample is proportional to the associated value
         in this column of the dataframe.
 
-    shuffle : bool (optional, default=True)
+    shuffle : bool, default=True
         Whether to shuffle the data.
 
         .. note::
@@ -104,15 +104,15 @@ class DataLoaderConfig(ClinicaDLConfig):
             If ``sampling_weights`` is passed, the data will be fetched randomly with
             replacement, no matter the value of ``shuffle``.
 
-    num_workers : NonNegativeInt (optional, default=0)
+    num_workers : NonNegativeInt, default=0
         Number of workers for data loading.
-    pin_memory : bool (optional, default=True)
+    pin_memory : bool, default=True
         Whether to copy Tensors into device/CUDA pinned memory before returning them.
-    drop_last : bool (optional, default=False)
+    drop_last : bool, default=False
         Whether to drop the last incomplete batch.
-    prefetch_factor : Optional[int] (optional, default=None)
+    prefetch_factor : Optional[int], default=None
         Number of batches loaded in advance by each worker. Can't be passed if ``num_workers=0``.
-    persistent_workers : bool (optional, default=False)
+    persistent_workers : bool, default=False
         Whether to maintain the worker processes alive at the end of an epoch.
         Can't be passed if ``num_workers=0``.
 
@@ -123,7 +123,7 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     See Also
     --------
-    - :py:class:`torch.utils.data.DataLoader` for more details on the parameters.
+    :py:class:`torch.utils.data.DataLoader` for more details on the parameters.
 
     Examples
     --------
@@ -275,9 +275,9 @@ class DataLoaderConfig(ClinicaDLConfig):
         ----------
         dataset : Dataset
             The ClinicaDL dataset to put in the DataLoader.
-        dp_degree : Optional[int] (optional, default=None)
+        dp_degree : Optional[int], default=None
             The degree of data parallelism. ``None`` if no data parallelism.
-        rank : Optional[int] (optional, default=None)
+        rank : Optional[int], default=None
             Process id within the data parallelism communicator.
             ``None`` if no data parallelism.
 
@@ -327,14 +327,14 @@ class DataLoaderConfig(ClinicaDLConfig):
             collate_fn=tuple_collate_fn
             if isinstance(dataset, (PairedDataset, UnpairedDataset))
             else simple_collate_fn,
-            **self.model_dump(exclude={"sampling_weights", "shuffle"}),
+            **self.to_dict(exclude={"sampling_weights", "shuffle"}),
         )
 
     def _generate_sampler(
         self,
         dataset: Dataset,
-        dp_degree: Optional[int],
-        rank: Optional[int],
+        dp_degree: int,
+        rank: int,
     ) -> Sampler:
         """
         Returns a WeightedRandomSampler if self.sampling_weights is not None, otherwise a
@@ -342,7 +342,7 @@ class DataLoaderConfig(ClinicaDLConfig):
         the degree of data parallelism is set to 1, so it is equivalent to a simple PyTorch
         RandomSampler if self.shuffle is True or no sampler if self.shuffle is False).
         """
-        if self.sampling_weights and rank is not None:
+        if self.sampling_weights:
             weights = self._get_weights(dataset, self.sampling_weights)
             length = len(weights) // dp_degree + int(rank < len(weights) % dp_degree)
             sampler = WeightedRandomSampler(weights, num_samples=length)  # type: ignore

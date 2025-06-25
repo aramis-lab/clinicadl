@@ -18,7 +18,8 @@ CUSTOM_TRANSFORM = "Custom transform passed by the user"
 
 class Transforms(ClinicaDLConfig):
     """
-    Configuration class to gather all the transforms applied to images.
+    Configuration class to gather all the transforms applied to images
+    (extraction, preprocessing, and augmentation).
 
     ClinicaDL defines 4 types of transforms:\n
     - ``extraction``: defines on what type of elements of the image we want to work
@@ -34,34 +35,34 @@ class Transforms(ClinicaDLConfig):
       and ``sample_transforms``, only during training.
 
     .. note::
-        :ref:`Extraction objects <extraction>` are not exactly transforms since
+        :ref:`Extraction objects <api_transforms_extraction>` are not exactly transforms since
         they modify the size of the datasets: if you have 10 images with 100 slices each and you want to work on slices
         (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
 
     For ``image_transforms``, ``sample_transforms`` and ``augmentations``, the transforms must be passed as lists.
     ``Transforms`` will compose the transforms in these lists, so **the order in the lists is important**.
 
-    Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <supported_transforms>`, but also
+    Finally, ``Transforms`` accepts preferably :ref:`transform configuration classes <api_transforms_config>`, but also
     any custom transform created by the user (see examples). The only requirement is that this custom transforms
     works with :py:class:`~clinicadl.data.structures.DataPoint`. In line with :ref:`ClinicaDL's philosophy <api_introduction>`,
     you are encouraged to **use transform configuration classes for better reproducibility**.
 
     Parameters
     ----------
-    extraction : Optional[Extraction], (optional, default=None)
-        The extraction applied. See :ref:`extraction`. Default is ``None``, which means
+    extraction : Optional[Extraction], default=None
+        The extraction applied. See :ref:`api_transforms_extraction`. Default is ``None``, which means
         that no extraction is applied and that the :py:class:`CapsDataset <clinicadl.data.datasets.CapsDataset>`
         will output full images.
-    image_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+    image_transforms : list[Union[Transform, TransformConfig]], default=[]
         A list of transformations to apply on the whole image, before extraction.
-    sample_transforms : list[Union[Transform, TransformConfig]], (optional, default=[])
+    sample_transforms : list[Union[Transform, TransformConfig]], default=[]
         A list of transformations to apply on samples (patches or slices).
 
     .. note::
         If ``extraction=None``, ``image_transforms`` and ``sample_transforms`` are the same.
         They will therefore be merged in ``image_transforms``.
 
-    augmentations : list[Union[Transform, TransformConfig]], (optional, default=[])
+    augmentations : list[Union[Transform, TransformConfig]], default=[]
         A list of augmentation transforms, to apply on samples, only during training.
 
 

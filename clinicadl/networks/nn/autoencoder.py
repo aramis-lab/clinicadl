@@ -24,138 +24,151 @@ from .utils import (
 
 class AutoEncoder(nn.Sequential):
     """
-    An autoencoder with convolutional and fully connected layers.
+    An AutoEncoder with convolutional and fully connected layers.
 
     The user must pass the arguments to build an encoder, from its convolutional and
     fully connected parts, and the decoder will be automatically built by taking the
     symmetrical network.
 
     More precisely, to build the decoder, the order of the encoding layers is reverted, convolutions are
-    replaced by transposed convolutions and pooling layers are replaced by either upsampling or transposed
+    replaced by transposed convolutions, and pooling layers are replaced by either upsampling or transposed
     convolution layers.
-    Please note that the order of `Activation`, `Dropout` and `Normalization`, defined with the
-    argument `adn_ordering` in `conv_args`, is the same for the encoder and the decoder.
 
-    Note that an `AutoEncoder` is an aggregation of a `CNN` (:py:class:`clinicadl.monai_networks.nn.
-    cnn.CNN`) and a `Generator` (:py:class:`clinicadl.monai_networks.nn.generator.Generator`).
+    An ``AutoEncoder`` is an aggregation of a :py:class:`~clinicadl.networks.nn.CNN` and a
+    :py:class:`~clinicadl.networks.nn.Generator`.
+
+    Works with 2D or 3D images (with additional batch and channel dimensions).
+
+    .. note::
+        Please note that the order of Activation, Dropout and Normalization, defined with the
+        argument ``adn_ordering`` in ``conv_args``, is the same for the encoder and the decoder.
 
     Parameters
     ----------
     in_shape : Sequence[int]
-        sequence of integers stating the dimension of the input tensor (minus batch dimension).
+        Dimensions of the input tensor (without batch dimension).
     latent_size : int
-        size of the latent vector.
+        Size of the latent vector.
     conv_args : Dict[str, Any]
-        the arguments for the convolutional part of the encoder. The arguments are those accepted
-        by :py:class:`clinicadl.monai_networks.nn.conv_encoder.ConvEncoder`, except `in_shape` that
-        is specified here. So, the only mandatory argument is `channels`.
-    mlp_args : Optional[Dict[str, Any]] (optional, default=None)
-        the arguments for the MLP part of the encoder . The arguments are those accepted by
-        :py:class:`clinicadl.monai_networks.nn.mlp.MLP`, except `num_inputs` that is inferred
-        from the output of the convolutional part, and `num_outputs` that is set to `latent_size`.
-        So, the only mandatory argument is `hidden_dims`.\n
-        If None, the MLP part will be reduced to a single linear layer.
-    out_channels : Optional[int] (optional, default=None)
-        number of output channels. If None, the output will have the same number of channels as the
+        The arguments for the convolutional part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.ConvEncoder`, except ``spatial_dims`` and ``in_channels``
+        that are specified here via ``in_shape``. So, the only **mandatory argument is** ``channels``.
+    mlp_args : Optional[Dict[str, Any]], default=None
+        The arguments for the MLP part. The arguments are those accepted by
+        :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is inferred
+        from the output of the convolutional part, and ``num_outputs`` that is equal to ``latent_size`` here.
+        So, the only **mandatory argument is** ``hidden_dims``.\n
+        If ``None``, the MLP part will be reduced to a single linear layer.
+    out_channels : Optional[int], default=None
+        Number of output channels. If ``None``, the output will have the same number of channels as the
         input.
-    output_act : Optional[ActivationParameters] (optional, default=None)
-        a potential activation layer applied to the output of the network, and optionally its arguments.
-        Should be passed as `activation_name` or `(activation_name, arguments)`. If None, no activation will be used.\n
-        `activation_name` can be any value in {`celu`, `elu`, `gelu`, `leakyrelu`, `logsoftmax`, `mish`, `prelu`,
-        `relu`, `relu6`, `selu`, `sigmoid`, `softmax`, `tanh`}. Please refer to PyTorch's [activationfunctions]
-        (https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity) to know the optional
-        arguments for each of them.
-    unpooling_mode : Union[str, UnpoolingMode] (optional, default=UnpoolingMode.NEAREST)
-        type of unpooling. Can be either `"nearest"`, `"linear"`, `"bilinear"`, `"bicubic"`, `"trilinear"` or
-        `"convtranspose"`.\n
-        - `nearest`: unpooling is performed by upsampling with the :italic:`nearest` algorithm (see [PyTorch's Upsample layer]
-        (https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html)).
-        - `linear`: unpooling is performed by upsampling with the :italic:`linear` algorithm. Only works with 1D images (excluding the
-        channel dimension).
-        - `bilinear`: unpooling is performed by upsampling with the :italic:`bilinear` algorithm. Only works with 2D images.
-        - `bicubic`: unpooling is performed by upsampling with the :italic:`bicubic` algorithm. Only works with 2D images.
-        - `trilinear`: unpooling is performed by upsampling with the :italic:`trilinear` algorithm. Only works with 3D images.
-        - `convtranspose`: unpooling is performed with a transposed convolution, whose parameters (kernel size, stride, etc.) are
-        computed to reverse the pooling operation.
+    output_act : Optional[ActivationParameters], default=None
+        A potential activation layer applied to the output of the network, and optionally its arguments.
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
+        If ``None``, no activation will be used.\n
+        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
+        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
+        for each of them.
+    unpooling_mode : Union[str, UnpoolingMode], default=UnpoolingMode.NEAREST
+        Type of unpooling. Can be any value in {``nearest``, ``linear``, ``bilinear``, ``bicubic``, ``trilinear`` or
+        ``convtranspose``}:
+
+        - ``nearest``: unpooling is performed by upsampling with the `nearest` algorithm (see
+          :py:class:`torch.nn.Upsample`);
+        - ``linear``: unpooling is performed by upsampling with the `linear` algorithm. Only works with 1D images (excluding the
+          channel dimension);
+        - ``bilinear``: unpooling is performed by upsampling with the `bilinear` algorithm. Only works with 2D images;
+        - ``bicubic``: unpooling is performed by upsampling with the `bicubic` algorithm. Only works with 2D images;
+        - ``trilinear``: unpooling is performed by upsampling with the `trilinear` algorithm. Only works with 3D images;
+        - ``convtranspose``: unpooling is performed with a transposed convolution (see :py:class:`torch.nn.ConvTranspose3d`), whose
+          parameters (kernel size, stride, etc.) are computed to reverse the pooling operation.
 
     Examples
     --------
-    >>> AutoEncoder(
-            in_shape=(1, 16, 16),
-            latent_size=8,
-            conv_args={
-                "channels": [2, 4],
-                "pooling_indices": [0],
-                "pooling": ("avg", {"kernel_size": 2}),
-            },
-            mlp_args={"hidden_dims": [32], "output_act": "relu"},
-            out_channels=2,
-            output_act="sigmoid",
-            unpooling_mode="bilinear",
-        )
-    AutoEncoder(
-        (encoder): CNN(
-            (convolutions): ConvEncoder(
-                (layer0): Convolution(
-                    (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
-                    (adn): ADN(
-                        (N): InstanceNorm2d(2, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
-                        (A): PReLU(num_parameters=1)
-                    )
-                )
-                (pool0): AvgPool2d(kernel_size=2, stride=2, padding=0)
-                (layer1): Convolution(
-                    (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
-                )
-            )
-            (mlp): MLP(
-                (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden0): Sequential(
-                    (linear): Linear(in_features=100, out_features=32, bias=True)
-                    (adn): ADN(
-                        (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (A): PReLU(num_parameters=1)
-                    )
-                )
-                (output): Sequential(
-                    (linear): Linear(in_features=32, out_features=8, bias=True)
-                    (output_act): ReLU()
-                )
-            )
-        )
-        (decoder): Generator(
-            (mlp): MLP(
-                (flatten): Flatten(start_dim=1, end_dim=-1)
-                (hidden0): Sequential(
-                    (linear): Linear(in_features=8, out_features=32, bias=True)
-                    (adn): ADN(
-                        (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                        (A): PReLU(num_parameters=1)
-                    )
-                )
-                (output): Sequential(
-                    (linear): Linear(in_features=32, out_features=100, bias=True)
-                    (output_act): ReLU()
-                )
-            )
-            (reshape): Reshape()
-            (convolutions): ConvDecoder(
-                (layer0): Convolution(
-                    (conv): ConvTranspose2d(4, 4, kernel_size=(3, 3), stride=(1, 1))
-                    (adn): ADN(
-                        (N): InstanceNorm2d(4, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
-                        (A): PReLU(num_parameters=1)
-                    )
-                )
-                (unpool0): Upsample(size=(14, 14), mode=<UpsamplingMode.BILINEAR: 'bilinear'>)
-                (layer1): Convolution(
-                    (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
-                )
-                (output_act): Sigmoid()
-            )
-        )
-    )
 
+    .. code-block:: python
+
+        >>> AutoEncoder(
+                in_shape=(1, 16, 16),
+                latent_size=8,
+                conv_args={
+                    "channels": [2, 4],
+                    "pooling_indices": [0],
+                    "pooling": ("avg", {"kernel_size": 2}),
+                },
+                mlp_args={"hidden_dims": [32], "output_act": "relu"},
+                out_channels=2,
+                output_act="sigmoid",
+                unpooling_mode="bilinear",
+            )
+        AutoEncoder(
+            (encoder): CNN(
+                (convolutions): ConvEncoder(
+                    (layer0): Convolution(
+                        (conv): Conv2d(1, 2, kernel_size=(3, 3), stride=(1, 1))
+                        (adn): ADN(
+                            (N): InstanceNorm2d(2, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
+                            (A): PReLU(num_parameters=1)
+                        )
+                    )
+                    (pool0): AvgPool2d(kernel_size=2, stride=2, padding=0)
+                    (layer1): Convolution(
+                        (conv): Conv2d(2, 4, kernel_size=(3, 3), stride=(1, 1))
+                    )
+                )
+                (mlp): MLP(
+                    (flatten): Flatten(start_dim=1, end_dim=-1)
+                    (hidden0): Sequential(
+                        (linear): Linear(in_features=100, out_features=32, bias=True)
+                        (adn): ADN(
+                            (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (A): PReLU(num_parameters=1)
+                        )
+                    )
+                    (output): Sequential(
+                        (linear): Linear(in_features=32, out_features=8, bias=True)
+                        (output_act): ReLU()
+                    )
+                )
+            )
+            (decoder): Generator(
+                (mlp): MLP(
+                    (flatten): Flatten(start_dim=1, end_dim=-1)
+                    (hidden0): Sequential(
+                        (linear): Linear(in_features=8, out_features=32, bias=True)
+                        (adn): ADN(
+                            (N): BatchNorm1d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+                            (A): PReLU(num_parameters=1)
+                        )
+                    )
+                    (output): Sequential(
+                        (linear): Linear(in_features=32, out_features=100, bias=True)
+                        (output_act): ReLU()
+                    )
+                )
+                (reshape): Reshape()
+                (convolutions): ConvDecoder(
+                    (layer0): Convolution(
+                        (conv): ConvTranspose2d(4, 4, kernel_size=(3, 3), stride=(1, 1))
+                        (adn): ADN(
+                            (N): InstanceNorm2d(4, eps=1e-05, momentum=0.1, affine=False, track_running_stats=False)
+                            (A): PReLU(num_parameters=1)
+                        )
+                    )
+                    (unpool0): Upsample(size=(14, 14), mode=<UpsamplingMode.BILINEAR: 'bilinear'>)
+                    (layer1): Convolution(
+                        (conv): ConvTranspose2d(4, 2, kernel_size=(3, 3), stride=(1, 1))
+                    )
+                    (output_act): Sigmoid()
+                )
+            )
+        )
+
+    See Also
+    --------
+    :py:class:`~clinicadl.networks.nn.CNN`
+    :py:class:`~clinicadl.networks.nn.Generator`
     """
 
     def __init__(
@@ -185,7 +198,7 @@ class AutoEncoder(nn.Sequential):
         inter_channels = (
             conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
         )
-        inter_shape = (inter_channels, *self.encoder.convolutions.final_size)
+        inter_shape = (inter_channels, *self.encoder.convolutions._final_size)
         self.decoder = Generator(
             latent_size=latent_size,
             start_shape=inter_shape,
@@ -229,7 +242,7 @@ class AutoEncoder(nn.Sequential):
         args["unpooling"] = []
         sizes_before_pooling = [
             size
-            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            for size, (layer_name, _) in zip(conv._size_details, conv.named_children())
             if "pool" in layer_name
         ]
         for size, pooling in zip(sizes_before_pooling[::-1], conv.pooling[::-1]):
@@ -329,7 +342,7 @@ class AutoEncoder(nn.Sequential):
         output_padding = []
         size_before_convs = [
             size
-            for size, (layer_name, _) in zip(conv.size_details, conv.named_children())
+            for size, (layer_name, _) in zip(conv._size_details, conv.named_children())
             if "layer" in layer_name
         ]
         for size, k, s, p, d in zip(

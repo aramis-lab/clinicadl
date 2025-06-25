@@ -237,11 +237,11 @@ class Predictor:
             split number.
         selection_metrics : _type_
             metrics used for model selection.
-        nb_images : _type_ (optional, default=None)
+        nb_images : _type_, default=None
             number of full images to write. Default computes the outputs of the whole data set.
-        gpu : _type_ (optional, default=None)
+        gpu : _type_, default=None
             If given, a new value for the device of the model will be computed.
-        network : _type_ (optional, default=None)
+        network : _type_, default=None
             Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in self._config.validation.selection_metrics:
@@ -310,9 +310,9 @@ class Predictor:
             split number.
         selection_metrics : list[str]
             metrics used for model selection.
-        gpu : bool (optional, default=None)
+        gpu : bool, default=None
             If given, a new value for the device of the model will be computed.
-        network : int (optional, default=None)
+        network : int, default=None
             Index of the network tested (only used in multi-network setting).
         Raises
         --------
@@ -581,7 +581,7 @@ class Predictor:
         ----------
         data_group : str
             _description_
-        split : int (optional, default=None)
+        split : int, default=None
             _description_
 
         Returns
@@ -672,11 +672,11 @@ class Predictor:
             name whose presence is checked.
         df : _type_
             DataFrame containing the participant_id and session_id (and label if use_labels is True)
-        caps_directory : Path (optional, default=None)
+        caps_directory : Path, default=None
             caps_directory if different from the training caps_directory,
-        multi_cohort : bool (optional, default=None)
+        multi_cohort : bool, default=None
             multi_cohort used if different from the training multi_cohort.
-        label : _type_ (optional, default=None)
+        label : _type_, default=None
             _description_
         """
         group_path = self.maps_manager.maps_path / "groups" / data_group
