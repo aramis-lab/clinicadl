@@ -135,6 +135,7 @@ class CapsReader(Reader):
     @staticmethod
     def path_to_tensor(
         path: PathType,
+        conversion_name: Optional[str] = None,
     ) -> Path:
         """
         Converts the path of an image to the path of the associated
@@ -142,8 +143,10 @@ class CapsReader(Reader):
 
         Parameters
         ----------
-        path: PathType
+        path : PathType
             Path of the image.
+        conversion_name : str
+            The name of the tensor conversion.
 
         Returns
         -------
@@ -157,14 +160,17 @@ class CapsReader(Reader):
             .with_suffix(PT)
             .name  # with_suffix("") to handle double extensions
         )
-
-        return parent / TENSORS / pt_file_name
+        if conversion_name:
+            return parent / TENSORS / conversion_name / pt_file_name
+        else:
+            return parent / TENSORS / pt_file_name
 
     def get_tensor_path(
         self,
         participant: str,
         session: str,
         preprocessing: Preprocessing,
+        conversion_name: str,
         check: bool = True,
     ) -> Path:
         """
@@ -178,6 +184,8 @@ class CapsReader(Reader):
             ID of the session.
         preprocessing: Preprocessing
             Configuration of the preprocessing steps.
+        conversion_name: str
+            The name of the tensor conversion.
         check : bool, default=True
             Whether to check if the tensor path exists.
 

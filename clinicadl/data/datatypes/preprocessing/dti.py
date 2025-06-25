@@ -76,9 +76,9 @@ class DWIDTI(Preprocessing, DWI):
             needed_pipeline=self.name,
         )
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return f"dwi-dti_{self.measure}_{self.space}"

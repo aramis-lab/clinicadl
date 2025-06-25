@@ -77,17 +77,17 @@ class PETLinear(PET, _LinearPreprocessing):
             )
         return description
 
-    def _get_filename(self):
+    def _get_file_pattern(self):
         """
-        Constructs the file name depending on the parameters of 'pet-linear'.
+        Constructs the file pattern depending on the parameters of 'pet-linear'.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
         rec = f"_rec-{self.reconstruction}" if self.reconstruction else ""
         return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality}.nii*"
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return (

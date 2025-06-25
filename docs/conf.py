@@ -41,6 +41,7 @@ extensions = [
 
 napoleon_use_admonition_for_references = True
 napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_warnings = False
 napoleon_numpy_docstring = True
 
 napoleon_custom_sections = [("Returns", "params_style")]

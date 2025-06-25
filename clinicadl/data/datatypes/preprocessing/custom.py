@@ -40,9 +40,9 @@ class Custom(Preprocessing, CustomModality):
             description=f"Custom images with suffix '{self.custom_suffix}'",
         )
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return self.custom_suffix

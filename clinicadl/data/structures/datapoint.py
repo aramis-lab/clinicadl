@@ -125,7 +125,8 @@ class DataPoint(tio.Subject):
         """
         Returns the spatial shape of the images in the DataPoint.
 
-        Consistency of spatial shapes across images in the DataPoint is checked first.
+        Consistency of spatial shapes across images in the DataPoint is checked first
+        (1e-3 relative tolerance).
 
         Examples
         --------
@@ -134,14 +135,16 @@ class DataPoint(tio.Subject):
         >>> datapoint.spatial_shape
         (181, 217, 181)
         """
-        return super().spatial_shape
+        self.check_consistent_attribute("spatial_shape", relative_tolerance=1e-3)
+        return self.get_first_image().spatial_shape
 
     @property
     def spacing(self):
         """
         Returns the voxel spacing of the images in the DataPoint.
 
-        Consistency of voxel spacings across images in the DataPoint is checked first.
+        Consistency of voxel spacings across images in the DataPoint is checked first
+        (1e-3 relative tolerance).
 
         Examples
         --------
@@ -150,15 +153,16 @@ class DataPoint(tio.Subject):
         >>> datapoint.spacing
         (1.0, 1.0, 1.0)
         """
-        spacing = super().spacing
-        return tuple(float(s) for s in spacing)
+        self.check_consistent_attribute("spacing", relative_tolerance=1e-3)
+        return tuple(float(s) for s in self.image.spacing)
 
     @property
     def affine(self):
         """
         Returns affine matrix of the images in the DataPoint.
 
-        Consistency of matrices across images in the DataPoint is checked first.
+        Consistency of matrices across images in the DataPoint is checked first
+        (1e-3 relative tolerance).
 
         Examples
         --------
@@ -170,8 +174,8 @@ class DataPoint(tio.Subject):
                [   0.,    0.,    1.,  -72.],
                [   0.,    0.,    0.,    1.]])
         """
-        self.check_consistent_affine()
-        return self.get_first_image().affine
+        self.check_consistent_attribute("affine", relative_tolerance=1e-3)
+        return self.image.affine
 
     def get_images(
         self,
