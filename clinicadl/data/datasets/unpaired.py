@@ -15,6 +15,7 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import Sample
+from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
@@ -194,11 +195,16 @@ class UnpairedDataset(Dataset):
         super().__init__()
         assert len(datasets) >= 2, "UnpairedDataset needs at least 2 datasets to stack!"
         self._check_conversion(datasets)
-        self.df = self._concat_dfs(list(datasets))
+        self._df = self._concat_dfs(list(datasets))
         self.datasets = datasets
         self.epoch = 0
         self.oversample = oversample
         self.mapping = self._map_datasets()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """
@@ -329,7 +335,7 @@ class UnpairedDataset(Dataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        stacked = self.df.stack(DATASET_ID)
+        stacked = self._df.stack(DATASET_ID)
         return list(set(zip(stacked[PARTICIPANT_ID], stacked[SESSION_ID])))
 
     def set_epoch(self, epoch: int) -> None:

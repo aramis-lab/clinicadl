@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
-    CapsDataset,
     PairedDataset,
     UnpairedDataset,
 )

@@ -133,9 +133,14 @@ class ClinicaDLMetrics(Metrics):
         """
         Add metrics to the ClinicaDLMetrics instance.
         """
-        self.metrics.extend(self.check_metrics(metrics))
-        self._callable_metrics = self.get_callable_metrics()
-        self.df = self.init_df()
+        add_metric = self.check_metrics(metrics)
+        new_callable_metrics = self.get_callable_metrics()
+        for metric, _callable in new_callable_metrics.items():
+            if metric not in self._callable_metrics:
+                self._callable_metrics[metric] = _callable
+
+        self.metrics.extend(add_metric)
+        # self.df = self.init_df()
 
     def get_callable_metrics(self) -> Dict[str, MonaiMetric]:
         """

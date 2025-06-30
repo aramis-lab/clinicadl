@@ -18,7 +18,7 @@ from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import KFold, make_kfold, make_split
-from clinicadl.trainer.trainer import Trainer
+from clinicadl.train.trainer import Trainer
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
 from clinicadl.transforms.output_transforms import OutputTransforms
@@ -32,7 +32,7 @@ sub_ses_t1 = caps_directory / "subjects_t1.tsv"  # 64 subjects
 preprocessing_t1 = T1Linear()
 
 transforms_image = Transforms(
-    extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
+    # extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
 )
 dataset_t1_image = CapsDataset(
     caps_directory=caps_directory,
@@ -41,14 +41,14 @@ dataset_t1_image = CapsDataset(
     transforms=transforms_image,
     label="diagnosis",
 )
-dataset_t1_image.to_tensors(json_name="test_bis.json", n_proc=2)
+dataset_t1_image.to_tensors(json_name="test_bis_im.json", n_proc=2)
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 splitter = KFold(fold_dir)
 
 
-optim_config = OptimizationConfig(epochs=5)
+optim_config = OptimizationConfig(epochs=2)
 comput_config = ComputationalConfig(gpu=False)
 dataloader_config = DataLoaderConfig(batch_size=3)
 
@@ -57,7 +57,7 @@ loss = MSELossConfig()
 
 model = ClinicaDLModel(
     network=get_network_config(
-        ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=2, in_channels=1
+        ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=3, in_channels=1
     ),
     loss=loss,
     optimizer=AdamConfig(),
@@ -95,6 +95,8 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
     trainer.train(split)
 
 
+trainer.evaluate(split.val_loader, additional_metrics=[matrix])
+print("out of training")
 # TEST
 
 dataset_test = CapsDataset(
@@ -104,7 +106,7 @@ dataset_test = CapsDataset(
     transforms=transforms_image,
     label="diagnosis",
 )
-dataset_test.to_tensors(json_name="test_test.json", n_proc=2)
+dataset_test.to_tensors(json_name="test_bis_im_bis.json", n_proc=2)
 dataloader_test = dataloader_config.get_object(dataset_test)
 
 output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])  # type: ignore

@@ -3,11 +3,13 @@ from typing import Optional, Union
 
 import torch
 import torch.nn as nn
+from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses.config import LossConfig, get_loss_function_config
 from clinicadl.losses.types import Loss
+from clinicadl.metrics.metrics import ClinicaDLMetrics
 from clinicadl.networks.config import NetworkConfig, get_network_config
 from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
 from clinicadl.utils import cluster
@@ -117,9 +119,7 @@ class ClinicaDLModel:
 
         return model_state["epoch"]
 
-    def training_step(
-        self, data: Batch, device: torch.device
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def training_step(self, data: Batch, device: torch.device) -> torch.Tensor:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
@@ -127,8 +127,26 @@ class ClinicaDLModel:
         images = data.get_images().to(device)
 
         outputs = self.network(images)
+        labels = labels.unsqueeze(dim=-1)
 
-        return outputs, labels
+        loss = self.loss(outputs, labels)
+
+        return loss
+
+    def validation_step(
+        self, data: Batch, device: torch.device, metrics: ClinicaDLMetrics
+    ) -> ClinicaDLMetrics:
+        """
+        Perform a training step on the model using the provided batch of data and return the computed loss
+        """
+        labels = data.get_labels().to(device)
+        images = data.get_images().to(device)
+
+        outputs = self.network(images)
+        labels = labels.unsqueeze(dim=-1)
+        metrics(outputs, labels)
+
+        return metrics
 
     def train(self):
         self.network.to(self.device)

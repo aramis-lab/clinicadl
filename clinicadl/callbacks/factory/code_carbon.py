@@ -2,7 +2,7 @@
 
 from importlib.util import find_spec
 
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 

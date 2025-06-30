@@ -131,6 +131,11 @@ class ConcatDataset(TorchConcatDataset):
             self._check_spacing()
         self._df = self._concat_dfs()
 
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the concatenation of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
+
     def eval(self) -> None:
         """
         Sets the datasets to evaluation mode.
@@ -263,7 +268,7 @@ class ConcatDataset(TorchConcatDataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        return list(set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID])))
+        return list(set(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID])))
 
     def __getitem__(self, idx: int) -> Sample:
         """

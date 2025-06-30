@@ -128,9 +128,14 @@ class PairedDataset(StackDataset):
     ):
         assert len(datasets) >= 2, "PairedDataset needs at least 2 datasets to pair!"
         self._check_conversion(datasets)
-        self.df = self._merge_dfs(list(datasets))
+        self._df = self._merge_dfs(list(datasets))
         super().__init__(*datasets)
         self.datasets: tuple[CapsDataset, ...]
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
+        return self._df
 
     def eval(self) -> None:
         """
@@ -228,13 +233,13 @@ class PairedDataset(StackDataset):
         """
         self._check_idx(idx)
 
-        if column not in self.df.columns:
+        if column not in self._df.columns:
             raise KeyError(
                 f"No column named '{column}' in any dataset of the PairedDataset. Present columns are: "
-                f"{list(self.df.columns)}"
+                f"{list(self._df.columns)}"
             )
 
-        row = self.df[(self.df[FIRST_INDEX] <= idx) & (idx <= self.df[LAST_INDEX])]
+        row = self._df[(self._df[FIRST_INDEX] <= idx) & (idx <= self._df[LAST_INDEX])]
 
         return row[column].iloc[0]
 
@@ -247,7 +252,7 @@ class PairedDataset(StackDataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        return list(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
+        return list(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
 
     def __getitem__(self, idx: int) -> tuple[Sample, ...]:
         """
@@ -310,7 +315,7 @@ class PairedDataset(StackDataset):
                     "Datasets passed to 'PairedDataset' cannot contain duplicated (participant, session) pairs, "
                     f"but some were founds in dataset {i}:\n {df[df.duplicated(keep=False)]}"
                 )
-            dataset.df = dataset.df.sort_values(
+            dataset._df = dataset.df.sort_values(
                 [PARTICIPANT_ID, SESSION_ID]
             ).reset_index(drop=True)
             CapsDataset._map_indices_to_images(dataset.df)

@@ -13,7 +13,7 @@ from clinicadl.metrics.config.base import (
     MetricConfig,
 )
 from clinicadl.metrics.metrics import Metrics
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 
@@ -45,6 +45,7 @@ class OneMetricEarlyStopping(Callback):
         self.check_finite = check_finite
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
+        self.stop = False
 
         self.check_bounds()
         self.is_better = self._get_comparison_function()
@@ -90,16 +91,16 @@ class OneMetricEarlyStopping(Callback):
                     f"Metric '{self.metric.name}' not found in DataFrame for epoch {config.epoch}."
                 )
             if self.check_finite and (math.isinf(value) or math.isnan(value)):
-                return True
+                self.stop = True
 
             if self.upper_bound is not None and (value > self.upper_bound):
-                return True
+                self.stop = True
 
             if self.lower_bound is not None and (value < self.lower_bound):
-                return True
+                self.stop = True
 
             if self.patience is None:
-                return False
+                self.stop = False
 
             if self.is_better(value, self.best):
                 self.num_bad_epochs = 0
@@ -107,12 +108,14 @@ class OneMetricEarlyStopping(Callback):
             else:
                 self.num_bad_epochs += 1
 
-            if self.num_bad_epochs >= self.patience:
-                return True
+            if self.patience is not None and self.num_bad_epochs >= self.patience:
+                self.stop = True
 
-            return False
+            self.stop = False
+        else:
+            raise ValueError("No df provided")
 
-        raise ValueError("No df provided")
+        # TODO : this function will be rewrite in the next PR
 
 
 class EarlyStopping(Metrics, Callback):
@@ -172,5 +175,7 @@ class EarlyStopping(Metrics, Callback):
             )
 
     def on_epoch_end(self, config: _TrainingState, **kwargs):
-        for metric in self.early_config_list:
+        config.stop = all(
             metric.on_epoch_end(config=config, **kwargs)
+            for metric in self.early_config_list
+        )

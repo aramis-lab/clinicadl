@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from clinicadl.utils.config.training import _TrainingState
+from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 
@@ -219,6 +219,7 @@ class Chronometer(Callback):
         """
         Displays collected timing statistics and performance summary.
         """
+        logger.info(">>> Performance summary:")
         if self.stop_proc and self.start_proc:
             logger.info(
                 ">>> Training complete in: %s", str(self.stop_proc - self.start_proc)
