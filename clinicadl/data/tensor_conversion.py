@@ -33,7 +33,6 @@ from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLTensorConversionError,
 )
-from clinicadl.utils.typing import PathType
 
 from .datatypes.preprocessing import Preprocessing, get_preprocessing_config
 from .structures import DataPoint, Mask
@@ -235,6 +234,7 @@ class TensorConversion:
 
         See :py:meth:`clinicadl.data.datasets.CapsDatasets.to_tensors`.
         """
+        self._check_conversion_name(conversion_name, save_transforms)
         self._reset()
         self._save_transforms = save_transforms
         self._ignore_spacing = ignore_spacing
@@ -373,7 +373,9 @@ class TensorConversion:
         images = self._get_first_images()
         images = self._transform(images)
 
-        pt_path = self.caps_reader.path_to_tensor(mask.path)
+        pt_path = self.caps_reader.path_to_tensor(
+            mask.path, conversion_name=self.tensor_folder_name
+        )
         label_map = getattr(images, mask.name)
         self._save_mask_as_tensor(label_map, pt_path)
 
@@ -485,7 +487,7 @@ class TensorConversion:
             raise ClinicaDLTensorConversionError(message) from exc
 
     ### to save tensors ###
-    def _save_images_as_tensors(self, images: DataPoint, path: PathType) -> None:
+    def _save_images_as_tensors(self, images: DataPoint, path: Path) -> None:
         """
         Saves all the images related to an image in the same .pt file.
         The affine matrix of the image is also saved in the file.
@@ -493,7 +495,7 @@ class TensorConversion:
         More precisely, they are saved as a dict with at least the keys 'image'
         and 'affine'. Potential masks can be accessed via their name.
         """
-        Path(path).parent.mkdir(exist_ok=True)
+        path.parent.mkdir(exist_ok=True, parents=True)
 
         images_dict = {}
         del images[PARTICIPANT]
@@ -510,27 +512,25 @@ class TensorConversion:
 
         images_dict[AFFINE] = torch.from_numpy(images.image.affine).float()
 
-        path = Path(path)
         if path.is_file():
             logger.info("The file %s exists. It will be overwritten.", path)
         torch.save(images_dict, path)
 
     @staticmethod
-    def _save_mask_as_tensor(mask: tio.LabelMap, path: PathType) -> None:
+    def _save_mask_as_tensor(mask: tio.LabelMap, path: Path) -> None:
         """
         Saves a common mask in a .pt file, along with its affine matrix.
 
         More precisely, it is saved as a dict with the keys 'mask' and
         'affine'.
         """
-        Path(path).parent.mkdir(exist_ok=True)
+        path.parent.mkdir(exist_ok=True, parents=True)
 
         mask_dict = {
             MASK: mask.tensor.int(),
             AFFINE: torch.from_numpy(mask.affine).float(),
         }
 
-        path = Path(path)
         if path.is_file():
             logger.info("The file %s exists. It will be overwritten.", path)
         torch.save(mask_dict, path)
@@ -843,6 +843,18 @@ class TensorConversion:
             raise ClinicaDLTensorConversionError(error_msg)
 
     ### other utils ###
+    @staticmethod
+    def _check_conversion_name(
+        conversion_name: Optional[str], save_transforms: bool
+    ) -> None:
+        """Checks if 'conversion_name' is valid."""
+        if conversion_name and conversion_name.startswith("default"):
+            raise ClinicaDLArgumentError("'conversion_name' can't start with default")
+        elif conversion_name is None and save_transforms:
+            raise ClinicaDLArgumentError(
+                "If 'save_transforms' is True, 'conversion_name' cannot be None."
+            )
+
     def _reset(self) -> None:
         """
         Resets the state of the converter.

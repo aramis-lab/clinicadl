@@ -46,7 +46,7 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         Builds a filename for a json file saving
         information on this preprocessing.
         """
-        return self._get_file_name() + JSON
+        return "default_" + self._get_file_name() + JSON
 
     def __str__(self):
         """

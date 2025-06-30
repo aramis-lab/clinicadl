@@ -162,9 +162,9 @@ class DataLoaderConfig(ClinicaDLConfig):
         >>> dataloader = dataloader_config.get_object(caps_dataset)
         >>> batch = next(iter(dataloader))
         >>> batch
-        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1)]
+        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)]
 
 
     We have a list of three samples (our ``batch_size``). However, if you want to pass your images to a neural network, you need tensors.
@@ -199,12 +199,12 @@ class DataLoaderConfig(ClinicaDLConfig):
         >>> dataloader = dataloader_config.get_object(PairedDataset([caps_dataset, caps_dataset_no_label]))
         >>> batch = next(iter(dataloader))
         >>> batch
-        ([ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1)],
-        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction', '_sample_index'); images: 1)])
+        ([ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)],
+        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)])
 
     We have a tuple of batches. We can still call ``get_images`` and ``get_labels`` on these batches:
 

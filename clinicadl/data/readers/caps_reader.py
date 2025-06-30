@@ -203,7 +203,7 @@ class CapsReader(Reader):
         """
 
         filepath = self.get_image_path(participant, session, preprocessing)
-        tensor_path = self.path_to_tensor(filepath)
+        tensor_path = self.path_to_tensor(filepath, conversion_name=conversion_name)
         if check and not tensor_path.is_file():
             raise FileNotFoundError(
                 f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"

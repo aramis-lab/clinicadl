@@ -9,7 +9,7 @@ from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
 
-LabelType = Optional[Union[int, float, tio.LabelMap]]
+LabelType = Optional[Union[int, float, dict[str, float], tio.LabelMap]]
 
 
 class Column(UserString):

@@ -15,7 +15,6 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import Sample
-from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import ClinicaDLCAPSError
 from clinicadl.utils.typing import DataType
 
@@ -26,31 +25,31 @@ logger = getLogger("clinicadl.data.datasets.unpaired")
 
 class UnpairedDataset(Dataset):
     """
-    UnpairedDataset is a useful class to stack multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
-    (e.g. different modalities). By "stacking", we mean **randomly** associating images across datasets.
+    ``UnpairedDataset`` is a useful class to stack multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
+    (e.g. different modalities from different datasets). By "stacking", we mean **randomly** associating images across datasets.
 
-    So, UnpairedDataset differs from :py:class:`~clinicadl.data.datasets.PairedDataset` in that PairedDataset
-    associates images across datasets via a unique mapping. Therefore, as opposed to PairedDataset, there is no need for
-    the CapsDatasets forming the UnpairedDataset to contain the same (participant, session) pairs.
+    So, ``UnpairedDataset`` differs from :py:class:`~clinicadl.data.datasets.PairedDataset` in that ``PairedDataset``
+    associates images across datasets via a unique mapping. Therefore, as opposed to ``PairedDataset``, there is no need for
+    the ``CapsDatasets`` forming the ``UnpairedDataset`` to contain the same (participant, session) pairs.
 
     The randomness of the mapping between datasets can be controlled via :py:meth:`~UnpairedDataset.set_epoch`.
     This enables to have different associations for each epoch.
 
-    The size of an UnpairedDataset is set to **the size of its biggest underlying CapsDataset** if ``oversample=True``,
-    or to **the size of its smallest underlying CapsDataset** if ``oversample=False``. To handle datasets
-    with different sizes, UnpairedDataset will randomly replicate some of their samples so that they reach the
+    The size of an ``UnpairedDataset`` is set to **the size of its biggest underlying CapsDataset** if ``oversample=True``,
+    or to **the size of its smallest underlying CapsDataset** if ``oversample=False``: to handle datasets
+    with different sizes, ``UnpairedDataset`` will randomly replicate some of their samples so that they reach the
     size of the biggest dataset if ``oversample=True``, or will randomly drop some of their samples so that they reach the
     size of the smallest dataset if ``oversample=False``. This randomness is also controlled via
     :py:meth:`~UnpairedDataset.set_epoch`.
 
-    An UnpairedDataset will return a tuple of :ref:`CapsDataset outputs <api_dataset_output>`, whose length is equal
-    to the number of datasets forming the UnpairedDataset.
+    An ``UnpairedDataset`` will return a tuple of :py:class:`~clinicadl.data.structures.DataPoint` (one for each underlying
+    dataset).
 
-    To use UnpairedDataset, you must **previously perform tensor conversion** for each underlying CapsDataset
-    (see :ref:`api_caps_dataset`).
+    To use ``UnpairedDataset``, you must **previously perform**
+    :py:func:`tensor conversion <clinicadl.data.datasets.CapsDataset.to_tensors>`.
 
     .. note::
-        ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset` in its inputs.
+        ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset`.
 
     Parameters
     ----------
@@ -59,9 +58,9 @@ class UnpairedDataset(Dataset):
     oversample: bool, default=False
         Strategy to adopt when the datasets have different sizes:
 
-        - if ``oversample=True``: randomly replicate samples in smaller datasets so that they reach the
+        - ``oversample=True``: randomly replicate samples in smaller datasets so that they reach the
           size of the biggest dataset.
-        - if ``oversample=False``: randomly drop samples in bigger datasets so that all datasets reach the
+        - ``oversample=False``: randomly drop samples in bigger datasets so that all datasets reach the
           size of the smallest dataset.
 
 
@@ -74,56 +73,57 @@ class UnpairedDataset(Dataset):
     --------
     .. code-block:: python
 
-        >>> # data are as follows:
-        >>> # mycaps
-        >>> # ├── tensor_conversion
-        >>> # │   ├── pet_conversion.json
-        >>> # │   └── t1_conversion.json
-        >>> # └── subjects
-        >>> #     ├── sub-000
-        >>> #     │   └── ses-M000
-        >>> #     │       ├── pet_linear
-        >>> #     │       │   ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        >>> #     │       │   └── tensors
-        >>> #     │       │       └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-        >>> #     │       └── t1_linear
-        >>> #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
-        >>> #     │           └── tensors
-        >>> #     │               └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
-        >>> #         ...
-        >>> #     ...
+        # data are as follows:
+        # caps_t1
+        # ├── tensor_conversion
+        # │   └── default_t1-linear.json
+        # └── subjects
+        #     ├── sub-000
+        #     │   └── ses-M000
+        #     │       └── t1_linear
+        #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+        #     │           └── tensors
+        #     │               └── default
+        #     │                   └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+        #         ...
+        #     ...
+        #
+        # caps_pet
+        # ├── tensor_conversion
+        # │   └── default_pet-linear_18FAV45_pons2.json
+        # └── subjects
+        #     ├── sub-A
+        #     │   └── ses-M000
+        #     │       ├── pet_linear
+        #     │       │   ├── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+        #     │       │   └── tensors
+        #     │       │       └── default
+        #     │       │           └── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+        #         ...
+        #     ...
 
-        >>> import pandas as pd
-        >>> from clinicadl.data.datasets import CapsDataset, UnpairedDataset
-        >>> from clinicadl.data.datatypes import PETLinear, T1Linear
-        >>> from clinicadl.transforms import Transforms
-        >>> from clinicadl.transforms.extraction import Slice
+        from clinicadl.data.datasets import CapsDataset, UnpairedDataset
+        from clinicadl.data.datatypes import PETLinear, T1Linear
 
-        >>> participants_sessions = pd.DataFrame(
-                {"participant_id": ["sub-000", "sub-010"], "session_id": ["ses-M000", "ses-M003"]}
-            )
-        >>> caps_t1 = CapsDataset(
-                mycaps,
-                preprocessing=T1Linear(use_uncropped_image=True),
-                data=participants_sessions,
-                transforms=Transforms(extraction=Slice(slices=[0, 1])),
-            )
-        >>> caps_t1.read_tensor_conversion("t1_conversion")
+        caps_t1 = CapsDataset("caps_t1", preprocessing=T1Linear(use_uncropped_image=True))
+        caps_pet = CapsDataset(
+            "caps_pet",
+            preprocessing=PETLinear(
+                use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+            ),
+        )
+
+        caps_pet.read_tensor_conversion()
+        caps_t1.read_tensor_conversion()
+
+        stacked = UnpairedDataset([caps_t1, caps_pet], oversample=True)
+
+    .. code-block:: python
+
         >>> len(caps_t1)
         4
-
-        >>> caps_pet = CapsDataset(
-                mycaps,
-                preprocessing=PETLinear(
-                    use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-                ),
-                data=participants_sessions,
-            )
-        >>> caps_pet.read_tensor_conversion("pet_conversion")
         >>> len(caps_pet)
         2
-
-        >>> stacked = UnpairedDataset([caps_t1, caps_pet], oversample=True)
         >>> len(stacked)
         4   # = length of the biggest dataset
 
@@ -139,27 +139,25 @@ class UnpairedDataset(Dataset):
                 2	1	0
                 3	0	1
 
-    ``idx`` is the index of the sample in the UnpairedDataset. In column ``0``, you have the
+    ``idx`` is the index of the sample in the ``UnpairedDataset``. In column ``0``, you have the
     associated sample in the first dataset (``caps_t1``), and in column ``1``, the associated
     sample in the second dataset (``caps_pet``).
 
-    Let's see if it works as expected:
-
     .. code-block:: python
 
-        >>> caps_t1[3].participant, caps_t1[3].session, caps_t1[3].slice_position
-        ('sub-010', 'ses-M003', 1)
+        >>> caps_t1[2].participant, caps_t1[2].session,
+        ('sub-002', 'ses-M000')
 
         >>> caps_pet[0].participant, caps_pet[0].session
-        ('sub-000', 'ses-M000')
+        ('sub-A', 'ses-M000')
 
         >>> sample = stacked[1]
         >>> len(sample)
         2
-        >>> sample[0].participant, sample[0].session, sample[0].slice_position
-        ('sub-010', 'ses-M003', 1)
+        >>> sample[0].participant, sample[0].session
+        ('sub-002', 'ses-M003')
         >>> sample[1].participant, sample[1].session
-        ('sub-000', 'ses-M000')
+        ('sub-A', 'ses-M000')
 
     Now we can change the random mapping with :py:meth:`~UnpairedDataset.set_epoch`:
 

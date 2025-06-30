@@ -25,7 +25,9 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
+from clinicadl.transforms.extraction.slice import SliceSample
 from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms.utils import Squeeze
 from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -57,7 +59,7 @@ class CapsDataset(Dataset):
     Transforms to apply to the images are passed via the argument ``transforms``.
 
     .. note::
-        More precisely, transforms are applied to ``DataPoint`` objects. So, if you need any additional data to compute
+        More precisely, transforms are applied to the ``DataPoint``. If you need any additional data to compute
         a transform (e.g. a mask for normalization), you can add them to the ``DataPoint`` via the arguments
         ``columns`` or ``masks``.
 
@@ -98,9 +100,17 @@ class CapsDataset(Dataset):
             Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not
             to name your own TSV files with a name starting with "overview".
 
-    labels : Optional[Union[str, Sequence[str]]], default=None
-        A potential label related to the image. It can be a numeric column passed in ``columns`` (for classification
-        or regression), a mask passed in ``masks`` (for segmentation), or ``None`` (reconstruction).
+    label : Optional[Union[str, Sequence[str]]], default=None
+        A potential label related to the image. It can be:
+
+        - For **classification**: a numeric column passed in the argument ``columns``. The column must contain **integers**.
+          For multi-class classification, do not one-hot encode your labels, but keep them all in the same column, numbered
+          from ``0`` to ``num_classes-1``.
+        - For **regression**: a numeric column passed in the argument ``columns``.
+          You can also pass a set of columns if you want to do multi-output regression. The column(s) must contain **floats**.
+        - For ``segmentation``: a segmentation mask passed in the argument ``mask``.
+        - For ``reconstruction`` or ``generation``: ``None``.
+
     transforms : Transforms, default=Transforms()
         Transformation pipeline to apply to the data during loading. The user also specifies here whether to work on images, patches, or slices.
         See :py:class:`clinicadl.transforms.Transforms`.
@@ -149,57 +159,116 @@ class CapsDataset(Dataset):
     ClinicaDLConfigurationError
         If for some (participant, session) pairs, the image corresponding to ``preprocessing``
         cannot be found.
+    ClinicaDLArgumentError
+        If the label passed in ``label`` was not passed in ``columns`` or ``masks``.
+    ClinicaDLArgumentError
+        If ``label`` is a non-numeric column.
+    ClinicaDLArgumentError
+        If ``label`` is a mask, but it is not image-specific.
     FileNotFoundError
         If ``masks`` contain paths that do not match any files.
+    ClinicaDLArgumentError
+        If an element in ``columns`` or ``masks`` is in {"image", "label", "affine", "participant", "session"},
+        which are protected names.
 
     Examples
     --------
     .. code-block:: python
 
-        >>> # data are as follows:
-        >>> # mycaps
-        >>> # ├── masks
-        >>> # │   └── leftHippocampus.nii.gz
-        >>> # ├── pet_data.tsv
-        >>> # └── subjects
-        >>> #     ├── sub-000
-        >>> #     │   └── ses-M000
-        >>> #     │       └── pet_linear
-        >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-        >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        >>> #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz
-        >>> #         ...
-        >>> #     ...
+        # data are as follows:
+        # mycaps
+        # ├── masks
+        # │   └── leftHippocampus.nii.gz
+        # ├── data.tsv
+        # └── subjects
+        #     ├── sub-000
+        #     │   └── ses-M000
+        #     │       └── pet_linear
+        #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+        #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+        #         ...
+        #     ...
+        #
+        # in data.tsv:
+        #    participant_id	session_id	age	sex	diagnosis
+        # 0	    sub-001	  ses-M000	 55	  M	      CN
+        # 1	    sub-001	  ses-M003	 55	  M	      AD
+        # 2	    sub-002	  ses-M000	 62	  F	      MCI
+        # 3	    sub-002	  ses-M003	 62	  F	      AD
+        # 4	    sub-003	  ses-M000	 67	  F	      CN
+        # ...
 
-        >>> from clinicadl.data.datasets import CapsDataset
-        >>> from clinicadl.data.datatypes import PETLinear
-        >>> from clinicadl.transforms import Transforms
-        >>> from clinicadl.transforms.config import ZNormalizationConfig, MaskConfig, RandomFlipConfig
-        >>> from clinicadl.transforms.extraction import Patch
-
-        >>> normalization = ZNormalizationConfig(masking_method="brain")
-        >>> masking = MaskConfig(masking_method="leftHippocampus")
-        >>> flip = RandomFlipConfig(flip_probability=0.3)
-
-        >>> dataset = CapsDataset(
-                caps_directory="mycaps",
-                preprocessing=PETLinear(
-                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-                ),
-                data="mycaps/pet_data.tsv",
-                transforms=Transforms(
-                    extraction=Patch(patch_size=32, stride=32),
-                    image_transforms=[normalization, masking],
-                    sample_transforms=[],
-                    augmentations=[flip],
-                ),
-                label="seg",
-                masks=["brain", "leftHippocampus.nii.gz"],  # define masks used in transforms
+        from clinicadl.data import datasets, datatypes
+        from clinicadl.transforms import Transforms, extraction
+        from clinicadl.transforms.config import (
+                ZNormalizationConfig,
+                MaskConfig,
+                RandomFlipConfig,
             )
+        import pandas as pd
 
-    - Labels are here in file ``sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_seg.nii.gz``;
-    - ``"brain"`` is an image-specific mask in ``sub-*_ses-*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz``;
-    - ``"leftHippocampus.nii.gz"`` is a common mask in ``masks/leftHippocampus.nii.gz``.
+        # to convert diagnosis to numeric values
+        def diagnosis_to_number(column: pd.Series) -> pd.Series:
+            encoding = {"CN": 0, "MCI": 1, "AD": 2}
+            return column.apply(lambda x: encoding[x])
+
+    Let's build a dataset for multi-class classification, with normalization, masking, and data augmentation.
+    For normalization and masking, we need two masks that we define in ``masks``. We also want the age of the
+    participants, and we will ask it in ``columns``.
+
+    .. code-block:: python
+
+        dataset = datasets.CapsDataset(
+            caps_directory="mycaps",
+            preprocessing=datatypes.PETLinear(
+                tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+            ),
+            data="mycaps/data.tsv",
+            transforms=Transforms(
+                image_transforms=[
+                    ZNormalizationConfig(masking_method="brain"),
+                    MaskConfig(masking_method="leftHippocampus"),
+                ],
+                sample_transforms=[],
+                augmentations=[RandomFlipConfig(flip_probability=0.3)],
+            ),
+            label="diagnosis",
+            columns={"age": None, "diagnosis": diagnosis_to_number},
+            masks=["brain", "leftHippocampus.nii.gz"],
+        )
+
+        dataset.to_tensors()
+
+    .. code-block:: python
+
+        >>> dataset[0]
+        DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'brain', 'leftHippocampus', 'age', 'extraction'); images: 3)
+        >>> dataset[0]["age"]
+        55
+
+    Let's build a dataset for segmentation, working on patches:
+
+    .. code-block:: python
+
+        dataset = datasets.CapsDataset(
+            caps_directory="mycaps",
+            preprocessing=datatypes.PETLinear(
+                tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+            ),
+            data="mycaps/data.tsv",
+            transforms=Transforms(extraction=extraction.Patch(patch_size=32, stride=32)),
+            label="brain",
+            masks=["brain"],
+        )
+
+        dataset.read_tensor_conversion()
+
+    .. code-block:: python
+
+        >>> dataset[0]
+        DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'leftHippocampus', 'extraction', 'patch_index', 'patch_size', 'patch_stride'); images: 3)
+        >>> dataset[0]["label"]
+        LabelMap(shape: (1, 32, 32, 32); spacing: (0.82, 0.80, 0.80); orientation: RAS+; dtype: torch.IntTensor)    # here the label is a mask
 
     See Also
     --------
@@ -213,7 +282,7 @@ class CapsDataset(Dataset):
         caps_directory: PathType,
         preprocessing: Preprocessing = T1Linear(),
         data: Optional[DataType] = None,
-        labels: Optional[Union[str, Sequence[str]]] = None,
+        label: Optional[Union[str, Sequence[str]]] = None,
         transforms: Transforms = Transforms(),
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
@@ -232,18 +301,20 @@ class CapsDataset(Dataset):
 
         self.eval_mode = False
         self.caps_reader = CapsReader(caps_directory)
-        self.caps_reader.check_preprocessing(
-            self.get_participant_session_couples(), self.preprocessing
-        )
 
         _df = self._get_df_from_input(data)
         columns = self._read_columns(columns)
         self._df = self._process_columns(_df, columns)
         self.columns = list(columns.keys())
+
+        self.caps_reader.check_preprocessing(
+            self.get_participant_session_couples(), self.preprocessing
+        )
+
         self.individual_masks, self.common_masks = self._read_masks(masks)
         self._individual_mask_names = set(mask.name for mask in self.individual_masks)
         self._common_mask_names = set(mask.name for mask in self.common_masks)
-        self.labels = self._check_labels(labels)
+        self.label = self._check_label(label)
 
         self.tensor_conversion: TensorConversion = TensorConversion(self)
         self.common_masks_tensors: list[Mask] = []
@@ -255,7 +326,7 @@ class CapsDataset(Dataset):
 
     @property
     def converted(self) -> bool:
-        """Whether tensor conversion has been performed."""
+        """Whether tensor conversion was performed."""
         return self.tensor_conversion.completed
 
     @property
@@ -291,7 +362,7 @@ class CapsDataset(Dataset):
         used by a ``CapsDataset`` with other image transforms.
 
         .. note::
-            Images are converted to the same coordinate system (RAS+).
+            Images are converted to the same coordinate system (:term:`RAS+`).
 
         Parameters
         ----------
@@ -333,7 +404,7 @@ class CapsDataset(Dataset):
             ``conversion_name`` **cannot** be ``None`` if ``save_transforms=True``.
 
         save_transforms : bool, default=False
-            Whether to save raw images as tensors (``False``) or images on which were applied image
+            Whether to save raw images as tensors (``False``), or images on which were applied image
             transforms (``True``). Saving transformed images will speed up dataloading. However transformed
             images are specific to a sequence of transforms, so they cannot be used by any future ``CapsDataset``.
 
@@ -342,7 +413,8 @@ class CapsDataset(Dataset):
             tensor conversion with the old one. ``check_transforms`` determines whether transforms
             will be checked during the merger. If ``True``, ``CapsDataset`` will check that current transforms match
             the transforms applied during the old conversions.\n
-            Useful when you use custom transforms (i.e. transforms not in ``ClinicaDL``), which cannot be checked.
+            ``check_transforms=False`` is useful when you use custom transforms (i.e. transforms not in ``ClinicaDL``),
+            which cannot be checked.
 
             .. note::
                 If ``save_transforms=False``, no such check will be performed.
@@ -352,6 +424,10 @@ class CapsDataset(Dataset):
 
         Raises
         ------
+        ClinicaDLArgumentError
+            If ``conversion_name`` starts with "default".
+        ClinicaDLArgumentError
+            If ``conversion_name`` is ``None`` and ``save_transforms=True``.
         ClinicaDLArgumentError
             If a conversion named ``conversion_name`` already exists and the new conversion cannot
             be merged with the old one.
@@ -365,9 +441,95 @@ class CapsDataset(Dataset):
         -----
         If ``raise_warnings=True``, raises:
 
-        - a warning (only once) if images have different shapes across;
+        - a warning (only once) if images have different shapes across images;
         - a warning if some ``.pt`` files already present in the :term:`CAPS` directory will be
           overwritten.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            # data are as follows:
+            # mycaps
+            # ├── masks
+            # │   └── leftHippocampus.nii.gz
+            # ├── data.tsv
+            # └── subjects
+            #     ├── sub-000
+            #     │   └── ses-M000
+            #     │       └── pet_linear
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #         ...
+            #     ...
+
+            dataset = datasets.CapsDataset(
+                caps_directory="mycaps",
+                preprocessing=datatypes.PETLinear(
+                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+                ),
+                data="mycaps/data.tsv",
+                masks=["brain", "leftHippocampus.nii.gz"],
+            )
+
+        .. code-block:: python
+
+            >>> dataset.to_tensors()
+            # data are now as follows:
+            # mycaps
+            # ├── tensor_conversion
+            # │   └── default_pet-linear_18FAV45_pons2.json
+            # ├── masks
+            # │   ├── leftHippocampus.nii.gz
+            # │   └── tensors
+            # │       └── default
+            # │           └── leftHippocampus.pt
+            # ├── data.tsv
+            # └── subjects
+            #     ├── sub-000
+            #     │   └── ses-M000
+            #     │       └── pet_linear
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           └── tensors
+            #     │               └── default
+            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #         ...
+            #     ...
+
+        Here ``sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt`` contains the associated
+        image as a tensor, as well as the mask "brain".\n
+        Here, we didn't pass a ``conversion_name``, so the name of the ``json`` file and the name of the folder where tensors
+        are saved are inferred. If you put a ``conversion_name``:
+
+        .. code-block:: python
+
+            >>> dataset.to_tensors(conversion_name="pet_conversion")
+            # data are now as follows:
+            # mycaps
+            # ├── tensor_conversion
+            # │   ├── default_pet-linear_18FAV45_pons2.json
+            # │   └── pet_conversion.json
+            # ├── masks
+            # │   ├── leftHippocampus.nii.gz
+            # │   └── tensors
+            # │       ├── default
+            # │       └── pet_conversion
+            # │           └── leftHippocampus.pt
+            # ├── data.tsv
+            # └── subjects
+            #     ├── sub-000
+            #     │   └── ses-M000
+            #     │       └── pet_linear
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           └── tensors
+            #     │               ├── default
+            #     │               └── pet_conversion
+            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #         ...
+            #     ...
+
         """
         self.tensor_conversion.convert_to_tensors(
             n_proc=n_proc,
@@ -408,7 +570,7 @@ class CapsDataset(Dataset):
             ``{caps_directory}/subjects/sub-*/ses-*/{preprocessing}/tensors/default``.
         check_transforms : bool, default=True
             Whether to check if the image transforms potentially applied before tensor conversion
-            match the current ones. Useful when you use custom transforms (i.e. transforms
+            match the current ones. ``check_transforms=False`` is useful when you use custom transforms (i.e. transforms
             not in ``ClinicaDL``), which cannot be read by ``ClinicaDL`` and thus cannot be checked.
 
             .. note::
@@ -430,20 +592,74 @@ class CapsDataset(Dataset):
             If the conversion mentioned doesn't work with the
             current ``CapsDataset`` (not the same preprocessing, images not all converted, transforms
             mismatch, etc.).
+        ClinicaDLArgumentError
+            If an element of ``load_also`` was already passed in the arguments ``columns`` or ``masks``
+            of the ``CapsDataset``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            # data are as follows:
+            # mycaps
+            # ├── tensor_conversion
+            # │   ├── default_pet-linear_18FAV45_pons2.json
+            # │   └── pet_conversion.json
+            # ├── masks
+            # │   ├── leftHippocampus.nii.gz
+            # │   └── tensors
+            # │       ├── default
+            # │       └── pet_conversion
+            # │           └── leftHippocampus.pt
+            # ├── data.tsv
+            # └── subjects
+            #     ├── sub-000
+            #     │   └── ses-M000
+            #     │       └── pet_linear
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           └── tensors
+            #     │               ├── default
+            #     │               └── pet_conversion
+            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #         ...
+            #     ...
+
+            dataset = datasets.CapsDataset(
+                caps_directory="mycaps",
+                preprocessing=datatypes.PETLinear(
+                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+                ),
+                data="mycaps/data.tsv",
+                masks=["brain", "leftHippocampus.nii.gz"],
+            )
+
+        To read the default conversion:
+
+        .. code-block:: python
+
+            >>> dataset.read_tensor_conversion()
+
+        To read a specific conversion:
+
+        .. code-block:: python
+
+            >>> dataset.read_tensor_conversion(conversion_name="pet_conversion")
 
         See Also
         --------
         :py:meth:`~CapsDataset.to_tensors`
         """
-        for name in load_also:
-            if name in self.columns:
-                raise ClinicaDLArgumentError(
-                    f"Cannot load the element '{name}', as you already this pass this name in 'columns'."
-                )
-            elif name in self._individual_mask_names.union(self._common_mask_names):
-                raise ClinicaDLArgumentError(
-                    f"Cannot load the element '{name}', as you already this pass this name in 'masks'."
-                )
+        if load_also:
+            for name in load_also:
+                if name in self.columns:
+                    raise ClinicaDLArgumentError(
+                        f"Cannot load the element '{name}', as you already pass this name in 'columns'."
+                    )
+                elif name in self._individual_mask_names.union(self._common_mask_names):
+                    raise ClinicaDLArgumentError(
+                        f"Cannot load the element '{name}', as you already pass this name in 'masks'."
+                    )
         self.tensor_conversion.read_conversion(
             conversion_name=conversion_name,
             check_transforms=check_transforms,
@@ -456,7 +672,7 @@ class CapsDataset(Dataset):
         """
         Sets the dataset to evaluation mode.
 
-        This disables data augmentation in the transformation pipeline.
+        It disables data augmentation in the transformation pipeline.
         """
         self.eval_mode = True
 
@@ -464,7 +680,7 @@ class CapsDataset(Dataset):
         """
         Sets the dataset to training mode.
 
-        This enables data augmentation in the transformation pipeline.
+        It enables data augmentation in the transformation pipeline.
         """
         self.eval_mode = False
 
@@ -552,7 +768,7 @@ class CapsDataset(Dataset):
         column : str
             The information to look for, i.e. a column of the DataFrame containing
             the metadata, which is equal to ``data`` if ``data`` was passed when instantiating the
-            CapsDataset. If ``data`` was not passed, the only accessible columns are
+            ``CapsDataset``. If ``data`` was not passed, the only accessible columns are
             ``"participant_id"`` and ``"session_id"``.
 
         Returns
@@ -565,13 +781,13 @@ class CapsDataset(Dataset):
         IndexError
             If ``idx`` is not a non-negative integer, greater or equal to
             the length of the dataset.
+        KeyError
+            If ``column`` is not in the metadata DataFrame.
         ClinicaDLCAPSError
             If slices or patches are extracted from the images and ``to_tensors`` or
             ``read_tensor_conversion`` has not been run previously (some
             attributes of the ``CapsDataset``, such as its length, depends on the
             number of samples per image).
-        KeyError
-            If ``column`` is not in the metadata DataFrame.
         """
         if not isinstance(idx, int) or idx < 0:
             raise IndexError(f"Index must be a non-negative integer, got {idx}.")
@@ -660,69 +876,76 @@ class CapsDataset(Dataset):
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
             data = self.image_transform(data)
 
-        sample = self.extraction.extract_sample(data, sample_index)
+        data = self.extraction.extract_sample(data, sample_index)
 
-        sample = self.sample_transform(sample)
+        data = self.sample_transform(data)
 
         if not self.eval_mode:
-            sample = self.augmentation(sample)
+            data = self.augmentation(data)
 
-        return sample
+        if isinstance(data, SliceSample) and data.squeeze:
+            data = Squeeze(data.slice_direction)(data)
+
+        return data
 
     ### to read user inputs ###
-    def _check_labels(
-        self, labels: Optional[Union[str, Sequence[str]]]
-    ) -> Optional[Union[list[Column], Mask]]:
+    def _check_label(
+        self, label: Optional[Union[str, Sequence[str]]]
+    ) -> Optional[Union[Column, list[Column], Mask]]:
         """
-        Checks if 'labels' is a valid column name (or column names), a valid mask suffix or None.
+        Checks if 'label' is a valid column name (or column names), a valid mask suffix or None.
 
         Raises
         ------
         ClinicaDLArgumentError
-            If 'labels' is not a string or None.
+            If 'label' is not a string or None.
         ClinicaDLArgumentError
-            If 'labels' is not in the columns or the masks passed by the user.
+            If 'label' is not in the columns or the masks passed by the user.
         """
-        if isinstance(labels, str):
-            if labels in self._common_mask_names:
+        if isinstance(label, str):
+            if label in self._common_mask_names:
                 raise ClinicaDLArgumentError(
-                    f"A segmentation mask must be specific to each image, but you passed labels={labels}, which is "
+                    f"A segmentation mask must be specific to each image, but you passed label={label}, which is "
                     "a non image-specific mask."
                 )
-            elif labels in self._individual_mask_names:
+            elif label in self._individual_mask_names:
                 self.individual_masks = [
-                    mask for mask in self.individual_masks if mask.name != labels
+                    mask for mask in self.individual_masks if mask.name != label
                 ]
-                return Mask(labels)
-            elif labels not in self.columns:
+                return Mask(label)
+            elif label not in self.columns:
                 raise ClinicaDLArgumentError(
-                    f"Got '{labels}' in 'labels', but there is no such column or mask."
+                    f"Got '{label}' for 'label', but there is no such column or mask."
                 )
 
-            labels = [labels]
+            label = [label]
 
-        if isinstance(labels, list):
+        if isinstance(label, list):
             labels_list = []
-            for label in labels:
-                if label in self.columns:
-                    if not pd.api.types.is_numeric_dtype(self._df[label]):
+            for lab in label:
+                if lab in self.columns:
+                    if not pd.api.types.is_numeric_dtype(self._df[lab]):
                         raise ClinicaDLArgumentError(
-                            f"'{label}' was passed in 'labels', but this column is not numeric!"
+                            f"'{lab}' was passed in 'label', but this column is not numeric!"
                         )
-                    self.columns.remove(label)
-                    labels_list.append(Column(label))
+                    self.columns.remove(lab)
+                    labels_list.append(Column(lab))
                 else:
                     raise ClinicaDLArgumentError(
-                        f"You passed a list in 'labels', and this list can only contain columns passed in 'columns'. But got: '{label}'"
+                        f"You passed a list in 'label', and this list can only contain columns passed in 'columns'. But got: '{lab}'"
                     )
-            return labels_list
+
+            if len(labels_list) == 1:
+                return labels_list[0]
+            else:
+                return labels_list
 
         elif label is None:
             return None
 
         else:
             raise ClinicaDLArgumentError(
-                f"'labels' must be a string, a list, or None. Got: {label}"
+                f"'label' must be a string, a list, or None. Got: {label}"
             )
 
     def _read_masks(
@@ -736,35 +959,37 @@ class CapsDataset(Dataset):
         Raises
         ------
         ClinicaDLArgumentError
-            If 'masks' is not a dict.
+            If 'masks' is not a list, a tuple, or None.
         FileNotFoundError
             If a path is passed for a mask, and this path does not match any file.
-        ClinicaDLCAPSError
+        ClinicaDLArgumentError
             If a suffix is passed for a mask, and this suffix is a name
             among {'image', 'label', 'affine', 'participant', 'session'}.
         """
-        if not (isinstance(masks, (list, tuple)) or masks is None):
+        if masks is None:
+            return [], []
+        elif not isinstance(masks, (list, tuple)):
             raise ClinicaDLArgumentError(
                 f"'masks' should be a list, a tuple, or None, got: {masks}"
             )
 
         individual_masks: list[Mask] = []
         common_masks: list[Mask] = []
-        for mask in masks:
+        for mask_name in masks:
+            mask = self._read_mask(mask_name)
             if mask.name in {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION}:
                 raise ClinicaDLArgumentError(
-                    f"Mask suffix cannot be '{mask.name}'. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
+                    f"Mask cannot be named '{mask.name}'. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
                     "are protected names."
                 )
             if mask.name in self.columns:
                 raise ClinicaDLArgumentError(
                     f"Conflict: '{mask.name}' has been passed in 'columns' AND 'masks'!"
                 )
-            mask_object = self._read_mask(mask)
-            if mask_object.is_common_mask:
-                common_masks.append(mask_object)
+            if mask.is_common_mask:
+                common_masks.append(mask)
             else:
-                individual_masks.append(mask_object)
+                individual_masks.append(mask)
 
         union = [mask.name for mask in common_masks] + [
             mask.name for mask in individual_masks
@@ -821,8 +1046,8 @@ class CapsDataset(Dataset):
 
         return deepcopy(df)
 
+    @staticmethod
     def _read_columns(
-        self,
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
         ],
@@ -837,17 +1062,25 @@ class CapsDataset(Dataset):
         """
         if columns is None:
             return dict()
-        elif isinstance(columns, list):
-            return {col: None for col in columns}
-        elif isinstance(columns, dict):
-            return columns
-        else:
+        elif not isinstance(columns, (list, dict)):
             raise ClinicaDLArgumentError(
                 f"'columns' must be a list, a dict, or None. Got: {columns}"
             )
 
+        for col in columns:
+            if col in {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION}:
+                raise ClinicaDLArgumentError(
+                    f"A column cannot be named '{col}'. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
+                    "are protected names."
+                )
+
+        if isinstance(columns, list):
+            return {col: None for col in columns}
+        else:
+            return columns
+
+    @staticmethod
     def _process_columns(
-        self,
         df: pd.DataFrame,
         columns: dict[Column, Optional[Callable[[pd.Series], pd.Series]]],
     ) -> pd.DataFrame:
@@ -937,11 +1170,15 @@ class CapsDataset(Dataset):
         images_dict = self._load_pt(pt_path)
 
         # label
-        if isinstance(self.label, Mask):
+        if self.label is None:
+            label = None
+        elif isinstance(self.label, Mask):
             label_mask = images_dict[self.label.name]
             label = tio.LabelMap(tensor=label_mask, affine=images_dict[AFFINE])
-        elif self.label is None:
-            label = None
+        elif isinstance(self.label, list):
+            label = {
+                lab: self._get_info(participant, session, lab) for lab in self.label
+            }
         else:
             label = self._get_info(participant, session, self.label)
 
@@ -965,7 +1202,7 @@ class CapsDataset(Dataset):
 
         # common masks (already loaded)
         for mask in self.common_masks_tensors:
-            data.add_mask(mask.get_associated_mask(), mask.path.name)
+            data.add_mask(mask.get_associated_mask(), mask.name)
 
         # columns
         for col in self.columns:
@@ -994,7 +1231,12 @@ class CapsDataset(Dataset):
     def _load_pt(self, path: Path) -> Dict[str, Any]:
         """
         Loads the tensors for a (participant, session).
-        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion._save_images_as_tensors`
+        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion._save_images_as_tensors`.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the '.pt' file cannot be found.
         """
         try:
             return torch.load(path, weights_only=True)
@@ -1010,9 +1252,14 @@ class CapsDataset(Dataset):
         """
         Converts nifti masks to the associated tensor masks
         when 'to_tensors' or 'read_tensor_conversion' is called.
+
+        FileNotFoundError
+            If the '.pt' file cannot be found for this mask.
         """
         for mask in self.common_masks:
-            mask_pt_path = self.caps_reader.path_to_tensor(mask.path)
+            mask_pt_path = self.caps_reader.path_to_tensor(
+                mask.path, conversion_name=self.tensor_conversion.tensor_folder_name
+            )
             try:
                 self.common_masks_tensors.append(Mask(mask_pt_path))
             except FileNotFoundError as exc:
@@ -1026,6 +1273,11 @@ class CapsDataset(Dataset):
         """
         Gets the number of samples for each image and puts
         it in the dataframe.
+
+        Raises
+        ------
+        ClinicaDLCAPSError
+            If tensors were not converted before.
         """
         if self.extraction.extract_method == ExtractionMethod.IMAGE:
             self._df[N_SAMPLES] = 1
@@ -1054,6 +1306,11 @@ class CapsDataset(Dataset):
     def _get_n_samples(self, participant: str, session: str) -> int:
         """
         Gets the number of samples in an image.
+
+        Raises
+        ------
+        IndexError
+            If an error occurred while extracting samples.
         """
         data = self._get_data(participant, session)
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
