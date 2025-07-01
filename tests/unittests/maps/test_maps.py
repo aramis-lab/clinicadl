@@ -140,7 +140,7 @@ def test_good_split_dir():
     assert isinstance(maps.splits[split_idx].tmp, TmpDir)
     assert (
         maps.splits[split_idx].tmp.checkpoint
-        == maps_test / f"split-{split_idx}" / "tmp" / "checkpoint.pth.tar"
+        == maps_test / f"split-{split_idx}" / "tmp" / "model.pth.tar"
     )
     assert (
         maps.splits[split_idx].tmp.optimizer
