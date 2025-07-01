@@ -154,6 +154,8 @@ class Trainer:
     ) -> None:
         train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
 
+        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
+
         self.callbacks = CallbacksHandler(
             metrics=train_metrics,
             callbacks=callbacks if callbacks is not None else [],

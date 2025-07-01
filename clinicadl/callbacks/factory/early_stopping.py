@@ -41,7 +41,6 @@ class OneMetricEarlyStopping(Callback):
         If metric goes above this value, training stops.
     lower_bound : float, optional
         If metric goes below this value, training stops.
-
     """
 
     def __init__(
@@ -207,7 +206,10 @@ class EarlyStopping(Metrics, Callback):
             - Metrics used for EarlyStopping are always passed to ModelSelection to track best models.
             - EarlyStopping triggers stopping when all these metrics stop improving.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> b470bbaa (proper callbacks module)
     .. warning:
         Multiple EarlyStopping callbacks can be registered simultaneously. In such cases,
         training stops as soon as the first EarlyStopping callback's stopping criterion is met.

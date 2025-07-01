@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.metrics.metrics import ClinicaDLMetrics
 
 from .factory import *
 from .factory.base import Callback
@@ -26,8 +25,6 @@ PREFERRED_ORDER = [
     WandB.__name__,
     Tensorboard.__name__,
 ]
-
-LOSS = "loss"
 
 
 class CallbacksHandler:
@@ -185,19 +182,6 @@ class CallbacksHandler:
         ordered.update(rest)
 
         self.callbacks = ordered
-
-        available_metrics = metrics.metrics.keys()
-
-        if not all(elem in available_metrics for elem in model_selection_metrics):
-            raise ValueError(
-                f"Some metrics from ModelSelection are not in the metrics: \n"
-                f"{[x for x in model_selection_metrics if x not in available_metrics]}"
-            )
-        if not all(elem in available_metrics for elem in early_stopping_metrics):
-            raise ValueError(
-                f"Some metrics from EarlyStopping are not in the metrics: \n"
-                f"{[x for x in early_stopping_metrics if x not in available_metrics]}"
-            )
 
     @property
     def callback_list(self) -> list[str]:
