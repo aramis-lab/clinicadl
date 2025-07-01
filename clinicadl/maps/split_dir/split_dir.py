@@ -265,7 +265,7 @@ class TmpDir(Directory):
 
     @property
     def checkpoint(self) -> Path:
-        return (self.path / CHECKPOINT).with_suffix(PTH + TAR)
+        return (self.path / MODEL).with_suffix(PTH + TAR)
 
     @property
     def optimizer(self) -> Path:

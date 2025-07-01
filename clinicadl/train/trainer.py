@@ -8,18 +8,18 @@ from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.callbacks.handler import Callback, CallbacksHandler
-from clinicadl.data.dataloader import Batch
+from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.metrics import ClinicaDLMetrics, LossMetricConfig
+from clinicadl.metrics.types import MetricType
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
-from clinicadl.train.training_state import _TrainingState
 from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
@@ -33,9 +33,7 @@ class Trainer:
         maps_path: PathType,
         model: ClinicaDLModel,
         callbacks: Optional[list[Callback]] = None,
-        metrics: Optional[
-            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
-        ] = None,
+        metrics: Optional[dict[str, MetricType]] = None,
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
@@ -43,19 +41,15 @@ class Trainer:
     ) -> None:
         """TO COMPLETE"""
 
+        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
+
         self.callbacks = CallbacksHandler(
+            metrics=train_metrics,
             callbacks=callbacks if callbacks is not None else [],
         )
 
-        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
-
-        self.callbacks.check_metrics(train_metrics)
-
-        maps = Maps(maps_path, _overwrite)
-        maps.create()
-
         self.config = _TrainingState(
-            maps=maps,
+            maps=Maps(maps_path, _overwrite),
             metrics=train_metrics,
             model=model,
             optim=optim_config,
@@ -102,7 +96,7 @@ class Trainer:
 
                 self.callbacks.on_backward_begin(config=self.config)
                 self.scaler.scale(loss).backward()
-                self.weights_update()
+                self.on_backward_end()
 
                 self.on_batch_end(loss=loss)
 
@@ -113,6 +107,7 @@ class Trainer:
     def on_train_begin(self, split: Split) -> None:
         """TO COMPLETE"""
 
+        self.config.maps.create()
         self.model.train()
         self.reset(split)
 
@@ -128,12 +123,14 @@ class Trainer:
         self.config.batch = batch_idx
         self.callbacks.on_batch_begin(config=self.config)
 
-    def weights_update(self):
+    def on_backward_end(self):
         """TO COMPLETE"""
 
         self.scaler.step(self.model.optimizer)
         self.scaler.update()
         self.model.optimizer.zero_grad(set_to_none=True)
+
+        self.callbacks.on_backward_end(config=self.config)
 
     def on_batch_end(self, loss: torch.Tensor):
         """TO COMPLETE"""
@@ -158,7 +155,6 @@ class Trainer:
         self.callbacks.on_train_end(config=self.config)
 
         self.metrics.save(self.maps.splits[split.index].metrics_tsv)
-        self.maps.splits[split.index].tmp.remove()
 
     def reset(self, split: Optional[Split] = None):
         """TO COMPLETE"""

@@ -1,11 +1,11 @@
 import shutil
 from typing import Union
 
+from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import MODEL, OPTIMIZER
+from clinicadl.dictionary.words import CHECKPOINT, MODEL, OPTIMIZER
 from clinicadl.metrics.config.enum import Optimum
 from clinicadl.metrics.metrics import Metrics
-from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 
@@ -56,18 +56,17 @@ class ModelSelection(Callback, Metrics):
         self,
         metrics: Union[str, list[str]],
     ):
-        """_summary_
-
+        """
         Parameters
         ----------
         metrics : str or list of str
             Name(s) of the metric(s) to monitor for model selection. These should match
-            keys present in the `ClinicaDLMetrics` dictionary.If a single string is provided,
+            keys present in the `ClinicaDLMetrics` dictionary. If a single string is provided,
             it is converted to a list internally.
         """
         self.metrics = metrics if isinstance(metrics, list) else [metrics]
 
-    def on_train_begin(self, config: _TrainingState, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
         Initialize storage structures for best metrics and create necessary folders.
         """
@@ -75,7 +74,7 @@ class ModelSelection(Callback, Metrics):
         config.maps.create_split(config.split, self.metrics)
         config.split.write_json(config.maps.splits[config.split.index].split_json)
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """
         At each epoch, check whether any metric has improved. If so, copy the current
         model and optimizer checkpoints into the best directory for that metric.
@@ -107,7 +106,7 @@ class ModelSelection(Callback, Metrics):
                 )
             ):
                 checkpoint_path = config.maps.splits[config.split.index].tmp.path / (
-                    MODEL + PTH + TAR
+                    CHECKPOINT + PTH + TAR
                 )
                 shutil.copyfile(checkpoint_path, metric_path / (MODEL + PTH + TAR))
 

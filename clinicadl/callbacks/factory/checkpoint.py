@@ -1,9 +1,9 @@
 import shutil
 from typing import Optional
 
+from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
-from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
 
@@ -47,12 +47,13 @@ class Checkpoint(Callback):
         self.epochs = epochs if epochs else []
         self.patience = patience
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         if (
             config.epoch in self.epochs
             or config.epoch % self.patience == 0
             or config.epoch == config.optim.epochs
         ):
+            assert config.split is not None
             config.maps.splits[config.split.index].create_epoch(config.epoch)
             epoch_path = (
                 config.maps.splits[config.split.index].epochs[config.epoch].path

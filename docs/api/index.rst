@@ -34,3 +34,4 @@ functions may not be enough to give full guidelines on their use.
    optim/index
    split
    transforms/index
+   callbacks

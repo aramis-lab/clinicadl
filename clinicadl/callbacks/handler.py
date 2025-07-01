@@ -1,145 +1,134 @@
 from typing import Dict, List, Optional
 
+from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.metrics import ClinicaDLMetrics
-from clinicadl.train.training_state import _TrainingState
 
 from .factory import *
 from .factory.base import Callback
+from .factory.checkpoint_saver import _CheckpointSaver
+from .factory.chronometer import _Chronometer
+from .factory.logger import _Logger
+from .factory.training_loss import _TrainingLoss
 
 LOSS = "loss"
+
+PREFERRED_ORDER = [
+    _TrainingLoss.__name__,
+    LRScheduler.__name__,
+    _Chronometer.__name__,
+    _CheckpointSaver.__name__,
+    Checkpoint.__name__,
+    ModelSelection.__name__,
+    _Logger.__name__,
+    MLflow.__name__,
+    CodeCarbon.__name__,
+    Comet.__name__,
+    WandB.__name__,
+    Tensorboard.__name__,
+]
 
 
 class CallbacksHandler:
     """
-    Class that manages a collection of callbacks to be executed during the
-    different stages of a training pipeline in ClinicaDL.
+    Central handler for all training callbacks in the ClinicaDL pipeline.
 
-    This handler centralizes all callback logic (e.g., early stopping, logging,
-    metric selection, time tracking) and ensures that each registered callback
-    is executed at appropriate times during training and validation.
-
-    .. note::
-        Custom callbacks can be passed during initialization. Additionally,
-        default callbacks such as :ref:`Chronometer`, :ref:`TrainingLoss`, :ref:`Logger`,
-        :ref:`ProgressBar`, and :ref:`CurrentState` are added automatically if not already provided.
+    This class initializes, validates, and orders the various callbacks used during
+    training and evaluation, including logging, monitoring, early stopping, and checkpointing.
 
     Parameters
     ----------
-    callbacks : list of Callback, optional
-        List of custom callback instances to use. Each callback must inherit
-        from `clinicadl.utils.callbacks.factory.base.Callback`.
+    metrics : ClinicaDLMetrics
+        Object used to validate the metric names required by `ModelSelection` and `EarlyStopping`.
+    callbacks : Optional[List[Callback]]
+        List of user-defined callbacks. Supports duplicates for EarlyStopping,
+        and merges `ModelSelection` instances.
 
     Attributes
     ----------
-    callbacks : dict
-        A dictionary mapping callback class names to instances.
-        Each callback is uniquely identified by its class name, unless duplicates are allowed
-        (e.g., multiple `EarlyStopping` callbacks).
-
-    Methods
-    -------
-    check_metrics(metrics: ClinicaDLMetrics)
-        Ensure that all metrics required by ModelSelection and EarlyStopping are available.
-
-    on_train_begin(config: _TrainingState, **kwargs)
-        Triggered at the start of training.
-
-    on_train_end(config: _TrainingState, **kwargs)
-        Triggered at the end of training.
-
-    on_epoch_begin(config: _TrainingState, **kwargs)
-        Triggered at the start of each epoch.
-
-    on_epoch_end(config: _TrainingState, **kwargs)
-        Triggered at the end of each epoch.
-
-    on_batch_begin(config: _TrainingState, **kwargs)
-        Triggered before each training batch is processed.
-
-    on_batch_end(config: _TrainingState, **kwargs)
-        Triggered after each training batch is processed.
-
-    on_backward_begin(config: _TrainingState, **kwargs)
-        Triggered before backward pass (if needed).
-
-    on_validation_begin(config: _TrainingState, **kwargs)
-        Triggered before starting validation loop.
-
-    on_validation_end(config: _TrainingState, **kwargs)
-        Triggered after ending validation loop.
-
-    callback_list : list of str
-        Property returning the list of all currently registered callback names.
-
-    Examples
-    --------
-    >>> from clinicadl.utils.callbacks.handler import CallbacksHandler
-    >>> from clinicadl.utils.callbacks.factory import EarlyStopping
-    >>> handler = CallbacksHandler(callbacks=[EarlyStopping(patience=3)])
-    >>> handler.on_train_begin(config)
-
-    Notes
-    -----
-    - When multiple EarlyStopping callbacks are passed, they are renamed to avoid collisions.
-    - If EarlyStopping and ModelSelection use different metrics, the union of their metrics is used in ModelSelection.
-    - LOSS is always enforced in ModelSelection to ensure compatibility with training monitoring.
+    callbacks : Dict[str, Callback]
+        Dictionary mapping callback identifiers to instantiated callbacks.
 
     See Also
     --------
-    clinicadl.utils.callbacks.factory.base.Callback
-    clinicadl.metrics.metrics.ClinicaDLMetrics
+    :py:class:`~clinicadl.callbacks.base.Callback`: Abstract base class for all callbacks.
+    :py:class:`~clinicadl.metrics.metrics.ClinicaDLMetrics`: Metric management utility.
     """
 
     def __init__(
         self,
+        metrics: ClinicaDLMetrics,
         callbacks: Optional[List[Callback]] = None,
     ):
-        self.callbacks: Dict[str, Callback] = {}
-        if callbacks:
-            for callback in callbacks:
-                if not isinstance(callback, Callback):
-                    raise TypeError(
-                        f"Each custom callback must be a Callback instance, got {type(callback)} for {callback}"
-                    )
+        self.callbacks: Dict[str, Callback] = self._check_callbacks_names(callbacks)
+        self._add_default_callbacks()
+        self._check_metrics(metrics)
+        self._check_callbacks_order()
 
-                callback_name = callback.__class__.__name__
+    def _check_callbacks_names(
+        self, callbacks: Optional[List[Callback]] = None
+    ) -> Dict[str, Callback]:
+        """
+        Resolve user-provided callbacks, avoiding duplicates and handling special cases.
 
-                if callback_name not in self.callbacks:
-                    self.callbacks[callback_name] = callback
+        Parameters
+        ----------
+        callbacks : Optional[List[Callback]]
+            List of callback instances.
 
-                elif isinstance(callback, EarlyStopping):
-                    callback_name = callback_name + str(
-                        sum(callback_name in key for key in self.callbacks) + 1
-                    )
-                    self.callbacks[callback_name] = callback
+        Returns
+        -------
+        Dict[str, Callback]
+            Mapping of callback names to instances.
+        """
+        if not callbacks:
+            return {}
 
-                elif isinstance(callback, ModelSelection):
-                    existing = set(self.callbacks[callback_name].metrics)
-                    new = set(callback.metrics)
-                    self.callbacks[callback_name] = ModelSelection(
-                        metrics=list(existing.union(new))
-                    )
+        resolved: Dict[str, Callback] = {}
 
+        for callback in callbacks:
+            if not isinstance(callback, Callback):
+                raise TypeError(
+                    f"Each callback must be a Callback instance, got {type(callback)} for {callback}"
+                )
+
+            name = type(callback).__name__
+
+            if isinstance(callback, EarlyStopping):
+                count = sum(k.startswith(name) for k in resolved)
+                unique_name = f"{name}{count + 1}" if name in resolved else name
+                resolved[unique_name] = callback
+
+            elif isinstance(callback, ModelSelection):
+                if name in resolved:
+                    merged_metrics = set(resolved[name].metrics).union(callback.metrics)  # type: ignore
+                    resolved[name] = ModelSelection(metrics=list(merged_metrics))
                 else:
-                    raise ValueError(
-                        f"Callback {callback_name} is already registered, you can't provide it twice."
-                    )
+                    resolved[name] = callback
 
-        # Default callbacks
+            elif name in resolved:
+                raise ValueError(f"Duplicate callback not allowed: {name}")
 
-        if Chronometer.__name__ not in self.callbacks:
-            self.callbacks[Chronometer.__name__] = Chronometer()
+            else:
+                resolved[name] = callback
 
-        if TrainingLoss.__name__ not in self.callbacks:
-            self.callbacks[TrainingLoss.__name__] = TrainingLoss()
+        return resolved
 
-        if Logger.__name__ not in self.callbacks:
-            self.callbacks[Logger.__name__] = Logger()
+    def _add_default_callbacks(self):
+        """
+        Add default callbacks if they are not already provided.
+        """
+        defaults = {
+            _Chronometer.__name__: _Chronometer(),
+            _TrainingLoss.__name__: _TrainingLoss(),
+            _Logger.__name__: _Logger(),
+            _CheckpointSaver.__name__: _CheckpointSaver(),
+        }
 
-        if CurrentState.__name__ not in self.callbacks:
-            self.callbacks[CurrentState.__name__] = CurrentState()
+        for name, callback in defaults.items():
+            if name not in self.callbacks:
+                self.callbacks[name] = callback
 
-    def check_metrics(self, metrics: ClinicaDLMetrics):
+    def _check_metrics(self, metrics: ClinicaDLMetrics):
         """
         Ensure that all metrics used in ModelSelection and EarlyStopping callbacks
         are present in the provided metrics.
@@ -147,64 +136,53 @@ class CallbacksHandler:
         Raises
         ------
         ValueError
-            If any required metric is missing from `metrics`.
+            If any metric required by `EarlyStopping` or `ModelSelection` is missing.
         """
 
-        early_stopping_metrics = []
+        es_metrics = [
+            metric
+            for cb in self.callbacks.values()
+            if isinstance(cb, EarlyStopping)
+            for metric in cb.metrics
+        ]
 
-        if ModelSelection.__name__ not in self.callbacks:
-            if EarlyStopping.__name__ not in self.callbacks:
-                self.callbacks[ModelSelection.__name__] = ModelSelection(metrics=[LOSS])
+        ms_cb = self.callbacks.get(ModelSelection.__name__)
+        ms_metrics = set(ms_cb.metrics if ms_cb else [])  # type: ignore
+        ms_metrics.add(LOSS)
 
-                model_selection_metrics = [LOSS]
+        ms_metrics.update(es_metrics)
+        self.callbacks[ModelSelection.__name__] = ModelSelection(
+            metrics=list(ms_metrics)
+        )
 
-            else:
-                # TODO : check if loss not in EarlyStopping, do I add it to ModelSelection ?
-                for _, v in self.callbacks.items():
-                    if isinstance(v, EarlyStopping):
-                        early_stopping_metrics.extend(v.metrics)
+        available = set(metrics.metrics.keys())
 
-                self.callbacks[ModelSelection.__name__] = ModelSelection(
-                    metrics=early_stopping_metrics
-                )
+        if es_metrics:
+            missing_early = set(es_metrics) - available
+            if missing_early:
+                raise ValueError(f"Missing metrics for EarlyStopping: {missing_early}")
 
-                model_selection_metrics = early_stopping_metrics
-        else:
-            model_selection_metrics: list[str] = self.callbacks[
-                ModelSelection.__name__
-            ].metrics  # type: ignore
+        missing = ms_metrics - available
+        if missing:
+            raise ValueError(f"Missing metrics for ModelSelection: {missing}")
 
-            if LOSS not in model_selection_metrics:
-                model_selection_metrics.append(LOSS)
-                self.callbacks[ModelSelection.__name__] = ModelSelection(
-                    metrics=model_selection_metrics
-                )
+    def _check_callbacks_order(self):
+        """
+        Order callbacks based on preferred priority.
+        """
 
-            if EarlyStopping.__name__ in self.callbacks:
-                for _, v in self.callbacks.items():
-                    if isinstance(v, EarlyStopping):
-                        early_stopping_metrics.extend(v.metrics)
+        early = {
+            k: v
+            for k, v in self.callbacks.items()
+            if k.startswith(EarlyStopping.__name__)
+        }
+        rest = {k: v for k, v in self.callbacks.items() if k not in early}
 
-                diff = list(set(early_stopping_metrics) - set(model_selection_metrics))
+        ordered = {name: rest.pop(name) for name in PREFERRED_ORDER if name in rest}
+        ordered.update(dict(sorted(early.items())))
+        ordered.update(rest)
 
-                if len(diff) > 0:
-                    model_selection_metrics.extend(diff)
-                    self.callbacks[ModelSelection.__name__] = ModelSelection(
-                        metrics=model_selection_metrics
-                    )
-
-        available_metrics = metrics.metrics.keys()
-
-        if not all(elem in available_metrics for elem in model_selection_metrics):
-            raise ValueError(
-                f"Some metrics from ModelSelection are not in the metrics: \n"
-                f"{[x for x in model_selection_metrics if x not in available_metrics]}"
-            )
-        if not all(elem in available_metrics for elem in early_stopping_metrics):
-            raise ValueError(
-                f"Some metrics from EarlyStopping are not in the metrics: \n"
-                f"{[x for x in early_stopping_metrics if x not in available_metrics]}"
-            )
+        self.callbacks = ordered
 
     @property
     def callback_list(self) -> list[str]:
@@ -218,61 +196,7 @@ class CallbacksHandler:
         """
         return list(self.callbacks.keys())
 
-    def on_train_begin(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_train_begin` method of each callback.
-        """
-        self._call_event("on_train_begin", config=config, **kwargs)
-
-    def on_train_end(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_train_end` method of each callback.
-        """
-        self._call_event("on_train_end", config=config, **kwargs)
-
-    def on_epoch_begin(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_epoch_begin` method of each callback.
-        """
-        self._call_event("on_epoch_begin", config=config, **kwargs)
-
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_epoch_end` method of each callback.
-        """
-        self._call_event("on_epoch_end", config=config, **kwargs)
-
-    def on_batch_begin(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_batch_begin` method of each callback.
-        """
-        self._call_event("on_batch_begin", config=config, **kwargs)
-
-    def on_batch_end(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_batch_end` method of each callback.
-        """
-        self._call_event("on_batch_end", config=config, **kwargs)
-
-    def on_backward_begin(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_backward_begin` method of each callback.
-        """
-        self._call_event("on_backward_begin", config=config, **kwargs)
-
-    def on_validation_begin(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_validation_begin` method of each callback.
-        """
-        self._call_event("on_validation_begin", config=config, **kwargs)
-
-    def on_validation_end(self, config: _TrainingState, **kwargs):
-        """
-        Trigger the `on_validation_end` method of each callback.
-        """
-        self._call_event("on_validation_end", config=config, **kwargs)
-
-    def _call_event(self, event, config: _TrainingState, **kwargs):
+    def _call_event(self, event: str, config: _TrainingState, **kwargs) -> None:
         """
         Call a specific event method on all callbacks.
 
@@ -288,3 +212,34 @@ class CallbacksHandler:
             method = getattr(callback, event, None)
             if callable(method):
                 method(config=config, **kwargs)
+
+    # Event hooks
+    def on_train_begin(self, config: _TrainingState, **kwargs):
+        self._call_event("on_train_begin", config=config, **kwargs)
+
+    def on_train_end(self, config: _TrainingState, **kwargs):
+        self._call_event("on_train_end", config=config, **kwargs)
+
+    def on_epoch_begin(self, config: _TrainingState, **kwargs):
+        self._call_event("on_epoch_begin", config=config, **kwargs)
+
+    def on_epoch_end(self, config: _TrainingState, **kwargs):
+        self._call_event("on_epoch_end", config=config, **kwargs)
+
+    def on_batch_begin(self, config: _TrainingState, **kwargs):
+        self._call_event("on_batch_begin", config=config, **kwargs)
+
+    def on_batch_end(self, config: _TrainingState, **kwargs):
+        self._call_event("on_batch_end", config=config, **kwargs)
+
+    def on_backward_begin(self, config: _TrainingState, **kwargs):
+        self._call_event("on_backward_begin", config=config, **kwargs)
+
+    def on_backward_end(self, config: _TrainingState, **kwargs):
+        self._call_event("on_backward_end", config=config, **kwargs)
+
+    def on_validation_begin(self, config: _TrainingState, **kwargs):
+        self._call_event("on_validation_begin", config=config, **kwargs)
+
+    def on_validation_end(self, config: _TrainingState, **kwargs):
+        self._call_event("on_validation_end", config=config, **kwargs)
