@@ -152,7 +152,6 @@ class Trainer:
         _overwrite: bool = False,
         seed: int = 123,
     ) -> None:
-        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
 
         train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
 
