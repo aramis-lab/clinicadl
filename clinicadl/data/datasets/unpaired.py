@@ -72,36 +72,39 @@ class UnpairedDataset(Dataset):
 
     Examples
     --------
-    .. code-block:: python
+    .. code-block:: text
 
-        # data are as follows:
-        # caps_t1
-        # ├── tensor_conversion
-        # │   └── default_t1-linear.json
-        # └── subjects
-        #     ├── sub-001
-        #     │   └── ses-M000
-        #     │       └── t1_linear
-        #     │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
-        #     │           └── tensors
-        #     │               └── default
-        #     │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
-        #         ...
-        #     ...
-        #
-        # caps_pet
-        # ├── tensor_conversion
-        # │   └── default_pet-linear_18FAV45_pons2.json
-        # └── subjects
-        #     ├── sub-A
-        #     │   └── ses-M000
-        #     │       ├── pet_linear
-        #     │       │   ├── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        #     │       │   └── tensors
-        #     │       │       └── default
-        #     │       │           └── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-        #         ...
-        #     ...
+        Data look like:
+
+        caps_t1
+        ├── tensor_conversion
+        │   └── default_t1-linear.json
+        └── subjects
+            ├── sub-001
+            │   └── ses-M000
+            │       └── t1_linear
+            │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+            │           └── tensors
+            │               └── default
+            │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+                ...
+            ...
+
+        caps_pet
+        ├── tensor_conversion
+        │   └── default_pet-linear_18FAV45_pons2.json
+        └── subjects
+            ├── sub-A
+            │   └── ses-M000
+            │       ├── pet_linear
+            │       │   ├── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            │       │   └── tensors
+            │       │       └── default
+            │       │           └── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+                ...
+            ...
+
+    .. code-block:: python
 
         from clinicadl.data.datasets import CapsDataset, UnpairedDataset
         from clinicadl.data.datatypes import PETLinear, T1Linear

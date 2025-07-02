@@ -46,6 +46,7 @@ def test_extract_sample():
     assert extracted_data_point.participant == "sub-000"
     assert extracted_data_point.session == "ses-M000"
     assert extracted_data_point.image_path == "abc.nii.gz"
+    assert extracted_data_point._sample_index == 1
 
     # other tests
     data_point = DataPoint(

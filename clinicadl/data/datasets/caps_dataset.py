@@ -172,30 +172,34 @@ class CapsDataset(Dataset):
 
     Examples
     --------
-    .. code-block:: python
+    .. code-block:: text
 
-        # data are as follows:
-        # mycaps
-        # ├── masks
-        # │   └── leftHippocampus.nii.gz
-        # ├── data.tsv
-        # └── subjects
-        #     ├── sub-001
-        #     │   └── ses-M000
-        #     │       └── pet_linear
-        #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-        #     │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        #         ...
-        #     ...
-        #
-        # in data.tsv:
-        #    participant_id	session_id	age	sex	diagnosis
-        # 0	    sub-001	  ses-M000	 55	  M	      CN
-        # 1	    sub-001	  ses-M003	 55	  M	      AD
-        # 2	    sub-002	  ses-M000	 62	  F	      MCI
-        # 3	    sub-002	  ses-M003	 62	  F	      AD
-        # 4	    sub-003	  ses-M000	 67	  F	      CN
-        # ...
+        Data look like:
+
+        mycaps
+        ├── masks
+        │   └── leftHippocampus.nii.gz
+        ├── data.tsv
+        └── subjects
+            ├── sub-001
+            │   └── ses-M000
+            │       └── pet_linear
+            │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+                ...
+            ...
+
+        The "data.tsv" file looks like:
+
+        participant_id  session_id   age   sex   diagnosis
+        sub-001         ses-M000     55.0  M     CN
+        sub-001         ses-M003     55.0  M     AD
+        sub-002         ses-M000     62.0  F     MCI
+        sub-002         ses-M003     62.0  F     AD
+        sub-003         ses-M000     67.0  F     CN
+        ...
+
+    .. code-block:: python
 
         from clinicadl.data import datasets, datatypes
         from clinicadl.transforms import Transforms, extraction
@@ -243,7 +247,7 @@ class CapsDataset(Dataset):
         >>> dataset[0]
         DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'brain', 'leftHippocampus', 'age', 'extraction'); images: 3)
         >>> dataset[0]["age"]
-        55
+        55.0
 
     Let's build a dataset for segmentation, working on patches:
 
@@ -441,21 +445,26 @@ class CapsDataset(Dataset):
 
         Examples
         --------
+        .. code-block:: text
+
+            Data look like:
+
+            mycaps
+            ├── masks
+            │   └── leftHippocampus.nii.gz
+            ├── data.tsv
+            └── subjects
+                ├── sub-001
+                │   └── ses-M000
+                │       └── pet_linear
+                │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+                │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+                    ...
+                ...
+
         .. code-block:: python
 
-            # data are as follows:
-            # mycaps
-            # ├── masks
-            # │   └── leftHippocampus.nii.gz
-            # ├── data.tsv
-            # └── subjects
-            #     ├── sub-001
-            #     │   └── ses-M000
-            #     │       └── pet_linear
-            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            #         ...
-            #     ...
+            from clinicadl.data import datasets, datatypes
 
             dataset = datasets.CapsDataset(
                 caps_directory="mycaps",
@@ -592,32 +601,37 @@ class CapsDataset(Dataset):
 
         Examples
         --------
+        .. code-block:: text
+
+            Data look like:
+
+            mycaps
+            ├── tensor_conversion
+            │   ├── default_pet-linear_18FAV45_pons2.json
+            │   └── pet_conversion.json
+            ├── masks
+            │   ├── leftHippocampus.nii.gz
+            │   └── tensors
+            │       ├── default
+            │       └── pet_conversion
+            │           └── leftHippocampus.pt
+            ├── data.tsv
+            └── subjects
+                ├── sub-001
+                │   └── ses-M000
+                │       └── pet_linear
+                │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+                │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+                │           └── tensors
+                │               ├── default
+                │               └── pet_conversion
+                │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+                    ...
+                ...
+
         .. code-block:: python
 
-            # data are as follows:
-            # mycaps
-            # ├── tensor_conversion
-            # │   ├── default_pet-linear_18FAV45_pons2.json
-            # │   └── pet_conversion.json
-            # ├── masks
-            # │   ├── leftHippocampus.nii.gz
-            # │   └── tensors
-            # │       ├── default
-            # │       └── pet_conversion
-            # │           └── leftHippocampus.pt
-            # ├── data.tsv
-            # └── subjects
-            #     ├── sub-001
-            #     │   └── ses-M000
-            #     │       └── pet_linear
-            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            #     │           └── tensors
-            #     │               ├── default
-            #     │               └── pet_conversion
-            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-            #         ...
-            #     ...
+            from clinicadl.data import datasets, datatypes
 
             dataset = datasets.CapsDataset(
                 caps_directory="mycaps",

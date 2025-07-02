@@ -220,32 +220,36 @@ class DataLoaderConfig(ClinicaDLConfig):
 
         Examples
         --------
-        .. code-block:: python
+        .. code-block:: text
 
-            # data are as follows:
-            # mycaps
-            # ├── data.tsv
-            # ├── tensor_conversion
-            # │   └── default_pet-linear_18FAV45_pons2.json
-            # └── subjects
-            #     ├── sub-001
-            #     │   └── ses-M000
-            #     │       └── pet_linear
-            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            #     │           └── tensors
-            #     │               └── default
-            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-            #         ...
-            #     ...
-            #
-            # in data.tsv:
-            #    participant_id	session_id	age	sex	diagnosis
-            # 0	    sub-001	  ses-M000	 55	  M	      CN
-            # 1	    sub-001	  ses-M003	 55	  M	      AD
-            # 2	    sub-002	  ses-M000	 62	  F	      MCI
-            # 3	    sub-002	  ses-M003	 62	  F	      AD
-            # 4	    sub-003	  ses-M000	 67	  F	      CN
-            # ...
+            Data look like:
+
+            mycaps
+            ├── data.tsv
+            ├── tensor_conversion
+            │   └── default_pet-linear_18FAV45_pons2.json
+            └── subjects
+                ├── sub-001
+                │   └── ses-M000
+                │       └── pet_linear
+                │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+                │           └── tensors
+                │               └── default
+                │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+                    ...
+                ...
+
+            The "data.tsv" file looks like:
+
+            participant_id  session_id   age   sex   diagnosis
+            sub-001         ses-M000     55.0  M     CN
+            sub-001         ses-M003     55.0  M     AD
+            sub-002         ses-M000     62.0  F     MCI
+            sub-002         ses-M003     62.0  F     AD
+            sub-003         ses-M000     67.0  F     CN
+            ...
+
+        .. code-block:: python
 
             from clinicadl.data.datasets import CapsDataset, PairedDataset
             from clinicadl.data.datatypes import PETLinear

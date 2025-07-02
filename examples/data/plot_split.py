@@ -124,10 +124,10 @@ splitter = split.KFold(kfold_dir)
 # :py:class:`KFold.get_splits <clinicadl.split.KFold.get_splits>`. This method is a generator
 # that enables to iterate over the splits of the K-Fold.
 
-for i, split in enumerate(splitter.get_splits(train_set)):
+for i, split_ in enumerate(splitter.get_splits(train_set)):
     print(f"Split {i}")
-    print(f"Training set: {len(split.train_dataset)} images")
-    print(f"Test set: {len(split.val_dataset)} images")
+    print(f"Training set: {len(split_.train_dataset)} images")
+    print(f"Test set: {len(split_.val_dataset)} images")
 
 # %%
 # Manipulate a :py:class:`~clinicadl.split.Split`
@@ -137,9 +137,9 @@ for i, split in enumerate(splitter.get_splits(train_set)):
 # A ``Split`` contains the data of the training/validation splits, as well as other relevant information
 # for ClinicaDL. Before passing it to the ``Trainer``, you will have to build the associated :py:class:`~torch.utils.data.DataLoader` s:
 
-split.build_train_loader(batch_size=2, shuffle=True)
-split.build_val_loader(batch_size=2, shuffle=False)
-split.train_loader
+split_.build_train_loader(batch_size=2, shuffle=True)
+split_.build_val_loader(batch_size=2, shuffle=False)
+split_.train_loader
 
 # %%
 #

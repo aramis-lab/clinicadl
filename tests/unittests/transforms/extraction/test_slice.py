@@ -83,6 +83,9 @@ def test_extract_sample():
     assert extracted_data.participant == "sub-000"
     assert extracted_data.session == "ses-M000"
     assert extracted_data.image_path == "abc.nii.gz"
+    assert extracted_data.slice_position == 5
+    assert extracted_data.slice_direction == 2
+    assert extracted_data._sample_index == 5
 
     assert data_point.image.tensor.shape == (1, 5, 3, 7)
 
