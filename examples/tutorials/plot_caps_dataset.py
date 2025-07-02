@@ -13,7 +13,8 @@ from pathlib import Path
 
 from clinicadl.data import datasets, datatypes
 
-caps_path = (Path(__file__).parents[1] / "resources" / "caps").resolve()
+current_dir = Path.cwd()
+caps_path = current_dir.parent / "resources" / "caps"
 data = caps_path / "data.tsv"
 caps = datasets.CapsDataset(
     caps_path,
@@ -28,7 +29,7 @@ caps = datasets.CapsDataset(
 # ------------------------------
 
 # This is a python comment
-caps.read_tensor_conversion()
+caps.to_tensors()
 
 
 # %%
