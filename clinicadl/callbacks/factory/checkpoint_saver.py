@@ -51,25 +51,20 @@ class _CheckpointSaver(Callback):
             MODEL: config.model.network.state_dict(),
             EPOCH: config.epoch,
         }
-        checkpoint_path = config.maps.splits[config.split.index].tmp.path / (
-            MODEL + PTH + TAR
-        )
-        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_dir = config.maps.training.splits[config.split.index].tmp
+        tmp_dir.create(_exists_ok=True)
 
-        torch.save(model_weights, checkpoint_path)
+        torch.save(model_weights, tmp_dir.model)
 
         optim_weights = {
             MODEL: config.model.optimizer.state_dict(),
             EPOCH: config.epoch,
         }
-        optim_path = config.maps.splits[config.split.index].tmp.path / (
-            OPTIMIZER + PTH + TAR
-        )
 
-        torch.save(optim_weights, optim_path)
+        torch.save(optim_weights, tmp_dir.optimizer)
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """
         Remove the temporary storage used for the latest checkpoint after training completes.
         """
-        config.maps.splits[config.split.index].tmp.remove()
+        config.maps.training.splits[config.split.index].tmp.remove()

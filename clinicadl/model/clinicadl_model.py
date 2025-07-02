@@ -9,7 +9,7 @@ from torch.optim.optimizer import Optimizer
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses.config import LossConfig, get_loss_function_config
 from clinicadl.losses.types import Loss
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.networks.config import NetworkConfig, get_network_config
 from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
 from clinicadl.utils import cluster
@@ -134,8 +134,8 @@ class ClinicaDLModel:
         return loss
 
     def validation_step(
-        self, data: Batch, device: torch.device, metrics: ClinicaDLMetrics
-    ) -> ClinicaDLMetrics:
+        self, data: Batch, device: torch.device, metrics: MetricsHandler
+    ) -> MetricsHandler:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """

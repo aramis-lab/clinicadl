@@ -55,7 +55,9 @@ class Tensorboard(Callback):
         Optionally logs the model graph if requested.
         """
         if self.log_dir is None:
-            self.log_dir = config.maps.splits[config.split.index].logs.tensorboard
+            self.log_dir = config.maps.training.splits[
+                config.split.index
+            ].logs.tensorboard
 
         self.writer = SummaryWriter(log_dir=str(self.log_dir))
 

@@ -14,7 +14,7 @@ from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.metrics import ClinicaDLMetrics, LossMetricConfig
+from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricType
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
@@ -152,16 +152,18 @@ class Trainer:
         _overwrite: bool = False,
         seed: int = 123,
     ) -> None:
-
-        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
+        train_metrics = MetricsHandler(metrics=metrics, loss=model.loss)
 
         self.callbacks = CallbacksHandler(
             metrics=train_metrics,
             callbacks=callbacks if callbacks is not None else [],
         )
 
+        maps = Maps(maps_path)
+        maps.create(overwrite=_overwrite)
+
         self.config = _TrainingState(
-            maps=Maps(maps_path, _overwrite),
+            maps=maps,
             metrics=train_metrics,
             model=model,
             optim=optim_config,
@@ -226,7 +228,7 @@ class Trainer:
     def on_train_begin(self, split: Split) -> None:
         """Prepare training by setting model to training mode, creating maps, and resetting states."""
 
-        self.config.maps.create()
+        self.config.maps.create(split=split)
         self.model.train()
         self.reset(split)
 
@@ -264,7 +266,7 @@ class Trainer:
 
     def on_train_end(self, split: Split):
         self.callbacks.on_train_end(config=self.config)
-        self.metrics.save(self.maps.splits[split.index].metrics_tsv)
+        self.metrics.save(self.maps.training.splits[split.index].validation_metrics_tsv)
 
     def reset(self, split: Optional[Split] = None):
         """TO COMPLETE"""
@@ -353,4 +355,26 @@ class Trainer:
             split=split,
             output_transforms=output_transforms,
             data_group=data_group if data_group else "test",
+        )
+
+    @classmethod
+    def from_maps(cls, maps_path: PathType):
+        maps = Maps(maps_path)
+        maps.load()
+
+        model = maps.get_model()
+        comp_config = maps.training.get_computational_config()
+        optim_config = maps.training.get_optimization_config()
+        callbacks = maps.training.get_callbacks()
+        metrics = maps.training.get_metrics()
+
+        # TODO : check seed ?
+
+        return cls(
+            maps_path=maps_path,
+            model=model,
+            callbacks=callbacks,
+            metrics=metrics,
+            optim_config=optim_config,
+            comp_config=comp_config,
         )

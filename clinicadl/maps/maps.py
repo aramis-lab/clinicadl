@@ -5,123 +5,420 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Union
 
+import pandas as pd
+
+from clinicadl.callbacks.factory.base import Callback
+from clinicadl.callbacks.handler import CallbacksHandler
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
 from clinicadl.dictionary.words import (
+    ARCHITECTURE,
+    BEST,
+    CALLBACKS,
+    CAPS,
+    CHECKPOINTS,
     COMPUTATIONAL,
+    DATA,
+    DATASET,
     ENVIRONMENT,
+    EPOCH,
     GROUPS,
+    LOGS,
     METRICS,
     MODEL,
     OPTIMIZATION,
+    OPTIMIZER,
+    OUTPUT,
+    PREDICTIONS,
+    SPLIT,
+    SUMMARY,
+    TEST,
+    TMP,
     TRAIN,
+    TRAINING,
     VALIDATION,
 )
+from clinicadl.metrics.config import MetricConfig
+from clinicadl.metrics.handler import MetricsHandler
+from clinicadl.model import ClinicaDLModel
+from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
 from clinicadl.tsvtools.utils import remove_non_empty_dir
+from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
 from .base import Directory
-from .data_group import DataGroup, TrainValDataGroup
-from .split_dir import SplitDir
-
-TRAIN_VAL = [TRAIN, VALIDATION]
-DataGroupType = Union[DataGroup, TrainValDataGroup]
 
 
-class Maps(Directory):
-    """
-    Class representing the `MAPS` (Model Analysis and Processing Structure) folder.
-    This directory contains all elements obtained during training, validation, and post-processing
-    procedures in a deep learning framework.
+class BestMetric(Directory):
+    def __init__(self, parent_dir: PathType, metric: str):
+        super().__init__(path=Path(parent_dir) / (BEST + "-" + metric))
 
-    The structure is organized into:
-    - **Splits**: A training procedure consists of training one model per train/validation split
-      defined by the validation procedure. The MAPS directory contains `split-<i>` folders, where `i`
-      ranges from `0` to `N-1`, each storing information about the corresponding split.
-    - **Best Metrics**: For each split, a model is selected per user-defined `selection_metrics`.
-      The output folder for a model selected by a metric `<metric>` is named `best-<metric>`.
-    - **Data Groups**: A selected model can be applied to different datasets for individual predictions,
-      evaluation metrics, or interpretability maps. These datasets, called "data groups," are stored
-      at the root of the MAPS directory to ensure their characteristics are shared across all models.
+    @property
+    def caps_output(self) -> Path:
+        return self.path / (CAPS + OUTPUT)
 
-    Attributes
-    ----------
-    path : Path
-        Path to the MAPS directory.
-    splits : Dict[int, SplitDir]
-        Dictionary mapping split indices to their corresponding `SplitDir` objects.
-    data_groups : Dict[str, Union[Dict[int, DataGroupType], DataGroupType]]
-        Dictionary storing data groups. For train/validation data groups, a dictionary is maintained
-        per split. For other data groups, they are stored individually.
-    """
+    @property
+    def metrics_tsv(self) -> Path:
+        return self.path / (METRICS + TSV)
 
-    def __init__(self, maps_path: PathType, overwrite: bool = False):
-        super().__init__(path=maps_path)
 
-        self._overwrite = overwrite
-        self.splits: Dict[int, SplitDir] = {}
-        self.data_groups: Dict[str, Union[Dict[int, DataGroupType], DataGroupType]] = {}
+class PredSplitDir(Directory):
+    def __init__(self, num: int, parent_path: PathType):
+        super().__init__(path=Path(parent_path) / (SPLIT + "-" + str(num)))
+
+        self.best_metrics: Dict[str, BestMetric] = {}
+
+    def create(self, metric: str):
+        super().create()
+        best_metric = BestMetric(parent_dir=self.path, metric=metric)
+        best_metric.create()
+        self.best_metrics[metric] = best_metric
+
+    @property
+    def metric_list(self) -> list[str]:
+        if self.is_empty():
+            return []
+        return [
+            x.name.split("-")[1]
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(BEST)
+        ]
 
     def load(self):
-        """
-        Loads an existing MAPS directory.
-
-        Parameters
-        ----------
-        maps_path : PathType
-            Path to the MAPS directory.
-
-        Returns
-        -------
-        Maps
-            An instance of the `Maps` class representing the loaded directory.
-        """
-        if not self.exists():
-            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
-
-        for split_idx in self.split_list:
-            split_dir = SplitDir.load(num=split_idx, maps_path=self.path)
-
-            if not split_dir.exists() or split_dir.is_empty():
-                raise ClinicaDLConfigurationError(
-                    f"The split at {split_dir.path} doesn't exist or is empty."
-                )
-
-            self.splits[split_idx] = split_dir
-
-        for data_group in self.group_list:
-            if data_group in TRAIN_VAL:
-                for split_idx in self.splits.keys():
-                    group = TrainValDataGroup(
-                        name=data_group, parent_dir=self.groups_dir, split=split_idx
-                    )
-
-                    self.data_groups[group.name] = {split_idx: group}
-
-            else:
-                group = DataGroup(name=data_group, parent_dir=self.groups_dir)
-                if not group.exists():
-                    raise ClinicaDLConfigurationError(
-                        f"The group at {group.path} doesn't exist."
-                    )
-                self.data_groups[group.name] = group
+        super().load()
+        for metric in self.metric_list:
+            best_metric = BestMetric(parent_dir=self.path, metric=metric)
+            best_metric.load()
+            self.best_metrics[metric] = best_metric
 
     @property
-    def groups_dir(self) -> Path:
-        """Returns the path to the groups directory inside MAPS."""
-        return self.path / GROUPS
+    def computational_json(self) -> Path:
+        return self.path / (COMPUTATIONAL + JSON)
 
-    @property
-    def json_dir(self) -> Path:
-        return self.path / "json"
+
+class GroupDir(Directory):
+    def __init__(self, parents_path: PathType, group_name: str):
+        super().__init__(path=Path(parents_path) / (TEST + group_name))
+
+        self.splits: Dict[int, PredSplitDir] = {}
+
+    def create(self, split: int, metric: str, dataset: CapsDataset):
+        super().create()
+
+        dataset.df.to_csv(self.data_tsv, sep="\t", index=False)
+
+        split_dir = PredSplitDir(num=split, parent_path=self.path)
+        split_dir.create(metric=metric)
+        self.splits[split] = split_dir
+
+    def load(self):
+        super().load()
+        for idx in self.split_list:
+            split = PredSplitDir(num=idx, parent_path=self.path)
+            split.load()
+            self.splits[idx] = split
 
     @property
     def split_list(self) -> list[int]:
-        """Returns a list of available split indices."""
-        if not self.exists():
-            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
+        if self.is_empty():
+            return []
+        return [
+            int(x.name.split("-")[1])
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(SPLIT)
+        ]
+
+    @property
+    def caps_dataset_json(self) -> Path:
+        return self.path / (CAPS + "_" + DATASET + JSON)
+
+    @property
+    def data_tsv(self) -> Path:
+        return self.path / (DATA + TSV)
+
+    @property
+    def metrics_json(self) -> Path:
+        return self.path / (METRICS + JSON)
+
+
+class PredictionsDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / PREDICTIONS)
+
+        self.groups: Dict[str, GroupDir] = {}
+
+    def load(self):
+        super().load()
+        for name in self.group_list:
+            group = GroupDir(parents_path=self.path, group_name=name)
+            group.load()
+            self.groups[name] = group
+
+    def create_group(
+        self, group_name: str, split: int, metric: str, dataset: CapsDataset
+    ):
+        super().create(_exists_ok=True)
+        group = GroupDir(parents_path=self.path, group_name=group_name)
+        group.create(split=split, metric=metric, dataset=dataset)
+        self.groups[group_name] = group
+
+    @property
+    def group_list(self) -> list[str]:
+        if self.is_empty():
+            return []
+        return [
+            x.name.split("-")[1]
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(TEST)
+        ]
+
+
+class DataSplitDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / SPLIT)
+
+        self.df = None
+
+    def load(self):
+        super().load()
+        self.df = pd.read_csv(self.data_tsv, sep="\t")
+        # TODO : Add check for column and index ?
+
+    @property
+    def data_tsv(self) -> Path:
+        return self.path / (DATA + TSV)
+
+
+class DataTrainDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / TRAIN)
+
+        self.splits: Dict[int, DataSplitDir] = {}
+
+    def load(self):
+        super().load()
+
+        for idx in range(1, 6):
+            split = DataSplitDir(parents_path=self.path / str(idx))
+            split.load()
+            self.splits[idx] = split
+
+
+class DataValDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / VALIDATION)
+
+        self.splits: Dict[int, DataSplitDir] = {}
+
+    def load(self):
+        super().load()
+
+        for idx in range(1, 6):
+            split = DataSplitDir(parents_path=self.path / str(idx))
+            split.load()
+            self.splits[idx] = split
+
+
+class DataDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / DATA)
+
+        self.train = DataTrainDir(parents_path=self.path)
+        self.val = DataValDir(parents_path=self.path)
+
+        self.df = None
+
+    def create(self, split: Split):
+        super().create(_exists_ok=True)
+        self.train.create(split=split.train)
+        self.val.create(split=split.val)
+
+    def load(self):
+        super().load()
+        self.train.load()
+        self.val.load()
+        self.df = pd.read_csv(self.data_tsv, sep="\t")
+
+    def get_caps_dataset(self):
+        return CapsDataset.from_json(self.caps_dataset_json)
+
+    @property
+    def caps_dataset_json(self) -> Path:
+        return self.path / (CAPS + "_" + DATASET + JSON)
+
+    @property
+    def data_tsv(self) -> Path:
+        return self.path / (DATA + TSV)
+
+
+class LogsDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / LOGS)
+
+    @property
+    def training_tsv(self) -> Path:
+        return self.path / (TRAINING + TSV)
+
+    @property
+    def tensorboard(self) -> Path:
+        return self.path / TENSORBOARD
+
+
+class EpochDir(Directory):
+    def __init__(self, parents_path: PathType, epoch: int):
+        super().__init__(path=Path(parents_path) / f"{EPOCH}-{epoch}")
+
+    def load(self):
+        super().load()
+        # TODO : add check ?
+
+    @property
+    def model(self) -> Path:
+        return self.path / (MODEL + PTH + TAR)
+
+    @property
+    def optimizer(self) -> Path:
+        return self.path / (OPTIMIZER + PTH + TAR)
+
+
+class CheckpointsDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / CHECKPOINTS)
+
+        self.epochs: Dict[int, EpochDir] = {}
+
+    def create_epoch(self, epoch: int):
+        epoch_dir = EpochDir(parents_path=self.path, epoch=epoch)
+        epoch_dir.create()
+        self.epochs[epoch] = epoch_dir
+
+    def load(self):
+        super().load()
+
+        for epoch in self.epoch_list:
+            epoch_dir = EpochDir(parents_path=self.path, epoch=epoch)
+            epoch_dir.load()
+            self.epochs[epoch] = epoch_dir
+
+    @property
+    def epoch_list(self):
+        if self.is_empty():
+            return []
+        return [
+            int(x.name.split("-")[1])
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith(EPOCH)
+        ]
+
+
+class TrainBestMetric(Directory):
+    def __init__(self, parent_dir: PathType, metric: str):
+        super().__init__(path=Path(parent_dir) / (BEST + "-" + metric))
+
+    def load(self):
+        super().load()
+        # TODO: some check ?
+
+    @property
+    def model(self) -> Path:
+        return self.path / (MODEL + PTH + TAR)
+
+    @property
+    def optimizer(self) -> Path:
+        return self.path / (OPTIMIZER + PTH + TAR)
+
+    @property
+    def validation_metrics_tsv(self) -> Path:
+        return self.path / (VALIDATION + "_" + METRICS + TSV)
+
+
+class TmpDir(Directory):
+    def __init__(self, parent_dir: PathType):
+        super().__init__(path=Path(parent_dir) / TMP)
+        pass
+
+    @property
+    def model(self) -> Path:
+        return (self.path / MODEL).with_suffix(PTH + TAR)
+
+    @property
+    def optimizer(self) -> Path:
+        return (self.path / OPTIMIZER).with_suffix(PTH + TAR)
+
+    def remove(self) -> None:
+        """Removes the temporary files."""
+        if self.model.is_file():
+            self.model.unlink()
+        if self.optimizer.is_file():
+            self.optimizer.unlink()
+        if self.path.is_dir():
+            self.path.rmdir()
+
+
+class TrainSplitDir(Directory):
+    def __init__(self, num: int, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / (SPLIT + "-" + str(num)))
+
+        self.best_metrics: Dict[str, TrainBestMetric] = {}
+
+        self.checkpoints = CheckpointsDir(parents_path=self.path)
+        self.logs = LogsDir(parents_path=self.path)
+
+        self.tmp = TmpDir(parent_dir=self.path)
+
+    def load(self):
+        super().load()
+        self.checkpoints.load()
+        self.logs.load()
+        self.tmp.load()
+
+        for metric in self.best_metrics_list:
+            best_metric = TrainBestMetric(parent_dir=self.path, metric=metric)
+            best_metric.load()
+            self.best_metrics[metric] = best_metric
+
+    def get_computational_config(self) -> ComputationalConfig:
+        return ComputationalConfig.from_json(self.computational_json)
+
+    @property
+    def best_metrics_list(self):
+        if self.is_empty():
+            return []
+        return [
+            x.name.split("-")[1]
+            for x in self.path.iterdir()
+            if x.is_dir() and x.name.startswith("best")
+        ]
+
+    @property
+    def computational_json(self) -> Path:
+        return self.path / (COMPUTATIONAL + JSON)
+
+    @property
+    def summary_log(self) -> Path:
+        return self.path / (SUMMARY + LOG)
+
+    @property
+    def validation_metrics_tsv(self) -> Path:
+        return self.path / (VALIDATION + "_" + METRICS + TSV)
+
+
+class TrainingDir(Directory):
+    def __init__(self, parents_path: PathType):
+        super().__init__(path=Path(parents_path) / TRAINING)
+
+        self.data = DataDir(parents_path=self.path)
+        self.splits: Dict[int, TrainSplitDir] = {}
+
+    def create_split(self, num: int):
+        split = TrainSplitDir(num=num, parents_path=self.path)
+        split.create()
+        self.splits[num] = split
+
+    @property
+    def split_list(self) -> list[int]:
         if self.is_empty():
             return []
         return [
@@ -130,140 +427,96 @@ class Maps(Directory):
             if x.is_dir() and x.name.startswith("split")
         ]
 
-    @property
-    def group_list(self) -> list[str]:
-        """Returns a list of available data group names."""
-        if not self.exists():
-            raise ClinicaDLConfigurationError(f"The MAPS at {self.path} doesn't exist.")
-        if self.is_empty():
-            return []
-        return [x.name for x in self.groups_dir.iterdir() if x.is_dir()]
+    def load(self):
+        super().load()
+        self.data.load()
 
-    @property
-    def train_val_tsv(self) -> Path:
-        """Returns the path to the `train+validation.tsv` file."""
-        return (self.path / f"{TRAIN}+{VALIDATION}").with_suffix(TSV)
+        for idx in self.split_list:
+            split = TrainSplitDir(num=idx, parents_path=self.path)
+            split.load()
+            self.splits[idx] = split
 
-    @property
-    def requirements_txt(self) -> Path:
-        """Returns the path to the `environment.txt`file."""
-        return (self.path / ENVIRONMENT).with_suffix(TXT)
+    def get_callbacks(self) -> list[Callback]:
+        return CallbacksHandler.from_json(self.callbacks_json)
 
-    @property
-    def metrics_json(self) -> Path:
-        """Returns the path to the `maps.json` configuration file."""
-        return (self.json_dir / METRICS).with_suffix(JSON)
+    def get_metrics(self) -> Dict[str, MetricConfig]:
+        return MetricsHandler.from_json(self.metrics_json)
 
-    @property
-    def model_json(self) -> Path:
-        """Returns the path to the `model.json` configuration file."""
-        return (self.json_dir / MODEL).with_suffix(JSON)
+    def get_computational_config(self) -> ComputationalConfig:
+        return ComputationalConfig.from_json(self.computational_json)
+
+    def get_optimization_config(self) -> OptimizationConfig:
+        return OptimizationConfig.from_json(self.optimization_json)
 
     @property
     def computational_json(self) -> Path:
-        """Returns the path to the `computational.json` configuration file."""
-        return (self.json_dir / COMPUTATIONAL).with_suffix(JSON)
+        return self.path / (COMPUTATIONAL + JSON)
 
     @property
     def optimization_json(self) -> Path:
-        """Returns the path to the `optimization.json` configuration file."""
-        return (self.json_dir / OPTIMIZATION).with_suffix(JSON)
+        return self.path / (OPTIMIZATION + JSON)
 
-    def create_data_group(self, name: str, dataset: CapsDataset) -> None:
-        """
-        Creates a new data group within the MAPS directory.
+    @property
+    def callbacks_json(self) -> Path:
+        return self.path / (CALLBACKS + JSON)
 
-        Parameters
-        ----------
-            name: str
-                Name of the data group.
-            dataset: CapsDataset
-                Dataset associated with the data group.
+    @property
+    def metrics_json(self) -> Path:
+        return self.path / (METRICS + JSON)
 
-        Raises
-        ------
-            ClinicaDLConfigurationError: If the data group already exists.
-        """
-        if name in self.data_groups:
-            raise ClinicaDLConfigurationError(f"Data group '{name}' already exists.")
 
-        data_group = DataGroup(name=name, parent_dir=self.groups_dir)
-        data_group.create(dataset=dataset)
-        self.data_groups[name] = data_group
+class Maps(Directory):
+    def __init__(self, maps_path: PathType):
+        super().__init__(path=maps_path)
 
-    def create_split(self, split: Split, best_metrics: list[str]) -> None:
-        """
-        Creates a new split directory within the MAPS directory.
-        Creates the train and validation data_group associated to this split.
+        # self._overwrite = overwrite
+        self.predictions = PredictionsDir(parents_path=self.path)
+        self.training = TrainingDir(parents_path=self.path)
 
-        Parameters
-        ----------
-            split: Split
-                Split object defining train/validation datasets.
-            best_metrics: list[str]
-                List of metrics used for model selection.
+    def create(self, split: Optional[Split] = None, overwrite: bool = False):
+        super().create(overwrite=overwrite)
+        self.predictions.create(overwrite=overwrite)
+        self.training.create(overwrite=overwrite)
 
-        Raises
-        ------
-            ClinicaDLConfigurationError: If the split already exists.
-        """
-        if split.index in self.splits:
-            raise ClinicaDLConfigurationError(f"Split '{split.index}' already exists.")
+        if split:
+            self.training.create_split(num=split.index)
+            self.training.data.create(split=split)
 
-        split_dir = SplitDir(
-            num=split.index, best_metrics=best_metrics, maps_path=self.path
-        )
-        split_dir.create(split=split)
-        self.splits[split.index] = split_dir
+        self._write_evironment_txt()
 
-        train_group = TrainValDataGroup(
-            name=TRAIN, parent_dir=self.groups_dir, split=split.index
-        )
-        train_group.create(dataset=split.train_dataset)
-        self.data_groups[TRAIN] = {split.index: train_group}
+    def load(self):
+        super().load()
 
-        val_group = TrainValDataGroup(
-            name=VALIDATION, parent_dir=self.groups_dir, split=split.index
-        )
-        val_group.create(dataset=split.val_dataset)
-        self.data_groups[VALIDATION] = {split.index: val_group}
+        self.predictions.load()
+        self.training.load()
 
-    def create(self) -> None:
-        """
-        Creates the MAPS directory if it does not already exist.
+    def get_model(self):
+        return ClinicaDLModel.from_json(self.model_json)
 
-        Raises:
-            ClinicaDLConfigurationError: If the directory already exists.
-        """
-        if self.exists() and not self._overwrite:
-            raise ClinicaDLConfigurationError(
-                f"Maps directory ({self.path})already exists."
-            )
-        elif self._overwrite and self.exists():
-            self.remove()
+    @property
+    def architecture_log(self) -> Path:
+        return self.path / (ARCHITECTURE + LOG)
 
-        self.path.mkdir(parents=True, exist_ok=True)
-        self.groups_dir.mkdir(parents=True)
-        self.json_dir.mkdir(parents=True)
-        self._write_requirements_version()
+    @property
+    def environment_txt(self) -> Path:
+        return self.path / (ENVIRONMENT + TXT)
 
-    def _write_requirements_version(self) -> None:
+    @property
+    def model_json(self) -> Path:
+        return self.path / (MODEL + JSON)
+
+    @property
+    def summary_log(self) -> Path:
+        return self.path / (SUMMARY + LOG)
+
+    def _write_evironment_txt(self) -> None:
         """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
         try:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
             )
-            with (self.requirements_txt).open(mode="w") as file:
+            with (self.environment_txt).open(mode="w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
-            with (self.requirements_txt).open(mode="w") as file:
+            with (self.environment_txt).open(mode="w") as file:
                 file.write("pip freeze")
-
-    def read_json(self) -> dict:
-        return dict()
-
-    def caps_dir(self) -> Path:  # TODO: to change !
-        return self.read_json().get("caps_dir", Path(""))
-
-    def remove(self) -> None:
-        remove_non_empty_dir(self.path)

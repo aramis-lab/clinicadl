@@ -72,7 +72,7 @@ class Metrics(ABC):
         return metrics_config
 
 
-class ClinicaDLMetrics(Metrics):
+class MetricsHandler(Metrics):
     """TO COMPLETE"""
 
     def __init__(
@@ -81,7 +81,7 @@ class ClinicaDLMetrics(Metrics):
         metrics: Optional[dict[str, MetricType]] = None,
     ):
         """
-        Initialize the ClinicaDLMetrics instance.
+        Initialize the MetricsHandler instance.
 
         Parameters
         ----------
@@ -122,7 +122,7 @@ class ClinicaDLMetrics(Metrics):
         metrics: dict[str, MetricType],
     ) -> None:
         """
-        Add metrics to the ClinicaDLMetrics instance.
+        Add metrics to the MetricsHandler instance.
         """
         add_metric = self.check_metrics(metrics)
         new_callable_metrics = self.get_callable_metrics()

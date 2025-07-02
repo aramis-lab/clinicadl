@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics.handler import Metrics
 
 from .base import Callback
 

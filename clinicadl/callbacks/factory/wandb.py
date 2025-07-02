@@ -102,14 +102,16 @@ class WandB(Callback):  # pragma: no cover
                     self._wandb.log(log_dict, step=config.epoch)
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
-        tmp_path = config.maps.splits[config.split.index].tmp.path
-        model_file = tmp_path / MODEL + PTH + TAR
-        optimizer_file = tmp_path / OPTIMIZER + PTH + TAR
+        tmp_dir = config.maps.training.splits[config.split.index].tmp
+        model_file = tmp_dir.model
+        optimizer_file = tmp_dir.optimizer
 
         if model_file.exists():
-            self._wandb.save(str(model_file), base_path=str(tmp_path), policy="now")
+            self._wandb.save(str(model_file), base_path=str(tmp_dir.path), policy="now")
 
         if optimizer_file.exists():
-            self._wandb.save(str(optimizer_file), base_path=str(tmp_path), policy="now")
+            self._wandb.save(
+                str(optimizer_file), base_path=str(tmp_dir.path), policy="now"
+            )
 
         self._wandb.finish()

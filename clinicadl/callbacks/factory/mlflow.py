@@ -100,7 +100,7 @@ class MLflow(Callback):
         Log the final model checkpoint and optimizer state as MLflow artifacts,
         then end the MLflow run.
         """
-        tmp_path = config.maps.splits[config.split.index].tmp.path
+        tmp_path = config.maps.training.splits[config.split.index].tmp.path
         model_file = tmp_path / MODEL + PTH + TAR
         optimizer_file = tmp_path / OPTIMIZER + PTH + TAR
 

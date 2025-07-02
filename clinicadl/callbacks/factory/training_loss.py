@@ -43,6 +43,6 @@ class _TrainingLoss(Callback):
         """
         Called at the end of training to save the recorded losses to a TSV file.
         """
-        training_tsv = config.maps.splits[config.split.index].logs.training_tsv
+        training_tsv = config.maps.training.splits[config.split.index].logs.training_tsv
         training_tsv.parent.mkdir(parents=True, exist_ok=True)
         self.df.to_csv(training_tsv, sep="\t", index=True)

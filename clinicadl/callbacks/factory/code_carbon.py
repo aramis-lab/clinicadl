@@ -33,7 +33,9 @@ class CodeCarbon(Callback):
         from codecarbon import EmissionsTracker, OfflineEmissionsTracker
         from codecarbon.output_methods.logger import LoggerOutput
 
-        codecarbon_dir = config.maps.splits[config.split.index].path / CODECARBON
+        codecarbon_dir = (
+            config.maps.training.splits[config.split.index].path / CODECARBON
+        )
         codecarbon_dir.mkdir(parents=True, exist_ok=True)
 
         try:

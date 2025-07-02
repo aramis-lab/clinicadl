@@ -20,7 +20,7 @@ from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.metrics import LossMetricConfig
+from clinicadl.metrics.handler import LossMetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
@@ -51,7 +51,9 @@ class Predictor:
         self.maps.load()
 
         if comp_config is None:
-            self.comp = ComputationalConfig.from_json(self.maps.computational_json)
+            self.comp = ComputationalConfig.from_json(
+                self.maps.training.computational_json
+            )
         else:
             self.comp = comp_config
 
@@ -115,12 +117,17 @@ class Predictor:
         # TODO : check the datagroup doesn't exist for these parameters
 
         # TODO : retrieve the metrics from the maps and add the additional metrics
-        # metrics = ClinicaDLMetrics.from_maps(additionnal_metrics= additionnal_metrics)
+        # metrics = MetricsHandler.from_maps(additionnal_metrics= additionnal_metrics)
 
         # TODO : check that the Transforms is of Type OutputsTransforms, if not put the transforms in an OutputsTransforms Object
 
-        self.maps.create_data_group(name=data_group, dataset=dataloader.dataset)
-        self.maps.splits[split].best_metrics[metric].create_data_group(name=data_group)
+        self.maps.predictions.create_group(
+            group_name=data_group,
+            split=split,
+            dataset=dataloader.dataset,
+            metric=metric,
+        )
+
         # TODO : create a new method to create a new datagroup
 
         self.model.network.eval()

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from clinicadl.maps.maps import Maps
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
@@ -24,7 +24,7 @@ class _TrainingState(ClinicaDLConfig):
     ----------
     maps : Maps
         Provides access to dataset file paths and structure.
-    metrics : ClinicaDLMetrics
+    metrics : MetricsHandler
         Handles computation and storage of performance metrics.
     model : ClinicaDLModel
         The neural network model being trained.
@@ -51,7 +51,7 @@ class _TrainingState(ClinicaDLConfig):
     """
 
     maps: Maps
-    metrics: ClinicaDLMetrics
+    metrics: MetricsHandler
     model: ClinicaDLModel
     optim: OptimizationConfig
     comp: ComputationalConfig

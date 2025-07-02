@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.metrics.handler import MetricsHandler
 
 from .factory import *
 from .factory.base import Callback
@@ -36,7 +37,7 @@ class CallbacksHandler:
 
     Parameters
     ----------
-    metrics : ClinicaDLMetrics
+    metrics : MetricsHandler
         Object used to validate the metric names required by `ModelSelection` and `EarlyStopping`.
     callbacks : Optional[List[Callback]]
         List of user-defined callbacks. Supports duplicates for EarlyStopping,
@@ -50,12 +51,12 @@ class CallbacksHandler:
     See Also
     --------
     :py:class:`~clinicadl.callbacks.base.Callback`: Abstract base class for all callbacks.
-    :py:class:`~clinicadl.metrics.metrics.ClinicaDLMetrics`: Metric management utility.
+    :py:class:`~clinicadl.metrics.metrics.MetricsHandler`: Metric management utility.
     """
 
     def __init__(
         self,
-        metrics: ClinicaDLMetrics,
+        metrics: MetricsHandler,
         callbacks: Optional[List[Callback]] = None,
     ):
         self.callbacks: Dict[str, Callback] = self._check_callbacks_names(callbacks)
@@ -127,7 +128,7 @@ class CallbacksHandler:
             if name not in self.callbacks:
                 self.callbacks[name] = callback
 
-    def _check_metrics(self, metrics: ClinicaDLMetrics):
+    def _check_metrics(self, metrics: MetricsHandler):
         """
         Ensure that all metrics used in ModelSelection and EarlyStopping callbacks
         are present in the provided metrics.
