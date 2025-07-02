@@ -34,8 +34,8 @@ class Trainer:
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
-    It leverages ClinicaDL's components like :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`,
-    :py:class:`~clinicadl.metrics.metrics.ClinicaDLMetrics`, and :py:class:`~clinicadl.maps.maps.Maps`,
+    It leverages ClinicaDL's components like :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
+    and :py:class:`~clinicadl.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
     The Trainer follows a callback-driven design pattern: it invokes callbacks at key stages
@@ -51,7 +51,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : ClinicaDLModel
+    model : :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
         The deep learning model to train and evaluate.
     callbacks : list[Callback], optional
         List of callback instances to execute during training and evaluation.
