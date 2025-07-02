@@ -22,7 +22,7 @@ class Custom(Preprocessing, CustomModality):
     custom_suffix : str
         The suffix to identify the files to select.\n
         Only the files that match the pattern ``custom/sub-*_ses-*_{custom_suffix}.nii*``
-        in the CAPS structure will be considered.
+        in the :term:`CAPS` structure will be considered.
     """
 
     @computed_field

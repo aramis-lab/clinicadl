@@ -9,41 +9,25 @@
             "needed_pipeline": "t1-linear"
         }
     },
-    "individual_masks": ["brain", "seg"],
-    "common_masks": ["leftHippocampus.nii.gz"],
+    "individual_masks": [],
+    "common_masks": ["leftHemisphere.nii"],
     "also": {},
-    "transforms": [
-        {
-            "name": "Crop",
-            "cropping": [
-                0,
-                1,
-                0,
-                1,
-                0,
-                1
-            ]
-        }
-    ],
+    "transforms": [],
     "spacing": [
-        1.2999999523162842,
-        1.2000000476837158,
-        1.100000023841858
+        1.0,
+        1.0,
+        1.0
     ],
     "shape": [
-        2,
-        2,
-        2
+        3,
+        3,
+        3
     ],
     "interrupted": false,
     "participants_sessions": [
         [
             "sub-000",
             "ses-M000"
-        ],
-        [
-            "sub-010",
-            "ses-M003"
         ]
     ]
 }

@@ -47,12 +47,6 @@ def test_extract_sample():
     assert extracted_data_point.session == "ses-M000"
     assert extracted_data_point.image_path == "abc.nii.gz"
 
-    # test get_tensors
-    tensors = extracted_data_point.get_tensors()
-    assert (tensors["image"] == image_tensor).all()
-    assert (tensors["label"] == label).all()
-    assert (tensors["mask_1"] == mask_1).all()
-
     # other tests
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),

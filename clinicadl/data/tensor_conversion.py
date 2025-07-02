@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 from pydantic import SerializeAsAny, ValidationError, field_serializer
 from tqdm import tqdm
 
-from clinicadl.dictionary.suffixes import JSON
+from clinicadl.dictionary.suffixes import JSON, PT
 from clinicadl.dictionary.words import (
     AFFINE,
     DEFAULT,
@@ -100,7 +100,7 @@ class TensorConversionInfo(ClinicaDLConfig):
                         transforms.append(transform)
             else:
                 raise ClinicaDLTensorConversionError(
-                    f"{json_path} is not a valid tensor conversion file."
+                    f"{json_path} is not a valid tensor conversion file. "
                     "Value for 'transforms' should be a list."
                 )
             del info[TRANSFORMS]
@@ -113,7 +113,7 @@ class TensorConversionInfo(ClinicaDLConfig):
             )
         except ValidationError as exc:
             raise ClinicaDLTensorConversionError(
-                f"{json_path} is not a valid tensor conversion file."
+                f"{json_path} is not a valid tensor conversion file. "
                 "Some values have been corrupted and cannot be read."
             ) from exc
 
@@ -124,7 +124,7 @@ class TensorConversion:
 
     Before conversion to tensors, transforms at the image level can be applied, in order not
     to have to compute them each time the image is loaded.
-    Images are also (always) converted to the same coordinate system (RAS+).
+    Images are also converted to the same coordinate system (RAS+).
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ class TensorConversion:
 
         self._save_transforms = True
         self._ignore_spacing = False
-        self._raise_warnings = True
+        self._shape_warning = True
         self._ref_image_spacing = None
         self._ref_image_shape = None
         self._output_shape = None
@@ -165,7 +165,9 @@ class TensorConversion:
 
     @tensor_folder_name.setter
     def tensor_folder_name(self, conversion_name: Optional[str]) -> None:
-        if conversion_name:
+        if conversion_name and conversion_name.startswith(DEFAULT):
+            self._tensor_folder_name = DEFAULT
+        elif conversion_name:
             self._tensor_folder_name = conversion_name
         else:
             self._tensor_folder_name = DEFAULT
@@ -225,7 +227,7 @@ class TensorConversion:
         self,
         n_proc: int = 1,
         ignore_spacing: bool = False,
-        raise_warnings: bool = True,
+        shape_warning: bool = True,
         conversion_name: Optional[str] = None,
         save_transforms: bool = False,
         check_transforms: bool = True,
@@ -239,7 +241,7 @@ class TensorConversion:
         self._reset()
         self._save_transforms = save_transforms
         self._ignore_spacing = ignore_spacing
-        self._raise_warnings = raise_warnings
+        self._shape_warning = shape_warning
 
         self.json = conversion_name
         self.tensor_folder_name = conversion_name
@@ -285,6 +287,7 @@ class TensorConversion:
         conversion_name: Optional[str] = None,
         check_transforms: bool = True,
         load_also: Optional[list[str]] = None,
+        check_pt_files: bool = True,
     ):
         """
         To read an old tensor conversion json and updates the states of the
@@ -333,6 +336,10 @@ class TensorConversion:
             for name, type_ in conversion_info.also.items()
             if name in load_also
         }
+
+        # finally, check that pt files have not been deleted
+        if check_pt_files:
+            self._check_pt_files()
         self.completed = True
 
     ### to process (participant, session) and masks individually ###
@@ -514,8 +521,6 @@ class TensorConversion:
 
         images_dict[AFFINE] = torch.from_numpy(images.image.affine).float()
 
-        if path.is_file():
-            logger.info("The file %s exists. It will be overwritten.", path)
         torch.save(images_dict, path)
 
     @staticmethod
@@ -533,8 +538,6 @@ class TensorConversion:
             AFFINE: torch.from_numpy(mask.affine).float(),
         }
 
-        if path.is_file():
-            logger.info("The file %s exists. It will be overwritten.", path)
         torch.save(mask_dict, path)
 
     ### to check consistency across the dataset
@@ -582,7 +585,7 @@ class TensorConversion:
         shape = image.spatial_shape
         if shape != self._ref_image_shape.spatial_shape:
             if (
-                self._raise_warnings
+                self._shape_warning
                 and self._uniform_shape  # to avoid raising to many warnings
             ):
                 warnings.warn(
@@ -590,7 +593,7 @@ class TensorConversion:
                     f"for example, {image.path} is {shape}, "
                     f"but {self._ref_image_shape.path} is {self._ref_image_shape.spatial_shape}.\n"
                     "It can be problematic if your network only accepts a specific shape.\n"
-                    "If you don't want this warning to be raised, set `raise_warnings` "
+                    "If you don't want this warning to be raised, set `shape_warning` "
                     "to False."
                 )
             self._uniform_shape = False
@@ -626,11 +629,12 @@ class TensorConversion:
             try:
                 self._merge_conversion(check_transforms=check_transforms)
             except ClinicaDLTensorConversionError as exc:
-                raise ClinicaDLArgumentError(
+                raise ClinicaDLTensorConversionError(
                     f"{str(self.json)} already exists, so ClinicaDL tried to merge the current tensor conversion "
                     "with the old one. But an error occurred, most likely because the two conversions concern "
                     "different kinds of data (e.g. different preprocessing, different transforms applied, different "
-                    "masks used). See exception traceback for more details. If you want to run a new tensor conversion, "
+                    "masks used).\n"
+                    "See exception traceback for more details. If you want to run a new tensor conversion, "
                     "please give an available 'conversion_name'."
                 ) from exc
 
@@ -689,7 +693,7 @@ class TensorConversion:
         if old_conversion.preprocessing != self.preprocessing:
             raise ClinicaDLTensorConversionError(
                 "The preprocessing of the old conversion does not match the current "
-                f"preprocessing. Previously, got '{old_conversion.preprocessing}' (see '{str(self.json)}'),\n "
+                f"preprocessing. Previously, got '{old_conversion.preprocessing}' (see '{str(self.json)}'),\n"
                 f"whereas current preprocessing is '{self.preprocessing}'"
             )
 
@@ -758,7 +762,7 @@ class TensorConversion:
             )
             if len(masks_not_converted) > 0:
                 raise ClinicaDLTensorConversionError(
-                    f"Some image-specific masks have not been converted (see '{str(self.json)}'):\n"
+                    f"Some image-specific masks have not been converted (see '{str(self.json)}'): "
                     f"{masks_not_converted}"
                 )
 
@@ -774,7 +778,7 @@ class TensorConversion:
         )
         if len(masks_not_converted) > 0:
             raise ClinicaDLTensorConversionError(
-                f"Some masks have not been converted (see '{str(self.json)}'):\n "
+                f"Some masks have not been converted (see '{str(self.json)}'): "
                 f"{masks_not_converted}"
             )
 
@@ -809,16 +813,16 @@ class TensorConversion:
         )
         if len(sym_diff) > 0:
             raise ClinicaDLTensorConversionError(
-                f"There is a mismatch between the additional information in the current CapsDataset "
+                f"There is a mismatch between the additional information currently saved "
                 f"({list(current_also.keys())}) and that in the '.pt' files "
-                f"({list(old_conversion.also.keys())}). See details in '{str(self.json)}'."
+                f"({list(old_conversion.also.keys())}). See details in 'also' section in '{str(self.json)}'."
             )
-        for info, also in current_also.items():
-            if also != old_conversion.also[info]:
+        for info, type_ in current_also.items():
+            if type_ != old_conversion.also[info]:
                 raise ClinicaDLTensorConversionError(
-                    "There is a mismatch between the additional information in the current CapsDataset "
-                    f"and that in the '.pt' files (see '{str(self.json)}'):\n "
-                    f"'{info}' is of type '{also}' in the current CapsDataset "
+                    "There is a mismatch between the additional information currently saved "
+                    f"and that in the '.pt' files (see 'also' in '{str(self.json)}'):\n"
+                    f"'{info}' is of type '{type_}' in the current CapsDataset "
                     f"and of type '{old_conversion.also[info]}' in the '.pt' files."
                 )
 
@@ -844,6 +848,38 @@ class TensorConversion:
             )
             raise ClinicaDLTensorConversionError(error_msg)
 
+    ### to check that all pt files exists ###
+    def _check_pt_files(self) -> None:
+        """
+        Checks that all pt files exist.
+        """
+        pt_files: list[Path] = []
+        for participant, session in self._participants_sessions_converted:
+            pt_files.append(
+                self.caps_reader.get_tensor_path(
+                    participant,
+                    session,
+                    self.preprocessing,
+                    conversion_name=self.tensor_folder_name,
+                    check=False,
+                )
+            )
+        for mask_name in self._masks_converted:
+            pt_files.append(
+                self.caps_reader.get_common_mask_tensor_path(
+                    mask_name,
+                    conversion_name=self.tensor_folder_name,
+                )
+            )
+
+        for path in pt_files:
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"Tensor conversion was performed, as suggested by the presence of {str(self.json)}. "
+                    f"Nevertheless, file {str(path)} cannot be found. The tensors have probably been deleted "
+                    "after conversion. Please rerun 'to_tensors' to generate the tensor files again."
+                )
+
     ### other utils ###
     @staticmethod
     def _check_conversion_name(
@@ -868,7 +904,7 @@ class TensorConversion:
 
         self._save_transforms = True
         self._ignore_spacing = False
-        self._raise_warnings = True
+        self._shape_warning = True
         self._ref_image_spacing = None
         self._ref_image_shape = None
         self._output_shape = None

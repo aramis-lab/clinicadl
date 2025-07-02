@@ -67,12 +67,6 @@ def test_extract_sample():
 
     assert data_point.image.tensor.shape == (1, 5, 7, 3)
 
-    # test get_tensors
-    tensors = extracted_data_point.get_tensors()
-    assert (tensors["image"] == image_tensor[:, :2, 4:7, 1:3]).all()
-    assert (tensors["label"] == label[:, :2, 4:7, 1:3]).all()
-    assert (tensors["mask_1"] == mask_1[:, :2, 4:7, 1:3]).all()
-
     # test transforms history
     transform = tio.Clamp(out_min=0, out_max=10)
     sample = patch.extract_sample(transform(data_point), sample_index=0)

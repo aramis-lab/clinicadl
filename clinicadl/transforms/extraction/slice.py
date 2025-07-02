@@ -74,7 +74,7 @@ class Slice(Extraction):
     - ``slice_direction``: 0, 1 or 2
         The slicing direction.
     - ``squeeze``: bool
-        Whether the tensors have been squeezed to have 2D slices.
+        Whether the tensors will be squeezed to work with 2D neural networks.
 
     Parameters
     ----------
@@ -95,8 +95,8 @@ class Slice(Extraction):
         If ``False``, slices will still have 3 spatial dimensions.
 
         .. note::
-            Squeezing is performed after applying transforms because **ClinicaDL transforms
-            only accepts images with 3 spatial dimensions**.
+            Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
+            network. This is because most of ``ClinicaDL`` tools work with 3D images.
     """
 
     slices: Optional[List[NonNegativeInt]] = None

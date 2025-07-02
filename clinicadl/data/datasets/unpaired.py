@@ -79,13 +79,13 @@ class UnpairedDataset(Dataset):
         # ├── tensor_conversion
         # │   └── default_t1-linear.json
         # └── subjects
-        #     ├── sub-000
+        #     ├── sub-001
         #     │   └── ses-M000
         #     │       └── t1_linear
-        #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+        #     │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
         #     │           └── tensors
         #     │               └── default
-        #     │                   └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+        #     │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
         #         ...
         #     ...
         #
@@ -152,11 +152,11 @@ class UnpairedDataset(Dataset):
         >>> caps_pet[0].participant, caps_pet[0].session
         ('sub-A', 'ses-M000')
 
-        >>> sample = stacked[1]
+        >>> sample = stacked[0]
         >>> len(sample)
         2
         >>> sample[0].participant, sample[0].session
-        ('sub-002', 'ses-M003')
+        ('sub-002', 'ses-M000')
         >>> sample[1].participant, sample[1].session
         ('sub-A', 'ses-M000')
 
@@ -173,9 +173,9 @@ class UnpairedDataset(Dataset):
                 2	0	0
                 3	3	0
 
-        >>> sample = stacked[1]
-        >>> sample[0].participant, sample[0].session, sample[0].slice_position
-        ('sub-000', 'ses-M000', 1)
+        >>> sample = stacked[0]
+        >>> sample[1].participant, sample[1].session
+        ('sub-B', 'ses-M000')
 
     Finally, if ``oversample=False``:
 
@@ -199,18 +199,23 @@ class UnpairedDataset(Dataset):
         self.datasets = datasets
         self.epoch = 0
         self.oversample = oversample
-        self.mapping = self._map_datasets()
+        self._mapping = self._map_datasets()
 
     @property
     def df(self) -> pd.DataFrame:
         """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
         return self._df
 
+    @property
+    def mapping(self) -> pd.DataFrame:
+        """The random mapping between the samples of the underlying ``CapsDatasets``."""
+        return self._mapping
+
     def eval(self) -> None:
         """
         Sets the datasets to evaluation mode.
 
-        This disables data augmentation in the transformation pipeline.
+        It disables data augmentation in the transformation pipeline.
         """
         for dataset in self.datasets:
             dataset.eval_mode = True
@@ -219,17 +224,17 @@ class UnpairedDataset(Dataset):
         """
         Sets the datasets to training mode.
 
-        This enables data augmentation in the transformation pipeline.
+        It enables data augmentation in the transformation pipeline.
         """
         for dataset in self.datasets:
             dataset.eval_mode = False
 
     def subset(self, data: DataType) -> UnpairedDataset:
         """
-        To get a subset of the UnpairedDataset from a list of (participant, session) pairs.
+        To get a subset of the ``UnpairedDataset`` from a list of (participant, session) pairs.
 
         In practice, it will call :py:meth:`CapsDataset.subset <clinicadl.data.datasets.CapsDataset.subset>`
-        for all the datasets forming the UnpairedDataset.
+        for all the datasets forming the ``UnpairedDataset``.
 
         Parameters
         ----------
@@ -241,30 +246,28 @@ class UnpairedDataset(Dataset):
         Returns
         -------
         UnpairedDataset
-            A subset of the original UnpairedDataset, restricted to the (participant, session) pairs mentioned in ``data``.
+            A subset of the original ``UnpairedDataset``, restricted to the (participant, session) pairs mentioned in ``data``.
 
         Raises
         ------
         ClinicaDLTSVError
-            If ``data`` is a TSV file that does not exist.
-        ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
         ClinicaDLCAPSError
-            If the subset of one of the datasets forming the UnpairedDataset is empty.
+            If the subset of one of the datasets forming the ``UnpairedDataset`` is empty.
         """
         return UnpairedDataset([dataset.subset(data) for dataset in self.datasets])
 
     def describe(self) -> tuple[Dict[str, Any], ...]:
         """
-        Returns a description of the CapsDatasets forming the UnpairedDataset.
+        Returns a description of the ``CapsDatasets`` forming the ``UnpairedDataset``.
 
         Returns
         -------
         tuple[Dict[str, Any], ...]
             The descriptions returned by :py:meth:`CapsDataset.describe
             <clinicadl.data.datasets.CapsDataset.describe>` for each
-            dataset forming the UnpairedDataset.
+            dataset forming the ``UnpairedDataset``.
 
         Raises
         ------
@@ -277,7 +280,7 @@ class UnpairedDataset(Dataset):
         """
         Retrieves information on a given sample.
 
-        In an UnpairedDataset, a sample is a tuple of "sub-samples" from the underlying datasets. Therefore,
+        In an ``UnpairedDataset``, a sample is a tuple of "sub-samples" from the underlying datasets. Therefore,
         ``get_sample_info`` will also return a tuple, containing the information on all the sub-samples
         forming the sample.
 
@@ -290,10 +293,10 @@ class UnpairedDataset(Dataset):
         Parameters
         ----------
         idx : int
-            The index of the sample in the UnpairedDataset.
+            The index of the sample in the ``UnpairedDataset``.
         column : str
             The information to look for, i.e. a column present in the DataFrame of at least one of the
-            dataset forming the UnpairedDataset.
+            dataset forming the ``UnpairedDataset``.
 
         Returns
         -------
@@ -306,11 +309,11 @@ class UnpairedDataset(Dataset):
             If ``idx`` is not a non-negative integer, greater or equal to
             the length of the dataset.
         KeyError
-            If ``column`` is not in any DataFrame of the datasets forming the UnpairedDataset.
+            If ``column`` is not in any DataFrame of the datasets forming the ``UnpairedDataset``.
         """
         self._check_idx(idx)
 
-        indices = self.mapping.iloc[idx]
+        indices = self._mapping.iloc[idx]
         list_info = []
         for dataset, idx_in_dataset in zip(self.datasets, indices):
             try:
@@ -351,13 +354,13 @@ class UnpairedDataset(Dataset):
             Epoch number.
         """
         self.epoch = epoch
-        self.mapping = self._map_datasets()
+        self._mapping = self._map_datasets()
 
     def __len__(self) -> int:
         """
-        The length of an UnpairedDataset is the length of its biggest dataset.
+        The length of an ``UnpairedDataset`` is the length of its biggest dataset.
         """
-        return len(self.mapping)
+        return len(self._mapping)
 
     def __getitem__(self, idx: int) -> tuple[Sample, ...]:
         """
@@ -387,7 +390,7 @@ class UnpairedDataset(Dataset):
             dataset).
         """
         self._check_idx(idx)
-        indices = self.mapping.iloc[idx]
+        indices = self._mapping.iloc[idx]
         return tuple(
             dataset[idx_in_dataset]
             for dataset, idx_in_dataset in zip(self.datasets, indices)

@@ -58,42 +58,27 @@ class _TupleDataLoader(DataLoader):
 
 class DataLoaderConfig(ClinicaDLConfig):
     """
-    Configuration class for the DataLoader.
+    Configuration class to create a DataLoader.
 
-    The DataLoader can then be accessed with :py:meth:`~DataLoaderConfig.get_object`.
-    The DataLoader obtained will be a :py:class:`torch.utils.data.DataLoader`.
+    **This object is the only type of DataLoader that will be accepted by other ClinicaDL objects.**
+    So, ``ClinicaDL`` won't work with a raw :py:class:`PyTorch DataLoader <torch.utils.data.DataLoader>`.
 
-    The output of the iterator is a list of :py:class:`~clinicadl.data.structures.DataPoint`
-    returned by the underlying :py:class:`~clinicadl.data.datasets.CapsDataset` (or a tuple
-    of lists of :py:class:`~clinicadl.data.structures.DataPoint` if the dataset is a
-    :py:class:`~clinicadl.data.datasets.PairedDataset` or an :py:class:`~clinicadl.data.datasets.UnpairedDataset`).
-
-    This list has special methods ``get_images`` and ``get_labels`` to get PyTorch tensors instead
-    of ``DataPoint``:
-
-    .. code-block:: python
-
-        dataloader = dataloader_config.get_object(caps_dataset)
-        for batch in dataloader:
-            images = batch.get_images()
-            labels = batch.get_labels()
-
-    .. note::
-        - ``batch.get_images()`` will return the batch of images as a unique :py:class:`torch.Tensor` if all the images
-          in the batch have the **same size**, otherwise it will return a list of tensors.
-        - ``batch.get_labels()`` will return the batch of labels as a unique :py:class:`torch.Tensor` if all
-          the labels in the batch are **homogeneous** (e.g. all scalars, or all images of same size) and not ``None``.
+    Nevertheless, if you want to access the underlying :py:class:`PyTorch DataLoader <torch.utils.data.DataLoader>`,
+    you can use :py:meth:`~DataLoaderConfig.get_object`.
 
     Parameters
     ----------
     batch_size : PositiveInt, default=1
         Batch size for the DataLoader.
     sampling_weights : Optional[str], default=None
-        Name of the column in the dataframe of the dataset where to find the sampling
+        Name of the column in the DataFrame of the :py:mod:`ClinicaDL dataset <clinicadl.data.datasets>` where to find the sampling
         weights. The column must contain ``float`` values.
 
         The probability of sampling a certain sample is proportional to the associated value
-        in this column of the dataframe.
+        in this column.
+
+        .. warning::
+            ``sampling_weights`` doesn't work with an :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
 
     shuffle : bool, default=True
         Whether to shuffle the data.
@@ -106,7 +91,7 @@ class DataLoaderConfig(ClinicaDLConfig):
     num_workers : NonNegativeInt, default=0
         Number of workers for data loading.
     pin_memory : bool, default=True
-        Whether to copy Tensors into device/CUDA pinned memory before returning them.
+        Whether to copy tensors into device/CUDA pinned memory before returning them.
     drop_last : bool, default=False
         Whether to drop the last incomplete batch.
     prefetch_factor : Optional[int], default=None
@@ -122,97 +107,8 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     See Also
     --------
-    :py:class:`torch.utils.data.DataLoader` for more details on the parameters.
-
-    Examples
-    --------
-    .. code-block:: python
-
-        >>> # data are as follows:
-        >>> # mycaps
-        >>> # ├── pet_data.tsv
-        >>> # ├── tensor_conversion
-        >>> # │   └── pet_conversion.json
-        >>> # └── subjects
-        >>> #     ├── sub-000
-        >>> #     │   └── ses-M000
-        >>> #     │       └── pet_linear
-        >>> #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        >>> #     │           └── tensors
-        >>> #     │               └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-        >>> #         ...
-        >>> #     ...
-
-        >>> from clinicadl.data.datasets import CapsDataset, PairedDataset
-        >>> from clinicadl.data.datatypes import PETLinear
-        >>> from clinicadl.data.dataloader import DataLoaderConfig
-
-        >>> caps_dataset = CapsDataset(
-                caps_directory="mycaps",
-                preprocessing=PETLinear(
-                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-                ),
-                data="mycaps/pet_data.tsv",
-                label="age",
-            )
-        >>> caps_dataset.read_tensor_conversion("pet_conversion")
-
-        >>> dataloader_config = DataLoaderConfig(batch_size=3, shuffle=False)
-        >>> dataloader = dataloader_config.get_object(caps_dataset)
-        >>> batch = next(iter(dataloader))
-        >>> batch
-        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)]
-
-
-    We have a list of three samples (our ``batch_size``). However, if you want to pass your images to a neural network, you need tensors.
-    To get them, you can call ``get_images`` and ``get_labels``:
-
-    .. code-block:: python
-
-        >>> images = batch.get_images()
-        >>> type(images)
-        list    # here, the images don't have the same shape, so the list of images cannot be converted to a tensor
-        >>> images[0].shape
-        torch.Size([1, 222, 312, 234])
-        >>> images[1].shape
-        torch.Size([1, 220, 312, 234])
-
-        >>> batch.get_labels()
-        tensor([55., 62., 67.])
-
-    Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
-
-    .. code-block:: python
-
-        >>> caps_dataset_no_label = CapsDataset(
-                caps_directory="mycaps",
-                preprocessing=PETLinear(
-                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-                ),
-                data="mycaps/pet_data.tsv",
-            )
-        >>> caps_dataset_no_label.read_tensor_conversion("pet_conversion")
-
-        >>> dataloader = dataloader_config.get_object(PairedDataset([caps_dataset, caps_dataset_no_label]))
-        >>> batch = next(iter(dataloader))
-        >>> batch
-        ([ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)],
-        [ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-        ImageSample(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)])
-
-    We have a tuple of batches. We can still call ``get_images`` and ``get_labels`` on these batches:
-
-    .. code-block:: python
-
-        >>> batch[0].get_labels()
-        tensor([55., 62., 67.])     # from caps_dataset
-        >>> batch[1].get_labels()
-        [None, None, None]      # from caps_dataset_no_label
+    :py:class:`torch.utils.data.DataLoader`
+        For more details on the parameters.
 
     """
 
@@ -265,15 +161,36 @@ class DataLoaderConfig(ClinicaDLConfig):
         rank: Optional[int] = None,
     ) -> DataLoader:
         """
-        To get a dataloader from a dataset (:py:class:`~clinicadl.data.datasets.CapsDataset`,
-        :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset` or
-        :py:class:`~clinicadl.data.datasets.UnpairedDataset`). The dataloader is parametrized
+        To get a :py:class:`PyTorch DataLoader <torch.utils.data.DataLoader>` from a dataset
+        :py:mod:`ClinicaDL dataset <clinicadl.data.datasets>`. The dataloader is parametrized
         with the options stored in this configuration class.
+
+        The output of the iterator is a list of :py:class:`~clinicadl.data.structures.DataPoint`
+        returned by the underlying :py:class:`~clinicadl.data.datasets.CapsDataset` (or a tuple
+        of lists of :py:class:`~clinicadl.data.structures.DataPoint` if the dataset is a
+        :py:class:`~clinicadl.data.datasets.PairedDataset` or an :py:class:`~clinicadl.data.datasets.UnpairedDataset`
+        - see examples).
+
+        This list has special methods ``get_images`` and ``get_labels`` to get :py:class:`torch.Tensor` instead
+        of ``DataPoint``:
+
+        .. code-block:: python
+
+            dataloader = dataloader_config.get_object(caps_dataset)
+            for batch in dataloader:
+                images = batch.get_images()
+                labels = batch.get_labels()
+
+        .. note::
+            - ``batch.get_images()`` will return the batch of images as a unique :py:class:`torch.Tensor` if all the images
+              in the batch have the **same size**, otherwise it will return a list of :py:class:`torch.Tensor`.
+            - ``batch.get_labels()`` will return the batch of labels as a unique :py:class:`torch.Tensor` if all
+              the labels in the batch are **homogeneous** (e.g. all scalars, or all images of same size).
 
         Parameters
         ----------
         dataset : Dataset
-            The ClinicaDL dataset to put in the DataLoader.
+            The :py:mod:`ClinicaDL dataset <clinicadl.data.datasets>` to put in the DataLoader.
         dp_degree : Optional[int], default=None
             The degree of data parallelism. ``None`` if no data parallelism.
         rank : Optional[int], default=None
@@ -300,6 +217,117 @@ class DataLoaderConfig(ClinicaDLConfig):
         ValueError
             If ``sampling_weights`` is not ``None`` and the associated column cannot
             be converted to float values.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            # data are as follows:
+            # mycaps
+            # ├── data.tsv
+            # ├── tensor_conversion
+            # │   └── default_pet-linear_18FAV45_pons2.json
+            # └── subjects
+            #     ├── sub-001
+            #     │   └── ses-M000
+            #     │       └── pet_linear
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           └── tensors
+            #     │               └── default
+            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #         ...
+            #     ...
+            #
+            # in data.tsv:
+            #    participant_id	session_id	age	sex	diagnosis
+            # 0	    sub-001	  ses-M000	 55	  M	      CN
+            # 1	    sub-001	  ses-M003	 55	  M	      AD
+            # 2	    sub-002	  ses-M000	 62	  F	      MCI
+            # 3	    sub-002	  ses-M003	 62	  F	      AD
+            # 4	    sub-003	  ses-M000	 67	  F	      CN
+            # ...
+
+            from clinicadl.data.datasets import CapsDataset, PairedDataset
+            from clinicadl.data.datatypes import PETLinear
+            from clinicadl.data.dataloader import DataLoaderConfig
+
+            caps_dataset = CapsDataset(
+                caps_directory="mycaps",
+                preprocessing=PETLinear(
+                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+                ),
+                data="mycaps/data.tsv",
+                label="age",
+                columns=["age"],
+            )
+            caps_dataset.read_tensor_conversion()
+
+            dataloader_config = DataLoaderConfig(batch_size=3, shuffle=False)
+            dataloader = dataloader_config.get_object(caps_dataset)
+
+        .. code-block:: python
+
+            >>> batch = next(iter(dataloader))
+            >>> batch
+            [DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+             DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+             DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)]
+            >>> batch[0]
+            DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)
+
+        We have a list of three ``DataPoints`` (``batch_size=3``). However, if you want to pass your images to a neural network, you need tensors.
+        To get them, you can call ``get_images`` and ``get_labels``:
+
+        .. code-block:: python
+
+            >>> images = batch.get_images()
+            >>> type(images)
+            list    # here, the images don't have the same shape, so the list of images cannot be converted to a single tensor
+            >>> images[0].shape
+            torch.Size([1, 222, 312, 234])
+            >>> images[1].shape
+            torch.Size([1, 220, 312, 234])
+
+            >>> batch.get_labels()
+            tensor([55., 55., 62.])
+
+        Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
+
+        .. code-block:: python
+
+            caps_dataset_no_label = CapsDataset(
+                caps_directory="mycaps",
+                preprocessing=PETLinear(
+                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
+                ),
+                data="mycaps/data.tsv",
+            )
+            caps_dataset_no_label.read_tensor_conversion()
+
+            paired_dataset = PairedDataset([caps_dataset, caps_dataset_no_label]
+
+            dataloader = dataloader_config.get_object(paired_dataset)
+
+        .. code-block:: python
+
+            >>> batch = next(iter(dataloader))
+            >>> batch
+            ([DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)],
+             [DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
+              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)])
+
+        We have a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.
+        We can still call ``get_images`` and ``get_labels`` on these batches:
+
+        .. code-block:: python
+
+            >>> batch[0].get_labels()
+            tensor([55., 55., 62.])     # from caps_dataset
+            >>> batch[1].get_labels()
+            [None, None, None]          # from caps_dataset_no_label
         """
         if (rank is not None and dp_degree is None) or (
             dp_degree is not None and rank is None

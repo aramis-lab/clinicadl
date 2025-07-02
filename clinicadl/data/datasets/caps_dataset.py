@@ -1,6 +1,7 @@
 # coding: utf8
 from __future__ import annotations
 
+from collections import OrderedDict
 from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
@@ -25,9 +26,7 @@ from clinicadl.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
-from clinicadl.transforms.extraction.slice import SliceSample
 from clinicadl.transforms.transforms import Transforms
-from clinicadl.transforms.utils import Squeeze
 from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -181,11 +180,11 @@ class CapsDataset(Dataset):
         # │   └── leftHippocampus.nii.gz
         # ├── data.tsv
         # └── subjects
-        #     ├── sub-000
+        #     ├── sub-001
         #     │   └── ses-M000
         #     │       └── pet_linear
-        #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-        #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+        #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+        #     │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
         #         ...
         #     ...
         #
@@ -338,7 +337,7 @@ class CapsDataset(Dataset):
         self,
         n_proc: int = 1,
         ignore_spacing: bool = False,
-        raise_warnings: bool = True,
+        shape_warning: bool = True,
         conversion_name: Optional[str] = None,
         save_transforms: bool = False,
         check_transforms: bool = True,
@@ -379,9 +378,8 @@ class CapsDataset(Dataset):
             .. note ::
                 To resample your images to a common spacing, have a look at :py:class:`~clinicadl.transforms.config.ResampleConfig`.
 
-        raise_warnings : bool, default=True
-            Whether to raise warnings during conversion, related to different kinds of events ``ClinicaDL`` thinks
-            the user should be aware of (e.g. images with different shapes, files overwritten, etc.).
+        shape_warning : bool, default=True
+            Whether to raise a warning if some images in the ``CapsDataset`` have different shapes.
 
         conversion_name : Optional[str], default=None
             The name of the tensor conversion. It determines:
@@ -439,11 +437,7 @@ class CapsDataset(Dataset):
 
         Notes
         -----
-        If ``raise_warnings=True``, raises:
-
-        - a warning (only once) if images have different shapes across images;
-        - a warning if some ``.pt`` files already present in the :term:`CAPS` directory will be
-          overwritten.
+        If ``shape_warning=True``, raises a warning (only once) if some images have different shapes.
 
         Examples
         --------
@@ -455,11 +449,11 @@ class CapsDataset(Dataset):
             # │   └── leftHippocampus.nii.gz
             # ├── data.tsv
             # └── subjects
-            #     ├── sub-000
+            #     ├── sub-001
             #     │   └── ses-M000
             #     │       └── pet_linear
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
             #         ...
             #     ...
 
@@ -486,18 +480,18 @@ class CapsDataset(Dataset):
             # │           └── leftHippocampus.pt
             # ├── data.tsv
             # └── subjects
-            #     ├── sub-000
+            #     ├── sub-001
             #     │   └── ses-M000
             #     │       └── pet_linear
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
             #     │           └── tensors
             #     │               └── default
-            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
             #         ...
             #     ...
 
-        Here ``sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt`` contains the associated
+        Here ``sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt`` contains the associated
         image as a tensor, as well as the mask "brain".\n
         Here, we didn't pass a ``conversion_name``, so the name of the ``json`` file and the name of the folder where tensors
         are saved are inferred. If you put a ``conversion_name``:
@@ -518,15 +512,15 @@ class CapsDataset(Dataset):
             # │           └── leftHippocampus.pt
             # ├── data.tsv
             # └── subjects
-            #     ├── sub-000
+            #     ├── sub-001
             #     │   └── ses-M000
             #     │       └── pet_linear
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
             #     │           └── tensors
             #     │               ├── default
             #     │               └── pet_conversion
-            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
             #         ...
             #     ...
 
@@ -534,7 +528,7 @@ class CapsDataset(Dataset):
         self.tensor_conversion.convert_to_tensors(
             n_proc=n_proc,
             ignore_spacing=ignore_spacing,
-            raise_warnings=raise_warnings,
+            shape_warning=shape_warning,
             conversion_name=conversion_name,
             save_transforms=save_transforms,
             check_transforms=check_transforms,
@@ -613,15 +607,15 @@ class CapsDataset(Dataset):
             # │           └── leftHippocampus.pt
             # ├── data.tsv
             # └── subjects
-            #     ├── sub-000
+            #     ├── sub-001
             #     │   └── ses-M000
             #     │       └── pet_linear
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
-            #     │           ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_brain.nii.gz
+            #     │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
             #     │           └── tensors
             #     │               ├── default
             #     │               └── pet_conversion
-            #     │                   └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+            #     │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
             #         ...
             #     ...
 
@@ -797,7 +791,7 @@ class CapsDataset(Dataset):
             )
         if column not in self._df.columns:
             raise KeyError(
-                f"No column named {column} in the metadata DataFrame. Present columns are: "
+                f"No column named '{column}' in the metadata DataFrame. Present columns are: "
                 f"{list(self._df.columns)}"
             )
 
@@ -882,9 +876,6 @@ class CapsDataset(Dataset):
 
         if not self.eval_mode:
             data = self.augmentation(data)
-
-        if isinstance(data, SliceSample) and data.squeeze:
-            data = Squeeze(data.slice_direction)(data)
 
         return data
 
@@ -998,7 +989,7 @@ class CapsDataset(Dataset):
             raise ClinicaDLArgumentError(
                 f"Duplicated mask names in 'masks' (got masks={masks}). "
                 "Beware that if you pass a path in 'masks' (e.g. 'leftHippocampus.nii.gz'), "
-                "CapsDatset will name the mask with its file name, without "
+                "CapsDataset will name the mask with its file name, without "
                 "the extension (e.g. 'leftHippocampus')."
             )
 
@@ -1154,11 +1145,6 @@ class CapsDataset(Dataset):
         info asked by the user.
 
         Conversion to tensors must have been performed first.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the '.pt' file cannot be found for this (participant, session).
         """
         pt_path = self.caps_reader.get_tensor_path(
             participant,
@@ -1167,7 +1153,7 @@ class CapsDataset(Dataset):
             conversion_name=self.tensor_conversion.tensor_folder_name,
             check=False,
         )
-        images_dict = self._load_pt(pt_path)
+        images_dict = torch.load(pt_path, weights_only=True)
 
         # label
         if self.label is None:
@@ -1176,9 +1162,9 @@ class CapsDataset(Dataset):
             label_mask = images_dict[self.label.name]
             label = tio.LabelMap(tensor=label_mask, affine=images_dict[AFFINE])
         elif isinstance(self.label, list):
-            label = {
-                lab: self._get_info(participant, session, lab) for lab in self.label
-            }
+            label = OrderedDict(
+                [(lab, self._get_info(participant, session, lab)) for lab in self.label]
+            )
         else:
             label = self._get_info(participant, session, self.label)
 
@@ -1228,46 +1214,17 @@ class CapsDataset(Dataset):
 
         return data
 
-    def _load_pt(self, path: Path) -> Dict[str, Any]:
-        """
-        Loads the tensors for a (participant, session).
-        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion._save_images_as_tensors`.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the '.pt' file cannot be found.
-        """
-        try:
-            return torch.load(path, weights_only=True)
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(
-                f"Tensor conversion was performed, as suggested in '{str(self.tensor_conversion.json)}'. "
-                f"Nevertheless, file '{str(path)}'  cannot be found. The tensors have probably been deleted "
-                "after conversion. Please rerun 'to_tensors' to generate the tensor files again."
-            ) from exc
-
     ### other utils ###
     def _load_pt_masks(self) -> None:
         """
         Converts nifti masks to the associated tensor masks
         when 'to_tensors' or 'read_tensor_conversion' is called.
-
-        FileNotFoundError
-            If the '.pt' file cannot be found for this mask.
         """
         for mask in self.common_masks:
             mask_pt_path = self.caps_reader.path_to_tensor(
                 mask.path, conversion_name=self.tensor_conversion.tensor_folder_name
             )
-            try:
-                self.common_masks_tensors.append(Mask(mask_pt_path))
-            except FileNotFoundError as exc:
-                raise FileNotFoundError(
-                    f"Tensor conversion was performed, as suggested in '{str(self.tensor_conversion.json)}'. "
-                    f"Nevertheless, mask '{str(mask_pt_path)}' cannot be found. The tensors have probably been deleted "
-                    "after conversion. Please rerun 'to_tensors' to generate the tensor file again."
-                ) from exc
+            self.common_masks_tensors.append(Mask(mask_pt_path))
 
     def _count_samples(self) -> None:
         """

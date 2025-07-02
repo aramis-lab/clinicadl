@@ -13,7 +13,7 @@ Preprocessing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class_no_members.rst
+   :template: autosummary/config_class.rst
 
    RescaleIntensityConfig
    ZNormalizationConfig
@@ -35,7 +35,7 @@ Augmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: class_no_members/class.rst
+   :template: config_class/class.rst
 
    OneOfConfig
    RandomMotionConfig

@@ -135,7 +135,7 @@ class CapsReader(Reader):
     @staticmethod
     def path_to_tensor(
         path: PathType,
-        conversion_name: Optional[str] = None,
+        conversion_name: str,
     ) -> Path:
         """
         Converts the path of an image to the path of the associated
@@ -160,10 +160,7 @@ class CapsReader(Reader):
             .with_suffix(PT)
             .name  # with_suffix("") to handle double extensions
         )
-        if conversion_name:
-            return parent / TENSORS / conversion_name / pt_file_name
-        else:
-            return parent / TENSORS / pt_file_name
+        return parent / TENSORS / conversion_name / pt_file_name
 
     def get_tensor_path(
         self,
@@ -258,10 +255,21 @@ class CapsReader(Reader):
         """
         Gives the full path of a common mask, from the file name.
         """
-        if Path(mask_name).suffix == PT:
-            return self.input_directory / COMMON_MASKS_DIR / TENSORS / mask_name
-        else:
-            return self.input_directory / COMMON_MASKS_DIR / mask_name
+        return self.input_directory / COMMON_MASKS_DIR / mask_name
+
+    def get_common_mask_tensor_path(
+        self, mask_name: PathType, conversion_name: str
+    ) -> Path:
+        """
+        Gives the full tensor path of a common mask, from the mask filename.
+        """
+        return (
+            self.input_directory
+            / COMMON_MASKS_DIR
+            / TENSORS
+            / conversion_name
+            / Path(mask_name).with_suffix("").with_suffix(PT)
+        )
 
     def _write_caps_json(
         self,

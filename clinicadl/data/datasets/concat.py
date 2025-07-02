@@ -65,13 +65,13 @@ class ConcatDataset(TorchConcatDataset):
         # ├── tensor_conversion
         # │   └── default_t1-linear.json
         # └── subjects
-        #     ├── sub-000
+        #     ├── sub-001
         #     │   └── ses-M000
         #     │       └── t1_linear
-        #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+        #     │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
         #     │           └── tensors
         #     │               └── default
-        #     │                   └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+        #     │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
         #         ...
         #     ...
         #
@@ -109,7 +109,7 @@ class ConcatDataset(TorchConcatDataset):
         >>> len(full_dataset)
         12
         >>> full_dataset[0].participant, full_dataset[0].session
-        ('sub-000', 'ses-M000')
+        ('sub-001', 'ses-M000')
         >>> full_dataset[4].participant, full_dataset[4].session
         ('sub-A', 'ses-M000')
     """

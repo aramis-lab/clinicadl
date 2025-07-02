@@ -72,18 +72,18 @@ class PairedDataset(StackDataset):
         # │   ├── default_pet-linear_18FAV45_pons2.json
         # │   └── default_t1-linear.json
         # └── subjects
-        #     ├── sub-000
+        #     ├── sub-001
         #     │   └── ses-M000
         #     │       ├── pet_linear
-        #     │       │   ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
+        #     │       │   ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
         #     │       │   └── tensors
         #     │       │       └── default
-        #     │       │           └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
+        #     │       │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
         #     │       └── t1_linear
-        #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+        #     │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
         #     │           └── tensors
         #     │               └── default
-        #     │                   └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+        #     │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
         #         ...
         #     ...
 
@@ -117,9 +117,9 @@ class PairedDataset(StackDataset):
         >>> len(sample)
         2
         >>> sample[0].participant, sample[0].session
-        ('sub-000', 'ses-M000')
+        ('sub-001', 'ses-M000')
         >>> sample[1].participant, sample[1].session
-        ('sub-000', 'ses-M000')
+        ('sub-001', 'ses-M000')
     """
 
     def __init__(

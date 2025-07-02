@@ -49,8 +49,8 @@ CAPS_PET = CapsDataset(
         }
     ),
 )
-CAPS_T1.read_tensor_conversion("t1_all")
-CAPS_PET.read_tensor_conversion("pet_all")
+CAPS_T1.read_tensor_conversion()
+CAPS_PET.read_tensor_conversion()
 
 SPLITTER = SingleSplit(SPLIT_DIR)
 
