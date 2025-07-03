@@ -40,31 +40,34 @@ class Metrics(ABC):
 
         metrics_config: dict[str, MetricConfig] = {}
 
-        if not isinstance(metrics, dict):
-            raise TypeError(
-                f"Metrics must be a dictionary, got {type(metrics)} instead."
-            )
-
-        for metric_name, metric in metrics.items():
-            if isinstance(metric, MonaiMetric):
-                config = get_metric_config(name=metric.__class__.__name__)
-                metrics_config[metric_name] = config
-
-            elif isinstance(metric, LossConfig):
-                metrics_config[metric_name] = LossMetricConfig(
-                    loss_fn=metric.get_object(), reduction=metric.reduction
+        if metrics is not None:
+            if not isinstance(metrics, dict):
+                raise TypeError(
+                    f"Metrics must be a dictionary, got {type(metrics)} instead."
                 )
 
-            elif isinstance(metric, MetricConfig) or isinstance(
-                metric, LossMetricConfig
-            ):
-                metrics_config[metric_name] = metric
+            for metric_name, metric in metrics.items():
+                if isinstance(metric, MonaiMetric):
+                    config = get_metric_config(
+                        name=metric.__class__.__name__, **metric.__dict__
+                    )  # TODO : check if it works when doing unittests
+                    metrics_config[metric_name] = config
 
-            elif isinstance(metric, type(CustomMetric)):
-                metrics_config[metric_name] = metric
+                elif isinstance(metric, LossConfig):
+                    metrics_config[metric_name] = LossMetricConfig(
+                        loss_fn=metric.get_object(), reduction=metric.reduction
+                    )
 
-            elif isinstance(metric, Loss):
-                metrics_config[metric_name] = LossMetricConfig(loss_fn=metric)
+                elif isinstance(metric, MetricConfig) or isinstance(
+                    metric, LossMetricConfig
+                ):
+                    metrics_config[metric_name] = metric
+
+                elif isinstance(metric, type(CustomMetric)):
+                    metrics_config[metric_name] = metric
+
+                elif isinstance(metric, Loss):
+                    metrics_config[metric_name] = LossMetricConfig(loss_fn=metric)
 
         return metrics_config
 

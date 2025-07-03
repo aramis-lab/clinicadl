@@ -56,10 +56,10 @@ class _TrainingState(ClinicaDLConfig):
     optim: OptimizationConfig
     comp: ComputationalConfig
     stop: bool = False
-    n_batch: int = -1
+    n_batch: int = 0
     split: Optional[Split] = None
-    epoch: int = -1
-    batch: int = -1
+    epoch: int = 0
+    batch: int = 0
 
     def reset(self, split: Split):
         """Reset the training state for a new training split."""
