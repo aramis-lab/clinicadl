@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from clinicadl.train.training_state import _TrainingState
+from clinicadl.callbacks.training_state import _TrainingState
 
 from .base import Callback
 
@@ -67,7 +67,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
 
     Returns
     -------
-    logging.Logger
+    logging._Logger
         Configured logger instance.
     """
     logging_level = logging.DEBUG if verbose else logging.INFO
@@ -106,7 +106,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
     return logger
 
 
-class Logger(Callback):
+class _Logger(Callback):
     """
     Callback that logs major training events to console and/or file.
 
@@ -116,20 +116,20 @@ class Logger(Callback):
         If True, enables detailed DEBUG-level logging.
     """
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = True):
         self.logger = setup_logging(verbose=verbose)
         self.train_progress_bar = None
 
-    def on_train_begin(self, config: _TrainingState, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.info("Beginning of the training for split %s", config.split.index)
         self.logger.info("Training on %s", config.comp.device)
 
-    def on_train_end(self, config: _TrainingState, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.info("End of the training")
 
-    def on_epoch_begin(self, config: _TrainingState, **kwargs):
+    def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
         self.logger.info(">>>>>>>>>>>>>>>>>>>>>>>>")
         train_loader = config.split.train_loader
         rank = kwargs.pop("rank", -1)
@@ -138,18 +138,18 @@ class Logger(Callback):
             self.train_progress_bar = tqdm(
                 total=len(train_loader),
                 unit="batch",
-                desc=f"{now} - Training of epoch {config.epoch}/{config.optim.epochs}",
+                desc=f"{now} - Training of epoch {config.epoch}/{config.optim.epochs - 1}",
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         if self.train_progress_bar is not None:
             self.train_progress_bar.close()
 
-    def on_batch_begin(self, config: _TrainingState, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
         self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>")
         self.logger.debug("Beginning of batch %d", config.batch)
 
-    def on_batch_end(self, config: _TrainingState, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         self.logger.debug("Batch %d completed", config.batch)
 
         if self.train_progress_bar is not None:

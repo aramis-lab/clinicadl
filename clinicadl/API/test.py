@@ -3,7 +3,7 @@ from pathlib import Path
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric
 
-from clinicadl.callbacks.factory import EarlyStopping, Logger, ModelCheckpoint
+from clinicadl.callbacks.factory import CodeCarbon, EarlyStopping, ModelSelection
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datatypes.preprocessing import T1Linear
@@ -65,13 +65,14 @@ model = ClinicaDLModel(
 
 
 mae = MAEMetric()
-ssim = SSIMMetricConfig(spatial_dims=2)
+mse = MSEMetricConfig()
 matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
 
 callbacks = [
-    EarlyStopping(metrics=[MSEMetricConfig(), loss]),
-    Logger(),
-    ModelCheckpoint(metrics=[MSEMetricConfig(), loss]),
+    EarlyStopping(metrics=["mae", "loss"]),
+    ModelSelection(metrics=["mae"]),
+    EarlyStopping(metrics=["mse"]),
+    CodeCarbon(),
 ]
 
 trainer = Trainer(
@@ -80,7 +81,7 @@ trainer = Trainer(
     comp_config=comput_config,
     optim_config=optim_config,
     callbacks=callbacks,
-    metrics=[mae, matrix, loss],
+    metrics={"mae": mae, "mse": mse, "matrix": matrix},
     _overwrite=True,
 )
 

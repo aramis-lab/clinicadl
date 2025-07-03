@@ -79,9 +79,12 @@ def extract_baseline(
         If a column contain more than one unique value for a (participant_id, baseline_session).
     """
 
-    first_sessions = df.groupby(PARTICIPANT_ID).apply(
-        lambda df: df[SESSION_ID].sort_values().iloc[0]
+    first_sessions = (
+        df.sort_values(SESSION_ID)
+        .drop_duplicates(PARTICIPANT_ID)[[PARTICIPANT_ID, SESSION_ID]]
+        .set_index(PARTICIPANT_ID)[SESSION_ID]
     )
+
     baseline = first_sessions.to_frame(SESSION_ID).reset_index()
 
     if columns is None:
@@ -91,29 +94,24 @@ def extract_baseline(
 
     baseline = baseline.merge(df[columns], how="left", on=[PARTICIPANT_ID, SESSION_ID])
 
-    baseline = baseline.groupby([PARTICIPANT_ID, SESSION_ID], group_keys=False).apply(
-        _resolve
-    )
+    group_cols = [PARTICIPANT_ID, SESSION_ID]
+    grouped = baseline.groupby(group_cols)
 
-    return baseline.reset_index(drop=True)
+    resolved_rows = []
 
+    for (pid, sid), group in grouped:
+        for col in group.columns:
+            values = group[col].dropna().unique()
+            if len(values) > 1:
+                raise ValueError(
+                    f"More than one value found in the dataframe for ({pid}, {sid}) in '{col}': {list(values)}. "
+                    "ClinicaDL can't decide which value to take."
+                )
+        resolved_rows.append(group.iloc[0])
 
-def _resolve(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    df is the dataframe for a baseline session.
-    Checks that df has at most one value for each column. Otherwise an error is raised.
-    """
-    unique_values = {}
-    for col in df:
-        values = df[col].dropna().unique()
-        if len(values) > 1:
-            raise ValueError(
-                f"More than one value found in the dataframe for ({df[PARTICIPANT_ID].iloc[0]}, {df[SESSION_ID].iloc[0]}) in '{col}': {list(values)}. "
-                "ClinicaDL can't decide which value to take."
-            )
-        unique_values[col] = pd.Series(values)
+    baseline_cleaned = pd.DataFrame(resolved_rows).reset_index(drop=True)
 
-    return pd.DataFrame(unique_values)
+    return baseline_cleaned
 
 
 def write_to_tsv(

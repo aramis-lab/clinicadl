@@ -61,6 +61,10 @@ intersphinx_mapping = {
     "torchvision": ("https://pytorch.org/vision/main", None),
     "nibabel": ("https://nipy.org/nibabel", None),
     "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "scikit-learn": ("https://scikit-learn.org/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "clinicadl": ("https://clinicadl.readthedocs.io/en/latest/", None),
 }
 extlinks = {
     "pathlib.Path": (

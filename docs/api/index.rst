@@ -16,6 +16,7 @@ functions may not be enough to give full guidelines on their use.
    :nosignatures:
    :template: module.rst
 
+   callbacks
    data
    losses
    metrics
@@ -23,10 +24,12 @@ functions may not be enough to give full guidelines on their use.
    optim
    split
    transforms
+   trainer
 
 .. toctree::
    :hidden:
    
+   callbacks
    data/index
    losses
    metrics
@@ -34,3 +37,4 @@ functions may not be enough to give full guidelines on their use.
    optim/index
    split
    transforms/index
+   trainer

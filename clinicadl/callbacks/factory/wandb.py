@@ -1,128 +1,115 @@
-# TODO : Not working at the moment
-
 from importlib.util import find_spec
-from typing import Optional
+from typing import Union
 
-import numpy as np
+import pandas as pd
 
-from clinicadl.dictionary.words import CLINICADL
-from clinicadl.train.training_state import _TrainingState
+from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.dictionary.suffixes import PTH, TAR
+from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
 from .base import Callback
 
 
 class WandB(Callback):  # pragma: no cover
     """
-    A :class:`TrainingCallback` integrating the experiment tracking tool
-    `wandb` (https://wandb.ai/).
+    A training callback that integrates with the experiment tracking tool
+    `Weights & Biases <https://wandb.ai/>`.
 
-    It allows users to store their configs, monitor their trainings
-    and compare runs through a graphic interface. To be able use this feature you will need:
+    This callback enables logging of training configurations, metrics, and artifacts,
+    allowing users to monitor experiments and compare training runs through the WandB
+    web interface.
 
-        - a valid `wandb` account
-        - the package `wandb` installed in your virtual env. If not you can install it with
+    Requirements
+    ------------
+    - The `wandb` package must be installed in your Python environment.
+      You can install it with:
 
-        .. code-block::
+    .. code-block:: bash
 
-            $ pip install wandb
+        pip install wandb
 
-        - to be logged in to your wandb account using
+    Notes
+    -----
+    - WandB supports local and cloud logging.
+    - This callback is useful for reproducibility and experiment tracking.
 
-        .. code-block::
+    Examples
+    --------
+    .. code-block:: python
 
-            $ wandb login
+        from clinicadl.callbacks import WandB
+
+        wandb_callback = WandB(project="my_project", entity="my_team")
+        handler = CallbacksHandler(callbacks=[wandb_callback])
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        project: str = "default_project",
+        entity: Union[str, None] = None,
+        run_name: Union[str, None] = None,
+        config: dict = None,
+    ):
         if not self.is_available():
             raise ModuleNotFoundError(
                 "`wandb` package must be installed. Run `pip install wandb`"
             )
 
         else:
-            import wandb  # type: ignore # pragma: no cover
+            import wandb
 
             self._wandb = wandb
+
+        self.project = project
+        self.entity = entity
+        self.run_name = run_name
+        self.config = config or {}
+        self.run = None
 
     @staticmethod
     def is_available() -> bool:
         return find_spec("wandb") is not None
 
-    def setup(
-        self,
-        project_name: str = "clinicadl_experiment",
-        entity_name: Optional[str] = None,
-        **kwargs,
-    ):
-        """
-        Setup the WandbCallback.
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+        # Optionally update config with hyperparameters from training config
+        training_config = {}
+        # Example: add learning rate or epochs if present
+        if hasattr(config, MODEL) and hasattr(config.model, OPTIMIZER):
+            for param_group in config.model.optimizer.param_groups:
+                for k, v in param_group.items():
+                    if isinstance(v, (int, float, str)):
+                        training_config[k] = v
+        training_config.update(self.config)
 
-        args:
-            project_name (str): The name of the wandb project to use.
+        self.run = self._wandb.init(
+            project=self.project,
+            entity=self.entity,
+            name=self.run_name,
+            config=training_config,
+            reinit=True,
+        )
 
-            entity_name (str): The name of the wandb entity to use.
-        """
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+        if config.metrics.df is not None and not config.metrics.df.empty:
+            if config.epoch in config.metrics.df.index:
+                epoch_metrics = config.metrics.df.loc[config.epoch]
+                if epoch_metrics is not None:
+                    log_dict = {
+                        metric_name: float(value)
+                        for metric_name, value in epoch_metrics.items()
+                        if value is not None and not pd.isna(value)
+                    }
+                    self._wandb.log(log_dict, step=config.epoch)
 
-        self.is_initialized = True
+    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
+        tmp_path = config.maps.splits[config.split.index].tmp.path
+        model_file = tmp_path / MODEL + PTH + TAR
+        optimizer_file = tmp_path / OPTIMIZER + PTH + TAR
 
-        self.run = self._wandb.init(project=project_name, entity=entity_name)
+        if model_file.exists():
+            self._wandb.save(str(model_file), base_path=str(tmp_path), policy="now")
 
-        self._wandb.config.update({})
+        if optimizer_file.exists():
+            self._wandb.save(str(optimizer_file), base_path=str(tmp_path), policy="now")
 
-        self._wandb.define_metric("train/global_step")
-        self._wandb.define_metric("*", step_metric="train/global_step", step_sync=True)
-
-    def on_train_begin(self, config: _TrainingState, **kwargs):
-        if not self.is_initialized:
-            self.setup(project_name=CLINICADL, entity_name=config.maps.path.name)
-
-    def on_prediction_step(self, **kwargs):
-        kwargs.pop("global_step", None)
-
-        column_names = ["images_id", "truth", "reconstruction", "normal_generation"]
-
-        true_data = kwargs.pop("true_data", None)
-        reconstructions = kwargs.pop("reconstructions", None)
-        generations = kwargs.pop("generations", None)
-
-        data_to_log = []
-
-        if (
-            true_data is not None
-            and reconstructions is not None
-            and generations is not None
-        ):
-            for i in range(len(true_data)):
-                data_to_log.append(
-                    [
-                        f"img_{i}",
-                        self._wandb.Image(
-                            np.moveaxis(true_data[i].cpu().detach().numpy(), 0, -1)
-                        ),
-                        self._wandb.Image(
-                            np.clip(
-                                np.moveaxis(
-                                    reconstructions[i].cpu().detach().numpy(), 0, -1
-                                ),
-                                0,
-                                255.0,
-                            )
-                        ),
-                        self._wandb.Image(
-                            np.clip(
-                                np.moveaxis(
-                                    generations[i].cpu().detach().numpy(), 0, -1
-                                ),
-                                0,
-                                255.0,
-                            )
-                        ),
-                    ]
-                )
-
-            val_table = self._wandb.Table(data=data_to_log, columns=column_names)
-
-            self._wandb.log({"my_val_table": val_table})
-
-    def on_train_end(self, config: _TrainingState, **kwargs):
-        self.run.finish()
+        self._wandb.finish()

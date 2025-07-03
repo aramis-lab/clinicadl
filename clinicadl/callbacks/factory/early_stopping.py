@@ -1,21 +1,17 @@
 import math
 from enum import Enum
+from logging import getLogger
 from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
-from clinicadl.losses.config import LossConfig
-from clinicadl.losses.types import Loss
-from clinicadl.metrics.config.base import (
-    LossMetricConfig,
-    MetricConfig,
-)
+from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.metrics import Metrics
-from clinicadl.train.training_state import _TrainingState
 
 from .base import Callback
+
+logger = getLogger("clinicadl.early_stopping")
 
 
 class Mode(str, Enum):
@@ -26,12 +22,32 @@ class Mode(str, Enum):
 
 
 class OneMetricEarlyStopping(Callback):
-    """TO COMPLETE"""
+    """
+    Early stopping for a single metric.
+
+    Parameters
+    ----------
+    metric : str
+        Name of the metric to monitor.
+    patience : int
+        Number of epochs to wait for improvement before stopping.
+    min_delta : float, optional (default=0.0)
+        Minimum change in the monitored metric to qualify as an improvement.
+    mode : Mode, optional (default=Mode.MIN)
+        Whether the metric should be minimized ('min') or maximized ('max').
+    check_finite : bool, optional (default=True)
+        If True, stop training if metric value is NaN or infinite.
+    upper_bound : float, optional
+        If metric goes above this value, training stops.
+    lower_bound : float, optional
+        If metric goes below this value, training stops.
+
+    """
 
     def __init__(
         self,
-        metric: MetricConfig,
-        patience: Optional[int] = None,
+        metric: str,
+        patience: int,
         min_delta: Optional[float] = 0.0,
         mode: Mode = Mode.MIN,
         check_finite: bool = True,
@@ -45,28 +61,27 @@ class OneMetricEarlyStopping(Callback):
         self.check_finite = check_finite
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
-        self.stop = False
 
-        self.check_bounds()
+        self._check_bounds()
         self.is_better = self._get_comparison_function()
         self.reset()
 
     def _get_comparison_function(self):
-        """Returns the comparison function."""
+        """Return the function to compare current and best metric values."""
         if self.mode == Mode.MIN:
             return lambda value, best: value < best - self.min_delta
         elif self.mode == Mode.MAX:
             return lambda value, best: value > best + self.min_delta
         raise ValueError(f"Unknown mode: {self.mode}")
 
-    def check_bounds(self):
-        """TO COMPLETE"""
+    def _check_bounds(self):
+        """Validate that upper_bound is greater than lower_bound."""
         if self.upper_bound is not None and self.lower_bound is not None:
             if self.lower_bound > self.upper_bound:
                 raise ValueError("Upper bound should be greater than lower bound.")
 
     def reset(self) -> None:
-        """Resets the epoch count and the best value."""
+        """Reset the best metric and bad epoch counter."""
         if self.mode == Mode.MIN:
             self.best = np.inf
         elif self.mode == Mode.MAX:
@@ -75,59 +90,133 @@ class OneMetricEarlyStopping(Callback):
             raise ValueError(f"Unknown mode: {self.mode}")
         self.num_bad_epochs = 0
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
+    def should_stop_training(self, config: _TrainingState, **kwargs) -> bool:
         """
-        Decides whether to stop the training or not, depending
-        on the value of the last epoch.
+        Check if training should stop at the end of an epoch.
 
+        Parameters
+        ----------
+        config : _TrainingState
+            Current training state, must contain metrics DataFrame.
+
+        Returns
+        -------
+        bool
+            True if training should stop, False otherwise.
         """
         df = config.metrics.df
-        if df is not None and isinstance(df, pd.DataFrame) and not df.empty:
-            value = df.loc[
-                config.epoch, self.metric.name
-            ]  # TODO: check if the df has the right columns and rows
-            if value is None or pd.isna(value):
-                raise ValueError(
-                    f"Metric '{self.metric.name}' not found in DataFrame for epoch {config.epoch}."
-                )
-            if self.check_finite and (math.isinf(value) or math.isnan(value)):
-                self.stop = True
+        if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+            raise ValueError("Metrics DataFrame is missing or invalid.")
 
-            if self.upper_bound is not None and (value > self.upper_bound):
-                self.stop = True
+        if self.metric not in df.columns:
+            raise ValueError(
+                f"Metric '{self.metric}' not found in metrics DataFrame columns."
+            )
+        if config.epoch not in df.index:
+            raise ValueError(
+                f"Epoch {config.epoch} not found in metrics DataFrame index."
+            )
 
-            if self.lower_bound is not None and (value < self.lower_bound):
-                self.stop = True
+        value = df.at[config.epoch, self.metric]
 
-            if self.patience is None:
-                self.stop = False
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"Value for metric '{self.metric}' at epoch {config.epoch} is not numeric."
+            )
 
-            if self.is_better(value, self.best):
-                self.num_bad_epochs = 0
-                self.best = value
-            else:
-                self.num_bad_epochs += 1
+        if pd.isna(value):
+            raise ValueError(
+                f"Metric '{self.metric}' value at epoch {config.epoch} is NaN."
+            )
 
-            if self.patience is not None and self.num_bad_epochs >= self.patience:
-                self.stop = True
+        if self.check_finite and (math.isinf(value) or math.isnan(value)):
+            logger.warning(
+                f"Metric '{self.metric}' value at epoch {config.epoch} is not finite. Stopping training."
+            )
+            return True
 
-            self.stop = False
+        if self.upper_bound is not None and (value > self.upper_bound):
+            logger.warning(
+                f"Metric '{self.metric}' value {value} exceeded upper bound {self.upper_bound}. Stopping training."
+            )
+            return True
+
+        if self.lower_bound is not None and value < self.lower_bound:
+            logger.warning(
+                f"Metric '{self.metric}' value {value} fell below lower bound {self.lower_bound}. Stopping training."
+            )
+            return True
+
+        if self.is_better(value, self.best):
+            self.num_bad_epochs = 0
+            self.best = value
         else:
-            raise ValueError("No df provided")
+            self.num_bad_epochs += 1
+            logger.debug(
+                f"No improvement in '{self.metric}' for {self.num_bad_epochs} epochs."
+            )
 
-        # TODO : this function will be rewrite in the next PR
+        if self.patience is not None and self.num_bad_epochs >= self.patience:
+            logger.info(
+                f"Early stopping triggered on metric '{self.metric}' after {self.num_bad_epochs} epochs without improvement."
+            )
+            return True
+
+        return False
 
 
 class EarlyStopping(Metrics, Callback):
     """
-    TO COMPLETE
+    Early stopping callback monitoring one or multiple metrics.
+
+    Parameters
+    ----------
+    metrics : str or list[str]
+        Metrics to monitor.
+    patience : int or list[int], optional
+        Number of epochs with no improvement after which training will be stopped.
+        If a single int is provided, it is applied to all metrics.
+    min_delta : float or list[float], optional (default=0.0)
+        Minimum change in monitored metric to qualify as improvement.
+    mode : Mode or list[Mode], optional (default=Mode.MIN)
+        Whether to minimize or maximize the metric.
+    check_finite : bool or list[bool], optional (default=True)
+        Whether to stop if metric is NaN or infinite.
+    upper_bound : float or list[float], optional
+        Upper bound threshold for the metric.
+    lower_bound : float or list[float], optional
+        Lower bound threshold for the metric.
+
+    .. note:
+        Behavior regarding EarlyStopping and ModelSelection interaction:
+
+        - If neither EarlyStopping nor ModelSelection are used:
+            - The final model and the model corresponding to the best loss are saved,
+            but no early stopping is applied.
+
+        - If EarlyStopping is used without ModelSelection:
+            - Training stops when all monitored metrics stop improving.
+            - For each monitored metric, a ModelSelection object is created to track the best model.
+
+        - If ModelSelection is used without EarlyStopping:
+            - Model selection (saving best models) proceeds as expected without early stopping.
+
+        - If both EarlyStopping and ModelSelection are used:
+            - Metrics used for EarlyStopping are always passed to ModelSelection to track best models.
+            - EarlyStopping triggers stopping when all these metrics stop improving.
+
+
+    .. warning:
+        Multiple EarlyStopping callbacks can be registered simultaneously. In such cases,
+        training stops as soon as the first EarlyStopping callback's stopping criterion is met.
+
     """
 
     def __init__(
         self,
-        metrics: list[
-            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
-        ],
+        metrics: Union[str, list[str]],
         patience: Optional[Union[int, list[int]]] = None,
         min_delta: Optional[Union[float, list[float]]] = 0.0,
         mode: Union[Mode, list[Mode]] = Mode.MIN,
@@ -135,7 +224,7 @@ class EarlyStopping(Metrics, Callback):
         upper_bound: Optional[Union[float, list[float]]] = None,
         lower_bound: Optional[Union[float, list[float]]] = None,
     ) -> None:
-        self.metrics: list[MetricConfig] = self.check_metrics(metrics)
+        self.metrics = metrics if isinstance(metrics, list) else [metrics]
         len_metrics = len(metrics if isinstance(metrics, list) else [metrics])
 
         def check_list(value) -> list:
@@ -174,8 +263,18 @@ class EarlyStopping(Metrics, Callback):
                 )
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
-        config.stop = all(
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Called at the end of each epoch.
+
+        Updates `config.stop` to True if all monitored metrics meet early stopping criteria.
+        """
+        should_stop = all(
             metric.on_epoch_end(config=config, **kwargs)
             for metric in self.early_config_list
         )
+        if should_stop:
+            logger.info(
+                "Early stopping criteria met for all monitored metrics. Stopping training."
+            )
+        config.stop = should_stop
