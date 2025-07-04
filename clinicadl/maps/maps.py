@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 import pandas as pd
 
@@ -181,6 +181,11 @@ class DataSplitDir(Directory):
 
         self.df = None
 
+    def create(self, dataset: CapsDataset):
+        super().create()
+        self.df = dataset.df
+        self.df.to_csv(self.data_tsv, sep="\t", index=False)
+
     def load(self):
         super().load()
         self.df = pd.read_csv(self.data_tsv, sep="\t")
@@ -197,6 +202,12 @@ class DataTrainDir(Directory):
 
         self.splits: Dict[int, DataSplitDir] = {}
 
+    def create(self, dataset: CapsDataset, split: int):
+        super().create(_exists_ok=True)
+        split_dir = DataSplitDir(parents_path=self.path / str(split))
+        split_dir.create(dataset=dataset)
+        self.splits[split] = split_dir
+
     def load(self):
         super().load()
 
@@ -211,6 +222,12 @@ class DataValDir(Directory):
         super().__init__(path=Path(parents_path) / VALIDATION)
 
         self.splits: Dict[int, DataSplitDir] = {}
+
+    def create(self, dataset: CapsDataset, split: int):
+        super().create(_exists_ok=True)
+        split_dir = DataSplitDir(parents_path=self.path / str(split))
+        split_dir.create(dataset=dataset)
+        self.splits[split] = split_dir
 
     def load(self):
         super().load()
@@ -232,8 +249,8 @@ class DataDir(Directory):
 
     def create(self, split: Split):
         super().create(_exists_ok=True)
-        self.train.create(split=split.train)
-        self.val.create(split=split.val)
+        self.train.create(dataset=split.train_dataset, split=split.index)
+        self.val.create(dataset=split.val_dataset, split=split.index)
 
     def load(self):
         super().load()
