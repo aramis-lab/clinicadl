@@ -38,25 +38,33 @@ def test_good_caps_reader():
     assert (
         caps_reader.path_to_tensor(
             subject_dir
-            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1W.nii.gz"
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1W.nii.gz",
+            conversion_name="default",
         )
         == subject_dir
         / "tensors"
+        / "default"
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1W.pt"
     )
     assert (
-        caps_reader.path_to_tensor(caps_dir / "masks" / "leftHippocampus.nii")
-        == caps_dir / "masks" / "tensors" / "leftHippocampus.pt"
+        caps_reader.path_to_tensor(
+            caps_dir / "masks" / "leftHippocampus.nii", conversion_name="default"
+        )
+        == caps_dir / "masks" / "tensors" / "default" / "leftHippocampus.pt"
     )
 
     # get_tensor_path
     assert (
         caps_reader.get_tensor_path(
-            "sub-000", "ses-M000", T1Linear(use_uncropped_image=True)
+            "sub-000",
+            "ses-M000",
+            T1Linear(use_uncropped_image=True),
+            conversion_name="default",
         )
         == caps_dir
         / subject_dir
         / "tensors"
+        / "default"
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
     )
 
@@ -81,8 +89,10 @@ def test_good_caps_reader():
         == caps_dir / "masks" / "leftHippocampus.nii.gz"
     )
     assert (
-        caps_reader.get_common_mask_path("leftHippocampus.pt")
-        == caps_dir / "masks" / "tensors" / "leftHippocampus.pt"
+        caps_reader.get_common_mask_tensor_path(
+            "leftHippocampus.nii.gz", conversion_name="default"
+        )
+        == caps_dir / "masks" / "tensors" / "default" / "leftHippocampus.pt"
     )
     assert caps_reader.tensor_conversion_json_dir == caps_dir / "tensor_conversion"
 

@@ -60,7 +60,7 @@ def create_caps_datasets():
 
 def test_checks():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
+    caps_t1.read_tensor_conversion()
     with pytest.raises(
         ClinicaDLCAPSError, match="Tensor conversion must be performed BEFORE stacking*"
     ):
@@ -82,8 +82,8 @@ def test_df():
         }
     ).rename_axis(columns=["dataset_id", None])
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
     assert unpaired.df.fillna("nan").equals(ref_df)
     unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
@@ -92,8 +92,8 @@ def test_df():
 
 def test_get_participant_session_couples():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
     assert sorted(paired.get_participant_session_couples()) == sorted(
         [
@@ -114,8 +114,8 @@ def test_get_participant_session_couples():
 
 def test_get_sample_info():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = UnpairedDataset([caps_t1, caps_pet])
     assert paired.get_sample_info(0, "age") == (1, 1)
     with pytest.raises(IndexError):
@@ -128,8 +128,8 @@ def test_get_sample_info():
 
 def test_describe():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = UnpairedDataset([caps_t1, caps_pet])
     description = paired.describe()
     assert len(description) == 2
@@ -139,8 +139,8 @@ def test_describe():
 
 def test_train_val():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = UnpairedDataset([caps_t1, caps_pet])
     paired.eval()
     assert paired.datasets[0].eval_mode
@@ -152,8 +152,8 @@ def test_train_val():
 
 def test_len():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
     assert len(paired) == 4
     paired = UnpairedDataset([caps_t1, caps_pet])
@@ -162,8 +162,8 @@ def test_len():
 
 def test_subset():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     unpaired = UnpairedDataset([caps_t1, caps_pet])
     subset = unpaired.subset(
         sub_data(
@@ -205,8 +205,8 @@ def test_subset():
 
 def test_set_epoch():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
 
     # oversample
     unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
@@ -289,8 +289,8 @@ def test_set_epoch():
 
 def test_unpaired_concat():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     caps_pet_concat = ConcatDataset([caps_pet, caps_pet])
     unpaired = UnpairedDataset([caps_t1, caps_pet_concat], oversample=True)
     assert len(unpaired) == 6

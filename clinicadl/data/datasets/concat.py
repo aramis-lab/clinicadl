@@ -24,23 +24,24 @@ logger = getLogger("clinicadl.data.datasets.concat")
 class ConcatDataset(TorchConcatDataset):
     """
     ``ConcatDataset`` is a useful class to assemble multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
-    (e.g. from different datasets). ConcatDataset concatenates the input datasets,
-    so the length of the new dataset will be equal to the sum of the lengths of each individual dataset.
+    (e.g. from different datasets).
 
-    ConcatDataset inherits from :py:class:`torch.utils.data.ConcatDataset`.
+    ``ConcatDataset`` concatenates the input datasets, so the length of the new dataset will be equal to the sum
+    of the lengths of each individual dataset.
 
-    To assemble CapsDatasets, you must **previously perform tensor conversion** for each dataset (see :ref:`api_caps_dataset`).
+    To assemble ``CapsDatasets``, you must **previously perform**
+    :py:func:`tensor conversion <clinicadl.data.datasets.CapsDataset.to_tensors>`.
 
     Parameters
     ----------
     datasets : Iterable[CapsDataset]
         List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be concatenated.
     ignore_spacing : bool, default=False
-        Whether to ignore checks made on voxel spacing. If ``False``, ConcatDataset will check that the voxel spacing
+        Whether to ignore checks made on voxel spacing. If ``False``, ``ConcatDataset`` will check that the voxel spacing
         is consistent across all the datasets (if the information is provided in the ``.json`` file of the tensor
         conversion).
     raise_warnings : bool, default=True
-        Whether to raise warnings during concatenation, related to different kinds of issues ClinicaDL thinks
+        Whether to raise warnings during concatenation, related to different kinds of issues ``ClinicaDL`` thinks
         the user should be aware of (e.g. datasets of different dimensionality).
 
     Raises
@@ -50,55 +51,70 @@ class ConcatDataset(TorchConcatDataset):
     ClinicaDLCAPSError
         If ``ignore_spacing=False`` and some datasets don't have the same voxel spacing.
 
-    Warnings
+    Notes
     --------
-    * Also raises a warning if the dimensionalities of the datasets are not the same, e.g. a dataset contains 2D slices but
-      another one contains 3D images (unless ``raise_warnings=False``).
+    Also raises a warning if the dimensionalities of the datasets are not the same, e.g. a dataset contains 2D slices but
+    another one contains 3D images (unless ``raise_warnings=False``).
 
     Examples
     --------
+    .. code-block:: text
+
+        Data look like:
+
+        caps_1
+        ├── tensor_conversion
+        │   └── default_t1-linear.json
+        └── subjects
+            ├── sub-001
+            │   └── ses-M000
+            │       └── t1_linear
+            │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+            │           └── tensors
+            │               └── default
+            │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+                ...
+            ...
+
+        caps_2
+        ├── tensor_conversion
+        │   └── default_t1-linear.json
+        └── subjects
+            ├── sub-A
+            │   └── ses-M000
+            │       └── t1_linear
+            │           ├── sub-A_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
+            │           └── tensors
+            │               └── default
+            │                   └── sub-A_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+                ...
+            ...
+
     .. code-block:: python
 
-        >>> # data are as follows:
-        >>> # mycaps
-        >>> # ├── tensor_conversion
-        >>> # │   ├── pet_conversion.json
-        >>> # │   └── t1_conversion.json
-        >>> # └── subjects
-        >>> #     ├── sub-000
-        >>> #     │   └── ses-M000
-        >>> #     │       ├── pet_linear
-        >>> #     │       │   ├── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-        >>> #     │       │   └── tensors
-        >>> #     │       │       └── sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-        >>> #     │       └── t1_linear
-        >>> #     │           ├── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
-        >>> #     │           └── tensors
-        >>> #     │               └── sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
-        >>> #         ...
-        >>> #     ...
+        from clinicadl.data.datasets import CapsDataset, ConcatDataset
+        from clinicadl.data.datatypes import T1Linear
 
-        >>> from clinicadl.data.datasets import CapsDataset, ConcatDataset
-        >>> from clinicadl.data.datatypes import PETLinear, T1Linear
+        caps_1 = CapsDataset("caps_1", preprocessing=T1Linear(use_uncropped_image=True))
+        caps_2 = CapsDataset("caps_2", preprocessing=T1Linear(use_uncropped_image=True))
 
-        >>> caps_t1 = CapsDataset("mycaps", preprocessing=T1Linear(use_uncropped_image=True))
-        >>> caps_t1.read_tensor_conversion("t1_conversion")
-        >>> len(caps_t1)
+        caps_1.read_tensor_conversion()
+        caps_2.read_tensor_conversion()
+
+        full_dataset = ConcatDataset([caps_1, caps_2])
+
+    .. code-block:: python
+
+        >>> len(caps_1)
         4
-
-        >>> caps_pet = CapsDataset(
-                "mycaps",
-                preprocessing=PETLinear(
-                    use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-                ),
-            )
-        >>> caps_pet.read_tensor_conversion("pet_conversion")
-        >>> len(caps_pet)
+        >>> len(caps_2)
         8
-
-        >>> multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-        >>> len(multimodal_dataset)
+        >>> len(full_dataset)
         12
+        >>> full_dataset[0].participant, full_dataset[0].session
+        ('sub-001', 'ses-M000')
+        >>> full_dataset[4].participant, full_dataset[4].session
+        ('sub-A', 'ses-M000')
     """
 
     def __init__(
@@ -127,7 +143,7 @@ class ConcatDataset(TorchConcatDataset):
         """
         Sets the datasets to evaluation mode.
 
-        This disables data augmentation in the transformation pipeline.
+        It disables data augmentation in the transformation pipeline.
         """
         for dataset in self.datasets:
             dataset.eval_mode = True
@@ -136,17 +152,17 @@ class ConcatDataset(TorchConcatDataset):
         """
         Sets the datasets to training mode.
 
-        This enables data augmentation in the transformation pipeline.
+        It enables data augmentation in the transformation pipeline.
         """
         for dataset in self.datasets:
             dataset.eval_mode = False
 
     def subset(self, data: DataType) -> ConcatDataset:
         """
-        To get a subset of the ConcatDataset from a list of (participant, session) pairs.
+        To get a subset of the ``ConcatDataset`` from a list of (participant, session) pairs.
 
         In practice, it will call :py:meth:`CapsDataset.subset <clinicadl.data.datasets.CapsDataset.subset>`
-        for all the datasets forming the ConcatDataset.
+        for all the datasets forming the ``ConcatDataset``.
 
         Parameters
         ----------
@@ -158,18 +174,16 @@ class ConcatDataset(TorchConcatDataset):
         Returns
         -------
         ConcatDataset
-            A subset of the original ConcatDataset, restricted to the (participant, session) pairs mentioned in ``data``.
+            A subset of the original ``ConcatDataset``, restricted to the (participant, session) pairs mentioned in ``data``.
 
         Raises
         ------
-        ClinicaDLTSVError
-            If ``data`` is a TSV file that does not exist.
         ClinicaDLTSVError
             If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
             and ``"session_id"``.
         ClinicaDLCAPSError
             If no (participant, session) pairs mentioned in ``data`` are at least in one of the underlying datasets.
-            This would lead to an empty ConcatDataset.
+            This would lead to an empty ``ConcatDataset``.
         """
         sub_datasets = []
         not_empty = False
@@ -193,7 +207,7 @@ class ConcatDataset(TorchConcatDataset):
 
     def describe(self) -> tuple[Dict[str, Any], ...]:
         """
-        Returns a description of the CapsDatasets forming the ConcatDataset.
+        Returns a description of the ``CapsDatasets`` forming the ``ConcatDataset``.
 
         Returns
         -------
@@ -222,7 +236,7 @@ class ConcatDataset(TorchConcatDataset):
             The index of the sample in the ConcatDataset.
         column : str
             The information to look for, i.e. a column of the DataFrame containing
-            the metadata. The DataFrame is the one from the CapsDataset associated to
+            the metadata. The DataFrame is the one from the ``CapsDataset`` associated to
             ``idx``. So, the information accessible depends on ``idx``.
 
         Returns
@@ -257,7 +271,7 @@ class ConcatDataset(TorchConcatDataset):
         List[Tuple[str, str]]
             The list of (participant, session).
         """
-        return list(set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID])))
+        return list(set(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID])))
 
     def __getitem__(self, idx: int) -> Sample:
         """

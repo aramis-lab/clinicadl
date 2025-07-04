@@ -36,6 +36,11 @@ class ImageSample(Sample):
         The path to the image.
     """
 
+    @property
+    def _sample_index(self) -> int:
+        """The index of the sample. Equal to 1 here."""
+        return 1
+
 
 class Image(Extraction):
     """
@@ -79,7 +84,6 @@ class Image(Extraction):
         sample = ImageSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            _sample_index=sample_index,
         )
         sample.applied_transforms = extracted_datapoint.applied_transforms
 

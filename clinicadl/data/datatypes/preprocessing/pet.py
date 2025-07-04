@@ -1,6 +1,5 @@
 from enum import Enum
 from logging import getLogger
-from typing import Union
 
 from pydantic import computed_field
 
@@ -37,19 +36,17 @@ class PETLinear(PET, _LinearPreprocessing):
     suvr_reference_region : SUVRReferenceRegion, default="pons"
         The reference region used to compute SUVR, among ``pons``, ``cerebellumPons``, ``pons2`` and ``cerebellumPons2``.
     use_uncropped_image : bool, default=False
-        Whether to use the uncropped images returned by Clinica:\n
+        Whether to use the uncropped images returned by ``Clinica``:\n
         - if ``use_uncropped_image=True``: only the files that match the pattern
           ``pet_linear/sub-*_ses-*_trc-{tracer}_space-MNI152NLin2009cSym_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
-          in the CAPS structure will be considered.
+          in the :term:`CAPS` structure will be considered.
         - else: only the files that match the pattern
           ``pet_linear/sub-*_ses-*_trc-{tracer}_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
-          in the CAPS structure will be considered.
+          in the :term:`CAPS` structure will be considered.
 
         .. note::
             If ``reconstruction`` is specified, the pattern will be modified as follows:
-            ``pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_```
-            ``space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_```
-            ``suvr-{suvr_reference_region}_pet.nii*``
+            ``pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_{desc-Crop}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
     """
 
     suvr_reference_region: SUVRReferenceRegion = SUVRReferenceRegion.PONS
@@ -77,17 +74,17 @@ class PETLinear(PET, _LinearPreprocessing):
             )
         return description
 
-    def _get_filename(self):
+    def _get_file_pattern(self):
         """
-        Constructs the file name depending on the parameters of 'pet-linear'.
+        Constructs the file pattern depending on the parameters of 'pet-linear'.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
         rec = f"_rec-{self.reconstruction}" if self.reconstruction else ""
         return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality}.nii*"
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return (

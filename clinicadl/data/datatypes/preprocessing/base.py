@@ -2,7 +2,7 @@ import abc
 
 from pydantic import computed_field
 
-from clinicadl.dictionary.suffixes import TSV
+from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.utils.config import ClinicaDLConfig
 
 from ..file_type import FileType
@@ -38,7 +38,15 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         Builds a filename for a tsv file saving
         information on this preprocessing.
         """
-        return "overview_" + self._get_tsv_name() + TSV
+        return "overview_" + self._get_file_name() + TSV
+
+    @property
+    def json_filename(self) -> str:
+        """
+        Builds a filename for a json file saving
+        information on this preprocessing.
+        """
+        return "default_" + self._get_file_name() + JSON
 
     def __str__(self):
         """
@@ -56,9 +64,9 @@ class Preprocessing(ClinicaDLConfig, abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
 
@@ -73,13 +81,13 @@ class _LinearPreprocessing(Preprocessing, Modality):
 
     use_uncropped_image: bool = False
 
-    def _get_filename(self) -> str:
+    def _get_file_pattern(self) -> str:
         """
-        Constructs the file name depending on the preprocessing parameters.
+        Constructs the file pattern depending on the preprocessing parameters.
         May be overwritten for some preprocessings.
         """
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"  # TODO: remove the T1w ine the middle of the name at the end of the refactoring (maybe provide a function to change the name in the CAPS)
+        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"
 
     def _get_description(self) -> str:
         """
@@ -102,8 +110,8 @@ class _LinearPreprocessing(Preprocessing, Modality):
         """
         Base method to construct the FileType for linear preprocessings.
         """
-        filename = self._get_filename()
-        pattern = self.name.replace("-", "_") + f"/{filename}"
+        pattern = self._get_file_pattern()
+        pattern = self.name.replace("-", "_") + f"/{pattern}"
         description = self._get_description()
 
         return FileType(
@@ -112,9 +120,9 @@ class _LinearPreprocessing(Preprocessing, Modality):
             needed_pipeline=self.name,
         )
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return f"{self.name}{'' if self.use_uncropped_image else '_cropped'}"

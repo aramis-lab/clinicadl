@@ -50,43 +50,31 @@ class SliceSample(Sample):
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
         or ``2`` (axial).
     squeeze : bool
-        Whether the tensors will be squeezed (see :py:meth:`~SliceSample.get_tensors`).
+        Whether the tensors will be squeezed.
     """
 
     slice_position: int
     slice_direction: SliceDirection
     squeeze: bool
 
-    def get_tensors(self) -> dict[str, torch.Tensor]:
-        """
-        To get all the images and masks as :py:class:`torch.Tensor`.
-
-        If ``squeeze`` was set to ``True`` in :py:class:`~Slice`, the tensors
-        will be 3D (with one channel dimension). Otherwise, they will be 4D, with
-        a dummy dimension.
-
-        Returns
-        -------
-        dict[str, torch.Tensor]
-            The tensors with their names.
-        """
-        tensors = super().get_tensors()
-        if self.squeeze:
-            for name, image in tensors.items():
-                tensors[name] = image.squeeze(self.slice_direction + 1)
-
-        return tensors
-
-    @computed_field
     @property
-    def id(self) -> int:
-        """The index of the sample. Equal to `slice_position` here."""
+    def _sample_index(self) -> int:
+        """The index of the sample. Equal to 'slice_position' here."""
         return self.slice_position
 
 
 class Slice(Extraction):
     """
     Transform class to extract slices from an image in a specified direction.
+
+    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
+
+    - ``slice_position``: int
+        The position of the slice in the original image.
+    - ``slice_direction``: 0, 1 or 2
+        The slicing direction.
+    - ``squeeze``: bool
+        Whether the tensors will be squeezed to work with 2D neural networks.
 
     Parameters
     ----------
@@ -100,15 +88,15 @@ class Slice(Extraction):
         The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
         ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
         ``a`` slices and the last ``b`` slices will be filtered out.
-    slice_direction : SliceDirection, default=SliceDirection.SAGITTAL
+    slice_direction : SliceDirection, default=0
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
     squeeze : bool, default=True
         Whether to squeeze slices to have images with 2 spatial dimensions.
         If ``False``, slices will still have 3 spatial dimensions.
 
         .. note::
-            Squeezing is performed after applying transforms because ClinicaDL transforms
-            only accepts images with 3 spatial dimensions.
+            Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
+            network. This is because most of ``ClinicaDL`` tools work with 3D images.
     """
 
     slices: Optional[List[NonNegativeInt]] = None
@@ -201,7 +189,6 @@ class Slice(Extraction):
         sample = SliceSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            _sample_index=slice_position,
             slice_position=slice_position,
             slice_direction=self.slice_direction,
             squeeze=self.squeeze,

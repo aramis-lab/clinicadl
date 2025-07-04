@@ -10,7 +10,7 @@ from clinicadl.data.datasets import CapsDataset, ConcatDataset, PairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
-from clinicadl.utils.exceptions import ClinicaDLCAPSError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLCAPSError
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 FULL_DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -62,13 +62,13 @@ def create_caps_datasets(pet_all: bool = False):
 
 def test_checks():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
+    caps_t1.read_tensor_conversion()
     with pytest.raises(
         ClinicaDLCAPSError, match="Tensor conversion must be performed BEFORE pairing*"
     ):
         PairedDataset([caps_t1, caps_pet])
 
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_pet.read_tensor_conversion()
     caps_pet_concat = ConcatDataset([caps_pet, caps_pet])
     with pytest.raises(
         ClinicaDLCAPSError,
@@ -77,7 +77,7 @@ def test_checks():
         PairedDataset([caps_t1, caps_pet_concat])
 
     _, caps_pet = create_caps_datasets(pet_all=True)
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_pet.read_tensor_conversion()
     with pytest.raises(
         ClinicaDLCAPSError, match="To pair datasets, they must have exactly the same*"
     ):
@@ -90,8 +90,8 @@ def test_checks():
         data=caps_pet.df,
         transforms=Transforms(extraction=Slice()),
     )
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     with pytest.raises(
         ClinicaDLCAPSError,
         match=r"For \(sub-000, ses-M000\), different values found for 'n_samples'*",
@@ -101,8 +101,8 @@ def test_checks():
 
 def test_df():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     assert (
         (
             caps_t1.df.fillna(-1)
@@ -160,8 +160,8 @@ def test_df():
 
 def test_get_participant_session_couples():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     assert sorted(paired.get_participant_session_couples()) == sorted(
         [
@@ -173,8 +173,8 @@ def test_get_participant_session_couples():
 
 def test_get_sample_info():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     assert paired.get_sample_info(0, "age") == 1
     with pytest.raises(IndexError):
@@ -187,8 +187,8 @@ def test_get_sample_info():
 
 def test_describe():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     description = paired.describe()
     assert len(description) == 2
@@ -198,8 +198,8 @@ def test_describe():
 
 def test_train_val():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     paired.eval()
     assert paired.datasets[0].eval_mode
@@ -211,8 +211,8 @@ def test_train_val():
 
 def test_subset():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     assert (
         (
@@ -291,8 +291,8 @@ def test_subset():
 
 def test__getitem__():
     caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet.read_tensor_conversion()
     paired = PairedDataset([caps_t1, caps_pet])
     assert paired[0][0].participant == "sub-000"
     assert paired[0][0].session == "ses-M000"
@@ -330,9 +330,9 @@ def test_paired_concat():
             ]
         ),
     )
-    caps_t1.read_tensor_conversion("t1_all")
-    caps_pet_1.read_tensor_conversion("pet_all")
-    caps_pet_2.read_tensor_conversion("pet_all")
+    caps_t1.read_tensor_conversion()
+    caps_pet_1.read_tensor_conversion()
+    caps_pet_2.read_tensor_conversion()
     caps_pet_concat = ConcatDataset([caps_pet_1, caps_pet_2])
     paired = PairedDataset([caps_t1, caps_pet_concat])
     assert (paired[1][1].participant, paired[1][1].session) == ("sub-000", "ses-M000")

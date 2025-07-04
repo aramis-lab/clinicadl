@@ -17,7 +17,7 @@
     "also": {
         "other_image": "image",
         "other_mask": "mask",
-        "age": "other"
+        "coefficient": "other"
     },
     "transforms": [
         {

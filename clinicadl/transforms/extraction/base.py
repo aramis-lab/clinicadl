@@ -29,24 +29,12 @@ class Sample(DataPoint):
     image_path: PathType
     extraction: str
     preprocessing: Preprocessing
-    _sample_index: int
 
-    def get_tensors(self) -> dict[str, torch.Tensor]:
-        """
-        To get all the images and masks as 4D :py:class:`torch.Tensor`
-        (with one channel dimension).
-
-        Returns
-        -------
-        dict[str, torch.Tensor]
-            The tensors with their names.
-        """
-        tensors = {}
-        image: tio.Image
-        for name, image in self.get_images_dict(intensity_only=False).items():
-            tensors[name] = image.tensor
-
-        return tensors
+    @property
+    @abstractmethod
+    def _sample_index(self) -> int:
+        """The index of the sample. Equal to 1 here."""
+        return 1
 
 
 class Extraction(ClinicaDLConfig, ABC):

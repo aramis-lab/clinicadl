@@ -10,7 +10,7 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/config_class.rst
 
    Transforms
 
@@ -23,7 +23,7 @@
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/config_class.rst
 
    Image
    Patch
@@ -42,7 +42,7 @@ Preprocessing
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/config_class.rst
 
    RescaleIntensityConfig
    ZNormalizationConfig
@@ -63,7 +63,7 @@ Augmentation
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/config_class.rst
 
    OneOfConfig
    RandomMotionConfig
