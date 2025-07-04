@@ -22,6 +22,7 @@ Classification
 
     ConfusionMatrixMetricConfig
     ROCAUCMetricConfig
+    AveragePrecisionMetricConfig
 
 Regression
 ----------
