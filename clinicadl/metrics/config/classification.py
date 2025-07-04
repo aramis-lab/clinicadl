@@ -21,9 +21,11 @@ ROC_AUC_METRIC_METRICS_DEFAULTS = get_defaults_from(monai.metrics.rocauc.ROCAUCM
 CONFUSION_METRICS_DEFAULTS = get_defaults_from(
     monai.metrics.confusion_matrix.ConfusionMatrixMetric
 )
+AVERAGE_PRECISION_DEFAULTS = get_defaults_from(
+    monai.metrics.average_precision.AveragePrecisionMetric
+)
 
 
-# TODO : AP is missing
 class ROCAUCMetricConfig(MetricConfig):
     """
     Config class for :py:class:`monai.metrics.ROCAUCMetric`.
@@ -52,18 +54,31 @@ class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
     def optimum(self) -> Optimum:  # pylint: disable=arguments-differ
         """The optimum of the metric."""
         if self.metric_name in [
-            "miss_rate",
-            "false_negative_rate",
-            "fnr",
-            "fall_out",
-            "false_positive_rate",
-            "fpr",
-            "false_discovery_rate",
-            "fdr",
-            "false_omission_rate",
-            "for",
-            "prevalence_threshold",
-            "pt",
+            ConfusionMatrixMetricName.MISS_RATE.value,
+            ConfusionMatrixMetricName.FALSE_NEGATIVE_RATE.value,
+            ConfusionMatrixMetricName.FNR.value,
+            ConfusionMatrixMetricName.FALL_OUT.value,
+            ConfusionMatrixMetricName.FALSE_POSITIVE_RATE.value,
+            ConfusionMatrixMetricName.FPR.value,
+            ConfusionMatrixMetricName.FALSE_DISCOVERY_RATE.value,
+            ConfusionMatrixMetricName.FDR.value,
+            ConfusionMatrixMetricName.FALSE_OMISSION_RATE.value,
+            ConfusionMatrixMetricName.FOR.value,
+            ConfusionMatrixMetricName.PREVALENCE_THRESHOLD.value,
+            ConfusionMatrixMetricName.PT.value,
         ]:
             return Optimum.MIN
+        return Optimum.MAX
+
+
+class AveragePrecisionMetricConfig(MetricConfig):
+    """
+    Config class for :py:class:`monai.metrics.AveragePrecisionMetric`.
+    """
+
+    average: Average = AVERAGE_PRECISION_DEFAULTS["average"]
+
+    @staticmethod
+    def optimum() -> Optimum:
+        """The optimum of the metric."""
         return Optimum.MAX
