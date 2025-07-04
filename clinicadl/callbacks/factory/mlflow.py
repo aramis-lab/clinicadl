@@ -2,29 +2,53 @@
 
 
 from importlib.util import find_spec
-from typing import Optional
+from typing import Union
 
-from clinicadl.train.training_state import _TrainingState
+import pandas as pd
+
+from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.dictionary.suffixes import PTH, TAR
+from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
 from .base import Callback
 
 
-class MLFlow(Callback):  # pragma: no cover
+class MLflow(Callback):
     """
-    A :class:`TrainingCallback` integrating the experiment tracking tool
-    `mlflow` (https://mlflow.org/).
+    A training callback that integrates with the experiment tracking tool `MLflow <https://mlflow.org/>`_.
 
-    It allows users to store their configs, monitor their trainings
-    and compare runs through a graphic interface. To be able use this feature you will need:
+    This callback enables logging of training configurations, metrics, and artifacts,
+    allowing users to monitor experiments and compare training runs through the MLflow
+    graphical interface.
 
-        - the package `mlfow` installed in your virtual env. If not you can install it with
+    Requirements
+    ------------
+    - The `mlflow` package must be installed in your Python environment.
+      You can install it with:
 
-        .. code-block::
+    .. code-block:: bash
 
-            $ pip install mlflow
+        pip install mlflow
+
+    Notes
+    -----
+    - MLflow supports local file logging, remote tracking servers, and integration
+      with various cloud platforms.
+    - This callback is useful for reproducibility and large-scale experiment tracking.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from clinicadl.callbacks import MLflow
+
+        mlflow_callback = MLflow()
+        handler = CallbacksHandler(callbacks=[mlflow_callback])
     """
 
-    def __init__(self):
+    def __init__(
+        self, experiment_name: str = "default", run_name: Union[str, None] = None
+    ):
         if not self.is_available():
             raise ModuleNotFoundError(
                 "`mlflow` package must be installed. Run `pip install mlflow`"
@@ -35,37 +59,57 @@ class MLFlow(Callback):  # pragma: no cover
 
             self._mlflow = mlflow
 
+        self.experiment_name = experiment_name
+        self.run_name = run_name
+        self.run = None
+
     @staticmethod
     def is_available() -> bool:
         """TO COMPLETE"""
         return find_spec("mlflow") is not None
 
-    def setup(
-        self,
-        run_name: Optional[str] = None,
-        **kwargs,
-    ):
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+        """Initialize MLflow experiment and start a new run."""
+        self._mlflow.set_experiment(self.experiment_name)
+        self.run = self._mlflow.start_run(run_name=self.run_name)
+
+        # Optional: Log hyperparameters (example)
+        if hasattr(config, "model") and hasattr(config.model, OPTIMIZER):
+            for param_group in config.model.optimizer.param_groups:
+                for k, v in param_group.items():
+                    if isinstance(v, (int, float, str)):
+                        self._mlflow.log_param(k, v)
+
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """
-        Setup the MLflowCallback.
+        Log all metrics from the current epoch to MLflow.
 
+        Assumes `config.metrics.df` is a pandas DataFrame with epochs as the index.
         """
-        self.is_initialized = True
-        self._mlflow.start_run(run_name=run_name)
+        if config.metrics.df is not None and not config.metrics.df.empty:
+            epoch_metrics = config.metrics.df.loc[config.epoch]
+            if epoch_metrics is not None:
+                for metric_name, value in epoch_metrics.items():
+                    if value is not None and not pd.isna(value):
+                        self._mlflow.log_metric(
+                            metric_name, float(value), step=config.epoch
+                        )
 
-        self._mlflow.log_params({})
+    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Log the final model checkpoint and optimizer state as MLflow artifacts,
+        then end the MLflow run.
+        """
+        tmp_path = config.maps.splits[config.split.index].tmp.path
+        model_file = tmp_path / MODEL + PTH + TAR
+        optimizer_file = tmp_path / OPTIMIZER + PTH + TAR
 
-    def on_train_begin(self, config: _TrainingState, **kwargs):
-        if not self.is_initialized:
-            self.setup(run_name=config.maps.path.name)
+        # Log model checkpoint
+        if model_file.exists():
+            self._mlflow.log_artifact(str(model_file), artifact_path=MODEL)
 
-    def on_train_end(self, config: _TrainingState, **kwargs):
+        # Log optimizer checkpoint
+        if optimizer_file.exists():
+            self._mlflow.log_artifact(str(optimizer_file), artifact_path=OPTIMIZER)
+
         self._mlflow.end_run()
-
-    def __del__(self):
-        # if the previous run is not terminated correctly, the fluent API will
-        # not let you start a new run before the previous one is killed
-        if (
-            callable(getattr(self._mlflow, "active_run", None))
-            and self._mlflow.active_run() is not None
-        ):
-            self._mlflow.end_run()

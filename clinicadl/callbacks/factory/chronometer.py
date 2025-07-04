@@ -5,14 +5,14 @@ from typing import List, Optional
 
 import numpy as np
 
-from clinicadl.train.training_state import _TrainingState
+from clinicadl.callbacks.training_state import _TrainingState
 
 from .base import Callback
 
 logger = getLogger("clinicadl.chronometer")
 
 
-class Chronometer(Callback):
+class _Chronometer(Callback):
     """
     A lightweight profiler for timing a PyTorch training loop.
 
@@ -21,28 +21,25 @@ class Chronometer(Callback):
 
     Example
     -------
-    chrono = Chronometer()
-    chrono.on_train_begin()
-
-    for epoch in range(epochs):
-        chrono.on_epoch_begin()
-        for i, (x, y) in enumerate(train_loader):
-            chrono.on_batch_begin()
-            ...
-            chrono.on_backward_begin()
-            loss.backward()
-            optimizer.step()
-            chrono.on_batch_end()
-
-        chrono.validation()
-        for val_x, val_y in val_loader:
-            ...
-        chrono.validation()
-
-        chrono.on_epoch_end()
-
-    chrono.on_train_end()
-    chrono.display()
+    .. code-block:: python
+        chrono = _Chronometer()
+        chrono.on_train_begin()
+        for epoch in range(epochs):
+            chrono.on_epoch_begin()
+            for i, (x, y) in enumerate(train_loader):
+                chrono.on_batch_begin()
+                ...
+                chrono.on_backward_begin()
+                loss.backward()
+                optimizer.step()
+                chrono.on_batch_end()
+            chrono.validation()
+            for val_x, val_y in val_loader:
+                ...
+            chrono.validation()
+            chrono.on_epoch_end()
+        chrono.on_train_end()
+        chrono.display()
     """
 
     def __init__(self) -> None:
@@ -169,14 +166,14 @@ class Chronometer(Callback):
             self.val_time = datetime.now() - self.start_valid
             self.start_valid = None
 
-    def on_train_begin(self, config: _TrainingState, **kwargs):
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """Marks the beginning of the overall training."""
         self.start_proc = datetime.now()
 
-    def on_epoch_begin(self, config: _TrainingState, **kwargs):
+    def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
         self._dataload()
 
-    def on_batch_begin(self, config: _TrainingState, **kwargs):
+    def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
         """
         Call this before and after the forward pass.
         Handles dataloading, training, and forward time tracking.
@@ -185,7 +182,7 @@ class Chronometer(Callback):
         self._training()
         self._forward()
 
-    def on_backward_begin(self, config: _TrainingState, **kwargs):
+    def on_backward_begin(self, config: _TrainingState, **kwargs) -> None:
         """
         Call this before and after the backward pass.
         Handles forward and backward time tracking.
@@ -193,7 +190,7 @@ class Chronometer(Callback):
         self._forward()
         self._backward()
 
-    def on_batch_end(self, config: _TrainingState, **kwargs):
+    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """
         Call this after the optimizer step.
         Ends backward and training timing.
@@ -201,16 +198,16 @@ class Chronometer(Callback):
         self._backward()
         self._training()
 
-    def on_validation_begin(self, config: _TrainingState, **kwargs):
+    def on_validation_begin(self, config: _TrainingState, **kwargs) -> None:
         self.validation()
 
-    def on_validation_end(self, config: _TrainingState, **kwargs):
+    def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         self.validation()
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         self._dataload()
 
-    def on_train_end(self, config: _TrainingState, **kwargs):
+    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """Marks the end of the overall training."""
         self.stop_proc = datetime.now()
         self.display()

@@ -24,6 +24,8 @@ from clinicadl.metrics.config.base import (
 from clinicadl.metrics.config.factory import get_metric_config
 from clinicadl.utils.json import write_json
 
+from .types import MetricType
+
 
 class Metrics(ABC):
     """
@@ -32,37 +34,40 @@ class Metrics(ABC):
 
     @staticmethod
     def check_metrics(
-        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
-    ) -> list[MetricConfig]:
+        metrics: Optional[dict[str, MetricType]],
+    ) -> dict[str, MetricConfig]:
         """TO COMPLETE"""
 
-        metrics_config = []
-        _confusion_metrics_name = []
+        metrics_config: dict[str, MetricConfig] = {}
 
-        if not isinstance(metrics, list):
-            metrics = [metrics]
-        for metric in metrics:
-            if isinstance(metric, MonaiMetric):
-                config = get_metric_config(name=metric.__class__.__name__)
-                metrics_config.append(config)
-
-            elif isinstance(metric, LossConfig):
-                metrics_config.append(
-                    LossMetricConfig(
-                        loss_fn=metric.get_object(), reduction=metric.reduction
-                    )
+        if metrics is not None:
+            if not isinstance(metrics, dict):
+                raise TypeError(
+                    f"Metrics must be a dictionary, got {type(metrics)} instead."
                 )
 
-            elif isinstance(metric, MetricConfig) or isinstance(
-                metric, LossMetricConfig
-            ):
-                metrics_config.append(metric)
+            for metric_name, metric in metrics.items():
+                if isinstance(metric, MonaiMetric):
+                    config = get_metric_config(
+                        name=metric.__class__.__name__, **metric.__dict__
+                    )  # TODO : check if it works when doing unittests
+                    metrics_config[metric_name] = config
 
-            elif isinstance(metric, type(CustomMetric)):
-                metrics_config.append(metric)
+                elif isinstance(metric, LossConfig):
+                    metrics_config[metric_name] = LossMetricConfig(
+                        loss_fn=metric.get_object(), reduction=metric.reduction
+                    )
 
-            elif isinstance(metric, type(Loss)):
-                metrics_config.append(LossMetricConfig(loss_fn=metric))
+                elif isinstance(metric, MetricConfig) or isinstance(
+                    metric, LossMetricConfig
+                ):
+                    metrics_config[metric_name] = metric
+
+                elif isinstance(metric, type(CustomMetric)):
+                    metrics_config[metric_name] = metric
+
+                elif isinstance(metric, Loss):
+                    metrics_config[metric_name] = LossMetricConfig(loss_fn=metric)
 
         return metrics_config
 
@@ -72,10 +77,8 @@ class ClinicaDLMetrics(Metrics):
 
     def __init__(
         self,
-        metrics: Optional[
-            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
-        ],
         loss: Loss,
+        metrics: Optional[dict[str, MetricType]] = None,
     ):
         """
         Initialize the ClinicaDLMetrics instance.
@@ -87,20 +90,18 @@ class ClinicaDLMetrics(Metrics):
         compute_train_metrics : bool
             Flag to compute training metrics.
         """
-        if metrics is None:
-            metrics = []  # TODO: which default metrics should we add?
 
-        self.metrics = self.check_metrics(metrics)
+        self.metrics = self.check_metrics(metrics=metrics)
+        self._loss = loss
         self._loss_metric = LossMetricConfig(loss_fn=loss)
-
-        if self._loss_metric not in self.metrics:
-            self.metrics.append(self._loss_metric)
+        if "loss" not in self.metrics:
+            self.metrics["loss"] = self._loss_metric
             # TODO : check if 2 lossconifg, one for the loss and one as a metric, how to handle the name ? because a loss is a function and doesn't have a name
 
         self._callable_metrics = self.get_callable_metrics()
-        self.df = self.init_df()
+        self.df = self._init_df()
 
-    def init_df(self) -> pd.DataFrame:
+    def _init_df(self) -> pd.DataFrame:
         """TO COMPLETE"""
 
         columns = [EPOCH]
@@ -116,31 +117,24 @@ class ClinicaDLMetrics(Metrics):
         df.set_index(EPOCH, inplace=True)
         return df
 
-    def contains(
-        self,
-        metrics: list[Union[MetricConfig, MonaiMetric, CustomMetric, LossConfig, Loss]],
-    ) -> bool:
-        """TO COMPLETE"""
-        metrics = self.check_metrics(metrics)
-        return all(metric in self.metrics for metric in metrics)
-
     def add_metrics(
         self,
-        metrics: list[
-            Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]
-        ],
+        metrics: dict[str, MetricType],
     ) -> None:
         """
         Add metrics to the ClinicaDLMetrics instance.
         """
         add_metric = self.check_metrics(metrics)
         new_callable_metrics = self.get_callable_metrics()
-        for metric, _callable in new_callable_metrics.items():
-            if metric not in self._callable_metrics:
-                self._callable_metrics[metric] = _callable
+        for name, _callable in new_callable_metrics.items():
+            if name not in self._callable_metrics.keys():
+                self._callable_metrics[name] = _callable
+                self.metrics[name] = add_metric[name]
 
-        self.metrics.extend(add_metric)
-        # self.df = self.init_df()
+        new_df = self._init_df()
+        self.df = self.df.reindex(
+            columns=self.df.columns.union(new_df.columns), fill_value=pd.NA
+        )
 
     def get_callable_metrics(self) -> Dict[str, MonaiMetric]:
         """
@@ -153,24 +147,17 @@ class ClinicaDLMetrics(Metrics):
         """
         _callable_metrics: Dict[str, MonaiMetric] = {}
 
-        for metric in self.metrics:
-            if isinstance(metric, ConfusionMatrixMetricConfig):
-                _callable_metrics[
-                    metric.name
-                ] = metric.get_object()  # TODO: for now same as others but need to check if several ConfusionMatrixMetricConfig are proposed with diofferent args
-            elif isinstance(metric, LossMetricConfig):
-                _callable_metrics[
-                    metric.name
-                ] = metric.get_object()  # TODO: handle loss name
-            elif isinstance(metric, MetricConfig):
-                _callable_metrics[metric.name] = metric.get_object()
-            else:
+        for name, config in self.metrics.items():
+            try:
+                _callable_metrics[name] = config.get_object()
+            except TypeError:
                 raise TypeError(
-                    f"Unsupported metric type: {type(metric)}. Expected MetricConfig."
+                    f"The provided metric {name} doesn't have a get_object method."
                 )
+
         return _callable_metrics
 
-    def _resetdf(self) -> None:
+    def _reset_df(self) -> None:
         """
         Initialize or reset the internal DataFrame for storing aggregated metric values.
         """
@@ -188,7 +175,7 @@ class ClinicaDLMetrics(Metrics):
         for metric in self._callable_metrics.values():
             metric.reset()
         if df:
-            self._resetdf()
+            self._reset_df()
 
     def aggregate(self, epoch: int) -> None:
         """
@@ -225,24 +212,6 @@ class ClinicaDLMetrics(Metrics):
         for metric in self._callable_metrics.values():
             metric(y_pred, y)
 
-    def get_loss(self) -> float:
-        """
-        Get the latest loss value.
-
-        Returns
-        -------
-        float
-            Aggregated loss.
-
-        Raises
-        ------
-        ValueError
-            If the loss metric is not present.
-        """
-        if LOSS_METRIC not in self._callable_metrics:
-            raise ValueError("Loss not found in training metrics.")
-        return self._callable_metrics[LOSS_METRIC].aggregate().item()
-
     def save(self, path: Path) -> None:
         """
         Persist the metrics to disk using selection metric file paths.
@@ -264,7 +233,7 @@ class ClinicaDLMetrics(Metrics):
             Serialized metrics
         """
         return {
-            METRICS: [metric.to_dict() for metric in self.metrics],
+            METRICS: [metric.to_dict() for metric in self.metrics.values()],
         }
 
     def write_json(self, json_path: Path) -> None:

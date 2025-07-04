@@ -1,0 +1,71 @@
+from typing import Optional
+
+from clinicadl.maps.maps import Maps
+from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.optim.config import OptimizationConfig
+from clinicadl.split.split import Split
+from clinicadl.utils.computational.config import ComputationalConfig
+
+from ..utils.config.base import ClinicaDLConfig
+
+
+class _TrainingState(ClinicaDLConfig):
+    """
+    Stores and manages the mutable state during a training session.
+
+    This class acts as a centralized container for key objects and variables
+    involved in training a ClinicaDL model on a specific data split. It keeps
+    track of the current epoch, batch, whether training should stop, and holds
+    references to core components such as data maps, metrics, model, optimizer,
+    and computational configurations.
+
+    Attributes
+    ----------
+    maps : Maps
+        Provides access to dataset file paths and structure.
+    metrics : ClinicaDLMetrics
+        Handles computation and storage of performance metrics.
+    model : ClinicaDLModel
+        The neural network model being trained.
+    optim : OptimizationConfig
+        Configuration and state of the optimization process.
+    comp : ComputationalConfig
+        Computational settings such as device usage and resource limits.
+    stop : bool
+        Flag to indicate whether training should stop early.
+    n_batch : int
+        Number of batches in the current training epoch.
+    split : Optional[Split]
+        The current data split used for training.
+    epoch : int
+        The current epoch index.
+    batch : int
+        The current batch index within the epoch.
+
+    Methods
+    -------
+    reset(split: Split)
+        Initializes the training state for a new data split,
+        resetting counters and setting batch count.
+    """
+
+    maps: Maps
+    metrics: ClinicaDLMetrics
+    model: ClinicaDLModel
+    optim: OptimizationConfig
+    comp: ComputationalConfig
+    stop: bool = False
+    n_batch: int = 0
+    split: Optional[Split] = None
+    epoch: int = 0
+    batch: int = 0
+
+    def reset(self, split: Split):
+        """Reset the training state for a new training split."""
+
+        self.n_batch = len(split.train_loader)
+        self.split = split
+        self.stop = False
+        self.epoch = 0
+        self.batch = 0
