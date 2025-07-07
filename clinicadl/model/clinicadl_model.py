@@ -17,9 +17,26 @@ from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_con
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils.json import read_json, write_json
+from clinicadl.utils.config import FieldReadersType, MultipleConfig
+from clinicadl.utils.json import read_json
 from clinicadl.utils.typing import PathType
 
 # import idr_torch
+
+
+class ClinicaDLModelConfig(MultipleConfig):
+    """
+    Config class associated to ClinicaDLModel.
+    """
+
+    network: Optional[NetworkConfig] = None
+    loss: Optional[LossConfig] = None
+    optimizer: Optional[OptimizerConfig] = None
+    _FIELD_READERS: FieldReadersType = {
+        "network": get_network_config,
+        "loss": get_loss_function_config,
+        "optimizer": get_optimizer_config,
+    }
 
 
 class ClinicaDLModel:
@@ -29,21 +46,23 @@ class ClinicaDLModel:
         loss: Union[Loss, LossConfig],
         optimizer: Union[Optimizer, OptimizerConfig],
     ):
+        self._config = ClinicaDLModelConfig()
+
         if isinstance(network, NetworkConfig):
             self.network = network.get_object()
-            self._network_config = network
+            self._config.network = network
         else:
             self.network = network
 
         if isinstance(loss, LossConfig):
             self.loss = loss.get_object()
-            self._loss_config = loss
+            self._config.loss = loss
         else:
             self.loss = loss
 
         if isinstance(optimizer, OptimizerConfig):
             self.optimizer = optimizer.get_object(self.network)
-            self._optimizer_config = optimizer
+            self._config.optimizer = optimizer
         else:
             self.optimizer = optimizer
 
@@ -66,12 +85,16 @@ class ClinicaDLModel:
         # )  # to check
 
     @classmethod
-    def from_json(cls, json_path: PathType):
+    def from_json(cls, json_path: PathType) -> None:
         """
-        Reads a JSON file and returns a ClinicaDLModel instance.
+        Creates a ClinicaDLModel instance from a JSON file.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the json file.
         """
-        json_path = Path(json_path)
-        dict_ = read_json(json_path=json_path)
+        config = ClinicaDLModelConfig.from_json(json_path)
 
         return cls.from_dict(dict_)
 
@@ -85,25 +108,24 @@ class ClinicaDLModel:
             loss_config=loss_config,
             optimizer_config=optimizer_config,
         )
+    def write_json(self, json_path: PathType, overwrite: bool = False) -> None:
+        """
+        Writes the serialized config class to a JSON file.
+        """
+        json_path = Path(json_path)
 
-    @classmethod
-    def from_config(
-        cls,
-        network_config: NetworkConfig,
-        loss_config: LossConfig,
-        optimizer_config: OptimizerConfig,
-    ):
-        loss = loss_config.get_object()
-        network = network_config.get_object()
-        optimizer = optimizer_config.get_object(network=network)
+        if (
+            not self._network_config
+            or not self._loss_config
+            or not self._optimizer_config
+        ):
+            raise ValueError(
+                "Network, loss, and optimizer configs must be set before writing to JSON."
+            )
 
-        model = ClinicaDLModel(network, loss, optimizer)
-
-        model._network_config = network_config
-        model._loss_config = loss_config
-        model._optimizer_config = optimizer_config
-
-        return model
+        self._network_config.write_json(json_path, overwrite=overwrite)
+        self._loss_config.update_json(json_path)
+        self._optimizer_config.update_json(json_path)
 
     def load_optim_state_dict(self, optimizer_path: Path):
         checkpoint_state = torch.load(

@@ -60,9 +60,7 @@ class TensorConversionInfo(ClinicaDLConfig):
     Caps images to tensors.
     """
 
-    preprocessing: SerializeAsAny[
-        Preprocessing
-    ]  # SerializeAsAny to have fields that are not in the base Preprocessing
+    preprocessing: Preprocessing
     individual_masks: list[str]
     also: dict[str, AlsoType]  # other information stored in .pt
     common_masks: list[str]
