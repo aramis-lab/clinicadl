@@ -60,6 +60,7 @@ GOOD_INPUTS = [
         },
         RandomGhostingConfig,
     ),
+    ({"restore": None}, RandomGhostingConfig),
     ({"num_spikes": (0, 1), "intensity": 1.0}, RandomSpikeConfig),
     ({"num_spikes": 1, "intensity": (-1.0, 1.0)}, RandomSpikeConfig),
     ({"coefficients": 0, "order": 0}, RandomBiasFieldConfig),
