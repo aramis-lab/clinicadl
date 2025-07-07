@@ -27,7 +27,7 @@ BAD_INPUTS = [
     ({"intensity": (-0.1, 0.1)}, RandomGhostingConfig),
     ({"axes": "R"}, RandomGhostingConfig),
     ({"axes": 3}, RandomGhostingConfig),
-    ({"restore": 1.1}, RandomGhostingConfig),
+    ({"restore": (0, 1.1)}, RandomGhostingConfig),
     ({"num_spikes": 1.1}, RandomSpikeConfig),
     ({"num_spikes": -1}, RandomSpikeConfig),
     ({"num_spikes": (-1, 1)}, RandomSpikeConfig),
@@ -52,7 +52,12 @@ GOOD_INPUTS = [
         RandomGhostingConfig,
     ),
     (
-        {"num_ghosts": (1, 5), "axes": (0, 2), "intensity": (0.1, 0.2), "restore": 0},
+        {
+            "num_ghosts": (1, 5),
+            "axes": (0, 2),
+            "intensity": (0.1, 0.2),
+            "restore": (0, 0.1),
+        },
         RandomGhostingConfig,
     ),
     ({"num_spikes": (0, 1), "intensity": 1.0}, RandomSpikeConfig),

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torchio as tio
 from pydantic import (
@@ -77,7 +77,9 @@ class RandomGhostingConfig(TransformConfig):
     intensity: Union[
         NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]
     ] = RANDOM_GHOSTING_TORCHIO_DEFAULTS["intensity"]
-    restore: NonNegativeFloat = RANDOM_GHOSTING_TORCHIO_DEFAULTS["restore"]
+    restore: Optional[
+        Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat]]
+    ] = RANDOM_GHOSTING_TORCHIO_DEFAULTS["restore"]
 
     @field_validator("num_ghosts", "intensity", "restore", mode="after")
     @classmethod
@@ -90,10 +92,21 @@ class RandomGhostingConfig(TransformConfig):
     @field_validator("restore", mode="after")
     @classmethod
     def validator_restore(cls, v):
-        """Checks that 'restore' is a probability."""
-        if isinstance(v, float) and v > 1:
-            raise ValueError(f"'restore' must be between 0 and 1. Got {v}")
+        """Checks that 'restore' contains probability."""
+        if isinstance(v, float):
+            cls._check_restore(v)
+        elif isinstance(v, tuple):
+            for v_ in v:
+                cls._check_restore(v_)
         return v
+
+    @staticmethod
+    def _check_restore(restore: float) -> None:
+        """Checks a single restore value."""
+        if not (0 <= restore <= 1):
+            raise ValueError(
+                f"'restore' must contain values between 0 and 1. Got {restore}"
+            )
 
 
 class RandomSpikeConfig(TransformConfig):
