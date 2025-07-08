@@ -1,11 +1,12 @@
 import io
 import sys
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Optional, Union
 
 import torch
 import torch.nn as nn
-from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
 
 from clinicadl.data.dataloader import BatchType
@@ -18,10 +19,9 @@ from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.config import FieldReadersType, MultipleConfig
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.json import read_json
 from clinicadl.utils.typing import PathType
-
-# import idr_torch
 
 
 class ClinicaDLModelConfig(MultipleConfig):
@@ -47,6 +47,7 @@ class ClinicaDLModel:
         optimizer: Union[Optimizer, OptimizerConfig],
     ):
         self._config = ClinicaDLModelConfig()
+        self._device = None
 
         if isinstance(network, NetworkConfig):
             self.network = network.get_object()
@@ -86,17 +87,26 @@ class ClinicaDLModel:
 
     @classmethod
     def from_json(cls, json_path: PathType) -> None:
+    @property
+    def device(self) -> torch.device:
         """
-        Creates a ClinicaDLModel instance from a JSON file.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the json file.
+        The device where is currently the neural network.
         """
-        config = ClinicaDLModelConfig.from_json(json_path)
+        if not self._device:
+            devices = set()
+            for param in self.network.parameters():
+                devices.add(param.device)
+            for buffer in self.network.buffers():  # e.g. BatchNorm buffers
+                devices.add(buffer.device)
 
-        return cls.from_dict(dict_)
+            if len(devices) > 1:
+                raise ClinicaDLConfigurationError(
+                    "All the parameters of the neural network are not on the same device. "
+                    f"Got for devices: {devices}"
+                )
+            self._device = devices.pop()
+
+        return self._device
 
     @classmethod
     def from_dict(cls, dict_: dict):
@@ -114,33 +124,24 @@ class ClinicaDLModel:
         """
         json_path = Path(json_path)
 
-        if (
-            not self._network_config
-            or not self._loss_config
-            or not self._optimizer_config
-        ):
-            raise ValueError(
-                "Network, loss, and optimizer configs must be set before writing to JSON."
-            )
+    def to(
+        self,
+        device: Optional[Union[str, torch.device, int]] = None,
+        non_blocking: bool = False,
+        dtype: Optional[torch.dtype] = None,
+        channels_last: Optional[bool] = None,
+    ) -> None:
+        device_ = torch.device(device) if device else None
 
-        self._network_config.write_json(json_path, overwrite=overwrite)
-        self._loss_config.update_json(json_path)
-        self._optimizer_config.update_json(json_path)
-
-    def load_optim_state_dict(self, optimizer_path: Path):
-        checkpoint_state = torch.load(
-            optimizer_path, map_location=self.device, weights_only=True
+        self.network.to(
+            device=device_,
+            non_blocking=non_blocking,
+            dtype=dtype,
+            memory_format=channels_last,
         )
-        self.optimizer.load_state_dict(checkpoint_state["optimizer"])
-        # self.network.load_optim_state_dict(
-        #     self.optimizer, checkpoint_state["optimizer"]
-        # )
 
-    def load_network_state_dict(self, model_path: Path):
-        model_state = torch.load(
-            model_path, map_location=self.device, weights_only=True
-        )
-        self.network.load_state_dict(model_state["model"])
+        if device:
+            self._device = device_
 
         return model_state["epoch"]
 
@@ -209,3 +210,73 @@ class ClinicaDLModel:
     def write_architecture_log(self, log_path: PathType) -> None:
         with open(log_path, "w") as f:
             print(self.network, file=f)
+    @classmethod
+    def from_json(cls, json_path: PathType) -> ClinicaDLModel:
+        """
+        Creates a ``ClinicaDLModel`` instance from a ``JSON`` file.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the ``JSON`` file.
+        """
+        config = ClinicaDLModelConfig.from_json(json_path)
+
+        return cls(network=config.network, loss=config.loss, optimizer=config.optimizer)
+
+    def write_json(self, json_path: PathType, overwrite: bool = False) -> None:
+        """
+        Writes the ``ClinicaDLModel`` parameters in a ``JSON`` file.
+
+        .. warning::
+            This method is relevant only if the ``ClinicaDLModel`` was
+            instantiated with config classes. Otherwise, ``ClinicaDLModel``
+            don't know what parameters to store.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the json file.
+        overwrite : bool, default=True
+            Whether to overwrite the json file if it exists.
+        """
+        self._config.write_json(json_path=json_path, overwrite=overwrite)
+
+    def save_checkpoint(
+        self,
+        checkpoint_path: Path,
+        network_key: str = "model_state_dict",
+        optimizer_key: str = "optimizer_state_dict",
+    ) -> None:
+        torch.save(
+            {
+                network_key: self.network.state_dict(),
+                optimizer_key: self.optimizer.state_dict(),
+            },
+            f=checkpoint_path,
+        )
+
+    def load_checkpoint(
+        self,
+        checkpoint_path: Path,
+        network_key: str = "model_state_dict",
+        optimizer_key: str = "optimizer_state_dict",
+    ) -> None:
+        checkpoint = torch.load(
+            checkpoint_path, weights_only=True, map_location=self.device
+        )
+        self.network.load_state_dict(checkpoint[network_key])
+        self.optimizer.load_state_dict(checkpoint[optimizer_key])
+
+    def save_weights(
+        self,
+        checkpoint_path: Path,
+    ) -> None:
+        torch.save(self.network.state_dict(), f=checkpoint_path)
+
+    def load_weights(
+        self,
+        checkpoint_path: Path,
+    ) -> None:
+        checkpoint = torch.load(checkpoint_path, weights_only=True)
+        self.network.load_state_dict(checkpoint)

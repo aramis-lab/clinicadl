@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Sequence
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr, computed_field, model_validator
+from pydantic.fields import ModelPrivateAttr
 
 from clinicadl.dictionary.words import NAME
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
@@ -129,8 +130,8 @@ FieldReadersType = dict[str, FieldReaderType]
 class MultipleConfig(ClinicaDLConfig, ABC):
     """
     Base config class to gather multiple config classes.
-    Each field must be associated with a function to get the associated
-    config object from a dictionary (e.g. get_network_config).
+    Each field must be of type ClinicaDLConfig and associated with a function to get the associated
+    config object from a dictionary (e.g. 'get_network_config').
     """
 
     _FIELD_READERS: FieldReadersType = {}
@@ -155,16 +156,20 @@ class MultipleConfig(ClinicaDLConfig, ABC):
         dict_ = cls.read_json(json_path=json_path)
         dict_.update(kwargs)
 
-        for field, value in dict_.items():
-            dict_[field] = cls._FIELD_READERS[field](value)
+        for field, values in dict_.items():
+            if values is None:
+                raise ClinicaDLArgumentError(
+                    f"No configuration associated to '{field}' in '{str(json_path)}'!"
+                )
+            dict_[field] = cls._get_reader(field)(**values)
 
         return cls(**dict_)
 
     @classmethod
     def _get_reader(cls, field: str) -> FieldReaderType:
         """Gets the reader for a field."""
-        cls._FIELD_READERS: PrivateAttr
-        return cls._FIELD_READERS.default[field]
+        cls._FIELD_READERS: ModelPrivateAttr
+        return cls._FIELD_READERS.default[field]  # pylint: disable=no-member
 
 
 def _order_dict(model_or_field: Any) -> Any:
