@@ -1,1 +1,1 @@
-from .training import TrainingDir
+from .training_dir import TrainingDir

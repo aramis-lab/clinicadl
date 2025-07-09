@@ -1,61 +1,32 @@
 from __future__ import annotations
 
-import json
-import subprocess
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict
 
-import pandas as pd
-
-from clinicadl.callbacks.factory.base import Callback
-from clinicadl.callbacks.handler import CallbacksHandler
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
+from clinicadl.dictionary.suffixes import JSON, LOG, TSV
 from clinicadl.dictionary.words import (
-    ARCHITECTURE,
-    BEST,
-    CALLBACKS,
-    CAPS,
-    CHECKPOINTS,
+    CAPS_DATASET,
     COMPUTATIONAL,
-    DATA,
-    DATASET,
-    ENVIRONMENT,
-    EPOCH,
-    GROUPS,
-    LOGS,
     METRICS,
-    MODEL,
-    OPTIMIZATION,
-    OPTIMIZER,
-    OUTPUT,
-    PREDICTIONS,
     SPLIT,
     SUMMARY,
-    TEST,
-    TMP,
-    TRAIN,
-    TRAINING,
     VALIDATION,
 )
-from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.model import ClinicaDLModel
-from clinicadl.optim.config import OptimizationConfig
-from clinicadl.split.split import Split
-from clinicadl.tsvtools.utils import remove_non_empty_dir
 from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.typing import PathType
 
 from ...base import Directory
+from .best_metrics import TrainBestMetricDir
+from .checkpoints import CheckpointsDir
+from .logs import LogsDir
+from .tmp import TmpDir
 
 
 class TrainSplitDir(Directory):
     def __init__(self, num: int, parents_path: PathType):
         super().__init__(path=Path(parents_path) / (SPLIT + "-" + str(num)))
 
-        self.best_metrics: Dict[str, TrainBestMetric] = {}
+        self.best_metrics: Dict[str, TrainBestMetricDir] = {}
 
         self.checkpoints = CheckpointsDir(parents_path=self.path)
         self.logs = LogsDir(parents_path=self.path)
@@ -69,9 +40,20 @@ class TrainSplitDir(Directory):
         self.tmp.load()
 
         for metric in self.best_metrics_list:
-            best_metric = TrainBestMetric(parent_dir=self.path, metric=metric)
+            best_metric = TrainBestMetricDir(parent_dir=self.path, metric=metric)
             best_metric.load()
             self.best_metrics[metric] = best_metric
+
+    def _create(self):
+        super()._create()
+        self.checkpoints._create()
+        self.logs._create()
+        self.tmp._create()
+
+    def _create_best_metrics(self, metric: str):
+        best_metric = TrainBestMetricDir(parent_dir=self.path, metric=metric)
+        best_metric._create()
+        self.best_metrics[metric] = best_metric
 
     def get_computational_config(self) -> ComputationalConfig:
         return ComputationalConfig.from_json(self.computational_json)
@@ -89,6 +71,10 @@ class TrainSplitDir(Directory):
     @property
     def computational_json(self) -> Path:
         return self.path / (COMPUTATIONAL + JSON)
+
+    @property
+    def caps_dataset_json(self) -> Path:
+        return self.path / (CAPS_DATASET + JSON)
 
     @property
     def summary_log(self) -> Path:

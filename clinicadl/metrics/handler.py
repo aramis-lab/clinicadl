@@ -10,7 +10,7 @@ from monai.metrics.confusion_matrix import ConfusionMatrixMetric
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 
 from clinicadl.dictionary.words import EPOCH, LOSS_METRIC, METRICS
-from clinicadl.losses.config import LossConfig
+from clinicadl.losses.config import LossConfig, get_loss_function_config
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import (
     ConfusionMatrixMetricConfig,
@@ -22,7 +22,7 @@ from clinicadl.metrics.config.base import (
     MetricConfig,
 )
 from clinicadl.metrics.config.factory import get_metric_config
-from clinicadl.utils.json import write_json
+from clinicadl.utils.json import read_json, write_json
 
 from .types import MetricType
 
@@ -106,12 +106,12 @@ class MetricsHandler(Metrics):
 
         columns = [EPOCH]
 
-        for metric in self._callable_metrics.values():
+        for name, metric in self._callable_metrics.items():
             if isinstance(metric, ConfusionMatrixMetric):
                 for confusion_metric in metric.metric_name:
                     columns.append(confusion_metric)
             else:
-                columns.append(metric.__class__.__name__)
+                columns.append(name)
 
         df = pd.DataFrame(columns=columns)
         df.set_index(EPOCH, inplace=True)
@@ -223,19 +223,6 @@ class MetricsHandler(Metrics):
         """
         self.df.to_csv(path, sep="\t", index=True)
 
-    def to_dict(self) -> Dict[str, Optional[list[dict]]]:
-        """
-        Serialize the configuration to a dictionary.
-
-        Returns
-        -------
-        dict
-            Serialized metrics
-        """
-        return {
-            METRICS: [metric.to_dict() for metric in self.metrics.values()],
-        }
-
     def write_json(self, json_path: Path) -> None:
         """
         Save the configuration to a JSON file.
@@ -245,4 +232,18 @@ class MetricsHandler(Metrics):
         json_path : Path
             Destination file path.
         """
-        write_json(json_path, self.to_dict())
+        json_dict = {name: metric.to_dict() for name, metric in self.metrics.items()}
+        write_json(json_path, json_dict)
+
+    @classmethod
+    def from_json(cls, json_path: Path) -> Dict[str, MetricConfig]:
+        json_path = Path(json_path)
+        _dict = read_json(json_path=json_path)
+
+        for name, metric in _dict.items():
+            if "loss_fn" in metric:
+                metric["loss_fn"] = get_loss_function_config(
+                    name=metric["loss_fn"]["name"], **metric["loss_fn"]["params"]
+                ).get_object()
+            _dict[name] = get_metric_config(**metric)
+        return _dict

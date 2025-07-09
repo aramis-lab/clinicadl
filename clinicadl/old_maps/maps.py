@@ -188,7 +188,7 @@ class Maps(Directory):
             raise ClinicaDLConfigurationError(f"Data group '{name}' already exists.")
 
         data_group = DataGroup(name=name, parent_dir=self.groups_dir)
-        data_group.create(dataset=dataset)
+        data_group._create(dataset=dataset)
         self.data_groups[name] = data_group
 
     def create_split(self, split: Split, best_metrics: list[str]) -> None:

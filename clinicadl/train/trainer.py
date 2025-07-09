@@ -160,7 +160,15 @@ class Trainer:
         )
 
         maps = Maps(maps_path)
-        maps.create(overwrite=_overwrite)
+        maps._create_dirs(overwrite=_overwrite)
+
+        self.callbacks.write_json(maps.training.callbacks_json)
+        train_metrics.write_json(maps.training.metrics_json)
+        comp_config.write_json(maps.training.computational_json)
+        optim_config.write_json(maps.training.optimization_json)
+
+        model.write_json(maps.model_json)
+        model.write_architecture_log(maps.architecture_log)
 
         self.config = _TrainingState(
             maps=maps,
@@ -228,7 +236,6 @@ class Trainer:
     def on_train_begin(self, split: Split) -> None:
         """Prepare training by setting model to training mode, creating maps, and resetting states."""
 
-        self.config.maps.create(split=split)
         self.model.train()
         self.reset(split)
 

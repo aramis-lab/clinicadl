@@ -4,7 +4,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL, OPTIMIZER
 
-from .base import Callback
+from ..base import Callback
 
 
 class _CheckpointSaver(Callback):
@@ -52,7 +52,7 @@ class _CheckpointSaver(Callback):
             EPOCH: config.epoch,
         }
         tmp_dir = config.maps.training.splits[config.split.index].tmp
-        tmp_dir.create(_exists_ok=True)
+        tmp_dir._create(_exists_ok=True)
 
         torch.save(model_weights, tmp_dir.model)
 

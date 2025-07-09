@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import torch
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from .base import Callback
+from ..base import Callback
 
 
 class Tensorboard(Callback):
@@ -96,3 +96,22 @@ class Tensorboard(Callback):
         """
         if self.writer is not None:
             self.writer.close()
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update(
+            {
+                "log_dir": self.log_dir,
+                "log_model_graph": self.log_model_graph,
+                "example_input": self.example_input,
+            }
+        )
+        return json_dict

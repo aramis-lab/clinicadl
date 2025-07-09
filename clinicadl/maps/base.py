@@ -31,10 +31,10 @@ class Directory:
         """Remove the directory."""
         remove_non_empty_dir(self.path)
 
-    def create(self, overwrite: bool = False, _exists_ok: bool = False):
+    def _create(self, overwrite: bool = False, _exists_ok: bool = False):
         """Create the directory if it does not already exist."""
 
-        if self.exists() and not (_exists_ok and overwrite):
+        if self.exists() and not (_exists_ok or overwrite):
             raise ClinicaDLConfigurationError(
                 f"Directory ({self.path}) already exists."
             )

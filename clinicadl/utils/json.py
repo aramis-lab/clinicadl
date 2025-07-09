@@ -1,9 +1,12 @@
+import inspect
 import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
 
 import torch
+
+from clinicadl.utils.typing import PathType
 
 
 def read_json(json_path: Path) -> Dict[str, Any]:
@@ -23,10 +26,13 @@ def read_json(json_path: Path) -> Dict[str, Any]:
     return existing_data
 
 
-def write_json(json_path: Path, data: Dict[str, Any], overwrite: bool = False) -> None:
+def write_json(
+    json_path: PathType, data: Dict[str, Any], overwrite: bool = False
+) -> None:
     """
     Writes the serialized config class to a JSON file.
     """
+    json_path = Path(json_path)
     json_path.parent.mkdir(exist_ok=True, parents=True)
 
     if json_path.is_file() and not overwrite:
@@ -38,10 +44,11 @@ def write_json(json_path: Path, data: Dict[str, Any], overwrite: bool = False) -
         json.dump(data, json_file, indent=4, default=path_encoder)
 
 
-def update_json(json_path: Path, new_data: Dict[str, Any]) -> None:
+def update_json(json_path: PathType, new_data: Dict[str, Any]) -> None:
     """
     Updates the JSON file with the serialized config class.
     """
+    json_path = Path(json_path)
 
     # Lire le contenu existent du fichier
     existing_data = read_json(json_path)
@@ -57,6 +64,28 @@ def is_path_key(key: str) -> bool:
     """Check if a key is likely to refer to a path."""
     path_keywords = ("tsv", "dir", "directory", "path", "json", "location")
     return any(key.lower().endswith(suffix) for suffix in path_keywords)
+
+
+def serialize_callable(callable_obj):
+    cls = callable_obj.__class__
+    cls_name = cls.__name__
+
+    # Get the signature of the class __init__
+    try:
+        sig = inspect.signature(cls.__init__)
+    except (ValueError, TypeError):
+        return {"class": cls_name, "params": {}}
+
+    # Get arguments that were actually set
+    params = {}
+    for name, param in sig.parameters.items():
+        if name == "self":
+            continue
+        # Some attributes might not be set, so we check
+        if hasattr(callable_obj, name):
+            params[name] = getattr(callable_obj, name)
+
+    return {"name": cls_name, "params": params}
 
 
 def path_encoder(obj):

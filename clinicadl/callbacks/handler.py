@@ -1,18 +1,24 @@
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.handler import MetricsHandler
+from clinicadl.utils.json import read_json, write_json
+from clinicadl.utils.typing import PathType
 
+from .base import Callback
+from .config import get_callback_from_dict
 from .factory import *
-from .factory.base import Callback
 from .factory.checkpoint_saver import _CheckpointSaver
 from .factory.chronometer import _Chronometer
 from .factory.logger import _Logger
 from .factory.training_loss import _TrainingLoss
+from .factory.writer import _Writer
 
 LOSS = "loss"
 
 PREFERRED_ORDER = [
+    _Writer.__name__,
     _TrainingLoss.__name__,
     LRScheduler.__name__,
     _Chronometer.__name__,
@@ -122,6 +128,7 @@ class CallbacksHandler:
             _TrainingLoss.__name__: _TrainingLoss(),
             _Logger.__name__: _Logger(),
             _CheckpointSaver.__name__: _CheckpointSaver(),
+            _Writer.__name__: _Writer(),
         }
 
         for name, callback in defaults.items():
@@ -243,3 +250,19 @@ class CallbacksHandler:
 
     def on_validation_end(self, config: _TrainingState, **kwargs):
         self._call_event("on_validation_end", config=config, **kwargs)
+
+    def write_json(self, json_path: PathType) -> None:
+        json_path = Path(json_path)
+        json_dict = {
+            name: callback.to_dict()
+            for name, callback in self.callbacks.items()
+            if not name.startswith("_")
+        }
+
+        write_json(json_path=json_path, data=json_dict)
+
+    @classmethod
+    def from_json(cls, json_path: PathType) -> List[Callback]:
+        json_path = Path(json_path)
+        _dict = read_json(json_path=json_path)
+        return [get_callback_from_dict(json_dict) for json_dict in _dict.values()]

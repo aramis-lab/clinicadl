@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any, Union
 
 import torch
 
@@ -7,10 +7,10 @@ from clinicadl.optim.lr_schedulers.config.base import LRSchedulerConfig
 from clinicadl.optim.lr_schedulers.config.enum import ImplementedLRScheduler
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
 
-from .base import Callback
+from ..base import Callback
 
 LRSchedulerType = Union[
-    LRSchedulerConfig, ImplementedLRScheduler, torch.optim.lr_scheduler.LRScheduler
+    LRSchedulerConfig, ImplementedLRScheduler, torch.optim.lr_scheduler.LRScheduler, str
 ]
 
 
@@ -34,13 +34,19 @@ class LRScheduler(Callback):
 
     def __init__(self, scheduler: LRSchedulerType, **kwargs):
         self.scheduler = None
+        self.torch_scheduler = None
+        self.config = None
 
-        if isinstance(scheduler, LRSchedulerConfig):
-            self.config = scheduler
-        elif isinstance(scheduler, ImplementedLRScheduler):
+        if isinstance(scheduler, str):
+            scheduler = ImplementedLRScheduler(scheduler)
+
+        if isinstance(scheduler, ImplementedLRScheduler):
             self.config = get_lr_scheduler_config(scheduler, **kwargs)
+
+        elif isinstance(scheduler, LRSchedulerConfig):
+            self.config = scheduler
+
         elif isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
-            self.config = None
             self.torch_scheduler = scheduler
         else:
             raise ValueError(
@@ -77,3 +83,21 @@ class LRScheduler(Callback):
                 "LRScheduler has not been initialized. Call on_train_begin first."
             )
         self.scheduler.step()
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update(
+            {
+                "config": self.config.to_dict() if self.config else None,
+                "torch_scheduler": self.torch_scheduler,
+            }
+        )
+        return json_dict

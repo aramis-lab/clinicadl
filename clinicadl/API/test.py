@@ -3,7 +3,14 @@ from pathlib import Path
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric
 
-from clinicadl.callbacks.factory import CodeCarbon, EarlyStopping, ModelSelection
+from clinicadl.callbacks import (
+    Checkpoint,
+    CodeCarbon,
+    EarlyStopping,
+    LRScheduler,
+    ModelSelection,
+    Tensorboard,
+)
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
 from clinicadl.data.datatypes.preprocessing import T1Linear
@@ -48,9 +55,9 @@ fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 splitter = KFold(fold_dir)
 
 
-optim_config = OptimizationConfig(epochs=2)
+optim_config = OptimizationConfig(epochs=6)
 comput_config = ComputationalConfig(gpu=False)
-dataloader_config = DataLoaderConfig(batch_size=3)
+dataloader_config = DataLoaderConfig(batch_size=1)
 
 maps_path = Path("maps_test")
 loss = MSELossConfig()
@@ -72,7 +79,10 @@ callbacks = [
     EarlyStopping(metrics=["mae", "loss"]),
     ModelSelection(metrics=["mae"]),
     EarlyStopping(metrics=["mse"]),
-    CodeCarbon(),
+    Checkpoint(patience=2, epochs=[3]),
+    Tensorboard(),
+    LRScheduler(scheduler="LinearLR"),
+    # CodeCarbon(),
 ]
 
 trainer = Trainer(

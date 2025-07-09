@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from logging import getLogger
 from time import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from .base import Callback
+from ..base import Callback
 
 logger = getLogger("clinicadl.chronometer")
 

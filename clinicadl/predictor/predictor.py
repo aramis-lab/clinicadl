@@ -121,7 +121,7 @@ class Predictor:
 
         # TODO : check that the Transforms is of Type OutputsTransforms, if not put the transforms in an OutputsTransforms Object
 
-        self.maps.predictions.create_group(
+        self.maps.predictions._create_group(
             group_name=data_group,
             split=split,
             dataset=dataloader.dataset,

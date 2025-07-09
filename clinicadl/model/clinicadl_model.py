@@ -14,7 +14,7 @@ from clinicadl.networks.config import NetworkConfig, get_network_config
 from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
-from clinicadl.utils.json import read_json
+from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
 # import idr_torch
@@ -74,9 +74,9 @@ class ClinicaDLModel:
 
     @classmethod
     def from_dict(cls, dict_: dict):
-        network_config = get_network_config(**dict_)
-        loss_config = get_loss_function_config(**dict_)
-        optimizer_config = get_optimizer_config(**dict_)
+        network_config = get_network_config(**dict_["network"])
+        loss_config = get_loss_function_config(**dict_["loss"])
+        optimizer_config = get_optimizer_config(**dict_["optimizer"])
         return cls.from_config(
             network_config=network_config,
             loss_config=loss_config,
@@ -170,6 +170,22 @@ class ClinicaDLModel:
                 "Network, loss, and optimizer configs must be set before writing to JSON."
             )
 
-        self._network_config.write_json(json_path, overwrite=overwrite)
-        self._loss_config.update_json(json_path)
-        self._optimizer_config.update_json(json_path)
+        net_json = {"network": self._network_config.to_dict()}
+        loss_json = {"loss": self._loss_config.to_dict()}
+        optimizer_json = {"optimizer": self._optimizer_config.to_dict()}
+        write_json(
+            json_path=json_path,
+            data={**net_json, **loss_json, **optimizer_json},
+            overwrite=overwrite,
+        )
+
+    def write_architecture_log(self, log_path: PathType) -> None:
+        # input_size = model.input_size
+        # buffer = io.StringIO()
+        # sys.stdout = buffer
+        # summary(model, input_size)
+        # sys.stdout = sys.__stdout__
+
+        with open(log_path, "w") as f:
+            f.write(f"Model architecture: {self.__class__.__name__}\n\n")
+            # f.write(buffer.getvalue())

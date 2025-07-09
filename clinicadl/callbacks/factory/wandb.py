@@ -7,7 +7,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from .base import Callback
+from ..base import Callback
 
 
 class WandB(Callback):  # pragma: no cover

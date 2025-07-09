@@ -1,11 +1,9 @@
 import shutil
-from typing import Optional
+from typing import Any, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from .base import Callback
+from ..base import Callback
 
 
 class Checkpoint(Callback):
@@ -65,3 +63,16 @@ class Checkpoint(Callback):
 
             shutil.copyfile(tmp_dir.model, epoch_dir.model)
             shutil.copyfile(tmp_dir.optimizer, epoch_dir.optimizer)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update({"patience": self.patience, "epochs": self.epochs})
+        return json_dict

@@ -1,7 +1,7 @@
 import math
 from enum import Enum
 from logging import getLogger
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,7 @@ import pandas as pd
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.handler import Metrics
 
-from .base import Callback
+from ..base import Callback
 
 logger = getLogger("clinicadl.early_stopping")
 
@@ -277,3 +277,26 @@ class EarlyStopping(Metrics, Callback):
                 "Early stopping criteria met for all monitored metrics. Stopping training."
             )
         config.stop = should_stop
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update(
+            {
+                "metrics": self.metrics,
+                "patience": self.patience,
+                "min_delta": self.min_delta,
+                "mode": self.mode,
+                "check_finite": self.check_finite,
+                "upper_bound": self.upper_bound,
+                "lower_bound": self.lower_bound,
+            }
+        )
+        return json_dict
