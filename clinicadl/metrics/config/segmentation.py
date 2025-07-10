@@ -89,7 +89,7 @@ class GeneralizedDiceScoreConfig(MetricConfig):
     include_background: bool = GENERALIZED_DICE_SCORE_MONAI_DEFAULTS[
         "include_background"
     ]
-    reduction: Reduction = Reduction.MEAN
+    reduction: Reduction = GENERALIZED_DICE_SCORE_MONAI_DEFAULTS["reduction"]
     weight_type: WeightType = GENERALIZED_DICE_SCORE_MONAI_DEFAULTS["weight_type"]
 
     @staticmethod

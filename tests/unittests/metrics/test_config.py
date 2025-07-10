@@ -7,6 +7,7 @@ from torch.nn import MSELoss
 from clinicadl.metrics.config import get_metric_config
 from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.config.classification import (
+    AveragePrecisionMetricConfig,
     ConfusionMatrixMetricConfig,
     ROCAUCMetricConfig,
 )
@@ -31,7 +32,7 @@ from clinicadl.metrics.config.segmentation import (
 )
 
 BAD_INPUTS = [
-    ({"average": "abc"}, ROCAUCMetricConfig),
+    ({"average": "abc"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
     ({"metric_name": 0}, ConfusionMatrixMetricConfig),
     ({"compute_sample": ""}, ConfusionMatrixMetricConfig),
     (
@@ -124,9 +125,9 @@ BAD_INPUTS = [
 
 GOOD_INPUTS = [
     ({"class_thresholds": (0.1, 0)}, SurfaceDiceMetricConfig),
-    ({"average": "macro"}, ROCAUCMetricConfig),
-    ({"average": "micro"}, ROCAUCMetricConfig),
-    ({"average": "weighted"}, ROCAUCMetricConfig),
+    ({"average": "macro"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
+    ({"average": "micro"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
+    ({"average": "weighted"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
     (
         {"metric_name": "sensitivity", "compute_sample": True},
         ConfusionMatrixMetricConfig,
@@ -320,6 +321,7 @@ MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 
     [
         (ConfusionMatrixMetricConfig, metrics.ConfusionMatrixMetric),
         (ROCAUCMetricConfig, metrics.ROCAUCMetric),
+        (AveragePrecisionMetricConfig, metrics.AveragePrecisionMetric),
         (MultiScaleSSIMMetricConfig, metrics.MultiScaleSSIMMetric),
         (PSNRMetricConfig, metrics.PSNRMetric),
         (SSIMMetricConfig, metrics.SSIMMetric),
@@ -352,6 +354,7 @@ def test_get_object(config, expected_class):
     [
         ("ConfusionMatrixMetric", ConfusionMatrixMetricConfig),
         ("ROCAUCMetric", ROCAUCMetricConfig),
+        ("AveragePrecisionMetric", AveragePrecisionMetricConfig),
         ("MultiScaleSSIMMetric", MultiScaleSSIMMetricConfig),
         ("PSNRMetric", PSNRMetricConfig),
         ("SSIMMetric", SSIMMetricConfig),
@@ -401,6 +404,7 @@ def test_check_reduction():
     [
         (LossMetricConfig, "min"),
         (ROCAUCMetricConfig, "max"),
+        (AveragePrecisionMetricConfig, "max"),
         (MultiScaleSSIMMetricConfig, "max"),
         (PSNRMetricConfig, "max"),
         (SSIMMetricConfig, "max"),

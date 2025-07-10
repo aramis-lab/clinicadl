@@ -8,6 +8,7 @@ class ImplementedMetric(str, Enum):
 
     CONF_MATRIX = "ConfusionMatrixMetric"
     ROC_AUC = "ROCAUCMetric"
+    AVERAGE_PRECISION = "AveragePrecisionMetric"
 
     MSE = "MSEMetric"
     MAE = "MAEMetric"

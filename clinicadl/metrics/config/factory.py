@@ -2,7 +2,11 @@ from typing import Any, Union
 
 # pylint: disable=unused-import
 from .base import LossMetricConfig, MetricConfig
-from .classification import ConfusionMatrixMetricConfig, ROCAUCMetricConfig
+from .classification import (
+    AveragePrecisionMetricConfig,
+    ConfusionMatrixMetricConfig,
+    ROCAUCMetricConfig,
+)
 from .enum import ImplementedMetric
 from .reconstruction import (
     MultiScaleSSIMMetricConfig,
