@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="http://www.clinicadl.readthedocs.io">
-    <img src="https://clinicadl.readthedocs.io/en/latest/images/logo.png" alt="ClinicaDL Logo" width="120" height="120">
+    <img src="https://clinicadl.readthedocs.io/en/stable/images/logo.png" alt="ClinicaDL Logo" width="120" height="120">
   </a>
   <br/>
   ClinicaDL
@@ -15,8 +15,8 @@
   <a href="https://badge.fury.io/py/clinicadl">
     <img src="https://badge.fury.io/py/clinicadl.svg" alt="PyPI version">
   </a>
-  <a href='https://clinicadl.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
+  <a href='https://clinicadl.readthedocs.io/en/stable/?badge=stable'>
+    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=stable' alt='Documentation Status' />
   </a>
   <a href='https://pepy.tech/project/clinicadl'>
     <img src='https://static.pepy.tech/badge/clinicadl/month' alt='Downloads' />
