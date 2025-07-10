@@ -1,1 +1,1 @@
-from .clinicadl_model import ClinicaDLModel
+from .base import ClinicaDLModel

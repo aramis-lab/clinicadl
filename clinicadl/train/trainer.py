@@ -211,11 +211,14 @@ class Trainer:
         split : Split
             The data split containing training and validation DataLoaders.
         """
+        self.model.network.train()
+        split.train_dataset.train()
 
         self.on_train_begin(split)
 
         while not self.config.stop:
             self.on_epoch_begin()
+            split.train_loader.set_epoch(self.config.epoch)
 
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin(batch_idx=batch_idx)
@@ -224,7 +227,10 @@ class Trainer:
                     loss = self.model.training_step(data=data, device=self.comp.device)
 
                 self.on_backward_begin()
+                self.model.optimizer.zero_grad(set_to_none=True)
                 self.scaler.scale(loss).backward()
+                self.scaler.step(self.model.optimizer)
+                self.scaler.update()
                 self.on_backward_end()
 
                 self.on_batch_end(loss=loss)
@@ -232,6 +238,32 @@ class Trainer:
             self.on_epoch_end(split)
 
         self.on_train_end(split)
+
+    def evaluate(
+        self,
+        split: Split,
+        metrics: Optional[list[MetricType]] = None,
+    ):
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self.model.network.eval()
+        split.val_dataset.eval()
+
+        self.callbacks.on_validation_begin(config=self.config)
+
+        self.metrics.reset()
+
+        with torch.no_grad():
+            for data in split.val_loader:
+                outputs, labels = self.model.evaluation_step(
+                    data=data, metrics=self.metrics, device=self.comp.device
+                )
+                self.metrics(outputs, labels)
+
+            self.metrics.aggregate(epoch=self.config.epoch)
+
+        self.callbacks.on_validation_end(config=self.config)
 
     def on_train_begin(self, split: Split) -> None:
         self.model.train()
@@ -252,10 +284,6 @@ class Trainer:
         self.callbacks.on_backward_begin(config=self.config)
 
     def on_backward_end(self):
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.model.optimizer.zero_grad(set_to_none=True)
-
         self.callbacks.on_backward_end(config=self.config)
 
     def on_batch_end(self, loss: torch.Tensor):
@@ -281,46 +309,6 @@ class Trainer:
         if split:
             self.config.reset(split=split)
         self.metrics.reset(df=True)
-
-    def evaluate(
-        self,
-        dataloader: DataLoader[CapsDataset],
-        additional_metrics: Optional[list[MetricType]] = None,
-    ):
-        """
-        Evaluate the model on a validation or test dataset.
-
-        Parameters
-        ----------
-        dataloader : DataLoader[CapsDataset]
-            DataLoader providing the dataset to evaluate on.
-        additional_metrics : list, optional
-            List of additional metrics or losses to compute during evaluation.
-
-        Notes
-        -----
-        - Evaluation is done in no-grad mode.
-        - Model is switched to evaluation mode during the process and reset to train mode after.
-        - Metrics are aggregated at the end of evaluation.
-        """
-        self.callbacks.on_validation_begin(config=self.config)
-        self.model.network.eval()
-        dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
-
-        self.metrics.reset()
-        # self.metrics.add_metrics(additional_metrics)
-
-        with torch.no_grad():
-            for _, data in enumerate(dataloader):
-                self.config.metrics = self.model.validation_step(
-                    data=data, device=self.comp.device, metrics=self.metrics
-                )
-
-            self.metrics.aggregate(epoch=self.config.epoch)
-
-        self.model.network.train()
-
-        self.callbacks.on_validation_end(config=self.config)
 
     def predict(
         self,
