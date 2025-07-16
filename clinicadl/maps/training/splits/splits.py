@@ -37,7 +37,8 @@ class TrainSplitDir(Directory):
         super().load()
         self.checkpoints.load()
         self.logs.load()
-        self.tmp.load()
+        if self.tmp.exists():
+            self.tmp.load()
 
         for metric in self.best_metrics_list:
             best_metric = TrainBestMetricDir(parent_dir=self.path, metric=metric)

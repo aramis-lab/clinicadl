@@ -21,7 +21,7 @@ from .splits import PredSplitDir
 
 class GroupDir(Directory):
     def __init__(self, parents_path: PathType, group_name: str):
-        super().__init__(path=Path(parents_path) / (TEST + group_name))
+        super().__init__(path=Path(parents_path) / (TEST + "-" + group_name))
 
         self.splits: Dict[int, PredSplitDir] = {}
 
@@ -45,11 +45,13 @@ class GroupDir(Directory):
     def split_list(self) -> list[int]:
         if self.is_empty():
             return []
-        return [
-            int(x.name.split("-")[1])
-            for x in self.path.iterdir()
-            if x.is_dir() and x.name.startswith(SPLIT)
-        ]
+        return sorted(
+            [
+                int(x.name.split("-")[1])
+                for x in self.path.iterdir()
+                if x.is_dir() and x.name.startswith(SPLIT)
+            ]
+        )
 
     @property
     def caps_dataset_json(self) -> Path:

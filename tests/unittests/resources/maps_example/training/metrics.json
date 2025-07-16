@@ -1,0 +1,22 @@
+{
+    "mae": {
+        "name": "MAEMetric",
+        "get_not_nans": false,
+        "reduction": "mean"
+    },
+    "mse": {
+        "name": "MSEMetric",
+        "get_not_nans": false,
+        "reduction": "mean"
+    },
+    "loss": {
+        "name": "LossMetric",
+        "loss_fn": {
+            "name": "MSELoss",
+            "params": {
+                "reduction": "mean"
+            }
+        },
+        "reduction": "mean"
+    }
+}

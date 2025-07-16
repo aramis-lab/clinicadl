@@ -25,7 +25,11 @@ class DataSplitDir(Directory):
 
     def load(self):
         super().load()
-        self.df = pd.read_csv(self.data_tsv, sep="\t")
+        try:
+            self.df = pd.read_csv(self.data_tsv, sep="\t")
+        except pd.errors.EmptyDataError:
+            self.df = pd.DataFrame()
+
         # TODO : Add check for column and index ?
 
     @property

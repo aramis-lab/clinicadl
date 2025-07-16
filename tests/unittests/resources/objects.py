@@ -56,7 +56,7 @@ TEST_DATASET = CapsDataset(
 
 MAPS = Maps(MAPS_DIR)
 
-OPTIM = OptimizationConfig(epochs=3)
+OPTIM = OptimizationConfig()
 COMP = ComputationalConfig()
 
 

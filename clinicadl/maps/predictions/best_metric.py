@@ -20,7 +20,7 @@ class BestMetric(Directory):
 
     @property
     def caps_output(self) -> Path:
-        return self.path / (CAPS + OUTPUT)
+        return self.path / (CAPS + "-" + OUTPUT)
 
     @property
     def metrics_tsv(self) -> Path:

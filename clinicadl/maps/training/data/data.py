@@ -11,6 +11,7 @@ from clinicadl.dictionary.words import (
     CAPS,
     DATA,
     DATASET,
+    SPLIT,
     TRAIN,
     VALIDATION,
 )
@@ -36,7 +37,7 @@ class DataTrainValDir(Directory):
     def load(self):
         super().load()
 
-        for idx in range(1, 6):
+        for idx in self.split_list:
             split = DataSplitDir(parents_path=self.path, split=idx)
             split.load()
             self.splits[idx] = split
@@ -45,11 +46,13 @@ class DataTrainValDir(Directory):
     def split_list(self) -> list[int]:
         if self.is_empty():
             return []
-        return [
-            int(x.name.split("-")[1])
-            for x in self.path.iterdir()
-            if x.is_dir() and x.name.startswith("split")
-        ]
+        return sorted(
+            [
+                int(x.name.split("-")[1])
+                for x in self.path.iterdir()
+                if x.is_dir() and x.name.startswith(SPLIT)
+            ]
+        )
 
 
 class DataDir(Directory):
