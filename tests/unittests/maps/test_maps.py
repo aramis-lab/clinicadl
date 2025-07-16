@@ -213,7 +213,7 @@ def test_load_maps_predictions():
         maps.predictions.groups["ADNI"]
         .splits[0]
         .best_metrics["loss"]
-        .caps_output.exists()
+        .caps_output.is_dir()
     )
 
     assert maps.predictions.groups["ADNI"].splits[0].computational_json.is_file()
