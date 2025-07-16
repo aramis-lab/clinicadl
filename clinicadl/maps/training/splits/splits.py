@@ -3,16 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict
 
-from clinicadl.dictionary.suffixes import JSON, LOG, TSV
+from clinicadl.dictionary.suffixes import JSON, LOG, TSV, TXT
 from clinicadl.dictionary.words import (
     CAPS_DATASET,
-    COMPUTATIONAL,
+    DATALOADER,
     METRICS,
     SPLIT,
     SUMMARY,
+    TIME,
+    TORCH,
     VALIDATION,
 )
-from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.typing import PathType
 
 from ...base import Directory
@@ -56,9 +57,6 @@ class TrainSplitDir(Directory):
         best_metric._create()
         self.best_metrics[metric] = best_metric
 
-    def get_computational_config(self) -> ComputationalConfig:
-        return ComputationalConfig.from_json(self.computational_json)
-
     @property
     def best_metrics_list(self):
         if self.is_empty():
@@ -70,17 +68,21 @@ class TrainSplitDir(Directory):
         ]
 
     @property
-    def computational_json(self) -> Path:
-        return self.path / (COMPUTATIONAL + JSON)
+    def dataloader_json(self) -> Path:
+        return self.path / (DATALOADER + JSON)
 
     @property
     def caps_dataset_json(self) -> Path:
         return self.path / (CAPS_DATASET + JSON)
 
     @property
-    def summary_log(self) -> Path:
-        return self.path / (SUMMARY + LOG)
+    def torchsummary_txt(self) -> Path:
+        return self.path / (TORCH + SUMMARY + TXT)
 
     @property
     def validation_metrics_tsv(self) -> Path:
         return self.path / (VALIDATION + "_" + METRICS + TSV)
+
+    @property
+    def time_txt(self) -> Path:
+        return self.path / (TIME + TXT)

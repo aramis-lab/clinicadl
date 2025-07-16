@@ -78,7 +78,7 @@ def test_good_maps():
 
     assert not maps.exists()
 
-    maps._create_dirs()
+    maps.create()
 
     assert maps.exists()
     assert maps.environment_txt.is_file()
@@ -104,7 +104,6 @@ def test_good_maps():
     assert maps.training.splits[SPLIT.index].logs.path.is_dir()
     assert maps.training.splits[SPLIT.index].tmp.path.is_dir()
     assert maps.training.splits[SPLIT.index].checkpoints.path.is_dir()
-
     assert maps.training.data.train.split_list == [SPLIT.index]
     assert maps.training.data.train.splits[SPLIT.index].data_tsv.is_file()
 
@@ -164,7 +163,9 @@ def test_load_maps_training():
     assert maps.training.splits[0].checkpoints.epochs[10].exists()
     assert maps.training.splits[0].checkpoints.epochs[42].exists()
 
-    assert maps.training.splits[0].summary_log.is_file()
+    assert maps.training.splits[0].torchsummary_txt.is_file()
+    assert maps.training.splits[0].caps_dataset_json.is_file()
+    assert maps.training.splits[0].dataloader_json.is_file()
     assert maps.training.splits[0].validation_metrics_tsv.is_file()
 
     assert maps.training.callbacks_json.is_file()
@@ -217,36 +218,6 @@ def test_load_maps_predictions():
     )
 
     assert maps.predictions.groups["ADNI"].splits[0].computational_json.is_file()
-
-
-def test_maps_training_data():
-    maps = Maps(MAPS_DIR)
-
-    if not maps.exists():
-        raise ClinicaDLTestingError(
-            "MAPS directory does not exist. Please add a valid MAPS directory."
-        )
-
-    maps.load()
-
-    assert maps.training.get_computational_config() == COMP
-    assert maps.training.get_optimization_config() == OPTIM
-
-    m1 = str(deepcopy(maps.training.get_metrics()))
-    m2 = str(deepcopy(METRICS.metrics))
-    assert m1 == m2
-
-    n1 = str(deepcopy(maps.get_model().network))
-    n2 = str(deepcopy(MODEL.network))
-    assert n1 == n2
-
-    l1 = str(deepcopy(maps.get_model().loss))
-    l2 = str(deepcopy(MODEL.loss))
-    assert l1 == l2
-
-    o1 = str(deepcopy(maps.get_model().optimizer))
-    o2 = str(deepcopy(MODEL.optimizer))
-    assert o1 == o2
 
 
 def test_bad_maps():

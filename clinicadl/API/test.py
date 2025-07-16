@@ -55,7 +55,7 @@ fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)
 splitter = KFold(fold_dir)
 
 
-optim_config = OptimizationConfig(epochs=6)
+optim_config = OptimizationConfig(epochs=3)
 comput_config = ComputationalConfig(gpu=False)
 dataloader_config = DataLoaderConfig(batch_size=1)
 

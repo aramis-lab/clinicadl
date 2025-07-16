@@ -11,10 +11,6 @@ from clinicadl.dictionary.words import (
     OPTIMIZATION,
     TRAINING,
 )
-from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.optim.config import OptimizationConfig
-from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
@@ -52,18 +48,6 @@ class TrainingDir(Directory):
             split = TrainSplitDir(num=idx, parents_path=self.path)
             split.load()
             self.splits[idx] = split
-
-    # def get_callbacks(self) -> list[Callback]:
-    #     return CallbacksHandler.from_json(self.callbacks_json)
-
-    def get_metrics(self) -> Dict[str, MetricConfig]:
-        return MetricsHandler.from_json(self.metrics_json)
-
-    def get_computational_config(self) -> ComputationalConfig:
-        return ComputationalConfig.from_json(self.computational_json)
-
-    def get_optimization_config(self) -> OptimizationConfig:
-        return OptimizationConfig.from_json(self.optimization_json)
 
     @property
     def computational_json(self) -> Path:

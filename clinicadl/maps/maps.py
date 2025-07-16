@@ -11,6 +11,7 @@ from clinicadl.dictionary.words import (
     ENVIRONMENT,
     MODEL,
     SUMMARY,
+    TIME,
 )
 from clinicadl.model import ClinicaDLModel
 from clinicadl.split.split import Split
@@ -71,7 +72,7 @@ class Maps(Directory):
         self.predictions = PredictionsDir(parents_path=self.path)
         self.training = TrainingDir(parents_path=self.path)
 
-    def _create_dirs(self, overwrite: bool = False) -> None:
+    def create(self, overwrite: bool = False) -> None:
         """
         Create the directory if it does not already exist or if overwrite is True.
 
@@ -82,6 +83,7 @@ class Maps(Directory):
         self.predictions._create(overwrite=overwrite)
         self.training._create(overwrite=overwrite)
         self._write_environment_txt()
+        self._create_summary_log()
 
     def _create_training_split(self, split: Split) -> None:
         """
@@ -170,12 +172,12 @@ class Maps(Directory):
         return self.path / (ARCHITECTURE + LOG)
 
     @property
-    def environment_txt(self) -> Path:
-        return self.path / (ENVIRONMENT + TXT)
-
-    @property
     def model_json(self) -> Path:
         return self.path / (MODEL + JSON)
+
+    @property
+    def environment_txt(self) -> Path:
+        return self.path / (ENVIRONMENT + TXT)
 
     @property
     def summary_log(self) -> Path:
@@ -197,6 +199,7 @@ class Maps(Directory):
             file.write(summary)
 
     def _add_lines_to_summary_log(self, line):
+        line += "\n"
         with (self.summary_log).open(mode="a") as file:
             file.write(line)
 

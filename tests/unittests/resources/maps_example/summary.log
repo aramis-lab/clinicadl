@@ -1,0 +1,10 @@
+==================== Summary Log ====================
+
+Date              : 16 Jul 2025, 16:09:03
+Path              : /Users/camille.brianceau/aramis/CLINICADL/clinicadl/maps_test
+Training dataset  : /Users/camille.brianceau/aramis/CLINICADL/caps
+Input size        : torch.Size([1, 1, 169, 208, 179])
+===============
+Training dataset  : /Users/camille.brianceau/aramis/CLINICADL/caps
+Input size        : torch.Size([1, 1, 169, 208, 179])
+===============

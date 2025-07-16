@@ -918,17 +918,29 @@ class CapsDataset(Dataset):
     def model_dump(self, masks: Optional[list[PathType]]) -> Dict:
         _dict = {}
         _dict["caps_directory"] = self.directory
-        # _dict["preprocessing"] = self.preprocessing.model_dump()
-        # _dict["data"] = self._df
+        _dict["preprocessing"] = self.preprocessing.to_dict()
+        # _dict["data"] = self._df for now there is a pb with these two lines
         # _dict["label"] = self.label
-        # _dict["transforms"] = self.transforms.model_dump()
-        # _dict["masks"] = masks
+        _dict["transforms"] = self.transforms.to_dict()
+        _dict["masks"] = masks
 
         return _dict
 
-    def write_json(self, json_path: PathType) -> None:
+    def write_json(self, json_path: PathType, name: Optional[str]) -> None:
         json_path = Path(json_path)
-        write_json(json_path=json_path, data=self._dict)
+
+        if name is not None:
+            if json_path.is_file():
+                update_json(json_path=json_path, new_data={name: self._dict})
+            else:
+                write_json(json_path=json_path, data={name: self._dict})
+        else:
+            if json_path.is_file():
+                raise ClinicaDLArgumentError(
+                    f"File {json_path} already exists. Please provide a name to save the dataset."
+                )
+            else:
+                write_json(json_path=json_path, data=self._dict)
 
     @classmethod
     def from_json(cls, json_path: PathType) -> CapsDataset:

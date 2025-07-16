@@ -160,15 +160,15 @@ class Trainer:
         )
 
         maps = Maps(maps_path)
-        maps._create_dirs(overwrite=_overwrite)
+        maps.create(overwrite=_overwrite)
+
+        model.write_json(maps.model_json)
+        model.write_architecture_log(maps.architecture_log)
 
         self.callbacks.write_json(maps.training.callbacks_json)
         train_metrics.write_json(maps.training.metrics_json)
         comp_config.write_json(maps.training.computational_json)
         optim_config.write_json(maps.training.optimization_json)
-
-        model.write_json(maps.model_json)
-        model.write_architecture_log(maps.architecture_log)
 
         self.config = _TrainingState(
             maps=maps,
@@ -239,6 +239,8 @@ class Trainer:
         self.model.train()
         self.reset(split)
 
+        self._write_training_infos(split=split)
+
         self.callbacks.on_train_begin(config=self.config)
 
     def on_epoch_begin(self) -> None:
@@ -274,6 +276,8 @@ class Trainer:
     def on_train_end(self, split: Split):
         self.callbacks.on_train_end(config=self.config)
         self.metrics.save(self.maps.training.splits[split.index].validation_metrics_tsv)
+
+        self._write_end_training_infos(split=split)
 
     def reset(self, split: Optional[Split] = None):
         """TO COMPLETE"""
@@ -385,3 +389,56 @@ class Trainer:
             optim_config=optim_config,
             comp_config=comp_config,
         )
+
+    def _write_training_infos(
+        self,
+        split: Split,
+    ) -> None:
+        """
+        Write training information to the maps directory.
+
+        Parameters
+        ----------
+        split : Split
+            The data split used for training.
+        """
+        self.maps._create_training_split(split=split)
+        self.maps._add_lines_to_summary_log(
+            f"Training dataset  : {split.train_dataset.caps_reader.input_directory}"
+        )
+
+        assert isinstance(split.train_loader.dataset, CapsDataset)
+        split.train_loader.dataset.write_json(
+            self.maps.training.splits[split.index].caps_dataset_json, name="train"
+        )
+        split.train_loader_config.write_json(
+            self.maps.training.splits[split.index].dataloader_json, name="train"
+        )
+
+        assert isinstance(split.val_loader.dataset, CapsDataset)
+        split.val_loader.dataset.write_json(
+            self.maps.training.splits[split.index].caps_dataset_json, name="val"
+        )
+        split.val_loader_config.write_json(
+            self.maps.training.splits[split.index].dataloader_json, name="val"
+        )
+
+    def _write_end_training_infos(
+        self,
+        split: Split,
+    ) -> None:
+        """
+        Write end of training information to the maps directory.
+
+        Parameters
+        ----------
+        split : Split
+            The data split used for training.
+        """
+
+        self.maps._add_lines_to_summary_log(
+            f"Input size        : {self.model._input_size}"
+        )
+        self.maps._add_lines_to_summary_log("=" * 15)
+
+        # self.config.write_torchsummary() not working i don't know why

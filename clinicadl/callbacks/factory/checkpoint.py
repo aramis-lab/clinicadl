@@ -52,7 +52,7 @@ class Checkpoint(Callback):
             or config.epoch == config.optim.epochs
         ):
             assert config.split is not None
-            config.maps.training.splits[config.split.index].checkpoints.create_epoch(
+            config.maps.training.splits[config.split.index].checkpoints._create_epoch(
                 config.epoch
             )
 

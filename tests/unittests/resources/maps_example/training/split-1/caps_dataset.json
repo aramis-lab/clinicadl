@@ -1,0 +1,46 @@
+{
+    "train": {
+        "caps_directory": "/Users/camille.brianceau/aramis/CLINICADL/caps",
+        "preprocessing": {
+            "name": "t1-linear",
+            "use_uncropped_image": false,
+            "modality": "T1w",
+            "file_type": {
+                "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*",
+                "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+                "needed_pipeline": "t1-linear"
+            }
+        },
+        "transforms": {
+            "extraction": {
+                "extract_method": "image"
+            },
+            "image_transforms": [],
+            "sample_transforms": [],
+            "augmentations": []
+        },
+        "masks": null
+    },
+    "val": {
+        "caps_directory": "/Users/camille.brianceau/aramis/CLINICADL/caps",
+        "preprocessing": {
+            "name": "t1-linear",
+            "use_uncropped_image": false,
+            "modality": "T1w",
+            "file_type": {
+                "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii*",
+                "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, and cropped (matrix size 169\u00d7208\u00d7179, 1 mm isotropic voxels)",
+                "needed_pipeline": "t1-linear"
+            }
+        },
+        "transforms": {
+            "extraction": {
+                "extract_method": "image"
+            },
+            "image_transforms": [],
+            "sample_transforms": [],
+            "augmentations": []
+        },
+        "masks": null
+    }
+}

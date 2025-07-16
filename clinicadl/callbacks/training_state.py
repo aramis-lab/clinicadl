@@ -1,5 +1,7 @@
 from typing import Optional
 
+from torchsummary import summary
+
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
@@ -69,3 +71,17 @@ class _TrainingState(ClinicaDLConfig):
         self.stop = False
         self.epoch = 0
         self.batch = 0
+
+    def write_torchsummary(self):
+        with open(
+            self.maps.training.splits[self.split.index].torchsummary_txt, "w"
+        ) as f:
+            print(
+                summary(
+                    self.model.network,
+                    input_size=self.model._input_size,
+                    batch_size=self.n_batch,
+                    device=self.comp.device.type,
+                ),
+                file=f,
+            )

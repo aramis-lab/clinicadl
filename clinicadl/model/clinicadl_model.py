@@ -1,3 +1,5 @@
+import io
+import sys
 from pathlib import Path
 from typing import Optional, Union
 
@@ -5,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
+from torchsummary import summary
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses.config import LossConfig, get_loss_function_config
@@ -51,6 +54,7 @@ class ClinicaDLModel:
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
 
+        self._input_size = None
         # if cluster.rank == 0: print(f'model: {network}')
         # if cluster.rank == 0: print('number of parameters: {}'.format(sum([p.numel()
         #                                       for p in network.parameters()])))
@@ -126,6 +130,8 @@ class ClinicaDLModel:
         labels = data.get_labels().to(device)
         images = data.get_images().to(device)
 
+        self._input_size = images.shape
+
         outputs = self.network(images)
         labels = labels.unsqueeze(dim=-1)
 
@@ -180,12 +186,5 @@ class ClinicaDLModel:
         )
 
     def write_architecture_log(self, log_path: PathType) -> None:
-        # input_size = model.input_size
-        # buffer = io.StringIO()
-        # sys.stdout = buffer
-        # summary(model, input_size)
-        # sys.stdout = sys.__stdout__
-
         with open(log_path, "w") as f:
-            f.write(f"Model architecture: {self.__class__.__name__}\n\n")
-            # f.write(buffer.getvalue())
+            print(self.network, file=f)

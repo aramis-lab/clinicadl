@@ -75,12 +75,8 @@ class DataDir(Directory):
         self.val.load()
         self.df = pd.read_csv(self.data_tsv, sep="\t")
 
-    def get_caps_dataset(self):
-        return CapsDataset.from_json(self.caps_dataset_json)
-
-    @property
-    def caps_dataset_json(self) -> Path:
-        return self.path / (CAPS + "_" + DATASET + JSON)
+    # def get_caps_dataset(self):
+    #     return CapsDataset.from_json(self.caps_dataset_json)
 
     @property
     def data_tsv(self) -> Path:

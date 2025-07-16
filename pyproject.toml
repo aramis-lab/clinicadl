@@ -49,6 +49,7 @@ matplotlib =  "^3.9"
 ipykernel = { version = "^6", optional = true }
 notebook = { version = "^7", optional = true }
 clinicadl-zoo = { git = "https://github.com/aramis-lab/clinicadl-zoo.git", branch = "main", optional = true }
+torchsummary = "^1.5.1"
 
 [tool.poetry.extras]
 zoo = ["clinicadl-zoo"]

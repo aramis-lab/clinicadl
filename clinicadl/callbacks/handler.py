@@ -13,12 +13,10 @@ from .factory.checkpoint_saver import _CheckpointSaver
 from .factory.chronometer import _Chronometer
 from .factory.logger import _Logger
 from .factory.training_loss import _TrainingLoss
-from .factory.writer import _Writer
 
 LOSS = "loss"
 
 PREFERRED_ORDER = [
-    _Writer.__name__,
     _TrainingLoss.__name__,
     LRScheduler.__name__,
     _Chronometer.__name__,
@@ -128,7 +126,6 @@ class CallbacksHandler:
             _TrainingLoss.__name__: _TrainingLoss(),
             _Logger.__name__: _Logger(),
             _CheckpointSaver.__name__: _CheckpointSaver(),
-            _Writer.__name__: _Writer(),
         }
 
         for name, callback in defaults.items():
