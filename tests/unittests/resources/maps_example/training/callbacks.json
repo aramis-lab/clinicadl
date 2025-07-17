@@ -1,14 +1,11 @@
 {
     "LRScheduler": {
         "name": "LRScheduler",
-        "config": {
-            "name": "LinearLR",
-            "last_epoch": -1,
-            "start_factor": 0.3333333333333333,
-            "end_factor": 1.0,
-            "total_iters": 5
-        },
-        "torch_scheduler": null
+        "scheduler": "LinearLR",
+        "last_epoch": -1,
+        "start_factor": 0.3333333333333333,
+        "end_factor": 1.0,
+        "total_iters": 5
     },
     "Checkpoint": {
         "name": "Checkpoint",

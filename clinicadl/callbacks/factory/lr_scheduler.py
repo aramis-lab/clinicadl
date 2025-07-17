@@ -94,10 +94,13 @@ class LRScheduler(Callback):
             Dictionary representation of the callback.
         """
         json_dict = super().to_dict()
-        json_dict.update(
-            {
-                "config": self.config.to_dict() if self.config else None,
-                "torch_scheduler": self.torch_scheduler,
-            }
-        )
+        if self.config:
+            config_dict = self.config.to_dict()
+            scheduler = config_dict.pop("name", None)
+            json_dict.update({"scheduler": scheduler})
+            json_dict.update(config_dict)
+
+        if self.torch_scheduler:
+            json_dict.update(self.torch_scheduler.__dict__)
+
         return json_dict

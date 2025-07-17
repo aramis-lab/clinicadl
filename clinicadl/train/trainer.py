@@ -373,11 +373,11 @@ class Trainer:
         maps = Maps(maps_path)
         maps.load()
 
-        model = maps.get_model()
-        comp_config = maps.training.get_computational_config()
-        optim_config = maps.training.get_optimization_config()
-        callbacks = maps.training.get_callbacks()
-        metrics = maps.training.get_metrics()
+        model = ClinicaDLModel.from_json(maps.model_json)
+        comp_config = ComputationalConfig.from_json(maps.training.computational_json)
+        optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
+        callbacks = CallbacksHandler.from_json(maps.training.callbacks_json)
+        metrics = MetricsHandler.from_json(maps.training.metrics_json)
 
         # TODO : check seed ?
 

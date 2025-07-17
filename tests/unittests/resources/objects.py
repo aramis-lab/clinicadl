@@ -1,13 +1,27 @@
 from pathlib import Path
 
 import pandas as pd
+from monai.metrics.regression import MAEMetric
 
+from clinicadl.callbacks import (
+    Checkpoint,
+    CodeCarbon,
+    EarlyStopping,
+    LRScheduler,
+    ModelSelection,
+    Tensorboard,
+)
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.maps.maps import Maps
-from clinicadl.metrics.config import MAEMetricConfig, MSEMetricConfig
+from clinicadl.metrics.config import (
+    ConfusionMatrixMetricConfig,
+    MAEMetricConfig,
+    MSEMetricConfig,
+)
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model import ClinicaDLModel
 from clinicadl.model.example_model import example_model
@@ -56,8 +70,9 @@ TEST_DATASET = CapsDataset(
 
 MAPS = Maps(MAPS_DIR)
 
-OPTIM = OptimizationConfig()
-COMP = ComputationalConfig()
+OPTIM = OptimizationConfig(epochs=3)
+COMP = ComputationalConfig(gpu=False)
+DATALOADER = DataLoaderConfig(batch_size=1)
 
 
 NETWORK = ResNetConfig(
@@ -75,10 +90,25 @@ MODEL = ClinicaDLModel(
     optimizer=OPTIMIZER,
 )
 
-METRICS = MetricsHandler(
+METRICS_HANDLER = MetricsHandler(
     loss=LOSS.get_object(), metrics={"mae": MAEMetricConfig(), "mse": MSEMetricConfig()}
 )
 
 SPLIT = Split(
     index=1, split_dir=SPLIT_DIR, train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
 )
+
+mae = MAEMetric()
+mse = MSEMetricConfig()
+matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
+
+METRICS = {"mae": mae, "mse": mse, "matrix": matrix}
+CALLBACKS = [
+    EarlyStopping(metrics=["mae", "loss"]),
+    ModelSelection(metrics=["mae"]),
+    EarlyStopping(metrics=["mse"]),
+    Checkpoint(patience=2, epochs=[3]),
+    Tensorboard(),
+    LRScheduler(scheduler="LinearLR"),
+    # CodeCarbon(),
+]

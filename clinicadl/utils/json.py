@@ -117,9 +117,7 @@ def path_decoder(obj):
         obj2 = deepcopy(obj)
         for key, value in obj2.items():
             if is_path_key(key):
-                if value in ("", False, None):
-                    obj2[key] = False
-                else:
+                if value not in ("", False, None):
                     obj2[key] = Path(value)
             else:
                 obj2[key] = path_decoder(value)

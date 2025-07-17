@@ -236,7 +236,7 @@ class MetricsHandler(Metrics):
         write_json(json_path, json_dict)
 
     @classmethod
-    def from_json(cls, json_path: Path) -> Dict[str, MetricConfig]:
+    def from_json(cls, json_path: Path) -> dict[str, MetricConfig]:
         json_path = Path(json_path)
         _dict = read_json(json_path=json_path)
 

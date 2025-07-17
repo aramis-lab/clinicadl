@@ -4,7 +4,7 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Sequence
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
@@ -168,7 +168,6 @@ def _order_dict(model_or_field: Any) -> Any:
             ordered_sequence.append(_order_dict(v))
         if isinstance(model_or_field, tuple):
             ordered_sequence = tuple(ordered_sequence)
-
         return ordered_sequence
 
     return model_or_field

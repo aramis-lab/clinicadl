@@ -161,12 +161,6 @@ class Maps(Directory):
         self.predictions.load()
         self.training.load()
 
-    def get_model(self) -> ClinicaDLModel:
-        """
-        Load the ClinicaDLModel from `model.json`.
-        """
-        return ClinicaDLModel.from_json(self.model_json)
-
     @property
     def architecture_log(self) -> Path:
         return self.path / (ARCHITECTURE + LOG)
