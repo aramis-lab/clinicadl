@@ -1,38 +1,14 @@
-from __future__ import annotations
-
-from typing import Optional, Union
-
-import torch
-from deepdiff import DeepDiff
-from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
-from torch.amp.autocast_mode import autocast
-from torch.utils.data import DataLoader
-
-from clinicadl.callbacks.handler import Callback, CallbacksHandler
-from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.losses.config import LossConfig
-from clinicadl.losses.types import Loss
+from clinicadl.callbacks.handler import CallbacksHandler
 from clinicadl.maps.maps import Maps
-from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
-from clinicadl.metrics.types import MetricType
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
-from clinicadl.predictor.predictor import Predictor
-from clinicadl.split.split import Split
 from clinicadl.train.trainer import Trainer
-from clinicadl.transforms.output_transforms import OutputTransforms
-from clinicadl.transforms.transforms import Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.seed import seed_everything
-from clinicadl.utils.typing import PathType
 
 from ..resources.objects import (
     CALLBACKS,
     COMP,
-    MAPS,
-    MAPS_DIR,
     METRICS,
     MODEL,
     OPTIM,
