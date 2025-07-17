@@ -9,7 +9,7 @@ from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
 
-LabelType = Optional[Union[int, float, tio.LabelMap]]
+LabelType = Optional[Union[int, float, dict[str, float], tio.LabelMap]]
 
 
 class Column(UserString):
@@ -39,7 +39,7 @@ class Mask:
 
     If the mask is in a `.pt` file (e.g. `Mask("masks/mask.pt")`), it is expected
     to be a 4D tensor with the associated affine matrix, as saved by
-    `clinicadl.TensorConversion.save_mask_as_tensor`.\n
+    `clinicadl.TensorConversion._save_mask_as_tensor`.\n
     If the mask is in a NIfTI file (e.g. `Mask("masks/mask.nii.gz")`), it is expected
     to be a 3D image.
 
@@ -105,7 +105,7 @@ class Mask:
     def _load_pt_mask(path: Path) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Loads a mask and its affine matrix from a .pt file.
-        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion.save_mask_as_tensor`.
+        See also: :py:func:`clinicadl.data.tensor_conversion.TensorConversion._save_mask_as_tensor`.
         """
         pt_mask = torch.load(path, weights_only=True)
         return pt_mask[MASK], pt_mask[AFFINE]

@@ -22,7 +22,7 @@ class Custom(Preprocessing, CustomModality):
     custom_suffix : str
         The suffix to identify the files to select.\n
         Only the files that match the pattern ``custom/sub-*_ses-*_{custom_suffix}.nii*``
-        in the CAPS structure will be considered.
+        in the :term:`CAPS` structure will be considered.
     """
 
     @computed_field
@@ -40,9 +40,9 @@ class Custom(Preprocessing, CustomModality):
             description=f"Custom images with suffix '{self.custom_suffix}'",
         )
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return self.custom_suffix

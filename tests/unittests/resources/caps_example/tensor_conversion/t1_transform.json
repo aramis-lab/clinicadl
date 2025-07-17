@@ -11,8 +11,24 @@
     },
     "individual_masks": ["brain", "seg"],
     "common_masks": ["leftHippocampus.nii.gz"],
-    "also": {},
-    "transforms": [],
+    "also": {
+        "other_image": "image",
+        "other_mask": "mask",
+        "coefficient": "other"
+    },
+    "transforms": [
+        {
+            "name": "Crop",
+            "cropping": [
+                0,
+                1,
+                0,
+                1,
+                0,
+                1
+            ]
+        }
+    ],
     "spacing": [
         1.2999999523162842,
         1.2000000476837158,

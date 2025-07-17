@@ -83,21 +83,11 @@ def test_extract_sample():
     assert extracted_data.participant == "sub-000"
     assert extracted_data.session == "ses-M000"
     assert extracted_data.image_path == "abc.nii.gz"
+    assert extracted_data.slice_position == 5
+    assert extracted_data.slice_direction == 2
+    assert extracted_data._sample_index == 5
 
     assert data_point.image.tensor.shape == (1, 5, 3, 7)
-
-    # test get_tensors
-    tensors = extracted_data.get_tensors()
-    assert (tensors["image"] == image_tensor[:, :, :, 5]).all()
-    assert (tensors["label"] == label[:, :, :, 5]).all()
-    assert (tensors["mask_1"] == mask_1[:, :, :, 5]).all()
-
-    slice = Slice(discarded_slices=[4], borders=1, slice_direction=2, squeeze=False)
-    extracted_data = slice.extract_sample(data_point, sample_index=3)
-    tensors = extracted_data.get_tensors()
-    assert (tensors["image"] == image_tensor[:, :, :, 5:6]).all()
-    assert (tensors["label"] == label[:, :, :, 5:6]).all()
-    assert (tensors["mask_1"] == mask_1[:, :, :, 5:6]).all()
 
     # test transforms history
     transform = tio.Clamp(out_min=0, out_max=10)

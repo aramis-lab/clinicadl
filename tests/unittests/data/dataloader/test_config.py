@@ -52,6 +52,7 @@ CAPS = CapsDataset(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     label="age",
+    columns=["age"],
     data=DATA,
 )
 CAPS_WITHOUT_LABEL = CapsDataset(
@@ -61,8 +62,8 @@ CAPS_WITHOUT_LABEL = CapsDataset(
     ),
     data=DATA,
 )
-CAPS.read_tensor_conversion("pet_all")
-CAPS_WITHOUT_LABEL.read_tensor_conversion("pet_all")
+CAPS.read_tensor_conversion()
+CAPS_WITHOUT_LABEL.read_tensor_conversion()
 
 
 @pytest.mark.parametrize("args", GOOD_INPUTS)
@@ -200,9 +201,9 @@ def test_ddp():
         ),
         label="age",
         data=DATA,
-        transforms=Transforms(image_transforms=[]),
+        columns=["age"],
     )
-    caps.read_tensor_conversion("pet_all")
+    caps.read_tensor_conversion()
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         shuffle=False,
@@ -339,10 +340,10 @@ def test_ddp():
         preprocessing=T1Linear(use_uncropped_image=True),
         label="seg",
         data=sub_data,
-        transforms=Transforms(extraction=Slice()),
-        masks=["brain"],
+        transforms=Transforms(extraction=Slice(slices=[0, 1])),
+        masks=["brain", "seg"],
     )
-    caps.read_tensor_conversion("t1_without_transform")
+    caps.read_tensor_conversion("t1_masks")
 
     dataloader_config = DataLoaderConfig(
         batch_size=2,

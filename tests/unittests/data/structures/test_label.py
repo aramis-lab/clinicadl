@@ -38,12 +38,13 @@ def test_Mask():
     assert mask._mask_img is not None
 
     # tensor mask
-    mask = Mask(caps_dir / "masks" / "tensors" / "leftHippocampus.pt")
+    mask = Mask(caps_dir / "masks" / "tensors" / "t1_masks" / "leftHippocampus.pt")
     associated_mask = mask.get_associated_mask()
     assert (
         associated_mask.tensor
         == torch.load(
-            caps_dir / "masks" / "tensors" / "leftHippocampus.pt", weights_only=True
+            caps_dir / "masks" / "tensors" / "t1_masks" / "leftHippocampus.pt",
+            weights_only=True,
         )["mask"]
     ).all()
 
@@ -77,6 +78,7 @@ def test_Mask():
             subject_dir.parent
             / "pet_linear"
             / "tensors"
+            / "default"
             / "sub-000_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii"
         )
     with pytest.raises(ValueError):

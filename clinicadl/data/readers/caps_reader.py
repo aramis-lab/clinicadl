@@ -135,6 +135,7 @@ class CapsReader(Reader):
     @staticmethod
     def path_to_tensor(
         path: PathType,
+        conversion_name: str,
     ) -> Path:
         """
         Converts the path of an image to the path of the associated
@@ -142,8 +143,10 @@ class CapsReader(Reader):
 
         Parameters
         ----------
-        path: PathType
+        path : PathType
             Path of the image.
+        conversion_name : str
+            The name of the tensor conversion.
 
         Returns
         -------
@@ -157,14 +160,14 @@ class CapsReader(Reader):
             .with_suffix(PT)
             .name  # with_suffix("") to handle double extensions
         )
-
-        return parent / TENSORS / pt_file_name
+        return parent / TENSORS / conversion_name / pt_file_name
 
     def get_tensor_path(
         self,
         participant: str,
         session: str,
         preprocessing: Preprocessing,
+        conversion_name: str,
         check: bool = True,
     ) -> Path:
         """
@@ -178,6 +181,8 @@ class CapsReader(Reader):
             ID of the session.
         preprocessing: Preprocessing
             Configuration of the preprocessing steps.
+        conversion_name: str
+            The name of the tensor conversion.
         check : bool, default=True
             Whether to check if the tensor path exists.
 
@@ -195,7 +200,7 @@ class CapsReader(Reader):
         """
 
         filepath = self.get_image_path(participant, session, preprocessing)
-        tensor_path = self.path_to_tensor(filepath)
+        tensor_path = self.path_to_tensor(filepath, conversion_name=conversion_name)
         if check and not tensor_path.is_file():
             raise FileNotFoundError(
                 f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"
@@ -250,10 +255,21 @@ class CapsReader(Reader):
         """
         Gives the full path of a common mask, from the file name.
         """
-        if Path(mask_name).suffix == PT:
-            return self.input_directory / COMMON_MASKS_DIR / TENSORS / mask_name
-        else:
-            return self.input_directory / COMMON_MASKS_DIR / mask_name
+        return self.input_directory / COMMON_MASKS_DIR / mask_name
+
+    def get_common_mask_tensor_path(
+        self, mask_name: PathType, conversion_name: str
+    ) -> Path:
+        """
+        Gives the full tensor path of a common mask, from the mask filename.
+        """
+        return (
+            self.input_directory
+            / COMMON_MASKS_DIR
+            / TENSORS
+            / conversion_name
+            / Path(mask_name).with_suffix("").with_suffix(PT)
+        )
 
     def _write_caps_json(
         self,

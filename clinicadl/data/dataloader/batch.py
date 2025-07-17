@@ -3,25 +3,25 @@ from typing import Any, List, Union
 import torch
 import torchio as tio
 
-from clinicadl.transforms.extraction import Sample
+from clinicadl.data.structures import DataPoint
 
 
-class SimpleBatch(list[Sample]):
+class SimpleBatch(list[DataPoint]):
     """
-    A class to manage a batch of samples.
+    A class to manage a batch of DataPoints.
 
     Parameters
     ----------
-    samples: list[Sample]
-        A list of :py:class:`clinicadl.transforms.extraction.Sample` forming the batch.
+    samples: list[DataPoint]
+        A list of :py:class:`~clinicadl.data.structures.DataPoint` forming the batch.
 
     Raises
     ------
     ValueError
-        If the provided list of samples is empty.
+        If the provided list of DataPoints is empty.
     """
 
-    def __init__(self, samples: list[Sample]):
+    def __init__(self, samples: list[DataPoint]):
         super().__init__(samples)
 
         if len(self) == 0:
@@ -60,31 +60,39 @@ class SimpleBatch(list[Sample]):
         labels = [
             sample.label.tensor
             if isinstance(sample.label, tio.LabelMap)
+            else self._dict_to_tensor(sample.label)
+            if isinstance(sample.label, dict)
             else sample.label
             for sample in self
         ]
+
         if all(isinstance(label, torch.Tensor) for label in labels):
             try:
                 return torch.stack(labels, dim=0)
             except RuntimeError:  # not the same shape
-                pass
+                return labels
+
         try:
-            return torch.tensor(
-                labels,
-                dtype=torch.float32,
-            )
-        except (TypeError, ValueError):  # e.g. None in labels
+            return torch.tensor(labels)
+        except (TypeError, ValueError, RuntimeError):  # e.g. None in labels
             return labels
+
+    @staticmethod
+    def _dict_to_tensor(dict_: dict[str, float]) -> torch.Tensor:
+        """
+        To convert multi-scalars label.
+        """
+        return torch.tensor([value for _, value in dict_.items()], dtype=torch.float32)
 
 
 Batch = Union[SimpleBatch, tuple[SimpleBatch, ...]]
 
 
-def simple_collate_fn(batch: list[Sample]) -> SimpleBatch:
+def simple_collate_fn(batch: list[DataPoint]) -> SimpleBatch:
     """For datasets that returns a single Sample."""
     return SimpleBatch(batch)
 
 
-def tuple_collate_fn(batch: list[tuple[Sample, ...]]) -> tuple[SimpleBatch, ...]:
+def tuple_collate_fn(batch: list[tuple[DataPoint, ...]]) -> tuple[SimpleBatch, ...]:
     """For datasets that returns a tuple of Samples."""
     return tuple(SimpleBatch(data) for data in zip(*batch))

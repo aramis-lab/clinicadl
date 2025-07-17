@@ -7,9 +7,14 @@
             * shape: (3, 3, 3)
             * label: "seg"
             * masks: "brain"
-            * additional info: "custom_image" (image), "custom_mask" (mask), "age" (float)
         * tensors:
-            * shape: (2, 2, 2)
+            * default
+                * without masks
+            * t1_masks
+                * with masks
+            * t1_transform
+                * shape: (2, 2, 2)
+                * additional info: "custom_image" (image), "custom_mask" (mask), "coefficient" (float)
     * ses-M003:
         * niftis:
             * uncropped only
@@ -26,7 +31,13 @@
             * label: "seg"
             * masks: "brain"
         * tensors:
-            * shape: (2, 2, 2)
+            * default
+                * without masks
+            * t1_masks
+                * with masks
+            * t1_transform
+                * shape: (2, 2, 2)
+                * additional info: "custom_image" (image), "custom_mask" (mask), "coefficient" (float)
     * ses-M012
         * niftis:
             * uncropped only
@@ -96,7 +107,8 @@
         * affine: diag(1.3, 1.2, 1.1) 
         * shape: (3, 3, 3)
     * tensors:
-        * shape: (2, 2, 2)
+        * t1_transform
+            * shape: (2, 2, 2)
 * rightHipppocampus:
     * nifti:
         * affine: diag(1, 1, 1) 

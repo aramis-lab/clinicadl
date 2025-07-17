@@ -35,6 +35,7 @@ caps_t1 = CapsDataset(
     CAPS_DIR,
     preprocessing=T1Linear(use_uncropped_image=True),
     label="age",
+    columns=["age"],
     data=sub_data([("sub-000", "ses-M000"), ("sub-010", "ses-M003")]),
     transforms=Transforms(extraction=Slice(slices=[0, 1])),
 )
@@ -44,12 +45,13 @@ caps_pet = CapsDataset(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     label="age",
+    columns=["age"],
     data=sub_data(
         [("sub-000", "ses-M000"), ("sub-010", "ses-M003"), ("sub-999", "ses-M099")]
     ),
 )
-caps_t1.read_tensor_conversion("t1_all")
-caps_pet.read_tensor_conversion("pet_all")
+caps_t1.read_tensor_conversion()
+caps_pet.read_tensor_conversion()
 UNPAIRED = UnpairedDataset([caps_t1, caps_pet], oversample=True)
 
 CONCAT_DF = pd.DataFrame(

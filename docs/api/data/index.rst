@@ -30,7 +30,7 @@
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/config_class.rst
 
     Custom
     T1Linear
@@ -48,7 +48,7 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/config_class.rst
 
     DataLoaderConfig
 

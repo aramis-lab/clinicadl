@@ -1,6 +1,5 @@
 from enum import Enum
 from logging import getLogger
-from typing import Union
 
 from pydantic import computed_field
 
@@ -44,10 +43,10 @@ class DWIDTI(Preprocessing, DWI):
         MNI152Lin standard space):\n
         - with ``native``: only the files that match the pattern
           ``dwi/dti_based_processing/native_space/sub-*_ses-*_space-*_{measure}.nii*``
-          in the CAPS structure will be considered.
+          in the :term:`CAPS` structure will be considered.
         - with ``normalized``: only the files that match the pattern
           ``dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*``
-          in the CAPS structure will be considered.
+          in the :term:`CAPS` structure will be considered.
     """
 
     measure: DTIMeasure
@@ -76,9 +75,9 @@ class DWIDTI(Preprocessing, DWI):
             needed_pipeline=self.name,
         )
 
-    def _get_tsv_name(self) -> str:
+    def _get_file_name(self) -> str:
         """
-        Builds a suffix for a tsv file saving
+        Builds a suffix for files saving
         information on this preprocessing.
         """
         return f"dwi-dti_{self.measure}_{self.space}"

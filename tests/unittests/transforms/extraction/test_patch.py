@@ -64,14 +64,12 @@ def test_extract_sample():
     assert extracted_data_point.participant == "sub-000"
     assert extracted_data_point.session == "ses-M000"
     assert extracted_data_point.image_path == "abc.nii.gz"
+    assert extracted_data_point._sample_index == 5
+    assert extracted_data_point.patch_size == (2, 3, 2)
+    assert extracted_data_point.patch_stride == (1, 2, 1)
+    assert extracted_data_point._sample_index == 5
 
     assert data_point.image.tensor.shape == (1, 5, 7, 3)
-
-    # test get_tensors
-    tensors = extracted_data_point.get_tensors()
-    assert (tensors["image"] == image_tensor[:, :2, 4:7, 1:3]).all()
-    assert (tensors["label"] == label[:, :2, 4:7, 1:3]).all()
-    assert (tensors["mask_1"] == mask_1[:, :2, 4:7, 1:3]).all()
 
     # test transforms history
     transform = tio.Clamp(out_min=0, out_max=10)

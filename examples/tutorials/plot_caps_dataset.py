@@ -13,10 +13,9 @@ from pathlib import Path
 
 from clinicadl.data import datasets, datatypes
 
-caps_path = (
-    Path("../../") / "tests" / "unittests" / "resources" / "caps_example"
-).resolve()
-data = caps_path / "tsv" / "labels.tsv"
+current_dir = Path.cwd()
+caps_path = current_dir.parent / "resources" / "caps"
+data = caps_path / "data.tsv"
 caps = datasets.CapsDataset(
     caps_path,
     data=data,
@@ -30,7 +29,7 @@ caps = datasets.CapsDataset(
 # ------------------------------
 
 # This is a python comment
-caps.read_tensor_conversion("pet_all")
+caps.to_tensors()
 
 
 # %%
@@ -42,3 +41,5 @@ caps[0].plot()
 # Get data on the subjects
 # ------------------------
 caps.df
+
+# %%

@@ -7,7 +7,7 @@ class ColinDataPoint(DataPoint):
     """
     Example of a :py:class:`~clinicadl.data.structures.DataPoint`.
 
-    It contains a T1 image, a mask as a label, and an additional mask called 'head'.
+    It contains a T1 image, a mask as a label, and an additional mask called "head".
 
     Examples
     --------

@@ -35,7 +35,7 @@ class DataPoint(tio.Subject):
         >>> datapoint.session
         'ses-M000'
 
-    Besides, a DataPoint is dictionary-like object. So, you can easily add a key-value pair
+    Besides, a ``DataPoint`` is dictionary-like object. So, you can easily add a key-value pair
     to it:
 
     .. code-block:: python
@@ -44,7 +44,7 @@ class DataPoint(tio.Subject):
         >>> datapoint["age"]    # the attribute notation won't work here
         55
 
-    However, to add an image or a mask to the DataPoint, prefer :py:func:`~add_image`
+    However, to add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
     and :py:func:`~add_mask`.
 
     To get all the images in your DataPoint, you can use :py:func:`get_images` or :py:func:`get_images_dict`.
@@ -53,10 +53,10 @@ class DataPoint(tio.Subject):
     access them via the attributes :py:attr:`~shape` (or :py:attr:`~spatial_shape` to remove the channel dimension),
     :py:attr:`~spacing` and :py:attr:`~affine` respectively.
 
-    Finally,  you may also be interested in :py:func:`~plot` to plot images inside your DataPoint, and :py:func:`~get_applied_transforms`
+    Finally,  you may also be interested in :py:func:`~plot` to plot images inside your ``DataPoint``, and :py:func:`~get_applied_transforms`
     to see the transforms applied to your data.
 
-    As DataPoint is a subclass of :py:class:`torchio.Subject`, you can also used all the other methods it inherits from.
+    As ``DataPoint`` is a subclass of :py:class:`torchio.Subject`, you can also used all the other methods it inherits from.
 
     .. note::
         Any transform used in ClinicaDL must work with DataPoint.
@@ -65,10 +65,15 @@ class DataPoint(tio.Subject):
     ----------
     image : Union[torchio.ScalarImage, PathType]
         The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
-    label : Optional[Union[float, int, torchio.LabelMap, PathType]]
-        The label associated to the image. Can be a ``float`` (regression),
-        an ``int`` (classification), a mask (passed as a :py:class:`torchio.LabelMap`
-        or a ``path`` to a NIfTI file; for segmentation) or ``None`` if no label (reconstruction).
+    label : Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]]
+        The label associated to the image. Can be:
+
+        - a ``float`` (regression);
+        - a ``dictionary`` with ``strings`` for keys and ``floats`` for values (multi-output regression);
+        - an ``int`` (classification, including multi-class classification),
+        - a mask, passed as a :py:class:`torchio.LabelMap` or a ``path`` to a NIfTI file, (segmentation);
+        - or ``None``, if no label (reconstruction).
+
     participant : str
         The participant concerned.
     session : str
@@ -85,7 +90,7 @@ class DataPoint(tio.Subject):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        label: Optional[Union[float, int, tio.LabelMap, PathType]],
+        label: Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]],
         participant: str,
         session: str,
         **kwargs: Any,
@@ -107,9 +112,9 @@ class DataPoint(tio.Subject):
     @property
     def shape(self):
         """
-        Returns the shape of the images in the DataPoint.
+        Returns the shape of the images in the ``DataPoint``.
 
-        Consistency of shapes across images in the DataPoint is checked first.
+        Consistency of shapes across images in the ``DataPoint`` is checked first.
 
         Examples
         --------
@@ -123,9 +128,9 @@ class DataPoint(tio.Subject):
     @property
     def spatial_shape(self):
         """
-        Returns the spatial shape of the images in the DataPoint.
+        Returns the spatial shape of the images in the ``DataPoint``.
 
-        Consistency of spatial shapes across images in the DataPoint is checked first.
+        Consistency of spatial shapes across images in the ``DataPoint`` is checked first.
 
         Examples
         --------
@@ -134,14 +139,16 @@ class DataPoint(tio.Subject):
         >>> datapoint.spatial_shape
         (181, 217, 181)
         """
-        return super().spatial_shape
+        self.check_consistent_attribute("spatial_shape")
+        return self.get_first_image().spatial_shape
 
     @property
     def spacing(self):
         """
-        Returns the voxel spacing of the images in the DataPoint.
+        Returns the voxel spacing of the images in the ``DataPoint``.
 
-        Consistency of voxel spacings across images in the DataPoint is checked first.
+        Consistency of voxel spacings across images in the ``DataPoint`` is checked first
+        (1e-3 relative tolerance).
 
         Examples
         --------
@@ -150,15 +157,16 @@ class DataPoint(tio.Subject):
         >>> datapoint.spacing
         (1.0, 1.0, 1.0)
         """
-        spacing = super().spacing
-        return tuple(float(s) for s in spacing)
+        self.check_consistent_attribute("spacing", relative_tolerance=1e-3)
+        return tuple(float(s) for s in self.image.spacing)
 
     @property
     def affine(self):
         """
-        Returns affine matrix of the images in the DataPoint.
+        Returns affine matrix of the images in the ``DataPoint``.
 
-        Consistency of matrices across images in the DataPoint is checked first.
+        Consistency of matrices across images in the ``DataPoint`` is checked first
+        (1e-3 relative tolerance).
 
         Examples
         --------
@@ -170,8 +178,8 @@ class DataPoint(tio.Subject):
                [   0.,    0.,    1.,  -72.],
                [   0.,    0.,    0.,    1.]])
         """
-        self.check_consistent_affine()
-        return self.get_first_image().affine
+        self.check_consistent_attribute("affine", relative_tolerance=1e-3)
+        return self.image.affine
 
     def get_images(
         self,
@@ -180,7 +188,7 @@ class DataPoint(tio.Subject):
         exclude: Optional[Sequence[str]] = None,
     ) -> list[tio.Image]:
         """
-        To get the list of all the images in a DataPoint.
+        To get the list of all the images in a ``DataPoint``.
 
         Parameters
         ----------
@@ -197,6 +205,21 @@ class DataPoint(tio.Subject):
         -------
         list[torchio.Image]
             The list of the :py:class:`torchio.Image`.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint.get_images()
+        [ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)]
+        >>> datapoint.get_images(intensity_only=False)
+        [ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...),
+        LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...),
+        LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)]
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.get_images_dict`
         """
         return super().get_images(intensity_only, include, exclude)
 
@@ -207,7 +230,7 @@ class DataPoint(tio.Subject):
         exclude: Optional[Sequence[str]] = None,
     ) -> dict[str, tio.Image]:
         """
-        To get all the images in a DataPoint, and their names.
+        To get all the images in a ``DataPoint``, and their names.
 
         Parameters
         ----------
@@ -224,6 +247,17 @@ class DataPoint(tio.Subject):
         -------
         dict[str, torchio.Image]
             The images and their names.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint.get_images_dict()
+        {'image': ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)}
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.get_images`
         """
         return super().get_images_dict(intensity_only, include, exclude)
 
@@ -231,7 +265,7 @@ class DataPoint(tio.Subject):
         self, image: Union[tio.ScalarImage, PathType], image_name: str
     ) -> None:
         """
-        To add an image to the DataPoint.
+        To add an image to the ``DataPoint``.
 
         Parameters
         ----------
@@ -242,15 +276,19 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> import torchio as tio
-        >>> from clinicadl.data.structures import DataPoint
-        >>> data = tio.datasets.Colin27()
-        >>> datapoint = DataPoint(
-                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
-            )
-        >>> datapoint.add_image(data.t1, "t1_bis")
-        >>> datapoint["t1_bis"]
+        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint
+        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+        >>> datapoint.add_image(datapoint.image, "image_duplicate")
+        >>> datapoint
+        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'image_duplicate'); images: 4)
+        >>> datapoint["image_duplicate"]
         ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.add_mask`
         """
         if isinstance(image, (Path, str)):
             image = tio.ScalarImage(path=image)
@@ -258,26 +296,30 @@ class DataPoint(tio.Subject):
 
     def add_mask(self, mask: Union[tio.LabelMap, PathType], mask_name: str) -> None:
         """
-        To add a mask to the DataPoint.
+        To add a mask to the ``DataPoint``.
 
         Parameters
         ----------
         mask : Union[tio.LabelMap, PathType]
             The mask to add, as a :py:class:`torchio.LabelMap` or a ``path`` to a NIfTI file.
         mask_name : str
-            The name that the mask will take in the DataPoint.
+            The name that the mask will take in the ``DataPoint``.
 
         Examples
         --------
-        >>> import torchio as tio
-        >>> from clinicadl.data.structures import DataPoint
-        >>> data = tio.datasets.Colin27()
-        >>> datapoint = DataPoint(
-                image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
-            )
-        >>> datapoint.add_mask(data.head, "head")
-        >>> datapoint["head"]
+        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint
+        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+        >>> datapoint.add_mask(datapoint["head"], "head_duplicate")
+        >>> datapoint
+        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'head_duplicate'); images: 4)
+        >>> datapoint["head_duplicate"]
         LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.add_image`
         """
         if isinstance(mask, (Path, str)):
             mask = tio.LabelMap(path=mask)
@@ -287,12 +329,22 @@ class DataPoint(tio.Subject):
         self,
     ) -> list[tio.Transform]:
         """
-        Gets the history of transforms applied to the DataPoint.
+        Gets the history of transforms applied to the ``DataPoint``.
 
         Returns
         -------
         list[torchio.Transform]
             The history of transforms applied.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from torchio import RescaleIntensity
+        >>> datapoint = ColinDataPoint()
+        >>> transform = RescaleIntensity()
+        >>> datapoint = transform(datapoint)
+        >>> datapoint.get_applied_transforms()
+        [RescaleIntensity(out_min_max=(0, 1), percentiles=(0, 100), masking_method=None, in_min_max=(0.0, 9646287.0))]
         """
         return super().get_applied_transforms()
 

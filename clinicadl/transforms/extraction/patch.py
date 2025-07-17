@@ -48,10 +48,9 @@ class PatchSample(Sample):
     patch_size: Tuple[int, int, int]
     patch_stride: Tuple[int, int, int]
 
-    @computed_field
     @property
-    def id(self) -> int:
-        """The index of the sample. Equal to `patch_index` here."""
+    def _sample_index(self) -> int:
+        """The index of the sample. Equal to 'patch_index' here."""
         return self.patch_index
 
 
@@ -61,6 +60,15 @@ class Patch(Extraction):
 
     The image is divided into smaller patches using a sliding window approach, where the patch size
     and the stride are configurable.
+
+    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
+
+    - ``patch_index``: int
+        The index of the patch among all patches extracted from the image.
+    - ``patch_size``: Tuple[int, int, int]
+        The size of the patch.
+    - ``patch_stride``: Tuple[int, int, int]
+        The stride used for patch extraction.
 
     Parameters
     ----------
@@ -135,7 +143,6 @@ class Patch(Extraction):
         sample = PatchSample(
             **extracted_datapoint,
             extraction=self.extract_method,
-            _sample_index=sample_index,
             patch_index=sample_index,
             patch_size=self.patch_size,
             patch_stride=self.stride,
