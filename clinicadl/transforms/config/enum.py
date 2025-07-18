@@ -1,5 +1,3 @@
-from enum import Enum
-
 from clinicadl.utils.enum import BaseEnum
 
 
@@ -157,3 +155,24 @@ class LockedBordersMode(int, BaseEnum):
     ZERO = 0
     ONE = 1
     TWO = 2
+
+
+class Rounding(str, BaseEnum):
+    """
+    Options for 'rounding' argument in AsDiscrete.
+    see: https://docs.monai.io/en/stable/transforms.html#monai.transforms.AsDiscrete
+    """
+
+    TORCH_ROUNDING = "torchrounding"
+
+
+class SobelPaddingMode(str, BaseEnum):
+    """
+    Options for 'padding_mode' argument in SobelGradients.
+    see: https://docs.monai.io/en/stable/transforms.html#monai.transforms.SobelGradients
+    """
+
+    ZEROS = "zeros"
+    REFLECT = "reflect"
+    REPLICATE = "replicate"
+    CIRCULAR = "circular"

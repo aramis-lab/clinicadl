@@ -87,5 +87,7 @@ class MonaiTransformWrapper(BaseTransform):
         return self._transform(x).item()
 
     def _transform(self, x: Any) -> torch.Tensor:
-        out: MetaTensor = self.transform(x)
-        return out.as_tensor()
+        out = self.transform(x)
+        if isinstance(out, MetaTensor):
+            out = out.as_tensor()
+        return out
