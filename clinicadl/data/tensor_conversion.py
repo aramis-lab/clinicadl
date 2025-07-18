@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 from pydantic import SerializeAsAny, ValidationError, field_serializer
 from tqdm import tqdm
 
-from clinicadl.dictionary.suffixes import JSON, PT
+from clinicadl.dictionary.suffixes import JSON
 from clinicadl.dictionary.words import (
     AFFINE,
     DEFAULT,
@@ -35,7 +35,10 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTensorConversionError,
 )
 
-from .datatypes.preprocessing import Preprocessing, get_preprocessing_config
+from .datatypes.preprocessing import (
+    Preprocessing,
+    get_preprocessing_config,
+)
 from .structures import DataPoint, Mask
 
 if TYPE_CHECKING:
@@ -229,6 +232,7 @@ class TensorConversion:
         ignore_spacing: bool = False,
         shape_warning: bool = True,
         conversion_name: Optional[str] = None,
+        overwrite: bool = False,
         save_transforms: bool = False,
         check_transforms: bool = True,
     ) -> None:
@@ -243,9 +247,16 @@ class TensorConversion:
         self._ignore_spacing = ignore_spacing
         self._shape_warning = shape_warning
 
-        self.json = conversion_name
+        self.json: Path = conversion_name
         self.tensor_folder_name = conversion_name
-        self._merge_with_old_conversions(check_transforms=check_transforms)
+        if self.json.is_file() and overwrite:
+            from .utils import remove_tensors
+
+            remove_tensors(
+                self.caps_reader.input_directory, conversion_name=self.json.stem
+            )
+        elif self.json.is_file():
+            self._merge_with_old_conversion(check_transforms=check_transforms)
 
         # process images and masks, and manage errors
         try:
@@ -620,23 +631,21 @@ class TensorConversion:
                 f"{self.json} does not exist, please give a valid 'conversion_name'."
             )
 
-    def _merge_with_old_conversions(self, check_transforms: bool = True) -> None:
+    def _merge_with_old_conversion(self, check_transforms: bool = True) -> None:
         """
-        Checks if a conversion with the same json file exists. If it exists,
-        tries to merge the two tensor conversions.
+        Tries to merge the current conversion with the old one.
         """
-        if self.json.is_file():
-            try:
-                self._merge_conversion(check_transforms=check_transforms)
-            except ClinicaDLTensorConversionError as exc:
-                raise ClinicaDLTensorConversionError(
-                    f"{str(self.json)} already exists, so ClinicaDL tried to merge the current tensor conversion "
-                    "with the old one. But an error occurred, most likely because the two conversions concern "
-                    "different kinds of data (e.g. different preprocessing, different transforms applied, different "
-                    "masks used).\n"
-                    "See exception traceback for more details. If you want to run a new tensor conversion, "
-                    "please give an available 'conversion_name'."
-                ) from exc
+        try:
+            self._merge_conversion(check_transforms=check_transforms)
+        except ClinicaDLTensorConversionError as exc:
+            raise ClinicaDLTensorConversionError(
+                f"{str(self.json)} already exists, so ClinicaDL tried to merge the current tensor conversion "
+                "with the old one. But an error occurred, most likely because the two conversions concern "
+                "different kinds of data (e.g. different preprocessing, different transforms applied, different "
+                "masks used).\n"
+                "See exception traceback for more details. If you want to run a new tensor conversion, "
+                "please give an available 'conversion_name'."
+            ) from exc
 
     def _merge_conversion(
         self,

@@ -343,6 +343,7 @@ class CapsDataset(Dataset):
         ignore_spacing: bool = False,
         shape_warning: bool = True,
         conversion_name: Optional[str] = None,
+        overwrite: bool = False,
         save_transforms: bool = False,
         check_transforms: bool = True,
     ) -> None:
@@ -393,9 +394,12 @@ class CapsDataset(Dataset):
             - the name of the ``json`` file that will store information on the conversion:
               ``{caps_directory}/tensor_conversion/{conversion_name}.json``.
 
-            If a conversion with this name already exists, ``ClinicaDL`` will try to merge the old
-            tensor conversion with the new one if they concern the same type of data (same
-            preprocessing, same transforms applied, etc.), otherwise an error will be raised.
+            If a conversion with this name already exists:
+
+            - if ``overwrite=True``, ``CapsDataset`` will overwrite the old conversion and the associated
+              tensors;
+            - else, ``CapsDataset`` will try to merge the old tensor conversion with the new one if they
+              concern the same type of data (same preprocessing, same transforms applied, etc.), otherwise an error will be raised.
 
             If ``None``, the tensors will be saved in ``{caps_directory}/subjects/sub-*/ses-*/{preprocessing}/tensors/default``,
             and the name of the ``json`` file will be inferred, depending on the preprocessing, but will always start with
@@ -405,13 +409,16 @@ class CapsDataset(Dataset):
 
             ``conversion_name`` **cannot** be ``None`` if ``save_transforms=True``.
 
+        overwrite : bool, default=False
+            Whether to overwrite an old tensor conversion that as the same ``conversion_name``.
+
         save_transforms : bool, default=False
             Whether to save raw images as tensors (``False``), or images on which were applied image
             transforms (``True``). Saving transformed images will speed up dataloading. However transformed
             images are specific to a sequence of transforms, so they cannot be used by any future ``CapsDataset``.
 
         check_transforms : bool, default=True
-            If a conversion named ``conversion_name`` already exists, the ``CapsDataset`` will try to merge the current
+            If a conversion named ``conversion_name`` already exists and ``overwrite=False``, the ``CapsDataset`` will try to merge the current
             tensor conversion with the old one. ``check_transforms`` determines whether transforms
             will be checked during the merger. If ``True``, ``CapsDataset`` will check that current transforms match
             the transforms applied during the old conversions.\n
@@ -539,6 +546,7 @@ class CapsDataset(Dataset):
             ignore_spacing=ignore_spacing,
             shape_warning=shape_warning,
             conversion_name=conversion_name,
+            overwrite=overwrite,
             save_transforms=save_transforms,
             check_transforms=check_transforms,
         )

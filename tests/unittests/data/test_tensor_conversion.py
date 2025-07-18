@@ -74,9 +74,6 @@ def copy_caps():
     if tmp_dir.is_dir():
         shutil.rmtree(tmp_dir)
     shutil.copytree(caps_dir, tmp_dir)
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
 
 
 def copy_caps_without_tensors():
@@ -824,6 +821,64 @@ def test_convert_to_tensors():
         match="If 'save_transforms' is True, 'conversion_name' cannot be None.",
     ):
         converter.convert_to_tensors(save_transforms=True)
+
+    shutil.rmtree(tmp_dir)
+
+
+def test_overwrite():
+    copy_caps()
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    preprocessing = T1Linear(use_uncropped_image=True)
+    caps_dataset = CapsDataset(
+        tmp_dir, preprocessing=preprocessing, data=data, masks=["brain"]
+    )
+    converter = TensorConversion(caps_dataset)
+
+    with pytest.raises(
+        ClinicaDLTensorConversionError,
+        match=r".*already exists, so ClinicaDL tried to merge*",
+    ):
+        converter.convert_to_tensors()
+
+    converter.convert_to_tensors(overwrite=True)
+
+    with open(tmp_dir / "tensor_conversion" / "default_t1-linear.json", "r") as f:
+        conversion_info = json.load(f)
+    assert conversion_info["individual_masks"] == ["brain"]
+    tensors = torch.load(
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "default"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        weights_only=True,
+    )
+    assert "brain" in tensors
+
+    converter.convert_to_tensors(conversion_name="t1_masks", overwrite=True)
+
+    with open(tmp_dir / "tensor_conversion" / "t1_masks.json", "r") as f:
+        conversion_info = json.load(f)
+    assert conversion_info["individual_masks"] == ["brain"]
+    tensors = torch.load(
+        tmp_dir
+        / "subjects"
+        / "sub-000"
+        / "ses-M000"
+        / "t1_linear"
+        / "tensors"
+        / "t1_masks"
+        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt",
+        weights_only=True,
+    )
+    assert "seg" not in tensors
 
     shutil.rmtree(tmp_dir)
 

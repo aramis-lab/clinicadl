@@ -15,6 +15,7 @@ from .enum import Average, ConfusionMatrixMetricName, Optimum
 __all__ = [
     "ROCAUCMetricConfig",
     "ConfusionMatrixMetricConfig",
+    "AveragePrecisionMetricConfig",
 ]
 
 ROC_AUC_METRIC_METRICS_DEFAULTS = get_defaults_from(monai.metrics.rocauc.ROCAUCMetric)
