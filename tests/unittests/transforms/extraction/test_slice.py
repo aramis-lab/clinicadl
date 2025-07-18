@@ -58,8 +58,8 @@ def test_extract_sample():
     slice = Slice(discarded_slices=[4], borders=1, slice_direction=2)
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 3, 7)
-    mask_1 = torch.ones(1, 5, 3, 7)
-    label = torch.ones(1, 5, 3, 7)
+    mask_1 = torch.randint(0, 2, (1, 5, 3, 7))
+    label = torch.randint(0, 2, (2, 5, 3, 7))
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),

@@ -21,8 +21,8 @@ def test_extract_sample():
     image = Image()
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 3, 4, 5)
-    mask_1 = torch.ones(1, 3, 4, 5)
-    label = torch.ones(1, 3, 4, 5)
+    mask_1 = torch.randint(0, 2, (1, 3, 4, 5))
+    label = torch.randint(0, 2, (2, 3, 4, 5))
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
