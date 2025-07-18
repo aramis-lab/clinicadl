@@ -53,6 +53,12 @@ class TorchioTransformConfig(TransformConfig):
         """
         return super().get_object()
 
+    @model_validator(mode="after")
+    def check_include_exclude(self):
+        """Checks that 'include' and 'exclude' are not both specified."""
+        if self.include and self.exclude:
+            raise ValueError("'include' and 'exclude' cannot be both specified.")
+
     @classmethod
     def _get_class(cls) -> type[TorchioTransform]:
         """Returns the transform associated to this config class."""
