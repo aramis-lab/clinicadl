@@ -80,7 +80,6 @@ Augmentation
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
 
-
 Post-processing
 ^^^^^^^^^^^^^^^
 
