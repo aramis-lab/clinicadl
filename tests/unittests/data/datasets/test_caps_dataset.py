@@ -1,5 +1,4 @@
 import shutil
-from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -556,7 +555,10 @@ def test__getitem__():
         columns={"age": None, "diagnosis": encode_diagnosis},
         transforms=Transforms(
             extraction=Slice(squeeze=False),
-            image_transforms=[CropConfig(cropping=(0, 0, 0, 1, 0, 1))],
+            image_transforms=[
+                CropConfig(cropping=(0, 0, 0, 1, 0, 1)),
+                tio.OneHot(num_classes=7, include=["label"]),
+            ],
             sample_transforms=[
                 tio.RescaleIntensity(masking_method="brain"),
                 tio.Mask(masking_method="leftHippocampus"),
@@ -607,7 +609,8 @@ def test__getitem__():
     )
 
     assert (out_sample.affine == tensors["affine"]).all()
-    assert out_sample.shape == (1, 1, 2, 2)
+    assert out_sample.spatial_shape == (1, 2, 2)
+    assert out_sample.label.shape == (7, 1, 2, 2)
 
     compose = tio.Compose(
         [
