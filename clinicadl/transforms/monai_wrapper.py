@@ -11,10 +11,8 @@ from numpy import ndarray
 
 from clinicadl.data.structures import DataPoint
 
-from .base import BaseTransform
 
-
-class MonaiTransformWrapper(BaseTransform):
+class MonaiTransformWrapper:
     """Converts a transform from ``MONAI`` to
     a transform compatible with ``ClinicaDL``, i.e. a
     transform that works with a :py:class:`clinicadl.data.structures.DataPoint`.

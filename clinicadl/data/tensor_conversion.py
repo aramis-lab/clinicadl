@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 from pydantic import SerializeAsAny, ValidationError, field_serializer
 from tqdm import tqdm
 
-from clinicadl.dictionary.suffixes import JSON, PT
+from clinicadl.dictionary.suffixes import JSON
 from clinicadl.dictionary.words import (
     AFFINE,
     DEFAULT,
@@ -26,9 +26,8 @@ from clinicadl.dictionary.words import (
     SESSION,
     TRANSFORMS,
 )
-from clinicadl.transforms import Transforms
+from clinicadl.transforms import Transform, Transforms
 from clinicadl.transforms.config import TransformConfig, get_transform_config
-from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
