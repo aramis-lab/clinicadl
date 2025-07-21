@@ -34,11 +34,13 @@ class TrainingDir(Directory):
     def split_list(self) -> list[int]:
         if self.is_empty():
             return []
-        return [
-            int(x.name.split("-")[1])
-            for x in self.path.iterdir()
-            if x.is_dir() and x.name.startswith("split")
-        ]
+        return sorted(
+            [
+                int(x.name.split("-")[1])
+                for x in self.path.iterdir()
+                if x.is_dir() and x.name.startswith("split")
+            ]
+        )
 
     def load(self):
         super().load()

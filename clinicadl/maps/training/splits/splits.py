@@ -61,11 +61,13 @@ class TrainSplitDir(Directory):
     def best_metrics_list(self):
         if self.is_empty():
             return []
-        return [
-            x.name.split("-")[1]
-            for x in self.path.iterdir()
-            if x.is_dir() and x.name.startswith("best")
-        ]
+        return sorted(
+            [
+                x.name.split("-")[1]
+                for x in self.path.iterdir()
+                if x.is_dir() and x.name.startswith("best")
+            ]
+        )
 
     @property
     def dataloader_json(self) -> Path:

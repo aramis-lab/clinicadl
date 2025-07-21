@@ -39,8 +39,10 @@ class PredictionsDir(Directory):
     def group_list(self) -> list[str]:
         if self.is_empty():
             return []
-        return [
-            x.name.split("-")[1]
-            for x in self.path.iterdir()
-            if x.is_dir() and x.name.startswith(TEST)
-        ]
+        return sorted(
+            [
+                x.name.split("-")[1]
+                for x in self.path.iterdir()
+                if x.is_dir() and x.name.startswith(TEST)
+            ]
+        )

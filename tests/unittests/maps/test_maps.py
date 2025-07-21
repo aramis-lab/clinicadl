@@ -192,7 +192,7 @@ def test_load_maps_predictions():
     assert maps.predictions.exists()
 
     assert maps.predictions.groups
-    assert maps.predictions.group_list == ["OASIS", "ADNI"]
+    assert maps.predictions.group_list == ["ADNI", "OASIS"]
 
     assert maps.predictions.groups["ADNI"].exists()
     assert maps.predictions.groups["ADNI"].caps_dataset_json.is_file()
