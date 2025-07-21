@@ -25,7 +25,7 @@ def test_extract_method():
 
 
 def test_num_samples_per_image():
-    img = torch.randn(1, 5, 7, 3)
+    img = torch.randn(2, 5, 7, 3)
 
     slice = Slice()
     assert slice.num_samples_per_image(img) == 5

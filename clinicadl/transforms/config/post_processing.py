@@ -12,10 +12,10 @@ from pydantic import (
 
 from clinicadl.dictionary.words import INCLUDE, LABEL, NAME, OUTPUT
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
-from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.factories import get_defaults_from
 
 from ..types import Transform
+from .base import TransformConfig
 from .enum import Rounding, SobelPaddingMode
 
 __all__ = [
@@ -39,7 +39,7 @@ FILL_HOLES_MONAI_DEFAULTS = get_defaults_from(transforms.FillHoles)
 SOBEL_MONAI_DEFAULTS = get_defaults_from(transforms.SobelGradients)
 
 
-class MonaiTransformConfig(ObjectConfig):
+class MonaiTransformConfig(TransformConfig):
     """
     Base config class for MONAI Transforms.
     """

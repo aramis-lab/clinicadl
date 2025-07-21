@@ -169,7 +169,7 @@ class Patch(Extraction):
         -----
         The number of patches is determined by the image size, the patch size, and the stride.
         """
-        return self._get_patches(image).shape[0]
+        return self._get_patches(image).shape[1]
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int

@@ -13,7 +13,7 @@ from torchio import Image
 
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import Bounds, TransformConfig
+from .base import Bounds, TorchioTransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 
 __all__ = [
@@ -37,7 +37,7 @@ CROP_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Crop)
 PAD_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Pad)
 
 
-class CropOrPadConfig(TransformConfig):
+class CropOrPadConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.CropOrPad`.
     """
@@ -68,13 +68,13 @@ class CropOrPadConfig(TransformConfig):
         return self
 
 
-class ToCanonicalConfig(TransformConfig):
+class ToCanonicalConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.ToCanonical`.
     """
 
 
-class ResizeConfig(TransformConfig):
+class ResizeConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Resize`.
     """
@@ -108,7 +108,7 @@ class ResizeConfig(TransformConfig):
             )
 
 
-class ResampleConfig(TransformConfig):
+class ResampleConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Resample`.
     """
@@ -161,7 +161,7 @@ class ResampleConfig(TransformConfig):
         return v
 
 
-class EnsureShapeMultipleConfig(TransformConfig):
+class EnsureShapeMultipleConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.EnsureShapeMultiple`.
     """
@@ -170,7 +170,7 @@ class EnsureShapeMultipleConfig(TransformConfig):
     method: EnsureShapeMultipleMode = ENSURE_SHAPE_MULTIPLE_TORCHIO_DEFAULTS["method"]
 
 
-class CropConfig(TransformConfig):
+class CropConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Crop`.
     """
@@ -178,7 +178,7 @@ class CropConfig(TransformConfig):
     cropping: Bounds
 
 
-class PadConfig(TransformConfig):
+class PadConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Pad`.
     """

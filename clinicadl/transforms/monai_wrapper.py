@@ -47,7 +47,7 @@ class MonaiTransformWrapper(BaseTransform):
                 self._transform_tio_image(value)
             else:
                 if isinstance(value, torch.Tensor):
-                    transform = self._transform_tensor
+                    transform = self._transform
                 elif isinstance(value, ndarray):
                     transform = self._transform_ndarray
                 elif isinstance(value, numbers.Number):
@@ -63,25 +63,15 @@ class MonaiTransformWrapper(BaseTransform):
         """
         if not isinstance(value, (tio.Image, torch.Tensor, ndarray, numbers.Number)):
             raise TypeError(
-                f"To apply {self.transform.__class__.__name__}, '{key}' must be a torchio.Image, a torch.Tensor, a numpy.ndarray, "
+                f"To apply '{self.transform.__class__.__name__}', '{key}' must be a torchio.Image, a torch.Tensor, a numpy.ndarray, "
                 f"or a numeric value. Got a {type(value)}"
             )
 
     def _transform_tio_image(self, x: tio.Image) -> None:
-        x.set_data(self._transform_tensor(x.tensor))
+        x.set_data(self._transform(x.tensor))
 
     def _transform_ndarray(self, x: ndarray) -> ndarray:
         return self._transform(x).numpy()
-
-    def _transform_tensor(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        If there is no channel dimension, remove it during the transform.
-        """
-        if x.shape[0] == 1:
-            out = self._transform(x.squeeze(0))
-            return out.unsqueeze(0)
-        else:
-            return self._transform(x)
 
     def _transform_numeric(self, x: numbers.Number) -> numbers.Number:
         return self._transform(x).item()

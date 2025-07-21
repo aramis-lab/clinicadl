@@ -23,7 +23,7 @@ def test_extract_method():
 
 
 def test_num_samples_per_image():
-    img = torch.randn(1, 5, 7, 3)
+    img = torch.randn(2, 5, 7, 3)
 
     patch = Patch(patch_size=3, stride=1)
     assert patch.num_samples_per_image(img) == 3 * 5 * 1

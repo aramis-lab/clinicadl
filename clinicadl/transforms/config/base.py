@@ -7,6 +7,7 @@ from pydantic import (
     model_validator,
 )
 from torchio import Compose, transforms
+from torchio import Transform as TorchioTransform
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
@@ -21,6 +22,10 @@ __all__ = [
 
 class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
+
+
+class TorchioTransformConfig(TransformConfig):
+    """Base config class for the transforms from TorchIO."""
 
     include: Optional[Sequence[str]] = None
     exclude: Optional[Sequence[str]] = None
@@ -42,9 +47,10 @@ class TransformConfig(ObjectConfig):
         """Checks that 'include' and 'exclude' are not both specified."""
         if self.include and self.exclude:
             raise ValueError("'include' and 'exclude' cannot be both specified.")
+        return self
 
     @classmethod
-    def _get_class(cls) -> type[Transform]:
+    def _get_class(cls) -> type[TorchioTransform]:
         """Returns the transform associated to this config class."""
         return getattr(transforms, cls._get_name())
 
@@ -85,7 +91,7 @@ class TransformConfig(ObjectConfig):
             cls._is_six_tuple_sorted(tup, field_name)
 
 
-class OneOfConfig(TransformConfig):
+class OneOfConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneOf`.
     TODO: Explain why 2 lists are used for transforms and probabilities instead of a dictionary

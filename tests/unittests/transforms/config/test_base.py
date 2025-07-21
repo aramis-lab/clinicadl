@@ -48,7 +48,7 @@ def test_one_of():
         tio.Compose,
     ]
     assert list(transform_dict.values()) == [0.8, 0.1, 0.1]
-    transform(x)
+    transform(X)
 
     one_of = OneOfConfig(
         transforms=[

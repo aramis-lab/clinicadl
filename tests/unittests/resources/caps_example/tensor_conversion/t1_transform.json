@@ -19,6 +19,8 @@
     "transforms": [
         {
             "name": "Crop",
+            "include": null,
+            "exclude": null,
             "cropping": [
                 0,
                 1,

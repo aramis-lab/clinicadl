@@ -13,7 +13,7 @@ from pydantic import (
 from clinicadl.utils.factories import get_defaults_from
 
 from ..types import Std
-from .base import TransformConfig
+from .base import TorchioTransformConfig
 from .enum import InterpolationMode, NumericalAxis
 
 __all__ = [
@@ -38,7 +38,7 @@ RANDOOM_GAMMA_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomGamma)
 RANOM_SWAP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomSwap)
 
 
-class RandomMotionConfig(TransformConfig):
+class RandomMotionConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomMotion`.
     """
@@ -63,7 +63,7 @@ class RandomMotionConfig(TransformConfig):
         return v
 
 
-class RandomGhostingConfig(TransformConfig):
+class RandomGhostingConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomGhosting`.
     """
@@ -109,7 +109,7 @@ class RandomGhostingConfig(TransformConfig):
             )
 
 
-class RandomSpikeConfig(TransformConfig):
+class RandomSpikeConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomSpike`.
     """
@@ -130,7 +130,7 @@ class RandomSpikeConfig(TransformConfig):
         return v
 
 
-class RandomBiasFieldConfig(TransformConfig):
+class RandomBiasFieldConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomBiasField`.
     """
@@ -149,7 +149,7 @@ class RandomBiasFieldConfig(TransformConfig):
         return v
 
 
-class RandomBlurConfig(TransformConfig):
+class RandomBlurConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomBlur`.
     """
@@ -165,7 +165,7 @@ class RandomBlurConfig(TransformConfig):
         return v
 
 
-class RandomNoiseConfig(TransformConfig):
+class RandomNoiseConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomNoise`.
     """
@@ -186,7 +186,7 @@ class RandomNoiseConfig(TransformConfig):
         return v
 
 
-class RandomSwapConfig(TransformConfig):
+class RandomSwapConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomSwap`.
     """
@@ -197,7 +197,7 @@ class RandomSwapConfig(TransformConfig):
     num_iterations: NonNegativeInt = RANOM_SWAP_TORCHIO_DEFAULTS["num_iterations"]
 
 
-class RandomGammaConfig(TransformConfig):
+class RandomGammaConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomGamma`.
     """

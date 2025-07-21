@@ -11,7 +11,7 @@ from pydantic import (
 from clinicadl.utils.factories import get_defaults_from
 
 from ..types import SpatialRange
-from .base import TransformConfig
+from .base import TorchioTransformConfig
 from .enum import (
     AnatomicalAxis,
     CenterMode,
@@ -36,7 +36,7 @@ RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS = get_defaults_from(
 RANDOM_ANISOTROPY_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomAnisotropy)
 
 
-class RandomFlipConfig(TransformConfig):
+class RandomFlipConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomFlip`.
     """
@@ -58,7 +58,7 @@ class RandomFlipConfig(TransformConfig):
         return v
 
 
-class RandomAffineConfig(TransformConfig):
+class RandomAffineConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomAffine`.
     """
@@ -89,7 +89,7 @@ class RandomAffineConfig(TransformConfig):
         return v
 
 
-class RandomElasticDeformationConfig(TransformConfig):
+class RandomElasticDeformationConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomElasticDeformation`.
     """
@@ -126,7 +126,7 @@ class RandomElasticDeformationConfig(TransformConfig):
         return v
 
 
-class RandomAnisotropyConfig(TransformConfig):
+class RandomAnisotropyConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomAnisotropy`.
     """

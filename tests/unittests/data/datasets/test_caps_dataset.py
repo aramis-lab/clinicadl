@@ -453,7 +453,7 @@ def test_get_sample_info():
         ClinicaDLCAPSError, match="Needs tensors to compute the length of the dataset*"
     ):
         caps_dataset.get_sample_info(8, "age")
-    caps_dataset.read_tensor_conversion("t1_masks")
+    caps_dataset.read_tensor_conversion("t1_transform")
     assert caps_dataset.get_sample_info(7, "age") == 1.0
     assert caps_dataset.get_sample_info(8, "age") == 2.0
 
