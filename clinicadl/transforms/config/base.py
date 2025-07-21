@@ -27,6 +27,10 @@ __all__ = [
 class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
 
+
+class TorchioTransformConfig(TransformConfig):
+    """Base config class for the transforms from TorchIO."""
+
     include: Optional[Sequence[str]] = None
     exclude: Optional[Sequence[str]] = None
 
@@ -58,6 +62,7 @@ class TorchioTransformConfig(TransformConfig):
         """Checks that 'include' and 'exclude' are not both specified."""
         if self.include and self.exclude:
             raise ValueError("'include' and 'exclude' cannot be both specified.")
+        return self
 
     @classmethod
     def _get_class(cls) -> type[TorchioTransform]:
