@@ -15,6 +15,7 @@ MANDATORY_ARGS = {
     "cropping": 1,
     "padding": 1,
     "out_min": 0,
+    "applied_labels": [0],
 }
 
 
@@ -47,6 +48,14 @@ MANDATORY_ARGS = {
         ("Crop", CropConfig),
         ("Pad", PadConfig),
         ("OneOf", OneHotConfig),
+        ("Activations", ActivationsConfig),
+        ("AsDiscrete", AsDiscreteConfig),
+        ("KeepLargestConnectedComponent", KeepLargestConnectedComponentConfig),
+        ("DistanceTransformEDT", DistanceTransformEDTConfig),
+        ("RemoveSmallObjects", RemoveSmallObjectsConfig),
+        ("LabelFilter", LabelFilterConfig),
+        ("FillHoles", FillHolesConfig),
+        ("SobelGradients", SobelGradientsConfig),
     ],
 )
 def test_get_transform_config(name, config):

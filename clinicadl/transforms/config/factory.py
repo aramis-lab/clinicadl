@@ -20,6 +20,16 @@ from .intensity_augmentations import (
     RandomSwapConfig,
 )
 from .label import OneHotConfig, RemapLabelsConfig
+from .post_processing import (
+    ActivationsConfig,
+    AsDiscreteConfig,
+    DistanceTransformEDTConfig,
+    FillHolesConfig,
+    KeepLargestConnectedComponentConfig,
+    LabelFilterConfig,
+    RemoveSmallObjectsConfig,
+    SobelGradientsConfig,
+)
 from .spatial import (
     CropConfig,
     CropOrPadConfig,
