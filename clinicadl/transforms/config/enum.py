@@ -36,6 +36,15 @@ class ImplementedTransform(str, BaseEnum):
     RANDOM_SWAP = "RandomSwap"
     RANDOM_GAMMA = "RandomGamma"
 
+    ACTIVATIONS = "Activations"
+    AS_DISCRETE = "AsDiscrete"
+    KLCC = "KeepLargestConnectedComponent"
+    EDT = "DistanceTransformEDT"
+    SMALL_OBJECTS = "RemoveSmallObjects"
+    LABEL_FILTER = "LabelFilter"
+    FILL_HOLES = "FillHoles"
+    SOBEL = "SobelGradients"
+
     @classmethod
     def _missing_(cls, value):
         raise ValueError(
