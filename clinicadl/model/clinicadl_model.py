@@ -129,7 +129,7 @@ class ClinicaDLModel:
         labels = data.get_labels().to(device).float()
         images = data.get_images().to(device)
 
-        self._input_size = images.shape
+        self._input_size = images.shape[1:]
 
         outputs = self.network(images)
         labels = labels.unsqueeze(dim=-1)

@@ -1,3 +1,4 @@
+from contextlib import redirect_stdout
 from typing import Optional
 
 from torchsummary import summary
@@ -76,12 +77,10 @@ class _TrainingState(ClinicaDLConfig):
         with open(
             self.maps.training.splits[self.split.index].torchsummary_txt, "w"
         ) as f:
-            print(
+            with redirect_stdout(f):
                 summary(
                     self.model.network,
                     input_size=self.model._input_size,
                     batch_size=self.n_batch,
                     device=self.comp.device.type,
-                ),
-                file=f,
-            )
+                )
