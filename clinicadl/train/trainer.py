@@ -433,8 +433,8 @@ class Trainer:
         """
 
         self.maps._add_lines_to_summary_log(
-            f"Input size        : {self.model._input_size}"
+            f"Input size        : {self.model._input_size}\n"
         )
         self.maps._add_lines_to_summary_log("=" * 15)
 
-        # self.config.write_torchsummary() not working i don't know why
+        self.config.write_torchsummary()  # not working i don't know why

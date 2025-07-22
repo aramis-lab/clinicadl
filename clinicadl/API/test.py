@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd
 import torchio.transforms as transforms
 from monai.metrics.regression import MAEMetric
 
@@ -31,6 +32,12 @@ from clinicadl.transforms.extraction import Slice
 from clinicadl.transforms.output_transforms import OutputTransforms
 from clinicadl.utils.computational.config import ComputationalConfig
 
+
+def diagnosis_to_number(column: pd.Series) -> pd.Series:
+    encoding = {"CN": 0, "MCI": 1, "AD": 2}
+    return column.apply(lambda x: encoding[x])
+
+
 caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
 )  # output of clinica pipelines
@@ -47,8 +54,9 @@ dataset_t1_image = CapsDataset(
     preprocessing=preprocessing_t1,
     transforms=transforms_image,
     label="diagnosis",
+    columns={"diagnosis": None},
 )
-dataset_t1_image.to_tensors(json_name="test_bis_im.json", n_proc=2)
+dataset_t1_image.to_tensors(conversion_name="test_bis_im", n_proc=2)
 
 split_dir = make_split(sub_ses_t1, n_test=0.2)
 fold_dir = make_kfold(split_dir / "train.tsv", n_splits=2)

@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
-from torchsummary import summary
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses.config import LossConfig, get_loss_function_config
@@ -127,7 +126,7 @@ class ClinicaDLModel:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
-        labels = data.get_labels().to(device)
+        labels = data.get_labels().to(device).float()
         images = data.get_images().to(device)
 
         self._input_size = images.shape
@@ -145,7 +144,7 @@ class ClinicaDLModel:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
-        labels = data.get_labels().to(device)
+        labels = data.get_labels().to(device).float()
         images = data.get_images().to(device)
 
         outputs = self.network(images)
