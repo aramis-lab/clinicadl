@@ -1,0 +1,10 @@
+==================== Time Summary ====================
+
+
+Training complete in: 0:00:40.994138
+Training performance time: min 3.21, avg 3.52 (+/- 0.24)
+Loading performance time: min 0.02, avg 3.00 (+/- 2.00)
+Forward performance time: avg 1.28 (+/- 0.14)
+Backward performance time: avg 2.24 (+/- 0.15)
+Validation time: 0.04 sec
+

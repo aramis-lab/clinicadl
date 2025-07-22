@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterator, Optional, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
@@ -10,6 +11,7 @@ from clinicadl.data.datasets import (
 )
 from clinicadl.data.datasets.types import Dataset, SimpleDataset, TupleDataset
 from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.json import read_json, update_json, write_json
 from clinicadl.utils.seed import pl_worker_init_function
 
 from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
@@ -413,3 +415,9 @@ class DataLoaderConfig(ClinicaDLConfig):
             ) from exc
 
         return weights
+
+    def write_json(self, json_path: Path, name: str) -> None:
+        if json_path.is_file():
+            update_json(json_path=json_path, new_data={name: self.to_dict()})
+        else:
+            write_json(json_path=json_path, data={name: self.to_dict()})

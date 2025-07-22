@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import monai
 import monai.metrics
@@ -81,3 +81,11 @@ class LossMetricConfig(MetricConfig):
                 ) from exc
 
         return self
+
+    def to_dict(self) -> Dict[str, Any]:
+        from clinicadl.utils.json import serialize_callable
+
+        my_dict = super().to_dict()
+        my_dict["loss_fn"] = serialize_callable(self.loss_fn)
+
+        return my_dict

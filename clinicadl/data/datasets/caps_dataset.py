@@ -32,6 +32,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLCAPSError,
 )
+from clinicadl.utils.json import read_json, update_json, write_json
 from clinicadl.utils.typing import DataType, PathType
 
 from ..datatypes.preprocessing import Preprocessing, T1Linear
@@ -321,6 +322,8 @@ class CapsDataset(Dataset):
 
         self.tensor_conversion: TensorConversion = TensorConversion(self)
         self.common_masks_tensors: list[Mask] = []
+
+        self._dict = self.model_dump(masks)
 
     @property
     def df(self) -> pd.DataFrame:
@@ -1309,3 +1312,36 @@ class CapsDataset(Dataset):
         """
         df[FIRST_INDEX] = (df[N_SAMPLES].cumsum().shift(1)).fillna(0).astype(int)
         df[LAST_INDEX] = (df[N_SAMPLES].cumsum() - 1).astype(int)
+
+    def model_dump(self, masks: Optional[list[PathType]]) -> Dict:
+        _dict = {}
+        _dict["caps_directory"] = self.directory
+        _dict["preprocessing"] = self.preprocessing.to_dict()
+        # _dict["data"] = self._df for now there is a pb with these two lines
+        # _dict["label"] = self.label
+        _dict["transforms"] = self.transforms.to_dict()
+        _dict["masks"] = masks
+
+        return _dict
+
+    def write_json(self, json_path: PathType, name: Optional[str]) -> None:
+        json_path = Path(json_path)
+
+        if name is not None:
+            if json_path.is_file():
+                update_json(json_path=json_path, new_data={name: self._dict})
+            else:
+                write_json(json_path=json_path, data={name: self._dict})
+        else:
+            if json_path.is_file():
+                raise ClinicaDLArgumentError(
+                    f"File {json_path} already exists. Please provide a name to save the dataset."
+                )
+            else:
+                write_json(json_path=json_path, data=self._dict)
+
+    @classmethod
+    def from_json(cls, json_path: PathType) -> CapsDataset:
+        json_path = Path(json_path)
+        _dict = read_json(json_path=json_path)
+        return CapsDataset(**_dict)

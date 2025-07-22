@@ -1,3 +1,5 @@
+import io
+import sys
 from pathlib import Path
 from typing import Optional, Union
 
@@ -5,16 +7,17 @@ import torch
 import torch.nn as nn
 from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
+from torchsummary import summary
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses.config import LossConfig, get_loss_function_config
 from clinicadl.losses.types import Loss
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.networks.config import NetworkConfig, get_network_config
 from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
 from clinicadl.utils import cluster
 from clinicadl.utils.computational.ddp import DDP
-from clinicadl.utils.json import read_json
+from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
 # import idr_torch
@@ -51,6 +54,7 @@ class ClinicaDLModel:
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
 
+        self._input_size = None
         # if cluster.rank == 0: print(f'model: {network}')
         # if cluster.rank == 0: print('number of parameters: {}'.format(sum([p.numel()
         #                                       for p in network.parameters()])))
@@ -74,9 +78,9 @@ class ClinicaDLModel:
 
     @classmethod
     def from_dict(cls, dict_: dict):
-        network_config = get_network_config(**dict_)
-        loss_config = get_loss_function_config(**dict_)
-        optimizer_config = get_optimizer_config(**dict_)
+        network_config = get_network_config(**dict_["network"])
+        loss_config = get_loss_function_config(**dict_["loss"])
+        optimizer_config = get_optimizer_config(**dict_["optimizer"])
         return cls.from_config(
             network_config=network_config,
             loss_config=loss_config,
@@ -126,6 +130,8 @@ class ClinicaDLModel:
         labels = data.get_labels().to(device)
         images = data.get_images().to(device)
 
+        self._input_size = images.shape
+
         outputs = self.network(images)
         labels = labels.unsqueeze(dim=-1)
 
@@ -134,8 +140,8 @@ class ClinicaDLModel:
         return loss
 
     def validation_step(
-        self, data: Batch, device: torch.device, metrics: ClinicaDLMetrics
-    ) -> ClinicaDLMetrics:
+        self, data: Batch, device: torch.device, metrics: MetricsHandler
+    ) -> MetricsHandler:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """
@@ -170,6 +176,15 @@ class ClinicaDLModel:
                 "Network, loss, and optimizer configs must be set before writing to JSON."
             )
 
-        self._network_config.write_json(json_path, overwrite=overwrite)
-        self._loss_config.update_json(json_path)
-        self._optimizer_config.update_json(json_path)
+        net_json = {"network": self._network_config.to_dict()}
+        loss_json = {"loss": self._loss_config.to_dict()}
+        optimizer_json = {"optimizer": self._optimizer_config.to_dict()}
+        write_json(
+            json_path=json_path,
+            data={**net_json, **loss_json, **optimizer_json},
+            overwrite=overwrite,
+        )
+
+    def write_architecture_log(self, log_path: PathType) -> None:
+        with open(log_path, "w") as f:
+            print(self.network, file=f)

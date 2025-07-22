@@ -1,13 +1,13 @@
 import shutil
-from typing import Union
+from typing import Any, Union
 
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import CHECKPOINT, MODEL, OPTIMIZER
 from clinicadl.metrics.config.enum import Optimum
-from clinicadl.metrics.metrics import Metrics
+from clinicadl.metrics.handler import Metrics
 
-from .base import Callback
+from ..base import Callback
 
 
 class ModelSelection(Callback, Metrics):
@@ -61,7 +61,7 @@ class ModelSelection(Callback, Metrics):
         ----------
         metrics : str or list of str
             Name(s) of the metric(s) to monitor for model selection. These should match
-            keys present in the `ClinicaDLMetrics` dictionary. If a single string is provided,
+            keys present in the `MetricsHandler` dictionary. If a single string is provided,
             it is converted to a list internally.
         """
         self.metrics = metrics if isinstance(metrics, list) else [metrics]
@@ -71,8 +71,12 @@ class ModelSelection(Callback, Metrics):
         Initialize storage structures for best metrics and create necessary folders.
         """
 
-        config.maps.create_split(config.split, self.metrics)
-        config.split.write_json(config.maps.splits[config.split.index].split_json)
+        # config.maps.training.create_split(config.split)
+        for metric in self.metrics:
+            config.maps.training.splits[config.split.index]._create_best_metrics(
+                metric=metric
+            )
+        # config.split.write_json(config.maps.training.splits[config.split.index].caps_dataset_json)
 
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """
@@ -81,10 +85,10 @@ class ModelSelection(Callback, Metrics):
         """
 
         for metric in self.metrics:
-            metric_path = (
-                config.maps.splits[config.split.index].best_metrics[metric].path
-            )
-            metric_path.mkdir(parents=True, exist_ok=True)
+            metric_dir = config.maps.training.splits[config.split.index].best_metrics[
+                metric
+            ]
+            # metric_path.mkdir(parents=True, exist_ok=True)
 
             optimum = config.metrics.metrics[metric].optimum()
 
@@ -105,12 +109,20 @@ class ModelSelection(Callback, Metrics):
                     )
                 )
             ):
-                checkpoint_path = config.maps.splits[config.split.index].tmp.path / (
-                    CHECKPOINT + PTH + TAR
-                )
-                shutil.copyfile(checkpoint_path, metric_path / (MODEL + PTH + TAR))
+                tmp_dir = config.maps.training.splits[config.split.index].tmp
 
-                optim_path = config.maps.splits[config.split.index].tmp.path / (
-                    OPTIMIZER + PTH + TAR
-                )
-                shutil.copyfile(optim_path, metric_path / (OPTIMIZER + PTH + TAR))
+                shutil.copyfile(tmp_dir.model, metric_dir.model)
+                shutil.copyfile(tmp_dir.optimizer, metric_dir.optimizer)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update({"metrics": self.metrics})
+        return json_dict

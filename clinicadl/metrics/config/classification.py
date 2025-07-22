@@ -22,9 +22,7 @@ ROC_AUC_METRIC_METRICS_DEFAULTS = get_defaults_from(monai.metrics.rocauc.ROCAUCM
 CONFUSION_METRICS_DEFAULTS = get_defaults_from(
     monai.metrics.confusion_matrix.ConfusionMatrixMetric
 )
-AVERAGE_PRECISION_DEFAULTS = get_defaults_from(
-    monai.metrics.average_precision.AveragePrecisionMetric
-)
+AVERAGE_PRECISION_DEFAULTS = get_defaults_from(monai.metrics.AveragePrecisionMetric)
 
 
 class ROCAUCMetricConfig(MetricConfig):
@@ -77,7 +75,7 @@ class AveragePrecisionMetricConfig(MetricConfig):
     Config class for :py:class:`monai.metrics.AveragePrecisionMetric`.
     """
 
-    average: Average = AVERAGE_PRECISION_DEFAULTS["average"]
+    average: Average = Average.MACRO  # TODO : add monai
 
     @staticmethod
     def optimum() -> Optimum:

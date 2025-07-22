@@ -1,0 +1,52 @@
+{
+    "network": {
+        "name": "ResNet",
+        "spatial_dims": 3,
+        "in_channels": 1,
+        "num_outputs": 1,
+        "block_type": "basic",
+        "n_res_blocks": [
+            2,
+            2,
+            2,
+            2
+        ],
+        "n_features": [
+            64,
+            128,
+            256,
+            512
+        ],
+        "init_conv_size": 7,
+        "init_conv_stride": 2,
+        "bottleneck_reduction": 4,
+        "act": [
+            "relu",
+            {
+                "inplace": true
+            }
+        ],
+        "output_act": null
+    },
+    "loss": {
+        "name": "MSELoss",
+        "reduction": "mean"
+    },
+    "optimizer": {
+        "name": "Adam",
+        "freeze": null,
+        "lr": 0.001,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.0,
+        "amsgrad": false,
+        "foreach": null,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false,
+        "fused": null
+    }
+}

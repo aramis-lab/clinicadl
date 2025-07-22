@@ -46,9 +46,13 @@ class ClinicaDLTrainingException(ClinicaDLException):
     """Base class for training exceptions."""
 
 
-class ClinicaDLMetricsError(ClinicaDLException):
+class MetricsHandlerError(ClinicaDLException):
     """Base class for training exceptions."""
 
 
 class ClinicaDLMAPSError(ClinicaDLException):
     """Base class for training exceptions."""
+
+
+class ClinicaDLTestingError(ClinicaDLException):
+    """Base class for testing exceptions."""

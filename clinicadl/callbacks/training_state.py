@@ -1,7 +1,9 @@
 from typing import Optional
 
+from torchsummary import summary
+
 from clinicadl.maps.maps import Maps
-from clinicadl.metrics.metrics import ClinicaDLMetrics
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
@@ -24,7 +26,7 @@ class _TrainingState(ClinicaDLConfig):
     ----------
     maps : Maps
         Provides access to dataset file paths and structure.
-    metrics : ClinicaDLMetrics
+    metrics : MetricsHandler
         Handles computation and storage of performance metrics.
     model : ClinicaDLModel
         The neural network model being trained.
@@ -51,7 +53,7 @@ class _TrainingState(ClinicaDLConfig):
     """
 
     maps: Maps
-    metrics: ClinicaDLMetrics
+    metrics: MetricsHandler
     model: ClinicaDLModel
     optim: OptimizationConfig
     comp: ComputationalConfig
@@ -69,3 +71,17 @@ class _TrainingState(ClinicaDLConfig):
         self.stop = False
         self.epoch = 0
         self.batch = 0
+
+    def write_torchsummary(self):
+        with open(
+            self.maps.training.splits[self.split.index].torchsummary_txt, "w"
+        ) as f:
+            print(
+                summary(
+                    self.model.network,
+                    input_size=self.model._input_size,
+                    batch_size=self.n_batch,
+                    device=self.comp.device.type,
+                ),
+                file=f,
+            )

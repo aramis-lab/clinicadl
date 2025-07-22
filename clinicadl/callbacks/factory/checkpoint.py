@@ -1,11 +1,9 @@
 import shutil
-from typing import Optional
+from typing import Any, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from .base import Callback
+from ..base import Callback
 
 
 class Checkpoint(Callback):
@@ -54,13 +52,27 @@ class Checkpoint(Callback):
             or config.epoch == config.optim.epochs
         ):
             assert config.split is not None
-            config.maps.splits[config.split.index].create_epoch(config.epoch)
-            epoch_path = (
-                config.maps.splits[config.split.index].epochs[config.epoch].path
+            config.maps.training.splits[config.split.index].checkpoints._create_epoch(
+                config.epoch
             )
 
-            checkpoint_path = config.maps.splits[config.split.index].tmp.checkpoint
-            shutil.copyfile(checkpoint_path, epoch_path / (MODEL + PTH + TAR))
+            epoch_dir = config.maps.training.splits[
+                config.split.index
+            ].checkpoints.epochs[config.epoch]
+            tmp_dir = config.maps.training.splits[config.split.index].tmp
 
-            optim_path = config.maps.splits[config.split.index].tmp.optimizer
-            shutil.copyfile(optim_path, epoch_path / (OPTIMIZER + PTH + TAR))
+            shutil.copyfile(tmp_dir.model, epoch_dir.model)
+            shutil.copyfile(tmp_dir.optimizer, epoch_dir.optimizer)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update({"patience": self.patience, "epochs": self.epochs})
+        return json_dict

@@ -10,7 +10,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from .base import Callback
+from ..base import Callback
 
 
 class MLflow(Callback):
@@ -100,7 +100,7 @@ class MLflow(Callback):
         Log the final model checkpoint and optimizer state as MLflow artifacts,
         then end the MLflow run.
         """
-        tmp_path = config.maps.splits[config.split.index].tmp.path
+        tmp_path = config.maps.training.splits[config.split.index].tmp.path
         model_file = tmp_path / MODEL + PTH + TAR
         optimizer_file = tmp_path / OPTIMIZER + PTH + TAR
 

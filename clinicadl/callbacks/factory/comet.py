@@ -6,7 +6,7 @@ from typing import Optional
 
 import numpy as np
 
-from .base import Callback
+from ..base import Callback
 
 
 class Comet(Callback):

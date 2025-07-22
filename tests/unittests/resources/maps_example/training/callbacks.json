@@ -1,0 +1,86 @@
+{
+    "LRScheduler": {
+        "name": "LRScheduler",
+        "scheduler": "LinearLR",
+        "last_epoch": -1,
+        "start_factor": 0.3333333333333333,
+        "end_factor": 1.0,
+        "total_iters": 5
+    },
+    "Checkpoint": {
+        "name": "Checkpoint",
+        "patience": 2,
+        "epochs": [
+            3
+        ]
+    },
+    "ModelSelection": {
+        "name": "ModelSelection",
+        "metrics": [
+            "mse",
+            "mae",
+            "loss"
+        ]
+    },
+    "Tensorboard": {
+        "name": "Tensorboard",
+        "log_dir": null,
+        "log_model_graph": false,
+        "example_input": null
+    },
+    "EarlyStopping": {
+        "name": "EarlyStopping",
+        "metrics": [
+            "mae",
+            "loss"
+        ],
+        "patience": [
+            null,
+            null
+        ],
+        "min_delta": [
+            0.0,
+            0.0
+        ],
+        "mode": [
+            "min",
+            "min"
+        ],
+        "check_finite": [
+            true,
+            true
+        ],
+        "upper_bound": [
+            null,
+            null
+        ],
+        "lower_bound": [
+            null,
+            null
+        ]
+    },
+    "EarlyStopping2": {
+        "name": "EarlyStopping",
+        "metrics": [
+            "mse"
+        ],
+        "patience": [
+            null
+        ],
+        "min_delta": [
+            0.0
+        ],
+        "mode": [
+            "min"
+        ],
+        "check_finite": [
+            true
+        ],
+        "upper_bound": [
+            null
+        ],
+        "lower_bound": [
+            null
+        ]
+    }
+}

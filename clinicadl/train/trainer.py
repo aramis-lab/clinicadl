@@ -14,7 +14,7 @@ from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config import MetricConfig
-from clinicadl.metrics.metrics import ClinicaDLMetrics, LossMetricConfig
+from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricType
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
@@ -152,15 +152,26 @@ class Trainer:
         _overwrite: bool = False,
         seed: int = 123,
     ) -> None:
-        train_metrics = ClinicaDLMetrics(metrics=metrics, loss=model.loss)
+        train_metrics = MetricsHandler(metrics=metrics, loss=model.loss)
 
         self.callbacks = CallbacksHandler(
             metrics=train_metrics,
             callbacks=callbacks if callbacks is not None else [],
         )
 
+        maps = Maps(maps_path)
+        maps.create(overwrite=_overwrite)
+
+        model.write_json(maps.model_json)
+        model.write_architecture_log(maps.architecture_log)
+
+        self.callbacks.write_json(maps.training.callbacks_json)
+        train_metrics.write_json(maps.training.metrics_json)
+        comp_config.write_json(maps.training.computational_json)
+        optim_config.write_json(maps.training.optimization_json)
+
         self.config = _TrainingState(
-            maps=Maps(maps_path, _overwrite),
+            maps=maps,
             metrics=train_metrics,
             model=model,
             optim=optim_config,
@@ -225,9 +236,10 @@ class Trainer:
     def on_train_begin(self, split: Split) -> None:
         """Prepare training by setting model to training mode, creating maps, and resetting states."""
 
-        self.config.maps.create()
         self.model.train()
         self.reset(split)
+
+        self._write_training_infos(split=split)
 
         self.callbacks.on_train_begin(config=self.config)
 
@@ -263,7 +275,9 @@ class Trainer:
 
     def on_train_end(self, split: Split):
         self.callbacks.on_train_end(config=self.config)
-        self.metrics.save(self.maps.splits[split.index].metrics_tsv)
+        self.metrics.save(self.maps.training.splits[split.index].validation_metrics_tsv)
+
+        self._write_end_training_infos(split=split)
 
     def reset(self, split: Optional[Split] = None):
         """TO COMPLETE"""
@@ -353,3 +367,78 @@ class Trainer:
             output_transforms=output_transforms,
             data_group=data_group if data_group else "test",
         )
+
+    @classmethod
+    def from_maps(cls, maps_path: PathType):
+        maps = Maps(maps_path)
+        maps.load()
+
+        model = ClinicaDLModel.from_json(maps.model_json)
+        comp_config = ComputationalConfig.from_json(maps.training.computational_json)
+        optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
+        callbacks = CallbacksHandler.from_json(maps.training.callbacks_json)
+        metrics = MetricsHandler.from_json(maps.training.metrics_json)
+
+        # TODO : check seed ?
+
+        return cls(
+            maps_path=maps_path,
+            model=model,
+            callbacks=callbacks,
+            metrics=metrics,
+            optim_config=optim_config,
+            comp_config=comp_config,
+        )
+
+    def _write_training_infos(
+        self,
+        split: Split,
+    ) -> None:
+        """
+        Write training information to the maps directory.
+
+        Parameters
+        ----------
+        split : Split
+            The data split used for training.
+        """
+        self.maps._create_training_split(split=split)
+        self.maps._add_lines_to_summary_log(
+            f"Training dataset  : {split.train_dataset.caps_reader.input_directory}"
+        )
+
+        assert isinstance(split.train_loader.dataset, CapsDataset)
+        split.train_loader.dataset.write_json(
+            self.maps.training.splits[split.index].caps_dataset_json, name="train"
+        )
+        split.train_loader_config.write_json(
+            self.maps.training.splits[split.index].dataloader_json, name="train"
+        )
+
+        assert isinstance(split.val_loader.dataset, CapsDataset)
+        split.val_loader.dataset.write_json(
+            self.maps.training.splits[split.index].caps_dataset_json, name="val"
+        )
+        split.val_loader_config.write_json(
+            self.maps.training.splits[split.index].dataloader_json, name="val"
+        )
+
+    def _write_end_training_infos(
+        self,
+        split: Split,
+    ) -> None:
+        """
+        Write end of training information to the maps directory.
+
+        Parameters
+        ----------
+        split : Split
+            The data split used for training.
+        """
+
+        self.maps._add_lines_to_summary_log(
+            f"Input size        : {self.model._input_size}"
+        )
+        self.maps._add_lines_to_summary_log("=" * 15)
+
+        # self.config.write_torchsummary() not working i don't know why

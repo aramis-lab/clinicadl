@@ -1,0 +1,7 @@
+- Nombre de données train et validation
+
+- durée entrainements
+
+- mémoire max
+
+- hardware

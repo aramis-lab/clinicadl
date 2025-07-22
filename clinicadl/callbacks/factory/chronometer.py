@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from logging import getLogger
+from pathlib import Path
 from time import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from .base import Callback
+from ..base import Callback
 
 logger = getLogger("clinicadl.chronometer")
 
@@ -210,52 +211,55 @@ class _Chronometer(Callback):
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """Marks the end of the overall training."""
         self.stop_proc = datetime.now()
-        self.display()
+        self.write_chronometer_file(
+            config.maps.training.splits[config.split.index].time_txt
+        )
 
-    def display(self) -> None:
+    def write_chronometer_file(self, json_path: Path) -> None:
         """
         Displays collected timing statistics and performance summary.
         """
-        logger.info(">>> Performance summary:")
+        txt = "==================== Time Summary ===================="
+        txt += "\n\n"
+
         if self.stop_proc and self.start_proc:
-            logger.info(
-                ">>> Training complete in: %s", str(self.stop_proc - self.start_proc)
-            )
+            txt += f"\nTraining complete in: {str(self.stop_proc - self.start_proc)}"
 
         if self.time_perf_train:
-            logger.info(
-                ">>> Training performance time: min %f, avg %f (+/- %f)",
+            txt += "\nTraining performance time: min {:.2f}, avg {:.2f} (+/- {:.2f})".format(
                 np.min(self.time_perf_train[1:]),
-                np.median(self.time_perf_train[1:]),
+                np.mean(self.time_perf_train[1:]),
                 np.std(self.time_perf_train[1:]),
             )
 
         if self.time_perf_load:
-            logger.info(
-                ">>> Loading performance time: min %f, avg %f (+/- %f)",
+            txt += "\nLoading performance time: min {:.2f}, avg {:.2f} (+/- {:.2f})".format(
                 np.min(self.time_perf_load[1:]),
                 np.mean(self.time_perf_load[1:]),
                 np.std(self.time_perf_load[1:]),
             )
 
         if self.time_perf_forward:
-            logger.info(
-                ">>> Forward performance time: avg %f (+/- %f)",
+            txt += "\nForward performance time: avg {:.2f} (+/- {:.2f})".format(
                 np.mean(self.time_perf_forward[1:]),
                 np.std(self.time_perf_forward[1:]),
             )
 
         if self.time_perf_backward:
-            logger.info(
-                ">>> Backward performance time: avg %f (+/- %f)",
+            txt += "\nBackward performance time: avg {:.2f} (+/- {:.2f})".format(
                 np.mean(self.time_perf_backward[1:]),
                 np.std(self.time_perf_backward[1:]),
             )
 
         if self.power:
-            logger.info(">>> Peak Power during training: %f W", np.max(self.power))
+            txt += "\nPeak Power during training: {:.2f} W".format(np.max(self.power))
 
         if self.val_time:
-            logger.info(
-                ">>> Validation time: %f sec", self.val_time.total_seconds() / 60
+            txt += "\nValidation time: {:.2f} sec".format(
+                self.val_time.total_seconds() / 60
             )
+
+        txt += "======================================================"
+        with open(json_path, "w") as f:
+            f.write(txt)
+            f.write("\n\n")
