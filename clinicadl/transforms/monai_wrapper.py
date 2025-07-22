@@ -53,6 +53,9 @@ class MonaiTransformWrapper:
     def __repr__(self):
         return f"{self.__class__.__name__}(transform={repr(self.transform)}, include={self.include})"
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(transform={repr(self.transform)}, include={self.include})"
+
     def __call__(self, datapoint: DataPoint) -> DataPoint:
         """
         Applies the transform to the fields in 'include'.
