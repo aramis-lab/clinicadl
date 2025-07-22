@@ -1,4 +1,5 @@
-import numpy as np
+import re
+
 import pytest
 import torch
 import torchio as tio
@@ -34,6 +35,9 @@ def test_monai_wrapper():
     assert (out["tensor"] == 1).all()
     assert out["numeric"] == 1
     assert out["exclude"] == 0.2
+
+    pattern = r"MonaiTransformWrapper\(transform=<monai\.transforms\.post\.array\.Activations object at .*?>, include=\['label', 'image', 'array', 'tensor', 'numeric'\]\)"
+    assert re.fullmatch(pattern, repr(transform))
 
     transform = MonaiTransformWrapper(as_discrete, include=["participant"])
     with pytest.raises(
