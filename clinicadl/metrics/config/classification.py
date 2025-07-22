@@ -21,9 +21,7 @@ ROC_AUC_METRIC_METRICS_DEFAULTS = get_defaults_from(monai.metrics.rocauc.ROCAUCM
 CONFUSION_METRICS_DEFAULTS = get_defaults_from(
     monai.metrics.confusion_matrix.ConfusionMatrixMetric
 )
-# AVERAGE_PRECISION_DEFAULTS = get_defaults_from(
-#     monai.metrics.AveragePrecisionMetric
-# )
+AVERAGE_PRECISION_DEFAULTS = get_defaults_from(monai.metrics.AveragePrecisionMetric)
 
 
 class ROCAUCMetricConfig(MetricConfig):
