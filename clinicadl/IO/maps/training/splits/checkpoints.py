@@ -40,7 +40,7 @@ class CheckpointsDir(Directory):
 
     def _create_epoch(self, epoch: int):
         epoch_dir = EpochDir(parents_path=self.path, epoch=epoch)
-        epoch_dir._create()
+        epoch_dir._create(_exists_ok=True)
         self.epochs[epoch] = epoch_dir
 
     def load(self):

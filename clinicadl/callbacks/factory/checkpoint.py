@@ -15,12 +15,19 @@ class Checkpoint(Callback):
 
     Parameters
     ----------
-    patience : int
+    patience : int (default=10)
         Interval (in epochs) at which to save checkpoints. For example, if patience=5,
-        checkpoints are saved every 5 epochs.
+        checkpoints are saved every 5 epochs. The final epoch is always checkpointed.
     epochs : list of int, optional
         Specific epochs at which to save checkpoints regardless of the patience interval.
         If not provided, only the patience interval and the final epoch trigger checkpointing.
+
+    Notes
+    -----
+    .. notes::
+        - The final epoch is always saved as a checkpoint.
+        - If `patience` is greater than the total number of epochs, it will not save any intermediate checkpoints.
+        - If a specific epoch is outside the range of total epochs, it will not raise an error but will not save a checkpoint for that epoch.
 
     Examples
     --------
@@ -41,7 +48,10 @@ class Checkpoint(Callback):
 
     """
 
-    def __init__(self, patience: int, epochs: Optional[list[int]] = None):
+    def __init__(self, patience: int = 10, epochs: Optional[list[int]] = None):
+        if patience <= 0:
+            raise ValueError("Patience must be a positive integer.")
+
         self.epochs = epochs if epochs else []
         self.patience = patience
 

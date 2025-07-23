@@ -15,7 +15,16 @@ from torch.optim.lr_scheduler import (
 )
 
 from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
-from clinicadl.optim.lr_schedulers.config import *
+from clinicadl.optim.lr_schedulers.config import (
+    ConstantLRConfig,
+    ExponentialLRConfig,
+    LinearLRConfig,
+    MultiStepLRConfig,
+    OneCycleLRConfig,
+    PolynomialLRConfig,
+    ReduceLROnPlateauConfig,
+    StepLRConfig,
+)
 
 from ...resources.objects import NETWORK, OPTIMIZER, TRAINING_STATE
 
@@ -78,6 +87,8 @@ def test_scheduler_init_with_torch_optimizer(args, name, config, sched):
 def test_on_batch_end_steps_scheduler(args, name, config, sched):
     scheduler = LRScheduler(name, **args)
     scheduler.on_train_begin(TRAINING_STATE)
+
+    assert scheduler.scheduler is not None
 
     # Mock step to verify it's called
     scheduler.scheduler.step = MagicMock()
