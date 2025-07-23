@@ -22,6 +22,8 @@
     "transforms": [
         {
             "name": "RescaleIntensity",
+            "include": null,
+            "exclude": null,
             "masking_method": null,
             "out_min_max": [
                 0.0,

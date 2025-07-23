@@ -10,13 +10,22 @@ from clinicadl.transforms.config.intensity_augmentations import (
 )
 from clinicadl.transforms.config.spatial_augmentations import RandomFlipConfig
 
+X = tio.Subject(
+    image=tio.ScalarImage(tensor=torch.randn(1, 16, 17, 18)),
+    label=tio.LabelMap(tensor=torch.ones(1, 16, 17, 18)),
+)
+
+
+def test_include_exlude():
+    with pytest.raises(ValidationError):
+        RandomMotionConfig(include=["a"], exclude=["b"])
+    c = RandomMotionConfig(exclude=["b"])
+    assert c.get_object().exclude == ["b"]
+    c = RandomMotionConfig(include=["a"])
+    assert c.get_object().include == ["a"]
+
 
 def test_one_of():
-    x = tio.Subject(
-        image=tio.ScalarImage(tensor=torch.randn(1, 16, 17, 18)),
-        label=tio.LabelMap(tensor=torch.ones(1, 16, 17, 18)),
-    )
-
     one_of = OneOfConfig(
         transforms=[
             RandomMotionConfig(degrees=1),
@@ -39,7 +48,7 @@ def test_one_of():
         tio.Compose,
     ]
     assert list(transform_dict.values()) == [0.8, 0.1, 0.1]
-    transform(x)
+    transform(X)
 
     one_of = OneOfConfig(
         transforms=[

@@ -475,6 +475,8 @@ def test_convert_to_tensors():
     assert conversion_info["transforms"] == [
         {
             "name": "Crop",
+            "exclude": None,
+            "include": None,
             "cropping": [0, 1, 0, 1, 0, 1],
         },
         "Custom transform passed by the user: 'Clamp'",

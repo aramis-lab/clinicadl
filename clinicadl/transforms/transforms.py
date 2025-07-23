@@ -139,7 +139,7 @@ class Transforms(ClinicaDLConfig):
         d = []
         for transform in transforms:
             if isinstance(transform, TransformConfig):
-                d.append(transform.model_dump())
+                d.append(transform.to_dict())
             else:
                 d.append(CUSTOM_TRANSFORM + ": " + f"'{type(transform).__name__}'")
 

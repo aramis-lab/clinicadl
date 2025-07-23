@@ -169,7 +169,7 @@ class Patch(Extraction):
         -----
         The number of patches is determined by the image size, the patch size, and the stride.
         """
-        return self._get_patches(image).shape[0]
+        return self._get_patches(image).shape[1]
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
@@ -184,7 +184,7 @@ class Patch(Extraction):
         """
         patches_tensor = self._get_patches(image_tensor)
         try:
-            return patches_tensor[sample_index].unsqueeze(0)
+            return patches_tensor[:, sample_index]
         except IndexError as exc:
             raise IndexError(
                 f"'sample_index' {sample_index} is out of range as there are only "
@@ -202,8 +202,8 @@ class Patch(Extraction):
             will be ``(num_patches, patch_size[0], patch_size[1], patch_size[2])``, where ``num_patches`` is
             determined by the image size, the patch size, and the stride.
         """
-        spatial_shape = image_tensor.shape[1:]
-        if self.patch_size > spatial_shape:
+        n_channels, *spatial_shape = image_tensor.shape
+        if self.patch_size > tuple(spatial_shape):
             raise IndexError(
                 "The patch size can't be greater than the size of the image. "
                 f"Got image with spatial shape {tuple(spatial_shape)}, but patch size is {self.patch_size}."
@@ -217,5 +217,5 @@ class Patch(Extraction):
         )
 
         return patches_tensor.view(
-            -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
+            n_channels, -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
         )

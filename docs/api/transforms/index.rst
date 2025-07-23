@@ -79,6 +79,22 @@ Augmentation
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
 
+Post-processing
+^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :nosignatures:
+   :template: autosummary/config_class.rst
+
+   ActivationsConfig
+   AsDiscreteConfig
+   KeepLargestConnectedComponentConfig
+   DistanceTransformEDTConfig
+   RemoveSmallObjectsConfig
+   LabelFilterConfig
+   FillHolesConfig
+   SobelGradientsConfig
+
 .. toctree::
    :hidden:
 

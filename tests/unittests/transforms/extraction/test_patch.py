@@ -23,7 +23,7 @@ def test_extract_method():
 
 
 def test_num_samples_per_image():
-    img = torch.randn(1, 5, 7, 3)
+    img = torch.randn(2, 5, 7, 3)
 
     patch = Patch(patch_size=3, stride=1)
     assert patch.num_samples_per_image(img) == 3 * 5 * 1
@@ -39,8 +39,8 @@ def test_extract_sample():
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 7, 3)
-    mask_1 = torch.ones(1, 5, 7, 3)
-    label = torch.ones(1, 5, 7, 3)
+    mask_1 = torch.randint(0, 2, (1, 5, 7, 3))
+    label = torch.randint(0, 2, (3, 5, 7, 3))
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),

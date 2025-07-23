@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import (
+    ActivationsConfig,
     PadConfig,
     RescaleIntensityConfig,
     ResizeConfig,
@@ -53,8 +54,13 @@ def test_get_transforms():
             tio.Crop(1),
             RescaleIntensityConfig(),
         ],
-        sample_transforms=[PadConfig(padding=1)],
-        augmentations=[tio.Mask(masking_method="mask_1")],
+        sample_transforms=[
+            PadConfig(padding=1),
+            ActivationsConfig(softmax=True, include=["image"]),
+        ],
+        augmentations=[
+            tio.Mask(masking_method="mask_1"),
+        ],
     )
     (
         image_transforms,
@@ -82,6 +88,7 @@ def test_get_transforms():
     assert tio_sample.image.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.label.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.mask_1.tensor.shape == (1, 6, 6, 6)
+    assert (tio_sample.image.tensor == 1).all()
 
     tio_sample = augmentations(tio_sample)
     assert (tio_sample.image.tensor[:, :2, :2, :2] == 0.0).all()
@@ -118,11 +125,15 @@ def test_serialization():
     d = transforms.to_dict()
     resize_ordered_dict = OrderedDict(
         name="Resize",
+        include=None,
+        exclude=None,
         target_shape=3,
         image_interpolation="linear",
         label_interpolation="nearest",
     )
-    to_canonical_order_dict = OrderedDict(name="ToCanonical")
+    to_canonical_order_dict = OrderedDict(
+        name="ToCanonical", include=None, exclude=None
+    )
     assert d["image_transforms"] == [
         "Custom transform passed by the user: 'Resize'",
         resize_ordered_dict,

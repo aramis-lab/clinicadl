@@ -7,8 +7,8 @@
 
 .. currentmodule:: clinicadl.transforms.config
 
-Preprocessing
-^^^^^^^^^^^^^
+Pre-processing
+^^^^^^^^^^^^^^
 
 .. autosummary::
    :toctree: ../generated/
@@ -50,3 +50,20 @@ Augmentation
    RandomAffineConfig
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
+
+Post-processing
+^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: config_class/class.rst
+
+   ActivationsConfig
+   AsDiscreteConfig
+   KeepLargestConnectedComponentConfig
+   DistanceTransformEDTConfig
+   RemoveSmallObjectsConfig
+   LabelFilterConfig
+   FillHolesConfig
+   SobelGradientsConfig

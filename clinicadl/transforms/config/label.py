@@ -5,7 +5,7 @@ from pydantic import field_validator
 
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import Bounds, MaskingMethodConfig, TransformConfig
+from .base import Bounds, MaskingMethodConfig, TorchioTransformConfig
 from .enum import AnatomicalLabel
 
 __all__ = ["RemapLabelsConfig", "OneHotConfig"]
@@ -14,7 +14,7 @@ REMAP_LABELS_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RemapLabels)
 ONE_HOT_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.OneHot)
 
 
-class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
+class RemapLabelsConfig(TorchioTransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.RemapLabels`.
     """
@@ -25,7 +25,7 @@ class RemapLabelsConfig(TransformConfig, MaskingMethodConfig):
     ] = REMAP_LABELS_TORCHIO_DEFAULTS["masking_method"]
 
 
-class OneHotConfig(TransformConfig):
+class OneHotConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneHot`.
     """

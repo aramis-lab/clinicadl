@@ -1,15 +1,17 @@
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
-import torchio as tio
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
     field_validator,
     model_validator,
 )
+from torchio import Compose, transforms
+from torchio import Transform as TorchioTransform
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
+from ..types import Transform
 from .enum import AnatomicalLabel
 
 __all__ = [
@@ -21,22 +23,36 @@ __all__ = [
 class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
 
-    def get_object(self) -> tio.Transform:
+
+class TorchioTransformConfig(TransformConfig):
+    """Base config class for the transforms from TorchIO."""
+
+    include: Optional[Sequence[str]] = None
+    exclude: Optional[Sequence[str]] = None
+
+    def get_object(self) -> Transform:
         """
         Returns the transform associated to this configuration,
         parametrized with the parameters passed by the user.
 
         Returns
         -------
-        tio.Transform:
-            The TorchIO transform.
+        Transform:
+            The associated transform.
         """
         return super().get_object()
 
+    @model_validator(mode="after")
+    def check_include_exclude(self):
+        """Checks that 'include' and 'exclude' are not both specified."""
+        if self.include and self.exclude:
+            raise ValueError("'include' and 'exclude' cannot be both specified.")
+        return self
+
     @classmethod
-    def _get_class(cls) -> type[tio.Transform]:
+    def _get_class(cls) -> type[TorchioTransform]:
         """Returns the transform associated to this config class."""
-        return getattr(tio.transforms, cls._get_name())
+        return getattr(transforms, cls._get_name())
 
     @staticmethod
     def _is_couple_sorted(tup: Tuple[Any, Any], field_name: str) -> None:
@@ -75,7 +91,7 @@ class TransformConfig(ObjectConfig):
             cls._is_six_tuple_sorted(tup, field_name)
 
 
-class OneOfConfig(TransformConfig):
+class OneOfConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneOf`.
     TODO: Explain why 2 lists are used for transforms and probabilities instead of a dictionary
@@ -84,15 +100,15 @@ class OneOfConfig(TransformConfig):
     transforms: List[Union[TransformConfig, List[TransformConfig]]]
     probabilities: Optional[List[NonNegativeFloat]] = None
 
-    def get_object(self) -> tio.Transform:
+    def get_object(self) -> Transform:
         """
         Returns the transform associated to this configuration,
         parametrized with the parameters passed by the user.
 
         Returns
         -------
-        tio.Transform:
-            The TorchIO transform.
+        Transform:
+            The associated transform.
         """
         config_dict = {}
         for transform, proba in zip(self.transforms, self.probabilities):
@@ -100,7 +116,7 @@ class OneOfConfig(TransformConfig):
                 config_dict[transform.get_object()] = proba
             else:
                 transform: List[TransformConfig]
-                config_dict[tio.Compose([t.get_object() for t in transform])] = proba
+                config_dict[Compose([t.get_object() for t in transform])] = proba
 
         one_of = self._get_class()(transforms=config_dict)
         return one_of

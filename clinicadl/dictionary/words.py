@@ -29,6 +29,7 @@ FOLD = "fold"
 GROUPS = "groups"
 ID = "id"
 IMAGE = "image"
+INCLUDE = "include"
 INFORMATION = "information"
 KFOLD = "k" + FOLD
 LABEL = "label"
