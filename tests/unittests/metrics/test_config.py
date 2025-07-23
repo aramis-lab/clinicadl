@@ -30,6 +30,7 @@ from clinicadl.metrics.config.segmentation import (
     SurfaceDiceMetricConfig,
     SurfaceDistanceMetricConfig,
 )
+from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
 
 BAD_INPUTS = [
     ({"average": "abc"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
@@ -346,7 +347,8 @@ def test_get_object(config, expected_class):
             except ValidationError:
                 continue
     transform_from_config = c.get_object()
-    assert isinstance(transform_from_config, expected_class)
+    assert isinstance(transform_from_config, MonaiMetricWrapper)
+    assert isinstance(transform_from_config.metric, expected_class)
 
 
 @pytest.mark.parametrize(
