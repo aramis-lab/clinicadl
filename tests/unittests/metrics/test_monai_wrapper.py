@@ -4,7 +4,18 @@ from monai.metrics import (
     AveragePrecisionMetric,
     ConfusionMatrixMetric,
     DiceMetric,
+    GeneralizedDiceScore,
+    HausdorffDistanceMetric,
+    MAEMetric,
+    MeanIoU,
     MSEMetric,
+    MultiScaleSSIMMetric,
+    PSNRMetric,
+    RMSEMetric,
+    ROCAUCMetric,
+    SSIMMetric,
+    SurfaceDiceMetric,
+    SurfaceDistanceMetric,
 )
 
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
@@ -21,6 +32,15 @@ from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
             float("nan"),
             float("nan"),
             0.6667,
+        ),
+        (
+            ROCAUCMetric(),
+            torch.tensor([1]),
+            torch.tensor([0]),
+            torch.tensor([0.6]),
+            float("nan"),
+            float("nan"),
+            0.5,
         ),
         (
             ConfusionMatrixMetric(metric_name="accuracy"),
@@ -41,6 +61,33 @@ from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
             0.3333,
         ),
         (
+            MAEMetric(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2).float(),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2).float(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2).float(),
+            0.0000,
+            1.0000,
+            0.3333,
+        ),
+        (
+            RMSEMetric(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            0.0000,
+            1.0000,
+            0.3333,
+        ),
+        (
+            PSNRMetric(max_val=1),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0.1, 0]).repeat(1, 1, 2, 2, 2),
+            3.9255,
+            2.9671,
+            3.6060,
+        ),
+        (
             DiceMetric(),
             torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
             torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
@@ -49,6 +96,69 @@ from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
             0.0000,
             0.6667,
         ),
+        (
+            GeneralizedDiceScore(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            1.0000,
+            0.0000,
+            0.6667,
+        ),
+        (
+            SurfaceDiceMetric(class_thresholds=[0.1]),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            1.0000,
+            0.0000,
+            0.6667,
+        ),
+        (
+            MeanIoU(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            1.0000,
+            0.0000,
+            0.6667,
+        ),
+        (
+            HausdorffDistanceMetric(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            0.0000,
+            1.0000,
+            0.3333,
+        ),
+        (
+            SurfaceDistanceMetric(),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            0.0000,
+            1.0000,
+            0.3333,
+        ),
+        (
+            SSIMMetric(spatial_dims=3, win_size=1),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            1.0000,
+            0.0000,
+            0.6667,
+        ),
+        (
+            MultiScaleSSIMMetric(spatial_dims=3, kernel_size=1, weights=(0.5,)),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([0, 1]).repeat(1, 1, 2, 2, 2),
+            torch.tensor([1, 0]).repeat(1, 1, 2, 2, 2),
+            1.0000,
+            0.0100,
+            0.6700,
+        ),
     ],
 )
 def test_monai_metric_wrapper(
@@ -56,7 +166,11 @@ def test_monai_metric_wrapper(
 ):
     metric = MonaiMetricWrapper(monai_metric)
     torch.testing.assert_close(
-        metric(pred, y_1), torch.tensor([intermediate_1]), equal_nan=True
+        metric(pred, y_1),
+        torch.tensor([intermediate_1]),
+        equal_nan=True,
+        rtol=1e-4,
+        atol=1e-4,
     )
     torch.testing.assert_close(
         metric(
@@ -65,5 +179,7 @@ def test_monai_metric_wrapper(
         ),
         torch.tensor([intermediate_1, intermediate_2]),
         equal_nan=True,
+        rtol=1e-4,
+        atol=1e-4,
     )
     torch.testing.assert_close(metric.aggregate(), final, rtol=1e-4, atol=1e-4)
