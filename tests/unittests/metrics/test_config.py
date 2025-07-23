@@ -294,7 +294,8 @@ def test_good_inputs(args: dict, configs):
 def test_confusion_matrix_metric():
     for metric in ConfusionMatrixMetricName:
         c = ConfusionMatrixMetricConfig(metric_name=metric)
-        assert isinstance(c.get_object(), ConfusionMatrixMetric)
+        assert isinstance(c.get_object(), MonaiMetricWrapper)
+        assert isinstance(c.get_object().metric, ConfusionMatrixMetric)
 
 
 def test_check_spatial_dim():
@@ -311,7 +312,8 @@ def test_check_loss_metric():
     assert config.reduction == "sum"
     c = get_metric_config("LossMetric", loss_fn=lambda x: x, reduction="mean")
     assert c.name == "LossMetric"
-    assert isinstance(c.get_object(), metrics.LossMetric)
+    assert isinstance(c.get_object(), MonaiMetricWrapper)
+    assert isinstance(c.get_object().metric, metrics.LossMetric)
 
 
 MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 2}

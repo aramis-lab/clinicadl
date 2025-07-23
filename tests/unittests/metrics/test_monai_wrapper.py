@@ -1,3 +1,5 @@
+import re
+
 import pytest
 import torch
 from monai.metrics import (
@@ -183,3 +185,9 @@ def test_monai_metric_wrapper(
         atol=1e-4,
     )
     torch.testing.assert_close(metric.aggregate(), final, rtol=1e-4, atol=1e-4)
+
+
+def test_repr():
+    metric = MonaiMetricWrapper(AveragePrecisionMetric())
+    pattern = r"MonaiMetricWrapper\(metric=<monai\.metrics\.average_precision\.AveragePrecisionMetric object at .*?>\)"
+    assert re.fullmatch(pattern, repr(metric))
