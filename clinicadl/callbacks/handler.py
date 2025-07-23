@@ -11,6 +11,7 @@ from .factory import *
 from .factory.base import Callback
 from .factory.checkpoint_saver import _CheckpointSaver
 from .factory.logger import _Logger
+from .factory.monitor import _Monitor
 from .factory.training_loss import _TrainingLoss
 
 LOSS = "loss"
@@ -18,6 +19,7 @@ LOSS = "loss"
 PREFERRED_ORDER = [
     _TrainingLoss.__name__,
     LRScheduler.__name__,
+    _Monitor.__name__,
     _CheckpointSaver.__name__,
     Checkpoint.__name__,
     ModelSelection.__name__,
@@ -120,6 +122,7 @@ class _CallbacksHandler:
         Add default callbacks if they are not already provided.
         """
         defaults = {
+            _Monitor.__name__: _Monitor(),
             _TrainingLoss.__name__: _TrainingLoss(),
             _Logger.__name__: _Logger(),
             _CheckpointSaver.__name__: _CheckpointSaver(),

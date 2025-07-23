@@ -8,9 +8,9 @@ from clinicadl.dictionary.words import (
     CAPS_DATASET,
     DATALOADER,
     METRICS,
+    PERFORMANCE,
     SPLIT,
     SUMMARY,
-    TIME,
     TORCH,
     VALIDATION,
 )
@@ -86,5 +86,5 @@ class TrainSplitDir(Directory):
         return self.path / (VALIDATION + "_" + METRICS + TSV)
 
     @property
-    def time_txt(self) -> Path:
-        return self.path / (TIME + TXT)
+    def performance_txt(self) -> Path:
+        return self.path / (PERFORMANCE + TXT)
