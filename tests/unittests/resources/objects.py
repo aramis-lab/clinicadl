@@ -112,3 +112,14 @@ CALLBACKS = [
     LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]
+
+TRAINING_STATE = _TrainingState(
+    maps=MAPS,
+    metrics=METRICS_HANDLER,
+    model=MODEL,
+    optim=OPTIM,
+    comp=COMP,
+)
+SPLIT.build_train_loader(dataloader_config=DATALOADER)
+SPLIT.build_val_loader(dataloader_config=DATALOADER)
+TRAINING_STATE.reset(SPLIT)
