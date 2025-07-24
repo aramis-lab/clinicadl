@@ -138,7 +138,7 @@ class TensorConversion:
         self.caps_dataset = caps_dataset
         self.caps_reader = caps_dataset.caps_reader
         self.preprocessing = caps_dataset.preprocessing
-        self.transform = caps_dataset.image_transform
+        self.transforms = caps_dataset.transforms
         self.json_directory = self.caps_reader.tensor_conversion_json_dir
 
         self.completed = False
@@ -217,7 +217,7 @@ class TensorConversion:
             individual_masks=individual_masks,
             also=self._also if self._also else {},
             common_masks=self._masks_converted,
-            transforms=self.caps_dataset.transforms.image_transforms
+            transforms=self.transforms.image_transforms
             if self._save_transforms
             else [],
             spacing=self._output_spacing,
@@ -407,7 +407,7 @@ class TensorConversion:
         """
         images = self._to_canonical(images)
         if self._save_transforms:
-            return self.transform(images)
+            return self.transforms.apply_image_transforms(images)
         else:
             return images
 
@@ -719,7 +719,7 @@ class TensorConversion:
                     "If you are sure that the transforms match, set 'check_transforms' to False."
                 )
 
-        caps_image_transforms = self.caps_dataset.transforms.image_transforms
+        caps_image_transforms = self.transforms.image_transforms
         for transform in caps_image_transforms:
             if not isinstance(transform, TransformConfig):
                 raise ClinicaDLTensorConversionError(

@@ -24,8 +24,7 @@ from clinicadl.metrics.handler import LossMetricConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
-from clinicadl.transforms.output_transforms import OutputTransforms
-from clinicadl.transforms.transforms import Transforms
+from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.tsvtools.utils import tsv_to_df
 from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLDataLeakageError

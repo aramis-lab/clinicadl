@@ -71,18 +71,28 @@ def test_good_caps_dataset():
         columns=columns,
         masks=masks,
     )
-    assert isinstance(caps_dataset.image_transform, tio.Compose)
-    assert len(caps_dataset.image_transform.transforms) == 1
-    assert isinstance(caps_dataset.image_transform.transforms[0], tio.RescaleIntensity)
+    assert isinstance(caps_dataset.transforms._image_transforms_processed, tio.Compose)
+    assert len(caps_dataset.transforms._image_transforms_processed.transforms) == 1
+    assert isinstance(
+        caps_dataset.transforms._image_transforms_processed.transforms[0],
+        tio.RescaleIntensity,
+    )
 
-    assert isinstance(caps_dataset.sample_transform, tio.Compose)
-    assert len(caps_dataset.sample_transform.transforms) == 2
-    assert isinstance(caps_dataset.sample_transform.transforms[0], tio.Pad)
-    assert isinstance(caps_dataset.sample_transform.transforms[1], tio.RemapLabels)
+    assert isinstance(caps_dataset.transforms._sample_transforms_processed, tio.Compose)
+    assert len(caps_dataset.transforms._sample_transforms_processed.transforms) == 2
+    assert isinstance(
+        caps_dataset.transforms._sample_transforms_processed.transforms[0], tio.Pad
+    )
+    assert isinstance(
+        caps_dataset.transforms._sample_transforms_processed.transforms[1],
+        tio.RemapLabels,
+    )
 
-    assert isinstance(caps_dataset.augmentation, tio.Compose)
-    assert len(caps_dataset.augmentation.transforms) == 1
-    assert isinstance(caps_dataset.augmentation.transforms[0], tio.Crop)
+    assert isinstance(caps_dataset.transforms._augmentations_processed, tio.Compose)
+    assert len(caps_dataset.transforms._augmentations_processed.transforms) == 1
+    assert isinstance(
+        caps_dataset.transforms._augmentations_processed.transforms[0], tio.Crop
+    )
 
     assert (
         (caps_dataset.df.drop(columns="diagnosis") == data.drop(columns="diagnosis"))

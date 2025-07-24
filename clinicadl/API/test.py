@@ -26,9 +26,8 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import KFold, make_kfold, make_split
 from clinicadl.train.trainer import Trainer
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.output_transforms import OutputTransforms
+from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
 
 caps_directory = Path(
