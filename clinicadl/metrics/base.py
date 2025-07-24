@@ -31,6 +31,9 @@ class Metric(CumulativeIterationMetric, ABC):
 
     - use "min" when a lower metric value indicates better performance.
     - use "max" when a higher metric value indicates better performance.
+
+    Finally, ``__init__`` can be overwrite, but don't forget to call
+    ``super().__init__()`` inside.
     """
 
     _optimum: Literal["min", "max"]
