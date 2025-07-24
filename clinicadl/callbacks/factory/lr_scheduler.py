@@ -7,7 +7,7 @@ from clinicadl.optim.lr_schedulers.config.base import LRSchedulerConfig
 from clinicadl.optim.lr_schedulers.config.enum import ImplementedLRScheduler
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
 
-from ..base import Callback
+from .base import Callback
 
 LRSchedulerType = Union[
     LRSchedulerConfig,
@@ -30,8 +30,8 @@ class LRScheduler(Callback):
     - A `LRSchedulerConfig` object with full custom configuration (**recommended for reproducibility**)
     - A `torch.optim.lr_scheduler.LRScheduler` instance directly
 
-    It allows flexible definition and initialization of a scheduler at the beginning
-    of training, and steps it after every batch to adjust the learning rate dynamically.
+    It allows flexible definition and initialization of a scheduler at the beginning of training,
+    and steps it after every batch to adjust the learning rate dynamically.
 
     Parameters
     ----------
@@ -50,15 +50,24 @@ class LRScheduler(Callback):
 
     Example
     -------
+    Using a predefined name:
+
     .. code-block:: python
+
         from clinicadl.callbacks import LRScheduler
         scheduler = LRScheduler("LinearLR", start_factor=0.1, total_iters=10)
 
-        # or using a config object
+    Using a config object:
+
+    .. code-block:: python
+
         from clinicadl.optim.lr_schedulers.config import LinearLRConfig
         scheduler = LRScheduler(LinearLRConfig(start_factor=0.1, total_iters=10))
 
-        # or directly with a PyTorch scheduler
+    Using a PyTorch scheduler directly:
+
+    .. code-block:: python
+
         import torch.optim as optim
         optimizer = optim.Adam(model.parameters(), lr=0.001)
         scheduler = LRScheduler(torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=10))

@@ -9,7 +9,7 @@ import pandas as pd
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.handler import Metrics
 
-from ..base import Callback
+from .base import Callback
 
 logger = getLogger("clinicadl.early_stopping")
 
@@ -171,46 +171,61 @@ class EarlyStopping(Metrics, Callback):
     """
     Early stopping callback monitoring one or multiple metrics.
 
+    This callback stops training early if monitored metric(s) do not improve for a
+    specified number of epochs. It can monitor multiple metrics simultaneously and
+    supports individual configurations per metric.
+
     Parameters
     ----------
-    metrics : str or list[str]
-        Metrics to monitor.
-    patience : int or list[int], optional
-        Number of epochs with no improvement after which training will be stopped.
-        If a single int is provided, it is applied to all metrics.
-    min_delta : float or list[float], optional (default=0.0)
-        Minimum change in monitored metric to qualify as improvement.
-    mode : Mode or list[Mode], optional (default=Mode.MIN)
-        Whether to minimize or maximize the metric.
-    check_finite : bool or list[bool], optional (default=True)
-        Whether to stop if metric is NaN or infinite.
-    upper_bound : float or list[float], optional
-        Upper bound threshold for the metric.
-    lower_bound : float or list[float], optional
-        Lower bound threshold for the metric.
+        metrics : str or list of str
+            Metric(s) to monitor.
+        patience : int or list of int, optional
+            Number of epochs with no improvement after which training will be stopped.
+            If a single int is provided, it is applied to all metrics.
+        min_delta : float or list of float, optional (default=0.0)
+            Minimum change in monitored metric to qualify as an improvement.
+        mode : Mode or list of Mode, optional (default=Mode.MIN)
+            Whether to minimize or maximize the metric (e.g., loss vs. accuracy).
+        check_finite : bool or list of bool, optional (default=True)
+            Whether to stop if the metric becomes NaN or infinite.
+        upper_bound : float or list of float, optional
+            Optional upper threshold that will trigger stopping if exceeded.
+        lower_bound : float or list of float, optional
+            Optional lower threshold that will trigger stopping if dropped below.
 
-    .. note:
-        Behavior regarding EarlyStopping and ModelSelection interaction:
 
-        - If neither EarlyStopping nor ModelSelection are used:
-            - The final model and the model corresponding to the best loss are saved,
-            but no early stopping is applied.
+    .. note::
 
-        - If EarlyStopping is used without ModelSelection:
-            - Training stops when all monitored metrics stop improving.
-            - For each monitored metric, a ModelSelection object is created to track the best model.
+        Behavior regarding interaction with ``ModelSelection``:
 
-        - If ModelSelection is used without EarlyStopping:
-            - Model selection (saving best models) proceeds as expected without early stopping.
+        - If neither ``EarlyStopping`` nor ``ModelSelection`` are used:
+          the final model and the best-loss model are saved, but no early stopping is applied.
+        - If ``EarlyStopping`` is used without ``ModelSelection``:
+          training stops when all monitored metrics stop improving.
+          For each metric, a ``ModelSelection`` object is automatically created.
+        - If ``ModelSelection`` is used without ``EarlyStopping``:
+          best models are saved based on monitored metrics, but training completes all epochs.
+        - If both are used:
+          ``EarlyStopping`` metrics are automatically tracked by ``ModelSelection``,
+          ensuring best-performing models are saved.
 
-        - If both EarlyStopping and ModelSelection are used:
-            - Metrics used for EarlyStopping are always passed to ModelSelection to track best models.
-            - EarlyStopping triggers stopping when all these metrics stop improving.
+    .. warning::
 
-    .. warning:
-        Multiple EarlyStopping callbacks can be registered simultaneously. In such cases,
-        training stops as soon as the first EarlyStopping callback's stopping criterion is met.
+        Multiple ``EarlyStopping`` callbacks can be registered simultaneously.
+        In such cases, training stops as soon as *any* of them triggers its stopping criterion.
 
+    Examples
+    --------
+    .. code-block:: python
+
+        from clinicadl.callbacks import EarlyStopping
+
+        early_stopping = EarlyStopping(metrics="mae", patience=5)
+
+        trainer = Trainer(
+            maps_path="maps",
+            callbacks=[early_stopping]
+        )
     """
 
     def __init__(

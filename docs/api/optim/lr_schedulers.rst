@@ -4,6 +4,7 @@
 ===========================================
 
 .. automodule:: clinicadl.optim.lr_schedulers.config
+   :no-index:
 
 .. currentmodule:: clinicadl.optim.lr_schedulers.config
 

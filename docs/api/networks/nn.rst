@@ -4,6 +4,7 @@
 ============================
 
 .. automodule:: clinicadl.networks.nn
+   :no-index:
 
 .. currentmodule:: clinicadl.networks.nn
 

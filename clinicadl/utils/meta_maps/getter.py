@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.maps.maps_manager import MapsManager
+from clinicadl.IO.maps.maps_manager import MapsManager
 from clinicadl.metrics.old_metrics.utils import find_selection_metrics, get_metrics
 from clinicadl.split.split_utils import find_splits
 from clinicadl.utils.exceptions import MAPSError

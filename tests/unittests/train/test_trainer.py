@@ -1,5 +1,5 @@
-from clinicadl.callbacks.handler import CallbacksHandler
-from clinicadl.maps.maps import Maps
+from clinicadl.callbacks.handler import _CallbacksHandler
+from clinicadl.IO.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
@@ -63,7 +63,7 @@ def test_training_from_json():
     optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
     assert_equal(optim_config, trainer.config.optim)
 
-    callbacks = CallbacksHandler.from_json(maps.training.callbacks_json)
+    callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
     metrics = MetricsHandler.from_json(maps.training.metrics_json)
 
     new_trainer = Trainer(

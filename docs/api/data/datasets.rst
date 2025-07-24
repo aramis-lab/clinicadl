@@ -4,6 +4,7 @@
 ==============================
 
 .. automodule:: clinicadl.data.datasets
+    :no-index:
 
 .. currentmodule:: clinicadl.data.datasets
 

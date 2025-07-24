@@ -4,6 +4,7 @@
 ================================
 
 .. automodule:: clinicadl.data.structures
+    :no-index:
 
 .. currentmodule:: clinicadl.data.structures
 

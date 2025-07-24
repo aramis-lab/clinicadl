@@ -58,6 +58,7 @@ Preprocessing
    RemapLabelsConfig
    OneHotConfig
 
+
 Augmentation
 ^^^^^^^^^^^^
 
@@ -78,6 +79,7 @@ Augmentation
    RandomAffineConfig
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
+
 
 Post-processing
 ^^^^^^^^^^^^^^^

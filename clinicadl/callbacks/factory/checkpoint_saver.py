@@ -4,7 +4,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL, OPTIMIZER
 
-from ..base import Callback
+from .base import Callback
 
 
 class _CheckpointSaver(Callback):
@@ -17,8 +17,6 @@ class _CheckpointSaver(Callback):
     These files are stored in `.pt.tar` format, in the maps, in a temporary directory associated
     with the current training split.
 
-    Notes
-    -----
     .. note:
         - This callback is added automatically at the beginning of the training.
         - Used internally for restoring the latest state when training is resumed.

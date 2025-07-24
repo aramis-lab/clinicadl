@@ -10,7 +10,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from ..base import Callback
+from .base import Callback
 
 
 class MLflow(Callback):
@@ -30,11 +30,10 @@ class MLflow(Callback):
 
         pip install mlflow
 
-    Notes
-    -----
-    - MLflow supports local file logging, remote tracking servers, and integration
-      with various cloud platforms.
-    - This callback is useful for reproducibility and large-scale experiment tracking.
+    .. note::
+        - MLflow supports local file logging, remote tracking servers, and integration
+          with various cloud platforms.
+        - This callback is useful for reproducibility and large-scale experiment tracking.
 
     Examples
     --------
@@ -43,7 +42,11 @@ class MLflow(Callback):
         from clinicadl.callbacks import MLflow
 
         mlflow_callback = MLflow()
-        handler = CallbacksHandler(callbacks=[mlflow_callback])
+        handler = _CallbacksHandler(callbacks=[mlflow_callback])
+
+
+    .. seealso::
+        - `MLflow documentation <https://mlflow.org/>`_.
     """
 
     def __init__(

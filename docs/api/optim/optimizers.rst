@@ -4,6 +4,7 @@
 ========================================
 
 .. automodule:: clinicadl.optim.optimizers.config
+   :no-index:
 
 .. currentmodule:: clinicadl.optim.optimizers.config
 

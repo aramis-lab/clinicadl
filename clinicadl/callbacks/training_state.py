@@ -2,7 +2,7 @@ from typing import Optional
 
 from torchsummary import summary
 
-from clinicadl.maps.maps import Maps
+from clinicadl.IO.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
