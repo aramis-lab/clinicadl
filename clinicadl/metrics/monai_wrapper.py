@@ -1,8 +1,11 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Optional
 
 import torch
 from monai.metrics import CumulativeIterationMetric
+
+from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.structures import DataPoint
 
 from .base import Metric, TensorOrList
 
@@ -10,17 +13,39 @@ from .base import Metric, TensorOrList
 class MonaiMetricWrapper(Metric):
     """
     Converts a metric from ``MONAI`` to a metric compatible with ``ClinicaDL``.
+
+    Parameters
+    ----------
+    metric : CumulativeIterationMetric
+        The metric to wrap.
+    pred_key : str
+        The key corresponding to the prediction in the input :py:class:`~clinicadl.data.structures.DataPoint`.
+        The value associated to the key must be a :py:class:`torchio.Image`, a :py:class:`torch.torch.Tensor`,
+        a :py:class:`numpy.ndarray`, or a numeric value.
+    label_key : Optional[str] = None
+        The key corresponding to the ground truth label in the input :py:class:`~clinicadl.data.structures.DataPoint`.
+        The value associated to the key must be a :py:class:`torchio.Image`, a :py:class:`torch.torch.Tensor`,
+        a :py:class:`numpy.ndarray`, or a numeric value.
+
+        Leave to ``None`` if no ground truth is used to compute the metric.
     """
 
-    def __init__(self, metric: CumulativeIterationMetric) -> None:
+    def __init__(
+        self,
+        metric: CumulativeIterationMetric,
+        pred_key: str,
+        label_key: Optional[str] = None,
+    ) -> None:
         super().__init__()
+        self.pred_key = pred_key
+        self.label_key = label_key
         self.metric = metric
         self.metric.reset()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(metric={repr(self.metric)})"
+        return f"{self.__class__.__name__}(metric={repr(self.metric)}, pred_key='{self.pred_key}', label_key='{self.label_key}')"
 
-    def _aggregate(self, data: TensorOrList, **kwargs: Any) -> float:
+    def _aggregate(self, data: TensorOrList) -> float:
         """
         See :py:meth:`clinicadl.metrics.Metric._aggregate`.
 
@@ -45,7 +70,7 @@ class MonaiMetricWrapper(Metric):
         ]
 
         # now we can call 'aggregate' to compute the metric. self.metric._synced = True, so it won't do synchronization
-        res = self.metric.aggregate(**kwargs)
+        res = self.metric.aggregate()
 
         # make sure to return a float
         if isinstance(res, Sequence) and len(res) == 1:
@@ -58,10 +83,16 @@ class MonaiMetricWrapper(Metric):
 
         return res
 
-    def _accumulate(
-        self, y_pred: torch.Tensor, y: torch.Tensor | None = None, **kwargs: Any
-    ) -> TensorOrList:
+    def _accumulate(self, batch: list[DataPoint]) -> TensorOrList:
         """
         See :py:meth:`clinicadl.metrics.Metric._accumulate`.
         """
-        return self.metric._compute_tensor(y_pred=y_pred, y=y, **kwargs)
+        batch = SimpleBatch(batch)
+
+        y_pred = batch.get_field(self.pred_key)
+        if self.label_key:
+            y = batch.get_field(self.label_key)
+        else:
+            y = None
+
+        return self.metric._compute_tensor(y_pred=y_pred, y=y)

@@ -1,7 +1,7 @@
 """
 We chose to overwrite MONAI's CumulativeIterationMetric because here
-we wanted to be able to compute the metric for each element of the batch
-individually.
+we wanted to work with ``DataPoints``, and to be able to compute the metric
+for each element of the batch individually.
 
 Besides, we think our implementation facilitates the creation fo custom
 transforms by the user.
@@ -9,10 +9,12 @@ transforms by the user.
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Union
 
 import torch
 from monai.metrics.metric import CumulativeIterationMetric
+
+from clinicadl.data.structures import DataPoint
 
 TensorOrList = Union[torch.Tensor, Sequence[torch.Tensor]]
 
@@ -25,7 +27,7 @@ class Metric(CumulativeIterationMetric, ABC):
     """
 
     @abstractmethod
-    def _aggregate(self, data: TensorOrList, **kwargs: Any) -> float:
+    def _aggregate(self, data: TensorOrList) -> float:
         """
         Aggregation logic.
 
@@ -44,21 +46,18 @@ class Metric(CumulativeIterationMetric, ABC):
         """
 
     @abstractmethod
-    def _accumulate(
-        self, y_pred: torch.Tensor, y: torch.Tensor | None = None, **kwargs: Any
-    ) -> TensorOrList:
+    def _accumulate(self, batch: list[DataPoint]) -> TensorOrList:
         """
         To accumulate data useful for the final metric computation.
 
         For example, for segmentation, to compute the
-        accuracy, this function would just return the confusion matrix.
+        accuracy, this function would just return the confusion matrix
+        for each element of the batch.
 
         Parameters
         ----------
-        y_pred : torch.Tensor
-            The predictions, as a "batch-first" tensor.
-        y : torch.Tensor | None, default=None
-            The potential ground truths, as a "batch-first" tensor.
+        batch : list[DataPoint]
+            The batch of :py:class:`~clinicadl.data.structures.DataPoint`.
 
         Returns
         -------
@@ -67,44 +66,43 @@ class Metric(CumulativeIterationMetric, ABC):
             of "batch-first" tensors.
         """
 
-    def aggregate(self, **kwargs: Any) -> float:
+    # pylint: disable=arguments-differ
+    def aggregate(self) -> float:
         """
         See :py:meth:`monai.metrics.metric.Cumulative.aggregate`.
         """
         data = self.get_buffer()
-        return self._aggregate(data, **kwargs)
+        return self._aggregate(data)
 
-    def _compute_tensor(
-        self, y_pred: torch.Tensor, y: torch.Tensor | None = None, **kwargs: Any
-    ) -> TensorOrList:
-        """
-        See :py:meth:`monai.metrics.metric.IterationMetric._compute_tensor`.
-        Note: :py:meth:`_accumulate` is defined just to have a name more explicit.
-        """
-        return self._accumulate(y_pred=y_pred, y=y, **kwargs)
-
-    def __call__(
-        self, y_pred: torch.Tensor, y: torch.Tensor | None = None, **kwargs: Any
-    ) -> torch.Tensor:
+    # pylint: disable=signature-differs
+    def __call__(self, batch: list[DataPoint]) -> torch.Tensor:
         """
         See :py:meth:`monai.metrics.metric.CumulativeIterationMetric.__call__`.
-        It is modified to get the metric for each element of the batch, whereas the
+
+        It is modified to accept a batch of :py:class:`~clinicadl.data.structures.DataPoint`,
+        and to get the metric for each element of the batch, whereas the
         original method only accumulates.
 
         Parameters
         ----------
-        y_pred : torch.Tensor
-            The predictions, as a "batch-first" tensor.
-        y : torch.Tensor | None, default=None
-            The potential ground truths, as a "batch-first" tensor.
+        batch : list[DataPoint]
+            The batch of :py:class:`~clinicadl.data.structures.DataPoint`.
 
         Returns
         -------
         torch.Tensor
             The metric value for each element of the batch.
         """
-        data = super().__call__(y_pred=y_pred, y=y, **kwargs)
+        # get the data for metric computation
+        data = self._accumulate(batch)
 
+        # store the data in the buffers
+        if isinstance(data, Sequence):
+            self.extend(*data)
+        else:
+            self.extend(data)
+
+        # compute the metric for each element of the batch
         results = []
         if isinstance(data, torch.Tensor):
             for elem in data:
@@ -116,3 +114,14 @@ class Metric(CumulativeIterationMetric, ABC):
                 results.append(res)
 
         return torch.tensor(results)
+
+    def _compute_tensor(self, batch: list[DataPoint]) -> TensorOrList:
+        """
+        See :py:meth:`monai.metrics.metric.IterationMetric._compute_tensor`.
+
+        Note: :py:meth:`_accumulate` is defined just to have a name more explicit.
+
+        ``_compute_tensor`` is actually not used, but it is mandatory to override it
+        (see :py:class:`monai.metrics.metric.IterationMetric`).
+        """
+        return self._accumulate(batch)
