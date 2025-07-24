@@ -5,6 +5,21 @@
 
 .. automodule:: clinicadl.data
 
+:mod:`clinicadl.data.dataloader`
+--------------------------------
+
+.. automodule:: clinicadl.data.dataloader
+
+.. currentmodule:: clinicadl.data.dataloader
+
+.. autosummary::
+    :nosignatures:
+    :template: autosummary/class.rst
+
+    DataLoaderConfig
+    batch.SimpleBatch
+
+
 :mod:`clinicadl.data.datasets`
 ------------------------------
 
@@ -38,19 +53,6 @@
     PETLinear
     DWIDTI
 
-:mod:`clinicadl.data.dataloader`
---------------------------------
-
-.. automodule:: clinicadl.data.dataloader
-
-.. currentmodule:: clinicadl.data.dataloader
-
-.. autosummary::
-    :toctree: ../generated/
-    :nosignatures:
-    :template: autosummary/config_class.rst
-
-    DataLoaderConfig
 
 :mod:`clinicadl.data.structures`
 --------------------------------
@@ -69,6 +71,7 @@
 .. toctree::
    :hidden:
 
+   dataloader
    datasets
    datatypes
    structures

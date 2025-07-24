@@ -8,17 +8,22 @@ from clinicadl.data.structures import DataPoint
 
 class SimpleBatch(list[DataPoint]):
     """
-    A class to manage a batch of DataPoints.
+    A batch container for :class:`~clinicadl.data.structures.DataPoint` objects.
+
+    This class inherits from the built-in :class:`list` and is specifically designed
+    to handle batches of `DataPoint` instances, providing utility methods to
+    retrieve their associated image tensors and labels.
 
     Parameters
     ----------
-    samples: list[DataPoint]
-        A list of :py:class:`~clinicadl.data.structures.DataPoint` forming the batch.
+    samples : list[DataPoint]
+        List of :class:`~clinicadl.data.structures.DataPoint` forming the batch.
 
     Raises
     ------
     ValueError
-        If the provided list of DataPoints is empty.
+        If the input list of samples is empty.
+
     """
 
     def __init__(self, samples: list[DataPoint]):
