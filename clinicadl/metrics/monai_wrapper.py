@@ -6,6 +6,8 @@ from monai.metrics import CumulativeIterationMetric
 
 from clinicadl.data.dataloader.batch import SimpleBatch
 from clinicadl.data.structures import DataPoint
+from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.types import TransformOrConfig
 
 from .base import Metric, TensorOrList
 from .enum import Optimum
@@ -43,6 +45,7 @@ class MonaiMetricWrapper(Metric):
         optimum: Optimum,
         pred_key: str,
         label_key: Optional[str] = None,
+        postprocessing: Optional[list[TransformOrConfig]] = None,
     ) -> None:
         super().__init__()
         self.pred_key = pred_key
@@ -50,6 +53,9 @@ class MonaiMetricWrapper(Metric):
         self.metric = metric
         self.metric.reset()
         self._optimum = optimum
+        self.postprocessing = (
+            Postprocessing(transforms=postprocessing) if postprocessing else None
+        )
 
     def __repr__(self):
         return (
@@ -101,6 +107,9 @@ class MonaiMetricWrapper(Metric):
         """
         See :py:meth:`clinicadl.metrics.Metric._accumulate`.
         """
+        if self.postprocessing:
+            batch = self.postprocessing.batch_apply(batch)
+
         batch = SimpleBatch(batch)
 
         y_pred = batch.get_field(self.pred_key)

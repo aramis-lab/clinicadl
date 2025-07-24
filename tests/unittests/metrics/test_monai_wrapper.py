@@ -24,6 +24,7 @@ from monai.metrics import (
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
+from clinicadl.transforms.config import AsDiscreteConfig
 
 DATAPOINT = DataPoint(
     image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
@@ -213,3 +214,23 @@ def test_repr():
     )
     pattern = r"MonaiMetricWrapper\(metric=<monai\.metrics\.average_precision\.AveragePrecisionMetric object at .*?>, optimum='max', pred_key='abc', label_key='bcd'\)"
     assert re.fullmatch(pattern, repr(metric))
+
+
+def test_postprocessing():
+    metric = MonaiMetricWrapper(
+        ConfusionMatrixMetric(metric_name="accuracy"),
+        pred_key="output",
+        label_key="label",
+        optimum="max",
+        postprocessing=[
+            AsDiscreteConfig(include=["output"], threshold=0.5),
+            AsDiscreteConfig(include=["label", "output"], to_onehot=2),
+        ],
+    )
+    batch = [deepcopy(DATAPOINT) for _ in range(2)]
+    batch[0]["label"] = 1.0
+    batch[0]["output"] = 0.7
+    batch[1]["label"] = 1.0
+    batch[1]["output"] = 0.3
+    assert (metric(batch) == torch.tensor([1, 0])).all()
+    assert metric.aggregate() == 0.5
