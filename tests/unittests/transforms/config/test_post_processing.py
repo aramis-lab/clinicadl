@@ -49,6 +49,17 @@ GOOD_INPUTS = [
             SobelGradientsConfig,
         ],
     ),
+    (
+        {"exclude": ["abc"]},
+        [
+            ActivationsConfig,
+            AsDiscreteConfig,
+            KeepLargestConnectedComponentConfig,
+            DistanceTransformEDTConfig,
+            RemoveSmallObjectsConfig,
+            SobelGradientsConfig,
+        ],
+    ),
     ({"sigmoid": True, "softmax": False, "other": lambda x: x}, ActivationsConfig),
     ({"other": None}, ActivationsConfig),
     (
@@ -128,6 +139,10 @@ GOOD_INPUTS = [
     ),
     (
         {"applied_labels": [1, 2], "include": ["abc"]},
+        [LabelFilterConfig, FillHolesConfig],
+    ),
+    (
+        {"applied_labels": [1, 2], "exclude": ["abc"]},
         [LabelFilterConfig, FillHolesConfig],
     ),
     ({"connectivity": 1}, FillHolesConfig),
