@@ -33,6 +33,13 @@ DATAPOINT = DataPoint(
     session="abc",
 )
 
+DATAPOINT = DataPoint(
+    image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
+    label=None,
+    participant="abc",
+    session="abc",
+)
+
 
 @pytest.mark.parametrize(
     "monai_metric,y_1,y_2,pred,intermediate_1,intermediate_2,final",
