@@ -24,6 +24,8 @@ Y_3_PRED = torch.tensor([[0, 1], [0, 1], [0, 1], [1, 0]])
 
 
 class TestMetric(Metric):
+    _optimum = "max"
+
     def _accumulate(self, batch):
         pred = torch.stack([datapoint["output"] for datapoint in batch])
         gt = torch.stack([datapoint["label"] for datapoint in batch])
@@ -54,3 +56,5 @@ def test_metric():
     print(metric.get_buffer())
 
     assert metric.aggregate() == 0.25
+
+    assert metric.optimum == "max"

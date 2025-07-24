@@ -8,6 +8,7 @@ from clinicadl.data.dataloader.batch import SimpleBatch
 from clinicadl.data.structures import DataPoint
 
 from .base import Metric, TensorOrList
+from .enum import Optimum
 
 
 class MonaiMetricWrapper(Metric):
@@ -18,6 +19,12 @@ class MonaiMetricWrapper(Metric):
     ----------
     metric : CumulativeIterationMetric
         The metric to wrap.
+    optimum : Optimum
+        Either ``"max"`` or ``"min"``:
+
+        - use "min" when a lower metric value indicates better performance.
+        - use "max" when a higher metric value indicates better performance.
+
     pred_key : str
         The key corresponding to the prediction in the input :py:class:`~clinicadl.data.structures.DataPoint`.
         The value associated to the key must be a :py:class:`torchio.Image`, a :py:class:`torch.torch.Tensor`,
@@ -33,6 +40,7 @@ class MonaiMetricWrapper(Metric):
     def __init__(
         self,
         metric: CumulativeIterationMetric,
+        optimum: Optimum,
         pred_key: str,
         label_key: Optional[str] = None,
     ) -> None:
@@ -41,9 +49,15 @@ class MonaiMetricWrapper(Metric):
         self.label_key = label_key
         self.metric = metric
         self.metric.reset()
+        self._optimum = optimum
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(metric={repr(self.metric)}, pred_key='{self.pred_key}', label_key='{self.label_key}')"
+        return (
+            f"{self.__class__.__name__}(metric={repr(self.metric)}, "
+            f"optimum='{self.optimum.value}', "
+            f"pred_key='{self.pred_key}', "
+            f"label_key='{self.label_key}')"
+        )
 
     def _aggregate(self, data: TensorOrList) -> float:
         """

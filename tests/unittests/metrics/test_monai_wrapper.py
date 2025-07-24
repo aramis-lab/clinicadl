@@ -185,7 +185,9 @@ def test_monai_metric_wrapper(
     batch_2 = [deepcopy(datapoint)]
     batch_2[0]["label"] = y_2
 
-    metric = MonaiMetricWrapper(monai_metric, label_key="label", pred_key="output")
+    metric = MonaiMetricWrapper(
+        monai_metric, label_key="label", pred_key="output", optimum="max"
+    )
     torch.testing.assert_close(
         metric(batch_1),
         torch.tensor([intermediate_1]),
@@ -202,10 +204,12 @@ def test_monai_metric_wrapper(
     )
     torch.testing.assert_close(metric.aggregate(), final, rtol=1e-4, atol=1e-4)
 
+    assert metric.optimum == "max"
+
 
 def test_repr():
     metric = MonaiMetricWrapper(
-        AveragePrecisionMetric(), pred_key="abc", label_key="bcd"
+        AveragePrecisionMetric(), pred_key="abc", label_key="bcd", optimum="max"
     )
-    pattern = r"MonaiMetricWrapper\(metric=<monai\.metrics\.average_precision\.AveragePrecisionMetric object at .*?>, pred_key='abc', label_key='bcd'\)"
+    pattern = r"MonaiMetricWrapper\(metric=<monai\.metrics\.average_precision\.AveragePrecisionMetric object at .*?>, optimum='max', pred_key='abc', label_key='bcd'\)"
     assert re.fullmatch(pattern, repr(metric))

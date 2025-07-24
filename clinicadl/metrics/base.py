@@ -9,12 +9,14 @@ transforms by the user.
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Union
+from typing import Literal, Union
 
 import torch
 from monai.metrics.metric import CumulativeIterationMetric
 
 from clinicadl.data.structures import DataPoint
+
+from .enum import Optimum
 
 TensorOrList = Union[torch.Tensor, Sequence[torch.Tensor]]
 
@@ -23,8 +25,15 @@ class Metric(CumulativeIterationMetric, ABC):
     """
     Transforms must inherit from this class to work with ``ClinicaDL``.
 
-    The user must override :py:meth:`_aggregate` and :py:meth:`_accumulate`.
+    The user must override :py:meth:`_aggregate`, and :py:meth:`_accumulate`.
+
+    The user must also define the attribute ``_optimum``:
+
+    - use "min" when a lower metric value indicates better performance.
+    - use "max" when a higher metric value indicates better performance.
     """
+
+    _optimum: Literal["min", "max"]
 
     @abstractmethod
     def _aggregate(self, data: TensorOrList) -> float:
@@ -65,6 +74,11 @@ class Metric(CumulativeIterationMetric, ABC):
             Useful results for the final aggregation, as a "batch-first" tensor, or a sequence
             of "batch-first" tensors.
         """
+
+    @property
+    def optimum(self) -> Optimum:
+        """Optimization criterion for the metric."""
+        return Optimum(self._optimum)
 
     # pylint: disable=arguments-differ
     def aggregate(self) -> float:
