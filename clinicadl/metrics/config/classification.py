@@ -6,11 +6,12 @@ import monai.metrics
 from clinicadl.losses.enum import Reduction
 from clinicadl.utils.factories import get_defaults_from
 
+from ..enum import Optimum
 from .base import (
     MetricConfig,
     _GetNotNansConfig,
 )
-from .enum import Average, ConfusionMatrixMetricName, Optimum
+from .enum import Average, ConfusionMatrixMetricName
 
 __all__ = [
     "ROCAUCMetricConfig",

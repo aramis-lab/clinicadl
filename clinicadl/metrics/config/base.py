@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 
@@ -12,14 +10,17 @@ from clinicadl.losses.types import Loss
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 from ..base import Metric
+from ..enum import Optimum
 from ..monai_wrapper import MonaiMetricWrapper
-from .enum import Optimum
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
 
 class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
+
+    pred_key: str
+    label_key: Optional[str] = None
 
     def get_object(self) -> Metric:
         """
@@ -31,8 +32,15 @@ class MetricConfig(ObjectConfig):
         Metric:
             The associated metric.
         """
-        monai_metric = self._get_class()(**self.model_dump(exclude={NAME}))
-        metric = MonaiMetricWrapper(monai_metric)
+        monai_metric = self._get_class()(
+            **self.model_dump(exclude={NAME, "pred_key", "label_key"})
+        )
+        metric = MonaiMetricWrapper(
+            monai_metric,
+            pred_key=self.pred_key,
+            label_key=self.label_key,
+            optimum=self.optimum(),
+        )
         return metric
 
     @classmethod
