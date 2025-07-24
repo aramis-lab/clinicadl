@@ -11,7 +11,7 @@ GOOD_INPUTS = [
     (6, [3, 7]),
     (1, [2, 4, 6]),
     (3, [1, 2]),
-    (11, None),
+    (11, 10),
 ]
 
 
@@ -36,7 +36,7 @@ def test_good_checkpoint(patience, epochs):
         checkpoint.on_epoch_end(_ts)
 
         if (
-            epoch in (epochs if epochs else [])
+            epoch in (checkpoint.epochs if checkpoint.epochs else [])
             or epoch % patience == 0
             or epoch == OPTIM.epochs - 1
         ):

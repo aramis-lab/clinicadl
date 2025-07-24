@@ -117,7 +117,7 @@ class OneMetricEarlyStopping(Callback):
             )
 
         value = df.at[config.epoch, self.metric]
-
+        print(value)
         try:
             value = float(value)
         except (TypeError, ValueError):
@@ -125,6 +125,7 @@ class OneMetricEarlyStopping(Callback):
                 f"Value for metric '{self.metric}' at epoch {config.epoch} is not numeric."
             )
 
+        print("ok", value)
         if pd.isna(value):
             raise ValueError(
                 f"Metric '{self.metric}' value at epoch {config.epoch} is NaN."
@@ -261,7 +262,7 @@ class EarlyStopping(Callback):
         self.upper_bound = check_list(upper_bound)
         self.lower_bound = check_list(lower_bound)
 
-        self.early_config_list = []
+        self.early_config_list: list[OneMetricEarlyStopping] = []
 
         for i, metric in enumerate(self.metrics):
             self.early_config_list.append(
@@ -283,7 +284,7 @@ class EarlyStopping(Callback):
         Updates `config.stop` to True if all monitored metrics meet early stopping criteria.
         """
         should_stop = all(
-            metric.on_epoch_end(config=config, **kwargs)
+            metric.should_stop_training(config=config, **kwargs)
             for metric in self.early_config_list
         )
         if should_stop:

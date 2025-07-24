@@ -52,6 +52,9 @@ class Checkpoint(Callback):
         if patience <= 0:
             raise ValueError("Patience must be a positive integer.")
 
+        if not isinstance(epochs, list) and isinstance(epochs, int):
+            epochs = [epochs]
+
         self.epochs = epochs if epochs else []
         self.patience = patience
 
