@@ -40,7 +40,7 @@ def test_check_transforms():
     assert transforms.extraction == Image()
 
 
-def test_get_transforms():
+def test_apply_transforms():
     affine = np.diag([3, 2, 1, 1])
     image = tio.ScalarImage(tensor=torch.randn(1, 14, 14, 14), affine=affine)
     label = tio.LabelMap(tensor=torch.randint(0, 3, (1, 14, 14, 14)), affine=affine)
@@ -62,13 +62,8 @@ def test_get_transforms():
             tio.Mask(masking_method="mask_1"),
         ],
     )
-    (
-        image_transforms,
-        sample_transforms,
-        augmentations,
-    ) = transforms.get_transforms()
 
-    data_point = image_transforms(data_point)
+    data_point = transforms.apply_image_transforms(data_point)
     assert data_point.image.tensor.min() == 0
     assert data_point.image.tensor.max() == 1
     assert data_point.image.tensor.shape == (1, 12, 12, 12)
@@ -84,13 +79,13 @@ def test_get_transforms():
     assert (tio_sample.label.tensor == data_point.label.tensor[:, :4, :4, :4]).all()
     assert (tio_sample.mask_1.tensor == patch_mask).all()
 
-    tio_sample = sample_transforms(tio_sample)
+    tio_sample = transforms.apply_sample_transforms(tio_sample)
     assert tio_sample.image.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.label.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.mask_1.tensor.shape == (1, 6, 6, 6)
     assert (tio_sample.image.tensor == 1).all()
 
-    tio_sample = augmentations(tio_sample)
+    tio_sample = transforms.apply_augmentations(tio_sample)
     assert (tio_sample.image.tensor[:, :2, :2, :2] == 0.0).all()
     assert (tio_sample.image.tensor[:, 5:, 5:, 5:] == 0.0).all()
     assert np.isclose(tio_sample.image.affine, affine).all()
