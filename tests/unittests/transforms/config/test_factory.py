@@ -16,6 +16,8 @@ MANDATORY_ARGS = {
     "padding": 1,
     "out_min": 0,
     "applied_labels": [0],
+    "threshold": 0.5,
+    "softmax": True,
 }
 
 
@@ -75,14 +77,7 @@ def test_get_transform_config(name, config):
         with pytest.raises(ValueError):
             get_transform_config("abc")
     else:
-        try:
-            c = get_transform_config(name)
-        except (TypeError, ValidationError):
-            for arg, value in MANDATORY_ARGS.items():
-                try:
-                    c = get_transform_config(name, **{arg: value})
-                except (TypeError, ValidationError):
-                    continue
+        c = get_transform_config(name, **MANDATORY_ARGS)
 
         assert c.name == name
         assert isinstance(c, config)

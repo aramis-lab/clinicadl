@@ -18,7 +18,7 @@ def test_args():
 
 def test_check_transforms():
     transforms = Postprocessing(
-        transforms=[AsDiscreteConfig(), tio.RescaleIntensity()],
+        transforms=[AsDiscreteConfig(threshold=1), tio.RescaleIntensity()],
     )
     assert [type(t) for t in transforms._transforms_processed] == [
         MonaiTransformWrapper,
@@ -56,7 +56,7 @@ def test_apply():
 def test_str():
     transforms = Postprocessing(
         transforms=[
-            AsDiscreteConfig(),
+            AsDiscreteConfig(threshold=1),
             tio.RescaleIntensity(),
         ],
     )
@@ -69,7 +69,7 @@ def test_str():
 def test_serialization():
     transforms = Postprocessing(
         transforms=[
-            AsDiscreteConfig(),
+            AsDiscreteConfig(threshold=1),
             tio.Resample(),
         ],
     )
@@ -80,7 +80,7 @@ def test_serialization():
         exclude=None,
         argmax=False,
         to_onehot=None,
-        threshold=None,
+        threshold=1,
         rounding=None,
     )
     assert d["transforms"] == [

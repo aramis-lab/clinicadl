@@ -8,6 +8,7 @@ from pydantic import (
     PositiveFloat,
     PositiveInt,
     field_validator,
+    model_validator,
 )
 
 from clinicadl.dictionary.words import EXCLUDE, INCLUDE, NAME
@@ -79,6 +80,20 @@ class ActivationsConfig(MonaiTransformConfig):
         Callable[[torch.Tensor], torch.Tensor]
     ] = ACTIVATIONS_MONAI_DEFAULTS["other"]
 
+    @model_validator(mode="after")
+    def exclude_multiple_arguments(self):
+        """Ensure that the user pass only one argument."""
+        arguments = [self.sigmoid, self.softmax, self.other]
+        count = sum(1 for item in arguments if item is not None and item is not False)
+        if count > 1:
+            raise ValueError(
+                "You cannot pass more than one argument 'ActivationsConfig'."
+            )
+        elif count == 0:
+            raise ValueError("Please pass at least on argument to 'ActivationsConfig'.")
+
+        return self
+
 
 class AsDiscreteConfig(MonaiTransformConfig):
     """
@@ -89,6 +104,20 @@ class AsDiscreteConfig(MonaiTransformConfig):
     to_onehot: Optional[PositiveInt] = AS_DISCRETE_MONAI_DEFAULTS["to_onehot"]
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
+
+    @model_validator(mode="after")
+    def exclude_multiple_arguments(self):
+        """Ensure that the user pass only one argument."""
+        arguments = [self.argmax, self.to_onehot, self.threshold, self.rounding]
+        count = sum(1 for item in arguments if item is not None and item is not False)
+        if count > 1:
+            raise ValueError(
+                "You cannot pass more than one argument 'AsDiscreteConfig'."
+            )
+        elif count == 0:
+            raise ValueError("Please pass at least on argument to 'AsDiscreteConfig'.")
+
+        return self
 
 
 class KeepLargestConnectedComponentConfig(MonaiTransformConfig):

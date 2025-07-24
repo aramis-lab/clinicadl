@@ -103,7 +103,11 @@ class MonaiTransformWrapper:
         return self._transform(x).numpy()
 
     def _transform_numeric(self, x: numbers.Number) -> numbers.Number:
-        return self._transform(x).item()
+        transformed = self._transform(x)
+        try:
+            return transformed.item()
+        except RuntimeError:  # it is no longer a scalar (e.g. one-hot)
+            return transformed
 
     def _transform(self, x: Any) -> torch.Tensor:
         out = self.transform(x)
