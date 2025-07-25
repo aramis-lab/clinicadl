@@ -38,9 +38,9 @@ def assert_equal(obj1, obj2):
     assert norm1 == norm2, f"Objects differ:\n{norm1}\n≠\n{norm2}"
 
 
-def test_training_from_json():
+def test_training_from_json(tmp_path):
     trainer = Trainer(
-        maps_path="maps_tests",
+        maps_path=tmp_path / "maps_tests",
         model=MODEL,
         optim_config=OPTIM,
         comp_config=COMP,
@@ -49,7 +49,7 @@ def test_training_from_json():
         _overwrite=True,
     )
 
-    maps = Maps("maps_tests")
+    maps = Maps(tmp_path / "maps_tests")
     assert maps.path == trainer.maps.path
 
     model = SupervisedModel.from_json(maps.model_json)
@@ -67,7 +67,7 @@ def test_training_from_json():
     metrics = MetricsHandler.from_json(maps.training.metrics_json, mae=METRICS["mae"])
 
     new_trainer = Trainer(
-        maps_path="maps_tests_bis",
+        maps_path=tmp_path / "maps_tests_bis",
         model=model,
         optim_config=optim_config,
         comp_config=comp_config,
