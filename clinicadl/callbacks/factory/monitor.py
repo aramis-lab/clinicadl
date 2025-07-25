@@ -8,7 +8,7 @@ import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from ..base import Callback
+from .base import Callback
 
 
 class PhaseMonitor:
