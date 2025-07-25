@@ -1,84 +1,99 @@
 from __future__ import annotations
 
-from abc import ABC
 from pathlib import Path
 from typing import Dict, Optional, Union
 
 import pandas as pd
-import torch
-from monai.metrics.confusion_matrix import ConfusionMatrixMetric
-from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
+from pydantic import field_serializer, field_validator
 
-from clinicadl.dictionary.words import EPOCH, LOSS_METRIC, METRICS
-from clinicadl.losses.config import LossConfig, get_loss_function_config
+from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.dictionary.utils import SEP
+from clinicadl.dictionary.words import (
+    EPOCH,
+    LOSS,
+    PARTICIPANT,
+    PARTICIPANT_ID,
+    SESSION,
+    SESSION_ID,
+)
 from clinicadl.losses.types import Loss
-from clinicadl.metrics.config import (
-    ConfusionMatrixMetricConfig,
-    CustomMetric,
-    MetricConfig,
-)
-from clinicadl.metrics.config.base import (
-    LossMetricConfig,
-    MetricConfig,
-)
-from clinicadl.metrics.config.factory import get_metric_config
-from clinicadl.utils.json import read_json, write_json
+from clinicadl.metrics.config import MetricConfig, get_metric_config
+from clinicadl.utils.config import ClinicaDLConfig
 
-from .types import MetricType
+from .base import Metric
+from .types import MetricOrConfig
+
+CUSTOM_METRIC = "Custom metric passed by the user"
 
 
-class Metrics(ABC):
+class _MetricProcessor(ClinicaDLConfig):
     """
-    Abstract base class for metrics.
+    To check and convert metrics passed by the user.
     """
 
-    @staticmethod
-    def check_metrics(
-        metrics: Optional[dict[str, MetricType]],
-    ) -> dict[str, MetricConfig]:
-        """TO COMPLETE"""
+    metrics: dict[str, MetricOrConfig] = {}
 
-        metrics_config: dict[str, MetricConfig] = {}
-
-        if metrics is not None:
-            if not isinstance(metrics, dict):
-                raise TypeError(
-                    f"Metrics must be a dictionary, got {type(metrics)} instead."
+    @field_validator("metrics", mode="after")
+    def _validate_names(
+        self, metrics: dict[str, MetricOrConfig]
+    ) -> dict[str, MetricOrConfig]:
+        """Checks that no metric is named 'loss'."""
+        for name in metrics:
+            if name == LOSS:
+                raise ValueError(
+                    "'loss' is a protected name, please choose another name for your metric."
                 )
+        return metrics
 
-            for metric_name, metric in metrics.items():
-                if isinstance(metric, MonaiMetric):
-                    config = get_metric_config(
-                        name=metric.__class__.__name__, **metric.__dict__
-                    )  # TODO : check if it works when doing unittests
-                    metrics_config[metric_name] = config
+    @field_serializer("metrics")
+    @classmethod
+    def _serialize_metrics(
+        cls, metrics: dict[str, MetricOrConfig]
+    ) -> list[Union[str, dict]]:
+        """
+        Handles serialization of metrics that are not passed via
+        MetricConfigs.
+        """
+        repr_ = []
+        for metric in metrics:
+            if isinstance(metric, MetricConfig):
+                repr_.append(metric.to_dict())
+            else:
+                repr_.append(CUSTOM_METRIC + ": " + f"'{type(metric).__name__}'")
 
-                elif isinstance(metric, LossConfig):
-                    metrics_config[metric_name] = LossMetricConfig(
-                        loss_fn=metric.get_object(), reduction=metric.reduction
-                    )
+        return repr_
 
-                elif isinstance(metric, MetricConfig) or isinstance(
-                    metric, LossMetricConfig
-                ):
-                    metrics_config[metric_name] = metric
+    def get_callable_metrics(self) -> dict[str, Metric]:
+        """
+        Gets the callable metrics.
+        """
+        callable_metrics: Dict[str, Metric] = {}
 
-                elif isinstance(metric, type(CustomMetric)):
-                    metrics_config[metric_name] = metric
+        for name, metric in self.metrics.items():
+            if isinstance(metric, MetricConfig):
+                callable_metrics[name] = metric.get_object()
+            else:
+                callable_metrics[name] = metric
 
-                elif isinstance(metric, Loss):
-                    metrics_config[metric_name] = LossMetricConfig(loss_fn=metric)
+        return callable_metrics
 
-        return metrics_config
+    def add_metrics(
+        self,
+        metrics: dict[str, MetricOrConfig],
+    ) -> None:
+        """
+        Add metrics.
+        """
+        self.metrics = self.metrics | metrics
 
 
-class MetricsHandler(Metrics):
+class MetricsHandler:
     """TO COMPLETE"""
 
     def __init__(
         self,
-        loss: Loss,
-        metrics: Optional[dict[str, MetricType]] = None,
+        loss: Optional[Loss] = None,
+        metrics: Optional[dict[str, MetricOrConfig]] = None,
     ):
         """
         Initialize the MetricsHandler instance.
@@ -90,94 +105,72 @@ class MetricsHandler(Metrics):
         compute_train_metrics : bool
             Flag to compute training metrics.
         """
+        if not metrics:
+            metrics = {}
 
-        self.metrics = self.check_metrics(metrics=metrics)
-        self._loss = loss
-        self._loss_metric = LossMetricConfig(loss_fn=loss)
-        if "loss" not in self.metrics:
-            self.metrics["loss"] = self._loss_metric
-            # TODO : check if 2 lossconifg, one for the loss and one as a metric, how to handle the name ? because a loss is a function and doesn't have a name
+        self._metrics_processor = _MetricProcessor(metrics=metrics)
+        if loss:
+            self._metrics_processor.add_metrics({LOSS: loss})
 
-        self._callable_metrics = self.get_callable_metrics()
-        self.df = self._init_df()
+        self.metrics = self._metrics_processor.metrics
+        self._callable_metrics = self._metrics_processor.get_callable_metrics()
+
+        self._df = self._init_df()
+        self._detailed_df = self._init_detailed_df()
 
     def _init_df(self) -> pd.DataFrame:
-        """TO COMPLETE"""
-
-        columns = [EPOCH]
-
-        for name, metric in self._callable_metrics.items():
-            if isinstance(metric, ConfusionMatrixMetric):
-                for confusion_metric in metric.metric_name:
-                    columns.append(confusion_metric)
-            else:
-                columns.append(name)
-
+        """
+        Create an empty DataFrame with a column for each metric.
+        """
+        columns = list(self.metrics.keys())
         df = pd.DataFrame(columns=columns)
-        df.set_index(EPOCH, inplace=True)
+
+        return df
+
+    def _init_detailed_df(self) -> pd.DataFrame:
+        """
+        Create an empty DataFrame with a column for each metric,
+        as well as columns "participant_id" and "session_id".
+        """
+        df = self._init_df()
+        df.columns = df.columns.union([PARTICIPANT_ID, SESSION_ID])
+
         return df
 
     def add_metrics(
         self,
-        metrics: dict[str, MetricType],
+        metrics: dict[str, MetricOrConfig],
     ) -> None:
         """
         Add metrics to the MetricsHandler instance.
         """
-        add_metric = self.check_metrics(metrics)
-        new_callable_metrics = self.get_callable_metrics()
-        for name, _callable in new_callable_metrics.items():
-            if name not in self._callable_metrics.keys():
-                self._callable_metrics[name] = _callable
-                self.metrics[name] = add_metric[name]
+        self._metrics_processor.add_metrics(metrics)
+        self._callable_metrics = self._metrics_processor.get_callable_metrics()
 
-        new_df = self._init_df()
-        self.df = self.df.reindex(
-            columns=self.df.columns.union(new_df.columns), fill_value=pd.NA
+        new_columns = list(metrics.keys())
+        self._df = self._df.reindex(
+            columns=self._df.columns.union(new_columns), fill_value=pd.NA
+        )
+        self._detailed_df = self._detailed_df.reindex(
+            columns=self._detailed_df.columns.union(new_columns), fill_value=pd.NA
         )
 
-    def get_callable_metrics(self) -> Dict[str, MonaiMetric]:
-        """
-        Retrieve the callable metrics.
-
-        Returns
-        -------
-        Dict[str, MonaiMetric]
-            Dictionary of callable metrics.
-        """
-        _callable_metrics: Dict[str, MonaiMetric] = {}
-
-        for name, config in self.metrics.items():
-            try:
-                _callable_metrics[name] = config.get_object()
-            except TypeError:
-                raise TypeError(
-                    f"The provided metric {name} doesn't have a get_object method."
-                )
-
-        return _callable_metrics
-
-    def _reset_df(self) -> None:
-        """
-        Initialize or reset the internal DataFrame for storing aggregated metric values.
-        """
-        self.df.drop(self.df.index, inplace=True)
-
-    def reset(self, df: bool = False) -> None:
+    def reset(self, reset_df: bool = False) -> None:
         """
         Reset all metric states.
 
         Parameters
         ----------
-        df : bool
-            If True, also reset the DataFrame.
+        rest_df : bool
+            If ``True``, also reset the metric DataFrame.
         """
         for metric in self._callable_metrics.values():
             metric.reset()
-        if df:
-            self._reset_df()
+        if reset_df:
+            self._df = self._init_df()
+            self._detailed_df = self._init_detailed_df()
 
-    def aggregate(self, epoch: int) -> None:
+    def aggregate(self, epoch: Optional[int] = None) -> None:
         """
         Aggregate and store metric results.
 
@@ -188,17 +181,16 @@ class MetricsHandler(Metrics):
         batch : Optional[int]
             Current batch (optional).
         """
+        values = {}
         for name, metric in self._callable_metrics.items():
-            value = metric.aggregate()
-            if isinstance(metric, ConfusionMatrixMetric):
-                for i, _name in enumerate(metric.metric_name):
-                    self.df.at[epoch, _name] = value[i].item()
-            else:
-                self.df.at[epoch, name] = value.item()
+            values[name] = metric.aggregate()
+        if epoch:
+            values[EPOCH] = epoch
 
-    def __call__(
-        self, y_pred: torch.Tensor, y: Optional[torch.Tensor] = None, **kwargs
-    ) -> None:
+        new_df = pd.DataFrame([values])
+        self._df = pd.concat([self._df, new_df], ignore_index=True)
+
+    def __call__(self, batch: SimpleBatch, epoch: Optional[int] = None) -> None:
         """
         Update metrics using model predictions and ground truth.
 
@@ -209,10 +201,21 @@ class MetricsHandler(Metrics):
         y : torch.Tensor
             Ground truth labels.
         """
-        for metric in self._callable_metrics.values():
-            metric(y_pred, y)
+        participants = batch.get_field(PARTICIPANT)
+        sessions = batch.get_field(SESSION)
 
-    def save(self, path: Path) -> None:
+        values = {}
+        for name, metric in self._callable_metrics.items():
+            values[name] = metric(batch)
+
+        values = values | {PARTICIPANT_ID: participants, SESSION_ID: sessions}
+        if epoch:
+            values[EPOCH] = epoch
+        new_df = pd.DataFrame(values)
+
+        self._detailed_df = pd.concat([self._df, new_df], ignore_index=True)
+
+    def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
         Persist the metrics to disk using selection metric file paths.
 
@@ -221,7 +224,9 @@ class MetricsHandler(Metrics):
         best_metrics : Dict[str, BestMetric]
             Mapping of metric names to their best-tracking wrappers.
         """
-        self.df.to_csv(path, sep="\t", index=True)
+        self._df.to_csv(path, sep=SEP)
+        if details_path:
+            self._detailed_df.to_csv(details_path, sep=SEP)
 
     def write_json(self, json_path: Path) -> None:
         """
@@ -232,18 +237,26 @@ class MetricsHandler(Metrics):
         json_path : Path
             Destination file path.
         """
-        json_dict = {name: metric.to_dict() for name, metric in self.metrics.items()}
-        write_json(json_path, json_dict)
+        self._metrics_processor.write_json(json_path)
 
     @classmethod
-    def from_json(cls, json_path: Path) -> dict[str, MetricConfig]:
-        json_path = Path(json_path)
-        _dict = read_json(json_path=json_path)
-
+    def from_json(
+        cls, json_path: Path, loss: Optional[Loss] = None, **kwargs: Metric
+    ) -> MetricsHandler:
+        _dict = _MetricProcessor.read_json(json_path)
         for name, metric in _dict.items():
-            if "loss_fn" in metric:
-                metric["loss_fn"] = get_loss_function_config(
-                    name=metric["loss_fn"]["name"], **metric["loss_fn"]["params"]
-                ).get_object()
-            _dict[name] = get_metric_config(**metric)
-        return _dict
+            if isinstance(metric, dict):
+                _dict[name] = get_metric_config(**metric)
+            else:
+                if name in kwargs:
+                    _dict[name] = kwargs[name]
+                else:
+                    raise ValueError(
+                        f"Custom metric found for {name} in {str(json_path)}. "
+                        "ClinicaDL can't read custom metric, so pass it to 'from_json' via "
+                        f"{name}=<your-custom-metric>"
+                    )
+
+        metrics_processor = _MetricProcessor(metrics=_dict)
+
+        return cls(loss=loss, metrics=metrics_processor.metrics)
