@@ -7,6 +7,7 @@ from pydantic import field_validator, model_validator
 from clinicadl.dictionary.words import NAME
 from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
+from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
 from ..base import Metric
@@ -21,6 +22,7 @@ class MetricConfig(ObjectConfig):
 
     pred_key: str
     label_key: Optional[str] = None
+    postprocessing: list[TransformOrConfig] = []
 
     def get_object(self) -> Metric:
         """
@@ -33,13 +35,14 @@ class MetricConfig(ObjectConfig):
             The associated metric.
         """
         monai_metric = self._get_class()(
-            **self.model_dump(exclude={NAME, "pred_key", "label_key"})
+            **self.model_dump(exclude={NAME, "pred_key", "label_key", "postprocessing"})
         )
         metric = MonaiMetricWrapper(
             monai_metric,
             pred_key=self.pred_key,
             label_key=self.label_key,
             optimum=self.optimum(),
+            postprocessing=self.postprocessing,
         )
         return metric
 

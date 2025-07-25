@@ -1,5 +1,6 @@
 import monai.metrics as metrics
 import pytest
+import torchio as tio
 from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
 from torch.nn import MSELoss
@@ -31,6 +32,8 @@ from clinicadl.metrics.config.segmentation import (
     SurfaceDistanceMetricConfig,
 )
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
+from clinicadl.transforms.config import AsDiscreteConfig
+from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 BAD_INPUTS = [
     ({"average": "abc"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
@@ -327,6 +330,7 @@ MANDATORY_ARGS = {
     "class_thresholds": (0.5, 0.5),
     "spatial_dims": 2,
     "pred_key": "output",
+    "postprocessing": [tio.Crop(cropping=1), AsDiscreteConfig(threshold=0.5)],
 }
 
 
@@ -356,9 +360,21 @@ def test_get_object(config, expected_class):
     assert isinstance(transform_from_config, MonaiMetricWrapper)
     assert isinstance(transform_from_config.metric, expected_class)
     assert transform_from_config.pred_key == "output"
+    assert len(transform_from_config.postprocessing.transforms) == 2
+    assert isinstance(transform_from_config.postprocessing.transforms[0], tio.Crop)
+    assert isinstance(
+        transform_from_config.postprocessing.transforms[1], AsDiscreteConfig
+    )
 
     c.label_key = None
     transform_from_config = c.get_object()
+    assert isinstance(
+        transform_from_config.postprocessing._transforms_processed[0], tio.Crop
+    )
+    assert isinstance(
+        transform_from_config.postprocessing._transforms_processed[1],
+        MonaiTransformWrapper,
+    )
     assert transform_from_config.label_key is None
 
 
