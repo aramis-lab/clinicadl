@@ -19,7 +19,7 @@ This is the first release candidate for version 2.0.0, with the final release pl
 - Full **rewrite of the core library** — now fully object-oriented and modular.
 - New modules (see next section)
 - New **MAPS** architecture for managing model outputs and metadata.
-- Clear configuration-based design with JSON files and dedicated config classes.
+- Clear configuration-based design with JSON files and dedicated config classes based on **pydantic**.
 - Modern deep learning tooling: **PyTorch**, **MONAI**, **TorchIO**, **HuggingFace**, **MLflow**, and **Weights & Biases** support.
 - Extensive and fully updated **documentation**.
 
@@ -81,11 +81,6 @@ This is the first release candidate for version 2.0.0, with the final release pl
 ---
 
 
-
-
-
-
-
 ## [1.6.1] - 2024-04-05
 
 ### Fixed
@@ -100,6 +95,7 @@ This is the first release candidate for version 2.0.0, with the final release pl
 * Change 2 digits session label to 3 digits,
 * Change black and isort for ruff and codespell,
 * Update type hint and docstring,
+
 
 ### New
 
