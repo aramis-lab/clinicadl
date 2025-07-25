@@ -34,8 +34,9 @@ class _MetricProcessor(ClinicaDLConfig):
     metrics: dict[str, MetricOrConfig] = {}
 
     @field_validator("metrics", mode="after")
+    @classmethod
     def _validate_names(
-        self, metrics: dict[str, MetricOrConfig]
+        cls, metrics: dict[str, MetricOrConfig]
     ) -> dict[str, MetricOrConfig]:
         """Checks that no metric is named 'loss'."""
         for name in metrics:
@@ -117,6 +118,14 @@ class MetricsHandler:
 
         self._df = self._init_df()
         self._detailed_df = self._init_detailed_df()
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return self._df
+
+    @property
+    def detailed_df(self) -> pd.DataFrame:
+        return self._detailed_df
 
     def _init_df(self) -> pd.DataFrame:
         """
