@@ -33,8 +33,7 @@ class Sample(DataPoint):
     @property
     @abstractmethod
     def _sample_index(self) -> int:
-        """The index of the sample. Equal to 1 here."""
-        return 1
+        """The index of the sample."""
 
 
 class Extraction(ClinicaDLConfig, ABC):

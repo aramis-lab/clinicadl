@@ -1,4 +1,6 @@
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Union
 
 from pydantic import (
     NonNegativeFloat,
@@ -11,8 +13,10 @@ from torchio import Transform as TorchioTransform
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from ..types import Transform
 from .enum import AnatomicalLabel
+
+if TYPE_CHECKING:
+    from ..types import Transform
 
 __all__ = [
     "TransformConfig",
@@ -23,12 +27,19 @@ __all__ = [
 class TransformConfig(ObjectConfig):
     """Base config class for the transforms."""
 
+    include: Optional[Sequence[str]] = None
+    exclude: Optional[Sequence[str]] = None
+
+    @model_validator(mode="after")
+    def check_include_exclude(self):
+        """Checks that 'include' and 'exclude' are not both specified."""
+        if self.include and self.exclude:
+            raise ValueError("'include' and 'exclude' cannot be both specified.")
+        return self
+
 
 class TorchioTransformConfig(TransformConfig):
     """Base config class for the transforms from TorchIO."""
-
-    include: Optional[Sequence[str]] = None
-    exclude: Optional[Sequence[str]] = None
 
     def get_object(self) -> Transform:
         """
@@ -41,13 +52,6 @@ class TorchioTransformConfig(TransformConfig):
             The associated transform.
         """
         return super().get_object()
-
-    @model_validator(mode="after")
-    def check_include_exclude(self):
-        """Checks that 'include' and 'exclude' are not both specified."""
-        if self.include and self.exclude:
-            raise ValueError("'include' and 'exclude' cannot be both specified.")
-        return self
 
     @classmethod
     def _get_class(cls) -> type[TorchioTransform]:

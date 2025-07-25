@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Union
 
 import torch
 from monai import transforms
@@ -10,7 +10,7 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.dictionary.words import INCLUDE, LABEL, NAME, OUTPUT
+from clinicadl.dictionary.words import EXCLUDE, INCLUDE, NAME
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 from clinicadl.utils.factories import get_defaults_from
 
@@ -44,8 +44,6 @@ class MonaiTransformConfig(TransformConfig):
     Base config class for MONAI Transforms.
     """
 
-    include: Sequence[str]
-
     def get_object(self) -> Transform:
         """
         Returns the transform associated to this configuration,
@@ -56,8 +54,12 @@ class MonaiTransformConfig(TransformConfig):
         Transform:
             The associated transform.
         """
-        monai_transform = self._get_class()(**self.model_dump(exclude={NAME, INCLUDE}))
-        transform = MonaiTransformWrapper(monai_transform, include=self.include)
+        monai_transform = self._get_class()(
+            **self.model_dump(exclude={NAME, INCLUDE, EXCLUDE})
+        )
+        transform = MonaiTransformWrapper(
+            monai_transform, include=self.include, exclude=self.exclude
+        )
         return transform
 
     @classmethod
@@ -69,8 +71,6 @@ class MonaiTransformConfig(TransformConfig):
 class ActivationsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.Activations`.
-
-    By default, this postprocessing will only be applied on the output of the network.
     """
 
     sigmoid: bool = ACTIVATIONS_MONAI_DEFAULTS["sigmoid"]
@@ -79,14 +79,10 @@ class ActivationsConfig(MonaiTransformConfig):
         Callable[[torch.Tensor], torch.Tensor]
     ] = ACTIVATIONS_MONAI_DEFAULTS["other"]
 
-    include: Sequence[str] = [OUTPUT]
-
 
 class AsDiscreteConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.AsDiscrete`.
-
-    By default, this postprocessing will only be applied on the output of the network.
     """
 
     argmax: bool = AS_DISCRETE_MONAI_DEFAULTS["argmax"]
@@ -94,14 +90,10 @@ class AsDiscreteConfig(MonaiTransformConfig):
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
 
-    include: Sequence[str] = [OUTPUT]
-
 
 class KeepLargestConnectedComponentConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.KeepLargestConnectedComponent`.
-
-    By default, this postprocessing will be applied on the output and on the label.
     """
 
     applied_labels: Optional[Union[int, list[int]]] = KLCC_MONAI_DEFAULTS[
@@ -112,26 +104,18 @@ class KeepLargestConnectedComponentConfig(MonaiTransformConfig):
     connectivity: Optional[PositiveInt] = KLCC_MONAI_DEFAULTS["connectivity"]
     num_components: Optional[PositiveInt] = KLCC_MONAI_DEFAULTS["num_components"]
 
-    include: Sequence[str] = [OUTPUT, LABEL]
-
 
 class DistanceTransformEDTConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.DistanceTransformEDT`.
-
-    By default, this postprocessing will only be applied on the output of the network.
     """
 
     sampling: Optional[Union[float, list[float]]] = EDT_MONAI_DEFAULTS["sampling"]
-
-    include: Sequence[str] = [OUTPUT]
 
 
 class RemoveSmallObjectsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.RemoveSmallObjects`.
-
-    By default, this postprocessing will be applied on the output and on the label.
     """
 
     min_size: PositiveInt = SMALL_OBJECTS_MONAI_DEFAULTS["min_size"]
@@ -142,26 +126,18 @@ class RemoveSmallObjectsConfig(MonaiTransformConfig):
         Union[PositiveFloat, list[PositiveFloat]]
     ] = SMALL_OBJECTS_MONAI_DEFAULTS["pixdim"]
 
-    include: Sequence[str] = [OUTPUT, LABEL]
-
 
 class LabelFilterConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.LabelFilter`.
-
-    By default, this postprocessing will be applied on the output and on the label.
     """
 
     applied_labels: Union[int, list[int]]
-
-    include: Sequence[str] = [OUTPUT, LABEL]
 
 
 class FillHolesConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.FillHoles`.
-
-    By default, this postprocessing will only be applied on the output of the network.
     """
 
     applied_labels: Optional[Union[int, list[int]]] = FILL_HOLES_MONAI_DEFAULTS[
@@ -169,14 +145,10 @@ class FillHolesConfig(MonaiTransformConfig):
     ]
     connectivity: Optional[PositiveInt] = FILL_HOLES_MONAI_DEFAULTS["connectivity"]
 
-    include: Sequence[str] = [OUTPUT]
-
 
 class SobelGradientsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.SobelGradients`.
-
-    By default, this postprocessing will only be applied on the output of the network.
     """
 
     kernel_size: PositiveInt = SOBEL_MONAI_DEFAULTS["kernel_size"]
@@ -187,8 +159,6 @@ class SobelGradientsConfig(MonaiTransformConfig):
     normalize_gradients: bool = SOBEL_MONAI_DEFAULTS["normalize_gradients"]
     padding_mode: SobelPaddingMode = SOBEL_MONAI_DEFAULTS["padding_mode"]
     dtype: torch.dtype = SOBEL_MONAI_DEFAULTS["dtype"]
-
-    include: Sequence[str] = [OUTPUT]
 
     @field_validator("kernel_size", mode="after")
     @classmethod

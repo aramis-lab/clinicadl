@@ -25,8 +25,8 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
+from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import ExtractionMethod, Sample
-from clinicadl.transforms.transforms import Transforms
 from clinicadl.tsvtools.utils import read_data
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -296,11 +296,6 @@ class CapsDataset(Dataset):
         self.directory = Path(caps_directory)
         self.preprocessing = preprocessing
         self.transforms = transforms
-        (
-            self.image_transform,
-            self.sample_transform,
-            self.augmentation,
-        ) = transforms.get_transforms()
         self.extraction = transforms.extraction
 
         self.eval_mode = False
@@ -893,14 +888,14 @@ class CapsDataset(Dataset):
         data = self._get_data(participant, session)
 
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
-            data = self.image_transform(data)
+            data = self.transforms.apply_image_transforms(data)
 
         data = self.extraction.extract_sample(data, sample_index)
 
-        data = self.sample_transform(data)
+        data = self.transforms.apply_sample_transforms(data)
 
         if not self.eval_mode:
-            data = self.augmentation(data)
+            data = self.transforms.apply_augmentations(data)
 
         return data
 
@@ -1296,7 +1291,7 @@ class CapsDataset(Dataset):
         """
         data = self._get_data(participant, session)
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
-            data = self.image_transform(data)
+            data = self.transforms.apply_image_transforms(data)
         try:
             return self.extraction.num_samples_per_image(data.image.tensor)
         except IndexError as exc:

@@ -1,5 +1,5 @@
 """To transform 3D images."""
 
 from .config import ImplementedTransform
-from .transforms import Transforms
+from .handlers import Transforms
 from .types import Transform

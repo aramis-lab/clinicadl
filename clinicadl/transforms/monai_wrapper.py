@@ -1,7 +1,7 @@
 import numbers
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 
 import torch
 import torchio as tio
@@ -21,15 +21,34 @@ class MonaiTransformWrapper:
     ----------
     transform : MonaiTransform
         A :py:class:`monai.transforms.Transform`.
-    include : Sequence[str]
-        The key(s) of the ``DataPoints`` on which to apply the transform. The value associated
+    include : Optional[Sequence[str]], default=None
+        The key(s) of the ``DataPoints`` to which the transform will be applied. The value associated
         to the key must be a :py:class:`torchio.Image`, a :py:class:`torch.torch.Tensor`,
         a :py:class:`numpy.ndarray`, or a numeric value.
+
+        By default (if ``include=None``), the transform will be applied to all the images,
+        i.e. the :py:class:`torchio.Image`, that are not in ``exclude``.
+    exclude : Optional[Sequence[str]], default=None
+        The key(s) of the ``DataPoints`` to which the transform will **not** be applied.
+        ``exclude`` cannot be passed with ``include``.
+
+    Raises
+    ------
+    ValueError
+        If both ``include`` and ``exclude`` are passed.
     """
 
-    def __init__(self, transform: MonaiTransform, include: Sequence[str]) -> None:
+    def __init__(
+        self,
+        transform: MonaiTransform,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> None:
         self.transform = transform
+        if include and exclude:
+            raise ValueError("You cannot pass both 'include' and 'exclude'.")
         self.include = include
+        self.exclude = exclude if exclude else []
 
     def __repr__(self):
         return f"{self.__class__.__name__}(transform={repr(self.transform)}, include={self.include})"
@@ -40,7 +59,14 @@ class MonaiTransformWrapper:
         """
         datapoint = deepcopy(datapoint)
 
-        for key in self.include:
+        for key, value in datapoint.items():
+            if key in self.exclude:
+                continue
+            elif not self.include and not isinstance(value, tio.Image):
+                continue
+            elif self.include and key not in self.include:
+                continue
+
             value = datapoint[key]
             self._check_type(key, value)
 
@@ -55,6 +81,8 @@ class MonaiTransformWrapper:
                     transform = self._transform_numeric
 
                 datapoint[key] = transform(value)
+
+        datapoint.update_attributes()  # so that datapoint.label matches datapoint["label"]
 
         return datapoint
 

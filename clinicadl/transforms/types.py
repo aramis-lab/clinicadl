@@ -4,7 +4,11 @@ from pydantic import NonNegativeFloat
 
 from clinicadl.data.structures import DataPoint
 
+from .config import TransformConfig
+
 Transform = Callable[[DataPoint], DataPoint]
+
+TransformOrConfig = Union[Transform, TransformConfig]
 
 Std = Union[
     NonNegativeFloat,
