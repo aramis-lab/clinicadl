@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.6.1"
-description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
+version = "2.0.0rc1"
+description = "Python library for the reproducible processing of neuroimaging data with deep learning methods"
 license = "MIT"
 authors = ["ARAMIS Lab"]
 maintainers = ["Clinica developers <clinica-user@inria.fr>"]

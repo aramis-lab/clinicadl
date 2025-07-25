@@ -6,7 +6,82 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## ClinicaDL 1.6.0
+## [2.0.0rc1] – 2025-07-24
+
+This release marks a **major overhaul** of ClinicaDL, refactoring the entire framework into a **modular, API-first design**.
+
+Previously centered around the command line, ClinicaDL now provides a **flexible Python API** that allows users to build and customize deep learning pipelines with high-level configuration objects. The goal is to make the code more **maintainable**, **scalable**, and **user-extensible**, while preserving the core values of ClinicaDL: **reproducibility**, **robust support for neuroimaging**, and **data leakage prevention**.
+
+This is the first release candidate for version 2.0.0, with the final release planned for **September 2025**.
+
+### Highlights
+
+- Full **rewrite of the core library** — now fully object-oriented and modular.
+- New modules (see next section)
+- New **MAPS** architecture for managing model outputs and metadata.
+- Clear configuration-based design with JSON files and dedicated config classes based on **pydantic**.
+- Modern deep learning tooling: **PyTorch**, **MONAI**, **TorchIO**, **HuggingFace**, **MLflow**, and **Weights & Biases** support.
+- Extensive and fully updated **documentation**.
+
+
+### Added
+
+**Core Modules:**
+
+- `Trainer`: high-level training controller managing full model lifecycle.
+- `ClinicaDLModel`: flexible base class to define and extend custom architectures.
+- `CapsDataset`: redesigned dataset class in the new `dataset` module, tailored for CAPS/MAPS.
+- `Splitter`: new module for managing train/val/test split logic.
+- `Maps`: a structured and reproducible representation of model outputs and metadata.
+
+**Configuration Classes:**
+
+- `OptimizationConfig`, `DataloaderConfig`, `LossConfig`, `TransformConfig`, `MetricConfig`, etc.
+- Designed to be composable and readable using TOML files.
+- Stored alongside results to ensure **experiment traceability**.
+
+**Integration with Modern Tools:**
+
+- **Transforms**: use of `torchio` and `monai.transforms` for preprocessing and data augmentation.
+- **Metrics**: integration with MONAI metrics and support for custom metrics.
+- **Networks**: fully compatible with native PyTorch models.
+- **Logging**: support for **MLflow** and **Weights & Biases (W&B)** out of the box.
+- **HuggingFace**: integration point for loading pretrained models and tokenizers.
+
+**Documentation:**
+
+- Fully rewritten **Sphinx documentation** with improved structure and usage examples.
+- Interactive object documentation and visual MAPS structure navigation.
+
+---
+
+### Changed
+
+- All pipelines removed and replaced by a **unified API-driven interface**.
+- Internal architecture redesigned for **independent modules** that can be combined or extended.
+- CLI options replaced by TOML configuration — reducing duplication and increasing clarity.
+- All training now done through `Trainer`, using configuration objects and custom hooks.
+
+---
+
+### Removed
+
+- All legacy CLI commands (e.g., `clinicadl train`, `clinicadl random-search`, etc.).
+- Old pipelines (`train_from_json`, `preprocessing run`, etc.).
+- JSON-based configuration files.
+- Hardcoded command-line flags and argparse logic.
+
+---
+
+### Breaking Changes
+
+- **Backward compatibility is broken** with all 1.x versions.
+- You must migrate to the new API and TOML-based configuration system.
+
+---
+
+
+## [1.6.1] - 2024-04-05
 
 ### Fixed
 
@@ -21,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Change black and isort for ruff and codespell,
 * Update type hint and docstring,
 
+
 ### New
 
 * Add `--fsdp` option 
@@ -28,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## ClinicaDL 1.6.0
+## [1.6.0] – 2024-02-16
 
 ### Fixed
 
@@ -54,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `hugging-face push/pull` pipelines to share models on HuggingFace,
 * Add confidence intervals and metrics 
 
-## ClinicaDL 1.5.1
+## [1.5.1] – 2023-10-07
 
 ### Fixed
 
@@ -71,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop.
   
 
-## ClinicaDL 1.5.0
+## [1.5.0] – 2023-09-12
 
 ### Fixed
 
@@ -91,7 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 
 
-## ClinicaDL 1.4.0
+## [1.4.0] – 2023-06-09
 
 ### Fixed
 
@@ -119,7 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## ClinicaDL 1.3.1
+## [1.3.1] – 2023-05-15
 
 ### Fixed
 
@@ -134,7 +210,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### New 
 
 * Add `--caps_directory` option in `clinicadl tsvtools get-labels`.
-## ClinicaDL 1.3.0
+
+## [1.3.0] – 2023-04-13
 
 ### New 
 
@@ -157,7 +234,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Update tutorial.
   
 
-## ClinicaDL 1.2.0
+## [1.2.0] – 2023-02-15
 
 ### Changed
 
@@ -179,7 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `quality-check t1-linear` 
 
 
-## ClinicaDL 1.1.1
+## [1.1.1] – 2022-07-28
 
 ### Changed
 
@@ -199,7 +276,7 @@ to visualize the model layers.
 
 - Fix bug when using the `clinicadl train list_models` command.
 
-## ClinicaDL 1.1.0
+## [1.1.0] – 2022-07-10
 
 ### Changed
 
@@ -238,7 +315,7 @@ to visualize the model layers.
 - Documentation was updated.
 
 
-## ClinicaDL 1.0.4
+## [1.0.4] – 2021-12-6
 
 ### Changed
 
@@ -261,14 +338,14 @@ Fix label code generation
 Remove all occurrences of a group in a MAPS when choosing the `overwriting` option.
 Fix `resume` when the training.tsv file is empty.
 
-## ClinicaDL 1.0.3 (release bugfix)
+## [1.0.3] – 2021-09-21 (release bugfix)
 
 ### Fixed
 
 - Fix import module for VAE architectures.
 
 
-## ClinicaDL 1.0.2
+## [1.0.2] – 2021-09-20
 
 ### Changed
 
@@ -285,7 +362,7 @@ Fix `resume` when the training.tsv file is empty.
 - Replace the `predict` arguments passed through the CLI.
 - Fix issue when using multiple cohorts.
 
-## ClinicaDL 1.0.1
+## [1.0.1] – 2021-08-31
 
 ### Changed
 
@@ -294,7 +371,7 @@ Fix `resume` when the training.tsv file is empty.
 - `extract` improve this functionality with more expressive and easy to understand flags.
 - Change the test for `extract`.
 
-## ClinicaDL 1.0
+## [1.0] – 2021-08-25
 
 Welcome in **ClinicaDL 1.0.0** ! 
 
@@ -400,7 +477,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
 
 ### Security
 
-## ClinicaDL 0.2.2
+## [0.2.2] – 2021-06-02
 
 ### Added
 
@@ -421,7 +498,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
   generate` are now defined in `random_search.json`.
 - Remove tensorboardx dependency.
 
-## ClinicaDL 0.2.1
+## [0.2.1] – 2021-05-18
 
 ### Added
 
@@ -438,7 +515,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
 - Scripts and data related to MedIA publication.
 
 
-## ClinicaDL 0.2.0
+## [0.2.0] – 2021-02-08
 
 ### Added
 
