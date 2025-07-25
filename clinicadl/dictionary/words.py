@@ -52,6 +52,7 @@ OPTIMIZER = "optimizer"
 OUTPUT = "output"
 PARTICIPANT = "participant"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
+PERFORMANCE = "performance"
 PREPARATION = "preparation"
 PREDICTIONS = "predictions"
 PREPROCESSING = "preprocessing"

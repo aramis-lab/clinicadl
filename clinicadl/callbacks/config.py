@@ -5,6 +5,7 @@ from .factory import *
 from .factory.base import Callback
 from .factory.checkpoint_saver import _CheckpointSaver
 from .factory.logger import _Logger
+from .factory.monitor import _Monitor
 from .factory.training_loss import _TrainingLoss
 
 
