@@ -281,7 +281,7 @@ def test_bad_inputs(args, configs):
         configs = [configs]
     for config in configs:
         with pytest.raises(ValidationError):
-            config(**args, pred_key="output")
+            config(**args)
 
 
 @pytest.mark.parametrize("args,configs", GOOD_INPUTS)
@@ -289,16 +289,14 @@ def test_good_inputs(args: dict, configs):
     if not isinstance(configs, list):
         configs = [configs]
     for config in configs:
-        c = config(**args, pred_key="output", label_key="label")
+        c = config(**args)
         for arg, value in args.items():
             assert getattr(c, arg) == value
-        assert c.label_key == "label"
-        assert c.pred_key == "output"
 
 
 def test_confusion_matrix_metric():
     for metric in ConfusionMatrixMetricName:
-        c = ConfusionMatrixMetricConfig(metric_name=metric, pred_key="output")
+        c = ConfusionMatrixMetricConfig(metric_name=metric)
         assert isinstance(c.get_object(), MonaiMetricWrapper)
         assert isinstance(c.get_object().metric, ConfusionMatrixMetric)
 
@@ -312,14 +310,10 @@ def test_check_spatial_dim():
 
 def test_check_loss_metric():
     with pytest.raises(ValidationError):
-        LossMetricConfig(loss_fn=lambda x: x, reduction=None, pred_key="output")
-    config = LossMetricConfig(
-        loss_fn=MSELoss(reduction="sum"), reduction=None, pred_key="output"
-    )
+        LossMetricConfig(loss_fn=lambda x: x, reduction=None)
+    config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction=None)
     assert config.reduction == "sum"
-    c = get_metric_config(
-        "LossMetric", loss_fn=lambda x: x, reduction="mean", pred_key="output"
-    )
+    c = get_metric_config("LossMetric", loss_fn=lambda x: x, reduction="mean")
     assert c.name == "LossMetric"
     assert isinstance(c.get_object(), MonaiMetricWrapper)
     assert isinstance(c.get_object().metric, metrics.LossMetric)
@@ -329,7 +323,6 @@ MANDATORY_ARGS = {
     "max_val": 1,
     "class_thresholds": (0.5, 0.5),
     "spatial_dims": 2,
-    "pred_key": "output",
     "postprocessing": [tio.Crop(cropping=1), AsDiscreteConfig(threshold=0.5)],
 }
 
@@ -360,6 +353,7 @@ def test_get_object(config, expected_class):
     assert isinstance(transform_from_config, MonaiMetricWrapper)
     assert isinstance(transform_from_config.metric, expected_class)
     assert transform_from_config.pred_key == "output"
+    assert transform_from_config.label_key == "label"
     assert len(transform_from_config.postprocessing.transforms) == 2
     assert isinstance(transform_from_config.postprocessing.transforms[0], tio.Crop)
     assert isinstance(
@@ -367,6 +361,7 @@ def test_get_object(config, expected_class):
     )
 
     c.label_key = None
+    c.pred_key = "abc"
     transform_from_config = c.get_object()
     assert isinstance(
         transform_from_config.postprocessing._transforms_processed[0], tio.Crop
@@ -376,6 +371,7 @@ def test_get_object(config, expected_class):
         MonaiTransformWrapper,
     )
     assert transform_from_config.label_key is None
+    assert transform_from_config.pred_key == "abc"
 
 
 @pytest.mark.parametrize(
@@ -405,9 +401,7 @@ def test_get_metric_config(name, config):
     assert isinstance(c, config)
 
     if name == "SSIMMetric":
-        config = get_metric_config(
-            "SSIMMetric", spatial_dims=2, data_range=1.5, pred_key="output"
-        )
+        config = get_metric_config("SSIMMetric", spatial_dims=2, data_range=1.5)
         assert config.name == "SSIMMetric"
         assert config.data_range == 1.5
         assert config.win_size == 11
@@ -418,10 +412,8 @@ def test_get_metric_config(name, config):
 
 def test_check_reduction():
     with pytest.raises(ValidationError):
-        LossMetricConfig(loss_fn=lambda x: x, reduction=None, pred_key="output")
-    config = LossMetricConfig(
-        loss_fn=MSELoss(reduction="sum"), reduction=None, pred_key="output"
-    )
+        LossMetricConfig(loss_fn=lambda x: x, reduction=None)
+    config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction=None)
     assert config.reduction == "sum"
 
 
@@ -450,9 +442,9 @@ def test_optimum(config, optimum):
 
 
 def test_optimum_confusion_matrix():
-    config = ConfusionMatrixMetricConfig(metric_name="fpr", pred_key="output")
+    config = ConfusionMatrixMetricConfig(metric_name="fpr")
     assert config.optimum() == "min"
-    config = ConfusionMatrixMetricConfig(metric_name="tpr", pred_key="output")
+    config = ConfusionMatrixMetricConfig(metric_name="tpr")
     assert config.optimum() == "max"
     metric = config.get_object()
     assert metric.optimum == "max"

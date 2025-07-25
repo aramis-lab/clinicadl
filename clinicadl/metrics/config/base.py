@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import monai.metrics
 from pydantic import field_validator, model_validator
 
-from clinicadl.dictionary.words import NAME
+from clinicadl.dictionary.words import LABEL, NAME, OUTPUT
 from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
 from clinicadl.transforms.types import TransformOrConfig
@@ -20,8 +20,8 @@ __all__ = ["MetricConfig", "LossMetricConfig"]
 class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
-    pred_key: str
-    label_key: Optional[str] = None
+    pred_key: str = OUTPUT
+    label_key: Optional[str] = LABEL
     postprocessing: list[TransformOrConfig] = []
 
     def get_object(self) -> Metric:
