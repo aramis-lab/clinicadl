@@ -1,10 +1,9 @@
 from abc import ABC
 from typing import Any
 
-from .base import Callback
 from .factory import *
+from .factory.base import Callback
 from .factory.checkpoint_saver import _CheckpointSaver
-from .factory.chronometer import _Chronometer
 from .factory.logger import _Logger
 from .factory.training_loss import _TrainingLoss
 

@@ -7,49 +7,61 @@ from clinicadl.dictionary.words import CHECKPOINT, MODEL, OPTIMIZER
 from clinicadl.metrics.config.enum import Optimum
 from clinicadl.metrics.handler import Metrics
 
-from ..base import Callback
+from .base import Callback
 
 
 class ModelSelection(Callback, Metrics):
     """
     Callback that manages model checkpoint selection based on specified metrics.
 
-    At the end of each epoch, this callback evaluates the metrics and saves the model
-    checkpoint corresponding to the best score (minimum or maximum, depending on the
-    metric's optimum criterion).
+    At the end of each epoch, this callback evaluates the monitored metrics and saves
+    the model checkpoint corresponding to the best score (either minimum or maximum,
+    depending on the configured criterion).
 
-    This ensures that the model associated with the best performance on each monitored
+    This ensures that the model associated with the best performance on each tracked
     metric is preserved and can be restored later.
 
     Attributes
     ----------
-    metrics : list of str
-        List of metric names used to determine whether a new best model should be saved.
+        metrics : list of str
+            List of metric names used to determine whether a new best model should be saved.
 
-    Notes
-    -----
-    .. note:
-        When both `ModelSelection` and `EarlyStopping` are used:
+    .. note::
 
-        - `CallbacksHandler` ensures all metrics used by `EarlyStopping` are added to `ModelSelection` if not already present.
-        - This guarantees that any model selected based on a stopping condition is also saved properly.
+        When both ``ModelSelection`` and ``EarlyStopping`` are used:
 
-    .. note:
+        - ``_CallbacksHandler`` ensures all metrics used by ``EarlyStopping`` are added
+          to ``ModelSelection`` if not already present.
+        - This guarantees that any model selected based on a stopping condition is also
+          saved properly.
+
+    .. note::
+
         - The logic for determining whether a metric has improved is based on whether it
-        should be maximized or minimized (`Optimum.MAX` or `Optimum.MIN`).
+          should be maximized or minimized (``Optimum.MAX`` or ``Optimum.MIN``).
         - Models are stored in separate folders per metric to avoid overwriting.
 
     Examples
     --------
     .. code-block:: python
 
-        metrics = {"mse_mean": MSEMetricConfig(recution = "mean"), "mse_sum" : MSEMetricConfig(reduction = "sum", "mae" : MAEMetricConfig()}
+        from clinicadl.callbacks import ModelSelection
+        from clinicadl.metrics import MSEMetricConfig, MAEMetricConfig
+        from clinicadl.trainer import Trainer
+
+        metrics = {
+            "mse_mean": MSEMetricConfig(reduction="mean"),
+            "mse_sum": MSEMetricConfig(reduction="sum"),
+            "mae": MAEMetricConfig()
+        }
+
         selection = ModelSelection(metrics=["mse_mean", "mse_sum", "mae"])
 
         trainer = Trainer(
-            maps_path = "maps",
+            maps_path="maps",
             metrics=metrics,
-            callbacks=[selection])
+            callbacks=[selection]
+        )
     """
 
     def __init__(

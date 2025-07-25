@@ -7,12 +7,12 @@ from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
-from clinicadl.callbacks.handler import Callback, CallbacksHandler
+from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.datasets import CapsDataset
+from clinicadl.IO.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
-from clinicadl.maps.maps import Maps
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricType
@@ -29,13 +29,13 @@ from clinicadl.utils.typing import PathType
 
 class Trainer:
     """
-    Trainer class to manage the full lifecycle of model training, evaluation, and prediction
+    Trainer class to manage the full lifecycle of model **training**, **evaluation**, and **prediction**
     within the ClinicaDL framework.
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
     It leverages ClinicaDL's components like :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
-    and :py:class:`~clinicadl.maps.maps.Maps`,
+    and :py:class:`~clinicadl.IO.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
     The Trainer follows a callback-driven design pattern: it invokes callbacks at key stages
@@ -53,16 +53,16 @@ class Trainer:
         Directory path where training outputs, maps, and metrics will be saved.
     model : :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
         The deep learning model to train and evaluate.
-    callbacks : list[Callback], optional
+    callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
         Defaults to None (no callbacks).
     metrics : dict[str, MetricType], optional
         Dictionary of metric names and metric instances for monitoring model performance.
         Defaults to None.
-    optim_config : OptimizationConfig, optional
+    optim_config : :py:class:`~clinicadl.optim.config.OptimizationConfig`, optional
         Configuration object specifying optimizer settings and training schedule.
         Defaults to `OptimizationConfig()`.
-    comp_config : ComputationalConfig, optional
+    comp_config : :py:class:`~clinicadl.utils.computational.config.ComputationalConfig`, optional
         Configuration for computation environment (e.g., device type, mixed precision).
         Defaults to `ComputationalConfig()`.
     _overwrite : bool, optional
@@ -120,11 +120,10 @@ class Trainer:
             comp_config=comp_config,
             optim_config=optim_config,
             callbacks=callbacks,
-            metrics=,
+            metrics=metrics,
             _overwrite=True,
         )
 
-        # Cross-validation loop
         for split in splitter.get_splits(dataset=dataset_t1_image):
             split.build_train_loader(dataloader_config)
             split.build_val_loader(dataloader_config)
@@ -134,9 +133,9 @@ class Trainer:
     Notes
     -----
     .. note:
-        - Training utilizes automatic mixed precision (AMP) if enabled in `comp_config`.
+        - Training utilizes automatic mixed precision (AMP) if enabled in :py:class:`~clinicadl.utils.computational.config.ComputationalConfig`.
         - The callback system provides hooks to extend training behavior without altering core code.
-        - The Trainer expects datasets and models compatible with ClinicaDL interfaces.
+        - The :py:class:`~clinicadl.train.trainer.Trainer`: expects datasets and models compatible with ClinicaDL interfaces.
         - Metrics can be dynamically updated during evaluation and training.
 
     """
@@ -154,7 +153,7 @@ class Trainer:
     ) -> None:
         train_metrics = MetricsHandler(metrics=metrics, loss=model.loss)
 
-        self.callbacks = CallbacksHandler(
+        self.callbacks = _CallbacksHandler(
             metrics=train_metrics,
             callbacks=callbacks if callbacks is not None else [],
         )
@@ -234,8 +233,6 @@ class Trainer:
         self.on_train_end(split)
 
     def on_train_begin(self, split: Split) -> None:
-        """Prepare training by setting model to training mode, creating maps, and resetting states."""
-
         self.model.train()
         self.reset(split)
 
@@ -280,7 +277,6 @@ class Trainer:
         self._write_end_training_infos(split=split)
 
     def reset(self, split: Optional[Split] = None):
-        """TO COMPLETE"""
         if split:
             self.config.reset(split=split)
         self.metrics.reset(df=True)
@@ -376,7 +372,7 @@ class Trainer:
         model = ClinicaDLModel.from_json(maps.model_json)
         comp_config = ComputationalConfig.from_json(maps.training.computational_json)
         optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
-        callbacks = CallbacksHandler.from_json(maps.training.callbacks_json)
+        callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
         metrics = MetricsHandler.from_json(maps.training.metrics_json)
 
         # TODO : check seed ?

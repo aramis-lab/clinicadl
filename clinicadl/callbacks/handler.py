@@ -6,11 +6,10 @@ from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
-from .base import Callback
 from .config import get_callback_from_dict
 from .factory import *
+from .factory.base import Callback
 from .factory.checkpoint_saver import _CheckpointSaver
-from .factory.chronometer import _Chronometer
 from .factory.logger import _Logger
 from .factory.training_loss import _TrainingLoss
 
@@ -19,7 +18,6 @@ LOSS = "loss"
 PREFERRED_ORDER = [
     _TrainingLoss.__name__,
     LRScheduler.__name__,
-    _Chronometer.__name__,
     _CheckpointSaver.__name__,
     Checkpoint.__name__,
     ModelSelection.__name__,
@@ -32,7 +30,7 @@ PREFERRED_ORDER = [
 ]
 
 
-class CallbacksHandler:
+class _CallbacksHandler:
     """
     Central handler for all training callbacks in the ClinicaDL pipeline.
 
@@ -122,7 +120,6 @@ class CallbacksHandler:
         Add default callbacks if they are not already provided.
         """
         defaults = {
-            _Chronometer.__name__: _Chronometer(),
             _TrainingLoss.__name__: _TrainingLoss(),
             _Logger.__name__: _Logger(),
             _CheckpointSaver.__name__: _CheckpointSaver(),

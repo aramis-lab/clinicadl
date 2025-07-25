@@ -4,8 +4,11 @@
 ==================================
 
 .. automodule:: clinicadl.transforms.config
+   :no-index:
 
 .. currentmodule:: clinicadl.transforms.config
+
+.. _api_preprocessing:
 
 Pre-processing
 ^^^^^^^^^^^^^^
@@ -13,7 +16,7 @@ Pre-processing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/config_class.rst
+   :template: config_class/class.rst
 
    RescaleIntensityConfig
    ZNormalizationConfig
@@ -28,6 +31,9 @@ Pre-processing
    PadConfig
    RemapLabelsConfig
    OneHotConfig
+
+
+.. _api_augmentation:
 
 Augmentation
 ^^^^^^^^^^^^
@@ -50,6 +56,9 @@ Augmentation
    RandomAffineConfig
    RandomElasticDeformationConfig
    RandomAnisotropyConfig
+
+
+.. _api_post_processing:
 
 Post-processing
 ^^^^^^^^^^^^^^^

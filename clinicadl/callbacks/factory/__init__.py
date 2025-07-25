@@ -1,3 +1,4 @@
+from .base import Callback
 from .checkpoint import Checkpoint
 from .code_carbon import CodeCarbon
 from .comet import Comet

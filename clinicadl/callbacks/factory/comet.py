@@ -6,13 +6,12 @@ from typing import Optional
 
 import numpy as np
 
-from ..base import Callback
+from .base import Callback
 
 
 class Comet(Callback):
     """
-    A :class:`TrainingCallback` integrating the experiment tracking tool
-    `comet_ml` (https://www.comet.com/site/).
+    A :class:`TrainingCallback` integrating the experiment tracking tool `comet_ml <https://www.comet.com/site/>`_.
 
     It allows users to store their configs, monitor
     their trainings and compare runs through a graphic interface. To be able use this feature

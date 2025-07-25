@@ -17,6 +17,7 @@
    :nosignatures:
    :template: autosummary/class.rst
 
+    Callback
     Checkpoint
     CodeCarbon
     Comet
@@ -27,18 +28,3 @@
     Tensorboard
     WandB
 
-
-
-:mod:`clinicadl.callbacks.handler`
-----------------------------------
-
-.. automodule:: clinicadl.callbacks.handler
-
-.. currentmodule:: clinicadl.callbacks.handler
-
-.. autosummary::
-   :toctree: ../generated/
-   :nosignatures:
-   :template: autosummary/class.rst
-
-    CallbacksHandler

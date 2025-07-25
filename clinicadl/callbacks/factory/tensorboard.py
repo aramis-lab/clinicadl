@@ -6,7 +6,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from ..base import Callback
+from .base import Callback
 
 
 class Tensorboard(Callback):
@@ -15,13 +15,11 @@ class Tensorboard(Callback):
 
     Attributes
     ----------
-    log_dir : Optional[str]
-        Directory where TensorBoard logs will be saved. If None, defaults to a logs folder within the split directory.
-    log_model_graph : bool
-        Whether to log the model graph once at the start of training.
+        log_dir : Optional[str]
+            Directory where TensorBoard logs will be saved. If None, defaults to a logs folder within the split directory.
+        log_model_graph : bool
+            Whether to log the model graph once at the start of training.
 
-    Notes
-    -----
     .. note:
         Metrics are logged at the end of each epoch using values from the training state.
         The model graph can be logged once after training begins if an example input is provided.

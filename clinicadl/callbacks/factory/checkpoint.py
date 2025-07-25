@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from clinicadl.callbacks.training_state import _TrainingState
 
-from ..base import Callback
+from .base import Callback
 
 
 class Checkpoint(Callback):

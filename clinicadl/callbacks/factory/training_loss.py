@@ -6,7 +6,7 @@ import pandas as pd
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
 
-from ..base import Callback
+from .base import Callback
 
 
 class _TrainingLoss(Callback):

@@ -26,22 +26,28 @@ class Maps(Directory):
     """
     Entry point to access a ClinicaDL MAPS directory.
 
-    The `Maps` class provides access to the structure and content of a MAPS
+    The ``Maps`` class provides access to the structure and content of a MAPS
     directory, including training data, prediction results, model checkpoints,
     and associated metadata.
 
-    Typically, users will only call the `load()` method to inspect or reuse
+    Typically, users only need to call the ``load()`` method to inspect or reuse
     an already trained model directory.
 
-    Attributes:
-        training (TrainingDir): Access to training-related files (data, splits, checkpoints).
-        predictions (PredictionsDir): Access to prediction results for test groups.
+    Attributes
+    ----------
+    training : :py:class:`~clinicadl.IO.maps.training.TrainingDir`
+        Access to training-related files (data, splits, checkpoints).
+    predictions : :py:class:`~clinicadl.IO.maps.predictions.PredictionsDir`
+        Access to prediction results for test groups.
 
-    Example:
-     .. code-block:: python
-        from clinicadl.maps import Maps
+    Examples
+    --------
+    .. code-block:: python
+
+        from clinicadl.IO.maps import Maps
         maps = Maps("/path/to/maps_dir")
         maps.load()  # Load existing structure
+
         maps.training.split_list
         >>> [0, 1, 2, 3, 4]
 
@@ -53,12 +59,6 @@ class Maps(Directory):
         metrics_file = pred_group.splits[0].best_metrics["loss"].metrics_tsv
         print(metrics_file)
         >>> /path/to/maps_dir/predictions/testCNvsAD/split-0/best-loss/metrics.tsv
-
-
-    Public Methods:
-        load(): Load the full MAPS directory structure from disk.
-        get_model(): Load the model definition from `model.json`.
-
     """
 
     def __init__(self, maps_path: PathType):
@@ -102,60 +102,64 @@ class Maps(Directory):
         This method reads all subfolders (training, predictions, data splits, etc.)
         and reconstructs the directory tree as Python objects.
 
-        After loading, you can navigate through the Maps object to access the structure.
+        After loading, you can navigate through the :class:`~clinicadl.IO.maps.Maps` object to access all components.
 
-        Directory layout after loading a trained MAPS:
+        Directory Layout
+        ----------------
+        Example structure after training:
 
-        maps_path/
-        ├── architecture.log
-        ├── environment.txt
-        ├── model.json
-        ├── summary.log
-        ├── predictions
-        │   └── test<GroupName>
-        │       ├── data.tsv
-        │       ├── metrics.json
-        │       ├── caps_dataset.json
-        │       └── split-<N>
-        │           ├── best-<metric>
-        │           │   ├── metrics.tsv
-        │           │   └── caps_output
-        │           └── computational.json
-        └── training
-            ├── data
-            │   ├── data.tsv
-            │   ├── caps_dataset.json
-            │   ├── train
-            │   │   └── split-<N>
-            │   │       └──  data.tsv
-            │   └── validation
+        .. code-block:: text
+
+            maps_path/
+            ├── architecture.log
+            ├── environment.txt
+            ├── model.json
+            ├── summary.log
+            ├── predictions
+            │   └── test<GroupName>
+            │       ├── data.tsv
+            │       ├── metrics.json
+            │       ├── caps_dataset.json
             │       └── split-<N>
-            │           └──  data.tsv
-            ├── split-<N>
-            │   ├── best-<metric>
-            │   │   ├── model.pth.tar
-            │   │   └── optimizer.pth.tar
-            │   ├── checkpoints
-            │   │   └── epoch-<K>
-            │   │       ├── model.pth.tar
-            │   │       └── optimizer.pth.tar
-            │   ├── logs
-            │   │   └── training.tsv
-            │   └── tmp
-            │       ├── model.pth.tar
-            │       └── optimizer.pth.tar
-            ├── computational.json
-            ├── optimization.json
-            ├── metrics.json
-            └── callbacks.json
+            │           ├── best-<metric>
+            │           │   ├── metrics.tsv
+            │           │   └── caps_output/
+            │           └── computational.json
+            └── training
+                ├── data
+                │   ├── data.tsv
+                │   ├── caps_dataset.json
+                │   ├── train
+                │   │   └── split-<N>
+                │   │       └── data.tsv
+                │   └── validation
+                │       └── split-<N>
+                │           └── data.tsv
+                ├── split-<N>
+                │   ├── best-<metric>
+                │   │   ├── model.pth.tar
+                │   │   └── optimizer.pth.tar
+                │   ├── checkpoints
+                │   │   └── epoch-<K>
+                │   │       ├── model.pth.tar
+                │   │       └── optimizer.pth.tar
+                │   ├── logs
+                │   │   └── training.tsv
+                │   └── tmp
+                │       ├── model.pth.tar
+                │       └── optimizer.pth.tar
+                ├── computational.json
+                ├── optimization.json
+                ├── metrics.json
+                └── callbacks.json
 
-        Notes:
-            - `<N>` = split index (e.g. 0, 1, 2)
-            - `<GroupName>` = test group name (e.g. "CNvsAD")
-            - `<metric>` = evaluation metric used for best model selection
-
+        .. note::
+            - ``<N>`` refers to the split index (e.g., 0, 1, 2).
+            - ``<GroupName>`` refers to the name of the test group (e.g., ``CNvsAD``).
+            - ``<metric>`` refers to the metric used to select the best model (e.g., ``loss``).
 
         """
+
         super().load()
 
         self.predictions.load()

@@ -7,13 +7,13 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
 
-from ..base import Callback
+from .base import Callback
 
 
 class WandB(Callback):  # pragma: no cover
     """
     A training callback that integrates with the experiment tracking tool
-    `Weights & Biases <https://wandb.ai/>`.
+    `Weights & Biases <https://wandb.ai/>`_.
 
     This callback enables logging of training configurations, metrics, and artifacts,
     allowing users to monitor experiments and compare training runs through the WandB
@@ -21,17 +21,16 @@ class WandB(Callback):  # pragma: no cover
 
     Requirements
     ------------
-    - The `wandb` package must be installed in your Python environment.
-      You can install it with:
+        - The `wandb` package must be installed in your Python environment.
+        You can install it with:
 
     .. code-block:: bash
 
         pip install wandb
 
-    Notes
-    -----
-    - WandB supports local and cloud logging.
-    - This callback is useful for reproducibility and experiment tracking.
+    .. note::
+        - WandB supports local and cloud logging.
+        - This callback is useful for reproducibility and experiment tracking.
 
     Examples
     --------
@@ -40,7 +39,7 @@ class WandB(Callback):  # pragma: no cover
         from clinicadl.callbacks import WandB
 
         wandb_callback = WandB(project="my_project", entity="my_team")
-        handler = CallbacksHandler(callbacks=[wandb_callback])
+        handler = _CallbacksHandler(callbacks=[wandb_callback])
     """
 
     def __init__(
