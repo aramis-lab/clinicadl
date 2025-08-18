@@ -27,7 +27,7 @@ jobs:
       - ubuntu
       - gpu
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
