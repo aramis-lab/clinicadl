@@ -3,13 +3,20 @@ from typing import Optional, Sequence, Union
 import torch
 from monai.config.type_definitions import NdarrayOrTensor
 from monai.transforms import Transform
-from monai.utils.type_conversion import convert_to_dst_type, convert_to_tensor
+from monai.utils.type_conversion import (
+    convert_data_type,
+    convert_to_dst_type,
+    convert_to_tensor,
+)
 
 
 class Format(Transform):
     """
     Transform to reformat a :py:class:`torch.Tensor` or a :py:class:`np.ndarray`,
     i.e. to modify its shape and/or its dtype.
+
+    This transform is written to behave like other postprocessing transforms in
+    :py:mod:`monai.transforms.post`.
 
     Parameters
     ----------
@@ -40,14 +47,15 @@ class Format(Transform):
         self,
         img: NdarrayOrTensor,
     ) -> NdarrayOrTensor:
-        img_t: torch.Tensor = convert_to_tensor(img)
+        img: torch.Tensor = convert_to_tensor(img)
+        img_t, *_ = convert_data_type(img, torch.Tensor)
 
         if self.squeeze is True:
             img_t.squeeze_()
-        elif self.squeeze:
+        elif self.squeeze is not False:
             img_t.squeeze_(self.squeeze)
 
-        if self.unsqueeze:
+        if self.unsqueeze is not None:
             img_t.unsqueeze_(self.unsqueeze)
 
         out, *_ = convert_to_dst_type(img_t, img, dtype=self.dtype)
