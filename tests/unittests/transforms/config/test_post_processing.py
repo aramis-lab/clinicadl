@@ -10,11 +10,13 @@ from clinicadl.transforms.config import (
     AsDiscreteConfig,
     DistanceTransformEDTConfig,
     FillHolesConfig,
+    FormatConfig,
     KeepLargestConnectedComponentConfig,
     LabelFilterConfig,
     RemoveSmallObjectsConfig,
     SobelGradientsConfig,
 )
+from clinicadl.transforms.homemade import Format
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 BAD_INPUTS = [
@@ -23,6 +25,7 @@ BAD_INPUTS = [
     ({"to_onehot": 0}, AsDiscreteConfig),
     ({"rounding": "abc"}, AsDiscreteConfig),
     ({}, AsDiscreteConfig),
+    ({"dtype": int, "argxmax": True}, SobelGradientsConfig),
     ({"to_onehot": 2, "threshold": 0.5}, AsDiscreteConfig),
     ({"applied_labels": 1.4}, KeepLargestConnectedComponentConfig),
     (
@@ -40,7 +43,9 @@ BAD_INPUTS = [
     ({"kernel_size": 4}, SobelGradientsConfig),
     ({"spatial_axes": -1}, SobelGradientsConfig),
     ({"padding_mode": "abc"}, SobelGradientsConfig),
-    ({"dtype": int}, SobelGradientsConfig),
+    ({"dtype": int}, [SobelGradientsConfig, FormatConfig]),
+    ({"unsqueeze": -1}, FormatConfig),
+    ({"squeeze": [0, -1]}, FormatConfig),
 ]
 GOOD_INPUTS = [
     (
@@ -50,6 +55,7 @@ GOOD_INPUTS = [
             DistanceTransformEDTConfig,
             RemoveSmallObjectsConfig,
             SobelGradientsConfig,
+            FormatConfig,
         ],
     ),
     (
@@ -59,6 +65,7 @@ GOOD_INPUTS = [
             DistanceTransformEDTConfig,
             RemoveSmallObjectsConfig,
             SobelGradientsConfig,
+            FormatConfig,
         ],
     ),
     (
@@ -73,6 +80,7 @@ GOOD_INPUTS = [
             "threshold": None,
             "rounding": None,
             "include": ["abc"],
+            "dtype": torch.int,
         },
         AsDiscreteConfig,
     ),
@@ -193,6 +201,10 @@ GOOD_INPUTS = [
         },
         SobelGradientsConfig,
     ),
+    ({"unsqueeze": 0, "squeeze": True, "dtype": torch.int16}, FormatConfig),
+    ({"unsqueeze": None, "squeeze": 1, "dtype": None}, FormatConfig),
+    ({"squeeze": False}, FormatConfig),
+    ({"squeeze": [0, 1]}, FormatConfig),
 ]
 
 
@@ -254,6 +266,7 @@ def test_good_inputs(args: dict, configs):
         ),
         ({}, FillHolesConfig, transforms.FillHoles),
         ({}, SobelGradientsConfig, transforms.SobelGradients),
+        ({}, FormatConfig, Format),
     ],
 )
 def test_get_object(args, config, transform):
