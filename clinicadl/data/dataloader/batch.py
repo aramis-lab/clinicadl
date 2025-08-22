@@ -192,7 +192,9 @@ class Batch(list[DataPoint]):
             memory_format=memory_format,
         )
 
-    def get_field(self, field_name: str) -> Union[torch.Tensor, list[Any]]:
+    def get_field(
+        self, field_name: str, ensure_channel_dim: bool = False
+    ) -> Union[torch.Tensor, list[Any]]:
         """
         Gathers all the values of a field in the batch.
 
@@ -226,11 +228,19 @@ class Batch(list[DataPoint]):
 
         if all(isinstance(v, torch.Tensor) for v in values):
             try:
-                return torch.stack(values, dim=0)
+                values = torch.stack(values, dim=0)
             except RuntimeError:  # not the same shape
                 return values
         else:
-            return values
+            try:
+                values = torch.tensor(values)
+            except (TypeError, ValueError, RuntimeError):  # e.g. None in labels
+                return values
+
+        if len(values.shape) == 1 and ensure_channel_dim:  # at least two dimensions
+            return values.unsqueeze(1)
+
+        return values
 
     @staticmethod
     def _to_tensor(value: Any) -> torch.Tensor:
