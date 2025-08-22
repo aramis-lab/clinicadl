@@ -112,9 +112,9 @@ class MonaiMetricWrapper(Metric):
 
         batch = Batch(batch)
 
-        y_pred = batch.get_field(self.pred_key)
+        y_pred = batch.get_field(self.pred_key, ensure_channel_dim=True)
         if self.label_key:
-            y = batch.get_field(self.label_key)
+            y = batch.get_field(self.label_key, ensure_channel_dim=True)
         else:
             y = None
 
