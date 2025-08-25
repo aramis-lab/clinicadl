@@ -76,3 +76,4 @@ Post-processing
    LabelFilterConfig
    FillHolesConfig
    SobelGradientsConfig
+   FormatConfig
