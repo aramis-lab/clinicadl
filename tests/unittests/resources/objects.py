@@ -19,10 +19,12 @@ from clinicadl.IO.maps.maps import Maps
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config import (
     ConfusionMatrixMetricConfig,
+    LossMetricConfig,
     MAEMetricConfig,
     MSEMetricConfig,
 )
 from clinicadl.metrics.handler import MetricsHandler
+from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
 from clinicadl.model import ClinicaDLModel
 from clinicadl.model.example_model import example_model
 from clinicadl.networks.config import ResNetConfig
@@ -91,16 +93,19 @@ MODEL = ClinicaDLModel(
 )
 
 METRICS_HANDLER = MetricsHandler(
-    loss=LOSS.get_object(), metrics={"mae": MAEMetricConfig(), "mse": MSEMetricConfig()}
+    loss=LossMetricConfig(loss_fn=LOSS.get_object()),
+    **{"mae": MAEMetricConfig(), "mse": MSEMetricConfig()},
 )
 
 SPLIT = Split(
     index=1, split_dir=SPLIT_DIR, train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
 )
 
-mae = MAEMetric()
+mae = MonaiMetricWrapper(
+    MAEMetric(), optimum="min", pred_key="output", label_key="label"
+)
 mse = MSEMetricConfig()
-matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
+matrix = ConfusionMatrixMetricConfig(metric_name="tpr")
 
 METRICS = {"mae": mae, "mse": mse, "matrix": matrix}
 CALLBACKS = [

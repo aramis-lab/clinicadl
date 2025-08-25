@@ -13,9 +13,9 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.IO.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
-from clinicadl.metrics.config import MetricConfig
+from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
-from clinicadl.metrics.types import MetricType
+from clinicadl.metrics.types import MetricOrConfig
 from clinicadl.model.clinicadl_model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
@@ -144,13 +144,15 @@ class Trainer:
         maps_path: PathType,
         model: ClinicaDLModel,
         callbacks: Optional[list[Callback]] = None,
-        metrics: Optional[dict[str, MetricType]] = None,
+        metrics: Optional[dict[str, MetricOrConfig]] = None,
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
         seed: int = 123,
     ) -> None:
-        train_metrics = MetricsHandler(metrics=metrics, loss=model.loss)
+        train_metrics = MetricsHandler(
+            loss=LossMetricConfig(loss_fn=model.loss), **metrics
+        )
 
         self.callbacks = _CallbacksHandler(
             metrics=train_metrics,

@@ -76,8 +76,9 @@ def test_serialization():
         exclude=None,
         argmax=False,
         to_onehot=None,
-        threshold=1,
+        threshold=1.0,
         rounding=None,
+        dtype=torch.float32,
     )
     assert d["transforms"] == [
         asdiscrete_ordered_dict,
