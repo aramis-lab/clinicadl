@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  cpu-tests:
     name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -29,3 +29,41 @@ jobs:
           cache: poetry
       - name: Run unit tests
         run: make test
+
+  gpu-tests:
+    name: GPU test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on:
+      - self-hosted
+      - gpu
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: poetry
+      - name: Run unit tests
+        run: make gpu-test
+
+  multi-gpu-tests:
+    name: Multi-GPUs test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on:
+      - self-hosted
+      - multi-gpu
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: poetry
+      - name: Run unit tests
+        run: make multi-gpu-test
