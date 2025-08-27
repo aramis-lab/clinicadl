@@ -86,7 +86,7 @@ install.doc: check.lock
 ## tests        : Run the unit tests
 .PHONY: test
 test: install
-	@$(POETRY) run python -m pytest -v -m "not gpu" -m "not multi_gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests
 
 ## gpu-tests    : Run only GPU unit tests
 .PHONY: gpu-test
