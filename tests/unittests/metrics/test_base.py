@@ -93,9 +93,8 @@ def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
     def ddp_test_builder(func):
         @wraps(func)
         def wrapped(rank, *args, **kwargs):
-            setup_ddp(rank, world_size)
-
             try:
+                setup_ddp(rank, world_size)
                 func(rank, *args, **kwargs)
             finally:
                 cleanup()
