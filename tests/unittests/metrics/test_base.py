@@ -1,5 +1,6 @@
 import os
 import random
+import socket
 from copy import deepcopy
 from functools import wraps
 from typing import Callable
@@ -67,12 +68,18 @@ def test_metric():
     assert metric.optimum == "max"
 
 
+def find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))  # let the OS pick a free port
+        return s.getsockname()[1]
+
+
 def setup_ddp(rank: int, world_size: int) -> None:
     """
     Expects of course GPUs.
     """
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
+    os.environ["MASTER_PORT"] = str(find_free_port())
     backend = "nccl"
     assert torch.cuda.device_count() >= world_size
     dist.init_process_group(backend, rank=rank, world_size=world_size)
