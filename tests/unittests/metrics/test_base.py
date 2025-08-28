@@ -2,6 +2,7 @@ import os
 import random
 from copy import deepcopy
 from functools import wraps
+from typing import Callable
 
 import pytest
 import torch
@@ -60,31 +61,34 @@ def test_metric():
 
         assert (metric(batch) == result).all()
 
-    print(metric.get_buffer())
-
     assert metric.aggregate() == 0.25
 
     assert metric.optimum == "max"
 
 
-def setup_ddp(rank, world_size):
+def setup_ddp(rank: int, world_size: int) -> None:
+    """
+    Expects of course GPUs.
+    """
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = str(random.randint(10000, 20000))
-    backend = "nccl" if torch.cuda.is_available() else "gloo"
+    os.environ["MASTER_PORT"] = "12355"
+    backend = "nccl"
+    assert torch.cuda.device_count() >= world_size
+    torch.cuda.set_device(rank)
+    print("Initiating DDP...")
     dist.init_process_group(backend, rank=rank, world_size=world_size)
-    if torch.cuda.is_available():
-        torch.cuda.set_device(rank)
 
 
-def cleanup():
+def cleanup() -> None:
     dist.destroy_process_group()
 
 
-def ddp_test(world_size: int):
+def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
     def ddp_test_builder(func):
         @wraps(func)
         def wrapped(rank, *args, **kwargs):
             setup_ddp(rank, world_size)
+            print("Done")
 
             try:
                 func(rank, *args, **kwargs)
@@ -101,6 +105,7 @@ WORLD_SIZE = 2
 
 @ddp_test(world_size=WORLD_SIZE)
 def ddp_worker(rank):
+    print("Testing the metric")
     metric = ConfusionMatrixMetric(metric_name="accuracy")
     if rank == 0:
         pred, target = Y_1_PRED.to(rank), Y_1.to(rank)
@@ -110,8 +115,6 @@ def ddp_worker(rank):
     elif rank == 1:
         pred, target = Y_2_PRED.to(rank), Y_2.to(rank)
         metric(pred, target)
-
-    dist.barrier()
 
     if rank == 0:
         out = metric.aggregate()
