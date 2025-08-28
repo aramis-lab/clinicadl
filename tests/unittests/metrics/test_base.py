@@ -23,14 +23,19 @@ DATAPOINT = DataPoint(
     session="abc",
 )
 
-Y_1 = torch.tensor([[0, 1], [1, 0], [1, 0], [0, 1]])
-Y_1_PRED = torch.tensor([[0, 1], [1, 0], [0, 1], [1, 0]])
+GTS = [[0, 1], [1, 0], [1, 0], [1, 0], [0, 1], [1, 0]]
+PREDS = [[0, 1], [1, 0], [0, 1], [1, 0], [1, 0], [0, 1]]
 
-Y_2 = torch.tensor([[0, 1], [1, 0], [1, 0], [0, 1]])
-Y_2_PRED = torch.tensor([[1, 0], [0, 1], [0, 1], [1, 0]])
-
-Y_3 = torch.tensor([[0, 1], [1, 0], [1, 0], [0, 1]])
-Y_3_PRED = torch.tensor([[0, 1], [0, 1], [0, 1], [1, 0]])
+BATCH = [
+    DataPoint(
+        image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
+        label=torch.tensor(gt),
+        output=torch.tensor(pred),
+        participant="abc",
+        session="abc",
+    )
+    for pred, gt in zip(PREDS, GTS)
+]
 
 
 class TestMetric(Metric):
@@ -48,22 +53,16 @@ class TestMetric(Metric):
 def test_metric():
     metric = TestMetric()
 
-    batches = ((Y_1_PRED, Y_1), (Y_2_PRED, Y_2), (Y_3_PRED, Y_3))
+    batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
     results = (
-        torch.tensor([1.0, 1.0, 0.0, 0.0]),
-        torch.tensor([0.0, 0.0, 0.0, 0.0]),
-        torch.tensor([1.0, 0.0, 0.0, 0.0]),
+        torch.tensor([1.0, 1.0]),
+        torch.tensor([0.0, 1.0]),
+        torch.tensor([0.0, 0.0]),
     )
-
-    for (preds, ground_truths), result in zip(batches, results):
-        batch = [deepcopy(DATAPOINT) for _ in range(len(preds))]
-        for datapoint, pred, gt in zip(batch, preds, ground_truths):
-            datapoint["label"] = gt
-            datapoint["output"] = pred
-
+    for batch, result in zip(batches, results):
         assert (metric(batch) == result).all()
 
-    assert metric.aggregate() == 0.25
+    assert metric.aggregate() == 0.5
 
     assert metric.optimum == "max"
 
@@ -102,40 +101,18 @@ def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
 WORLD_SIZE = 2
 
 
-# @ddp_test(world_size=WORLD_SIZE)
-# def ddp_worker(rank):
-#     metric = ConfusionMatrixMetric(metric_name="accuracy")
-#     if rank == 0:
-#         pred, target = Y_1_PRED.to(rank), Y_1.to(rank)
-#         metric(pred, target)
-#         pred, target = Y_3_PRED.to(rank), Y_3.to(rank)
-#         metric(pred, target)
-#     elif rank == 1:
-#         pred, target = Y_2_PRED.to(rank), Y_2.to(rank)
-#         metric(pred, target)
-
-#     if rank == 0:
-#         out = metric.aggregate()
-#         assert out[0].item() == 0.25
-
-
-class ToyModel(nn.Module):
-    def __init__(self):
-        super(ToyModel, self).__init__()
-        self.net1 = nn.Linear(10, 10)
-        self.relu = nn.ReLU()
-        self.net2 = nn.Linear(10, 5)
-
-    def forward(self, x):
-        return self.net2(self.relu(self.net1(x)))
-
-
 @ddp_test(world_size=WORLD_SIZE)
 def ddp_worker(rank):
-    model = ToyModel().to(rank)
-    ddp_model = DDP(model, device_ids=[rank])
-    outputs = ddp_model(torch.randn(20, 10))
-    assert 1 == 0
+    batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
+    metric = TestMetric()
+    if rank == 0:
+        metric(batches[0])
+        metric(batches[2])
+    elif rank == 1:
+        metric(batches[1])
+
+    if rank == 0:
+        assert metric.aggregate() == 0.5
 
 
 @pytest.mark.multi_gpu
