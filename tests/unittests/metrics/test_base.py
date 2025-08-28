@@ -8,8 +8,10 @@ import pytest
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
+import torch.nn as nn
 import torchio as tio
 from monai.metrics import ConfusionMatrixMetric
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
@@ -74,8 +76,6 @@ def setup_ddp(rank: int, world_size: int) -> None:
     os.environ["MASTER_PORT"] = "12355"
     backend = "nccl"
     assert torch.cuda.device_count() >= world_size
-    torch.cuda.set_device(rank)
-    print("Initiating DDP...")
     dist.init_process_group(backend, rank=rank, world_size=world_size)
 
 
@@ -88,7 +88,6 @@ def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
         @wraps(func)
         def wrapped(rank, *args, **kwargs):
             setup_ddp(rank, world_size)
-            print("Done")
 
             try:
                 func(rank, *args, **kwargs)
@@ -103,22 +102,39 @@ def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
 WORLD_SIZE = 2
 
 
+# @ddp_test(world_size=WORLD_SIZE)
+# def ddp_worker(rank):
+#     metric = ConfusionMatrixMetric(metric_name="accuracy")
+#     if rank == 0:
+#         pred, target = Y_1_PRED.to(rank), Y_1.to(rank)
+#         metric(pred, target)
+#         pred, target = Y_3_PRED.to(rank), Y_3.to(rank)
+#         metric(pred, target)
+#     elif rank == 1:
+#         pred, target = Y_2_PRED.to(rank), Y_2.to(rank)
+#         metric(pred, target)
+
+#     if rank == 0:
+#         out = metric.aggregate()
+#         assert out[0].item() == 0.25
+
+
+class ToyModel(nn.Module):
+    def __init__(self):
+        super(ToyModel, self).__init__()
+        self.net1 = nn.Linear(10, 10)
+        self.relu = nn.ReLU()
+        self.net2 = nn.Linear(10, 5)
+
+    def forward(self, x):
+        return self.net2(self.relu(self.net1(x)))
+
+
 @ddp_test(world_size=WORLD_SIZE)
 def ddp_worker(rank):
-    print("Testing the metric")
-    metric = ConfusionMatrixMetric(metric_name="accuracy")
-    if rank == 0:
-        pred, target = Y_1_PRED.to(rank), Y_1.to(rank)
-        metric(pred, target)
-        pred, target = Y_3_PRED.to(rank), Y_3.to(rank)
-        metric(pred, target)
-    elif rank == 1:
-        pred, target = Y_2_PRED.to(rank), Y_2.to(rank)
-        metric(pred, target)
-
-    if rank == 0:
-        out = metric.aggregate()
-        assert out[0].item() == 0.25
+    model = ToyModel().to(rank)
+    ddp_model = DDP(model, device_ids=[rank])
+    outputs = ddp_model(torch.randn(20, 10))
 
 
 @pytest.mark.multi_gpu
