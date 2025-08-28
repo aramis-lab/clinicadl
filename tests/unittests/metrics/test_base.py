@@ -38,7 +38,7 @@ BATCH = [
 ]
 
 
-class TestMetric(Metric):
+class CustomTestMetric(Metric):
     _optimum = "max"
 
     def _accumulate(self, batch):
@@ -51,7 +51,7 @@ class TestMetric(Metric):
 
 
 def test_metric():
-    metric = TestMetric()
+    metric = CustomTestMetric()
 
     batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
     results = (
