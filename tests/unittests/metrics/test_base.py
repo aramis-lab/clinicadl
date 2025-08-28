@@ -135,6 +135,7 @@ def ddp_worker(rank):
     model = ToyModel().to(rank)
     ddp_model = DDP(model, device_ids=[rank])
     outputs = ddp_model(torch.randn(20, 10))
+    assert 1 == 0
 
 
 @pytest.mark.multi_gpu
