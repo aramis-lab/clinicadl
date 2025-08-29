@@ -232,8 +232,7 @@ class Batch(list[DataPoint]):
         else:
             return values
 
-    @staticmethod
-    def _to_tensor(value: Any) -> torch.Tensor:
+    def _to_tensor(self, value: Any) -> torch.Tensor:
         """
         Tries to convert to a tensor.
         """
@@ -244,7 +243,7 @@ class Batch(list[DataPoint]):
         elif isinstance(value, np.ndarray):
             value = torch.from_numpy(value)
         elif isinstance(value, numbers.Number):
-            value = torch.tensor(value)
+            value = torch.tensor(value, device=self.device)
         elif isinstance(value, torch.Tensor):
             pass
         else:

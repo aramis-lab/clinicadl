@@ -11,7 +11,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torchio as tio
-from monai.metrics import ConfusionMatrixMetric
+from monai.metrics import AveragePrecisionMetric, ConfusionMatrixMetric
+from monai.transforms import Activations, AsDiscrete
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from clinicadl.data.structures import DataPoint
@@ -68,20 +69,16 @@ def test_metric():
     assert metric.optimum == "max"
 
 
-def find_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))  # let the OS pick a free port
-        return s.getsockname()[1]
-
-
-def setup_ddp(rank: int, world_size: int) -> None:
+def setup_ddp(rank: int, world_size: int, port: int) -> None:
     """
     Expects of course GPUs.
     """
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = str(find_free_port())
-    backend = "nccl"
+    print("Setting up...")
     assert torch.cuda.device_count() >= world_size
+    torch.cuda.set_device(rank)
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = str(port)
+    backend = "nccl"
     dist.init_process_group(backend, rank=rank, world_size=world_size)
 
 
@@ -89,40 +86,76 @@ def cleanup() -> None:
     dist.destroy_process_group()
 
 
-def ddp_test(world_size: int) -> Callable[[Callable], Callable]:
-    def ddp_test_builder(func):
-        @wraps(func)
-        def wrapped(rank, *args, **kwargs):
-            try:
-                setup_ddp(rank, world_size)
-                func(rank, *args, **kwargs)
-            finally:
-                cleanup()
+def ddp_test(func):
+    @wraps(func)
+    def wrapped(rank, world_size, port, *args, **kwargs):
+        print(f"Rank {rank} starting")
+        try:
+            setup_ddp(rank, world_size, port)
+            func(rank, *args, **kwargs)
+        finally:
+            print(f"[Rank {rank}] cleaning up")
+            cleanup()
+            print(f"[Rank {rank}] finished")
 
-        return wrapped
-
-    return ddp_test_builder
+    return wrapped
 
 
 WORLD_SIZE = 2
 
 
-@ddp_test(world_size=WORLD_SIZE)
-def ddp_worker(rank):
-    # batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
-    # metric = TestMetric()
-    if rank == 0:
-        assert rank == 0
-        # metric(batches[0])
-        # metric(batches[2])
-    elif rank == 1:
-        assert rank == 1
-        # metric(batches[1])
+# @ddp_test(world_size=WORLD_SIZE)
+# def ddp_worker(rank):
+#     # batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
+#     # metric = TestMetric()
+#     if rank == 0:
+#         assert rank == 0
+#         # metric(batches[0])
+#         # metric(batches[2])
+#     elif rank == 1:
+#         assert rank == 1
+#         # metric(batches[1])
 
-    # if rank == 0:
-    #     assert metric.aggregate() == 0.5
+#     # if rank == 0:
+#     #     assert metric.aggregate() == 0.5
+
+
+@ddp_test
+def ddp_worker(rank):
+    ap_metric = AveragePrecisionMetric()
+    act = Activations(softmax=True)
+    to_onehot = AsDiscrete(to_onehot=2)
+
+    device = rank
+    if rank == 0:
+        y_pred = [
+            torch.tensor([0.1, 0.9], device=device),
+            torch.tensor([0.3, 1.4], device=device),
+        ]
+        y = [torch.tensor([0], device=device), torch.tensor([1], device=device)]
+
+    if rank == 1:
+        y_pred = [
+            torch.tensor([0.2, 0.1], device=device),
+            torch.tensor([0.1, 0.5], device=device),
+            torch.tensor([0.3, 0.4], device=device),
+        ]
+        y = [
+            torch.tensor([0], device=device),
+            torch.tensor([1], device=device),
+            torch.tensor([1], device=device),
+        ]
+
+    y_pred = [act(p) for p in y_pred]
+    y = [to_onehot(y_) for y_ in y]
+    ap_metric(y_pred, y)
+
+    result = ap_metric.aggregate()
+    np.testing.assert_allclose(0.7778, result, rtol=1e-4)
 
 
 @pytest.mark.multi_gpu
 def test_metric_dpp():
-    mp.spawn(ddp_worker, nprocs=WORLD_SIZE, join=True)
+    port = np.random.randint(10000, 20000)
+    world_size = 2
+    mp.spawn(ddp_worker, args=(world_size, port), nprocs=world_size, join=True)
