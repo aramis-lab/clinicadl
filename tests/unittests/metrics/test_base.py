@@ -16,6 +16,7 @@ from monai.metrics import AveragePrecisionMetric, ConfusionMatrixMetric
 from monai.transforms import Activations, AsDiscrete
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+from clinicadl.data.dataloader.batch import SimpleBatch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
 
@@ -105,54 +106,21 @@ def ddp_test(func):
 WORLD_SIZE = 2
 
 
-# @ddp_test(world_size=WORLD_SIZE)
-# def ddp_worker(rank):
-#     # batches = [BATCH[:2], BATCH[2:4], BATCH[4:]]
-#     # metric = TestMetric()
-#     if rank == 0:
-#         assert rank == 0
-#         # metric(batches[0])
-#         # metric(batches[2])
-#     elif rank == 1:
-#         assert rank == 1
-#         # metric(batches[1])
-
-#     # if rank == 0:
-#     #     assert metric.aggregate() == 0.5
-
-
 @ddp_test
 def ddp_worker(rank):
-    ap_metric = AveragePrecisionMetric()
-    act = Activations(softmax=True)
-    to_onehot = AsDiscrete(to_onehot=2)
-
-    device = rank
+    batches = [SimpleBatch(BATCH[:2]), SimpleBatch(BATCH[2:4]), SimpleBatch(BATCH[4:])]
+    metric = CustomTestMetric()
     if rank == 0:
-        y_pred = [
-            torch.tensor([0.1, 0.9], device=device),
-            torch.tensor([0.3, 1.4], device=device),
-        ]
-        y = [torch.tensor([0], device=device), torch.tensor([1], device=device)]
+        assert rank == 0
+        batches[0].to(rank)
+        batches[2].to(rank)
+        metric(batches[0])
+        metric(batches[2])
+    elif rank == 1:
+        batches[1].to(rank)
+        metric(batches[1])
 
-    if rank == 1:
-        y_pred = [
-            torch.tensor([0.2, 0.1], device=device),
-            torch.tensor([0.1, 0.5], device=device),
-            torch.tensor([0.3, 0.4], device=device),
-        ]
-        y = [
-            torch.tensor([0], device=device),
-            torch.tensor([1], device=device),
-            torch.tensor([1], device=device),
-        ]
-
-    y_pred = [act(p) for p in y_pred]
-    y = [to_onehot(y_) for y_ in y]
-    ap_metric(y_pred, y)
-
-    result = ap_metric.aggregate()
-    np.testing.assert_allclose(0.7778, result, rtol=1e-4)
+    assert metric.aggregate() == 0.5
 
 
 @pytest.mark.multi_gpu
