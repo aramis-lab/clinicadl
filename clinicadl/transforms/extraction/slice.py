@@ -1,21 +1,23 @@
 from logging import getLogger
-from typing import List, Optional, Tuple, Union, Dict
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import torch
 from pydantic import (
     NonNegativeInt,
     PositiveInt,
+    PrivateAttr,
     computed_field,
     model_validator,
 )
 from typing_extensions import Self
-import pandas as pd
+
 from clinicadl.data.structures import DataPoint
 from clinicadl.utils.enum import SliceDirection
-from pydantic import PrivateAttr
+
 from .base import Extraction, ExtractionMethod, Sample
-from pathlib import Path
 
 logger = getLogger("clinicadl.extraction.slice")
 
@@ -454,7 +456,29 @@ class SliceFromTSV(Extraction):
             squeeze=self.squeeze,
         )
         sample.applied_transforms = extracted.applied_transforms
-        
+
+                    "TSV has %d slices for %s %s, taking first.",
+                    len(slices),
+                    data_point.participant,
+                    data_point.session,
+                )
+            slice_position = int(slices[0])
+        else:
+            slice_position = int(slices[sample_index])
+
+        self._validate_position(data_point.image.tensor, slice_position)
+        slice_tensor = self._get_slice(data_point.image.tensor, slice_position)
+
+        extracted = self._extract_datapoint_sample(data_point, sample_index)
+        sample = SliceSample(
+            **extracted,
+            extraction=self.extract_method,
+            slice_position=slice_position,
+            slice_direction=self.slice_direction,
+            squeeze=self.squeeze,
+        )
+        sample.applied_transforms = extracted.applied_transforms
+
         return sample
 
     def num_samples_per_image(self, data_point: DataPoint) -> int:
@@ -469,7 +493,33 @@ class SliceFromTSV(Extraction):
         n_slices = int(data_point.image.tensor.size(self.slice_direction + 1))
         bad = [p for p in slices if p < 0 or p >= n_slices]
         if bad:
-            raise IndexError(f"Invalid slice indices {bad} for {self._current_key} (image has {n_slices} slices).")
+            raise IndexError(
+                f"Invalid slice indices {bad} for {self._current_key} (image has {n_slices} slices)."
+            )
+            extraction=self.extract_method,
+            slice_position=slice_position,
+            slice_direction=self.slice_direction,
+            squeeze=self.squeeze,
+        )
+        sample.applied_transforms = extracted.applied_transforms
+
+        return sample
+
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
+        self._current_key = (data_point.participant, data_point.session)
+        if self._one_row_per_slice_mode:
+            return 1
+        if self._current_key is None:
+            logger.warning("num_samples_per_image called without context; returning 1.")
+            return 1
+        slices = self._slices_for(*self._current_key)
+
+        n_slices = int(data_point.image.tensor.size(self.slice_direction + 1))
+        bad = [p for p in slices if p < 0 or p >= n_slices]
+        if bad:
+            raise IndexError(
+                f"Invalid slice indices {bad} for {self._current_key} (image has {n_slices} slices)."
+            )
         return len(slices)
 
     def _get_slice(self, image: torch.Tensor, slice_position: int) -> torch.Tensor:
