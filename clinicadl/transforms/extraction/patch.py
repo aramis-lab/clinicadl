@@ -151,14 +151,14 @@ class Patch(Extraction):
 
         return sample
 
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
         """
         Returns the total number of patches extracted from an image.
 
         Parameters
         ----------
-        image : torch.Tensor
-            The input image tensor (4D), where the first dimension represents the channel dimension.
+        data_point : DataPoint
+            The DataPoint to perform extraction on.
 
         Returns
         -------
@@ -169,7 +169,7 @@ class Patch(Extraction):
         -----
         The number of patches is determined by the image size, the patch size, and the stride.
         """
-        return self._get_patches(image).shape[1]
+        return self._get_patches(data_point.image.tensor).shape[1]
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_index: int
