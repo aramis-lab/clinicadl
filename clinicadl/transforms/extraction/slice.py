@@ -339,7 +339,7 @@ class SliceFromTSV(Extraction):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     squeeze: bool = True
 
-    # --- Private so ignored by Pydantic / problem of inheritence when used (Slice)
+    # --- Private so ignored by Pydantic / problem of inheritance when used (Slice)
     _tsv_path: str = PrivateAttr()
     _allow_missing: bool = PrivateAttr()
     _one_row_per_slice_mode: bool = PrivateAttr()
