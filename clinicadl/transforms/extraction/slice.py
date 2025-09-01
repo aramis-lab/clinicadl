@@ -477,6 +477,6 @@ class SliceFromTSV(Extraction):
             s = image[:, slice_position, :, :]
         elif self.slice_direction == 1:
             s = image[:, :, slice_position, :]
-        else:  # axial
+        else:
             s = image[:, :, :, slice_position]
         return s.unsqueeze(self.slice_direction + 1)
