@@ -65,9 +65,11 @@ class Batch(list[DataPoint]):
         Batch
             The copy of the input batch, on the wanted device.
         """
-        if isinstance(device, str) and not re.match(r"^cuda:.*", device):
+        if isinstance(device, str) and not (
+            re.match(r"^cuda:.*", device) or device == "cuda"
+        ):
             raise ValueError(
-                "If 'device' is a str, it must be like 'cuda:<device-id>'."
+                "If 'device' is a str, it must be 'cuda' or 'cuda:<device-id>'."
             )
 
         batch = deepcopy(self)

@@ -135,7 +135,8 @@ def test_to():
         ]
     )
     with pytest.raises(
-        ValueError, match="If 'device' is a str, it must be like 'cuda:<device-id>'."
+        ValueError,
+        match="If 'device' is a str, it must be 'cuda' or 'cuda:<device-id>'.",
     ):
         batch.to("cuda-0", non_blocking=True)
     batch.to("cuda", non_blocking=True)
