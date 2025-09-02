@@ -139,7 +139,7 @@ class ClinicaDLModel:
         return loss
 
     def validation_step(
-        self, data: Batch, device: torch.device, metrics: MetricsHandler
+        self, data: BatchType, device: torch.device, metrics: MetricsHandler
     ) -> MetricsHandler:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
