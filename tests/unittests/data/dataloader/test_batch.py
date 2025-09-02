@@ -127,6 +127,7 @@ def test_to():
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
                 label=torch.randn(2),
                 output=1,
+                abc=torch.randn(2, device=torch.device("cuda:0")),
                 participant=f"sub-{i}",
                 session=f"ses-{i}",
             )
@@ -136,10 +137,15 @@ def test_to():
     batch_gpu = batch.to(0, non_blocking=True)
     assert batch_gpu._non_blocking
     assert batch_gpu.device == torch.device("cuda:0")
-    assert batch.device == torch.device("cpu")
+    assert not batch._non_blocking
+    assert batch.device is None
 
     assert batch[0]["label"].device == torch.device("cpu")
     assert batch_gpu[0]["label"].device == torch.device("cuda:0")
+
+    assert batch[0]["abc"].device == torch.device("cuda:0")
+    assert batch_gpu[0]["abc"].device == torch.device("cuda:0")
+
     assert batch.get_field("output").device == torch.device("cpu")
     assert batch_gpu.get_field("output").device == torch.device("cuda:0")
 
