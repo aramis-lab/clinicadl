@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.amp.grad_scaler import GradScaler
 from torch.optim.optimizer import Optimizer
 
-from clinicadl.data.dataloader import Batch
+from clinicadl.data.dataloader import BatchType
 from clinicadl.losses.config import LossConfig, get_loss_function_config
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.handler import MetricsHandler
@@ -122,7 +122,7 @@ class ClinicaDLModel:
 
         return model_state["epoch"]
 
-    def training_step(self, data: Batch, device: torch.device) -> torch.Tensor:
+    def training_step(self, data: BatchType, device: torch.device) -> torch.Tensor:
         """
         Perform a training step on the model using the provided batch of data and return the computed loss
         """

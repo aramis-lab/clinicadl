@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
 from clinicadl.data.dataloader import DataLoaderConfig
-from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datasets import (
     CapsDataset,
     ConcatDataset,
@@ -101,7 +101,7 @@ def test_get_object():
     assert dataloader.sampler.num_samples == 7
     assert dataloader.sampler.replacement
     batch = next(iter(dataloader))
-    assert isinstance(batch, SimpleBatch)
+    assert isinstance(batch, Batch)
     assert batch[0].participant == "sub-999"
     assert batch[0].session == "ses-M099"
 
@@ -129,7 +129,7 @@ def test_get_object():
     assert dataloader.sampler.num_replicas == 1
     assert dataloader.sampler.rank == 0
     batch = next(iter(dataloader))
-    assert isinstance(batch, SimpleBatch)
+    assert isinstance(batch, Batch)
     assert batch[0].participant == "sub-000"
     assert batch[0].session == "ses-M000"
 

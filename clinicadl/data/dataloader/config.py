@@ -11,10 +11,10 @@ from clinicadl.data.datasets import (
 )
 from clinicadl.data.datasets.types import Dataset, SimpleDataset, TupleDataset
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.json import read_json, update_json, write_json
+from clinicadl.utils.json import update_json, write_json
 from clinicadl.utils.seed import pl_worker_init_function
 
-from .batch import SimpleBatch, simple_collate_fn, tuple_collate_fn
+from .batch import Batch, simple_collate_fn, tuple_collate_fn
 
 
 class DataLoader(TorchDataLoader):
@@ -45,7 +45,7 @@ class _SimpleDataLoader(DataLoader):
 
     def __iter__(
         self,
-    ) -> Iterator[SimpleBatch]:
+    ) -> Iterator[Batch]:
         return super().__iter__()
 
 
@@ -54,7 +54,7 @@ class _TupleDataLoader(DataLoader):
 
     def __iter__(
         self,
-    ) -> Iterator[tuple[SimpleBatch, ...]]:
+    ) -> Iterator[tuple[Batch, ...]]:
         return super().__iter__()
 
 
