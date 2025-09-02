@@ -46,7 +46,7 @@ def test_get_field():
     assert labels[-1].size() == (1, 3, 4, 6)
 
     # numpy and list
-    batch[0]["label"] = list(np.ones((1, 3, 4, 5)))
+    batch[0]["label"] = np.ones((1, 3, 4, 5)).tolist()
     batch[-1]["label"] = np.ones((1, 3, 4, 5))
     labels = batch.get_field("label")
     assert labels.size() == (2, 1, 3, 4, 5)
