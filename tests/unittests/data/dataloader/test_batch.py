@@ -138,8 +138,8 @@ def test_to():
     assert batch_gpu.device == torch.device("cuda:0")
     assert batch.device == torch.device("cpu")
 
-    assert batch["label"].device == torch.device("cpu")
-    assert batch_gpu["label"].device == torch.device("cuda:0")
+    assert batch[0]["label"].device == torch.device("cpu")
+    assert batch_gpu[0]["label"].device == torch.device("cuda:0")
     assert batch.get_field("output").device == torch.device("cpu")
     assert batch_gpu.get_field("output").device == torch.device("cuda:0")
 
