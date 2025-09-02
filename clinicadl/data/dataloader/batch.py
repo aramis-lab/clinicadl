@@ -15,45 +15,51 @@ class Batch(list[DataPoint]):
     """
     A batch container for :class:`~clinicadl.data.structures.DataPoint` objects.
 
-    This class inherits from the built-in :class:`list` and is specifically designed
-    to handle batches of ``DataPoint`` instances.
+    ``Batch`` is simply a list of ``DataPoints``, with additional useful functions.
 
     Parameters
     ----------
-    samples : list[DataPoint]
-        List of :py:class:`~clinicadl.data.structures.DataPoint` forming the batch.
+    datapoints : list[DataPoint]
+        List of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` forming the batch.
 
     Raises
     ------
     ValueError
-        If the input list of samples is empty.
+        If the input list is empty.
 
     """
 
     _device: Optional[torch.device] = None
     _non_blocking: bool = False
 
-    def __init__(self, samples: list[DataPoint]):
-        super().__init__(samples)
+    def __init__(self, datapoints: list[DataPoint]):
+        super().__init__(datapoints)
 
         if len(self) == 0:
             raise ValueError("The batch is empty!")
 
     @property
     def device(self) -> torch.device:
-        """The device on which are the tensors in the batch."""
+        """The device on which the :py:class:`Tensors <torch.Tensor>` in the batch are."""
         return self._device
 
     def to(
         self, device: Union[str, int, torch.device], non_blocking: bool = False
     ) -> Batch:
         """
-        Returns a copy of the ``Batch`` on the specified device.
+        Returns a copy of the ``Batch``, where :py:class:`Tensors <torch.Tensor>` are on the specified device.
 
         Parameters
         ----------
         device : Union[str, int, torch.device]
-            The device where to send the ``Batch``.
+            The device where to send the ``Batch``. Can be:
+
+            - an ``int``: the device id;
+            - ``"cuda"``;
+            - ``"cpu"``
+            - ``"cuda-<id>"``: where ``<id>`` is the device id;
+            - a :py:class:`torch.device`.
+
         non_blocking : bool, default=False
             "When non_blocking is set to ``True``, the function attempts to perform the
             conversion asynchronously with respect to the host, if possible.
@@ -63,10 +69,10 @@ class Batch(list[DataPoint]):
         Returns
         -------
         Batch
-            The copy of the input batch, on the wanted device.
+            The copy of the input batch, on the specified device.
         """
         if isinstance(device, str) and not (
-            re.match(r"^cuda:.*", device) or device == "cuda"
+            re.match(r"^cuda:.*", device) or device == "cuda" or device == "cpu"
         ):
             raise ValueError(
                 "If 'device' is a str, it must be 'cuda' or 'cuda:<device-id>'."
@@ -93,15 +99,13 @@ class Batch(list[DataPoint]):
         ensure_channel_dim: bool = False,
     ) -> Union[torch.Tensor, list[Any]]:
         """
-        Gathers all the values of a field in the :py:class:`~clinicadl.data.structures.DataPoint` in the batch.
+        Gathers all the values of a field that is in the ``DataPoints`` of the batch.
 
-        The function will try to return the output as a batch-first :py:class`torch.Tensor`. If not possible,
+        The function will try to return the output as a batch-first :py:class:`torch.Tensor`. If not possible,
         it will return the list of the values.
 
-        The tensor will be returned on the device passed via :py:meth:`to`.
-
-        Besides, if the output is a ``Tensor``, the desired data type and the memory format can be specified via
-        ``dtype`` and ``channels_last`` respectively.
+        If the output is a ``Tensor``, it will be returned on the device passed via :py:meth:`to`, and the desired data type
+        as well as the memory format can be specified via ``dtype`` and ``channels_last`` respectively.
 
         Parameters
         ----------
@@ -112,9 +116,9 @@ class Batch(list[DataPoint]):
             be cast into a specific data type.
         channels_last : Optional[bool], default=None
             Whether to use `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
-            for the output tensor.
+            for the output ``Tensor``. If ``None``, memory format will not be changed.
         ensure_channel_dim : bool, default=False
-            If ``True``, a 1D tensor output batche (B) will be unsqueezed to 2D tensor with a channel dimension (BC).
+            If ``True``, a 1D ``Tensor`` output batch (B) will be unsqueezed to a 2D ``Tensor`` with a channel dimension (BC).
 
         Returns
         -------
@@ -124,9 +128,35 @@ class Batch(list[DataPoint]):
         Raises
         ------
         KeyError
-            If not all the :py:class:`~clinicadl.data.structures.DataPoint` have the requested ``field_name``.
+            If not all the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` have the requested ``field_name``.
         ValueError
             If ``channels_last=True`` but the batch tensor is not 4D (BCHW) or 5D (BCDHW).
+
+        Examples
+        --------
+        .. code-block:: python
+
+            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+            datapoint = ColinDataPoint()
+            batch = Batch([datapoint, datapoint])
+
+        .. code-block:: python
+
+            >>> datapoint
+            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+            >>> datapoint["label"]
+            LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; dtype: torch.ShortTensor; memory: 13.6 MiB)
+            >>> datapoint["participant"]
+            'sub-colin'
+
+        .. code-block:: python
+
+            >>> batch.get_field("label").shape
+            torch.Size([2, 1, 181, 217, 181])
+            >>> batch.get_field("participant")
+            ['sub-colin', 'sub-colin']
+
         """
         # collect all the values and try to convert them to tensors
         batch = []

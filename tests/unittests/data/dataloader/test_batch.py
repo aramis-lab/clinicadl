@@ -143,10 +143,13 @@ def test_to():
     batch.to(torch.device("cuda:0"), non_blocking=True)
 
     batch_gpu = batch.to(0, non_blocking=True)
+    batch_cpu = batch.to("cpu")
     assert batch_gpu._non_blocking
     assert batch_gpu.device == torch.device("cuda:0")
     assert not batch._non_blocking
     assert batch.device is None
+    assert not batch_cpu._non_blocking
+    assert batch_cpu.device == torch.device("cpu")
 
     assert batch[0]["label"].device == torch.device("cpu")
     assert batch_gpu[0]["label"].device == torch.device("cuda:0")
