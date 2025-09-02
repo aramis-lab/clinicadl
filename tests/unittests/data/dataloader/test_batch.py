@@ -134,6 +134,13 @@ def test_to():
             for i in range(2)
         ]
     )
+    with pytest.raises(
+        ValueError, match="If 'device' is a str, it must be like 'cuda:<device-id>'."
+    ):
+        batch.to("cuda-0", non_blocking=True)
+    batch.to("cuda", non_blocking=True)
+    batch.to(torch.device("cuda:0"), non_blocking=True)
+
     batch_gpu = batch.to(0, non_blocking=True)
     assert batch_gpu._non_blocking
     assert batch_gpu.device == torch.device("cuda:0")
