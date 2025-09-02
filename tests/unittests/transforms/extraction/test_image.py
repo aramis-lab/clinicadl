@@ -13,8 +13,17 @@ def test_extract_method():
 
 
 def test_num_samples_per_image():
+    img = torch.randn(1, 3, 4, 5)
+
+    data_point = DataPoint(
+        image=tio.ScalarImage(tensor=img),
+        label=1,
+        participant="sub-000",
+        session="ses-000",
+    )
+
     image = Image()
-    assert image.num_samples_per_image(torch.randn(1, 3, 4, 5)) == 1
+    assert image.num_samples_per_image(data_point) == 1
 
 
 def test_extract_sample():

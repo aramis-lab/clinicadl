@@ -307,7 +307,8 @@ class Slice(Extraction):
 
         return slice_tensor.unsqueeze(self.slice_direction + 1)  # pylint: disable=possibly-used-before-assignment
 
-class SliceFromTSV(Extraction):
+
+class SliceFromTSV(Slice):
     """
     Extract slices specified in a TSV file per (participant_id, session_id).
 
@@ -324,8 +325,6 @@ class SliceFromTSV(Extraction):
         0: sagittal, 1: coronal, 2: axial
     squeeze : bool, default=True
         Whether to squeeze slices to 2D.
-    allow_missing : bool, default=False
-        If True, subjects absent from the TSV yield 0 samples instead of raising.
     one_row_per_slice_mode : bool, default=True
         - If True: TSV must have *one row per slice*; each row yields exactly one sample.
         - If False: TSV may have multiple slices per subject/session; then
@@ -339,12 +338,11 @@ class SliceFromTSV(Extraction):
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     squeeze: bool = True
 
-    # --- Private so ignored by Pydantic / problem of inheritance when used (Slice)
-    _tsv_path: str = PrivateAttr()
-    _allow_missing: bool = PrivateAttr()
-    _one_row_per_slice_mode: bool = PrivateAttr()
-    _map: Dict[Tuple[str, str], List[int]] = PrivateAttr(default_factory=dict)
-    _current_key: Optional[Tuple[str, str]] = PrivateAttr(default=None)
+    # --- Internal state (not Pydantic-managed)
+    _tsv_path: str
+    _one_row_per_slice_mode: bool
+    _map: Dict[Tuple[str, str], List[int]]
+    _current_key: Optional[Tuple[str, str]]
 
     def __init__(
         self,
@@ -352,7 +350,6 @@ class SliceFromTSV(Extraction):
         tsv_path: Union[str, Path],
         slice_direction: SliceDirection = SliceDirection.SAGITTAL,
         squeeze: bool = True,
-        allow_missing: bool = False,
         one_row_per_slice_mode: bool = True,
     ) -> None:
         super().__init__(
@@ -363,9 +360,9 @@ class SliceFromTSV(Extraction):
             squeeze=squeeze,
         )
         self._tsv_path = str(tsv_path)
-        self._allow_missing = allow_missing
         self._one_row_per_slice_mode = one_row_per_slice_mode
         self._map = self._load_tsv(self._tsv_path)
+        self._current_key = None
 
     @computed_field
     @property
@@ -379,8 +376,16 @@ class SliceFromTSV(Extraction):
         sess_col = cols.get("session_id")
         slice_col = cols.get("slice_idx")
         if not subj_col or not sess_col or not slice_col:
-            raise ValueError("TSV must contain columns: participant_id, session_id, slice_idx")
-        return df.rename(columns={subj_col: "participant_id", sess_col: "session_id", slice_col: "slice_idx"})
+            raise ValueError(
+                "TSV must contain columns: participant_id, session_id, slice_idx"
+            )
+        return df.rename(
+            columns={
+                subj_col: "participant_id",
+                sess_col: "session_id",
+                slice_col: "slice_idx",
+            }
+        )
 
     @staticmethod
     def _load_tsv(path: Union[str, Path]) -> Dict[Tuple[str, str], List[int]]:
@@ -390,7 +395,9 @@ class SliceFromTSV(Extraction):
             try:
                 df["slice_idx"] = df["slice_idx"].astype(int)
             except Exception as e:
-                raise ValueError("Column 'slice_idx' must be integers (0-based indices).") from e
+                raise ValueError(
+                    "Column 'slice_idx' must contain integers (0-based indices)."
+                ) from e
         mapping: Dict[Tuple[str, str], List[int]] = {}
         for (sub, ses), g in df.groupby(["participant_id", "session_id"]):
             mapping[(str(sub), str(ses))] = list(map(int, g["slice_idx"].tolist()))
@@ -403,9 +410,9 @@ class SliceFromTSV(Extraction):
     def _slices_for(self, participant: str, session: str) -> List[int]:
         key = (participant, session)
         if key not in self._map:
-            if self._allow_missing:
-                return []
-            raise ValueError(f"No slices found in TSV for participant={participant}, session={session}.")
+            raise ValueError(
+                f"No slices found in TSV for participant={participant}, session={session}."
+            )
         return self._map[key]
 
     def _validate_position(self, image: torch.Tensor, pos: int) -> None:
@@ -416,13 +423,17 @@ class SliceFromTSV(Extraction):
                 f"in direction {int(self.slice_direction)}."
             )
 
-    def _extract_tensor_sample(self, image_tensor: torch.Tensor, sample_index: int) -> torch.Tensor:
+    def _extract_tensor_sample(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> torch.Tensor:
         if self._one_row_per_slice_mode:
             slices = self._current_key and self._map.get(self._current_key, [])
             slice_position = int(slices[0]) if slices else 0
         else:
             if self._current_key is None:
-                raise RuntimeError("Must call prepare_datapoint before extracting slices in multi-slice mode.")
+                raise RuntimeError(
+                    "Must call prepare_datapoint before extracting slices in multi-slice mode."
+                )
             slices = self._slices_for(*self._current_key)
             try:
                 slice_position = int(slices[sample_index])
@@ -436,28 +447,12 @@ class SliceFromTSV(Extraction):
 
     def extract_sample(self, data_point: DataPoint, sample_index: int) -> SliceSample:
         self._current_key = (data_point.participant, data_point.session)
+
         slices = self._slices_for(data_point.participant, data_point.session)
         if self._one_row_per_slice_mode:
             if len(slices) != 1:
-                logger.warning("TSV has %d slices for %s %s, taking first.", len(slices), data_point.participant, data_point.session)
-            slice_position = int(slices[0])
-        else:
-            slice_position = int(slices[sample_index])
-
-        self._validate_position(data_point.image.tensor, slice_position)
-        slice_tensor = self._get_slice(data_point.image.tensor, slice_position)
-
-        extracted = self._extract_datapoint_sample(data_point, sample_index)
-        sample = SliceSample(
-            **extracted,
-            extraction=self.extract_method,
-            slice_position=slice_position,
-            slice_direction=self.slice_direction,
-            squeeze=self.squeeze,
-        )
-        sample.applied_transforms = extracted.applied_transforms
-
-                    "TSV has %d slices for %s %s, taking first.",
+                logger.warning(
+                    "TSV has %d slices for %s %s; one_row_per_slice_mode=True, taking first.",
                     len(slices),
                     data_point.participant,
                     data_point.session,
@@ -467,7 +462,6 @@ class SliceFromTSV(Extraction):
             slice_position = int(slices[sample_index])
 
         self._validate_position(data_point.image.tensor, slice_position)
-        slice_tensor = self._get_slice(data_point.image.tensor, slice_position)
 
         extracted = self._extract_datapoint_sample(data_point, sample_index)
         sample = SliceSample(
@@ -478,31 +472,6 @@ class SliceFromTSV(Extraction):
             squeeze=self.squeeze,
         )
         sample.applied_transforms = extracted.applied_transforms
-
-        return sample
-
-    def num_samples_per_image(self, data_point: DataPoint) -> int:
-        self._current_key = (data_point.participant, data_point.session)
-        if self._one_row_per_slice_mode:
-            return 1
-        if self._current_key is None:
-            logger.warning("num_samples_per_image called without context; returning 1.")
-            return 1
-        slices = self._slices_for(*self._current_key)
-
-        n_slices = int(data_point.image.tensor.size(self.slice_direction + 1))
-        bad = [p for p in slices if p < 0 or p >= n_slices]
-        if bad:
-            raise IndexError(
-                f"Invalid slice indices {bad} for {self._current_key} (image has {n_slices} slices)."
-            )
-            extraction=self.extract_method,
-            slice_position=slice_position,
-            slice_direction=self.slice_direction,
-            squeeze=self.squeeze,
-        )
-        sample.applied_transforms = extracted.applied_transforms
-
         return sample
 
     def num_samples_per_image(self, data_point: DataPoint) -> int:

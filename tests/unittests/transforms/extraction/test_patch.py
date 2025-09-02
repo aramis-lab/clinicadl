@@ -25,14 +25,21 @@ def test_extract_method():
 def test_num_samples_per_image():
     img = torch.randn(2, 5, 7, 3)
 
+    data_point = DataPoint(
+        image=tio.ScalarImage(tensor=img),
+        label=1,
+        participant="sub-000",
+        session="ses-000",
+    )
+
     patch = Patch(patch_size=3, stride=1)
-    assert patch.num_samples_per_image(img) == 3 * 5 * 1
+    assert patch.num_samples_per_image(data_point) == 3 * 5 * 1
 
     patch = Patch(patch_size=(2, 3, 2), stride=(1, 2, 1))
-    assert patch.num_samples_per_image(img) == 4 * 3 * 2
+    assert patch.num_samples_per_image(data_point) == 4 * 3 * 2
 
     patch = Patch(patch_size=(2, 3, 2), stride=3)
-    assert patch.num_samples_per_image(img) == 2 * 2 * 1
+    assert patch.num_samples_per_image(data_point) == 2 * 2 * 1
 
 
 def test_extract_sample():

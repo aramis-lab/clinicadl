@@ -89,14 +89,14 @@ class Image(Extraction):
 
         return sample
 
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
         """
         Returns the number of elements per image. Since no extraction is performed, this method always returns 1.
 
         Parameters
         ----------
-        image : torch.Tensor
-            The image tensor to determine the number of extracted elements.
+        data_point : DataPoint
+            The DataPoint to perform extraction on.
 
         Returns
         -------
