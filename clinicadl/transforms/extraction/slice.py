@@ -8,7 +8,6 @@ import torch
 from pydantic import (
     NonNegativeInt,
     PositiveInt,
-    PrivateAttr,
     computed_field,
     model_validator,
 )
@@ -211,7 +210,7 @@ class Slice(Extraction):
         Parameters
         ----------
         data_point : DataPoint
-            The DataPoint to perform extraction on.
+            The DataPoint containing the image to perform extraction on.
 
         Returns
         -------

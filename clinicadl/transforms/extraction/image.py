@@ -96,7 +96,7 @@ class Image(Extraction):
         Parameters
         ----------
         data_point : DataPoint
-            The DataPoint to perform extraction on.
+            The DataPoint containing the image to perform extraction on.
 
         Returns
         -------

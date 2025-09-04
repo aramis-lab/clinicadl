@@ -76,14 +76,14 @@ class Extraction(ClinicaDLConfig, ABC):
         """
 
     @abstractmethod
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
         """
-        Abstract method to return the number of extracted samples per image.
+        Abstract method to return the number of samples per image.
 
         Parameters
         ----------
-        image : torch.Tensor
-            The image tensor from which the number of samples will be determined.
+        data_point : DataPoint
+            The DataPoint containing the image to perform extraction on.
 
         Returns
         -------
