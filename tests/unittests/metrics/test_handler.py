@@ -8,7 +8,7 @@ import torchio as tio
 from pydantic import ValidationError
 from torch.nn import BCELoss
 
-from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
 from clinicadl.metrics.config import LossMetricConfig, MSEMetricConfig
@@ -25,7 +25,7 @@ DATAPOINTS = [
     for i, gt, pred in zip(range(6), [0, 0, 1, 1, 0, 1], [0, 1, 1, 0, 1, 1])
 ]
 
-BATCH_1, BATCH_2 = SimpleBatch(DATAPOINTS[:3]), SimpleBatch(DATAPOINTS[3:])
+BATCH_1, BATCH_2 = Batch(DATAPOINTS[:3]), Batch(DATAPOINTS[3:])
 
 
 class CustomMetric(Metric):

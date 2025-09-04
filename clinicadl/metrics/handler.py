@@ -7,7 +7,7 @@ from typing import Dict, Optional, Union
 import pandas as pd
 from pydantic import field_serializer
 
-from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.dataloader import Batch
 from clinicadl.dictionary.utils import SEP
 from clinicadl.dictionary.words import (
     EPOCH,
@@ -253,13 +253,13 @@ class MetricsHandler:
             except pd.errors.IntCastingNaNError:
                 pass
 
-    def __call__(self, batch: SimpleBatch, epoch: Optional[int] = None) -> None:
+    def __call__(self, batch: Batch, epoch: Optional[int] = None) -> None:
         """
         Updates metrics with a new batch.
 
         Parameters
         ----------
-        batch : SimpleBatch
+        batch : Batch
             The batch, with the predictions, and the ground truths if required
             by some metrics.
         epoch : Optional[int], default=None

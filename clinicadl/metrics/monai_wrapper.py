@@ -5,7 +5,6 @@ import torch
 from monai.metrics import CumulativeIterationMetric
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
 
@@ -103,14 +102,12 @@ class MonaiMetricWrapper(Metric):
 
         return res
 
-    def _accumulate(self, batch: list[DataPoint]) -> TensorOrList:
+    def _accumulate(self, batch: Batch) -> TensorOrList:
         """
         See :py:meth:`clinicadl.metrics.Metric._accumulate`.
         """
         if self.postprocessing:
             batch = self.postprocessing.batch_apply(batch)
-
-        batch = Batch(batch)
 
         y_pred = batch.get_field(self.pred_key, ensure_channel_dim=True)
         if self.label_key:

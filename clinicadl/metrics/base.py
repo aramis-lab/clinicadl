@@ -14,6 +14,7 @@ from typing import Literal, Union
 import torch
 from monai.metrics.metric import CumulativeIterationMetric
 
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 
 from .enum import Optimum
@@ -58,7 +59,7 @@ class Metric(CumulativeIterationMetric, ABC):
         """
 
     @abstractmethod
-    def _accumulate(self, batch: list[DataPoint]) -> TensorOrList:
+    def _accumulate(self, batch: Batch) -> TensorOrList:
         """
         To accumulate data useful for the final metric computation.
 
@@ -68,8 +69,9 @@ class Metric(CumulativeIterationMetric, ABC):
 
         Parameters
         ----------
-        batch : list[DataPoint]
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`.
+        batch : Batch
+            The batch of :py:class:`~clinicadl.data.structures.DataPoint`,
+            passed via a :py:class:`~clinicadl.data.dataloader.Batch`.
 
         Returns
         -------
@@ -92,7 +94,7 @@ class Metric(CumulativeIterationMetric, ABC):
         return self._aggregate(data)
 
     # pylint: disable=signature-differs
-    def __call__(self, batch: list[DataPoint]) -> torch.Tensor:
+    def __call__(self, batch: Batch) -> torch.Tensor:
         """
         See :py:meth:`monai.metrics.metric.CumulativeIterationMetric.__call__`.
 
@@ -102,8 +104,9 @@ class Metric(CumulativeIterationMetric, ABC):
 
         Parameters
         ----------
-        batch : list[DataPoint]
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`.
+        batch : Batch
+            The batch of :py:class:`~clinicadl.data.structures.DataPoint`,
+            passed via a :py:class:`~clinicadl.data.dataloader.Batch`.
 
         Returns
         -------
@@ -132,7 +135,7 @@ class Metric(CumulativeIterationMetric, ABC):
 
         return torch.tensor(results)
 
-    def _compute_tensor(self, batch: list[DataPoint]) -> TensorOrList:
+    def _compute_tensor(self, batch: Batch) -> TensorOrList:
         """
         See :py:meth:`monai.metrics.metric.IterationMetric._compute_tensor`.
 

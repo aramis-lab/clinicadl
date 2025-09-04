@@ -1,8 +1,10 @@
+from copy import deepcopy
 from typing import Union
 
 import torchio as tio
 from pydantic import field_serializer, model_validator
 
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 
 from ..types import TransformOrConfig
@@ -61,19 +63,24 @@ class Postprocessing(TransformsHandler):
         """
         return self._transforms_processed(datapoint)
 
-    def batch_apply(self, batch: list[DataPoint]) -> list[DataPoint]:
+    def batch_apply(self, batch: Batch) -> Batch:
         """
         Applies the transformations to a batch of
         :py:class:`~clinicadl.data.structures.DataPoint`.
 
         Parameters
         ----------
-        batch : list[DataPoint]
-            A batch of :py:class:`~clinicadl.data.structures.DataPoint`.
+        batch : Batch
+            A batch of :py:class:`~clinicadl.data.structures.DataPoint`,
+            passed via a :py:class:`~clinicadl.data.dataloader.Batch`.
 
         Returns
         -------
-        list[DataPoint]
+        Batch
             The transformed batch.
         """
-        return [self.apply(datapoint) for datapoint in batch]
+        batch = deepcopy(batch)
+        for i, datapoint in enumerate(batch):
+            batch[i] = self.apply(datapoint)
+
+        return batch
