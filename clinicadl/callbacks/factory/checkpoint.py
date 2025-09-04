@@ -59,6 +59,9 @@ class Checkpoint(Callback):
         self.patience = patience
 
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Save the current model and optimizer state at the end of the require epochs.
+        """
         if (
             config.epoch in self.epochs
             or config.epoch % self.patience == 0

@@ -1,4 +1,5 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from importlib.util import find_spec
 from typing import Any
 
 from ..training_state import _TrainingState
@@ -98,6 +99,7 @@ class Callback(ABC):
     def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after the validation loop ends."""
 
+    @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """
         Convert the callback to a dictionary representation.
@@ -107,6 +109,17 @@ class Callback(ABC):
         dict
             Dictionary representation of the callback.
         """
-        json_dict = {"name": self.__class__.__name__}
+        pass
 
-        return json_dict
+
+class Tracker(Callback):
+    """Base class for defining experiment trackers in ClinicaDL."""
+
+    def __init__(self):
+        super().__init__()
+
+        self.package = ""
+
+    def is_available(self):
+        """Check if the package is installed and available"""
+        return find_spec(self.package) is not None

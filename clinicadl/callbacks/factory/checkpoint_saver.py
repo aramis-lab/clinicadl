@@ -1,8 +1,7 @@
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL, OPTIMIZER
+from clinicadl.dictionary.words import EPOCH, MODEL
 
 from .base import Callback
 

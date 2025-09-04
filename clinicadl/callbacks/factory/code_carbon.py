@@ -1,8 +1,9 @@
-# TODO : Not working at the moment
+# Note: This callback is currently working but in a very basic way. It could be improved in the future.
+# For example, by allowing more parameters to be set (like tracking more specific hardware, etc.)
+# See https://codecarbon.io/ for more details.
 
 from importlib.util import find_spec
 from logging import getLogger
-from pathlib import Path
 
 from clinicadl.callbacks.training_state import _TrainingState
 
@@ -30,6 +31,9 @@ class CodeCarbon(Callback):
         return find_spec(CODECARBON) is not None
 
     def set_tracker(self, config: _TrainingState):
+        """
+        Initialize the CodeCarbon tracker.
+        """
         from codecarbon import EmissionsTracker, OfflineEmissionsTracker
         from codecarbon.output_methods.logger import LoggerOutput
 

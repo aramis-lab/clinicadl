@@ -166,6 +166,29 @@ class OneMetricEarlyStopping(Callback):
 
         return False
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        json_dict = super().to_dict()
+        json_dict.update(
+            {
+                "metrics": self.metric,
+                "patience": self.patience,
+                "min_delta": self.min_delta,
+                "mode": self.mode,
+                "check_finite": self.check_finite,
+                "upper_bound": self.upper_bound,
+                "lower_bound": self.lower_bound,
+            }
+        )
+        return json_dict
+
 
 class EarlyStopping(Callback):
     """

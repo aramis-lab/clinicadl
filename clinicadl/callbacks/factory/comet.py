@@ -13,11 +13,9 @@ class Comet(Callback):
     """
     A :class:`TrainingCallback` integrating the experiment tracking tool `comet_ml <https://www.comet.com/site/>`_.
 
-    It allows users to store their configs, monitor
-    their trainings and compare runs through a graphic interface. To be able use this feature
-    you will need:
-
-    - the package `comet_ml` installed in your virtual env. If not you can install it with
+    It allows users to store their configs, monitor their trainings and compare runs through a graphic interface.
+    To be able use this feature you will need:
+        - the package `comet_ml` installed in your virtual env. If not you can install it with
 
     .. code-block::
 
