@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numbers
 import re
 from copy import deepcopy
 from typing import Any, Optional, Union
@@ -192,25 +191,6 @@ class Batch(list[DataPoint]):
             non_blocking=self._non_blocking,
             memory_format=memory_format,
         )
-
-    def _to_tensor(self, value: Any) -> torch.Tensor:
-        """
-        Tries to convert to a tensor.
-        """
-        if isinstance(value, tio.ScalarImage):
-            value = value.tensor.float()
-        elif isinstance(value, tio.LabelMap):
-            value = value.tensor.int()
-        elif isinstance(value, np.ndarray):
-            value = torch.from_numpy(value)
-        elif isinstance(value, numbers.Number):
-            value = torch.tensor(value, device=self.device)
-        elif isinstance(value, torch.Tensor):
-            pass
-        else:
-            raise TypeError
-
-        return value
 
     @staticmethod
     def _get_field(datapoint: DataPoint, field_name: str) -> Any:

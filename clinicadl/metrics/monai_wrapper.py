@@ -4,7 +4,7 @@ from typing import Optional
 import torch
 from monai.metrics import CumulativeIterationMetric
 
-from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
@@ -110,7 +110,7 @@ class MonaiMetricWrapper(Metric):
         if self.postprocessing:
             batch = self.postprocessing.batch_apply(batch)
 
-        batch = SimpleBatch(batch)
+        batch = Batch(batch)
 
         y_pred = batch.get_field(self.pred_key)
         if self.label_key:
