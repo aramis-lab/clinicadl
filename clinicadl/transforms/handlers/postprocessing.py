@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from pydantic import field_serializer, model_validator
 
@@ -19,7 +19,7 @@ class Postprocessing(TransformsHandler):
     """
 
     transforms: list[TransformOrConfig]
-    _transforms_processed: Transform
+    _transforms_processed: Optional[Transform] = None
 
     @model_validator(mode="after")
     def _convert_transforms(self):

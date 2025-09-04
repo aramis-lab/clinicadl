@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Union
+from typing import Optional, Union
 
 from pydantic import field_serializer, model_validator
 
@@ -88,9 +88,9 @@ class Transforms(TransformsHandler):
     image_transforms: list[TransformOrConfig] = []
     sample_transforms: list[TransformOrConfig] = []
     augmentations: list[TransformOrConfig] = []
-    _image_transforms_processed: Transform
-    _sample_transforms_processed: Transform
-    _augmentations_processed: Transform
+    _image_transforms_processed: Optional[Transform] = None
+    _sample_transforms_processed: Optional[Transform] = None
+    _augmentations_processed: Optional[Transform] = None
 
     @model_validator(mode="after")
     def _check_transforms(self):
