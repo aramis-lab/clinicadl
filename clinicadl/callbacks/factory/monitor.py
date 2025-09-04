@@ -143,9 +143,6 @@ class _Monitor(Callback):
     def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         self.validation_phase.stop()
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
-        pass
-
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         self.all_phases.stop()
         self.write_file(config.maps.training.splits[config.split.index].performance_txt)
