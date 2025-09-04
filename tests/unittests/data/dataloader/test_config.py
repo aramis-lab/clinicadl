@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
 from clinicadl.data.dataloader import DataLoaderConfig
-from clinicadl.data.dataloader.batch import SimpleBatch
+from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datasets import (
     CapsDataset,
     ConcatDataset,
@@ -101,7 +101,7 @@ def test_get_object():
     assert dataloader.sampler.num_samples == 7
     assert dataloader.sampler.replacement
     batch = next(iter(dataloader))
-    assert isinstance(batch, SimpleBatch)
+    assert isinstance(batch, Batch)
     assert batch[0].participant == "sub-999"
     assert batch[0].session == "ses-M099"
 
@@ -117,8 +117,8 @@ def test_get_object():
     assert isinstance(batch, tuple)
     assert batch[0][0].participant == "sub-100"
     assert batch[0][0].session == "ses-M000"
-    assert batch[0].get_labels() == torch.tensor([5.0])
-    assert batch[1].get_labels() == [None]
+    assert batch[0].get_field("label") == torch.tensor([5.0])
+    assert batch[1].get_field("label") == [None]
 
     dataloader_config = DataLoaderConfig(
         shuffle=False,
@@ -129,7 +129,7 @@ def test_get_object():
     assert dataloader.sampler.num_replicas == 1
     assert dataloader.sampler.rank == 0
     batch = next(iter(dataloader))
-    assert isinstance(batch, SimpleBatch)
+    assert isinstance(batch, Batch)
     assert batch[0].participant == "sub-000"
     assert batch[0].session == "ses-M000"
 
@@ -168,14 +168,14 @@ def test_get_object():
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, tuple)
-    assert (batch[0].get_labels() == torch.tensor([1.0, 10.0])).all()
-    assert batch[1].get_labels() == [None, None]
+    assert (batch[0].get_field("label") == torch.tensor([1.0, 10.0])).all()
+    assert batch[1].get_field("label") == [None, None]
 
     dataloader = DataLoaderConfig(batch_size=5, shuffle=True).get_object(
         ConcatDataset([CAPS, CAPS_WITHOUT_LABEL])
     )
     batch = next(iter(dataloader))
-    assert batch.get_labels() == [5.0, 1.0, None, 10.0, 1.0]
+    assert batch.get_field("label") == [5.0, 1.0, None, 10.0, 1.0]
 
 
 @pytest.mark.skipif(

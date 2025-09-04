@@ -17,7 +17,7 @@
     :template: autosummary/class.rst
 
     DataLoaderConfig
-    batch.SimpleBatch
+    Batch
 
 
 :mod:`clinicadl.data.datasets`

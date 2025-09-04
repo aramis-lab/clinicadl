@@ -14,4 +14,4 @@
     :template: autosummary/class.rst
 
     DataLoaderConfig
-    batch.SimpleBatch
+    Batch

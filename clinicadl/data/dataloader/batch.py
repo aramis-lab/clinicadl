@@ -1,103 +1,260 @@
-from typing import Any, List, Union
+from __future__ import annotations
 
+import re
+from copy import deepcopy
+from typing import Any, Optional, Union
+
+import numpy as np
 import torch
 import torchio as tio
 
 from clinicadl.data.structures import DataPoint
 
 
-class SimpleBatch(list[DataPoint]):
+class Batch(list[DataPoint]):
     """
     A batch container for :class:`~clinicadl.data.structures.DataPoint` objects.
 
-    This class inherits from the built-in :class:`list` and is specifically designed
-    to handle batches of `DataPoint` instances, providing utility methods to
-    retrieve their associated image tensors and labels.
+    ``Batch`` is simply a list of ``DataPoints``, with additional useful functions.
 
     Parameters
     ----------
-    samples : list[DataPoint]
-        List of :class:`~clinicadl.data.structures.DataPoint` forming the batch.
+    datapoints : list[DataPoint]
+        List of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` forming the batch.
 
     Raises
     ------
     ValueError
-        If the input list of samples is empty.
+        If the input list is empty.
 
     """
 
-    def __init__(self, samples: list[DataPoint]):
-        super().__init__(samples)
+    _device: Optional[torch.device] = None
+    _non_blocking: bool = False
+
+    def __init__(self, datapoints: list[DataPoint]):
+        super().__init__(datapoints)
 
         if len(self) == 0:
-            raise ValueError("The batch is empty")
+            raise ValueError("The batch is empty!")
 
-    def get_images(self) -> Union[torch.Tensor, list[torch.Tensor]]:
+    @property
+    def device(self) -> torch.device:
+        """The device on which the :py:class:`Tensors <torch.Tensor>` in the batch are."""
+        return self._device
+
+    def to(
+        self, device: Union[str, int, torch.device], non_blocking: bool = False
+    ) -> Batch:
         """
-        Gathers the images in the batch as :py:class:`torch.Tensor`.
+        Returns a copy of the ``Batch``, where :py:class:`Tensors <torch.Tensor>` are on the specified device.
+
+        Parameters
+        ----------
+        device : Union[str, int, torch.device]
+            The device where to send the ``Batch``. Can be:
+
+            - an ``int``: the device id;
+            - ``"cuda"``;
+            - ``"cpu"``
+            - ``"cuda-<id>"``: where ``<id>`` is the device id;
+            - a :py:class:`torch.device`.
+
+        non_blocking : bool, default=False
+            "When non_blocking is set to ``True``, the function attempts to perform the
+            conversion asynchronously with respect to the host, if possible.
+            This asynchronous behavior applies to both pinned and pageable memory."
+            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`).
 
         Returns
         -------
-        Union[torch.Tensor, list[torch.Tensor]]
-            A tensor containing all the images from the batch if they
-            have the same size. A list of tensors otherwise.
-
-            If a tensor is returned, the first dimension is the batch
-            dimension.
+        Batch
+            The copy of the input batch, on the specified device.
         """
-        images = [sample.image.tensor for sample in self]
+        if isinstance(device, str) and not (
+            re.match(r"^cuda:.*", device) or device == "cuda" or device == "cpu"
+        ):
+            raise ValueError(
+                "If 'device' is a str, it must be 'cuda' or 'cuda:<device-id>'."
+            )
+
+        batch = deepcopy(self)
+
+        for datapoint in batch:
+            for name, value in datapoint.items():
+                if isinstance(value, torch.Tensor):
+                    datapoint[name] = value.to(device, non_blocking=non_blocking)
+            datapoint.update_attributes()
+
+        batch._device = torch.device(device)
+        batch._non_blocking = non_blocking
+
+        return batch
+
+    def get_field(
+        self,
+        field_name: str,
+        dtype: Optional[torch.dtype] = None,
+        channels_last: Optional[bool] = None,
+        ensure_channel_dim: bool = False,
+    ) -> Union[torch.Tensor, list[Any]]:
+        """
+        Gathers all the values of a field that is in the ``DataPoints`` of the batch.
+
+        The function will try to return the output as a batch-first :py:class:`torch.Tensor`. If not possible,
+        it will return the list of the values.
+
+        If the output is a ``Tensor``, it will be returned on the device passed via :py:meth:`to`, and the desired data type
+        as well as the memory format can be specified via ``dtype`` and ``channels_last`` respectively.
+
+        Parameters
+        ----------
+        field_name : str
+            The key to the field in the underlying :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
+        dtype : Optional[torch.dtype], default=None
+            Specifies the output data type, if the output is a ``Tensor``. If ``None``, the output will not
+            be cast into a specific data type.
+        channels_last : Optional[bool], default=None
+            Whether to use `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
+            for the output ``Tensor``. If ``None``, memory format will not be changed.
+        ensure_channel_dim : bool, default=False
+            If ``True``, a 1D ``Tensor`` output batch (B) will be unsqueezed to a 2D ``Tensor`` with a channel dimension (BC).
+
+        Returns
+        -------
+        Union[torch.Tensor, list[Any]]
+            A :py:class:`torch.Tensor` or a list containing all the values of ``field_name`` in the batch.
+
+        Raises
+        ------
+        KeyError
+            If not all the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` have the requested ``field_name``.
+        ValueError
+            If ``channels_last=True`` but the batch tensor is not 4D (BCHW) or 5D (BCDHW).
+
+        Examples
+        --------
+        .. code-block:: python
+
+            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+            datapoint = ColinDataPoint()
+            batch = Batch([datapoint, datapoint])
+
+        .. code-block:: python
+
+            >>> datapoint
+            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+            >>> datapoint["label"]
+            LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; dtype: torch.ShortTensor; memory: 13.6 MiB)
+            >>> datapoint["participant"]
+            'sub-colin'
+
+        .. code-block:: python
+
+            >>> batch.get_field("label").shape
+            torch.Size([2, 1, 181, 217, 181])
+            >>> batch.get_field("participant")
+            ['sub-colin', 'sub-colin']
+
+        """
+        # collect all the values and try to convert them to tensors
+        batch = []
         try:
-            return torch.stack(images, dim=0)
-        except RuntimeError:  # not the same shape
-            return images
+            for datapoint in self:
+                value = self._get_field(datapoint, field_name)
 
-    def get_labels(self) -> Union[torch.Tensor, List[Any]]:
-        """
-        Gathers the labels in the batch.
+                try:
+                    value = self._to_tensor(value)
+                except TypeError:
+                    raise StopIteration
 
-        Returns
-        -------
-        Union[torch.Tensor, List[Any]]
-            A :py:class:`torch.Tensor` or a list containing all the labels from the batch.
-            It will be a list if the labels are heterogeneous (e.g. a mask and a scalar) or if any
-            of the label is ``None``. Otherwise, it will be a tensor.
-        """
-        labels = [
-            sample.label.tensor
-            if isinstance(sample.label, tio.LabelMap)
-            else self._dict_to_tensor(sample.label)
-            if isinstance(sample.label, dict)
-            else sample.label
-            for sample in self
-        ]
+                batch.append(value)
 
-        if all(isinstance(label, torch.Tensor) for label in labels):
+        except StopIteration:  # some field values cannot be converted to tensors
+            return [self._get_field(datapoint, field_name) for datapoint in self]
+        else:  # now let's merge in one tensor
             try:
-                return torch.stack(labels, dim=0)
-            except RuntimeError:  # not the same shape
-                return labels
+                batch = torch.stack(batch, dim=0)
+            except RuntimeError:  # not the same shape, batch as tensor is not possible
+                return [self._get_field(datapoint, field_name) for datapoint in self]
 
-        try:
-            return torch.tensor(labels)
-        except (TypeError, ValueError, RuntimeError):  # e.g. None in labels
-            return labels
+        # format the batch tensor
+        if len(batch.shape) == 1 and ensure_channel_dim:  # at least two dimensions
+            batch = batch.unsqueeze(1)
+
+        memory_format = self._get_memory_format(batch, channels_last=channels_last)
+
+        return batch.to(
+            dtype=dtype,
+            device=self._device,
+            non_blocking=self._non_blocking,
+            memory_format=memory_format,
+        )
 
     @staticmethod
-    def _dict_to_tensor(dict_: dict[str, float]) -> torch.Tensor:
+    def _get_field(datapoint: DataPoint, field_name: str) -> Any:
+        """Returns the specified field."""
+        try:
+            return datapoint[field_name]
+        except KeyError as e:
+            raise KeyError(
+                f"You want to get '{field_name}', but there is no such key in some DataPoints in the batch."
+            ) from e
+
+    @classmethod
+    def _to_tensor(cls, value: Any) -> torch.Tensor:
         """
-        To convert multi-scalars label.
+        Tries to convert to a tensor.
         """
-        return torch.tensor([value for _, value in dict_.items()], dtype=torch.float32)
+        if isinstance(value, tio.ScalarImage):
+            return value.tensor.float()
+        elif isinstance(value, tio.LabelMap):
+            return value.tensor.int()
+        elif isinstance(value, np.ndarray):
+            return torch.from_numpy(value)
+        elif isinstance(value, dict):
+            return cls._to_tensor(list(value.values()))
+        elif isinstance(value, torch.Tensor):
+            return value
+        else:
+            try:
+                return torch.tensor(value)
+            except (TypeError, ValueError, RuntimeError) as exc:
+                raise TypeError from exc
+
+    @staticmethod
+    def _get_memory_format(
+        tensor: torch.Tensor,
+        channels_last: Optional[bool],
+    ) -> torch.memory_format:
+        """
+        Gets the desired memory format.
+        """
+        if channels_last:
+            if len(tensor.shape) == 4:
+                return torch.channels_last
+            elif len(tensor.shape) == 5:
+                return torch.channels_last_3d
+            else:
+                raise ValueError(
+                    "To use Channels Last memory format, the output tensor must be 4D (BCHW) or 5D (BCDHW). "
+                    f"Here it is {int(len(tensor.shape))}D."
+                )
+        elif channels_last is False:
+            return torch.contiguous_format
+        else:
+            return torch.preserve_format
 
 
-Batch = Union[SimpleBatch, tuple[SimpleBatch, ...]]
+BatchType = Union[Batch, tuple[Batch, ...]]
 
 
-def simple_collate_fn(batch: list[DataPoint]) -> SimpleBatch:
+def simple_collate_fn(batch: list[DataPoint]) -> Batch:
     """For datasets that returns a single Sample."""
-    return SimpleBatch(batch)
+    return Batch(batch)
 
 
-def tuple_collate_fn(batch: list[tuple[DataPoint, ...]]) -> tuple[SimpleBatch, ...]:
+def tuple_collate_fn(batch: list[tuple[DataPoint, ...]]) -> tuple[Batch, ...]:
     """For datasets that returns a tuple of Samples."""
-    return tuple(SimpleBatch(data) for data in zip(*batch))
+    return tuple(Batch(data) for data in zip(*batch))
