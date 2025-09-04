@@ -1,6 +1,7 @@
 from logging import getLogger
-from typing import Optional, Union
+from typing import Union
 
+import torchio as tio
 from pydantic import field_serializer, model_validator
 
 from clinicadl.data.structures import DataPoint
@@ -88,9 +89,9 @@ class Transforms(TransformsHandler):
     image_transforms: list[TransformOrConfig] = []
     sample_transforms: list[TransformOrConfig] = []
     augmentations: list[TransformOrConfig] = []
-    _image_transforms_processed: Optional[Transform] = None
-    _sample_transforms_processed: Optional[Transform] = None
-    _augmentations_processed: Optional[Transform] = None
+    _image_transforms_processed: tio.Compose = tio.Compose([])
+    _sample_transforms_processed: tio.Compose = tio.Compose([])
+    _augmentations_processed: tio.Compose = tio.Compose([])
 
     @model_validator(mode="after")
     def _check_transforms(self):
@@ -134,31 +135,37 @@ class Transforms(TransformsHandler):
         showing the current configuration of image and sample transforms,
         augmentations, and other settings.
         """
-        transform_str = f"Transforms configuration for {self.extraction} extraction:\n"
+        transform_str = f"Transforms configuration for {self.extraction.extract_method} extraction:\n"
 
         def _to_str(
-            list_: Transform,
+            list_: list[Transform],
             object_: str,
             transfo_: str,
         ):
             str_ = ""
             if list_:
-                str_ += f"{object_} {transfo_}:\n"
+                str_ += f"* {object_} {transfo_}:\n"
                 for transform in list_:
-                    str_ += f"  - {type(transform).__name__}\n"
+                    str_ += f"  - {self._get_transform_name(transform)}\n"
             else:
-                str_ += f"No {object_} {transfo_} applied.\n"
+                str_ += f"* No {object_} {transfo_} applied.\n"
 
             return str_
 
         transform_str += _to_str(
-            self._image_transforms_processed, object_=IMAGE, transfo_=TRANSFORMATION
+            self._image_transforms_processed.transforms,
+            object_=IMAGE,
+            transfo_=TRANSFORMATION,
         )
         transform_str += _to_str(
-            self._sample_transforms_processed, object_=SAMPLE, transfo_=TRANSFORMATION
+            self._sample_transforms_processed.transforms,
+            object_=SAMPLE,
+            transfo_=TRANSFORMATION,
         )
         transform_str += _to_str(
-            self._augmentations_processed, object_=SAMPLE, transfo_=AUGMENTATION
+            self._augmentations_processed.transforms,
+            object_=SAMPLE,
+            transfo_=AUGMENTATION,
         )
 
         return transform_str

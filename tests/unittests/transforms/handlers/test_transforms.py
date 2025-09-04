@@ -95,13 +95,13 @@ def test_apply_transforms():
 
 def test_str():
     transforms = Transforms(
-        extraction=Patch(patch_size=4, stride=4),
-        image_transforms=[tio.Resize(12), tio.RescaleIntensity()],
-        sample_transforms=[ResizeConfig(target_shape=3)],
-        image_augmentations=[],
-        sample_augmentations=[tio.Mask(masking_method=1)],
+        image_transforms=[RescaleIntensityConfig()],
+        augmentations=[tio.RescaleIntensity()],
     )
-    str(transforms)
+    assert (
+        str(transforms)
+        == "Transforms configuration for image extraction:\n* image transformation:\n  - RescaleIntensity\n* No sample transformation applied.\n* sample augmentation:\n  - RescaleIntensity\n"
+    )
 
 
 def test_serialization():

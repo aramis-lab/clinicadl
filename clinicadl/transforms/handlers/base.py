@@ -6,6 +6,7 @@ import torchio as tio
 from clinicadl.utils.config import ClinicaDLConfig
 
 from ..config import TransformConfig
+from ..monai_wrapper import MonaiTransformWrapper
 from ..types import Transform, TransformOrConfig
 
 CUSTOM_TRANSFORM = "Custom transform passed by the user"
@@ -63,6 +64,17 @@ class TransformsHandler(ClinicaDLConfig):
             if isinstance(transform, TransformConfig):
                 d.append(transform.to_dict())
             else:
-                d.append(CUSTOM_TRANSFORM + ": " + f"'{type(transform).__name__}'")
+                d.append(
+                    CUSTOM_TRANSFORM + ": " + f"'{cls._get_transform_name(transform)}'"
+                )
 
         return d
+
+    @staticmethod
+    def _get_transform_name(transform: Transform) -> str:
+        """
+        Gets a str describing the transform.
+        """
+        if isinstance(transform, MonaiTransformWrapper):
+            transform = transform.transform
+        return type(transform).__name__

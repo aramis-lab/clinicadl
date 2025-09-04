@@ -1,10 +1,11 @@
-from typing import Optional, Union
+from typing import Union
 
+import torchio as tio
 from pydantic import field_serializer, model_validator
 
 from clinicadl.data.structures import DataPoint
 
-from ..types import Transform, TransformOrConfig
+from ..types import TransformOrConfig
 from .base import TransformsHandler
 
 
@@ -18,8 +19,8 @@ class Postprocessing(TransformsHandler):
         A list of transformations to apply on the outputs.
     """
 
-    transforms: list[TransformOrConfig]
-    _transforms_processed: Optional[Transform] = None
+    transforms: list[TransformOrConfig] = []
+    _transforms_processed: tio.Compose = tio.Compose([])
 
     @model_validator(mode="after")
     def _convert_transforms(self):
@@ -44,11 +45,11 @@ class Postprocessing(TransformsHandler):
         """
         Returns a detailed string representation of the ``Postprocessing`` object.
         """
-        str_ = "Postprocessing configuration:\n"
+        str_ = "Postprocessing:\n"
 
-        if self._transforms_processed:
-            for transform in self._transforms_processed:
-                str_ += f"  - {type(transform).__name__}\n"
+        if self._transforms_processed.transforms:
+            for transform in self._transforms_processed.transforms:
+                str_ += f"  - {self._get_transform_name(transform)}\n"
         else:
             str_ += "No transform applied.\n"
 
