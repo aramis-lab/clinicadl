@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numbers
 import re
 from copy import deepcopy
 from typing import Any, Optional, Union
@@ -191,46 +192,6 @@ class Batch(list[DataPoint]):
             non_blocking=self._non_blocking,
             memory_format=memory_format,
         )
-
-    def get_field(self, field_name: str) -> Union[torch.Tensor, list[Any]]:
-        """
-        Gathers all the values of a field in the batch.
-
-        Parameters
-        ----------
-        field_name : str
-            The key to the field in the underlying :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
-
-        Returns
-        -------
-        Union[torch.Tensor, list[Any]]
-            A :py:class:`torch.Tensor` or a list containing all the values of ``field_name`` in the batch.
-            It will be a list a :py:class:`torch.Tensor` if all the values could be converted to tensors,
-            and if all tensors have the same shape.
-        """
-        values = []
-        for datapoint in self:
-            try:
-                value = datapoint[field_name]
-            except KeyError as e:
-                raise KeyError(
-                    f"You want to get '{field_name}', but there is no such key in some DataPoints in the batch."
-                ) from e
-
-            try:
-                value = self._to_tensor(value)
-            except TypeError:
-                pass
-
-            values.append(value)
-
-        if all(isinstance(v, torch.Tensor) for v in values):
-            try:
-                return torch.stack(values, dim=0)
-            except RuntimeError:  # not the same shape
-                return values
-        else:
-            return values
 
     def _to_tensor(self, value: Any) -> torch.Tensor:
         """
