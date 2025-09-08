@@ -1,10 +1,9 @@
 # TODO: need to define what to put in the custom metrics
 
 from abc import ABC, abstractmethod
-from typing import overload
 
+from ..enum import Optimum
 from .base import MetricConfig
-from .enum import Optimum
 
 
 class CustomMetric(MetricConfig, ABC):

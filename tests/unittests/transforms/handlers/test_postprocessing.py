@@ -13,12 +13,12 @@ from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 def test_args():
     with pytest.raises(ValidationError):
-        Postprocessing(Transforms=["AsDiscrete"])
+        Postprocessing(transforms=["AsDiscrete"])
 
 
 def test_check_transforms():
     transforms = Postprocessing(
-        transforms=[AsDiscreteConfig(), tio.RescaleIntensity()],
+        transforms=[AsDiscreteConfig(threshold=1), tio.RescaleIntensity()],
     )
     assert [type(t) for t in transforms._transforms_processed] == [
         MonaiTransformWrapper,
@@ -55,21 +55,17 @@ def test_apply():
 
 def test_str():
     transforms = Postprocessing(
-        transforms=[
-            AsDiscreteConfig(),
-            tio.RescaleIntensity(),
-        ],
+        transforms=[tio.RescaleIntensity(), AsDiscreteConfig(threshold=1)]
     )
-    str(transforms)
-
+    assert str(transforms) == "Postprocessing:\n  - RescaleIntensity\n  - AsDiscrete\n"
     transforms = Postprocessing(transforms=[])
-    str(transforms)
+    assert str(transforms) == "Postprocessing:\nNo transform applied.\n"
 
 
 def test_serialization():
     transforms = Postprocessing(
         transforms=[
-            AsDiscreteConfig(),
+            AsDiscreteConfig(threshold=1),
             tio.Resample(),
         ],
     )
@@ -80,7 +76,7 @@ def test_serialization():
         exclude=None,
         argmax=False,
         to_onehot=None,
-        threshold=None,
+        threshold=1,
         rounding=None,
     )
     assert d["transforms"] == [

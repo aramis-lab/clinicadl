@@ -34,12 +34,6 @@ class ImplementedMetric(str, Enum):
         )
 
 
-class Optimum(str, Enum):
-    MIN = "min"
-    MAX = "max"
-    NONE = "none"
-
-
 class ConfusionMatrixMetricName(str, Enum):
     """Supported metrics for ConfusionMatrixMetric."""
 

@@ -1,17 +1,18 @@
-from __future__ import annotations
-
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 
-import monai
 import monai.metrics
 from pydantic import field_validator, model_validator
 
+from clinicadl.dictionary.words import LABEL, NAME, OUTPUT
 from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
+from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
-from .enum import Optimum
+from ..base import Metric
+from ..enum import Optimum
+from ..monai_wrapper import MonaiMetricWrapper
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
 
@@ -19,17 +20,31 @@ __all__ = ["MetricConfig", "LossMetricConfig"]
 class MetricConfig(ObjectConfig):
     """Base config class to configure metrics."""
 
-    def get_object(self) -> monai.metrics.metric.CumulativeIterationMetric:
+    pred_key: str = OUTPUT
+    label_key: Optional[str] = LABEL
+    postprocessing: list[TransformOrConfig] = []
+
+    def get_object(self) -> Metric:
         """
         Returns the metric associated to this configuration,
         parametrized with the parameters passed by the user.
 
         Returns
         -------
-        monai.metrics.Metric:
-            The MONAI metric.
+        Metric:
+            The associated metric.
         """
-        return super().get_object()
+        monai_metric = self._get_class()(
+            **self.model_dump(exclude={NAME, "pred_key", "label_key", "postprocessing"})
+        )
+        metric = MonaiMetricWrapper(
+            monai_metric,
+            pred_key=self.pred_key,
+            label_key=self.label_key,
+            optimum=self.optimum(),
+            postprocessing=self.postprocessing,
+        )
+        return metric
 
     @classmethod
     def _get_class(cls) -> type[monai.metrics.metric.CumulativeIterationMetric]:

@@ -1,5 +1,6 @@
 import monai.metrics as metrics
 import pytest
+import torchio as tio
 from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
 from torch.nn import MSELoss
@@ -30,6 +31,9 @@ from clinicadl.metrics.config.segmentation import (
     SurfaceDiceMetricConfig,
     SurfaceDistanceMetricConfig,
 )
+from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
+from clinicadl.transforms.config import AsDiscreteConfig
+from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 BAD_INPUTS = [
     ({"average": "abc"}, [ROCAUCMetricConfig, AveragePrecisionMetricConfig]),
@@ -293,7 +297,8 @@ def test_good_inputs(args: dict, configs):
 def test_confusion_matrix_metric():
     for metric in ConfusionMatrixMetricName:
         c = ConfusionMatrixMetricConfig(metric_name=metric)
-        assert isinstance(c.get_object(), ConfusionMatrixMetric)
+        assert isinstance(c.get_object(), MonaiMetricWrapper)
+        assert isinstance(c.get_object().metric, ConfusionMatrixMetric)
 
 
 def test_check_spatial_dim():
@@ -310,10 +315,16 @@ def test_check_loss_metric():
     assert config.reduction == "sum"
     c = get_metric_config("LossMetric", loss_fn=lambda x: x, reduction="mean")
     assert c.name == "LossMetric"
-    assert isinstance(c.get_object(), metrics.LossMetric)
+    assert isinstance(c.get_object(), MonaiMetricWrapper)
+    assert isinstance(c.get_object().metric, metrics.LossMetric)
 
 
-MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 2}
+MANDATORY_ARGS = {
+    "max_val": 1,
+    "class_thresholds": (0.5, 0.5),
+    "spatial_dims": 2,
+    "postprocessing": [tio.Crop(cropping=1), AsDiscreteConfig(threshold=0.5)],
+}
 
 
 @pytest.mark.parametrize(
@@ -337,16 +348,30 @@ MANDATORY_ARGS = {"max_val": 1, "class_thresholds": (0.5, 0.5), "spatial_dims": 
     ],
 )
 def test_get_object(config, expected_class):
-    try:
-        c = config()
-    except ValidationError:
-        for arg, value in MANDATORY_ARGS.items():
-            try:
-                c = config(**{arg: value})
-            except ValidationError:
-                continue
+    c = config(**MANDATORY_ARGS)
     transform_from_config = c.get_object()
-    assert isinstance(transform_from_config, expected_class)
+    assert isinstance(transform_from_config, MonaiMetricWrapper)
+    assert isinstance(transform_from_config.metric, expected_class)
+    assert transform_from_config.pred_key == "output"
+    assert transform_from_config.label_key == "label"
+    assert len(transform_from_config.postprocessing.transforms) == 2
+    assert isinstance(transform_from_config.postprocessing.transforms[0], tio.Crop)
+    assert isinstance(
+        transform_from_config.postprocessing.transforms[1], AsDiscreteConfig
+    )
+
+    c.label_key = None
+    c.pred_key = "abc"
+    transform_from_config = c.get_object()
+    assert isinstance(
+        transform_from_config.postprocessing._transforms_processed[0], tio.Crop
+    )
+    assert isinstance(
+        transform_from_config.postprocessing._transforms_processed[1],
+        MonaiTransformWrapper,
+    )
+    assert transform_from_config.label_key is None
+    assert transform_from_config.pred_key == "abc"
 
 
 @pytest.mark.parametrize(
@@ -370,14 +395,7 @@ def test_get_object(config, expected_class):
     ],
 )
 def test_get_metric_config(name, config):
-    try:
-        c = get_metric_config(name)
-    except ValidationError:
-        for arg, value in MANDATORY_ARGS.items():
-            try:
-                c = get_metric_config(name, **{arg: value})
-            except ValidationError:
-                continue
+    c = get_metric_config(name, **MANDATORY_ARGS)
 
     assert c.name == name
     assert isinstance(c, config)
@@ -428,3 +446,5 @@ def test_optimum_confusion_matrix():
     assert config.optimum() == "min"
     config = ConfusionMatrixMetricConfig(metric_name="tpr")
     assert config.optimum() == "max"
+    metric = config.get_object()
+    assert metric.optimum == "max"
