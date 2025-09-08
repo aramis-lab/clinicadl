@@ -8,6 +8,7 @@ from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
 from torch.nn import MSELoss
 
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.config import get_metric_config
 from clinicadl.metrics.config.base import LossMetricConfig
@@ -318,16 +319,18 @@ def test_loss_metric(caplog):
     assert isinstance(config.get_object(), MonaiMetricWrapper)
     assert isinstance(config.get_object().metric, metrics.LossMetric)
 
-    batch = [
-        DataPoint(
-            image=tio.ScalarImage(tensor=torch.ones(1, 1, 1, 1)),
-            label=float(i),
-            output=float(i + 1),
-            participant=i,
-            session=i,
-        )
-        for i in range(3)
-    ]
+    batch = Batch(
+        [
+            DataPoint(
+                image=tio.ScalarImage(tensor=torch.ones(1, 1, 1, 1)),
+                label=float(i),
+                output=float(i + 1),
+                participant=i,
+                session=i,
+            )
+            for i in range(3)
+        ]
+    )
     config = LossMetricConfig(loss_fn=MSELoss(reduction="none"), reduction="mean")
     assert config.loss_fn.reduction == "none"
     assert config.reduction == "mean"

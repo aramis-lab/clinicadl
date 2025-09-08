@@ -44,7 +44,7 @@ class CustomTestMetric(Metric):
 def test_metric():
     metric = CustomTestMetric()
 
-    batches = [BATCH[:2], BATCH[2:4], Batch(BATCH[4:])]
+    batches = [Batch(BATCH[:2]), Batch(BATCH[2:4]), Batch(BATCH[4:])]
     results = (
         torch.tensor([1.0, 1.0]),
         torch.tensor([0.0, 1.0]),

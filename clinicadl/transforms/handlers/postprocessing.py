@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 from copy import deepcopy
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import torchio as tio
 from pydantic import field_serializer, model_validator
 
-from clinicadl.data.dataloader import Batch
-from clinicadl.data.structures import DataPoint
-
 from ..types import TransformOrConfig
 from .base import TransformsHandler
+
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import Batch
+    from clinicadl.data.structures import DataPoint
 
 
 class Postprocessing(TransformsHandler):
