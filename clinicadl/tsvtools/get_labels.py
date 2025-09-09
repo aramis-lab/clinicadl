@@ -27,7 +27,6 @@ from clinicadl.tsvtools.utils import (
     neighbour_session,
 )
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.iotools.iotools import commandline_to_json
 
 logger = getLogger("clinicadl.tsvtools")
 
@@ -63,21 +62,21 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                     nb_drop += 1
                 else:
                     prev_session = neighbour_session(session, session_list, -1)
-                    prev_diagnosis = bids_df.loc[(subject, prev_session), "diagnosis"]
+                    prev_diagnosis = bids_df.at[(subject, prev_session), "diagnosis"]
                     while isinstance(
                         prev_diagnosis, float
                     ) and prev_session != first_session(subject_df):
                         prev_session = neighbour_session(prev_session, session_list, -1)
-                        prev_diagnosis = bids_df.loc[
+                        prev_diagnosis = bids_df.at[
                             (subject, prev_session), "diagnosis"
                         ]
                     post_session = neighbour_session(session, session_list, +1)
-                    post_diagnosis = bids_df.loc[(subject, post_session), "diagnosis"]
+                    post_diagnosis = bids_df.at[(subject, post_session), "diagnosis"]
                     while isinstance(
                         post_diagnosis, float
                     ) and post_session != last_session(session_list):
                         post_session = neighbour_session(post_session, session_list, +1)
-                        post_diagnosis = bids_df.loc[
+                        post_diagnosis = bids_df.at[
                             (subject, post_session), "diagnosis"
                         ]
                     if prev_diagnosis == post_diagnosis:
@@ -231,6 +230,87 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: Path) -> pd.DataF
     return bids_copy_df
 
 
+def load_missing_mods_dict(missing_mods: Path):
+    """
+    Load the missing modalities files in a dictionary.
+
+    Parameters
+    ----------
+    missing_mods: str (path)
+        Path to the output directory of clinica iotools check-missing-modalities if already exists
+
+    Returns
+    -------
+    missing_mods_dict: dictionary of str and DataFrame
+        DataFrames of missing modalities
+    """
+
+    if not missing_mods.is_dir():
+        raise ValueError(
+            f"The missing_mods directory doesn't exist: {missing_mods}, please give another directory."
+        )
+    # Loading missing modalities files
+    list_files = list(missing_mods.iterdir())
+    missing_mods_dict = {}
+    for file in list_files:
+        fileext = file.suffix
+        filename = file.stem
+        if fileext == ".tsv":
+            session = filename.split("_")[-1]
+            missing_mods_df = pd.read_csv(file, sep="\t")
+            if len(missing_mods_df) == 0:
+                raise ClinicaDLTSVError(
+                    f"Given TSV file at {file} loads an empty DataFrame."
+                )
+
+            missing_mods_df.set_index("participant_id", drop=True, inplace=True)
+            missing_mods_dict[session] = missing_mods_df
+    return missing_mods_dict
+
+
+def get_variables_list(
+    df: pd.DataFrame, variables_of_interest: Optional[List[str]] = None
+) -> list:
+    variables_list = ["session_id"]
+
+    try:
+        variables_list.append(find_label(df.columns.values, "age"))
+        variables_list.append(find_label(df.columns.values, "sex"))
+        variables_list.append(find_label(df.columns.values, "diagnosis"))
+    except ValueError:
+        logger.warning(
+            "The age, sex or diagnosis values were not found in the dataset."
+        )
+
+    # Checking the variables of interest
+    if variables_of_interest is not None:
+        variables_set = set(variables_of_interest) | set(variables_list)
+        variables_list = list(variables_set)
+        if not set(variables_list).issubset(set(df.columns.values)):
+            raise ClinicaDLArgumentError(
+                f"The variables asked by the user {variables_of_interest} do not "
+                f"exist in the data set."
+            )
+    return variables_list
+
+
+def drop_bad_session(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drops rows with a session_id not starting with 'ses-M'
+    """
+
+    nb_drop = 0
+    for index, row in df.iterrows():
+        if not row["session_id"].startswith("ses-M"):
+            df.drop(index, axis=0, inplace=True)
+            nb_drop += 1
+    if nb_drop > 0:
+        logger.warning(
+            f"Dropped {nb_drop} subjects (bad session name, example ses-Nv)."
+        )
+    return df
+
+
 def get_labels(
     bids_directory: Path,
     merged_tsv: Path,
@@ -276,91 +356,27 @@ def get_labels(
 
     merged_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
 
-    def drop_bad_session(df: pd.DataFrame) -> pd.DataFrame:
-        nb_drop = 0
-        for index, row in df.iterrows():
-            if not row["session_id"].startswith("ses-M"):
-                df.drop(index, axis=0, inplace=True)
-                nb_drop += 1
-        if nb_drop > 0:
-            logger.warning(
-                f"Dropped {nb_drop} subjects (bad session name, example ses-Nv)."
-            )
-        return df
-
+    # dropping rows with a session_id not starting with 'ses-M'
     merged_df = drop_bad_session(merged_df)
 
+    # Get the session index from the session_id
     merged_df["session_index"] = (
         merged_df["session_id"].str.replace("ses-M", "").astype("int")
     )
-
     merged_df.set_index(["participant_id", "session_index"], inplace=True)
 
+    # check if diagnosis column exists (written dx1 in the merged tsv file)
     if "dx1" in merged_df.columns:
         merged_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
 
-    variables_list = ["session_id"]
-
-    try:
-        variables_list.append(find_label(merged_df.columns.values, "age"))
-        variables_list.append(find_label(merged_df.columns.values, "sex"))
-        variables_list.append(find_label(merged_df.columns.values, "diagnosis"))
-    except ValueError:
-        logger.warning(
-            "The age, sex or diagnosis values were not found in the dataset."
-        )
+    # Getting the variables of interest
+    variables_list = get_variables_list(merged_df, variables_of_interest)
 
     # Cleaning NaN diagnosis
     logger.debug("Cleaning NaN diagnosis")
     merged_df = cleaning_nan_diagnoses(merged_df)
 
-    # Checking the variables of interest
-    if variables_of_interest is not None:
-        variables_set = set(variables_of_interest) | set(variables_list)
-        variables_list = list(variables_set)
-        if not set(variables_list).issubset(set(merged_df.columns.values)):
-            raise ClinicaDLArgumentError(
-                f"The variables asked by the user {variables_of_interest} do not "
-                f"exist in the data set."
-            )
-
-    def load_missing_mods_dict(missing_mods: Path):
-        """
-        Load the missing modalities files in a dictionary.
-
-        Parameters
-        ----------
-        missing_mods: str (path)
-            Path to the output directory of clinica iotools check-missing-modalities if already exists
-
-        Returns
-        -------
-        missing_mods_dict: dictionary of str and DataFrame
-            DataFrames of missing modalities
-        """
-
-        if not missing_mods.is_dir():
-            raise ValueError(
-                f"The missing_mods directory doesn't exist: {missing_mods}, please give another directory."
-            )
-        # Loading missing modalities files
-        list_files = list(missing_mods.iterdir())
-        missing_mods_dict = {}
-        for file in list_files:
-            fileext = file.suffix
-            filename = file.stem
-            if fileext == ".tsv":
-                session = filename.split("_")[-1]
-                missing_mods_df = pd.read_csv(file, sep="\t")
-                if len(missing_mods_df) == 0:
-                    raise ClinicaDLTSVError(
-                        f"Given TSV file at {file} loads an empty DataFrame."
-                    )
-
-                missing_mods_df.set_index("participant_id", drop=True, inplace=True)
-                missing_mods_dict[session] = missing_mods_df
-        return missing_mods_dict
-
+    # Loading the bids merged tsv file
     missing_mods_dict = load_missing_mods_dict(missing_mods)
 
     # Remove SMC patients
