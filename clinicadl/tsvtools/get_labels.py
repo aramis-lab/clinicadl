@@ -10,7 +10,6 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-
 from copy import copy
 from logging import getLogger
 from pathlib import Path
@@ -19,6 +18,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from clinicadl.data.datatypes.modalities import DWI, PET, Flair, Modality, T1w
 from clinicadl.tsvtools.utils import (
     cleaning_nan_diagnoses,
     find_label,
@@ -233,16 +233,13 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: Path) -> pd.DataF
 
 def get_labels(
     bids_directory: Path,
+    merged_tsv: Path,
+    missing_mods: Path,
     diagnoses: List[str],
-    modality: str = "t1w",
-    restriction_path: Optional[Path] = None,
+    modality: Modality = T1w(),
     variables_of_interest: Optional[List[str]] = None,
     remove_smc: bool = True,
-    merged_tsv: Optional[Path] = None,
-    missing_mods: Optional[Path] = None,
     remove_unique_session_: bool = False,
-    output_dir: Optional[Path] = None,
-    caps_directory: Optional[Path] = None,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -274,81 +271,40 @@ def get_labels(
         Path to the directory where the output labels.tsv will be stored.
     """
 
-    if not output_dir.is_dir():
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-    output_tsv = output_dir / "labels.tsv"
-
-    commandline_to_json(
-        {
-            "bids_directory": bids_directory,
-            "output_dir": output_dir,
-            "diagnoses": diagnoses,
-            "modality": modality,
-            "restriction_path": restriction_path,
-            "variables_of_interest": variables_of_interest,
-            "remove_smc": remove_smc,
-            "missing_mods": missing_mods,
-            "merged_tsv": merged_tsv,
-            "remove_unique_session": remove_unique_session_,
-            "caps_directory": caps_directory,
-        },
-        filename="labels.json",
-    )
-
-    # Generating the output of `clinica iotools check-missing-modalities``
-    missing_mods_directory = output_dir / "missing_mods"
-    if missing_mods is not None:
-        missing_mods_directory = missing_mods
-
-    if not missing_mods_directory.is_dir():
-        raise ValueError(
-            f"The missing_mods directory doesn't exist: {missing_mods}, please give another directory."
-        )
-
-    logger.info(
-        f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
-    )
-
-    # Generating the output of `clinica iotools merge-tsv `
-    if not merged_tsv:
-        merged_tsv = output_dir / "merged.tsv"
-        if merged_tsv.is_file():
-            logger.warning(
-                f"A merged_tsv file already exists at {merged_tsv}. It will be used to run the command."
-            )
-        else:
-            raise ValueError(
-                "We can't find any merged tsv files, please give another path."
-            )
-    elif not merged_tsv.is_file():
+    if not merged_tsv.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
 
-    bids_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
+    merged_df = pd.read_csv(merged_tsv, sep="\t", low_memory=False)
 
-    nb_drop_bad_session = 0
-    for index, row in bids_df.iterrows():
-        if not row["session_id"].startswith("ses-M"):
-            bids_df.drop(index, axis=0, inplace=True)
-            nb_drop_bad_session += 1
-    logger.info(
-        f"Dropped subjects (bad session name, example ses-Nv): {nb_drop_bad_session}"
+    def drop_bad_session(df: pd.DataFrame) -> pd.DataFrame:
+        nb_drop = 0
+        for index, row in df.iterrows():
+            if not row["session_id"].startswith("ses-M"):
+                df.drop(index, axis=0, inplace=True)
+                nb_drop += 1
+        if nb_drop > 0:
+            logger.warning(
+                f"Dropped {nb_drop} subjects (bad session name, example ses-Nv)."
+            )
+        return df
+
+    merged_df = drop_bad_session(merged_df)
+
+    merged_df["session_index"] = (
+        merged_df["session_id"].str.replace("ses-M", "").astype("int")
     )
 
-    bids_df["session_index"] = (
-        bids_df["session_id"].str.replace("ses-M", "").astype("int")
-    )
+    merged_df.set_index(["participant_id", "session_index"], inplace=True)
 
-    bids_df.set_index(["participant_id", "session_index"], inplace=True)
+    if "dx1" in merged_df.columns:
+        merged_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+
     variables_list = ["session_id"]
 
-    if "dx1" in bids_df.columns:
-        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
-
     try:
-        variables_list.append(find_label(bids_df.columns.values, "age"))
-        variables_list.append(find_label(bids_df.columns.values, "sex"))
-        variables_list.append(find_label(bids_df.columns.values, "diagnosis"))
+        variables_list.append(find_label(merged_df.columns.values, "age"))
+        variables_list.append(find_label(merged_df.columns.values, "sex"))
+        variables_list.append(find_label(merged_df.columns.values, "diagnosis"))
     except ValueError:
         logger.warning(
             "The age, sex or diagnosis values were not found in the dataset."
@@ -356,57 +312,79 @@ def get_labels(
 
     # Cleaning NaN diagnosis
     logger.debug("Cleaning NaN diagnosis")
-    bids_df = cleaning_nan_diagnoses(bids_df)
+    merged_df = cleaning_nan_diagnoses(merged_df)
 
     # Checking the variables of interest
     if variables_of_interest is not None:
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
-        if not set(variables_list).issubset(set(bids_df.columns.values)):
+        if not set(variables_list).issubset(set(merged_df.columns.values)):
             raise ClinicaDLArgumentError(
                 f"The variables asked by the user {variables_of_interest} do not "
                 f"exist in the data set."
             )
 
-    # Loading missing modalities files
-    list_files = list(missing_mods_directory.iterdir())
-    missing_mods_dict = {}
-    for file in list_files:
-        fileext = file.suffix
-        filename = file.stem
-        if fileext == ".tsv":
-            session = filename.split("_")[-1]
-            missing_mods_df = pd.read_csv(file, sep="\t")
-            if len(missing_mods_df) == 0:
-                raise ClinicaDLTSVError(
-                    f"Given TSV file at {file} loads an empty DataFrame."
-                )
+    def load_missing_mods_dict(missing_mods: Path):
+        """
+        Load the missing modalities files in a dictionary.
 
-            missing_mods_df.set_index("participant_id", drop=True, inplace=True)
-            missing_mods_dict[session] = missing_mods_df
+        Parameters
+        ----------
+        missing_mods: str (path)
+            Path to the output directory of clinica iotools check-missing-modalities if already exists
+
+        Returns
+        -------
+        missing_mods_dict: dictionary of str and DataFrame
+            DataFrames of missing modalities
+        """
+
+        if not missing_mods.is_dir():
+            raise ValueError(
+                f"The missing_mods directory doesn't exist: {missing_mods}, please give another directory."
+            )
+        # Loading missing modalities files
+        list_files = list(missing_mods.iterdir())
+        missing_mods_dict = {}
+        for file in list_files:
+            fileext = file.suffix
+            filename = file.stem
+            if fileext == ".tsv":
+                session = filename.split("_")[-1]
+                missing_mods_df = pd.read_csv(file, sep="\t")
+                if len(missing_mods_df) == 0:
+                    raise ClinicaDLTSVError(
+                        f"Given TSV file at {file} loads an empty DataFrame."
+                    )
+
+                missing_mods_df.set_index("participant_id", drop=True, inplace=True)
+                missing_mods_dict[session] = missing_mods_df
+        return missing_mods_dict
+
+    missing_mods_dict = load_missing_mods_dict(missing_mods)
 
     # Remove SMC patients
     if remove_smc:
-        if "diagnosis_bl" in bids_df.columns.values:  # Retro-compatibility
-            bids_df = bids_df[~(bids_df.diagnosis_bl == "SMC")]
-        if "diagnosis_sc" in bids_df.columns.values:
-            bids_df = bids_df[~(bids_df.diagnosis_sc == "SMC")]
+        if "diagnosis_bl" in merged_df.columns.values:  # Retro-compatibility
+            merged_df = merged_df[~(merged_df.diagnosis_bl == "SMC")]
+        if "diagnosis_sc" in merged_df.columns.values:
+            merged_df = merged_df[~(merged_df.diagnosis_sc == "SMC")]
 
     # Adding the field baseline_diagnosis
-    bids_copy_df = copy(bids_df)
-    bids_copy_df["baseline_diagnosis"] = pd.Series(
-        np.zeros(len(bids_df)), index=bids_df.index
+    copy_df = copy(merged_df)
+    copy_df["baseline_diagnosis"] = pd.Series(
+        np.zeros(len(merged_df)), index=merged_df.index
     )
-    for subject, subject_df in bids_df.groupby(level=0):
+    for subject, subject_df in merged_df.groupby(level=0):
         baseline_diagnosis = subject_df.loc[
             (subject, first_session(subject_df)), "diagnosis"
         ]
-        bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
+        copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
-    bids_df = copy(bids_copy_df)
+    merged_df = copy(copy_df)
     variables_list.append("baseline_diagnosis")
 
-    bids_df = bids_df[variables_list]
+    merged_df = merged_df[variables_list]
     if remove_unique_session_:
         bids_df = remove_unique_session(bids_df)
 
@@ -416,11 +394,10 @@ def get_labels(
     output_df = infer_or_drop_diagnosis(output_df)
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
-    output_df = apply_restriction(output_df, restriction_path)
+    # output_df = apply_restriction(output_df, restriction_path)
 
     output_df.reset_index(inplace=True)
     output_df.sort_values(by=["participant_id", "session_index"], inplace=True)
     output_df.drop("session_index", axis=1, inplace=True)
-    output_df.to_csv(output_tsv, sep="\t", index=False)
 
-    logger.info(f"Results are stored in {output_dir}.")
+    return output_df

@@ -70,43 +70,33 @@ class Callback(ABC):
 
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """Called once at the beginning of training."""
-        pass
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """Called once at the end of training."""
-        pass
 
     def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
         """Called at the beginning of each epoch."""
-        pass
 
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """Called at the end of each epoch."""
-        pass
 
     def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
         """Called before processing each training batch."""
-        pass
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after processing each training batch."""
-        pass
 
     def on_backward_begin(self, config: _TrainingState, **kwargs) -> None:
         """Called before the backward pass."""
-        pass
 
     def on_backward_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after the backward pass."""
-        pass
 
     def on_validation_begin(self, config: _TrainingState, **kwargs) -> None:
         """Called before the validation loop starts."""
-        pass
 
     def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after the validation loop ends."""
-        pass
 
     def to_dict(self) -> dict[str, Any]:
         """

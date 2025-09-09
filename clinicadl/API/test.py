@@ -27,15 +27,16 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import KFold, make_kfold, make_split
 from clinicadl.train.trainer import Trainer
+from clinicadl.transforms.config.factory import (
+    ActivationsConfig,
+    ClampConfig,
+    RandomAffineConfig,
+    RescaleIntensityConfig,
+    ResizeConfig,
+)
 from clinicadl.transforms.extraction import Slice
 from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
-
-
-def diagnosis_to_number(column: pd.Series) -> pd.Series:
-    encoding = {"CN": 0, "MCI": 1, "AD": 2}
-    return column.apply(lambda x: encoding[x])
-
 
 caps_directory = Path(
     "/Users/camille.brianceau/aramis/CLINICADL/caps"
@@ -45,7 +46,9 @@ sub_ses_t1 = caps_directory / "subjects_t1.tsv"  # 64 subjects
 preprocessing_t1 = T1Linear()
 
 transforms_image = Transforms(
-    # extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
+    extraction=Slice(slices=[24, 25, 26, 27, 56, 57, 58, 78, 96, 97]),
+    image_transforms=[RescaleIntensityConfig(), ResizeConfig(target_shape=(128, 128))],
+    sample_transforms=[ClampConfig(min=-1000, max=1000), RandomAffineConfig()],
 )
 dataset_t1_image = CapsDataset(
     caps_directory=caps_directory,
