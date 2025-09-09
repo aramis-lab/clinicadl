@@ -280,7 +280,6 @@ class Batch(list[DataPoint]):
 
             from clinicadl.data.structures import ColinDataPoint
             from clinicadl.data.dataloader import Batch
-
             datapoint = ColinDataPoint()
             batch = Batch([datapoint, datapoint])
 
