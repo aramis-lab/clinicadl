@@ -1,6 +1,7 @@
 from typing import Union
 
-from config import NetworkConfig
 from torch.nn import Module
+
+from .config import NetworkConfig
 
 NetworkOrConfig = Union[Module, NetworkConfig]

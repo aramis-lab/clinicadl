@@ -16,7 +16,7 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.model import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
@@ -50,7 +50,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
+    model : :py:class:`~clinicadl.model.ClinicaDLModel`
         The deep learning model to train and evaluate.
     callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
