@@ -22,6 +22,7 @@ from monai.metrics import (
     SurfaceDistanceMetric,
 )
 
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
 from clinicadl.transforms.config import AsDiscreteConfig
@@ -180,10 +181,10 @@ def test_monai_metric_wrapper(
     datapoint = deepcopy(DATAPOINT)
     datapoint["output"] = pred
 
-    batch_1 = [deepcopy(datapoint)]
+    batch_1 = Batch([deepcopy(datapoint)])
     batch_1[0]["label"] = y_1
 
-    batch_2 = [deepcopy(datapoint)]
+    batch_2 = Batch([deepcopy(datapoint)])
     batch_2[0]["label"] = y_2
 
     metric = MonaiMetricWrapper(
@@ -197,7 +198,7 @@ def test_monai_metric_wrapper(
         atol=1e-4,
     )
     torch.testing.assert_close(
-        metric(batch_1 + batch_2),
+        metric(Batch(batch_1 + batch_2)),
         torch.tensor([intermediate_1, intermediate_2]),
         equal_nan=True,
         rtol=1e-4,
@@ -227,7 +228,7 @@ def test_postprocessing():
             AsDiscreteConfig(include=["label", "output"], to_onehot=2),
         ],
     )
-    batch = [deepcopy(DATAPOINT) for _ in range(2)]
+    batch = Batch([deepcopy(DATAPOINT) for _ in range(2)])
     batch[0]["label"] = 1.0
     batch[0]["output"] = 0.7
     batch[1]["label"] = 1.0

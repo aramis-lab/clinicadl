@@ -5,12 +5,11 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import CHECKPOINT, MODEL, OPTIMIZER
 from clinicadl.metrics.enum import Optimum
-from clinicadl.metrics.handler import Metrics
 
 from .base import Callback
 
 
-class ModelSelection(Callback, Metrics):
+class ModelSelection(Callback):
     """
     Callback that manages model checkpoint selection based on specified metrics.
 

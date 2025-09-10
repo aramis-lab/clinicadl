@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Sequence, Union
 
 import torch
 from monai import transforms
@@ -15,6 +15,7 @@ from clinicadl.dictionary.words import EXCLUDE, INCLUDE, NAME
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 from clinicadl.utils.factories import get_defaults_from
 
+from ..homemade import Format
 from ..types import Transform
 from .base import TransformConfig
 from .enum import Rounding, SobelPaddingMode
@@ -28,6 +29,7 @@ __all__ = [
     "LabelFilterConfig",
     "FillHolesConfig",
     "SobelGradientsConfig",
+    "FormatConfig",
 ]
 
 ACTIVATIONS_MONAI_DEFAULTS = get_defaults_from(transforms.Activations)
@@ -38,6 +40,7 @@ SMALL_OBJECTS_MONAI_DEFAULTS = get_defaults_from(transforms.RemoveSmallObjects)
 LABEL_FILTER_MONAI_DEFAULTS = get_defaults_from(transforms.LabelFilter)
 FILL_HOLES_MONAI_DEFAULTS = get_defaults_from(transforms.FillHoles)
 SOBEL_MONAI_DEFAULTS = get_defaults_from(transforms.SobelGradients)
+FORMAT_DEFAULTS = get_defaults_from(Format)
 
 
 class MonaiTransformConfig(TransformConfig):
@@ -104,6 +107,7 @@ class AsDiscreteConfig(MonaiTransformConfig):
     to_onehot: Optional[PositiveInt] = AS_DISCRETE_MONAI_DEFAULTS["to_onehot"]
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
+    dtype: torch.dtype = torch.float
 
     @model_validator(mode="after")
     def exclude_multiple_arguments(self):
@@ -198,3 +202,20 @@ class SobelGradientsConfig(MonaiTransformConfig):
         if v % 2 == 0:
             raise ValueError(f"'kernel_size' should be odd. Got {v}")
         return v
+
+
+class FormatConfig(MonaiTransformConfig):
+    """
+    Config class for :py:class:`clinicadl.transforms.homemade.Format`.
+    """
+
+    dtype: Optional[torch.dtype] = FORMAT_DEFAULTS["dtype"]
+    squeeze: Union[bool, NonNegativeInt, Sequence[NonNegativeInt]] = FORMAT_DEFAULTS[
+        "squeeze"
+    ]
+    unsqueeze: Optional[NonNegativeInt] = FORMAT_DEFAULTS["unsqueeze"]
+
+    @classmethod
+    def _get_class(cls) -> type[MonaiTransform]:
+        """Returns the transform associated to this config class."""
+        return Format

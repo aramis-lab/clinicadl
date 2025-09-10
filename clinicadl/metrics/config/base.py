@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from logging import getLogger
 from typing import Any, Dict, Optional
 
 import monai.metrics
@@ -9,12 +10,17 @@ from clinicadl.losses.enum import Reduction
 from clinicadl.losses.types import Loss
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+from clinicadl.utils.factories import get_defaults_from
 
 from ..base import Metric
 from ..enum import Optimum
 from ..monai_wrapper import MonaiMetricWrapper
 
 __all__ = ["MetricConfig", "LossMetricConfig"]
+
+logger = getLogger("clinicadl.metrics")
+
+LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(monai.metrics.LossMetric)
 
 
 class MetricConfig(ObjectConfig):
@@ -76,7 +82,7 @@ class LossMetricConfig(MetricConfig):
     "Config class to use the loss as a metric."
 
     loss_fn: Loss
-    reduction: Optional[Reduction] = None
+    reduction: Reduction = LOSS_METRIC_MONAI_DEFAULTS["reduction"]
 
     @staticmethod
     def optimum() -> Optimum:
@@ -85,15 +91,18 @@ class LossMetricConfig(MetricConfig):
 
     @model_validator(mode="after")
     def check_reduction(self):
-        """If 'reduction' is None, the reduction method of the loss function will be used."""
-        if self.reduction is None:
-            try:
-                self.reduction = self.loss_fn.reduction
-            except AttributeError as exc:
-                raise ValueError(
-                    "If the loss function doesn't have an attribute 'reduction', you must pass a reduction method to "
-                    "use the loss as a metric."
-                ) from exc
+        """Removes the reduction of the loss, and add it at the metric level."""
+        try:
+            loss_reduction = getattr(self.loss_fn, "reduction")
+        except AttributeError:
+            pass
+        else:
+            if self.reduction != loss_reduction:
+                logger.warning(
+                    f"The loss ({type(self.loss_fn).__name__}) has '{loss_reduction}' reduction, "
+                    f"whereas in the metric associated to the loss you passed '{self.reduction}' reduction."
+                )
+            setattr(self.loss_fn, "reduction", "none")
 
         return self
 
