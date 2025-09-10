@@ -30,7 +30,7 @@ class Batch(list[DataPoint]):
 
     """
 
-    _device: torch.device = torch.device("cpu")
+    _device: Optional[torch.device] = None
     _non_blocking: bool = False
     _channels_last: bool = False
 
@@ -41,7 +41,7 @@ class Batch(list[DataPoint]):
             raise ValueError("The batch is empty!")
 
     @property
-    def device(self) -> torch.device:
+    def device(self) -> Optional[torch.device]:
         """
         The device on which the :py:class:`Tensors <torch.Tensor>` in the batch are.
         It is also the device on which :py:class:`Tensors <torch.Tensor>` will be returned
