@@ -3,9 +3,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Dict, Sequence
+from typing import Any, Callable, Dict, Union
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr, computed_field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    FieldSerializationInfo,
+    computed_field,
+    field_serializer,
+    model_validator,
+)
 from pydantic.fields import ModelPrivateAttr
 
 from clinicadl.dictionary.words import NAME
@@ -127,17 +134,31 @@ FieldReaderType = Callable[[dict[str, Any]], ClinicaDLConfig]
 FieldReadersType = dict[str, FieldReaderType]
 
 
-class MultipleConfig(ClinicaDLConfig, ABC):
+class ConfigsOrObjects(ClinicaDLConfig):
     """
-    Base config class to gather multiple config classes.
-    Each field must be of type ClinicaDLConfig and associated with a function to get the associated
-    config object from a dictionary (e.g. 'get_network_config').
+    Each field must be of type ObjectConfig (e.g. MetricConfig) or the object associated to the config class (e.g. Metric;
+    so the field type is Union[Metric, MetricConfig]). Therefore, the user can pass the object itself or the
+    config class associated.
+    ConfigsOrObjects then handles serialization/deserialization in both cases.
+    For each field, a getter function must be passed, i.e. a function that will get the config class
+    from a dictionary (e.g. get_metric_config).
     """
 
     _FIELD_READERS: FieldReadersType = {}
 
+    def get_object(self, field: str) -> Any:
+        """
+        Gets a field, a converts it to the underlying object
+        if it is a config class.
+        """
+        value = getattr(self, field)
+        if isinstance(value, ObjectConfig):
+            return value.to_dict()
+        else:
+            return value
+
     @model_validator(mode="after")
-    def validate_readers(self):
+    def _validate_readers(self):
         """Checks that all fields have an associated reader."""
         for field, _ in self:
             assert field in self._FIELD_READERS, (
@@ -147,6 +168,20 @@ class MultipleConfig(ClinicaDLConfig, ABC):
 
         return self
 
+    @field_serializer("*")
+    def _serialize(self, value: Any, info: FieldSerializationInfo) -> Union[str, dict]:
+        """
+        Handles serialization of elements that are not passed via
+        config classes.
+        """
+        if isinstance(value, ObjectConfig):
+            return value.to_dict()
+        else:
+            return (
+                f"Custom {info.field_name} passed by the user: "
+                + f"'{type(value).__name__}'"
+            )
+
     @classmethod
     def from_json(cls, json_path: PathType, **kwargs):
         """
@@ -154,14 +189,19 @@ class MultipleConfig(ClinicaDLConfig, ABC):
         """
         json_path = Path(json_path)
         dict_ = cls.read_json(json_path=json_path)
-        dict_.update(kwargs)
 
         for field, values in dict_.items():
-            if values is None:
-                raise ClinicaDLArgumentError(
-                    f"No configuration associated to '{field}' in '{str(json_path)}'!"
-                )
-            dict_[field] = cls._get_reader(field)(**values)
+            if isinstance(values, dict):
+                dict_[field] = cls._get_reader(field)(**values)
+            else:
+                if field in kwargs:
+                    dict_[field] = kwargs[field]
+                else:
+                    raise ValueError(
+                        f"Custom {field} found for in {str(json_path)}. "
+                        f"ClinicaDL can't read custom {field}, so pass it to 'from_json' via "
+                        f"{field}=<your-custom-{field}>"
+                    )
 
         return cls(**dict_)
 

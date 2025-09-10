@@ -1,1 +1,1 @@
-from .base import ClinicaDLConfig, FieldReadersType, MultipleConfig, ObjectConfig
+from .base import ClinicaDLConfig, ConfigsOrObjects, FieldReadersType, ObjectConfig
