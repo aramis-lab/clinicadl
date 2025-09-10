@@ -37,7 +37,7 @@ class _MetricProcessor(ClinicaDLConfig):
     @classmethod
     def _serialize_metrics(
         cls, metrics: dict[str, MetricOrConfig]
-    ) -> list[Union[str, dict]]:
+    ) -> dict[str, Union[dict, str]]:
         """
         Handles serialization of metrics that are not passed via
         MetricConfigs.
