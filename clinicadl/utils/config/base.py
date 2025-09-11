@@ -146,16 +146,19 @@ class ConfigsOrObjects(ClinicaDLConfig):
 
     _FIELD_READERS: FieldReadersType = {}
 
-    def get_object(self, field: str) -> Any:
+    def get_objects(self) -> dict[str, Any]:
         """
-        Gets a field, a converts it to the underlying object
+        Gets field values, a converts them to the underlying object
         if it is a config class.
         """
-        value = getattr(self, field)
-        if isinstance(value, ObjectConfig):
-            return value.to_dict()
-        else:
-            return value
+        dict_ = {}
+        for field, value in self:
+            if isinstance(value, ObjectConfig):
+                dict_[field] = value.get_object()
+            else:
+                dict_[field] = value
+
+        return dict_
 
     @model_validator(mode="after")
     def _validate_readers(self):

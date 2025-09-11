@@ -1,0 +1,38 @@
+import torch
+import torchio as tio
+
+from clinicadl.data.dataloader import Batch
+from clinicadl.data.structures import DataPoint
+from clinicadl.losses.config import MSELossConfig
+from clinicadl.model import ReconstructionModel
+from clinicadl.optim.optimizers.config import AdamConfig
+
+BATCH = Batch(
+    [
+        DataPoint(
+            image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
+            label=0,
+            participant="sub-0",
+            session="ses-0",
+        ),
+        DataPoint(
+            image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
+            label=1,
+            participant="sub-1",
+            session="ses-1",
+        ),
+    ]
+)
+
+
+def test_ReconstructionModel():
+    network = torch.nn.Sequential(
+        torch.nn.Flatten(), torch.nn.Linear(8, 8), torch.nn.Unflatten(1, (1, 2, 2, 2))
+    )
+    loss = MSELossConfig()
+    optimizer = AdamConfig()
+    model = ReconstructionModel(network, loss, optimizer)
+
+    # training step
+    loss = model.training_step(BATCH)
+    assert loss.shape == ()
