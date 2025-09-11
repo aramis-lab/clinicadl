@@ -26,8 +26,8 @@ class ReconstructionModel(SupervisedModel):
 
     See Also
     --------
-    :py:class:`clinicadl.model.SupervisedModel`
-        A ``ClinicaDLModel`` for supervised training.
+    :py:class:`~clinicadl.model.SupervisedModel`
+        For supervised training.
     """
 
     def training_step(self, batch: Batch) -> torch.Tensor:
@@ -36,9 +36,9 @@ class ReconstructionModel(SupervisedModel):
 
         Parameters
         ----------
-        batch : BatchType
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`
+        batch : Batch
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
         Returns

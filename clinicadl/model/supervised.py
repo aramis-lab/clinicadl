@@ -77,8 +77,8 @@ class SupervisedModel(ClinicaDLModel):
 
     See Also
     --------
-    :py:class:`clinicadl.model.ReconstructionModel`
-        A ``ClinicaDLModel`` for image reconstruction.
+    :py:class:`~clinicadl.model.ReconstructionModel`
+        For image reconstruction.
     """
 
     network: nn.Module
@@ -106,9 +106,9 @@ class SupervisedModel(ClinicaDLModel):
 
         Parameters
         ----------
-        batch : BatchType
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`
+        batch : Batch
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
         Returns
@@ -132,9 +132,9 @@ class SupervisedModel(ClinicaDLModel):
 
         Parameters
         ----------
-        batch : BatchType
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`
+        batch : Batch
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
         Returns
@@ -180,9 +180,9 @@ class SupervisedModel(ClinicaDLModel):
             This asynchronous behavior applies to both pinned and pageable memory."
             (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
         dtype : Optional[torch.dtype], default=None
-            The desired data type. If ``None``, the model will stay on the current dtype.
+            The desired data type. If ``None``, the model will stay with the current dtype.
         memory_format : Optional[torch.memory_format], default=None
-            The desired memory format. If ``None``, the model will stay on the current memory format.
+            The desired memory format. If ``None``, the model will stay with the current memory format.
         """
         self.network.to(
             device=device,
@@ -225,8 +225,9 @@ class SupervisedModel(ClinicaDLModel):
         json_path : PathType
             Path to the ``JSON`` file.
         kwargs : Any
-            To pass a custom ``network``, ``loss``, or ``optimizer`` if ``ClinicaDL```
-            is not able to read the one in the ``JSON`` file.
+            To pass a custom ``network``, ``loss``, or ``optimizer`` if ``ClinicaDL``
+            is not able to read the ones in the ``JSON`` file. Useful when you don't
+            use config classes.
 
         Returns
         -------

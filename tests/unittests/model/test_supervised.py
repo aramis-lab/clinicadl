@@ -143,7 +143,12 @@ def test_gpu():
     param.stride() == (27, 27, 9, 3, 1)
     param.dtype == torch.float32
     param.device == torch.device("cpu")
-    model.to(device="cuda", memory_format=torch.channels_last_3d, dtype=torch.float16)
+    model.to(
+        device="cuda",
+        memory_format=torch.channels_last_3d,
+        dtype=torch.float16,
+        non_blocking=True,
+    )
     param = next(iter(model.network.parameters()))
     param.stride() == (27, 1, 9, 3, 1)
     param.dtype == torch.float16

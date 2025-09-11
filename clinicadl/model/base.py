@@ -13,12 +13,9 @@ from clinicadl.utils.typing import PathType
 
 class ClinicaDLModel(ABC):
     """
-    ``ClinicaDLModel`` defines the model, as well as its training and evaluation logic.
+    The base model from which every model that works with ``ClinicaDL`` must inherit.
 
-    A model is defined by a **neural network**, a **loss function**, and an **optimizer**.
-
-    The user can overwrite this class to define its own ``ClinicaDLModel``. More precisely,
-    the following methods must be overwritten:
+    The following methods must be overwritten:
 
     - :py:meth:`training_step`: that contains the training logic;
     - :py:meth:`evaluation_step`: that contains the evaluation logic;
@@ -34,9 +31,9 @@ class ClinicaDLModel(ABC):
 
     See Also
     --------
-    :py:class:`clinicadl.model.SupervisedModel`
+    :py:class:`~clinicadl.model.SupervisedModel`
         A ``ClinicaDLModel`` for supervised training.
-    :py:class:`clinicadl.model.ReconstructionModel`
+    :py:class:`~clinicadl.model.ReconstructionModel`
         A ``ClinicaDLModel`` for image reconstruction.
     """
 
@@ -46,7 +43,9 @@ class ClinicaDLModel(ABC):
     ) -> Union[torch.Tensor, dict[str, torch.Tensor]]:
         """
         Performs the training step using the provided batch of data and returns
-        the computed loss. Several losses can be computed during this step; in this cas, they must
+        the computed loss.
+
+        Several losses can be computed during this step; in this cas, they must
         be returned via a ``dict``.
 
         It is on this loss(es) that the gradients will be computed.
@@ -58,8 +57,8 @@ class ClinicaDLModel(ABC):
         Parameters
         ----------
         batch : BatchType
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
         Returns
@@ -85,7 +84,7 @@ class ClinicaDLModel(ABC):
         ----------
         batch : BatchType
             The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
         Returns
@@ -137,9 +136,9 @@ class ClinicaDLModel(ABC):
             This asynchronous behavior applies to both pinned and pageable memory."
             (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
         dtype : Optional[torch.dtype], default=None
-            The desired data type. If ``None``, the model will stay on the current dtype.
+            The desired data type. If ``None``, the model will stay with the current dtype.
         memory_format : Optional[torch.memory_format], default=None
-            The desired memory format. If ``None``, the model will stay on the current memory format.
+            The desired memory format. If ``None``, the model will stay with the current memory format.
 
         See Also
         --------
