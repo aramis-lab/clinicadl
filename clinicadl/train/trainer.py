@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Optional, Union
 
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
+from torch.amp import GradScaler
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
@@ -16,7 +18,7 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.model import ClinicaDLModel
+from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
@@ -211,7 +213,7 @@ class Trainer:
         split : Split
             The data split containing training and validation DataLoaders.
         """
-        self.model.network.train()
+        self.model.train()
         split.train_dataset.train()
 
         self.on_train_begin(split)
@@ -224,16 +226,19 @@ class Trainer:
                 self.on_batch_begin(batch_idx=batch_idx)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.model.training_step(data=data, device=self.comp.device)
+                    loss = self.model.forward_step(data=data, device=self.comp.device)
 
                 self.on_backward_begin()
-                self.model.optimizer.zero_grad(set_to_none=True)
-                self.scaler.scale(loss).backward()
-                self.scaler.step(self.model.optimizer)
+
+                self.model.backward_step(loss, self.scaler)
+
                 self.scaler.update()
+
                 self.on_backward_end()
 
                 self.on_batch_end(loss=loss)
+
+            self.evaluate(split.val_loader)
 
             self.on_epoch_end(split)
 
@@ -242,24 +247,22 @@ class Trainer:
     def evaluate(
         self,
         split: Split,
-        metrics: Optional[list[MetricType]] = None,
-    ):
+        epoch: Optional[int] = None,
+    ) -> None:
         """
         Evaluate the model on a validation or test dataset.
         """
-        self.model.network.eval()
+        self.model.eval()
         split.val_dataset.eval()
 
         self.callbacks.on_validation_begin(config=self.config)
 
-        self.metrics.reset()
+        self.metrics.reset(reset_df=False)
 
         with torch.no_grad():
             for data in split.val_loader:
-                outputs, labels = self.model.evaluation_step(
-                    data=data, metrics=self.metrics, device=self.comp.device
-                )
-                self.metrics(outputs, labels)
+                output_batch = self.model.evaluation_step(data)
+                self.metrics(output_batch, epoch=epoch)
 
             self.metrics.aggregate(epoch=self.config.epoch)
 
@@ -290,8 +293,6 @@ class Trainer:
         self.callbacks.on_batch_end(config=self.config, loss=loss.item())
 
     def on_epoch_end(self, split: Split) -> None:
-        self.evaluate(split.val_loader)
-
         self.callbacks.on_epoch_end(config=self.config)
 
         if self.config.epoch == self.optim.epochs - 1:
@@ -427,3 +428,41 @@ class Trainer:
         self.maps._add_lines_to_summary_log("=" * 15)
 
         self.config.write_torchsummary()  # not working i don't know why
+
+    @staticmethod
+    def _zero_grad(
+        optimizers: Union[torch.optim.Optimizer, Sequence[torch.optim.Optimizer]],
+    ) -> None:
+        """
+        Resets gradients via the optimizer(s).
+        """
+        error_msg = "The method 'get_optimizers' of your ClinicaDLModel returned something that is not an optimizer or a dict of optimizers: "
+
+        if isinstance(optimizers, torch.optim.Optimizer):
+            optimizers.zero_grad(set_to_none=True)
+        elif isinstance(optimizers, Sequence):
+            for optimizer in optimizers:
+                if not isinstance(optimizer, torch.optim.Optimizer):
+                    raise ValueError(error_msg + optimizer)
+                optimizer.zero_grad(set_to_none=True)
+        else:
+            raise ValueError(error_msg + optimizers)
+
+    @staticmethod
+    def _backward(
+        losses: Union[torch.Tensor, Sequence[torch.Tensor]], scaler: GradScaler
+    ) -> None:
+        """
+        Resets gradients via the optimizer(s).
+        """
+        error_msg = "The method 'training_step' of your ClinicaDLModel returned something that is not a tensor or a dict of tensors: "
+
+        if isinstance(losses, torch.Tensor):
+            scaler.scale(losses).backward()
+        elif isinstance(losses, Sequence):
+            for loss in losses:
+                if not isinstance(loss, torch.Tensor):
+                    raise ValueError(error_msg + loss)
+                scaler.scale(loss).backward()
+        else:
+            raise ValueError(error_msg + losses)

@@ -99,10 +99,9 @@ class SupervisedModel(ClinicaDLModel):
         self.loss = objects["loss"]
         self.optimizer = objects["optimizer"]
 
-    def training_step(self, batch: Batch) -> torch.Tensor:
+    def forward_step(self, batch: Batch) -> torch.Tensor:
         """
-        Performs a classical supervised training step and returns
-        the computed loss.
+        Performs a classical supervised forward step and returns the computed loss.
 
         Parameters
         ----------
@@ -124,6 +123,26 @@ class SupervisedModel(ClinicaDLModel):
         loss = self.loss(outputs, labels)
 
         return loss
+
+    def backward_step(
+        self,
+        loss: torch.Tensor,
+        grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
+    ) -> None:
+        """
+        Performs a classical backward step using the loss returned by
+        :py:meth:`forward_step`.
+
+        Parameters
+        ----------
+        loss : torch.Tensor
+            The loss(es) on which gradient will be computed.
+        grad_scaler : GradScaler, default=GradScaler(enabled=False)
+            A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
+        """
+        self.optimizer.zero_grad(set_to_none=True)
+        grad_scaler.scale(loss).backward()
+        grad_scaler.step(self.optimizer)
 
     def evaluation_step(self, batch: Batch) -> Batch:
         """
@@ -147,17 +166,6 @@ class SupervisedModel(ClinicaDLModel):
         batch.add_field("output", outputs)
 
         return batch
-
-    def get_optimizers(self) -> torch.optim.Optimizer:
-        """
-        Returns the optimizer.
-
-        Returns
-        -------
-        torch.optim.Optimizer
-            The optimizer.
-        """
-        return self.optimizer
 
     def to(
         self,

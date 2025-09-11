@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import torch
-import torch.optim as optim
+from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.utils.device import DeviceType
@@ -17,9 +17,9 @@ class ClinicaDLModel(ABC):
 
     The following methods must be overwritten:
 
-    - :py:meth:`training_step`: that contains the training logic;
+    - :py:meth:`forward_step`: defines the forward logic during training;
+    - :py:meth:`backward_step`: defines the backward logic during training;
     - :py:meth:`evaluation_step`: that contains the evaluation logic;
-    - :py:meth:`get_optimizers`: to get the optimizer(s) associated to the model;
     - :py:meth:`to`: to move the model on a specific device and/or cast the model to a specific datatype and/or memory format;
     - :py:meth:`train`: to set the model in training mode;
     - :py:meth:`eval`: to set the model in evaluation mode;
@@ -28,6 +28,10 @@ class ClinicaDLModel(ABC):
     - :py:meth:`save_checkpoint`: to save a checkpoint of the model;
     - :py:meth:`load_checkpoint`: to load a checkpoint of the model;
     - :py:meth:`write_architecture_log`: to store a summary of the neural network architecture.
+
+    .. tip::
+        Since rewriting all these methods can be tedious, feel free to inherit from an existing ``ClinicaDLModel`` with shared logic,
+        and rewrite only the relevant methods.
 
     See Also
     --------
@@ -38,20 +42,19 @@ class ClinicaDLModel(ABC):
     """
 
     @abstractmethod
-    def training_step(
+    def forward_step(
         self, batch: BatchType
-    ) -> Union[torch.Tensor, dict[str, torch.Tensor]]:
+    ) -> Union[torch.Tensor, Sequence[torch.Tensor]]:
         """
-        Performs the training step using the provided batch of data and returns
+        Performs the training forward step using the provided batch of data and returns
         the computed loss.
 
-        Several losses can be computed during this step; in this cas, they must
-        be returned via a ``dict``.
+        Several losses can be computed during this step.
 
         It is on this loss(es) that the gradients will be computed.
 
         .. note::
-            No need to send tensors to another device or to reset the gradients here,
+            No need to send tensors to another device, or to implement Automatic Mixed Precision,
             ``ClinicaDL`` takes care of this.
 
         Parameters
@@ -63,8 +66,26 @@ class ClinicaDLModel(ABC):
 
         Returns
         -------
-        Union[torch.Tensor, dict[str, torch.Tensor]]
-            The computed loss(es), as a **1-item** :py:class:`torch.Tensor`, or a dict of such ``Tensors``.
+        Union[torch.Tensor, Sequence[torch.Tensor]]
+            The computed loss(es), as a **1-item** :py:class:`torch.Tensor`, or a sequence of such ``Tensors``.
+        """
+
+    @abstractmethod
+    def backward_step(
+        self,
+        loss: Union[torch.Tensor, Sequence[torch.Tensor]],
+        grad_scaler: GradScaler = GradScaler(enabled=False),
+    ) -> None:
+        """
+        Performs the training backward step using the loss(es) returned by
+        :py:meth:`forward_step`.
+
+        Parameters
+        ----------
+        loss : Union[torch.Tensor, Sequence[torch.Tensor]]
+            The loss(es) on which gradient will be computed.
+        grad_scaler : GradScaler, default=GradScaler(enabled=False)
+            A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
 
     @abstractmethod
@@ -83,7 +104,7 @@ class ClinicaDLModel(ABC):
         Parameters
         ----------
         batch : BatchType
-            The batch of :py:class:`~clinicadl.data.structures.DataPoint`. It can either a
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
             :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
             (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
 
@@ -96,22 +117,6 @@ class ClinicaDLModel(ABC):
                 Even if the input batch is a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`,
                 the output must be a single :py:class:`~clinicadl.data.dataloader.Batch`. Metrics will be
                 computed on each element of this output batch.
-        """
-
-    @abstractmethod
-    def get_optimizers(self) -> Union[optim.Optimizer, dict[str, optim.Optimizer]]:
-        """
-        To get the optimizer(s) associated to the model.
-
-        At least one optimizer must be returned, but there can be multiple ones
-        (e.g. adversarial training). In the letter case, make sure that the keys
-        of the output ``dict`` match those of the ``dict`` returned by
-        :py:meth:`training_step`.
-
-        Returns
-        -------
-        Union[torch.optim.Optimizer, dict[str, torch.optim.Optimizer]]
-            The optimizer(s).
         """
 
     @abstractmethod

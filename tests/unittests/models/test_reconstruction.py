@@ -4,7 +4,7 @@ import torchio as tio
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.losses.config import MSELossConfig
-from clinicadl.model import ReconstructionModel
+from clinicadl.models import ReconstructionModel
 from clinicadl.optim.optimizers.config import AdamConfig
 
 BATCH = Batch(
@@ -34,5 +34,5 @@ def test_ReconstructionModel():
     model = ReconstructionModel(network, loss, optimizer)
 
     # training step
-    loss = model.training_step(BATCH)
+    loss = model.forward_step(BATCH)
     assert loss.shape == ()

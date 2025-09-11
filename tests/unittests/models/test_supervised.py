@@ -7,7 +7,7 @@ import torchio as tio
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.losses.config import BCEWithLogitsLossConfig
-from clinicadl.model import SupervisedModel
+from clinicadl.models import SupervisedModel
 from clinicadl.networks.config import ConvEncoderConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 
@@ -35,22 +35,18 @@ def test_SupervisedModel(tmp_path):
     optimizer = AdamConfig()
     model = SupervisedModel(network, loss, optimizer)
 
-    # training step
-    loss = model.training_step(BATCH)
+    # forward step
+    loss = model.forward_step(BATCH)
     assert loss.shape == ()
+
+    # backward step
+    model.backward_step(loss)
+    assert 0 in model.optimizer.state_dict()["state"]
 
     # evaluation step
     out_batch = model.evaluation_step(BATCH)
     assert isinstance(out_batch, Batch)
     assert out_batch[0]["output"].shape == (1,)
-
-    # get optimizers
-    opt = model.get_optimizers()
-    assert isinstance(opt, torch.optim.Adam)
-
-    # fake an optimizer step
-    loss.backward()
-    opt.step()
 
     # eval
     model.eval()
@@ -118,7 +114,7 @@ def test_SupervisedModel(tmp_path):
         next(iter(network.parameters())), next(iter(new_model.network.parameters()))
     )
     torch.testing.assert_close(
-        opt.state_dict()["state"][0]["exp_avg"],
+        model.optimizer.state_dict()["state"][0]["exp_avg"],
         new_model.optimizer.state_dict()["state"][0]["exp_avg"],
     )
 

@@ -10,7 +10,7 @@ class ReconstructionModel(SupervisedModel):
     A vanilla reconstruction model, to work with simple AutoEncoders like
     :py:class:`~clinicadl.networks.nn.AutoEncoder`.
 
-    Only the :py:meth:`training_step` differs from :py:class:`~clinicadl.model.SupervisedModel`.
+    Only the :py:meth:`forward_step` differs from :py:class:`~clinicadl.model.SupervisedModel`.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ class ReconstructionModel(SupervisedModel):
         For supervised training.
     """
 
-    def training_step(self, batch: Batch) -> torch.Tensor:
+    def forward_step(self, batch: Batch) -> torch.Tensor:
         """
         Performs a pass forward in the autoencoder and a comparison with the input image.
 

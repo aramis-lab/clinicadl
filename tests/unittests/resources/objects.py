@@ -25,8 +25,8 @@ from clinicadl.metrics.config import (
 )
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
-from clinicadl.model import ClinicaDLModel
-from clinicadl.model.example_model import example_model
+from clinicadl.models import ClinicaDLModel
+from clinicadl.models.example_model import example_model
 from clinicadl.networks.config import ResNetConfig
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
