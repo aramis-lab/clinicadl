@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
@@ -78,3 +80,14 @@ class _CheckpointSaver(Callback):
         Remove the temporary storage used for the latest checkpoint after training completes.
         """
         config.maps.training.splits[config.split.index].tmp.remove()
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        return self.__dict__

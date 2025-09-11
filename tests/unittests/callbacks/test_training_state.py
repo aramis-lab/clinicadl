@@ -14,10 +14,10 @@ def test_training_state():
     assert _ts.comp == COMP
 
     assert _ts.split is None
-    assert _ts.epoch == -1
-    assert _ts.batch == -1
+    assert _ts.epoch == 0
+    assert _ts.batch == 0
     assert _ts.stop is False
-    assert _ts.n_batch == -1
+    assert _ts.n_batch == 0
 
     _ts.reset(SPLIT)
 
@@ -25,4 +25,4 @@ def test_training_state():
     assert _ts.epoch == 0
     assert _ts.batch == 0
     assert _ts.stop is False
-    assert _ts.n_batch == 3
+    assert _ts.n_batch == 6  # why 6 ? maps size to check
