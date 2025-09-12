@@ -35,7 +35,7 @@ class Trainer:
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
-    It leverages ClinicaDL's components like :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
+    It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.ClinicaDLModel`
     and :py:class:`~clinicadl.IO.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
@@ -52,7 +52,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : :py:class:`~clinicadl.model.ClinicaDLModel`
+    model : :py:class:`~clinicadl.models.ClinicaDLModel`
         The deep learning model to train and evaluate.
     callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
@@ -428,41 +428,3 @@ class Trainer:
         self.maps._add_lines_to_summary_log("=" * 15)
 
         self.config.write_torchsummary()  # not working i don't know why
-
-    @staticmethod
-    def _zero_grad(
-        optimizers: Union[torch.optim.Optimizer, Sequence[torch.optim.Optimizer]],
-    ) -> None:
-        """
-        Resets gradients via the optimizer(s).
-        """
-        error_msg = "The method 'get_optimizers' of your ClinicaDLModel returned something that is not an optimizer or a dict of optimizers: "
-
-        if isinstance(optimizers, torch.optim.Optimizer):
-            optimizers.zero_grad(set_to_none=True)
-        elif isinstance(optimizers, Sequence):
-            for optimizer in optimizers:
-                if not isinstance(optimizer, torch.optim.Optimizer):
-                    raise ValueError(error_msg + optimizer)
-                optimizer.zero_grad(set_to_none=True)
-        else:
-            raise ValueError(error_msg + optimizers)
-
-    @staticmethod
-    def _backward(
-        losses: Union[torch.Tensor, Sequence[torch.Tensor]], scaler: GradScaler
-    ) -> None:
-        """
-        Resets gradients via the optimizer(s).
-        """
-        error_msg = "The method 'training_step' of your ClinicaDLModel returned something that is not a tensor or a dict of tensors: "
-
-        if isinstance(losses, torch.Tensor):
-            scaler.scale(losses).backward()
-        elif isinstance(losses, Sequence):
-            for loss in losses:
-                if not isinstance(loss, torch.Tensor):
-                    raise ValueError(error_msg + loss)
-                scaler.scale(loss).backward()
-        else:
-            raise ValueError(error_msg + losses)

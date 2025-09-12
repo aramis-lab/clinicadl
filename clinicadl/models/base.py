@@ -1,14 +1,25 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from enum import Enum
+from typing import Any, Optional, Sequence, Union
 
 import torch
+from pydantic import ValidationError
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.utils.device import DeviceType
+from clinicadl.utils.exceptions import NotInterpretableJson, NotInterpretableJsonField
+from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
+
+
+class ImplementedModel(str, Enum):
+    """Built-in ClinicaDLModels."""
+
+    SUPERVISED = "SupervisedModel"
+    RECONSTRUCTION = "ReconstructionModel"
 
 
 class ClinicaDLModel(ABC):
@@ -18,13 +29,11 @@ class ClinicaDLModel(ABC):
     The following methods must be overwritten:
 
     - :py:meth:`forward_step`: defines the forward logic during training;
-    - :py:meth:`backward_step`: defines the backward logic during training;
-    - :py:meth:`evaluation_step`: that contains the evaluation logic;
+    - :py:meth:`optimization_step`: defines the optimization logic;
+    - :py:meth:`evaluation_step`: defines the evaluation logic;
     - :py:meth:`to`: to move the model on a specific device and/or cast the model to a specific datatype and/or memory format;
     - :py:meth:`train`: to set the model in training mode;
     - :py:meth:`eval`: to set the model in evaluation mode;
-    - :py:meth:`write_json`: to save the ``ClinicaDLModel`` in a ``JSON`` file;
-    - :py:meth:`from_json`: to create a ``ClinicaDLModel`` from a ``JSON`` file;
     - :py:meth:`save_checkpoint`: to save a checkpoint of the model;
     - :py:meth:`load_checkpoint`: to load a checkpoint of the model;
     - :py:meth:`write_architecture_log`: to store a summary of the neural network architecture.
@@ -35,9 +44,9 @@ class ClinicaDLModel(ABC):
 
     See Also
     --------
-    :py:class:`~clinicadl.model.SupervisedModel`
+    :py:class:`~clinicadl.models.SupervisedModel`
         A ``ClinicaDLModel`` for supervised training.
-    :py:class:`~clinicadl.model.ReconstructionModel`
+    :py:class:`~clinicadl.models.ReconstructionModel`
         A ``ClinicaDLModel`` for image reconstruction.
     """
 
@@ -71,13 +80,13 @@ class ClinicaDLModel(ABC):
         """
 
     @abstractmethod
-    def backward_step(
+    def optimization_step(
         self,
         loss: Union[torch.Tensor, Sequence[torch.Tensor]],
         grad_scaler: GradScaler = GradScaler(enabled=False),
     ) -> None:
         """
-        Performs the training backward step using the loss(es) returned by
+        Performs the optimization step using the loss(es) returned by
         :py:meth:`forward_step`.
 
         Parameters
@@ -171,41 +180,6 @@ class ClinicaDLModel(ABC):
         """
 
     @abstractmethod
-    def write_json(self, json_path: PathType) -> None:
-        """
-        Writes the ``ClinicaDLModel`` parameters in a ``JSON`` file.
-
-        The user must define here the content of the file that will
-        enable ``ClinicaDLModel`` to recreate the same model with
-        the class method :py:meth:`from_json`.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the json file.
-        """
-
-    @classmethod
-    @abstractmethod
-    def from_json(cls, json_path: PathType) -> ClinicaDLModel:
-        """
-        Creates a ``ClinicaDLModel`` instance from a ``JSON`` file.
-
-        This method must define the logic to read the content saved
-        with :py:meth:`write_json`.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the ``JSON`` file.
-
-        Returns
-        -------
-        ClinicaDLModel
-            The model instantiated from the input file.
-        """
-
-    @abstractmethod
     def save_checkpoint(
         self,
         checkpoint_path: PathType,
@@ -262,3 +236,94 @@ class ClinicaDLModel(ABC):
         log_path : PathType
             The path to the log file.
         """
+
+    def write_json(self, json_path: PathType) -> None:
+        """
+        Writes the parameters of the model in a ``JSON`` file.
+
+        Requires :py:meth:`to_dict` to be implemented.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the json file.
+        """
+        try:
+            to_write = self.to_dict()
+        except NotImplementedError:
+            to_write = f"Custom model passed by the user: {type(self).__name__}"
+
+        write_json(json_path, to_write)
+
+    @staticmethod
+    def from_json(json_path: PathType, **kwargs: Any) -> ClinicaDLModel:
+        """
+        Creates a model from a ``JSON`` file saved with
+        :py:meth:`write_json`.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the ``JSON`` file.
+        kwargs : Any
+            To pass directly any argument that ``ClinicaDLModel``
+            will not be able to read in the ``JSON`` file. Useful when you don't
+            use config classes.
+
+        Returns
+        -------
+        ClinicaDLModel
+            The model instantiated from the input file.
+        """
+        dict_ = read_json(json_path)
+
+        if not isinstance(dict_, dict):
+            raise NotInterpretableJson(json_path, "ClinicaDLModel")
+
+        try:
+            name = dict_["name"]
+        except KeyError as exc:
+            raise KeyError(
+                f"{str(json_path)} is not a valid json file for a ClinicaDLModel: it does not contain 'name'"
+            ) from exc
+        else:
+            del dict_["name"]
+
+        model = ImplementedModel(name).value
+
+        # pylint: disable=import-outside-toplevel
+        if model == ImplementedModel.SUPERVISED:
+            from .supervised import SupervisedModel
+
+            cls = SupervisedModel
+        elif model == ImplementedModel.RECONSTRUCTION:
+            from .reconstruction import ReconstructionModel
+
+            cls = ReconstructionModel
+
+        dict_.update(kwargs)
+
+        try:
+            return cls(**dict_)  # pylint: disable=possibly-used-before-assignment
+        except ValidationError as exc:
+            raise NotInterpretableJsonField(exc, json_path, "ClinicaDLModel") from exc
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Converts the model to a ``dict``.
+
+        This method must define the content of the dictionary that will
+        enable ``ClinicaDLModel`` to recreate the model with
+        the classmethod :py:meth:`from_dict`.
+
+        The dictionary must contain at least a field 'name' with the
+        type of ``ClinicaDLModel`` (e.g. "SupervisedModel").
+
+        Returns
+        -------
+        dict[str, Any]
+            The ``dict`` version of the model.
+        """
+        raise NotImplementedError(
+            "Overwrite 'to_dict' to serialize you model and save it."
+        )

@@ -2,7 +2,19 @@ import torch
 
 from clinicadl.data.dataloader import Batch
 
-from .supervised import SupervisedModel
+from .base import ClinicaDLModel
+from .supervised import SupervisedModel, SupervisedModelConfig
+
+
+class ReconstructionModelConfig(SupervisedModelConfig):
+    """
+    Config class for ReconstructionModel.
+    """
+
+    @classmethod
+    def _get_class(cls) -> ClinicaDLModel:
+        """Returns the class associated to this config class."""
+        return ReconstructionModel
 
 
 class ReconstructionModel(SupervisedModel):

@@ -8,9 +8,8 @@ from typing import Any, Callable, Dict, Union
 from pydantic import (
     BaseModel,
     ConfigDict,
-    FieldSerializationInfo,
     computed_field,
-    field_serializer,
+    model_serializer,
     model_validator,
 )
 from pydantic.fields import ModelPrivateAttr
@@ -134,7 +133,7 @@ FieldReaderType = Callable[[dict[str, Any]], ClinicaDLConfig]
 FieldReadersType = dict[str, FieldReaderType]
 
 
-class ConfigsOrObjects(ClinicaDLConfig):
+class ConfigsOrObjects(ObjectConfig):
     """
     Each field must be of type ObjectConfig (e.g. MetricConfig) or the object associated to the config class (e.g. Metric;
     so the field type is Union[Metric, MetricConfig]). Therefore, the user can pass the object itself or the
@@ -146,19 +145,30 @@ class ConfigsOrObjects(ClinicaDLConfig):
 
     _FIELD_READERS: FieldReadersType = {}
 
+    def get_object(self) -> Any:
+        """
+        Returns the object associated to this configuration,
+        parametrized with the parameters passed by the user.
+        """
+        objects = self.get_objects()
+
+        associated_class = self._get_class()
+
+        return associated_class(**objects)
+
     def get_objects(self) -> dict[str, Any]:
         """
-        Gets field values, a converts them to the underlying object
-        if it is a config class.
+        Gets field values, a convert them to the underlying objects
+        if they are config classes.
         """
-        dict_ = {}
+        objects = {}
         for field, value in self:
             if isinstance(value, ObjectConfig):
-                dict_[field] = value.get_object()
+                objects[field] = value.get_object()
             else:
-                dict_[field] = value
+                objects[field] = value
 
-        return dict_
+        return objects
 
     @model_validator(mode="after")
     def _validate_readers(self):
@@ -171,42 +181,48 @@ class ConfigsOrObjects(ClinicaDLConfig):
 
         return self
 
-    @field_serializer("*")
-    def _serialize(self, value: Any, info: FieldSerializationInfo) -> Union[str, dict]:
+    @model_serializer()
+    def _serialize(self) -> Union[str, dict]:
         """
         Handles serialization of elements that are not passed via
         config classes.
         """
-        if isinstance(value, ObjectConfig):
-            return value.to_dict()
-        else:
-            return (
-                f"Custom {info.field_name} passed by the user: "
-                + f"'{type(value).__name__}'"
-            )
+        dict_ = {}
 
-    @classmethod
-    def from_json(cls, json_path: PathType, **kwargs):
-        """
-        Reads the serialized config class from a JSON file.
-        """
-        json_path = Path(json_path)
-        dict_ = cls.read_json(json_path=json_path)
-
-        for field, values in dict_.items():
-            if isinstance(values, dict):
-                dict_[field] = cls._get_reader(field)(**values)
+        for field, value in self:
+            if isinstance(value, ObjectConfig):
+                dict_[field] = value.to_dict()
             else:
-                if field in kwargs:
-                    dict_[field] = kwargs[field]
-                else:
-                    raise ValueError(
-                        f"Custom {field} found for in {str(json_path)}. "
-                        f"ClinicaDL can't read custom {field}, so pass it to 'from_json' via "
-                        f"{field}=<your-custom-{field}>"
-                    )
+                dict_[field] = (
+                    f"Custom {field} passed by the user: " + f"'{type(value).__name__}'"
+                )
 
-        return cls(**dict_)
+        dict_["name"] = getattr(self, "name")
+
+        return dict_
+
+    # @classmethod
+    # def from_json(cls, json_path: PathType, **kwargs):
+    #     """
+    #     Reads the serialized config class from a JSON file.
+    #     """
+    #     json_path = Path(json_path)
+    #     dict_ = cls.read_json(json_path=json_path)
+
+    #     for field, values in dict_.items():
+    #         if isinstance(values, dict):
+    #             dict_[field] = cls._get_reader(field)(**values)
+    #         else:
+    #             if field in kwargs:
+    #                 dict_[field] = kwargs[field]
+    #             else:
+    #                 raise ValueError(
+    #                     f"Custom {field} found for in {str(json_path)}. "
+    #                     f"ClinicaDL can't read custom {field}, so pass it to 'from_json' via "
+    #                     f"{field}=<your-custom-{field}>"
+    #                 )
+
+    #     return cls(**dict_)
 
     @classmethod
     def _get_reader(cls, field: str) -> FieldReaderType:

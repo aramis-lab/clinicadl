@@ -7,9 +7,10 @@ import torchio as tio
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.losses.config import BCEWithLogitsLossConfig
-from clinicadl.models import SupervisedModel
+from clinicadl.models import ClinicaDLModel, SupervisedModel
 from clinicadl.networks.config import ConvEncoderConfig
 from clinicadl.optim.optimizers.config import AdamConfig
+from clinicadl.utils.exceptions import NotInterpretableJsonField
 
 BATCH = Batch(
     [
@@ -40,7 +41,7 @@ def test_SupervisedModel(tmp_path):
     assert loss.shape == ()
 
     # backward step
-    model.backward_step(loss)
+    model.optimization_step(loss)
     assert 0 in model.optimizer.state_dict()["state"]
 
     # evaluation step
@@ -61,6 +62,7 @@ def test_SupervisedModel(tmp_path):
     with open(tmp_path / "model.json", "r") as f:
         dict_ = json.load(f)
     assert dict_ == {
+        "name": "SupervisedModel",
         "network": "Custom network passed by the user: 'Sequential'",
         "loss": {
             "name": "BCEWithLogitsLoss",
@@ -90,11 +92,11 @@ def test_SupervisedModel(tmp_path):
 
     # from json
     with pytest.raises(
-        ValueError,
-        match=r"Custom network found for in .*\. ClinicaDL can't read custom network, so pass it to 'from_json' via network=<your-custom-network>",
+        NotInterpretableJsonField,
+        match=r"ClinicaDLModel cannot read the following fields in .*: 'network'",
     ):
         SupervisedModel.from_json(tmp_path / "model.json")
-    new_model = SupervisedModel.from_json(
+    new_model: SupervisedModel = ClinicaDLModel.from_json(
         tmp_path / "model.json",
         network=torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1)),
     )

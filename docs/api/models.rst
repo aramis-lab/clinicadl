@@ -1,14 +1,14 @@
 .. _api_model:
 
-:mod:`clinicadl.model`
-======================
+:mod:`clinicadl.models`
+=======================
 
-.. automodule:: clinicadl.model
+.. automodule:: clinicadl.models
 
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/inherited_class.rst
+   :template: autosummary/models.rst
 
     ClinicaDLModel
     SupervisedModel

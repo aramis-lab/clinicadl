@@ -23,7 +23,7 @@ from clinicadl.utils.typing import PathType
 from .base import ClinicaDLModel
 
 
-class _SupervisedModelConfig(ConfigsOrObjects):
+class SupervisedModelConfig(ConfigsOrObjects):
     """
     Config class for SupervisedModel.
 
@@ -57,6 +57,11 @@ class _SupervisedModelConfig(ConfigsOrObjects):
 
         return dict_
 
+    @classmethod
+    def _get_class(cls) -> ClinicaDLModel:
+        """Returns the class associated to this config class."""
+        return SupervisedModel
+
 
 class SupervisedModel(ClinicaDLModel):
     """
@@ -77,7 +82,7 @@ class SupervisedModel(ClinicaDLModel):
 
     See Also
     --------
-    :py:class:`~clinicadl.model.ReconstructionModel`
+    :py:class:`~clinicadl.models.ReconstructionModel`
         For image reconstruction.
     """
 
@@ -91,9 +96,11 @@ class SupervisedModel(ClinicaDLModel):
         loss: LossOrConfig,
         optimizer: OptimizerOrConfig,
     ):
-        self._config = _SupervisedModelConfig(
+        print(loss)
+        self._config = SupervisedModelConfig(
             network=network, loss=loss, optimizer=optimizer
         )
+        print(self._config)
         objects = self._config.get_objects()
         self.network = objects["network"]
         self.loss = objects["loss"]
@@ -124,13 +131,13 @@ class SupervisedModel(ClinicaDLModel):
 
         return loss
 
-    def backward_step(
+    def optimization_step(
         self,
         loss: torch.Tensor,
         grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
     ) -> None:
         """
-        Performs a classical backward step using the loss returned by
+        Performs a classical optimization step using the loss returned by
         :py:meth:`forward_step`.
 
         Parameters
@@ -211,41 +218,6 @@ class SupervisedModel(ClinicaDLModel):
         """
         self.network.eval()
 
-    def write_json(self, json_path: PathType) -> None:
-        """
-        Writes the the network, loss and optimizer parameters in a ``JSON`` file.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the json file.
-        """
-        self._config.write_json(json_path=json_path)
-
-    @classmethod
-    def from_json(cls, json_path: PathType, **kwargs: Any) -> SupervisedModel:
-        """
-        Creates a ``SupervisedModel`` instance from a ``JSON`` file saved with
-        :py:meth:`write_json`.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the ``JSON`` file.
-        kwargs : Any
-            To pass a custom ``network``, ``loss``, or ``optimizer`` if ``ClinicaDL``
-            is not able to read the ones in the ``JSON`` file. Useful when you don't
-            use config classes.
-
-        Returns
-        -------
-        SupervisedModel
-            The model instantiated from the input file.
-        """
-        config = _SupervisedModelConfig.from_json(json_path, **kwargs)
-
-        return cls(network=config.network, loss=config.loss, optimizer=config.optimizer)
-
     def save_checkpoint(
         self,
         checkpoint_path: PathType,
@@ -308,3 +280,14 @@ class SupervisedModel(ClinicaDLModel):
         """
         with open(log_path, "w", encoding="utf-8") as f:
             print(self.network, file=f)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Converts the model to a ``dict``.
+
+        Returns
+        -------
+        dict[str, Any]
+            The ``dict`` version of the model.
+        """
+        return self._config.to_dict()
