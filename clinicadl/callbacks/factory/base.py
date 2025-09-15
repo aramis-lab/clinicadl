@@ -99,7 +99,6 @@ class Callback(ABC):
     def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after the validation loop ends."""
 
-    @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """
         Convert the callback to a dictionary representation.
@@ -109,7 +108,7 @@ class Callback(ABC):
         dict
             Dictionary representation of the callback.
         """
-        pass
+        return self.__dict__
 
 
 class Tracker(Callback):

@@ -150,6 +150,7 @@ class Trainer:
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
+        resume: bool = False,
         seed: int = 123,
     ) -> None:
         train_metrics = MetricsHandler(
@@ -162,15 +163,16 @@ class Trainer:
         )
 
         maps = Maps(maps_path)
-        maps.create(overwrite=_overwrite)
+        if not resume:
+            maps.create(overwrite=_overwrite)
 
-        model.write_json(maps.model_json)
-        model.write_architecture_log(maps.architecture_log)
+            model.write_json(maps.model_json)
+            model.write_architecture_log(maps.architecture_log)
 
-        self.callbacks.write_json(maps.training.callbacks_json)
-        train_metrics.write_json(maps.training.metrics_json)
-        comp_config.write_json(maps.training.computational_json)
-        optim_config.write_json(maps.training.optimization_json)
+            self.callbacks.write_json(maps.training.callbacks_json)
+            train_metrics.write_json(maps.training.metrics_json)
+            comp_config.write_json(maps.training.computational_json)
+            optim_config.write_json(maps.training.optimization_json)
 
         self.config = _TrainingState(
             maps=maps,
@@ -204,7 +206,7 @@ class Trainer:
     def maps(self):
         return self.config.maps
 
-    def train(self, split: Split) -> None:
+    def train(self, split: Split, resume: bool = False) -> None:
         """
         Run the training loop over the given data split.
 
@@ -216,6 +218,7 @@ class Trainer:
         self.model.train()
         split.train_dataset.train()
 
+        # if resume:
         self.on_train_begin(split)
 
         while not self.config.stop:
@@ -314,7 +317,7 @@ class Trainer:
         self,
         dataloader: DataLoader[CapsDataset],
         split: int,
-        output_transforms: Optional[Union[Transforms, OutputTransforms]] = None,
+        output_transforms: Optional[Union[Transforms, Postprocessing]] = None,
         additional_metrics: Optional[
             list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
         ] = None,
@@ -329,7 +332,7 @@ class Trainer:
             DataLoader providing the dataset for prediction.
         split : int
             Index of the data split used for prediction.
-        output_transforms : Transforms or OutputTransforms, optional
+        output_transforms : Transforms or Postprocessing, optional
             Optional transforms to apply to prediction outputs.
         additional_metrics : list, optional
             Additional metrics or losses to compute during prediction.
@@ -370,10 +373,31 @@ class Trainer:
             maps_path=maps_path,
             model=model,
             callbacks=callbacks,
-            metrics=metrics,
+            metrics=metrics,  # type: ignore
             optim_config=optim_config,
             comp_config=comp_config,
+            resume=True,
         )
+
+    def resume(self, split: Split):
+        while not self.config.stop:
+            self.on_epoch_begin()
+
+            for batch_idx, data in enumerate(split.train_loader):
+                self.on_batch_begin(batch_idx=batch_idx)
+
+                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
+                    loss = self.model.training_step(data=data, device=self.comp.device)
+
+                self.on_backward_begin()
+                self.scaler.scale(loss).backward()
+                self.on_backward_end()
+
+                self.on_batch_end(loss=loss)
+
+            self.on_epoch_end(split)
+
+        self.on_train_end(split)
 
     def _write_training_infos(
         self,
