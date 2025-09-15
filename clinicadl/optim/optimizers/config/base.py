@@ -92,13 +92,13 @@ class OptimizerConfig(ObjectConfig):
 
         return associated_class(params, **args_global)
 
-    def get_all_groups(self) -> Set[str]:
+    def get_all_groups(self) -> list[str]:
         """
         Returns all groups mentioned by the user in the fields.
 
         Returns
         -------
-        Set[str]
+        list[str]
             the groups.
         """
         groups = set()
@@ -106,7 +106,7 @@ class OptimizerConfig(ObjectConfig):
             if isinstance(value, dict):
                 groups.update(set(value.keys()))
 
-        return groups
+        return sorted(groups)
 
     @classmethod
     def _get_class(cls) -> type[optim.Optimizer]:
