@@ -15,8 +15,6 @@ class ComputationalConfig(ClinicaDLConfig):
     """Config class to handle computational parameters."""
 
     amp: bool = False
-    channels_last: bool = True
-    ddp: bool = False
     fully_sharded_data_parallel: bool = False
     gpu: bool = False
     non_blocking: bool = True

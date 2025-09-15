@@ -37,9 +37,7 @@ def write_json(
     json_path.parent.mkdir(exist_ok=True, parents=True)
 
     if json_path.is_file() and not overwrite:
-        raise FileExistsError(
-            f"The JSON file already exists: {json_path}. Set 'overwrite=True' to overwrite it."
-        )
+        raise FileExistsError(f"The JSON file already exists: {json_path}")
     elif json_path.is_file() and overwrite:
         json_path.unlink()
 
