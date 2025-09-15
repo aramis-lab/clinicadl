@@ -25,12 +25,11 @@ def assert_equal(obj1, obj2):
     def _normalize(value):
         if isinstance(value, dict):
             return {k: _normalize(v) for k, v in value.items() if not k.startswith("_")}
-        elif isinstance(value, (list, tuple)):
+        if isinstance(value, (list, tuple)):
             return [_normalize(v) for v in value]  # On convertit tout en liste
-        elif hasattr(value, "__dict__"):
+        if hasattr(value, "__dict__"):
             return _normalize(value.__dict__)
-        else:
-            return value
+        return value
 
     norm1 = _normalize(obj1)
     norm2 = _normalize(obj2)
