@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from importlib.util import find_spec
 from typing import Any
 

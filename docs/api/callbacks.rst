@@ -20,7 +20,6 @@
     Callback
     Checkpoint
     CodeCarbon
-    Comet
     EarlyStopping
     LRScheduler
     MLflow

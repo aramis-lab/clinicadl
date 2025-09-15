@@ -67,7 +67,7 @@ def test_good_inputs(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     _ts.reset(SPLIT)
-    _ts.metrics.df = metrics_df
+    _ts.metrics._df = metrics_df
 
     es_.on_epoch_end(_ts)
     assert not _ts.stop

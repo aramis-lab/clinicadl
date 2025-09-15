@@ -23,7 +23,6 @@ class CodeCarbon(Callback):
             raise ModuleNotFoundError(
                 "`codecarbon` must be installed. Run: pip install codecarbon"
             )
-        self.tracker = None
 
     @staticmethod
     def is_available() -> bool:

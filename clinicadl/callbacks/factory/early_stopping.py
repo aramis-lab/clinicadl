@@ -69,7 +69,7 @@ class OneMetricEarlyStopping(Callback):
         """Return the function to compare current and best metric values."""
         if self.mode == Mode.MIN:
             return lambda value, best: value < best - self.min_delta
-        elif self.mode == Mode.MAX:
+        if self.mode == Mode.MAX:
             return lambda value, best: value > best + self.min_delta
         raise ValueError(f"Unknown mode: {self.mode}")
 
@@ -87,9 +87,10 @@ class OneMetricEarlyStopping(Callback):
             self.best = -np.inf
         else:
             raise ValueError(f"Unknown mode: {self.mode}")
+
         self.num_bad_epochs = 0
 
-    def should_stop_training(self, config: _TrainingState, **kwargs) -> bool:
+    def should_stop_training(self, config: _TrainingState) -> bool:
         """
         Check if training should stop at the end of an epoch.
 
@@ -104,6 +105,7 @@ class OneMetricEarlyStopping(Callback):
             True if training should stop, False otherwise.
         """
         df = config.metrics.df
+
         if df is None or not isinstance(df, pd.DataFrame) or df.empty:
             raise ValueError("Metrics DataFrame is missing or invalid.")
 
@@ -117,15 +119,13 @@ class OneMetricEarlyStopping(Callback):
             )
 
         value = df.at[config.epoch, self.metric]
-        print(value)
         try:
             value = float(value)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exc:
             raise ValueError(
                 f"Value for metric '{self.metric}' at epoch {config.epoch} is not numeric."
-            )
+            ) from exc
 
-        print("ok", value)
         if pd.isna(value):
             raise ValueError(
                 f"Metric '{self.metric}' value at epoch {config.epoch} is NaN."
@@ -133,19 +133,27 @@ class OneMetricEarlyStopping(Callback):
 
         if self.check_finite and (math.isinf(value) or math.isnan(value)):
             logger.warning(
-                f"Metric '{self.metric}' value at epoch {config.epoch} is not finite. Stopping training."
+                "Metric '%s' value at epoch %s is not finite. Stopping training.",
+                self.metric,
+                config.epoch,
             )
             return True
 
         if self.upper_bound is not None and (value > self.upper_bound):
             logger.warning(
-                f"Metric '{self.metric}' value {value} exceeded upper bound {self.upper_bound}. Stopping training."
+                "Metric '%s' value %s  exceeded upper bound %s. Stopping training.",
+                self.metric,
+                value,
+                self.upper_bound,
             )
             return True
 
         if self.lower_bound is not None and value < self.lower_bound:
             logger.warning(
-                f"Metric '{self.metric}' value {value} fell below lower bound {self.lower_bound}. Stopping training."
+                "Metric '%s' value %s fell below lower bound %s. Stopping training.",
+                self.metric,
+                value,
+                self.lower_bound,
             )
             return True
 
@@ -155,12 +163,16 @@ class OneMetricEarlyStopping(Callback):
         else:
             self.num_bad_epochs += 1
             logger.debug(
-                f"No improvement in '{self.metric}' for {self.num_bad_epochs} epochs."
+                "No improvement in '%s' for %s epochs.",
+                self.metric,
+                self.num_bad_epochs,
             )
 
         if self.patience is not None and self.num_bad_epochs >= self.patience:
             logger.info(
-                f"Early stopping triggered on metric '{self.metric}' after {self.num_bad_epochs} epochs without improvement."
+                "Early stopping triggered on metric '%s' after %s epochs without improvement.",
+                self.metric,
+                self.num_bad_epochs,
             )
             return True
 

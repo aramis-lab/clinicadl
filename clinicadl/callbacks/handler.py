@@ -26,7 +26,6 @@ PREFERRED_ORDER = [
     _Logger.__name__,
     MLflow.__name__,
     CodeCarbon.__name__,
-    Comet.__name__,
     WandB.__name__,
     Tensorboard.__name__,
 ]

@@ -1,7 +1,6 @@
 from .base import Callback
 from .checkpoint import Checkpoint
 from .code_carbon import CodeCarbon
-from .comet import Comet
 from .early_stopping import EarlyStopping
 from .lr_scheduler import LRScheduler
 from .mlflow import MLflow
