@@ -9,6 +9,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from torch.optim import Optimizer
 
 from clinicadl.utils.factories import get_defaults_from
 
@@ -187,3 +188,17 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     def parameter_group_validator(cls, v, ctx):
         """Checks that 'ELSE' is always in a field if it is a dict."""
         return cls.group_validator(v, field_name=ctx.field_name)
+
+    def _check_optimizer_consistency(self, optimizer: Optimizer) -> None:
+        """
+        Checks if LR scheduler and optimizers are consistent.
+        """
+        super()._check_optimizer_consistency(optimizer)
+        if self.cycle_momentum:
+            if (
+                "momentum" not in optimizer.defaults
+                and "betas" not in optimizer.defaults
+            ):
+                raise ValueError(
+                    "If 'cycle_momentum' is True in OneCycleLR, the optimizer requires a momentum."
+                )

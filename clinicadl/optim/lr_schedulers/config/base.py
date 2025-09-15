@@ -62,6 +62,7 @@ class LRSchedulerConfig(ObjectConfig):
         torch.optim.lr_scheduler.LRScheduler
             The PyTorch LR Scheduler, associated to the optimizer.
         """
+        self._check_optimizer_consistency(optimizer)
         associated_class = self._get_class()
         config_dict = self.model_dump(exclude={"name"})
 
@@ -76,7 +77,21 @@ class LRSchedulerConfig(ObjectConfig):
 
         return associated_class(optimizer, **config_dict)
 
-    def get_all_groups(self) -> Set[str]:
+    def _check_optimizer_consistency(self, optimizer: Optimizer) -> None:
+        """
+        Checks if LR scheduler and optimizers are consistent.
+        """
+        n_optimizer_groups = len(optimizer.param_groups)
+        scheduler_groups = self.get_all_groups()
+
+        if len(scheduler_groups) > 0 and len(scheduler_groups) != n_optimizer_groups:
+            raise ValueError(
+                f"There are {n_optimizer_groups} parameter groups in the optimizer, "
+                f"but {len(scheduler_groups)} in the LR Scheduler ({scheduler_groups}). "
+                "Make sure that the parameter groups match between your optimizer and LR scheduler!"
+            )
+
+    def get_all_groups(self) -> list[str]:
         """
         Returns all parameter groups mentioned by the user in the fields.
 
@@ -87,9 +102,9 @@ class LRSchedulerConfig(ObjectConfig):
         """
         for _, value in self:
             if isinstance(value, dict):
-                return set(value.keys())  # all dict have the same keys
+                return sorted(set(value.keys()))  # all dict have the same keys
 
-        return set()
+        return []
 
     @classmethod
     def _get_class(cls) -> type[optim.lr_scheduler.LRScheduler]:

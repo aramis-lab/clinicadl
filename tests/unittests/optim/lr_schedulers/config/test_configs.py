@@ -247,10 +247,10 @@ def test_get_all_groups():
     config = ReduceLROnPlateauConfig(
         min_lr={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
     )
-    assert config.get_all_groups() == {"params1", "params2", "ELSE"}
+    assert config.get_all_groups() == ["ELSE", "params1", "params2"]
 
     config.min_lr = 0.1
-    assert config.get_all_groups() == set()
+    assert config.get_all_groups() == []
 
     config = OneCycleLRConfig(
         max_lr={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
@@ -258,14 +258,10 @@ def test_get_all_groups():
         base_momentum={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
         total_steps=1,
     )
-    assert config.get_all_groups() == {
-        "params1",
-        "params2",
-        "ELSE",
-    }
+    assert config.get_all_groups() == ["ELSE", "params1", "params2"]
 
     config = ConstantLRConfig()
-    assert config.get_all_groups() == set()
+    assert config.get_all_groups() == []
 
 
 @pytest.mark.parametrize(
@@ -285,19 +281,42 @@ def test_get_all_groups():
         ({"step_size": 1}, StepLRConfig, optim.lr_scheduler.StepLR),
     ],
 )
-def test_get_object(args, config, expected_class, optimizer):
+def test_get_object(args, config, expected_class, optimizer, network):
     c = config(**args)
     scheduler = c.get_object(optimizer)
     assert isinstance(scheduler, expected_class)
 
     if c.name == "OneCycleLR":
-        c = OneCycleLRConfig(
+        with pytest.raises(
+            ValueError,
+            match=r"^There are 3 parameter groups in the optimizer, but 2 in the LR Scheduler \(\['ELSE', 'linear2'\]\)\. Make sure that the parameter groups match between your optimizer and LR scheduler!$",
+        ):
+            OneCycleLRConfig(
+                max_momentum={"linear2": 0.01, "ELSE": 0},
+                max_lr={"linear2": 0.01, "ELSE": 10},
+                total_steps=1,
+                base_momentum=0.33,
+                cycle_momentum=True,
+            ).get_object(optimizer)
+
+        with pytest.raises(
+            ValueError,
+            match="If 'cycle_momentum' is True in OneCycleLR, the optimizer requires a momentum.",
+        ):
+            OneCycleLRConfig(
+                max_lr=1,
+                total_steps=1,
+                base_momentum=0.33,
+                cycle_momentum=True,
+            ).get_object(optim.Adagrad(network.parameters()))
+
+        scheduler: optim.lr_scheduler.OneCycleLR = OneCycleLRConfig(
             max_momentum={"linear2": 0.01, "linear1": 0.1, "ELSE": 0},
             max_lr={"linear2": 0.01, "linear1": 0.1, "ELSE": 10},
             total_steps=1,
             base_momentum=0.33,
-        )
-        scheduler: optim.lr_scheduler.OneCycleLR = c.get_object(optimizer)
+            cycle_momentum=True,
+        ).get_object(optimizer)
         assert optimizer.param_groups[0]["max_lr"] == 0.1
         assert optimizer.param_groups[1]["max_lr"] == 0.01
         assert optimizer.param_groups[2]["max_lr"] == 10
