@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Optional, Self, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 from pydantic import (
     BaseModel,
@@ -14,6 +14,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic.fields import ModelPrivateAttr
+from typing_extensions import Self
 
 from clinicadl.dictionary.words import NAME
 from clinicadl.utils.exceptions import (
