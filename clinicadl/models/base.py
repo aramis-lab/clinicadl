@@ -286,8 +286,6 @@ class ClinicaDLModel(ABC):
             raise KeyError(
                 f"{str(json_path)} is not a valid json file for a ClinicaDLModel: it does not contain 'name'"
             ) from exc
-        else:
-            del dict_["name"]
 
         model = ImplementedModel(name).value
 
@@ -295,18 +293,11 @@ class ClinicaDLModel(ABC):
         if model == ImplementedModel.SUPERVISED:
             from .supervised import SupervisedModel
 
-            cls = SupervisedModel
+            return SupervisedModel.from_json(json_path, **kwargs)
         elif model == ImplementedModel.RECONSTRUCTION:
             from .reconstruction import ReconstructionModel
 
-            cls = ReconstructionModel
-
-        dict_.update(kwargs)
-
-        try:
-            return cls(**dict_)  # pylint: disable=possibly-used-before-assignment
-        except ValidationError as exc:
-            raise NotInterpretableJsonField(exc, json_path, "ClinicaDLModel") from exc
+            return ReconstructionModel.from_json(json_path, **kwargs)
 
     def to_dict(self) -> dict[str, Any]:
         """

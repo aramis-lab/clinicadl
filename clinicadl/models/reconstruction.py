@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 import torch
 
 from clinicadl.data.dataloader import Batch
+from clinicadl.losses import LossOrConfig
+from clinicadl.networks import NetworkOrConfig
+from clinicadl.optim.optimizers import OptimizerOrConfig
+from clinicadl.utils.typing import PathType
 
 from .base import ClinicaDLModel
 from .supervised import SupervisedModel, SupervisedModelConfig
@@ -42,6 +48,20 @@ class ReconstructionModel(SupervisedModel):
         For supervised training.
     """
 
+    def __init__(
+        self,
+        network: NetworkOrConfig,
+        loss: LossOrConfig,
+        optimizer: OptimizerOrConfig,
+    ):
+        self._config = ReconstructionModelConfig(
+            network=network, loss=loss, optimizer=optimizer
+        )
+        objects = self._config.get_objects()
+        self.network = objects["network"]
+        self.loss = objects["loss"]
+        self.optimizer = objects["optimizer"]
+
     def forward_step(self, batch: Batch) -> torch.Tensor:
         """
         Performs a pass forward in the autoencoder and a comparison with the input image.
@@ -64,3 +84,29 @@ class ReconstructionModel(SupervisedModel):
         loss = self.loss(outputs, images)
 
         return loss
+
+    @classmethod
+    def from_json(cls, json_path: PathType, **kwargs) -> ReconstructionModel:
+        """
+        Creates a model from a ``JSON`` file saved with
+        :py:meth:`write_json`.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the ``JSON`` file.
+        kwargs : Any
+            To pass directly any argument that ``ReconstructionModel``
+            will not be able to read in the ``JSON`` file. Useful when you don't
+            use config classes.
+
+        Returns
+        -------
+        ReconstructionModel
+            The model instantiated from the input file.
+        """
+        config: ReconstructionModelConfig = ReconstructionModelConfig.from_json(
+            json_path, **kwargs
+        )
+
+        return cls(network=config.network, loss=config.loss, optimizer=config.optimizer)

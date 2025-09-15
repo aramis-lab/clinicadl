@@ -93,13 +93,14 @@ def test_SupervisedModel(tmp_path):
     # from json
     with pytest.raises(
         NotInterpretableJsonField,
-        match=r"ClinicaDLModel cannot read the following fields in .*: 'network'",
+        match=r"SupervisedModel cannot read the following fields in .*: 'network'",
     ):
         SupervisedModel.from_json(tmp_path / "model.json")
     new_model: SupervisedModel = ClinicaDLModel.from_json(
         tmp_path / "model.json",
         network=torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1)),
     )
+    assert isinstance(new_model, SupervisedModel)
 
     # read checkpoint
     new_model.load_checkpoint(

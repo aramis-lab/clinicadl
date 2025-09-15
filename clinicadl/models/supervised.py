@@ -96,11 +96,9 @@ class SupervisedModel(ClinicaDLModel):
         loss: LossOrConfig,
         optimizer: OptimizerOrConfig,
     ):
-        print(loss)
         self._config = SupervisedModelConfig(
             network=network, loss=loss, optimizer=optimizer
         )
-        print(self._config)
         objects = self._config.get_objects()
         self.network = objects["network"]
         self.loss = objects["loss"]
@@ -291,3 +289,29 @@ class SupervisedModel(ClinicaDLModel):
             The ``dict`` version of the model.
         """
         return self._config.to_dict()
+
+    @classmethod
+    def from_json(cls, json_path: PathType, **kwargs) -> SupervisedModel:
+        """
+        Creates a model from a ``JSON`` file saved with
+        :py:meth:`write_json`.
+
+        Parameters
+        ----------
+        json_path : PathType
+            Path to the ``JSON`` file.
+        kwargs : Any
+            To pass directly any argument that ``SupervisedModel``
+            will not be able to read in the ``JSON`` file. Useful when you don't
+            use config classes.
+
+        Returns
+        -------
+        SupervisedModel
+            The model instantiated from the input file.
+        """
+        config: SupervisedModelConfig = SupervisedModelConfig.from_json(
+            json_path, **kwargs
+        )
+
+        return cls(network=config.network, loss=config.loss, optimizer=config.optimizer)

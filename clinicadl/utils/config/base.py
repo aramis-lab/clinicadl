@@ -3,11 +3,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Self, Union
 
 from pydantic import (
     BaseModel,
     ConfigDict,
+    ValidationError,
     computed_field,
     model_serializer,
     model_validator,
@@ -15,7 +16,12 @@ from pydantic import (
 from pydantic.fields import ModelPrivateAttr
 
 from clinicadl.dictionary.words import NAME
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    NotInterpretableDictField,
+    NotInterpretableJson,
+    NotInterpretableJsonField,
+)
 from clinicadl.utils.json import read_json, update_json, write_json
 from clinicadl.utils.typing import PathType
 
@@ -36,7 +42,17 @@ class ClinicaDLConfig(BaseModel):
         """Useless method but needed for the doc (typing)."""
         super().__init__(**kwargs)
 
-    def to_dict(self, **kwargs) -> Dict[str, Any]:
+    @classmethod
+    def get_fields(cls) -> list[str]:
+        """
+        Gets the list of the fields in the config class (including computed fields).
+        """
+        fields = list(cls.model_fields.keys())
+        fields += list(cls.model_computed_fields.keys())
+
+        return fields
+
+    def to_dict(self, **kwargs) -> dict[str, Any]:
         """
         Customized version of 'model_dump'.
 
@@ -50,37 +66,39 @@ class ClinicaDLConfig(BaseModel):
         """
         Writes the serialized config class to a JSON file.
         """
-        json_path = Path(json_path)
         write_json(
             json_path=json_path, data=self.to_dict(**kwargs), overwrite=overwrite
         )
 
     @classmethod
-    def from_json(cls, json_path: PathType, **kwargs):
+    def from_json(cls, json_path: PathType, **kwargs) -> ClinicaDLConfig:
         """
         Reads the serialized config class from a JSON file.
         """
-        json_path = Path(json_path)
         dict_ = cls.read_json(json_path=json_path)
         dict_.update(kwargs)
+
         return cls(**dict_)
 
     @classmethod
-    def read_json(cls, json_path: Path) -> Dict[str, Any]:
+    def read_json(cls, json_path: PathType) -> dict[str, Any]:
         """
         Reads the serialized config class from a JSON file.
         """
         config_dict = read_json(json_path=json_path)
 
-        if set(config_dict.keys()) != set(cls.model_fields.keys()):
+        fields_in_dict = set(config_dict)
+        expected_fields = set(cls.get_fields())
+
+        if fields_in_dict != expected_fields:
             raise ClinicaDLArgumentError(
                 f"{json_path} is not a valid json file for {cls.__name__}. "
-                f"A valid file should contain the keys {list(cls.model_fields.keys())}."
+                f"A valid file should contain the keys {expected_fields}. Got: {fields_in_dict}"
             )
 
         return config_dict
 
-    def update_json(self, json_path: Path) -> None:
+    def update_json(self, json_path: PathType) -> None:
         """
         Updates the JSON file with the serialized config class.
         """
@@ -171,7 +189,7 @@ class ConfigsOrObjects(ObjectConfig):
         return objects
 
     @model_validator(mode="after")
-    def _validate_readers(self):
+    def _validate_readers(self) -> Self:
         """Checks that all fields have an associated reader."""
         for field, _ in self:
             assert field in self._FIELD_READERS, (
@@ -201,28 +219,39 @@ class ConfigsOrObjects(ObjectConfig):
 
         return dict_
 
-    # @classmethod
-    # def from_json(cls, json_path: PathType, **kwargs):
-    #     """
-    #     Reads the serialized config class from a JSON file.
-    #     """
-    #     json_path = Path(json_path)
-    #     dict_ = cls.read_json(json_path=json_path)
+    @classmethod
+    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> ConfigsOrObjects:
+        """
+        Converts a dict to a config class.
+        """
+        dict_.update(kwargs)
 
-    #     for field, values in dict_.items():
-    #         if isinstance(values, dict):
-    #             dict_[field] = cls._get_reader(field)(**values)
-    #         else:
-    #             if field in kwargs:
-    #                 dict_[field] = kwargs[field]
-    #             else:
-    #                 raise ValueError(
-    #                     f"Custom {field} found for in {str(json_path)}. "
-    #                     f"ClinicaDL can't read custom {field}, so pass it to 'from_json' via "
-    #                     f"{field}=<your-custom-{field}>"
-    #                 )
+        for field, values in dict_.items():
+            if isinstance(values, dict):
+                dict_[field] = cls._get_reader(field)(**values)
 
-    #     return cls(**dict_)
+        try:
+            return cls(**dict_)
+        except ValidationError as exc:
+            raise NotInterpretableDictField(exc, cls._get_name()) from exc
+
+    @classmethod
+    def from_json(cls, json_path: PathType, **kwargs) -> ConfigsOrObjects:
+        """
+        Reads the serialized config class from a JSON file.
+        """
+        json_path = Path(json_path)
+        dict_ = cls.read_json(json_path=json_path)
+
+        if not isinstance(dict_, dict):
+            raise NotInterpretableJson(json_path, cls._get_name())
+
+        try:
+            return cls.from_dict(dict_, **kwargs)
+        except NotInterpretableDictField as exc:
+            raise NotInterpretableJsonField(
+                exc.error, json_path, cls._get_name()
+            ) from exc
 
     @classmethod
     def _get_reader(cls, field: str) -> FieldReaderType:
