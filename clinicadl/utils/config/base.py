@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Self, Union
+from typing import Any, Callable, Optional, Self, Sequence, Union
 
 from pydantic import (
     BaseModel,
@@ -75,20 +75,25 @@ class ClinicaDLConfig(BaseModel):
         """
         Reads the serialized config class from a JSON file.
         """
-        dict_ = cls.read_json(json_path=json_path)
+        dict_ = cls.read_json(json_path=json_path, ignore=list(kwargs.keys()))
         dict_.update(kwargs)
 
         return cls(**dict_)
 
     @classmethod
-    def read_json(cls, json_path: PathType) -> dict[str, Any]:
+    def read_json(
+        cls, json_path: PathType, ignore: Optional[Sequence[str]] = None
+    ) -> dict[str, Any]:
         """
         Reads the serialized config class from a JSON file.
         """
+        if ignore is None:
+            ignore = set()
+
         config_dict = read_json(json_path=json_path)
 
         fields_in_dict = set(config_dict)
-        expected_fields = set(cls.get_fields())
+        expected_fields = set(cls.get_fields()).difference(ignore)
 
         if fields_in_dict != expected_fields:
             raise ClinicaDLArgumentError(

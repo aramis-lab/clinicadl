@@ -5,12 +5,11 @@ from enum import Enum
 from typing import Any, Optional, Sequence, Union
 
 import torch
-from pydantic import ValidationError
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.utils.device import DeviceType
-from clinicadl.utils.exceptions import NotInterpretableJson, NotInterpretableJsonField
+from clinicadl.utils.exceptions import NotInterpretableJson
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 

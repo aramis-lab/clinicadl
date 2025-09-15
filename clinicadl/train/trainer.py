@@ -230,7 +230,7 @@ class Trainer:
 
                 self.on_backward_begin()
 
-                self.model.backward_step(loss, self.scaler)
+                self.model.optimization_step(loss, self.scaler)
 
                 self.scaler.update()
 
@@ -247,7 +247,6 @@ class Trainer:
     def evaluate(
         self,
         split: Split,
-        epoch: Optional[int] = None,
     ) -> None:
         """
         Evaluate the model on a validation or test dataset.
@@ -262,9 +261,9 @@ class Trainer:
         with torch.no_grad():
             for data in split.val_loader:
                 output_batch = self.model.evaluation_step(data)
-                self.metrics(output_batch, epoch=epoch)
+                self.metrics(output_batch, epoch=self.config.epoch)
 
-            self.metrics.aggregate(epoch=self.config.epoch)
+        self.metrics.aggregate(epoch=self.config.epoch)
 
         self.callbacks.on_validation_end(config=self.config)
 

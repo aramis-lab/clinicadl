@@ -25,7 +25,7 @@ from clinicadl.metrics.config import (
 )
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
-from clinicadl.models import ClinicaDLModel
+from clinicadl.models import SupervisedModel
 from clinicadl.models.example_model import example_model
 from clinicadl.networks.config import ResNetConfig
 from clinicadl.optim.config import OptimizationConfig
@@ -86,7 +86,7 @@ NETWORK = ResNetConfig(
 LOSS = MSELossConfig()
 OPTIMIZER = AdamConfig()
 
-MODEL = ClinicaDLModel(
+MODEL = SupervisedModel(
     network=NETWORK,
     loss=LOSS,
     optimizer=OPTIMIZER,
