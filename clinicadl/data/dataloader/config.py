@@ -263,16 +263,7 @@ class DataLoaderConfig(ClinicaDLConfig):
 
         .. code-block:: python
 
-            caps_dataset_no_label = CapsDataset(
-                caps_directory="mycaps",
-                preprocessing=PETLinear(
-                    tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-                ),
-                data="mycaps/data.tsv",
-            )
-            caps_dataset_no_label.read_tensor_conversion()
-
-            paired_dataset = PairedDataset([caps_dataset, caps_dataset_no_label]
+            paired_dataset = PairedDataset([caps_dataset, caps_dataset])
 
             dataloader = dataloader_config.get_object(paired_dataset)
 
