@@ -7,7 +7,7 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.extraction import Slice, SliceFromTSV
+from clinicadl.transforms.extraction import Slice
 
 
 def test_args():
@@ -65,26 +65,12 @@ def test_num_samples_per_image():
     with pytest.raises(IndexError):
         slice.num_samples_per_image(data_point)
 
-    # test SliceFromTSV
+    # test FromTSV
     caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-    test_slice_tsv = caps_dir / "tsv" / "extract_slice_test.tsv"
+    test_slice_tsv = caps_dir / "tsv" / "extract_slices_test.tsv"
 
-    slice = SliceFromTSV(
-        tsv_path=test_slice_tsv, slice_direction=1, one_row_per_slice_mode=True
-    )
-    assert slice.num_samples_per_image(data_point) == 1
-
-    test_slice_tsv = caps_dir / "tsv" / "extract_slices_not_uniform_test.tsv"
-
-    slice = SliceFromTSV(
-        tsv_path=test_slice_tsv, slice_direction=1, one_row_per_slice_mode=False
-    )
+    slice = Slice(tsv_path=test_slice_tsv, slice_direction=1)
     assert slice.num_samples_per_image(data_point) == 2
-
-    slice = SliceFromTSV(
-        tsv_path=test_slice_tsv, slice_direction=1, one_row_per_slice_mode=True
-    )
-    assert slice.num_samples_per_image(data_point) == 1
 
 
 def test_extract_sample():
@@ -153,16 +139,12 @@ def test_extract_sample():
         == image_tensor[:, :, 1:2]
     ).all()
 
-    # Test from SliceFromTSV
-
-    # one_row_per_slice_mode=True -> exactly one slice per subject
+    # Test from FromTSV
 
     caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-    test_slice_tsv = caps_dir / "tsv" / "extract_slice_test.tsv"
+    test_slice_tsv = caps_dir / "tsv" / "extract_slices_test.tsv"
 
-    extractor = SliceFromTSV(
-        tsv_path=test_slice_tsv, slice_direction=2, one_row_per_slice_mode=True
-    )
+    extractor = Slice(tsv_path=test_slice_tsv, slice_direction=2)
 
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 3, 7)

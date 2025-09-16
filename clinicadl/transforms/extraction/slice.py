@@ -77,28 +77,6 @@ class Slice(Extraction):
         The slicing direction.
     - ``squeeze``: bool
         Whether the tensors will be squeezed to work with 2D neural networks.
-
-    Parameters
-    ----------
-    slices : Optional[List[NonNegativeInt]], default=None
-        The slices to select. If ``None``, slices will be selected with ``discarded_slices``
-        and/or ``borders``. If all these three parameters are ``None``, all slices will be
-        kept.
-    discarded_slices : Optional[List[NonNegativeInt]], default=None
-        Indices of the slices to discard. Cannot be used with ``slices``.
-    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
-        The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
-        ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
-        ``a`` slices and the last ``b`` slices will be filtered out.
-    slice_direction : SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
-    squeeze : bool, default=True
-        Whether to squeeze slices to have images with 2 spatial dimensions.
-        If ``False``, slices will still have 3 spatial dimensions.
-
-        .. note::
-            Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
-            network. This is because most of ``ClinicaDL`` tools work with 3D images.
     """
 
     slices: Optional[List[NonNegativeInt]] = None
@@ -106,11 +84,14 @@ class Slice(Extraction):
     borders: Optional[Tuple[PositiveInt, PositiveInt]] = None
     slice_direction: SliceDirection = SliceDirection.SAGITTAL
     squeeze: bool = True
+    _tsv_path: Optional[str] = None
+    _map: Optional[Dict[Tuple[str, str], List[int]]] = None
 
     def __init__(
         self,
         *,
         slices: Optional[List[NonNegativeInt]] = None,
+        tsv_path: Optional[Union[str, Path]] = None,
         discarded_slices: Optional[List[NonNegativeInt]] = None,
         borders: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]] = None,
         slice_direction: SliceDirection = SliceDirection.SAGITTAL,
@@ -123,250 +104,24 @@ class Slice(Extraction):
             slice_direction=slice_direction,
             squeeze=squeeze,
         )
+        if tsv_path is not None:
+            self._tsv_path = str(tsv_path)
+            self._map = self._load_tsv(self._tsv_path)
 
     @computed_field
     @property
     def extract_method(self) -> str:
-        """The method to be used for the extraction process (Image, Patch, Slice)."""
         return ExtractionMethod.SLICE.value
 
     @staticmethod
     def _ensure_tuple(
-        value: Union[PositiveInt, Tuple[PositiveInt, PositiveInt]],
-    ) -> Tuple[PositiveInt, PositiveInt]:
-        """
-        Ensures that 'borders' is always a tuple.
-        """
+        value: Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]],
+    ) -> Optional[Tuple[PositiveInt, PositiveInt]]:
+        if value is None:
+            return None
         if isinstance(value, int):
             return (value, value)
-        else:
-            return value
-
-    @model_validator(mode="after")
-    def validate_slices(self) -> Self:
-        """
-        Checks consistency between 'slices', 'discarded_slices' and 'borders'.
-        """
-        if (self.slices is not None) and (self.discarded_slices is not None):
-            raise ValueError(
-                "'slices' and 'discarded_slices' can't be passed simultaneously. Specify the wanted slices "
-                "in 'slices'."
-            )
-        elif (self.slices is not None) and (self.borders is not None):
-            raise ValueError(
-                "'slices' and 'borders' can't be passed simultaneously. Specify the wanted slices "
-                "in 'slices'."
-            )
-        return self
-
-    def extract_sample(self, data_point: DataPoint, sample_index: int) -> SliceSample:
-        """
-        Extracts a slice from a DataPoint.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            The DataPoint to perform extraction on.
-        sample_index : int
-            Index indicating the slice to extract.
-
-        Returns
-        -------
-        SliceSample
-            A :py:func:`~ImageSample` object with the extracted slices for each image
-            present in the original ``data_point``. The slice extracted from an
-            image is accessible via the same name as was the image in the original
-            ``data_point``.
-            Additional information on the extraction is added.
-
-        Raises
-        ------
-        IndexError
-            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
-        IndexError
-            If ``sample_index`` is greater or equal to the number of selected slices in the image.
-        """
-        slice_position = self._get_slice_position(data_point.image.tensor, sample_index)
-        extracted_datapoint = self._extract_datapoint_sample(data_point, sample_index)
-        sample = SliceSample(
-            **extracted_datapoint,
-            extraction=self.extract_method,
-            slice_position=slice_position,
-            slice_direction=self.slice_direction,
-            squeeze=self.squeeze,
-        )
-        sample.applied_transforms = extracted_datapoint.applied_transforms
-
-        return sample
-
-    def num_samples_per_image(self, data_point: DataPoint) -> int:
-        """
-        Returns the number of slices that can be extracted from the input image tensor.
-
-        If ``slices``, ``discarded_slices`` and ``borders`` have not been passed, there is no
-        slice filtering, so the function will simply output the number of slices in the
-        image.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            The DataPoint containing the image to perform extraction on.
-
-        Returns
-        -------
-        int
-            The number of slices remaining after slice filtering.
-
-        Raises
-        ------
-        IndexError
-            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
-        """
-        return self._get_slice_selection(data_point.image.tensor).sum()
-
-    def _extract_tensor_sample(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> torch.Tensor:
-        """
-        Extracts a single slice from an image.
-
-        Raises
-        ------
-        IndexError
-            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
-        IndexError
-            If ``sample_index`` is greater or equal to the number of selected slices in the image.
-        """
-        slice_position = self._get_slice_position(image_tensor, sample_index)
-        slice_tensor = self._get_slice(image_tensor, slice_position)
-
-        return slice_tensor
-
-    def _get_slice_selection(self, image: torch.Tensor) -> np.ndarray[bool]:
-        """
-        Returns the slices of an image that can be extracted, depending on ``slices``,
-        ``discarded_slices`` and ``borders``.
-        """
-        n_slices = image.size(self.slice_direction + 1)
-        selection = np.ones(n_slices).astype(bool)
-
-        if self.slices:
-            selection = ~selection
-            try:
-                selection[self.slices] = True
-            except IndexError as exc:
-                raise IndexError(
-                    "Invalid slices in 'slices': "
-                    f"slices in the image are indexed from 0 to {n_slices - 1}, but got "
-                    f"slices={self.slices}."
-                ) from exc
-        else:
-            if self.discarded_slices:
-                try:
-                    selection[self.discarded_slices] = False
-                except IndexError as exc:
-                    raise IndexError(
-                        "Invalid slices in 'discarded_slices': "
-                        f"slices in the image are indexed from 0 to {n_slices - 1}, but got "
-                        f"discarded_slices={self.discarded_slices}."
-                    ) from exc
-
-            if self.borders:
-                selection[: self.borders[0]] = False
-                selection[n_slices - self.borders[1] :] = False
-
-        return selection
-
-    def _get_slice_position(self, image: torch.Tensor, slice_index: int) -> int:
-        """
-        Returns the position in the image of ``slice_index``. They may differ as
-        ``slice_index`` is the index among the selected slices.
-        """
-        selection = self._get_slice_selection(image)
-        slice_positions = np.arange(len(selection))[selection]
-
-        try:
-            return int(slice_positions[slice_index])
-        except IndexError as exc:
-            raise IndexError(
-                f"'sample_index' {slice_index} is out of range as there are only "
-                f"{len(slice_positions)} selected slices in the image."
-            ) from exc
-
-    def _get_slice(self, image: torch.Tensor, slice_position: int) -> torch.Tensor:
-        """
-        Gets the wanted slice, according to the slicing direction.
-        """
-        if self.slice_direction == 0:
-            slice_tensor = image[:, slice_position, :, :]
-        elif self.slice_direction == 1:
-            slice_tensor = image[:, :, slice_position, :]
-        elif self.slice_direction == 2:
-            slice_tensor = image[:, :, :, slice_position]
-
-        return slice_tensor.unsqueeze(self.slice_direction + 1)  # pylint: disable=possibly-used-before-assignment
-
-
-class SliceFromTSV(Slice):
-    """
-    Extract slices specified in a TSV file per (participant_id, session_id).
-
-    TSV must have columns:
-        - participant_id
-        - session_id
-        - slice_idx  (0-based integer index in the chosen slice_direction)
-
-    Parameters
-    ----------
-    tsv_path : str or Path
-        Path to the TSV file.
-    slice_direction : SliceDirection, default=SliceDirection.SAGITTAL
-        0: sagittal, 1: coronal, 2: axial
-    squeeze : bool, default=True
-        Whether to squeeze slices to 2D.
-    one_row_per_slice_mode : bool, default=True
-        - If True: TSV must have *one row per slice*; each row yields exactly one sample.
-        - If False: TSV may have multiple slices per subject/session; then
-          `prepare_datapoint(data_point)` must be called before sample extraction.
-    """
-
-    # Keep base Slice API fields (not really used here)
-    slices: Optional[List[NonNegativeInt]] = None
-    discarded_slices: Optional[List[NonNegativeInt]] = None
-    borders: Optional[Tuple[PositiveInt, PositiveInt]] = None
-    slice_direction: SliceDirection = SliceDirection.SAGITTAL
-    squeeze: bool = True
-
-    # --- Internal state (not Pydantic-managed)
-    _tsv_path: str
-    _one_row_per_slice_mode: bool
-    _map: Dict[Tuple[str, str], List[int]]
-    _current_key: Optional[Tuple[str, str]]
-
-    def __init__(
-        self,
-        *,
-        tsv_path: Union[str, Path],
-        slice_direction: SliceDirection = SliceDirection.SAGITTAL,
-        squeeze: bool = True,
-        one_row_per_slice_mode: bool = True,
-    ) -> None:
-        super().__init__(
-            slices=None,
-            discarded_slices=None,
-            borders=None,
-            slice_direction=slice_direction,
-            squeeze=squeeze,
-        )
-        self._tsv_path = str(tsv_path)
-        self._one_row_per_slice_mode = one_row_per_slice_mode
-        self._map = self._load_tsv(self._tsv_path)
-        self._current_key = None
-
-    @computed_field
-    @property
-    def extract_method(self) -> str:
-        return ExtractionMethod.SLICE.value
+        return value
 
     @staticmethod
     def _normalize_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -389,78 +144,54 @@ class SliceFromTSV(Slice):
     @staticmethod
     def _load_tsv(path: Union[str, Path]) -> Dict[Tuple[str, str], List[int]]:
         df = pd.read_csv(path, sep="\t")
-        df = SliceFromTSV._normalize_cols(df)
+        df = Slice._normalize_cols(df)
         if not np.issubdtype(df["slice_idx"].dtype, np.integer):
             try:
                 df["slice_idx"] = df["slice_idx"].astype(int)
             except Exception as e:
-                raise ValueError(
-                    "Column 'slice_idx' must contain integers (0-based indices)."
-                ) from e
+                raise ValueError("Column 'slice_idx' must contain integers.") from e
         mapping: Dict[Tuple[str, str], List[int]] = {}
         for (sub, ses), g in df.groupby(["participant_id", "session_id"]):
             mapping[(str(sub), str(ses))] = list(map(int, g["slice_idx"].tolist()))
         return mapping
 
-    def prepare_datapoint(self, data_point: DataPoint) -> None:
-        """Call this before num_samples_per_image when not in one_row_per_slice_mode."""
-        self._current_key = (data_point.participant, data_point.session)
-
-    def _slices_for(self, participant: str, session: str) -> List[int]:
-        key = (participant, session)
+    def _slices_for(self, data_point: DataPoint) -> List[int]:
+        if self._map is None:
+            raise RuntimeError("Called _slices_for but no TSV was provided.")
+        key = (data_point.participant, data_point.session)
         if key not in self._map:
             raise ValueError(
-                f"No slices found in TSV for participant={participant}, session={session}."
+                f"No slices found in TSV for participant={key[0]}, session={key[1]}."
             )
         return self._map[key]
 
-    def _validate_position(self, image: torch.Tensor, pos: int) -> None:
-        n_slices = image.size(self.slice_direction + 1)
-        if pos < 0 or pos >= int(n_slices):
-            raise IndexError(
-                f"Slice index {pos} out of bounds for image with {n_slices} slices "
-                f"in direction {int(self.slice_direction)}."
+    @model_validator(mode="after")
+    def validate_slices(self) -> Self:
+        if self._map is not None:
+            # TSV takes full precedence, ignore validation
+            return self
+        if (self.slices is not None) and (self.discarded_slices is not None):
+            raise ValueError(
+                "'slices' and 'discarded_slices' can't be passed simultaneously."
             )
-
-    def _extract_tensor_sample(
-        self, image_tensor: torch.Tensor, sample_index: int
-    ) -> torch.Tensor:
-        if self._one_row_per_slice_mode:
-            slices = self._current_key and self._map.get(self._current_key, [])
-            slice_position = int(slices[0]) if slices else 0
-        else:
-            if self._current_key is None:
-                raise RuntimeError(
-                    "Must call prepare_datapoint before extracting slices in multi-slice mode."
-                )
-            slices = self._slices_for(*self._current_key)
-            try:
-                slice_position = int(slices[sample_index])
-            except IndexError as exc:
-                raise IndexError(
-                    f"'sample_index' {sample_index} out of range: TSV lists {len(slices)} slices for {self._current_key}."
-                ) from exc
-
-        self._validate_position(image_tensor, slice_position)
-        return self._get_slice(image_tensor, slice_position)
+        elif (self.slices is not None) and (self.borders is not None):
+            raise ValueError("'slices' and 'borders' can't be passed simultaneously.")
+        return self
 
     def extract_sample(self, data_point: DataPoint, sample_index: int) -> SliceSample:
-        self._current_key = (data_point.participant, data_point.session)
+        # store context for TSV lookup
+        self._current_datapoint = data_point
 
-        slices = self._slices_for(data_point.participant, data_point.session)
-        if self._one_row_per_slice_mode:
-            if len(slices) != 1:
-                logger.warning(
-                    "TSV has %d slices for %s %s; one_row_per_slice_mode=True, taking first.",
-                    len(slices),
-                    data_point.participant,
-                    data_point.session,
-                )
-            slice_position = int(slices[0])
+        slice_tensor = self._extract_tensor_sample(
+            data_point.image.tensor, sample_index
+        )
+
+        if self._map is not None:
+            slice_position = self._slices_for(data_point)[sample_index]
         else:
-            slice_position = int(slices[sample_index])
-
-        self._validate_position(data_point.image.tensor, slice_position)
+            slice_position = self._get_slice_position(
+                data_point.image.tensor, sample_index
+            )
 
         extracted = self._extract_datapoint_sample(data_point, sample_index)
         sample = SliceSample(
@@ -474,27 +205,81 @@ class SliceFromTSV(Slice):
         return sample
 
     def num_samples_per_image(self, data_point: DataPoint) -> int:
-        self._current_key = (data_point.participant, data_point.session)
-        if self._one_row_per_slice_mode:
-            return 1
-        if self._current_key is None:
-            logger.warning("num_samples_per_image called without context; returning 1.")
-            return 1
-        slices = self._slices_for(*self._current_key)
+        if self._map is not None:  # TSV mode
+            slices = self._slices_for(data_point)
+            n_slices = int(data_point.image.tensor.size(self.slice_direction + 1))
+            bad = [p for p in slices if p < 0 or p >= n_slices]
+            if bad:
+                raise IndexError(
+                    f"Invalid slice indices {bad} for {data_point.participant}, {data_point.session} "
+                    f"(image has {n_slices} slices)."
+                )
+            return len(slices)
+        return self._get_slice_selection(data_point.image.tensor).sum()
 
-        n_slices = int(data_point.image.tensor.size(self.slice_direction + 1))
-        bad = [p for p in slices if p < 0 or p >= n_slices]
-        if bad:
+    def _extract_tensor_sample(
+        self, image_tensor: torch.Tensor, sample_index: int
+    ) -> torch.Tensor:
+        if self._map is not None:
+            if (
+                not hasattr(self, "_current_datapoint")
+                or self._current_datapoint is None
+            ):
+                raise RuntimeError("TSV mode requires a current DataPoint context.")
+            slices = self._slices_for(self._current_datapoint)
+            try:
+                slice_position = int(slices[sample_index])
+            except IndexError as exc:
+                raise IndexError(
+                    f"'sample_index' {sample_index} out of range: TSV lists {len(slices)} slices "
+                    f"for {self._current_datapoint.participant}, {self._current_datapoint.session}."
+                ) from exc
+        else:
+            slice_position = self._get_slice_position(image_tensor, sample_index)
+
+        return self._get_slice(image_tensor, slice_position)
+
+    def _get_slice_selection(self, image: torch.Tensor) -> np.ndarray:
+        n_slices = image.size(self.slice_direction + 1)
+        selection = np.ones(n_slices, dtype=bool)
+
+        if self.slices:
+            selection[:] = False
+            try:
+                selection[self.slices] = True
+            except IndexError as exc:
+                raise IndexError(
+                    f"Invalid slices: image has 0..{n_slices - 1}, got {self.slices}."
+                ) from exc
+        else:
+            if self.discarded_slices:
+                try:
+                    selection[self.discarded_slices] = False
+                except IndexError as exc:
+                    raise IndexError(
+                        f"Invalid discarded_slices: image has 0..{n_slices - 1}, got {self.discarded_slices}."
+                    ) from exc
+            if self.borders:
+                selection[: self.borders[0]] = False
+                selection[n_slices - self.borders[1] :] = False
+
+        return selection
+
+    def _get_slice_position(self, image: torch.Tensor, slice_index: int) -> int:
+        selection = self._get_slice_selection(image)
+        slice_positions = np.arange(len(selection))[selection]
+        try:
+            return int(slice_positions[slice_index])
+        except IndexError as exc:
             raise IndexError(
-                f"Invalid slice indices {bad} for {self._current_key} (image has {n_slices} slices)."
-            )
-        return len(slices)
+                f"'sample_index' {slice_index} is out of range (only {len(slice_positions)} selected slices)."
+            ) from exc
 
     def _get_slice(self, image: torch.Tensor, slice_position: int) -> torch.Tensor:
         if self.slice_direction == 0:
-            s = image[:, slice_position, :, :]
+            slice_tensor = image[:, slice_position, :, :]
         elif self.slice_direction == 1:
-            s = image[:, :, slice_position, :]
-        else:
-            s = image[:, :, :, slice_position]
-        return s.unsqueeze(self.slice_direction + 1)
+            slice_tensor = image[:, :, slice_position, :]
+        elif self.slice_direction == 2:
+            slice_tensor = image[:, :, :, slice_position]
+        return slice_tensor.unsqueeze(self.slice_direction + 1)
