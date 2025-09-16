@@ -311,7 +311,7 @@ class Trainer:
     def reset(self, split: Optional[Split] = None):
         if split:
             self.config.reset(split=split)
-        self.metrics.reset(df=True)
+        self.metrics.reset(reset_df=True)
 
     def predict(
         self,
@@ -341,7 +341,7 @@ class Trainer:
 
         Notes
         -----
-        .. note:
+        .. note::
             Prediction results and metrics are saved to the configured maps directory.
         """
 

@@ -18,6 +18,7 @@ from clinicadl.data.datatypes.preprocessing import T1Linear
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config.factory import (
     ConfusionMatrixMetricConfig,
+    MAEMetricConfig,
     MSEMetricConfig,
     SSIMMetricConfig,
 )
@@ -78,9 +79,9 @@ model = ClinicaDLModel(
 )
 
 
-mae = MAEMetric()
+mae = MAEMetricConfig()
 mse = MSEMetricConfig()
-matrix = ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"])
+# matrix = ConfusionMatrixMetricConfig(metric_name=ConfusionMatrixMetricCon)
 
 callbacks = [
     EarlyStopping(metrics=["mae", "loss"]),
@@ -98,7 +99,7 @@ trainer = Trainer(
     comp_config=comput_config,
     optim_config=optim_config,
     callbacks=callbacks,
-    metrics={"mae": mae, "mse": mse, "matrix": matrix},
+    metrics={"mae": mae, "mse": mse},
     _overwrite=True,
 )
 
@@ -113,7 +114,7 @@ for split in splitter.get_splits(dataset=dataset_t1_image):
     trainer.train(split)
 
 
-trainer.evaluate(split.val_loader, additional_metrics=[matrix])
+trainer.evaluate(split.val_loader, additional_metrics=[mae])
 print("out of training")
 # TEST
 
@@ -124,10 +125,10 @@ dataset_test = CapsDataset(
     transforms=transforms_image,
     label="diagnosis",
 )
-dataset_test.to_tensors(json_name="test_bis_im_bis.json", n_proc=2)
+dataset_test.to_tensors(conversion_name="test_bis_im_bis", n_proc=2)
 dataloader_test = dataloader_config.get_object(dataset_test)
 
-output_transforms = OutputTransforms(sample_transforms=[transforms.RandomMotion()])  # type: ignore
+output_transforms = Postprocessing(sample_transforms=[transforms.RandomMotion()])  # type: ignore
 add_metrics = []
 
 

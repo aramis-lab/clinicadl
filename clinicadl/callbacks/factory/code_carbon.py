@@ -14,7 +14,7 @@ CODECARBON = "codecarbon"
 
 class CodeCarbon(Callback):
     """
-    CodeCarbon callback to estimate and track carbon emissions from your computer, quantify and analyze their impact.
+    `CodeCarbon <https://codecarbon.io/>`_ callback to estimate and track carbon emissions from your computer, quantify and analyze their impact.
     See https://codecarbon.io/ for more information.
     """
 

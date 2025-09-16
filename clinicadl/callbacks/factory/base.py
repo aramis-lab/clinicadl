@@ -108,7 +108,7 @@ class Callback(ABC):
         dict
             Dictionary representation of the callback.
         """
-        return self.__dict__
+        return {"name": self.__class__.__name__}
 
 
 class Tracker(Callback):
