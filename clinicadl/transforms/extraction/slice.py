@@ -89,13 +89,17 @@ class Slice(Extraction):
         TSV must have columns: ``participant_id``, ``session_id``, ``slice_idx``.
         If provided, the TSV overrides ``slices``, ``discarded_slices`` and ``borders``.
     discarded_slices : Optional[List[NonNegativeInt]], default=None
-        Indices of the slices to discard. Cannot be used with ``slices``.
-    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
-        The number of border slices that will be filtered out.
+        The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
+        ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
+        ``a`` slices and the last ``b`` slices will be filtered out.
     slice_direction : SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal), ``1`` (coronal), or ``2`` (axial).
+        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
     squeeze : bool, default=True
         Whether to squeeze slices to have images with 2 spatial dimensions.
+        If ``False``, slices will still have 3 spatial dimensions.
+        .. note::
+            Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
+            network. This is because most of ``ClinicaDL`` tools work with 3D images.
     """
 
     slices: Optional[List[NonNegativeInt]] = None
