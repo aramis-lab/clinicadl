@@ -67,28 +67,37 @@ class SliceSample(Sample):
 
 class Slice(Extraction):
     """
+    Transform class to extract slices from an image in a specified direction.
+
+    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
+
+    - ``slice_position``: int
+        The position of the slice in the original image.
+    - ``slice_direction``: 0, 1 or 2
+        The slicing direction.
+    - ``squeeze``: bool
+        Whether the tensors will be squeezed to work with 2D neural networks.
+
     Parameters
     ----------
     slices : Optional[List[NonNegativeInt]], default=None
         The slices to select. If ``None``, slices will be selected with ``discarded_slices``
         and/or ``borders``. If all these three parameters are ``None``, all slices will be
         kept.
+    tsv_path : Optional[Union[str, Path]], default=None
+        Path to a TSV file containing explicit slice indices per (participant, session).
+        TSV must have columns: ``participant_id``, ``session_id``, ``slice_idx``.
+        If provided, the TSV overrides ``slices``, ``discarded_slices`` and ``borders``.
     discarded_slices : Optional[List[NonNegativeInt]], default=None
         Indices of the slices to discard. Cannot be used with ``slices``.
     borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
-        The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
-        ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
-        ``a`` slices and the last ``b`` slices will be filtered out.
+        The number of border slices that will be filtered out.
     slice_direction : SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
+        The slicing direction. Can be ``0`` (sagittal), ``1`` (coronal), or ``2`` (axial).
     squeeze : bool, default=True
         Whether to squeeze slices to have images with 2 spatial dimensions.
-        If ``False``, slices will still have 3 spatial dimensions.
-        .. note::
-            Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
-            network. This is because most of ``ClinicaDL`` tools work with 3D images.
     """
-    
+
     slices: Optional[List[NonNegativeInt]] = None
     discarded_slices: Optional[List[NonNegativeInt]] = None
     borders: Optional[Tuple[PositiveInt, PositiveInt]] = None
