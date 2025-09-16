@@ -51,8 +51,8 @@ class TestCodeCarbon:
         cc_instance = cc_module.CodeCarbon.__new__(cc_module.CodeCarbon)
 
         mock_tracker = MagicMock()
-        with patch("codecarbon.EmissionsTracker", return_value=mock_tracker):
-            with patch("codecarbon.OfflineEmissionsTracker") as mock_offline:
+        with patch("code_carbon.EmissionsTracker", return_value=mock_tracker):
+            with patch("code_carbon.OfflineEmissionsTracker") as mock_offline:
                 cc_instance.set_tracker(fake_state)
 
         # Should have used EmissionsTracker, not Offline
@@ -64,8 +64,10 @@ class TestCodeCarbon:
         cc_instance = cc_module.CodeCarbon.__new__(cc_module.CodeCarbon)
 
         mock_offline = MagicMock()
-        with patch("codecarbon.EmissionsTracker", side_effect=Exception):
-            with patch("codecarbon.OfflineEmissionsTracker", return_value=mock_offline):
+        with patch("code_carbon.EmissionsTracker", side_effect=Exception):
+            with patch(
+                "code_carbon.OfflineEmissionsTracker", return_value=mock_offline
+            ):
                 cc_instance.set_tracker(fake_state)
 
         # Should have used OfflineEmissionsTracker
@@ -76,7 +78,7 @@ class TestCodeCarbon:
         cc_instance = cc_module.CodeCarbon.__new__(cc_module.CodeCarbon)
 
         mock_tracker = MagicMock()
-        with patch("codecarbon.EmissionsTracker", return_value=mock_tracker):
+        with patch("code_carbon.EmissionsTracker", return_value=mock_tracker):
             cc_instance.on_train_begin(fake_state)
             mock_tracker.start.assert_called_once()
 
