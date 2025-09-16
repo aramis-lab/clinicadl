@@ -176,6 +176,24 @@ def test_add_metrics():
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_df)
 
 
+def test_get_metric():
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+        loss=LossMetricConfig(
+            loss_fn=BCELoss(),
+        ),
+    )
+    metrics(BATCH_1)
+    metrics.aggregate(epoch=0)
+    metrics.reset()
+    metrics(BATCH_2)
+    metrics.aggregate(epoch=1)
+    assert np.isclose(metrics.get_metric("mse"), 0.66666, rtol=1e-4)
+    assert np.isclose(metrics.get_loss(), 66.666, rtol=1e-4)
+    assert np.isclose(metrics.get_metric("mse", epoch=0), 0.33333, rtol=1e-4)
+    assert np.isclose(metrics.get_loss(epoch=0), 33.333, rtol=1e-4)
+
+
 def test_checks():
     with pytest.raises(ValidationError):
         MetricsHandler(

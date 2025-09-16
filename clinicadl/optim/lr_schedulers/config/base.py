@@ -97,7 +97,7 @@ class LRSchedulerConfig(ObjectConfig):
 
         Returns
         -------
-        Set[str]
+        list[str]
             The groups.
         """
         for _, value in self:

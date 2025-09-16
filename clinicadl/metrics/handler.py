@@ -285,6 +285,45 @@ class MetricsHandler:
             except pd.errors.IntCastingNaNError:
                 pass
 
+    def get_metric(self, metric: str, epoch: Optional[int] = None) -> float:
+        """
+        To get the value of a metric.
+
+        Parameters
+        ----------
+        metric : str
+            The name of the metric.
+        epoch : Optional[int], default=None
+            The epoch for which the value is wanted. If ``None``, the method will
+            return the last computed value.
+
+        Returns
+        -------
+        float
+            The value of the metric.
+        """
+        if epoch is not None:
+            return self.df.set_index(EPOCH).loc[epoch, metric]
+        else:
+            return self.df.iloc[-1][metric]
+
+    def get_loss(self, epoch: Optional[int] = None) -> float:
+        """
+        To get the value of the loss.
+
+        Parameters
+        ----------
+        epoch : Optional[int], default=None
+            The epoch for which the loss is wanted. If ``None``, the method will
+            return the last computed loss.
+
+        Returns
+        -------
+        float
+            The value of the loss.
+        """
+        return self.get_metric("loss", epoch)
+
     def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
         Saves the DataFrames containing the results.
