@@ -89,6 +89,8 @@ class Slice(Extraction):
         TSV must have columns: ``participant_id``, ``session_id``, ``slice_idx``.
         If provided, the TSV overrides ``slices``, ``discarded_slices`` and ``borders``.
     discarded_slices : Optional[List[NonNegativeInt]], default=None
+        Indices of the slices to discard. Cannot be used with ``slices``.
+    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
         The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
         ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
         ``a`` slices and the last ``b`` slices will be filtered out.
