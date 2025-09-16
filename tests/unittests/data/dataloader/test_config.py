@@ -17,6 +17,7 @@ from clinicadl.data.datasets import (
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms import Transforms
+from clinicadl.transforms.config import PadConfig
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.seed import pl_worker_init_function
 
@@ -161,6 +162,12 @@ def test_get_object():
     ):
         dataloader_config.get_object(UnpairedDataset([CAPS, CAPS]))
 
+    with pytest.raises(
+        ValueError,
+        match="'rank' must be strictly smaller than 'dp_degree'. Got dp_degree=2 and rank=2",
+    ):
+        dataloader_config.get_object(CAPS, rank=2, dp_degree=2)
+
     # tets other datasets
     dataloader = DataLoaderConfig(batch_size=2).get_object(
         UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL])
@@ -191,6 +198,25 @@ def test_workers():
     assert dataloader.num_workers == 1
     assert dataloader.prefetch_factor == 2
     assert dataloader.persistent_workers
+
+
+def test_train_eval():
+    caps = CapsDataset(
+        CAPS_DIR,
+        preprocessing=PETLinear(
+            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
+        ),
+        transforms=Transforms(augmentations=[PadConfig(padding=1)]),
+        data=DATA,
+    )
+    caps.read_tensor_conversion()
+    dataloader = iter(DataLoaderConfig().get_object(caps))
+    caps.train()
+    out = next(dataloader)
+    assert out[0].image.shape == (1, 3, 3, 3)
+    caps.eval()
+    out = next(dataloader)
+    assert out[0].image.shape == (1, 1, 1, 1)
 
 
 def test_ddp():
