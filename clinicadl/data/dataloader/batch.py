@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import re
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import torch
 import torchio as tio
 
 from clinicadl.data.structures import DataPoint
+from clinicadl.utils.device import DeviceType, check_device
 
 
 class Batch(list[DataPoint]):
@@ -19,18 +19,19 @@ class Batch(list[DataPoint]):
 
     Parameters
     ----------
-    datapoints : list[DataPoint]
-        List of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` forming the batch.
+    datapoints : Sequence[DataPoint]
+        Sequence of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` forming the batch.
 
     Raises
     ------
     ValueError
-        If the input list is empty.
+        If the input sequence is empty.
 
     """
 
     _device: Optional[torch.device] = None
     _non_blocking: bool = False
+    _channels_last: bool = False
 
     def __init__(self, datapoints: list[DataPoint]):
         super().__init__(datapoints)
@@ -39,98 +40,66 @@ class Batch(list[DataPoint]):
             raise ValueError("The batch is empty!")
 
     @property
-    def device(self) -> torch.device:
-        """The device on which the :py:class:`Tensors <torch.Tensor>` in the batch are."""
+    def device(self) -> Optional[torch.device]:
+        """
+        The device on which the :py:class:`Tensors <torch.Tensor>` in the batch are.
+        It is also the device on which :py:class:`Tensors <torch.Tensor>` will be returned
+        by :py:meth:`get_field`.\n
+        It is specified with :py:meth:`to`. If ``device=None``, it means that :py:meth:`to` has not
+        been called, and that the ``Tensors`` inside the batch can be on any device.
+        """
         return self._device
 
+    @property
+    def channels_last(self) -> bool:
+        """
+        Whether `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
+        is used for 4D (NCWH) or 5D (NCDWH) :py:class:`Tensors <torch.Tensor>` returned by :py:meth:`get_field`.
+        It is specified via :py:meth:`to`.\n
+        By default, it is ``False``.
+        """
+        return self._channels_last
+
     def to(
-        self, device: Union[str, int, torch.device], non_blocking: bool = False
+        self,
+        device: Optional[DeviceType] = None,
+        non_blocking: bool = False,
+        channels_last: Optional[bool] = None,
     ) -> Batch:
         """
-        Returns a copy of the ``Batch``, where :py:class:`Tensors <torch.Tensor>` are on the specified device.
+        Returns a copy of the ``Batch``, where :py:class:`Tensors <torch.Tensor>` are on the specified device
+        and with the specified memory format.
+
+        .. note::
+            If ``device`` and ``channels_last`` are both ``None``, the original ``Batch`` will be returned.
 
         Parameters
         ----------
-        device : Union[str, int, torch.device]
+        device : Optional[DeviceType], default=None
             The device where to send the ``Batch``. Can be:
 
             - an ``int``: the device id;
             - ``"cuda"``;
             - ``"cpu"``
             - ``"cuda-<id>"``: where ``<id>`` is the device id;
-            - a :py:class:`torch.device`.
+            - a :py:class:`torch.device`;
+            - ``None``: the device won't be changed.
 
         non_blocking : bool, default=False
-            "When non_blocking is set to ``True``, the function attempts to perform the
+            "When ``non_blocking`` is set to ``True``, the function attempts to perform the
             conversion asynchronously with respect to the host, if possible.
             This asynchronous behavior applies to both pinned and pageable memory."
-            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`).
+            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
+        channels_last : Optional[bool], default=None
+            Whether to use `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
+            for 4D (NCWH) or 5D (NCDWH) :py:class:`Tensors <torch.Tensor>` returned by :py:meth:`get_field`.\n
+            If ``False``, the default contiguous memory format will be used.\n
+            If ``None``, the current memory format will be kept.
 
         Returns
         -------
         Batch
-            The copy of the input batch, on the specified device.
-        """
-        if isinstance(device, str) and not (
-            re.match(r"^cuda:.*", device) or device == "cuda" or device == "cpu"
-        ):
-            raise ValueError(
-                "If 'device' is a str, it must be 'cuda' or 'cuda:<device-id>'."
-            )
-
-        batch = deepcopy(self)
-
-        for datapoint in batch:
-            for name, value in datapoint.items():
-                if isinstance(value, torch.Tensor):
-                    datapoint[name] = value.to(device, non_blocking=non_blocking)
-            datapoint.update_attributes()
-
-        batch._device = torch.device(device)
-        batch._non_blocking = non_blocking
-
-        return batch
-
-    def get_field(
-        self,
-        field_name: str,
-        dtype: Optional[torch.dtype] = None,
-        channels_last: Optional[bool] = None,
-        ensure_channel_dim: bool = False,
-    ) -> Union[torch.Tensor, list[Any]]:
-        """
-        Gathers all the values of a field that is in the ``DataPoints`` of the batch.
-
-        The function will try to return the output as a batch-first :py:class:`torch.Tensor`. If not possible,
-        it will return the list of the values.
-
-        If the output is a ``Tensor``, it will be returned on the device passed via :py:meth:`to`, and the desired data type
-        as well as the memory format can be specified via ``dtype`` and ``channels_last`` respectively.
-
-        Parameters
-        ----------
-        field_name : str
-            The key to the field in the underlying :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
-        dtype : Optional[torch.dtype], default=None
-            Specifies the output data type, if the output is a ``Tensor``. If ``None``, the output will not
-            be cast into a specific data type.
-        channels_last : Optional[bool], default=None
-            Whether to use `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
-            for the output ``Tensor``. If ``None``, memory format will not be changed.
-        ensure_channel_dim : bool, default=False
-            If ``True``, a 1D ``Tensor`` output batch (B) will be unsqueezed to a 2D ``Tensor`` with a channel dimension (BC).
-
-        Returns
-        -------
-        Union[torch.Tensor, list[Any]]
-            A :py:class:`torch.Tensor` or a list containing all the values of ``field_name`` in the batch.
-
-        Raises
-        ------
-        KeyError
-            If not all the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` have the requested ``field_name``.
-        ValueError
-            If ``channels_last=True`` but the batch tensor is not 4D (BCHW) or 5D (BCDHW).
+            The copy of the input batch, on the specified device, and with the specified memory format.
 
         Examples
         --------
@@ -138,6 +107,95 @@ class Batch(list[DataPoint]):
 
             from clinicadl.data.structures import ColinDataPoint
             from clinicadl.data.dataloader import Batch
+            import torch
+
+            datapoint = ColinDataPoint()
+            datapoint["tensor"] = torch.tensor([1])
+            batch = Batch([datapoint, datapoint])
+            batch_gpu = batch.to("cuda", non_blocking=True, channels_last=True)
+
+        .. code-block:: python
+
+            >>> batch_gpu.device
+            device(type='cuda')
+            >>> batch_gpu[0]["tensor"].device   # all the tensors inside are affected
+            device(type='cuda')
+            >>> batch_gpu.get_field("image").device   # get_field is affected
+            device(type='cuda')
+
+        .. code-block:: python
+
+            >>> batch.get_field("image").stride()   # contiguous memory format (default)
+            (7109137, 7109137, 39277, 181, 1)
+            >>> batch_gpu.get_field("image").stride()   # Channels-last memory format
+            (7109137, 1, 39277, 181, 1)
+
+        """
+        if device is None and channels_last is None:
+            return self
+
+        batch = deepcopy(self)
+
+        if device is not None:
+            batch._device = check_device(device)
+            batch._non_blocking = non_blocking
+
+            for datapoint in batch:
+                for name, value in datapoint.items():
+                    if isinstance(value, torch.Tensor):
+                        datapoint[name] = value.to(
+                            batch.device, non_blocking=non_blocking
+                        )
+                datapoint.update_attributes()
+
+        if channels_last is not None:
+            batch._channels_last = channels_last
+
+        return batch
+
+    def get_field(
+        self,
+        field_name: str,
+        dtype: Optional[torch.dtype] = None,
+        ensure_channel_dim: bool = False,
+    ) -> Union[torch.Tensor, list[Any]]:
+        """
+        Gathers all the values of a field that is in the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
+        of the batch.
+
+        The function will try to return the output as a batch-first :py:class:`~torch.Tensor`. If not possible,
+        it will return the list of the values.
+
+        If the output is a ``Tensor``, it will respect the device and the memory format potentially
+        specified with :py:meth:`to`. Besides, the desired data type can be specified here via ``dtype``.
+
+        Parameters
+        ----------
+        field_name : str
+            The key to the field in the underlying :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
+        dtype : Optional[torch.dtype], default=None
+            Specifies the output data type, if the output is a :py:class:`~torch.Tensor`. If ``None``, the output will not
+            be cast into a specific data type.
+        ensure_channel_dim : bool, default=False
+            If ``True``, a 1D ``Tensor`` output batch (N) will be unsqueezed to a 2D ``Tensor`` with a channel dimension (NC).
+
+        Returns
+        -------
+        Union[torch.Tensor, list[Any]]
+            A :py:class:`~torch.Tensor` or a list containing all the values of ``field_name`` in the batch.
+
+        Raises
+        ------
+        KeyError
+            If not all the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` have the requested ``field_name``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+
             datapoint = ColinDataPoint()
             batch = Batch([datapoint, datapoint])
 
@@ -183,7 +241,9 @@ class Batch(list[DataPoint]):
         if len(batch.shape) == 1 and ensure_channel_dim:  # at least two dimensions
             batch = batch.unsqueeze(1)
 
-        memory_format = self._get_memory_format(batch, channels_last=channels_last)
+        memory_format = self._get_memory_format(
+            batch, channels_last=self._channels_last
+        )
 
         return batch.to(
             dtype=dtype,
@@ -191,6 +251,55 @@ class Batch(list[DataPoint]):
             non_blocking=self._non_blocking,
             memory_format=memory_format,
         )
+
+    def add_field(self, field_name: str, values: Sequence[Any]) -> None:
+        """
+        To add a field to the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
+        inside the current ``Batch``.
+
+        This method is useful for example when a neural network returns a batch of outputs
+        that one wants to store in the original ``Batch``.
+
+        Parameters
+        ----------
+        field_name : str
+            The name fo the field.
+        values : Sequence[Any]
+            The values of the field for each element of the ``Batch``. Obviously, the sequence must
+            be the same size as the ``Batch``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+
+            datapoint = ColinDataPoint()
+            batch = Batch([datapoint, datapoint])
+
+        .. code-block:: python
+
+            >>> batch[0]
+            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+
+        .. code-block:: python
+
+            >>> import torch
+            >>> batch.add_field("output", torch.randn(2, 1, 3, 3, 3))
+            >>> batch[0]
+            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'output'); images: 3)
+            >>> batch[0]["output"].shape
+            torch.Size([1, 3, 3, 3])
+
+        """
+        assert len(values) == len(self), (
+            f"'values' must have the same length as the batch. Got {len(values)} values, "
+            f"whereas the batch has only {len(self)} elements"
+        )
+        for datapoint, value in zip(self, values):
+            datapoint[field_name] = value
+            datapoint.update_attributes()
 
     @staticmethod
     def _get_field(datapoint: DataPoint, field_name: str) -> Any:
@@ -226,7 +335,7 @@ class Batch(list[DataPoint]):
     @staticmethod
     def _get_memory_format(
         tensor: torch.Tensor,
-        channels_last: Optional[bool],
+        channels_last: bool,
     ) -> torch.memory_format:
         """
         Gets the desired memory format.
@@ -236,15 +345,8 @@ class Batch(list[DataPoint]):
                 return torch.channels_last
             elif len(tensor.shape) == 5:
                 return torch.channels_last_3d
-            else:
-                raise ValueError(
-                    "To use Channels Last memory format, the output tensor must be 4D (BCHW) or 5D (BCDHW). "
-                    f"Here it is {int(len(tensor.shape))}D."
-                )
-        elif channels_last is False:
-            return torch.contiguous_format
         else:
-            return torch.preserve_format
+            return torch.contiguous_format
 
 
 BatchType = Union[Batch, tuple[Batch, ...]]
