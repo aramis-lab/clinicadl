@@ -11,7 +11,9 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/config_class.rst
 
     DataLoaderConfig
+
+    :template: autosummary/class.rst
     Batch

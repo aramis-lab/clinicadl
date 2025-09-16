@@ -2,4 +2,4 @@
 adapted to ``ClinicaDL``."""
 
 from .batch import Batch, BatchType
-from .config import DataLoaderConfig
+from .config import DataLoader, DataLoaderConfig
