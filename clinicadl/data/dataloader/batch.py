@@ -8,6 +8,7 @@ import torch
 import torchio as tio
 
 from clinicadl.data.structures import DataPoint
+from clinicadl.transforms.extraction.slice import SliceSample
 from clinicadl.utils.device import DeviceType, check_device
 
 
@@ -222,8 +223,13 @@ class Batch(list[DataPoint]):
             for datapoint in self:
                 value = self._get_field(datapoint, field_name)
 
+                if isinstance(datapoint, SliceSample) and datapoint.squeeze:
+                    squeezed_dim = datapoint.slice_direction
+                else:
+                    squeezed_dim = None
+
                 try:
-                    value = self._to_tensor(value)
+                    value = self._to_tensor(value, squeeze_img_dim=squeezed_dim)
                 except TypeError:
                     raise StopIteration
 
@@ -312,14 +318,22 @@ class Batch(list[DataPoint]):
             ) from e
 
     @classmethod
-    def _to_tensor(cls, value: Any) -> torch.Tensor:
+    def _to_tensor(
+        cls, value: Any, squeeze_img_dim: Optional[int] = None
+    ) -> torch.Tensor:
         """
         Tries to convert to a tensor.
         """
-        if isinstance(value, tio.ScalarImage):
-            return value.tensor.float()
-        elif isinstance(value, tio.LabelMap):
-            return value.tensor.int()
+        if isinstance(value, tio.Image):
+            tensor = value.tensor
+            if squeeze_img_dim is not None:
+                tensor.squeeze_(dim=squeeze_img_dim + 1)
+
+            if isinstance(value, tio.ScalarImage):
+                return tensor.float()
+            elif isinstance(value, tio.LabelMap):
+                return tensor.int()
+
         elif isinstance(value, np.ndarray):
             return torch.from_numpy(value)
         elif isinstance(value, dict):

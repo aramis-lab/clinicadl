@@ -5,6 +5,7 @@ import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch, simple_collate_fn, tuple_collate_fn
 from clinicadl.data.structures import DataPoint
+from clinicadl.transforms.extraction.slice import SliceSample
 
 
 def test_init():
@@ -91,6 +92,29 @@ def test_get_field():
     batch[1]["label"] = 1
     labels = batch.get_field("label", ensure_channel_dim=True)
     torch.testing.assert_close(labels, torch.tensor([[0], [1]]))
+
+    # slices
+    batch = Batch(
+        [
+            SliceSample(
+                image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 5)),
+                label=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
+                participant=f"sub-{i}",
+                session=f"ses-{i}",
+                squeeze=False,
+                slice_direction=1,
+            )
+            for i in range(2)
+        ]
+    )
+    images = batch.get_field("image")
+    assert images.size() == (2, 1, 3, 1, 5)
+
+    batch[0].squeeze = batch[1].squeeze = True
+    images = batch.get_field("image")
+    assert images.size() == (2, 1, 3, 5)
+    labels = batch.get_field("label")
+    assert labels.size() == (2, 1, 3, 5)
 
     # errors
     with pytest.raises(
