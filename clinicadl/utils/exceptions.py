@@ -1,6 +1,6 @@
-from pathlib import Path
-
 import pydantic
+
+from clinicadl.utils.typing import PathType
 
 
 class DownloadError(Exception):
@@ -75,13 +75,13 @@ class NotInterpretableJsonField(ClinicaDLException):
     """When some fields in a json cannot be interpreted by an object in ClinicaDL."""
 
     def __init__(
-        self, error: pydantic.ValidationError, json_path: Path, object_name: str
+        self, error: pydantic.ValidationError, json_path: PathType, object_name: str
     ):
         wrong_fields = set([f"'{err['loc'][0]}'" for err in error.errors()])
         wrong_fields_str = ", ".join(wrong_fields)
 
         error_msg = (
-            f"{object_name} cannot read the following fields in {(str(json_path))}: {wrong_fields_str}\n"
+            f"{object_name} cannot read the following fields in {str(json_path)}: {wrong_fields_str}\n"
             f"Please pass these fields via kwargs."
         )
         super().__init__(error_msg)
