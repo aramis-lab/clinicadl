@@ -336,23 +336,22 @@ def test_get_object(args, config, expected_class, optimizer, network):
                 cycle_momentum=True,
             ).get_object(optim.Adagrad(network.parameters()))
 
-        scheduler: optim.lr_scheduler.OneCycleLR = OneCycleLRConfig(
-            max_momentum={"linear2": 0.01, "linear1": 0.1, "ELSE": 0},
-            max_lr={"linear2": 0.01, "linear1": 0.1, "ELSE": 10},
-            total_steps=1,
-            base_momentum=0.33,
-            cycle_momentum=True,
+    if c.name == "ReduceLROnPlateau":
+        # check consistency between optimizer and lr scheduler configs
+        from clinicadl.optim.optimizers.config import AdamConfig
+
+        optimizer = AdamConfig(
+            lr={"linear2": 0.01, "linear1": 0.1, "ELSE": 1}
+        ).get_object(network)
+
+        scheduler: optim.lr_scheduler.ReduceLROnPlateau = ReduceLROnPlateauConfig(
+            min_lr={"linear2": 0.01, "ELSE": 0, "linear1": 0.1},
         ).get_object(optimizer)
-        assert optimizer.param_groups[0]["max_lr"] == 0.1
-        assert optimizer.param_groups[1]["max_lr"] == 0.01
-        assert optimizer.param_groups[2]["max_lr"] == 10
 
-        assert optimizer.param_groups[0]["max_momentum"] == 0.1
-        assert optimizer.param_groups[1]["max_momentum"] == 0.01
-        assert optimizer.param_groups[2]["max_momentum"] == 0
+        assert optimizer.param_groups[0]["lr"] == 0.1
+        assert optimizer.param_groups[1]["lr"] == 0.01
+        assert optimizer.param_groups[2]["lr"] == 1
 
-        assert optimizer.param_groups[0]["base_momentum"] == 0.33
-        assert optimizer.param_groups[1]["base_momentum"] == 0.33
-        assert optimizer.param_groups[2]["base_momentum"] == 0.33
-
-        assert scheduler.total_steps == 1
+        assert scheduler.min_lrs[0] == 0.1
+        assert scheduler.min_lrs[1] == 0.01
+        assert scheduler.min_lrs[2] == 0
