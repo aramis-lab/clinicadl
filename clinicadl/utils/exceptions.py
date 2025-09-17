@@ -66,7 +66,7 @@ class ClinicaDLTestingError(ClinicaDLException):
 class NotInterpretableJson(ClinicaDLException):
     """When a json cannot be interpreted by an object in ClinicaDL."""
 
-    def __init__(self, json_path: Path, object_name: str):
+    def __init__(self, json_path: PathType, object_name: str):
         error_msg = f"{object_name} cannot read {(str(json_path))}"
         super().__init__(error_msg)
 
