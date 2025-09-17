@@ -18,7 +18,7 @@ class ReconstructionModelConfig(SupervisedModelConfig):
     """
 
     @classmethod
-    def _get_class(cls) -> ClinicaDLModel:
+    def _get_class(cls) -> type[clinicaDLModel]:
         """Returns the class associated to this config class."""
         return ReconstructionModel
 
