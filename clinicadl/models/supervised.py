@@ -58,7 +58,7 @@ class SupervisedModelConfig(ConfigsOrObjects):
         return dict_
 
     @classmethod
-    def _get_class(cls) -> ClinicaDLModel:
+    def _get_class(cls) -> type[ClinicaDLModel]:
         """Returns the class associated to this config class."""
         return SupervisedModel
 
