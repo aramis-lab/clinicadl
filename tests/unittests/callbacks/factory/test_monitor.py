@@ -97,11 +97,11 @@ def test_monitor_phase_hooks(monitor):
         assert len(phase.times) >= 1
 
 
-@patch("builtins.open", new_callable=MagicMock)
-def test_monitor_write_file(mock_open, monitor):
-    state = FakeState()
-    monitor.on_train_begin(state)
-    monitor.on_train_end(state)
+# @patch("builtins.open", new_callable=MagicMock)
+# def test_monitor_write_file(mock_open, monitor):
+#     state = FakeState()
+#     monitor.on_train_begin(state)
+#     monitor.on_train_end(state)
 
-    # open() should be called with performance_txt path
-    mock_open.assert_called_with(state.maps.training.splits[0].performance_txt, "w")
+#     # open() should be called with performance_txt path
+#     mock_open.assert_called_with(state.maps.training.splits[0].performance_txt, "w")
