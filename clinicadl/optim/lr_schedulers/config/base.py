@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from collections.abc import Sequence
 
 import torch.optim as optim
@@ -10,11 +11,17 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
+from .enum import LRSchedulerType
 from .utils import is_dict_type
 
 
 class LRSchedulerConfig(ObjectConfig):
     """Base config class for the LR scheduler."""
+
+    @classmethod
+    @abstractmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
 
     @classmethod
     def group_validator(cls, v, field_name: str):

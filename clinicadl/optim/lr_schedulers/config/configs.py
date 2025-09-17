@@ -17,7 +17,7 @@ from .base import (
     LRSchedulerConfig,
     _LastEpochConfig,
 )
-from .enum import AnnealingStrategy, Mode, ThresholdMode
+from .enum import AnnealingStrategy, LRSchedulerType, Mode, ThresholdMode
 
 __all__ = [
     "ConstantLRConfig",
@@ -51,6 +51,11 @@ class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = CONSTANT_LR_DEFAULTS["total_iters"]
     last_epoch: int = CONSTANT_LR_DEFAULTS["last_epoch"]
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -59,6 +64,11 @@ class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     gamma: PositiveFloat
     last_epoch: int = EXPO_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -71,6 +81,11 @@ class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = LINEAR_LR_DEFAULTS["total_iters"]
     last_epoch: int = LINEAR_LR_DEFAULTS["last_epoch"]
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -80,6 +95,11 @@ class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     step_size: PositiveInt
     gamma: PositiveFloat = STEP_LR_DEFAULTS["gamma"]
     last_epoch: int = STEP_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -99,6 +119,11 @@ class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
         assert len(np.unique(v)) == len(v), "Epoch(s) in 'milestones' should be unique."
         return sorted(v)
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -108,6 +133,11 @@ class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = POLY_LR_DEFAULTS["total_iters"]
     power: float = POLY_LR_DEFAULTS["power"]
     last_epoch: int = POLY_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class ReduceLROnPlateauConfig(LRSchedulerConfig):
@@ -131,6 +161,11 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
     def min_lr_validator(cls, v):
         """Checks that 'ELSE' is always in 'min_lr' if it is a dict."""
         return cls.group_validator(v, field_name="min_lr")
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.LOSS
 
 
 class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -202,3 +237,8 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
                 raise ValueError(
                     "If 'cycle_momentum' is True in OneCycleLR, the optimizer requires a momentum."
                 )
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.STEP

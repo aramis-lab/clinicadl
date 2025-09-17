@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Optional, Union
 
 import torch
@@ -8,8 +7,8 @@ from clinicadl.optim.lr_schedulers.config import (
     ImplementedLRScheduler,
     LRSchedulerConfig,
 )
+from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
-from clinicadl.optim.optimizers.config import OptimizerConfig
 
 from .base import Callback
 
@@ -19,12 +18,6 @@ LRSchedulerType = Union[
     torch.optim.lr_scheduler.LRScheduler,
     str,
 ]
-
-
-class LRSchedulerMode(str, Enum):
-    STEP = "step-based"
-    EPOCH = "epoch-based"
-    METRIC = "metric"
 
 
 class LRScheduler(Callback):
@@ -47,6 +40,19 @@ class LRScheduler(Callback):
     ----------
     scheduler : Union[str, ImplementedLRScheduler, LRSchedulerConfig, torch.optim.lr_scheduler.LRScheduler]
         The learning rate scheduler configuration or object. Can be:
+    optimizer : Optional[torch.optim.Optimizer], default=None
+        The optimizer associated to the LR scheduler. **Mandatory if a name or a config class
+        is passed to** ``scheduler``.
+    scheduler_type : Optional[LRSchedulerMode], default=None
+        The type of LR scheduler, among:
+
+        - ``"epoch-based"``: learning rate is updated at the end of the epoch (e.g. :py:class:`~torch.optim.lr_scheduler.LinearLR`);
+        - ``"loss-based"``: learning rate is updated at the end of the epoch according
+          to the validation loss (e.g. :py:class:`~torch.optim.lr_scheduler.ReduceLROnPlateau`);
+        - ``"step-based"``: learning rate is updated after each optimization step
+          (e.g. :py:class:`~torch.optim.lr_scheduler.OneCycleLR`).
+
+        **Mandatory if a raw LRScheduler is passed to** ``scheduler``.
 
     **kwargs
         Additional keyword arguments passed to the scheduler config factory
@@ -87,7 +93,7 @@ class LRScheduler(Callback):
         self,
         scheduler: LRSchedulerType,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        scheduler_type: Optional[LRSchedulerType] = None,
+        scheduler_type: Optional[LRSchedulerMode] = None,
         **kwargs,
     ):
         self.config: Optional[LRSchedulerConfig] = None
@@ -97,11 +103,11 @@ class LRScheduler(Callback):
 
         if isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
             self.scheduler = scheduler
-            if type is None:
+            if not scheduler_type:
                 raise ValueError(
                     "If you pass directly your own LRScheduler, you must must specify the type of scheduler via 'scheduler_type'."
                 )
-            self.scheduler_type = scheduler_type
+            self.scheduler_type = LRSchedulerMode(scheduler_type)
 
         else:
             if not optimizer:
@@ -124,28 +130,25 @@ class LRScheduler(Callback):
                     f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
                 )
 
-            self.scheduler_type = self._get_scheduler_type(scheduler.name)
+            self.scheduler_type = scheduler.scheduler_type(scheduler.name)
             self.scheduler = scheduler.get_object(optimizer)
-
-    def _check_optimizer_scheduler_consistency(
-        self, optimizer: torch.optim.Optimizer, lr_scheduler_config: LRSchedulerConfig
-    ) -> None:
-        num_parameters = len(opt.param_groups)
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """
-        Step the learning rate scheduler after each training batch.
+        Step the learning rate scheduler after each training batch for
+        step-based schedulers.
         """
         if self.scheduler_type == LRSchedulerMode.STEP:
             self.scheduler.step()
 
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """
-        Step the learning rate scheduler after each training batch.
+        Step the learning rate scheduler after each epoch for
+        epoch-based and loss-based schedulers.
         """
         if self.scheduler_type == LRSchedulerMode.EPOCH:
             self.scheduler.step()
-        elif self.scheduler_type == LRSchedulerMode.METRIC:
+        elif self.scheduler_type == LRSchedulerMode.LOSS:
             val_loss = config.metrics.get_loss(epoch=config.epoch)
             self.scheduler.step(val_loss)
 
@@ -166,24 +169,7 @@ class LRScheduler(Callback):
             json_dict.update({"scheduler": scheduler})
             json_dict.update(config_dict)
 
-        if self.torch_scheduler:
-            json_dict.update(self.torch_scheduler.__dict__)
+        else:
+            json_dict.update(self.scheduler.__dict__)
 
         return json_dict
-
-    @staticmethod
-    def _get_scheduler_type(scheduler: str) -> LRSchedulerType:
-        if scheduler in {
-            "ConstantLR",
-            "ExponentialLR",
-            "LinearLR",
-            "StepLR",
-            "MultiStepLR",
-            "PolynomialLR",
-            "",
-        }:
-            return LRSchedulerType.EPOCH
-        elif scheduler in {"CyclicLR"}:
-            return LRSchedulerType.STEP
-        elif scheduler in {"ReduceLROnPlateau"}:
-            return LRSchedulerType.METRIC
