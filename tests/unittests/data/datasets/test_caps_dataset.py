@@ -422,6 +422,7 @@ def test_describe():
         "slice_direction": 0,
         "slices": None,
         "squeeze": True,
+        "tsv_path": None,
     }
     shutil.rmtree(tmp_dir)
 
