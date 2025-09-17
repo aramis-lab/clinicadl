@@ -99,26 +99,6 @@ class LRSchedulerConfig(ObjectConfig):
                             "Make sure that the parameter groups match between your optimizer and LR scheduler!"
                         )
 
-    def get_all_groups(self) -> list[str]:
-        """
-        Returns all parameter groups mentioned by the user in the fields.
-
-        Returns
-        -------
-        list[str]
-            The groups.
-        """
-        for _, value in self:
-            if isinstance(value, dict):
-                groups = list(value.keys())
-                groups.remove("ELSE")
-
-                return sorted(groups) + [
-                    "ELSE"
-                ]  # all dict have the same keys + put ELSE at the end
-
-        return []
-
     @classmethod
     def _get_class(cls) -> type[optim.lr_scheduler.LRScheduler]:
         """Returns the lr scheduler associated to this config class."""

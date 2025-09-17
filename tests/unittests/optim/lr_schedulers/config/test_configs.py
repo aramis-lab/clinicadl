@@ -258,27 +258,6 @@ def test_group_validator():
     )
 
 
-def test_get_all_groups():
-    config = ReduceLROnPlateauConfig(
-        min_lr={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
-    )
-    assert config.get_all_groups() == ["params1", "params2", "ELSE"]
-
-    config.min_lr = 0.1
-    assert config.get_all_groups() == []
-
-    config = OneCycleLRConfig(
-        max_lr={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
-        max_momentum={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
-        base_momentum={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
-        total_steps=1,
-    )
-    assert config.get_all_groups() == ["params1", "params2", "ELSE"]
-
-    config = ConstantLRConfig()
-    assert config.get_all_groups() == []
-
-
 @pytest.mark.parametrize(
     "args,config,expected_class",
     [
