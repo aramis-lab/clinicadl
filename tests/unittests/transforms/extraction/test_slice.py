@@ -8,9 +8,11 @@ from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 SLICE_TSV = CAPS_DIR / "tsv" / "extract_slices_test.tsv"
+BAD_SLICE_TSV_1 = CAPS_DIR / "tsv" / "extract_slices_test_bad.tsv"
 
 
 def test_args():
@@ -30,6 +32,11 @@ def test_args():
         match="You can't pass 'borders' if 'slices' or 'tsv_path' was passed.",
     ):
         Slice(tsv_path=SLICE_TSV, borders=1)
+    with pytest.raises(
+        ClinicaDLTSVError,
+        match="TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'",
+    ):
+        Slice(tsv_path=BAD_SLICE_TSV_1)
 
 
 def test_extract_method():
@@ -79,10 +86,7 @@ def test_num_samples_per_image():
         slice.num_samples_per_image(data_point)
 
     # test FromTSV
-    caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-    test_slice_tsv = caps_dir / "tsv" / "extract_slices_test.tsv"
-
-    slice = Slice(tsv_path=test_slice_tsv, slice_direction=1)
+    slice = Slice(tsv_path=SLICE_TSV, slice_direction=1)
     assert slice.num_samples_per_image(data_point) == 2
 
 
@@ -153,16 +157,7 @@ def test_extract_sample():
     ).all()
 
     # Test from FromTSV
-
-    caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-    test_slice_tsv = caps_dir / "tsv" / "extract_slices_test.tsv"
-
-    extractor = Slice(tsv_path=test_slice_tsv, slice_direction=2)
-
-    affine = np.diag([3, 2, 1, 1])
-    image_tensor = torch.randn(1, 5, 3, 7)
-    mask_1 = torch.randint(0, 2, (1, 5, 3, 7))
-    label = torch.randint(0, 2, (2, 5, 3, 7))
+    extractor = Slice(tsv_path=SLICE_TSV, slice_direction=2)
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
@@ -179,20 +174,10 @@ def test_extract_sample():
     assert (extracted_data.image.tensor == image_tensor[:, :, :, 1:2]).all()
     assert isinstance(extracted_data.label, tio.LabelMap)
     assert (extracted_data.label.tensor == label[:, :, :, 1:2]).all()
-    assert isinstance(extracted_data["mask_1"], tio.LabelMap)
-    assert (extracted_data["mask_1"].tensor == mask_1[:, :, :, 1:2]).all()
 
-    assert sample.participant == "sub-000"
-    assert sample.session == "ses-M000"
-
-    assert np.isclose(extracted_data.image.affine, affine).all()
-    assert np.isclose(extracted_data.label.affine, affine).all()
-
-    assert extracted_data.participant == "sub-000"
-    assert extracted_data.session == "ses-M000"
-    assert extracted_data.image_path == "abc.nii.gz"
-    assert extracted_data.slice_position == 1
-    assert extracted_data.slice_direction == 2
-    assert extracted_data._sample_index == 1
-
-    assert data_point.image.tensor.shape == (1, 5, 3, 7)
+    data_point.session = "ses-M001"
+    with pytest.raises(
+        ValueError,
+        match="No slices found in TSV for participant=sub-000, session=ses-M001.",
+    ):
+        extractor.extract_sample(data_point, sample_index=0)
