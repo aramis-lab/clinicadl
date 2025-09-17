@@ -153,17 +153,16 @@ class Trainer:
         resume: bool = False,
         seed: int = 123,
     ) -> None:
-        train_metrics = MetricsHandler(
-            loss=LossMetricConfig(loss_fn=model.loss), **metrics
-        )
-
-        self.callbacks = _CallbacksHandler(
-            metrics=train_metrics,
-            callbacks=callbacks if callbacks is not None else [],
-        )
-
         maps = Maps(maps_path)
         if not resume:
+            train_metrics = MetricsHandler(
+                loss=LossMetricConfig(loss_fn=model.loss), **metrics
+            )
+
+            self.callbacks = _CallbacksHandler(
+                metrics=train_metrics,
+                callbacks=callbacks if callbacks is not None else [],
+            )
             maps.create(overwrite=_overwrite)
 
             model.write_json(maps.model_json)
@@ -173,6 +172,16 @@ class Trainer:
             train_metrics.write_json(maps.training.metrics_json)
             comp_config.write_json(maps.training.computational_json)
             optim_config.write_json(maps.training.optimization_json)
+
+        else:
+            maps.load()
+            train_metrics = MetricsHandler.from_json(maps.training.metrics_json)
+            self.callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
+            optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
+            comp_config = ComputationalConfig.from_json(
+                maps.training.computational_json
+            )
+            model = ClinicaDLModel.from_json(maps.model_json)
 
         self.config = _TrainingState(
             maps=maps,
@@ -378,26 +387,6 @@ class Trainer:
             comp_config=comp_config,
             resume=True,
         )
-
-    def resume(self, split: Split):
-        while not self.config.stop:
-            self.on_epoch_begin()
-
-            for batch_idx, data in enumerate(split.train_loader):
-                self.on_batch_begin(batch_idx=batch_idx)
-
-                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.model.training_step(data=data, device=self.comp.device)
-
-                self.on_backward_begin()
-                self.scaler.scale(loss).backward()
-                self.on_backward_end()
-
-                self.on_batch_end(loss=loss)
-
-            self.on_epoch_end(split)
-
-        self.on_train_end(split)
 
     def _write_training_infos(
         self,
