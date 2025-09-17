@@ -5,7 +5,7 @@ import torch
 
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.model import ClinicaDLModel
+from clinicadl.models.base import ClinicaDLModel
 
 from ...resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
