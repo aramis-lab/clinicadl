@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import torch
 from pydantic import (
@@ -122,7 +122,7 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
     threshold_mode: ThresholdMode = REDUCE_LR_ON_PLATEAU_DEFAULTS["threshold_mode"]
     cooldown: NonNegativeInt = REDUCE_LR_ON_PLATEAU_DEFAULTS["cooldown"]
     min_lr: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = REDUCE_LR_ON_PLATEAU_DEFAULTS["min_lr"]
     eps: NonNegativeFloat = REDUCE_LR_ON_PLATEAU_DEFAULTS["eps"]
 
@@ -138,7 +138,7 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     Config class for :py:class:`torch.optim.lr_scheduler.OneCycleLR`.
     """
 
-    max_lr: Union[PositiveFloat, Dict[str, PositiveFloat]]
+    max_lr: Union[PositiveFloat, Sequence[PositiveFloat], Dict[str, PositiveFloat]]
     total_steps: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["total_steps"]
     epochs: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["epochs"]
     steps_per_epoch: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["steps_per_epoch"]
@@ -146,10 +146,10 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     anneal_strategy: AnnealingStrategy = ONE_CYCLE_LR_DEFAULTS["anneal_strategy"]
     cycle_momentum: bool = ONE_CYCLE_LR_DEFAULTS["cycle_momentum"]
     base_momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = ONE_CYCLE_LR_DEFAULTS["base_momentum"]
     max_momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = ONE_CYCLE_LR_DEFAULTS["max_momentum"]
     div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["div_factor"]
     final_div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["final_div_factor"]

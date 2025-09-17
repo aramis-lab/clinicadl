@@ -1,4 +1,4 @@
-from typing import Set
+from collections.abc import Sequence
 
 import torch.optim as optim
 from pydantic import (
@@ -9,6 +9,8 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+
+from .utils import is_dict_type
 
 
 class LRSchedulerConfig(ObjectConfig):
@@ -82,14 +84,20 @@ class LRSchedulerConfig(ObjectConfig):
         Checks if LR scheduler and optimizers are consistent.
         """
         n_optimizer_groups = len(optimizer.param_groups)
-        scheduler_groups = self.get_all_groups()
 
-        if len(scheduler_groups) > 0 and len(scheduler_groups) != n_optimizer_groups:
-            raise ValueError(
-                f"There are {n_optimizer_groups} parameter groups in the optimizer, "
-                f"but {len(scheduler_groups)} in the LR Scheduler ({scheduler_groups}). "
-                "Make sure that the parameter groups match between your optimizer and LR scheduler!"
-            )
+        for field_name, field in type(self).model_fields.items():
+            if is_dict_type(field.annotation):
+                value = getattr(self, field_name)
+
+                if isinstance(value, (Sequence, dict)):
+                    n_groups = len(value)
+
+                    if n_groups != n_optimizer_groups:
+                        raise ValueError(
+                            f"There are {n_optimizer_groups} parameter groups in the optimizer, "
+                            f"but {n_groups} groups in the {self._get_name()} for parameter '{field_name}'. "
+                            "Make sure that the parameter groups match between your optimizer and LR scheduler!"
+                        )
 
     def get_all_groups(self) -> list[str]:
         """
@@ -102,7 +110,12 @@ class LRSchedulerConfig(ObjectConfig):
         """
         for _, value in self:
             if isinstance(value, dict):
-                return sorted(set(value.keys()))  # all dict have the same keys
+                groups = list(value.keys())
+                groups.remove("ELSE")
+
+                return sorted(groups) + [
+                    "ELSE"
+                ]  # all dict have the same keys + put ELSE at the end
 
         return []
 

@@ -106,7 +106,9 @@ class OptimizerConfig(ObjectConfig):
             if isinstance(value, dict):
                 groups.update(set(value.keys()))
 
-        return sorted(groups)
+        groups.remove("ELSE")
+
+        return sorted(groups) + ["ELSE"]  # put ELSE at the end
 
     @classmethod
     def _get_class(cls) -> type[optim.Optimizer]:

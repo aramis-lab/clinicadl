@@ -99,8 +99,12 @@ BAD_INPUTS = [
     ({"cooldown": -1}, ReduceLROnPlateauConfig),
     ({"eps": -0.1}, ReduceLROnPlateauConfig),
     ({"min_lr": -0.1}, ReduceLROnPlateauConfig),
+    ({"min_lr": [-0.1]}, ReduceLROnPlateauConfig),
+    ({"min_lr": {"group_1": -0.1, "ELSE": 0}}, ReduceLROnPlateauConfig),
     ({"milestones": [0, 1]}, MultiStepLRConfig),
     ({"max_lr": 0, "total_steps": 10}, OneCycleLRConfig),
+    ({"max_lr": [0], "total_steps": 10}, OneCycleLRConfig),
+    ({"max_lr": {"group_1": 1, "ELSE": 0}, "total_steps": 10}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 0}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 10, "pct_start": 0}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 10, "pct_start": 1}, OneCycleLRConfig),
@@ -115,7 +119,17 @@ BAD_INPUTS = [
     ),
     ({"max_lr": 1, "total_steps": 10, "anneal_strategy": "abc"}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 10, "base_momentum": -0.1}, OneCycleLRConfig),
+    ({"max_lr": 1, "total_steps": 10, "base_momentum": [-0.1]}, OneCycleLRConfig),
+    (
+        {"max_lr": 1, "total_steps": 10, "base_momentum": {"group_1": -0.1, "ELSE": 0}},
+        OneCycleLRConfig,
+    ),
     ({"max_lr": 1, "total_steps": 10, "max_momentum": -0.1}, OneCycleLRConfig),
+    ({"max_lr": 1, "total_steps": 10, "max_momentum": [-0.1]}, OneCycleLRConfig),
+    (
+        {"max_lr": 1, "total_steps": 10, "max_momentum": {"group_1": -0.1, "ELSE": 0}},
+        OneCycleLRConfig,
+    ),
     ({"max_lr": 1, "total_steps": 10, "div_factor": 0}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 10, "final_div_factor": 0}, OneCycleLRConfig),
     ({"max_lr": 1, "total_steps": 10, "last_epoch": -2}, OneCycleLRConfig),
@@ -143,6 +157,18 @@ GOOD_INPUTS = [
         },
         ReduceLROnPlateauConfig,
     ),
+    (
+        {
+            "min_lr": [0],
+        },
+        ReduceLROnPlateauConfig,
+    ),
+    (
+        {
+            "min_lr": {"group_1": 1.0, "ELSE": 0.0},
+        },
+        ReduceLROnPlateauConfig,
+    ),
     ({"power": 0, "total_iters": 1, "last_epoch": -1}, PolynomialLRConfig),
     (
         {
@@ -162,12 +188,23 @@ GOOD_INPUTS = [
     ),
     (
         {
-            "max_lr": 1,
+            "max_lr": [1],
             "epochs": 1,
             "steps_per_epoch": 1,
             "anneal_strategy": "linear",
             "cycle_momentum": False,
             "three_phase": False,
+            "max_momentum": [0],
+            "base_momentum": [0],
+        },
+        OneCycleLRConfig,
+    ),
+    (
+        {
+            "max_lr": {"group_1": 1, "ELSE": 0.5},
+            "total_steps": 10,
+            "max_momentum": {"group_1": 1.0, "ELSE": 0.0},
+            "base_momentum": {"group_1": 1.0, "ELSE": 0.0},
         },
         OneCycleLRConfig,
     ),
@@ -182,16 +219,6 @@ def test_bad_inputs(args: dict, configs):
         with pytest.raises(ValidationError):
             config(**args)
 
-        # test dict inputs
-        args_dict = {
-            arg: {"group_1": value, "ELSE": value}
-            if arg in {"min_lr", "max_lr", "base_momentum", "max_momentum"}
-            else value
-            for arg, value in args.items()
-        }
-        with pytest.raises(ValidationError):
-            config(**args_dict)
-
 
 @pytest.mark.parametrize(
     "args,configs",
@@ -204,18 +231,6 @@ def test_good_inputs(args: dict, configs):
         c = config(**args)
         for arg, value in args.items():
             assert getattr(c, arg) == value
-
-        # test dict inputs
-        args_dict = {
-            arg: {"group_1": value, "ELSE": value}
-            if arg in {"min_lr", "max_lr", "base_momentum", "max_momentum"}
-            else value
-            for arg, value in args.items()
-        }
-        c = config(**args_dict)
-        for arg, value in args.items():
-            if arg in {"min_lr", "max_lr", "base_momentum", "max_momentum"}:
-                assert getattr(c, arg) == {"group_1": value, "ELSE": value}
 
 
 def test_group_validator():
@@ -247,7 +262,7 @@ def test_get_all_groups():
     config = ReduceLROnPlateauConfig(
         min_lr={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
     )
-    assert config.get_all_groups() == ["ELSE", "params1", "params2"]
+    assert config.get_all_groups() == ["params1", "params2", "ELSE"]
 
     config.min_lr = 0.1
     assert config.get_all_groups() == []
@@ -258,7 +273,7 @@ def test_get_all_groups():
         base_momentum={"params1": 0.1, "params2": 0.7, "ELSE": 0.2},
         total_steps=1,
     )
-    assert config.get_all_groups() == ["ELSE", "params1", "params2"]
+    assert config.get_all_groups() == ["params1", "params2", "ELSE"]
 
     config = ConstantLRConfig()
     assert config.get_all_groups() == []
@@ -289,11 +304,22 @@ def test_get_object(args, config, expected_class, optimizer, network):
     if c.name == "OneCycleLR":
         with pytest.raises(
             ValueError,
-            match=r"^There are 3 parameter groups in the optimizer, but 2 in the LR Scheduler \(\['ELSE', 'linear2'\]\)\. Make sure that the parameter groups match between your optimizer and LR scheduler!$",
+            match=r"^There are 3 parameter groups in the optimizer, but 2 groups in the OneCycleLR for parameter 'max_lr'. Make sure that the parameter groups match between your optimizer and LR scheduler!$",
         ):
             OneCycleLRConfig(
-                max_momentum={"linear2": 0.01, "ELSE": 0},
                 max_lr={"linear2": 0.01, "ELSE": 10},
+                total_steps=1,
+                base_momentum=0.33,
+                cycle_momentum=True,
+            ).get_object(optimizer)
+
+        with pytest.raises(
+            ValueError,
+            match=r"^There are 3 parameter groups in the optimizer, but 2 groups in the OneCycleLR for parameter 'max_momentum'. Make sure that the parameter groups match between your optimizer and LR scheduler!$",
+        ):
+            OneCycleLRConfig(
+                max_lr=1,
+                max_momentum=[0.01, 0],
                 total_steps=1,
                 base_momentum=0.33,
                 cycle_momentum=True,

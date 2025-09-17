@@ -147,7 +147,7 @@ def test_get_all_groups():
         lr={"params1": 0.1, "params3": 0.7, "ELSE": 0.2},
         weight_decay={"params2": 0.3, "ELSE": 0.5},
     )
-    assert c.get_all_groups() == ["ELSE", "params1", "params2", "params3"]
+    assert c.get_all_groups() == ["params1", "params2", "params3", "ELSE"]
 
 
 def test_get_check_else():
