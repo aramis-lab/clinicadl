@@ -1,5 +1,8 @@
-from typing import Callable
+from typing import Callable, Union
 
 from torch import Tensor
 
-Loss = Callable[[Tensor, Tensor], Tensor]
+from .config import LossConfig
+
+Loss = Callable[..., Tensor]
+LossOrConfig = Union[Loss, LossConfig]

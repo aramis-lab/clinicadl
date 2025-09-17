@@ -9,10 +9,11 @@ import torch
 from clinicadl.utils.typing import PathType
 
 
-def read_json(json_path: Path) -> Dict[str, Any]:
+def read_json(json_path: PathType) -> Dict[str, Any]:
     """
     Reads the serialized config class from a JSON file.
     """
+    json_path = Path(json_path)
 
     if not json_path.is_file():
         raise FileNotFoundError(f"The json file {json_path} does not exist.")

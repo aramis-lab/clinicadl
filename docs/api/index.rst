@@ -21,6 +21,7 @@ functions may not be enough to give full guidelines on their use.
    IO
    losses
    metrics
+   models
    networks
    optim
    split
@@ -37,6 +38,7 @@ functions may not be enough to give full guidelines on their use.
    io/index
    losses
    metrics
+   models
    networks/index
    optim/index
    split

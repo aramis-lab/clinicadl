@@ -1,7 +1,7 @@
 from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.IO.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.models import SupervisedModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.train.trainer import Trainer
 from clinicadl.utils.computational.config import ComputationalConfig
@@ -52,7 +52,7 @@ def test_training_from_json():
     maps = Maps("maps_tests")
     assert maps.path == trainer.maps.path
 
-    model = ClinicaDLModel.from_json(maps.model_json)
+    model = SupervisedModel.from_json(maps.model_json)
     assert_equal(model.network, trainer.model.network)
     # assert_equal(model.loss, trainer.model.loss)
     assert_equal(model.optimizer, trainer.model.optimizer)

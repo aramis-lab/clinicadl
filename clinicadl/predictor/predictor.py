@@ -21,7 +21,7 @@ from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig
-from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.models import ClinicaDLModel
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
 from clinicadl.transforms.handlers import Postprocessing, Transforms

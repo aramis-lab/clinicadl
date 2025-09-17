@@ -2,9 +2,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydantic import NonNegativeInt, PositiveInt
-from torch.utils.data import DataLoader
 
-from clinicadl.data.dataloader.config import DataLoaderConfig
+from clinicadl.data.dataloader import DataLoader, DataLoaderConfig
 from clinicadl.data.datasets.types import Dataset
 from clinicadl.utils.config import ClinicaDLConfig
 

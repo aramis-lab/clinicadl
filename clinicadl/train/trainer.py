@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Optional, Union
 
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
+from torch.amp import GradScaler
 from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
@@ -16,7 +18,7 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
@@ -33,7 +35,7 @@ class Trainer:
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
-    It leverages ClinicaDL's components like :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
+    It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.ClinicaDLModel`
     and :py:class:`~clinicadl.IO.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
@@ -50,7 +52,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : :py:class:`~clinicadl.model.clinicadl_model.ClinicaDLModel`
+    model : :py:class:`~clinicadl.models.ClinicaDLModel`
         The deep learning model to train and evaluate.
     callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
@@ -211,27 +213,59 @@ class Trainer:
         split : Split
             The data split containing training and validation DataLoaders.
         """
+        self.model.train()
+        split.train_dataset.train()
 
         self.on_train_begin(split)
 
         while not self.config.stop:
             self.on_epoch_begin()
+            split.train_loader.set_epoch(self.config.epoch)
 
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin(batch_idx=batch_idx)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.model.training_step(data=data, device=self.comp.device)
+                    loss = self.model.forward_step(data=data, device=self.comp.device)
 
                 self.on_backward_begin()
-                self.scaler.scale(loss).backward()
+
+                self.model.optimization_step(loss, self.scaler)
+
+                self.scaler.update()
+
                 self.on_backward_end()
 
                 self.on_batch_end(loss=loss)
 
+            self.evaluate(split.val_loader)
+
             self.on_epoch_end(split)
 
         self.on_train_end(split)
+
+    def evaluate(
+        self,
+        split: Split,
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self.model.eval()
+        split.val_dataset.eval()
+
+        self.callbacks.on_validation_begin(config=self.config)
+
+        self.metrics.reset(reset_df=False)
+
+        with torch.no_grad():
+            for data in split.val_loader:
+                output_batch = self.model.evaluation_step(data)
+                self.metrics(output_batch, epoch=self.config.epoch)
+
+        self.metrics.aggregate(epoch=self.config.epoch)
+
+        self.callbacks.on_validation_end(config=self.config)
 
     def on_train_begin(self, split: Split) -> None:
         self.model.train()
@@ -252,18 +286,12 @@ class Trainer:
         self.callbacks.on_backward_begin(config=self.config)
 
     def on_backward_end(self):
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.model.optimizer.zero_grad(set_to_none=True)
-
         self.callbacks.on_backward_end(config=self.config)
 
     def on_batch_end(self, loss: torch.Tensor):
         self.callbacks.on_batch_end(config=self.config, loss=loss.item())
 
     def on_epoch_end(self, split: Split) -> None:
-        self.evaluate(split.val_loader)
-
         self.callbacks.on_epoch_end(config=self.config)
 
         if self.config.epoch == self.optim.epochs - 1:
@@ -281,46 +309,6 @@ class Trainer:
         if split:
             self.config.reset(split=split)
         self.metrics.reset(df=True)
-
-    def evaluate(
-        self,
-        dataloader: DataLoader[CapsDataset],
-        additional_metrics: Optional[list[MetricType]] = None,
-    ):
-        """
-        Evaluate the model on a validation or test dataset.
-
-        Parameters
-        ----------
-        dataloader : DataLoader[CapsDataset]
-            DataLoader providing the dataset to evaluate on.
-        additional_metrics : list, optional
-            List of additional metrics or losses to compute during evaluation.
-
-        Notes
-        -----
-        - Evaluation is done in no-grad mode.
-        - Model is switched to evaluation mode during the process and reset to train mode after.
-        - Metrics are aggregated at the end of evaluation.
-        """
-        self.callbacks.on_validation_begin(config=self.config)
-        self.model.network.eval()
-        dataloader.dataset.eval()  # TODO: check that the dataset is a CapsDataset? or do we accept all kind of dataset ?
-
-        self.metrics.reset()
-        # self.metrics.add_metrics(additional_metrics)
-
-        with torch.no_grad():
-            for _, data in enumerate(dataloader):
-                self.config.metrics = self.model.validation_step(
-                    data=data, device=self.comp.device, metrics=self.metrics
-                )
-
-            self.metrics.aggregate(epoch=self.config.epoch)
-
-        self.model.network.train()
-
-        self.callbacks.on_validation_end(config=self.config)
 
     def predict(
         self,

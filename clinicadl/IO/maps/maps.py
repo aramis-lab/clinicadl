@@ -13,7 +13,7 @@ from clinicadl.dictionary.words import (
     SUMMARY,
     TIME,
 )
-from clinicadl.model import ClinicaDLModel
+from clinicadl.models import ClinicaDLModel
 from clinicadl.split.split import Split
 from clinicadl.utils.typing import PathType
 

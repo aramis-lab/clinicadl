@@ -2,4 +2,4 @@
 
 from .config import ImplementedTransform
 from .handlers import Transforms
-from .types import Transform
+from .types import Transform, TransformOrConfig

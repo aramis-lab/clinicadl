@@ -21,7 +21,7 @@ from clinicadl.metrics.config.factory import (
     MSEMetricConfig,
     SSIMMetricConfig,
 )
-from clinicadl.model.clinicadl_model import ClinicaDLModel
+from clinicadl.models.base import ClinicaDLModel
 from clinicadl.networks.config import ImplementedNetwork, get_network_config
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.optimizers.config import AdamConfig
