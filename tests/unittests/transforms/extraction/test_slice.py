@@ -9,14 +9,27 @@ from pydantic import ValidationError
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
 
+CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
+SLICE_TSV = CAPS_DIR / "tsv" / "extract_slices_test.tsv"
+
 
 def test_args():
+    with pytest.raises(
+        ValidationError, match="'slices' and 'tsv_path' can't be passed simultaneously."
+    ):
+        Slice(slices=[0], tsv_path=SLICE_TSV)
     with pytest.raises(ValidationError):
         Slice(slices=[0], slice_direction=3)
-    with pytest.raises(ValidationError):
+    with pytest.raises(
+        ValidationError,
+        match="You can't pass 'discarded_slices' if 'slices' or 'tsv_path' was passed.",
+    ):
         Slice(slices=[0], discarded_slices=[1])
-    with pytest.raises(ValidationError):
-        Slice(slices=[0], borders=1)
+    with pytest.raises(
+        ValidationError,
+        match="You can't pass 'borders' if 'slices' or 'tsv_path' was passed.",
+    ):
+        Slice(tsv_path=SLICE_TSV, borders=1)
 
 
 def test_extract_method():

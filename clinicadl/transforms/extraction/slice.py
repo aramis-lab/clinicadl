@@ -80,22 +80,29 @@ class Slice(Extraction):
     - ``squeeze``: bool
         Whether the tensors will be squeezed to work with 2D neural networks.
 
+    .. note::
+        To select slices, use ``slices``, ``tsv_path``, ``discarded_slices``, or
+        ``borders``.
+
+        - If none of these parameters is passed, all slices will be kept.
+        - ``slices`` and ``tsv_path`` cannot be used in conjunction another slice selection
+          parameter, but ``discarded_slices`` and ``borders`` can be passed together.
+
     Parameters
     ----------
     slices : Optional[List[NonNegativeInt]], default=None
-        The slices to select. If ``None``, slices will be selected with ``discarded_slices``
-        and/or ``borders``. If all these three parameters are ``None``, all slices will be
-        kept.
+        The slices to select. The slices selected will be the same for all images; if you
+        want a different selection for each image, use ``tsv_path``.
     tsv_path : Optional[PathType], default=None
-        Path to a TSV file containing explicit slice indices per (participant, session).
-        TSV must have columns: ``participant_id``, ``session_id``, ``slice_idx``.
-        If provided, the TSV overrides ``slices``, ``discarded_slices`` and ``borders``.
+        Path to a ``TSV`` file containing slice indices for each image.
+        The ``TSV`` table must have the columns: ``participant_id``, ``session_id``, and ``slice_idx``.
     discarded_slices : Optional[List[NonNegativeInt]], default=None
-        Indices of the slices to discard. Cannot be used with ``slices``.
+        Indices of the slices to discard. Cannot be used with ``slices`` or ``tsv_path``.
     borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
         The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
         ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
-        ``a`` slices and the last ``b`` slices will be filtered out.
+        ``a`` slices and the last ``b`` slices will be filtered out.\n
+        Cannot be used with ``slices`` or ``tsv_path``.
     slice_direction : SliceDirection, default=0
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
     squeeze : bool, default=True
@@ -216,17 +223,20 @@ class Slice(Extraction):
     @model_validator(mode="after")
     def validate_slices(self) -> Self:
         """
-        Checks consistency between 'slices', 'discarded_slices' and 'borders'.
+        Checks consistency between 'slices', 'tsv_path', 'discarded_slices' and 'borders'.
         """
-        if self._map is not None:
-            # TSV takes full precedence, ignore validation
-            return self
-        if (self.slices is not None) and (self.discarded_slices is not None):
+        if self.slices and self.tsv_path:
+            raise ValueError("'slices' and 'tsv_path' can't be passed simultaneously.")
+
+        slices_or_tsv = self.slices or self.tsv_path
+        if slices_or_tsv and self.discarded_slices:
             raise ValueError(
-                "'slices' and 'discarded_slices' can't be passed simultaneously."
+                "You can't pass 'discarded_slices' if 'slices' or 'tsv_path' was passed."
             )
-        elif (self.slices is not None) and (self.borders is not None):
-            raise ValueError("'slices' and 'borders' can't be passed simultaneously.")
+        elif slices_or_tsv and self.borders:
+            raise ValueError(
+                "You can't pass 'borders' if 'slices' or 'tsv_path' was passed."
+            )
         return self
 
     def extract_sample(self, data_point: DataPoint, sample_index: int) -> SliceSample:
