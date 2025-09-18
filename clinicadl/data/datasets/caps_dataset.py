@@ -1293,7 +1293,7 @@ class CapsDataset(Dataset):
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
             data = self.transforms.apply_image_transforms(data)
         try:
-            return self.extraction.num_samples_per_image(data.image.tensor)
+            return self.extraction.num_samples_per_image(data)
         except IndexError as exc:
             raise IndexError(
                 f"An error occurred while counting samples in images of ({participant}, {session})."

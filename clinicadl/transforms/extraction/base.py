@@ -76,14 +76,14 @@ class Extraction(ClinicaDLConfig, ABC):
         """
 
     @abstractmethod
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
         """
-        Abstract method to return the number of extracted samples per image.
+        Abstract method to return the number of samples per image.
 
         Parameters
         ----------
-        image : torch.Tensor
-            The image tensor from which the number of samples will be determined.
+        data_point : DataPoint
+            The DataPoint containing the image to perform extraction on.
 
         Returns
         -------
@@ -101,16 +101,17 @@ class Extraction(ClinicaDLConfig, ABC):
         Raises
         ------
         IndexError
-            If ``sample_index`` is greater or equal to the number of samples in the images.
+            If ``sample_index`` is greater or equal to the number of samples in the image.
         """
         extracted_data_point = deepcopy(data_point)
+        sample_position = self._get_sample_position(data_point, sample_index)
 
         image: tio.Image
         for name, image in extracted_data_point.get_images_dict(
             intensity_only=False
         ).items():
             try:
-                sample = self._extract_tensor_sample(image.tensor, sample_index)
+                sample = self._extract_tensor_sample(image.tensor, sample_position)
             except IndexError as exc:
                 raise IndexError(
                     f"An error occurred while extracting sample '{sample_index}' from image '{name}' of ({data_point.participant}, {data_point.session})."
@@ -124,13 +125,24 @@ class Extraction(ClinicaDLConfig, ABC):
     def _extract_tensor_sample(
         self,
         image_tensor: torch.Tensor,
-        sample_index: int,
+        sample_position: int,
     ) -> torch.Tensor:
         """
         Abstract method for extracting a sample from a given tensor image.
+        """
+
+    @abstractmethod
+    def _get_sample_position(
+        self,
+        data_point: DataPoint,
+        sample_index: int,
+    ) -> int:
+        """
+        Abstract method to get the position of the sample in the image
+        (which is not necessarily equal to ``sample_index``).
 
         Raises
         ------
         IndexError
-            If 'sample_index' is greater or equal to the number of samples in the image.
+            If ``sample_index`` is greater or equal to the number of samples in the image.
         """

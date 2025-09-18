@@ -151,14 +151,14 @@ class Patch(Extraction):
 
         return sample
 
-    def num_samples_per_image(self, image: torch.Tensor) -> int:
+    def num_samples_per_image(self, data_point: DataPoint) -> int:
         """
         Returns the total number of patches extracted from an image.
 
         Parameters
         ----------
-        image : torch.Tensor
-            The input image tensor (4D), where the first dimension represents the channel dimension.
+        data_point : DataPoint
+            The DataPoint containing the image to perform extraction on.
 
         Returns
         -------
@@ -169,27 +169,17 @@ class Patch(Extraction):
         -----
         The number of patches is determined by the image size, the patch size, and the stride.
         """
-        return self._get_patches(image).shape[1]
+        return self._get_patches(data_point.image.tensor).shape[1]
 
     def _extract_tensor_sample(
-        self, image_tensor: torch.Tensor, sample_index: int
+        self, image_tensor: torch.Tensor, sample_position: int
     ) -> torch.Tensor:
         """
         Extracts a single patch from an image.
-
-        Raises
-        ------
-        IndexError
-            If ``sample_index`` is greater or equal to the number of patches in the image.
         """
         patches_tensor = self._get_patches(image_tensor)
-        try:
-            return patches_tensor[:, sample_index]
-        except IndexError as exc:
-            raise IndexError(
-                f"'sample_index' {sample_index} is out of range as there are only "
-                f"{len(patches_tensor)} patches in the image."
-            ) from exc
+
+        return patches_tensor[:, sample_position]
 
     def _get_patches(self, image_tensor: torch.Tensor) -> torch.Tensor:
         """
@@ -219,3 +209,27 @@ class Patch(Extraction):
         return patches_tensor.view(
             n_channels, -1, self.patch_size[0], self.patch_size[1], self.patch_size[2]
         )
+
+    def _get_sample_position(
+        self,
+        data_point: DataPoint,
+        sample_index: int,
+    ) -> int:
+        """
+        To get the position of the sample in the image, which is equal
+        to ``sample_index`` here.
+
+        Raises
+        ------
+        IndexError
+            If ``sample_index`` is greater or equal to the number of patches in the image.
+        """
+        patches_tensor = self._get_patches(data_point.image.tensor)
+
+        if sample_index >= patches_tensor.size(1):
+            raise IndexError(
+                f"'sample_index' {sample_index} is out of range as there are only "
+                f"{patches_tensor.size(1)} patches in the image."
+            )
+
+        return sample_index
