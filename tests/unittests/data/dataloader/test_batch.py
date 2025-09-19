@@ -114,6 +114,7 @@ def test_get_field():
     assert images.size() == (2, 1, 3, 5)
     labels = batch.get_field("label")
     assert labels.size() == (2, 1, 3, 5)
+    assert batch[0].image.tensor.shape == (1, 3, 1, 5)
 
     # errors
     with pytest.raises(
