@@ -5,7 +5,6 @@ import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch, simple_collate_fn, tuple_collate_fn
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.extraction.slice import SliceSample
 
 
 def test_init():
@@ -96,7 +95,7 @@ def test_get_field():
     # slices
     batch = Batch(
         [
-            SliceSample(
+            DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 5)),
                 label=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
                 participant=f"sub-{i}",

@@ -71,7 +71,7 @@ def test_apply_transforms():
     assert data_point.label.tensor.shape == (1, 12, 12, 12)
     assert data_point.mask_1.tensor.shape == (1, 12, 12, 12)
 
-    tio_sample = transforms.extraction.extract_sample(data_point, 0)
+    tio_sample = transforms.extract_sample(data_point, 0)
     patch_mask = np.zeros((1, 4, 4, 4))
     patch_mask[:, 1:, 1:, 1:] = 1
     patch_mask = torch.from_numpy(patch_mask)

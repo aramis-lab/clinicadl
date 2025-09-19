@@ -8,7 +8,6 @@ import torch
 import torchio as tio
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.extraction.slice import SliceSample
 from clinicadl.utils.device import DeviceType, check_device
 
 
@@ -223,8 +222,12 @@ class Batch(list[DataPoint]):
             for datapoint in self:
                 value = self._get_field(datapoint, field_name)
 
-                if isinstance(datapoint, SliceSample) and datapoint.squeeze:
-                    squeezed_dim = datapoint.slice_direction
+                if (
+                    hasattr(datapoint, "squeeze")
+                    and hasattr(datapoint, "slice_direction")
+                    and getattr(datapoint, "squeeze")
+                ):
+                    squeezed_dim = getattr(datapoint, "slice_direction")
                 else:
                     squeezed_dim = None
 
