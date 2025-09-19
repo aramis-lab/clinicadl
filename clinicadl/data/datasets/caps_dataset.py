@@ -890,7 +890,7 @@ class CapsDataset(Dataset):
         if not self._tensor_conversion_info.transforms:  # image transforms not saved
             data = self.transforms.apply_image_transforms(data)
 
-        data = self.extraction.extract_sample(data, sample_index)
+        data = self.transforms.extract_sample(data, sample_index)
 
         data = self.transforms.apply_sample_transforms(data)
 

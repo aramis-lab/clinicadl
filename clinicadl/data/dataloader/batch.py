@@ -223,8 +223,12 @@ class Batch(list[DataPoint]):
             for datapoint in self:
                 value = self._get_field(datapoint, field_name)
 
-                if isinstance(datapoint, SliceSample) and datapoint.squeeze:
-                    squeezed_dim = datapoint.slice_direction
+                if (
+                    hasattr(datapoint, "squeeze")
+                    and hasattr(datapoint, "slice_direction")
+                    and getattr(datapoint, "squeeze")
+                ):
+                    squeezed_dim = getattr(datapoint, "slice_direction")
                 else:
                     squeezed_dim = None
 

@@ -177,6 +177,14 @@ class Transforms(TransformsHandler):
         """
         return self._image_transforms_processed(datapoint)
 
+    def extract_sample(self, datapoint: DataPoint, sample_index: int) -> DataPoint:
+        """
+        Extracts the sample.
+
+        See: :py:class:`clinicadl.transforms.extraction.Extraction`.
+        """
+        return self.extraction.extract_sample(datapoint, sample_index)
+
     def apply_sample_transforms(self, datapoint: DataPoint) -> DataPoint:
         """
         Applies the transforms passed in ``sample_transforms`` and returns the
