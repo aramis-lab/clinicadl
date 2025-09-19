@@ -8,7 +8,6 @@ import torch
 import torchio as tio
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.extraction.slice import SliceSample
 from clinicadl.utils.device import DeviceType, check_device
 
 
