@@ -4,6 +4,16 @@ from clinicadl import __version__
 
 
 def main():
+    """
+    Entry point for the ClinicaDL command-line interface (CLI).
+    This function sets up the argument parser and handles command-line arguments.
+
+    It currently supports the `--version` flag to display the ClinicaDL version and
+    the `--help` flag to show usage information.
+    If no arguments are provided, it prints a brief description of ClinicaDL and suggests
+    using `--help` for more information.
+
+    """
     parser = argparse.ArgumentParser(
         prog="clinicadl",
         description="ClinicaDL - Deep learning Library for neuroimaging analysis.",

@@ -1,5 +1,6 @@
 ## From https://github.com/jinh0park/pytorch-ssim-3D
 
+# TODO : remove this or put it in Metrics module ?
 from math import exp
 
 import torch
