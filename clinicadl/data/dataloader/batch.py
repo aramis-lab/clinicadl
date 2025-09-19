@@ -328,7 +328,7 @@ class Batch(list[DataPoint]):
         Tries to convert to a tensor.
         """
         if isinstance(value, tio.Image):
-            tensor = value.tensor
+            tensor = value.tensor.clone()
             if squeeze_img_dim is not None:
                 tensor.squeeze_(dim=squeeze_img_dim + 1)
 
@@ -342,7 +342,7 @@ class Batch(list[DataPoint]):
         elif isinstance(value, dict):
             return cls._to_tensor(list(value.values()))
         elif isinstance(value, torch.Tensor):
-            return value
+            return value.clone()
         else:
             try:
                 return torch.tensor(value)
