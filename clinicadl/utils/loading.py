@@ -3,6 +3,8 @@ from pathlib import Path
 import nibabel as nib
 import torch
 
+from .exceptions import ClinicaDLLoadingError
+
 
 def nifti_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     """
@@ -39,17 +41,16 @@ def nifti_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     try:
         nifti_image = nib.loadsave.load(path)
     except Exception as e:
-        raise Exception(
+        raise ClinicaDLLoadingError(
             f"Unable to read the image in {path}. Consider using a nifti file format "
             "('.nii' or '.nii.gz')."
         ) from e
 
-    image_tensor = torch.from_numpy(nifti_image.get_fdata()).unsqueeze(0)
+    image_tensor = torch.from_numpy(nifti_image.get_fdata()).unsqueeze(0)  # type: ignore
 
     if int_values:
         return image_tensor.int()
-    else:
-        return image_tensor.float()
+    return image_tensor.float()
 
 
 def pt_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
@@ -82,7 +83,7 @@ def pt_to_tensor(path: Path, int_values: bool = False) -> torch.Tensor:
     try:
         image_tensor: torch.Tensor = torch.load(path, weights_only=True)
     except Exception as e:
-        raise Exception(f"Unable to read the tensor in {path}.") from e
+        raise ClinicaDLLoadingError(f"Unable to read the tensor in {path}.") from e
 
     if int_values:
         return image_tensor.int()

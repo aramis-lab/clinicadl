@@ -1,8 +1,8 @@
 from inspect import signature
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List
 
 
-def get_args_from(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
+def get_args_from(func: Callable) -> List[str]:
     """
     Gets the arguments of a function.
 

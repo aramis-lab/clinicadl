@@ -1,8 +1,9 @@
+from typing import Any
+
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import CHECKPOINT, EPOCH, MODEL, OPTIMIZER
+from clinicadl.dictionary.words import EPOCH, MODEL
 
 from .base import Callback
 
@@ -23,12 +24,20 @@ class _CheckpointSaver(Callback):
 
     """
 
+    def __init__(self):
+        self._last_saved_epoch = -1
+
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
         Check that training and validation DataLoaders are initialized.
 
         This method ensures that data loading has been configured correctly before training begins.
         """
+        if config.split is None:
+            raise ValueError(
+                "The split has not been initialized. Please run `config.reset(split)`"
+            )
+
         if config.split.train_loader is None:
             raise ValueError(
                 "The split has no train_loader defined. Please run `get_dataloader()`"
@@ -45,6 +54,11 @@ class _CheckpointSaver(Callback):
         This includes the epoch number and corresponding state dicts for both the
         model and optimizer. These are saved in the `tmp` directory of the current split in the maps.
         """
+
+        if config.epoch == self._last_saved_epoch:
+            return
+        self._last_saved_epoch = config.epoch
+
         model_weights = {
             MODEL: config.model.network.state_dict(),
             EPOCH: config.epoch,
@@ -66,3 +80,14 @@ class _CheckpointSaver(Callback):
         Remove the temporary storage used for the latest checkpoint after training completes.
         """
         config.maps.training.splits[config.split.index].tmp.remove()
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the callback to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the callback.
+        """
+        return self.__dict__

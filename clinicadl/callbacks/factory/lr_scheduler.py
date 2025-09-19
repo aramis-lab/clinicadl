@@ -98,6 +98,7 @@ class LRScheduler(Callback):
     def optimizers_equal(
         self, opt1: torch.optim.Optimizer, opt2: torch.optim.Optimizer
     ) -> bool:
+        """Check if two optimizers are equal."""
         if type(opt1) != type(opt2):
             return False
 

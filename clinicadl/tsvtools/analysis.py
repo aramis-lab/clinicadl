@@ -19,9 +19,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 logger = getLogger("clinicadl.tsvtools.analysis")
 
 
-def demographics_analysis(
-    merged_tsv: Path, data_tsv: Path, results_tsv: Path, diagnoses
-):
+def demographics_analysis(merged_tsv: Path, data_tsv: Path, diagnoses) -> pd.DataFrame:
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -33,7 +31,7 @@ def demographics_analysis(
     merged_tsv: str (path)
         Path to the file obtained by the command clinica iotools merge-tsv.
     data_tsv: str (path)
-        Path to the folder containing data extracted by clinicadl tsvtool get-labels.
+        Path to the folder containing data extracted by clinicadl tsvtools get-labels.
     results_tsv: str (path)
         Path to the output tsv file (filename included).
     diagnoses: list of str

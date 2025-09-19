@@ -67,6 +67,11 @@ class _TrainingState(ClinicaDLConfig):
     def reset(self, split: Split):
         """Reset the training state for a new training split."""
 
+        if split.train_loader is None:
+            raise ValueError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+
         self.n_batch = len(split.train_loader)
         self.split = split
         self.stop = False
@@ -74,8 +79,14 @@ class _TrainingState(ClinicaDLConfig):
         self.batch = 0
 
     def write_torchsummary(self):
+        """Write the model summary to a text file in the maps directory."""
+        if self.split is None:
+            raise ValueError("The split has not been initialized.")
+
         with open(
-            self.maps.training.splits[self.split.index].torchsummary_txt, "w"
+            self.maps.training.splits[self.split.index].torchsummary_txt,
+            "w",
+            encoding="utf-8",
         ) as f:
             with redirect_stdout(f):
                 summary(

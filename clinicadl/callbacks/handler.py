@@ -26,7 +26,6 @@ PREFERRED_ORDER = [
     _Logger.__name__,
     MLflow.__name__,
     CodeCarbon.__name__,
-    Comet.__name__,
     WandB.__name__,
     Tensorboard.__name__,
 ]
@@ -262,4 +261,5 @@ class _CallbacksHandler:
     def from_json(cls, json_path: PathType) -> List[Callback]:
         json_path = Path(json_path)
         _dict = read_json(json_path=json_path)
+
         return [get_callback_from_dict(json_dict) for json_dict in _dict.values()]

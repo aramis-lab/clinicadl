@@ -150,27 +150,38 @@ class Trainer:
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
+        resume: bool = False,
         seed: int = 123,
     ) -> None:
-        train_metrics = MetricsHandler(
-            loss=LossMetricConfig(loss_fn=model.loss), **metrics
-        )
-
-        self.callbacks = _CallbacksHandler(
-            metrics=train_metrics,
-            callbacks=callbacks if callbacks is not None else [],
-        )
-
         maps = Maps(maps_path)
-        maps.create(overwrite=_overwrite)
+        if not resume:
+            train_metrics = MetricsHandler(
+                loss=LossMetricConfig(loss_fn=model.loss), **metrics
+            )
 
-        model.write_json(maps.model_json)
-        model.write_architecture_log(maps.architecture_log)
+            self.callbacks = _CallbacksHandler(
+                metrics=train_metrics,
+                callbacks=callbacks if callbacks is not None else [],
+            )
+            maps.create(overwrite=_overwrite)
 
-        self.callbacks.write_json(maps.training.callbacks_json)
-        train_metrics.write_json(maps.training.metrics_json)
-        comp_config.write_json(maps.training.computational_json)
-        optim_config.write_json(maps.training.optimization_json)
+            model.write_json(maps.model_json)
+            model.write_architecture_log(maps.architecture_log)
+
+            self.callbacks.write_json(maps.training.callbacks_json)
+            train_metrics.write_json(maps.training.metrics_json)
+            comp_config.write_json(maps.training.computational_json)
+            optim_config.write_json(maps.training.optimization_json)
+
+        else:
+            maps.load()
+            train_metrics = MetricsHandler.from_json(maps.training.metrics_json)
+            self.callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
+            optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
+            comp_config = ComputationalConfig.from_json(
+                maps.training.computational_json
+            )
+            model = ClinicaDLModel.from_json(maps.model_json)
 
         self.config = _TrainingState(
             maps=maps,
@@ -204,7 +215,7 @@ class Trainer:
     def maps(self):
         return self.config.maps
 
-    def train(self, split: Split) -> None:
+    def train(self, split: Split, resume: bool = False) -> None:
         """
         Run the training loop over the given data split.
 
@@ -216,6 +227,7 @@ class Trainer:
         self.model.train()
         split.train_dataset.train()
 
+        # if resume:
         self.on_train_begin(split)
 
         while not self.config.stop:
@@ -308,13 +320,13 @@ class Trainer:
     def reset(self, split: Optional[Split] = None):
         if split:
             self.config.reset(split=split)
-        self.metrics.reset(df=True)
+        self.metrics.reset(reset_df=True)
 
     def predict(
         self,
         dataloader: DataLoader[CapsDataset],
         split: int,
-        output_transforms: Optional[Union[Transforms, OutputTransforms]] = None,
+        output_transforms: Optional[Union[Transforms, Postprocessing]] = None,
         additional_metrics: Optional[
             list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
         ] = None,
@@ -329,7 +341,7 @@ class Trainer:
             DataLoader providing the dataset for prediction.
         split : int
             Index of the data split used for prediction.
-        output_transforms : Transforms or OutputTransforms, optional
+        output_transforms : Transforms or Postprocessing, optional
             Optional transforms to apply to prediction outputs.
         additional_metrics : list, optional
             Additional metrics or losses to compute during prediction.
@@ -338,7 +350,7 @@ class Trainer:
 
         Notes
         -----
-        .. note:
+        .. note::
             Prediction results and metrics are saved to the configured maps directory.
         """
 
@@ -370,9 +382,10 @@ class Trainer:
             maps_path=maps_path,
             model=model,
             callbacks=callbacks,
-            metrics=metrics,
+            metrics=metrics,  # type: ignore
             optim_config=optim_config,
             comp_config=comp_config,
+            resume=True,
         )
 
     def _write_training_infos(

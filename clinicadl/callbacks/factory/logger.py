@@ -1,3 +1,5 @@
+# Note: I don't know if the logger need to be in a callback ? WDYT ?
+
 import logging
 import sys
 from datetime import datetime

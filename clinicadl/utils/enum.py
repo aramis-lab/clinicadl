@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class CaseInsensitiveEnum(str, Enum):
+    """Case insensitive Enum object."""
+
     @classmethod
     def _missing_(cls, value):
         if isinstance(value, str):

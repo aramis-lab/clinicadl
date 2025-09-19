@@ -15,12 +15,19 @@ class Checkpoint(Callback):
 
     Parameters
     ----------
-    patience : int
+    patience : int (default=10)
         Interval (in epochs) at which to save checkpoints. For example, if patience=5,
-        checkpoints are saved every 5 epochs.
+        checkpoints are saved every 5 epochs. The final epoch is always checkpointed.
     epochs : list of int, optional
         Specific epochs at which to save checkpoints regardless of the patience interval.
         If not provided, only the patience interval and the final epoch trigger checkpointing.
+
+    Notes
+    -----
+    .. notes::
+        - The final epoch is always saved as a checkpoint.
+        - If `patience` is greater than the total number of epochs, it will not save any intermediate checkpoints.
+        - If a specific epoch is outside the range of total epochs, it will not raise an error but will not save a checkpoint for that epoch.
 
     Examples
     --------
@@ -41,17 +48,27 @@ class Checkpoint(Callback):
 
     """
 
-    def __init__(self, patience: int, epochs: Optional[list[int]] = None):
+    def __init__(self, patience: int = 10, epochs: Optional[list[int]] = None):
+        if patience <= 0:
+            raise ValueError("Patience must be a positive integer.")
+
+        if not isinstance(epochs, list) and isinstance(epochs, int):
+            epochs = [epochs]
+
         self.epochs = epochs if epochs else []
         self.patience = patience
 
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Save the current model and optimizer state at the end of the require epochs.
+        It needs to be called after the _CheckpointSaver callback so that the tmp files
+        exist and are up to date.
+        """
         if (
             config.epoch in self.epochs
             or config.epoch % self.patience == 0
             or config.epoch == config.optim.epochs
         ):
-            assert config.split is not None
             config.maps.training.splits[config.split.index].checkpoints._create_epoch(
                 config.epoch
             )
