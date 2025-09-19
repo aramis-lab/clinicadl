@@ -254,14 +254,12 @@ class _CallbacksHandler:
             for name, callback in self.callbacks.items()
             if not name.startswith("_")
         }
-        print(json_dict)
 
         write_json(json_path=json_path, data=json_dict)
 
     @classmethod
     def from_json(cls, json_path: PathType) -> List[Callback]:
-        print(json_path)
         json_path = Path(json_path)
         _dict = read_json(json_path=json_path)
-        print(_dict)
+
         return [get_callback_from_dict(json_dict) for json_dict in _dict.values()]

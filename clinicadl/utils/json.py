@@ -44,7 +44,6 @@ def write_json(
         json_path.unlink()
 
     with open(json_path, "w", encoding="utf-8") as json_file:
-        print(data)
         json.dump(data, json_file, indent=4, default=path_encoder)
 
 
