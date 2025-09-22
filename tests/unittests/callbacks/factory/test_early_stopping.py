@@ -56,7 +56,7 @@ def test_good_inputs(
     assert isinstance(es_.upper_bound, list)
     assert isinstance(es_.lower_bound, list)
 
-    for oes_ in es_.early_config_list:
+    for oes_ in es_.early_stoppers:
         assert isinstance(oes_.patience, int)
         assert isinstance(oes_.min_delta, float)
         assert isinstance(oes_.mode, str)
@@ -112,3 +112,27 @@ def test_bad_inputs():
 
     with pytest.raises(ValueError):
         es.on_epoch_end(_ts)
+
+
+def test_load_save_checkpoint(tmp_path):
+    _ts = _TrainingState(
+        maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
+    )
+    _ts.metrics._df = pd.DataFrame(
+        {"epoch": [_ts.epoch, _ts.epoch + 1], "mae": [0.3, 0.4], "loss": [0.3, 0.2]}
+    )
+
+    early_stopping = EarlyStopping(metrics=["mae", "loss"], patience=10, mode="min")
+
+    early_stopping.on_epoch_end(_ts)
+    _ts.epoch += 1
+    early_stopping.on_epoch_end(_ts)
+
+    early_stopping.save_checkpoint(tmp_path / "early_stopping")
+
+    early_stopping = EarlyStopping(metrics=["mae", "loss"], patience=10, mode="min")
+    early_stopping.load_checkpoint(tmp_path / "early_stopping")
+    early_stopping.early_stoppers[0].best == 0.3
+    early_stopping.early_stoppers[1].best == 0.2
+    early_stopping.early_stoppers[0].num_bad_epochs == 1
+    early_stopping.early_stoppers[1].num_bad_epochs == 0

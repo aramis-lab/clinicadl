@@ -2,6 +2,7 @@ import pytest
 
 from clinicadl.callbacks.factory.checkpoint import Checkpoint
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
+from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
 
 from ...resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT
@@ -25,6 +26,7 @@ def test_good_checkpoint(patience, epochs):
     _ts = _TrainingState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
+    callbacks = _CallbacksHandler(metrics=METRICS_HANDLER, callbacks=[])
     _ts.reset(SPLIT)
 
     for epoch in range(OPTIM.epochs):
@@ -32,7 +34,7 @@ def test_good_checkpoint(patience, epochs):
         _saver.on_train_begin(_ts)
         _saver.on_epoch_begin(_ts)
 
-        _saver.on_epoch_end(_ts)
+        _saver.on_epoch_end(_ts, callbacks=callbacks)
         checkpoint.on_epoch_end(_ts)
 
         if (
@@ -46,14 +48,13 @@ def test_good_checkpoint(patience, epochs):
                 .checkpoints.epochs[epoch]
                 .exists()
             )
-            assert _ts.maps.training.splits[_ts.split.index].tmp.model.is_file()
-            assert _ts.maps.training.splits[_ts.split.index].tmp.optimizer.is_file()
+            assert _ts.maps.training.splits[_ts.split.index].tmp(epoch).model.is_file()
 
     _saver.on_train_end(_ts)
     checkpoint.on_train_end(_ts)
 
     assert _ts.split is not None
-    assert not _ts.maps.training.splits[_ts.split.index].tmp.exists()
+    assert not _ts.maps.training.splits[_ts.split.index].tmp().exists()
 
 
 def test_bad_checkpoint():

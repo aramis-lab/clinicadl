@@ -72,8 +72,12 @@ class _CheckpointSaver(Callback):
 
         for name, callback in callbacks.callbacks.items():
             lowered_name = camel_to_snake(name)
-            callback_json = (tmp_dir.callbacks / lowered_name).with_suffix(PT)
+            callback_json = tmp_dir.callbacks / lowered_name
             callback.save_checkpoint(callback_json)
+
+        config.maps.training.splits[config.split.index].tmp().clear(
+            except_epoch=config.epoch
+        )
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """

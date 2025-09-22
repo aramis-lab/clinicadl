@@ -53,9 +53,14 @@ def test_checkpoint_multiple_epochs():
         tmp_dir = _ts.maps.training.splits[_ts.split.index].tmp(epoch)
         assert os.listdir(tmp_dir.path) == ["callbacks", "model.pth.tar"]
         assert os.listdir(tmp_dir.path / "callbacks") == [
+            "_training_loss.tsv",
             "lr_scheduler.pt",
             "lr_scheduler_2.pt",
         ]
+
+        assert (
+            not _ts.maps.training.splits[_ts.split.index].tmp(epoch=epoch - 1).exists()
+        )
 
     cs_callback.on_train_end(_ts)
     assert not _ts.maps.training.splits[_ts.split.index].tmp().exists()

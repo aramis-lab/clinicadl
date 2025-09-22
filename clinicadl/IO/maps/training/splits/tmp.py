@@ -35,3 +35,13 @@ class TmpDir(Directory):
     def remove(self) -> None:
         """Removes the temporary files."""
         shutil.rmtree(self.path)
+
+    def clear(self, except_epoch: Optional[int] = None) -> None:
+        """Removes the temporary files."""
+        list_dir = [
+            d
+            for d in self.path.iterdir()
+            if d.is_dir() and d.name != f"epoch-{except_epoch}"
+        ]
+        for dir in list_dir:
+            shutil.rmtree(dir)

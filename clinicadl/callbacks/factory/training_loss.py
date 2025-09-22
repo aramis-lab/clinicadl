@@ -1,9 +1,11 @@
 """Callback to record training loss per batch and epoch."""
-from typing import Any
+
+from pathlib import Path
 
 import pandas as pd
 
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.dictionary.suffixes import TSV
 from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
 
 from .base import Callback
@@ -48,3 +50,22 @@ class _TrainingLoss(Callback):
         training_tsv = config.maps.training.splits[config.split.index].logs.training_tsv
         training_tsv.parent.mkdir(parents=True, exist_ok=True)
         self.df.to_csv(training_tsv, sep="\t", index=True)
+
+    def save_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To save the losses so far."""
+        filename = checkpoint_path.with_suffix(TSV)
+        self.df.to_csv(filename, sep="\t", index=True)
+
+    def load_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To load a checkpoint saved with 'save_checkpoint'."""
+        filename = checkpoint_path.with_suffix(TSV)
+        self.df: pd.DataFrame = pd.read_csv(filename, sep="\t")
+        self.df.set_index([EPOCH, BATCH], inplace=True)

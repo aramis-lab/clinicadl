@@ -1,12 +1,16 @@
 import math
 from enum import Enum
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
+import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.dictionary.suffixes import JSON
+from clinicadl.utils.json import read_json, write_json
 
 from .base import Callback
 
@@ -297,10 +301,10 @@ class EarlyStopping(Callback):
         self.upper_bound = check_list(upper_bound)
         self.lower_bound = check_list(lower_bound)
 
-        self.early_config_list: list[OneMetricEarlyStopping] = []
+        self.early_stoppers: list[OneMetricEarlyStopping] = []
 
         for i, metric in enumerate(self.metrics):
-            self.early_config_list.append(
+            self.early_stoppers.append(
                 OneMetricEarlyStopping(
                     metric=metric,
                     patience=self.patience[i],
@@ -318,10 +322,10 @@ class EarlyStopping(Callback):
 
         Updates `config.stop` to True if all monitored metrics meet early stopping criteria.
         """
-        should_stop = all(
-            metric.should_stop_training(config=config, **kwargs)
-            for metric in self.early_config_list
-        )
+        should_stops = [
+            metric.should_stop_training(config) for metric in self.early_stoppers
+        ]
+        should_stop = all(should_stops)
         if should_stop:
             logger.info(
                 "Early stopping criteria met for all monitored metrics. Stopping training."
@@ -350,3 +354,30 @@ class EarlyStopping(Callback):
             }
         )
         return json_dict
+
+    def save_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To save the state of the early stoppers."""
+        checkpoints = {}
+        for stopper in self.early_stoppers:
+            checkpoints[stopper.metric] = {
+                "best": stopper.best,
+                "num_bad_epochs": stopper.num_bad_epochs,
+            }
+        filename = checkpoint_path.with_suffix(JSON)
+        write_json(filename, checkpoints)
+
+    def load_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To load a checkpoint saved with 'save_checkpoint'."""
+        filename = checkpoint_path.with_suffix(JSON)
+        checkpoint: dict = read_json(filename)
+        for metric, stopper in zip(self.metrics, self.early_stoppers):
+            stopper.best = checkpoint[metric]["best"]
+            stopper.num_bad_epochs = checkpoint[metric]["num_bad_epochs"]

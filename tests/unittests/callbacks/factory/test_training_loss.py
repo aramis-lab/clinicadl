@@ -46,7 +46,7 @@ def training_loss_callback():
     return _TrainingLoss()
 
 
-def test_on_batch_end_records_loss(training_loss_callback):
+def test_on_batch_end_records_loss(training_loss_callback: _TrainingLoss):
     state = FakeState(tmp_path=Path("."))
     callback = training_loss_callback
 
@@ -66,7 +66,7 @@ def test_on_batch_end_records_loss(training_loss_callback):
     assert df.at[(1, 0), LOSS] == 0.3
 
 
-def test_on_train_end_saves_file(tmp_path, training_loss_callback):
+def test_on_train_end_saves_file(tmp_path, training_loss_callback: _TrainingLoss):
     state = FakeState(tmp_path=tmp_path)
     callback = training_loss_callback
 
@@ -85,3 +85,20 @@ def test_on_train_end_saves_file(tmp_path, training_loss_callback):
     # Check file content
     df_loaded = pd.read_csv(training_tsv, sep="\t", index_col=[0, 1])
     assert df_loaded.at[(0, 0), LOSS] == 1.23
+
+
+def test_saved_load_checkpoint(tmp_path):
+    loss = _TrainingLoss()
+    state = FakeState(tmp_path=Path("."))
+    state.batch = 0
+    state.epoch = 0
+    loss.on_batch_end(state, loss=0.3)
+    state.batch = 1
+    loss.on_batch_end(state, loss=0.5)
+
+    loss.save_checkpoint(tmp_path / "training_loss")
+
+    new_loss = _TrainingLoss()
+    new_loss.load_checkpoint(tmp_path / "training_loss")
+    print(new_loss.df)
+    pd.testing.assert_frame_equal(new_loss.df, loss.df.astype({"loss": float}))

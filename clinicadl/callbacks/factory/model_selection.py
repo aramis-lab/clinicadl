@@ -120,10 +120,11 @@ class ModelSelection(Callback):
                     )
                 )
             ):
-                tmp_dir = config.maps.training.splits[config.split.index].tmp
+                tmp_dir = config.maps.training.splits[config.split.index].tmp(
+                    config.epoch
+                )
 
                 shutil.copyfile(tmp_dir.model, metric_dir.model)
-                shutil.copyfile(tmp_dir.optimizer, metric_dir.optimizer)
 
     def to_dict(self) -> dict[str, Any]:
         """
