@@ -98,8 +98,8 @@ class LRScheduler(Callback):
         scheduler_type: Optional[LRSchedulerMode] = None,
         **kwargs,
     ):
-        self.config: Optional[LRSchedulerConfig] = None
-        self.scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
+        self.config: LRSchedulerConfig
+        self.scheduler: torch.optim.lr_scheduler.LRScheduler
         self.scheduler_type: LRSchedulerType
         self._initial_state: dict
 

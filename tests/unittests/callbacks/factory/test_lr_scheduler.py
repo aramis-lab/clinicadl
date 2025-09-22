@@ -62,7 +62,7 @@ def test_scheduler_init(args, name, config, sched):
         ValueError,
         match="If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'.",
     ):
-        LRScheduler(config, **args)
+        LRScheduler(_config, **args)
     scheduler_from_config = LRScheduler(_config, optimizer=optimizer)
     assert scheduler_from_config.config is not None
     assert scheduler_from_config.config == _config
