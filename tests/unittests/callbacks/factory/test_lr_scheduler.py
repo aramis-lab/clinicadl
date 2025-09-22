@@ -1,6 +1,7 @@
 from copy import deepcopy
 from unittest.mock import MagicMock
 
+import pandas as pd
 import pytest
 import torch
 from torch.optim.lr_scheduler import (
@@ -97,6 +98,9 @@ def test_on_train_begin():
 
 
 def test_steps_scheduler():
+    TRAINING_STATE.metrics._df = pd.DataFrame(
+        {"epoch": [0], "mse": [1.0], "mae": [1.0], "loss": [0.5]}
+    )
     optimizer = OPTIMIZER.get_object(NETWORK.get_object())
     sched = StepLR(optimizer, step_size=1)
     epoch_scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
