@@ -1,11 +1,15 @@
-from typing import Any
+from __future__ import annotations
 
-import torch
+from typing import TYPE_CHECKING, Any
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.words import EPOCH, MODEL
+from clinicadl.dictionary.suffixes import PT
+from clinicadl.utils.names import camel_to_snake
 
 from .base import Callback
+
+if TYPE_CHECKING:
+    from ..handler import _CallbacksHandler
 
 
 class _CheckpointSaver(Callback):
@@ -47,7 +51,9 @@ class _CheckpointSaver(Callback):
                 "The split has no val_loader defined. Please run `get_dataloader()`"
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(
+        self, config: _TrainingState, callbacks: _CallbacksHandler, **kwargs
+    ) -> None:
         """
         Save the current model and optimizer state at the end of each epoch.
 
@@ -59,27 +65,21 @@ class _CheckpointSaver(Callback):
             return
         self._last_saved_epoch = config.epoch
 
-        model_weights = {
-            MODEL: config.model.network.state_dict(),
-            EPOCH: config.epoch,
-        }
-        tmp_dir = config.maps.training.splits[config.split.index].tmp
+        tmp_dir = config.maps.training.splits[config.split.index].tmp(config.epoch)
         tmp_dir._create(_exists_ok=True)
 
-        torch.save(model_weights, tmp_dir.model)
+        config.model.save_checkpoint(tmp_dir.model)
 
-        optim_weights = {
-            MODEL: config.model.optimizer.state_dict(),
-            EPOCH: config.epoch,
-        }
-
-        torch.save(optim_weights, tmp_dir.optimizer)
+        for name, callback in callbacks.callbacks.items():
+            lowered_name = camel_to_snake(name)
+            callback_json = (tmp_dir.callbacks / lowered_name).with_suffix(PT)
+            callback.save_checkpoint(callback_json)
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """
         Remove the temporary storage used for the latest checkpoint after training completes.
         """
-        config.maps.training.splits[config.split.index].tmp.remove()
+        config.maps.training.splits[config.split.index].tmp().remove()
 
     def to_dict(self) -> dict[str, Any]:
         """

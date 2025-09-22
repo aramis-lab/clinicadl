@@ -96,7 +96,7 @@ class _CallbacksHandler:
 
             name = type(callback).__name__
 
-            if isinstance(callback, EarlyStopping):
+            if isinstance(callback, (EarlyStopping, LRScheduler)):
                 count = sum(k.startswith(name) for k in resolved)
                 unique_name = f"{name}{count + 1}" if name in resolved else name
                 resolved[unique_name] = callback

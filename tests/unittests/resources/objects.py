@@ -29,6 +29,7 @@ from clinicadl.models import SupervisedModel
 from clinicadl.models.example_model import example_model
 from clinicadl.networks.config import ResNetConfig
 from clinicadl.optim.config import OptimizationConfig
+from clinicadl.optim.lr_schedulers.config import LinearLRConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split.split import Split
 from clinicadl.utils.computational.config import ComputationalConfig
@@ -85,6 +86,7 @@ NETWORK = ResNetConfig(
 
 LOSS = MSELossConfig()
 OPTIMIZER = AdamConfig()
+LR_SCHEDULER = LinearLRConfig()
 
 MODEL = SupervisedModel(
     network=NETWORK,

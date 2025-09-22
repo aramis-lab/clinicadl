@@ -1,5 +1,6 @@
 from abc import ABC
 from importlib.util import find_spec
+from pathlib import Path
 from typing import Any
 
 from ..training_state import _TrainingState
@@ -98,6 +99,12 @@ class Callback(ABC):
 
     def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
         """Called after the validation loop ends."""
+
+    def save_checkpoint(self, checkpoint_path: Path, **kwargs) -> None:
+        """To save a checkpoint of the callback state."""
+
+    def load_checkpoint(self, checkpoint_path: Path, **kwargs) -> None:
+        """To load a checkpoint saved with 'save_checkpoint'."""
 
     def to_dict(self) -> dict[str, Any]:
         """
