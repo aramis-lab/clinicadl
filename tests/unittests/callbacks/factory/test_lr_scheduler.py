@@ -127,7 +127,8 @@ def test_steps_scheduler():
 
 @pytest.mark.gpu
 def test_save_load_checkpoint(tmp_path):
-    optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+    net = NETWORK.get_object()
+    optimizer = OPTIMIZER.get_object(net)
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
 
     optimizer.step()
@@ -138,7 +139,7 @@ def test_save_load_checkpoint(tmp_path):
     scheduler.load_checkpoint(tmp_path / "scheduler.json")
     scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
 
-    NETWORK.to("cuda")
+    net.to("cuda")
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
     scheduler.load_checkpoint(tmp_path / "scheduler.json", device=torch.device("cuda"))
     scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
