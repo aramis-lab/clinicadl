@@ -96,6 +96,9 @@ METRICS_HANDLER = MetricsHandler(
     loss=LossMetricConfig(loss_fn=LOSS.get_object()),
     **{"mae": MAEMetricConfig(), "mse": MSEMetricConfig()},
 )
+METRICS_HANDLER._df = pd.DataFrame(
+    {"epoch": [0], "mse": [1.0], "mae": [1.0], "loss": [0.5]}
+)
 
 SPLIT = Split(
     index=1, split_dir=SPLIT_DIR, train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
@@ -114,7 +117,7 @@ CALLBACKS = [
     EarlyStopping(metrics=["mse"]),
     Checkpoint(patience=2, epochs=[3]),
     Tensorboard(),
-    LRScheduler(scheduler="LinearLR"),
+    # LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]
 

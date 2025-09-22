@@ -45,68 +45,100 @@ GOOD_PARAMETERS = [
     GOOD_PARAMETERS,
 )
 def test_scheduler_init(args, name, config, sched):
-    scheduler_from_str = LRScheduler(name, **args)
+    optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+
+    with pytest.raises(
+        ValueError,
+        match="If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'.",
+    ):
+        LRScheduler(name, **args)
+    scheduler_from_str = LRScheduler(name, optimizer=optimizer, **args)
     assert scheduler_from_str.config is not None
     assert isinstance(scheduler_from_str.config, config)
+    assert isinstance(scheduler_from_str.scheduler, sched)
 
     _config = config(**args)
-    scheduler_from_config = LRScheduler(_config)
+    with pytest.raises(
+        ValueError,
+        match="If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'.",
+    ):
+        LRScheduler(config, **args)
+    scheduler_from_config = LRScheduler(_config, optimizer=optimizer)
     assert scheduler_from_config.config is not None
     assert scheduler_from_config.config == _config
-    assert scheduler_from_config.torch_scheduler is None
-    assert scheduler_from_config.scheduler is None
-
-    scheduler_from_config.on_train_begin(TRAINING_STATE)
-    assert scheduler_from_config.scheduler is not None
-    assert isinstance(
-        scheduler_from_config.scheduler, torch.optim.lr_scheduler.LRScheduler
-    )
+    assert isinstance(scheduler_from_str.scheduler, sched)
 
 
-@pytest.mark.parametrize(
-    "args,name,config,sched",
-    GOOD_PARAMETERS,
-)
-def test_scheduler_init_with_torch_optimizer(args, name, config, sched):
+def test_raw_scheduler():
     optimizer = OPTIMIZER.get_object(NETWORK.get_object())
-    torch_scheduler = sched(optimizer, **args)
-    scheduler = LRScheduler(torch_scheduler)
-    assert scheduler.torch_scheduler == torch_scheduler
-    assert scheduler.config is None
-    assert scheduler.scheduler is None
+    raw_scheduler = ConstantLR(optimizer)
+    with pytest.raises(
+        ValueError,
+        match="If you pass directly your own LRScheduler, you must must specify the type of scheduler via 'scheduler_type'.",
+    ):
+        LRScheduler(scheduler=ConstantLR(optimizer))
+    scheduler_from_raw = LRScheduler(
+        scheduler=raw_scheduler, scheduler_type="epoch-based"
+    )
+    assert scheduler_from_raw.config is None
+    assert scheduler_from_raw.scheduler is raw_scheduler
+    assert scheduler_from_raw.scheduler_type == "epoch-based"
 
+
+def test_on_train_begin():
+    optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+    scheduler = LRScheduler(LinearLRConfig(start_factor=0.5), optimizer=optimizer)
+
+    optimizer.step()
+    scheduler.scheduler.step()
+    scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
     scheduler.on_train_begin(TRAINING_STATE)
-    assert scheduler.scheduler is not None
-    assert isinstance(scheduler.scheduler, sched)
+    scheduler.scheduler.state_dict()["_last_lr"] = 0.0005
 
 
-@pytest.mark.parametrize(
-    "args,name,config,sched",
-    GOOD_PARAMETERS,
-)
-def test_on_batch_end_steps_scheduler(args, name, config, sched):
-    scheduler = LRScheduler(name, **args)
-    scheduler.on_train_begin(TRAINING_STATE)
-
-    assert scheduler.scheduler is not None
+def test_steps_scheduler():
+    optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+    sched = StepLR(optimizer, step_size=1)
+    epoch_scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
+    step_scheduler = LRScheduler(sched, scheduler_type="step-based")
+    metric_scheduler = LRScheduler(deepcopy(sched), scheduler_type="loss-based")
 
     # Mock step to verify it's called
-    scheduler.scheduler.step = MagicMock()
-    scheduler.on_batch_end(TRAINING_STATE)
-    scheduler.scheduler.step.assert_called_once()
+    epoch_scheduler.scheduler.step = MagicMock()
+    step_scheduler.scheduler.step = MagicMock()
+    metric_scheduler.scheduler.step = MagicMock()
+
+    epoch_scheduler.on_batch_end(TRAINING_STATE)
+    step_scheduler.on_batch_end(TRAINING_STATE)
+    metric_scheduler.on_batch_end(TRAINING_STATE)
+
+    epoch_scheduler.scheduler.step.assert_not_called()
+    step_scheduler.scheduler.step.assert_called_once()
+    metric_scheduler.scheduler.step.assert_not_called()
+
+    epoch_scheduler.on_epoch_end(TRAINING_STATE)
+    step_scheduler.on_epoch_end(TRAINING_STATE)
+    metric_scheduler.on_epoch_end(TRAINING_STATE)
+
+    epoch_scheduler.scheduler.step.assert_called_once()
+    step_scheduler.scheduler.step.assert_called_once()
+    metric_scheduler.scheduler.step.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "args,name,config,sched",
-    GOOD_PARAMETERS,
-)
-def test_on_train_begin_raises_without_optimizer(args, name, config, sched):
-    _config = deepcopy(TRAINING_STATE)
-    del _config.model.optimizer  # remove optimizer
+@pytest.mark.gpu
+def test_save_load_checkpoint(tmp_path):
+    optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+    scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
 
-    scheduler = LRScheduler(name, **args)
-    with pytest.raises(AttributeError):
-        scheduler.on_train_begin(_config)
+    optimizer.step()
+    scheduler.scheduler.step()
+    scheduler.save_checkpoint(tmp_path / "scheduler.json")
 
-    with pytest.raises(RuntimeError):
-        scheduler.on_batch_end(TRAINING_STATE)
+    scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
+    scheduler.load_checkpoint(tmp_path / "scheduler.json")
+    scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
+
+    NETWORK.to("cuda")
+    scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
+    scheduler.load_checkpoint(tmp_path / "scheduler.json", device=torch.device("cuda"))
+    scheduler.scheduler.state_dict()["_last_lr"] = 0.0006

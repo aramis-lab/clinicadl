@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import torch
@@ -52,7 +53,8 @@ class LRScheduler(Callback):
         - ``"step-based"``: learning rate is updated after each optimization step
           (e.g. :py:class:`~torch.optim.lr_scheduler.OneCycleLR`).
 
-        **Mandatory if a raw LRScheduler is passed to** ``scheduler``.
+        **Mandatory if a raw LRScheduler is passed to** ``scheduler``. It will be ignore if a
+        config class is passed.
 
     **kwargs
         Additional keyword arguments passed to the scheduler config factory
@@ -98,8 +100,8 @@ class LRScheduler(Callback):
     ):
         self.config: Optional[LRSchedulerConfig] = None
         self.scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
-        self.optimizer: Optional[torch.optim.Optimizer] = None
         self.scheduler_type: LRSchedulerType
+        self._initial_state: dict
 
         if isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
             self.scheduler = scheduler
@@ -130,8 +132,16 @@ class LRScheduler(Callback):
                     f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
                 )
 
-            self.scheduler_type = scheduler.scheduler_type(scheduler.name)
-            self.scheduler = scheduler.get_object(optimizer)
+            self.scheduler = self.config.get_object(optimizer)
+            self.scheduler_type = self.config.scheduler_type()
+
+        self._initial_state = self.scheduler.state_dict()
+
+    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Reset the LR scheduler.
+        """
+        self.scheduler.load_state_dict(self._initial_state)
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """
@@ -151,6 +161,28 @@ class LRScheduler(Callback):
         elif self.scheduler_type == LRSchedulerMode.LOSS:
             val_loss = config.metrics.get_loss(epoch=config.epoch)
             self.scheduler.step(val_loss)
+
+    def save_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To save the state of the LR scheduler."""
+        state = self.scheduler.state_dict()
+        torch.save(state, checkpoint_path)
+
+    def load_checkpoint(
+        self,
+        checkpoint_path: Path,
+        device: torch.device = torch.device("cpu"),
+        **kwargs,
+    ) -> None:
+        """To load a checkpoint saved with 'save_checkpoint'."""
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=device,
+        )
+        self.scheduler.load_state_dict(checkpoint)
 
     def to_dict(self) -> dict[str, Any]:
         """
