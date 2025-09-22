@@ -112,11 +112,6 @@ class LRScheduler(Callback):
             self.scheduler_type = LRSchedulerMode(scheduler_type)
 
         else:
-            if not optimizer:
-                raise ValueError(
-                    "If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'."
-                )
-
             if isinstance(scheduler, str):
                 scheduler = ImplementedLRScheduler(scheduler)
 
@@ -130,6 +125,11 @@ class LRScheduler(Callback):
                 raise ValueError(
                     f"Invalid scheduler type: {type(scheduler)}. "
                     f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
+                )
+
+            if not optimizer:
+                raise ValueError(
+                    "If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'."
                 )
 
             self.scheduler = self.config.get_object(optimizer)
