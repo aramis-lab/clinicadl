@@ -20,14 +20,14 @@ PREFERRED_ORDER = [
     _TrainingLoss.__name__,
     LRScheduler.__name__,
     _Monitor.__name__,
-    _CheckpointSaver.__name__,
-    Checkpoint.__name__,
-    ModelSelection.__name__,
     _Logger.__name__,
     MLflow.__name__,
     CodeCarbon.__name__,
     WandB.__name__,
     Tensorboard.__name__,
+    _CheckpointSaver.__name__,
+    Checkpoint.__name__,
+    ModelSelection.__name__,
 ]
 
 
