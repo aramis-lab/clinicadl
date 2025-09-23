@@ -1,4 +1,5 @@
 import os
+import shutil
 from copy import deepcopy
 
 import pytest
@@ -7,12 +8,12 @@ from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
 from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.models.base import ClinicaDLModel
+from clinicadl.IO.maps import Maps
 
 from ...resources.objects import (
     COMP,
     LR_SCHEDULER,
-    MAPS,
+    MAPS_DIR,
     METRICS_HANDLER,
     MODEL,
     NETWORK,
@@ -21,10 +22,12 @@ from ...resources.objects import (
     SPLIT,
 )
 
-MAPS.load()
 
+def test_checkpoint_multiple_epochs(tmp_path):
+    shutil.copytree(MAPS_DIR, tmp_path / "maps")
+    MAPS = Maps(tmp_path / "maps")
+    MAPS.load()
 
-def test_checkpoint_multiple_epochs():
     optim = OPTIMIZER.get_object(network=NETWORK.get_object())
     callbacks = _CallbacksHandler(
         metrics=METRICS_HANDLER,
@@ -50,23 +53,30 @@ def test_checkpoint_multiple_epochs():
         _ts.epoch = epoch
         cs_callback.on_epoch_end(_ts, callbacks=callbacks)
 
-        tmp_dir = _ts.maps.training.splits[_ts.split.index].tmp(epoch)
-        assert os.listdir(tmp_dir.path) == ["callbacks", "model.pth.tar"]
+        tmp_dir = _ts.maps.training.splits[_ts.split.index].tmp.epochs[epoch]
+        assert os.listdir(tmp_dir.path) == ["metrics", "callbacks", "model.pth.tar"]
         assert os.listdir(tmp_dir.path / "callbacks") == [
             "_training_loss.tsv",
             "lr_scheduler.pt",
             "lr_scheduler_2.pt",
         ]
 
-        assert (
-            not _ts.maps.training.splits[_ts.split.index].tmp(epoch=epoch - 1).exists()
-        )
+        if epoch > 0:
+            assert (
+                not _ts.maps.training.splits[_ts.split.index]
+                .tmp.epochs[epoch - 1]
+                .exists()
+            )
 
     cs_callback.on_train_end(_ts)
     assert not _ts.maps.training.splits[_ts.split.index].tmp.exists()
 
 
-def test_bad_checkpoint():
+def test_bad_checkpoint(tmp_path):
+    shutil.copytree(MAPS_DIR, tmp_path / "maps")
+    MAPS = Maps(tmp_path / "maps")
+    MAPS.load()
+
     cs_callback = _CheckpointSaver()
 
     _ts = _TrainingState(

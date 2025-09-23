@@ -45,20 +45,20 @@ def test_phase_monitor_stop_without_start_raises():
 
 
 class FakeSplit:
-    def __init__(self):
+    def __init__(self, path):
         self.train_loader = [0] * 2  # minimal loader
-        self.performance_txt = Path("perf.txt")
+        self.performance_txt = Path(path)
 
 
 class FakeMaps:
-    def __init__(self):
+    def __init__(self, path):
         self.training = type("Training", (), {})()
-        self.training.splits = [FakeSplit()]
+        self.training.splits = [FakeSplit(path)]
 
 
 class FakeState:
-    def __init__(self):
-        self.maps = FakeMaps()
+    def __init__(self, path):
+        self.maps = FakeMaps(path)
         self.split = type("Split", (), {"index": 0})()
         self.epoch = 0
         self.batch = 0
@@ -71,8 +71,8 @@ def monitor():
     return _Monitor()
 
 
-def test_monitor_phase_hooks(monitor):
-    state = FakeState()
+def test_monitor_phase_hooks(tmp_path, monitor):
+    state = FakeState(tmp_path / "maps")
 
     # Call all hooks and check internal PhaseMonitor times are recorded
     monitor.on_train_begin(state)

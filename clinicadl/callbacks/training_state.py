@@ -79,6 +79,11 @@ class _TrainingState(ClinicaDLConfig):
         self.epoch = 0
         self.batch = 0
 
+        # TODO:  temporary
+        self.maps.load()
+        if split.index not in self.maps.training.split_list:
+            self.maps.training._create_split(split.index)
+
     def write_torchsummary(self):
         """Write the model summary to a text file in the maps directory."""
         if self.split is None:

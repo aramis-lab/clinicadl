@@ -11,7 +11,7 @@ from clinicadl.IO.maps import Maps
 from clinicadl.IO.maps.training import TrainingDir
 from clinicadl.IO.maps.training.data.data import DataDir, DataTrainValDir
 from clinicadl.IO.maps.training.data.splits import DataSplitDir
-from clinicadl.IO.maps.training.splits.best_metrics import TrainBestMetricDir
+from clinicadl.IO.maps.training.splits.best_metric import TrainBestMetricDir
 from clinicadl.IO.maps.training.splits.checkpoints import CheckpointsDir
 from clinicadl.IO.maps.training.splits.logs import LogsDir
 from clinicadl.IO.maps.training.splits.splits import TrainSplitDir
