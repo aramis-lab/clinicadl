@@ -54,7 +54,7 @@ def test_good_checkpoint(patience, epochs):
     checkpoint.on_train_end(_ts)
 
     assert _ts.split is not None
-    assert not _ts.maps.training.splits[_ts.split.index].tmp().exists()
+    assert not _ts.maps.training.splits[_ts.split.index].tmp.exists()
 
 
 def test_bad_checkpoint():

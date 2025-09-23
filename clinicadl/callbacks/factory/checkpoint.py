@@ -76,7 +76,9 @@ class Checkpoint(Callback):
             epoch_dir = config.maps.training.splits[
                 config.split.index
             ].checkpoints.epochs[config.epoch]
-            tmp_dir = config.maps.training.splits[config.split.index].tmp(config.epoch)
+            tmp_dir = config.maps.training.splits[config.split.index].tmp.epochs[
+                config.epoch
+            ]
 
             shutil.copyfile(tmp_dir.model, epoch_dir.model)
 

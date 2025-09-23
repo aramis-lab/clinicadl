@@ -65,25 +65,24 @@ class _CheckpointSaver(Callback):
             return
         self._last_saved_epoch = config.epoch
 
-        tmp_dir = config.maps.training.splits[config.split.index].tmp(config.epoch)
-        tmp_dir._create(_exists_ok=True)
+        tmp_dir = config.maps.training.splits[config.split.index].tmp
+        tmp_dir._create_epoch(config.epoch)
+        epoch_dir = tmp_dir.epochs[config.epoch]
 
-        config.model.save_checkpoint(tmp_dir.model)
+        config.save_checkpoint(epoch_dir)
 
         for name, callback in callbacks.callbacks.items():
             lowered_name = camel_to_snake(name)
-            callback_json = tmp_dir.callbacks / lowered_name
+            callback_json = epoch_dir.callbacks / lowered_name
             callback.save_checkpoint(callback_json)
 
-        config.maps.training.splits[config.split.index].tmp().clear(
-            except_epoch=config.epoch
-        )
+        tmp_dir.clear(except_epoch=config.epoch)
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """
         Remove the temporary storage used for the latest checkpoint after training completes.
         """
-        config.maps.training.splits[config.split.index].tmp().remove()
+        config.maps.training.splits[config.split.index].tmp.remove()
 
     def to_dict(self) -> dict[str, Any]:
         """

@@ -63,7 +63,7 @@ def test_checkpoint_multiple_epochs():
         )
 
     cs_callback.on_train_end(_ts)
-    assert not _ts.maps.training.splits[_ts.split.index].tmp().exists()
+    assert not _ts.maps.training.splits[_ts.split.index].tmp.exists()
 
 
 def test_bad_checkpoint():
