@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,6 +25,8 @@ DATAPOINTS = [
     )
     for i, gt, pred in zip(range(6), [0, 0, 1, 1, 0, 1], [0, 1, 1, 0, 1, 1])
 ]
+
+TSV_PATH = Path(__file__).parents[1] / "resources" / "metrics"
 
 BATCH_1, BATCH_2 = Batch(DATAPOINTS[:3]), Batch(DATAPOINTS[3:])
 
@@ -107,6 +110,68 @@ def test_reset():
     assert len(metrics.detailed_df) == 3
     metrics._callable_metrics["loss"].get_buffer() is None
     metrics._callable_metrics["mse"].get_buffer() is None
+
+
+def test_load(tmp_path):
+    metrics = MetricsHandler(
+        loss=LossMetricConfig(
+            loss_fn=BCELoss(),
+        ),
+        my_metric=CustomMetric(),
+        mse=MSEMetricConfig(),
+    )
+    metrics.load(path=TSV_PATH / "validation.tsv")
+    assert metrics._callable_metrics["loss"].get_buffer() is None
+    excepted_df = pd.DataFrame.from_dict(
+        {
+            "epoch": [0, 1, 2],
+            "mse": [0.0, 0.1, 0.2],
+            "my_metric": [1.0, 1.1, 1.2],
+            "loss": [2.0, 2.1, 2.2],
+        }
+    )
+    pd.testing.assert_frame_equal(metrics.df, excepted_df)
+
+    metrics.load(
+        path=TSV_PATH / "validation.tsv",
+        details_path=TSV_PATH / "validation_details.tsv",
+    )
+    expected_details = pd.DataFrame.from_dict(
+        {
+            "epoch": [0, 0, 1, 1, 2, 2],
+            "mse": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+            "my_metric": [1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
+            "loss": [2.0, 2.1, 2.2, 2.3, 2.4, 2.5],
+            "participant_id": [
+                "sub-001",
+                "sub-002",
+                "sub-001",
+                "sub-002",
+                "sub-001",
+                "sub-002",
+            ],
+            "session_id": [
+                "ses-M000",
+                "ses-M000",
+                "ses-M000",
+                "ses-M000",
+                "ses-M000",
+                "ses-M000",
+            ],
+        }
+    )
+    pd.testing.assert_frame_equal(metrics.df, excepted_df)
+    pd.testing.assert_frame_equal(metrics.detailed_df, expected_details)
+
+    metrics.reset(reset_df=True)
+    metrics.save(tmp_path / "validation_empty.tsv")
+    metrics.load(tmp_path / "validation_empty.tsv")
+
+    with pytest.raises(
+        AssertionError,
+        match="Checkpoint in .* is not a valid metric file, some columns are missing: {'my_metric'}",
+    ):
+        metrics.load(TSV_PATH / "validation_bad.tsv")
 
 
 def test_epoch():
