@@ -2,17 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import PTH, TAR, TSV
+from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import (
     BEST,
-    METRICS,
     MODEL,
-    OPTIMIZER,
-    VALIDATION,
 )
 from clinicadl.utils.typing import PathType
 
 from ...base import Directory
+from .metrics import MetricsDir
 
 
 class TrainBestMetricDir(Directory):
@@ -28,9 +26,5 @@ class TrainBestMetricDir(Directory):
         return self.path / (MODEL + PTH + TAR)
 
     @property
-    def optimizer(self) -> Path:
-        return self.path / (OPTIMIZER + PTH + TAR)
-
-    @property
-    def validation_metrics_tsv(self) -> Path:
-        return self.path / (VALIDATION + "_" + METRICS + TSV)
+    def metrics(self) -> MetricsDir:
+        return MetricsDir(parent_dir=self.path)
