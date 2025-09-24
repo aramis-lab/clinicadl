@@ -10,6 +10,7 @@ from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
 from clinicadl.utils.computational.config import ComputationalConfig
+from clinicadl.utils.json import read_json, write_json
 
 from ..utils.config.base import ClinicaDLConfig
 
@@ -109,6 +110,7 @@ class _TrainingState(ClinicaDLConfig):
             path=checkpoint_path.metrics.validation,
             details_path=checkpoint_path.metrics.validation_details,
         )
+        write_json(checkpoint_path.stop, self.stop)
 
     def load_checkpoint(self, checkpoint_path: EpochTmpDir) -> None:
         self.maps.load()
@@ -118,4 +120,5 @@ class _TrainingState(ClinicaDLConfig):
             path=checkpoint_path.metrics.validation,
             details_path=checkpoint_path.metrics.validation_details,
         )
+        self.stop = read_json(checkpoint_path.stop)
         self.epoch = checkpoint_path.epoch + 1

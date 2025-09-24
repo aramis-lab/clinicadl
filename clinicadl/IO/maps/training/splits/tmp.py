@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from clinicadl.dictionary.suffixes import JSON
 from clinicadl.dictionary.words import (
     CALLBACKS,
     TMP,
@@ -22,6 +23,10 @@ class EpochTmpDir(EpochDir):
     @property
     def metrics(self) -> MetricsDir:
         return MetricsDir(parent_dir=self.path)
+
+    @property
+    def stop(self) -> Path:
+        return (self.path / "stop").with_suffix(JSON)
 
 
 class TmpDir(CheckpointsDir):

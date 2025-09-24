@@ -59,6 +59,7 @@ def test_save_load_checkpoint(tmp_path):
     _ts.metrics._df = df
     _ts.metrics._detailed_df = detailed_df
     _ts.epoch = 1
+    _ts.stop = True
 
     _ts.save_checkpoint(chkpt_path)
 
@@ -73,6 +74,7 @@ def test_save_load_checkpoint(tmp_path):
     )
     _ts.load_checkpoint(chkpt_path)
     assert _ts.epoch == 2
+    assert _ts.stop
     pd.testing.assert_frame_equal(_ts.metrics.df, df)
     pd.testing.assert_frame_equal(_ts.metrics.detailed_df, detailed_df)
     torch.testing.assert_close(MODEL.network.state_dict(), network.state_dict())
