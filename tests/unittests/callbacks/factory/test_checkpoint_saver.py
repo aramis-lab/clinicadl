@@ -54,12 +54,16 @@ def test_checkpoint_multiple_epochs(tmp_path):
         cs_callback.on_epoch_end(_ts, callbacks=callbacks)
 
         tmp_dir = _ts.maps.training.splits[_ts.split.index].tmp.epochs[epoch]
-        assert os.listdir(tmp_dir.path) == ["metrics", "callbacks", "model.pth.tar"]
-        assert os.listdir(tmp_dir.path / "callbacks") == [
-            "_training_loss.tsv",
-            "lr_scheduler.pt",
-            "lr_scheduler_2.pt",
-        ]
+        assert set(os.listdir(tmp_dir.path)) == set(
+            ["metrics", "callbacks", "model.pth.tar"]
+        )
+        assert set(os.listdir(tmp_dir.path / "callbacks")) == set(
+            [
+                "_training_loss.tsv",
+                "lr_scheduler.pt",
+                "lr_scheduler_2.pt",
+            ]
+        )
 
         if epoch > 0:
             assert (
