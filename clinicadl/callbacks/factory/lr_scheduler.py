@@ -10,6 +10,7 @@ from clinicadl.optim.lr_schedulers.config import (
 )
 from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 from .base import Callback
 
@@ -139,8 +140,15 @@ class LRScheduler(Callback):
 
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
-        Reset the LR scheduler.
+        Checks the optimizer and resets the LR scheduler.
         """
+        optimizers = config.model.get_optimizers()
+        if self.scheduler.optimizer not in optimizers.values():
+            raise ClinicaDLConfigurationError(
+                f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not an optimizer returned by your ClinicaDLModel via the "
+                "method 'get_optimizers'. There is therefore a risk that this optimizer is not used during training."
+            )
+
         self.scheduler.load_state_dict(self._initial_state)
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:

@@ -26,6 +26,7 @@ from clinicadl.optim.lr_schedulers.config import (
     ReduceLROnPlateauConfig,
     StepLRConfig,
 )
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 from ...resources.objects import NETWORK, OPTIMIZER, TRAINING_STATE
 
@@ -88,7 +89,20 @@ def test_raw_scheduler():
 
 def test_on_train_begin():
     optimizer = OPTIMIZER.get_object(NETWORK.get_object())
+
     scheduler = LRScheduler(LinearLRConfig(start_factor=0.5), optimizer=optimizer)
+    with pytest.raises(
+        ClinicaDLConfigurationError,
+        match=(
+            "The optimizer associated to the LR scheduler 'LinearLR' is not an optimizer returned by your ClinicaDLModel via the method 'get_optimizers'. "
+            "There is therefore a risk that this optimizer is not used during training."
+        ),
+    ):
+        scheduler.on_train_begin(TRAINING_STATE)
+
+    scheduler = LRScheduler(
+        LinearLRConfig(start_factor=0.5), optimizer=TRAINING_STATE.model.optimizer
+    )
 
     optimizer.step()
     scheduler.scheduler.step()
