@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.losses import Loss, LossOrConfig
@@ -171,6 +172,19 @@ class SupervisedModel(ClinicaDLModel):
         batch.add_field("output", outputs)
 
         return batch
+
+    def get_optimizers(self) -> dict[str, optim.Optimizer]:
+        """
+        To retrieve all optimizers used during training.
+
+        All optimizers must be given a name.
+
+        Returns
+        -------
+        dict[str, optim.Optimizer]
+            The optimizers and their names.
+        """
+        return {"optimizer": self.optimizer}
 
     def to(
         self,

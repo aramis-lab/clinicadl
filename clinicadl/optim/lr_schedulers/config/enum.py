@@ -21,6 +21,14 @@ class ImplementedLRScheduler(str, Enum):
         )
 
 
+class LRSchedulerType(str, Enum):
+    """Possible types of LR scheduler."""
+
+    STEP = "step-based"
+    EPOCH = "epoch-based"
+    LOSS = "loss-based"
+
+
 class Mode(str, Enum):
     """Supported mode for ReduceLROnPlateau."""
 

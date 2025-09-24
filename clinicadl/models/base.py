@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Optional, Sequence, Union
 
 import torch
+import torch.optim as optim
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
@@ -30,6 +31,7 @@ class ClinicaDLModel(ABC):
     - :py:meth:`forward_step`: defines the forward logic during training;
     - :py:meth:`optimization_step`: defines the optimization logic;
     - :py:meth:`evaluation_step`: defines the evaluation logic;
+    - :py:meth:`get_optimizers`: to access the optimizers used for training;
     - :py:meth:`to`: to move the model on a specific device and/or cast the model to a specific datatype and/or memory format;
     - :py:meth:`train`: to set the model in training mode;
     - :py:meth:`eval`: to set the model in evaluation mode;
@@ -125,6 +127,19 @@ class ClinicaDLModel(ABC):
                 Even if the input batch is a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`,
                 the output must be a single :py:class:`~clinicadl.data.dataloader.Batch`. Metrics will be
                 computed on each element of this output batch.
+        """
+
+    @abstractmethod
+    def get_optimizers(self) -> dict[str, optim.Optimizer]:
+        """
+        To retrieve all optimizers used during training.
+
+        All optimizers must be given a name.
+
+        Returns
+        -------
+        dict[str, optim.Optimizer]
+            The optimizers and their names.
         """
 
     @abstractmethod

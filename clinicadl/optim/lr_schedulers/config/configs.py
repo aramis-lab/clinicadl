@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import torch
 from pydantic import (
@@ -9,6 +9,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from torch.optim import Optimizer
 
 from clinicadl.utils.factories import get_defaults_from
 
@@ -16,7 +17,7 @@ from .base import (
     LRSchedulerConfig,
     _LastEpochConfig,
 )
-from .enum import AnnealingStrategy, Mode, ThresholdMode
+from .enum import AnnealingStrategy, LRSchedulerType, Mode, ThresholdMode
 
 __all__ = [
     "ConstantLRConfig",
@@ -50,6 +51,11 @@ class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = CONSTANT_LR_DEFAULTS["total_iters"]
     last_epoch: int = CONSTANT_LR_DEFAULTS["last_epoch"]
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -58,6 +64,11 @@ class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     gamma: PositiveFloat
     last_epoch: int = EXPO_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -70,6 +81,11 @@ class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = LINEAR_LR_DEFAULTS["total_iters"]
     last_epoch: int = LINEAR_LR_DEFAULTS["last_epoch"]
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -79,6 +95,11 @@ class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     step_size: PositiveInt
     gamma: PositiveFloat = STEP_LR_DEFAULTS["gamma"]
     last_epoch: int = STEP_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -98,6 +119,11 @@ class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
         assert len(np.unique(v)) == len(v), "Epoch(s) in 'milestones' should be unique."
         return sorted(v)
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
+
 
 class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
@@ -107,6 +133,11 @@ class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     total_iters: PositiveInt = POLY_LR_DEFAULTS["total_iters"]
     power: float = POLY_LR_DEFAULTS["power"]
     last_epoch: int = POLY_LR_DEFAULTS["last_epoch"]
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.EPOCH
 
 
 class ReduceLROnPlateauConfig(LRSchedulerConfig):
@@ -121,7 +152,7 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
     threshold_mode: ThresholdMode = REDUCE_LR_ON_PLATEAU_DEFAULTS["threshold_mode"]
     cooldown: NonNegativeInt = REDUCE_LR_ON_PLATEAU_DEFAULTS["cooldown"]
     min_lr: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = REDUCE_LR_ON_PLATEAU_DEFAULTS["min_lr"]
     eps: NonNegativeFloat = REDUCE_LR_ON_PLATEAU_DEFAULTS["eps"]
 
@@ -131,13 +162,18 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
         """Checks that 'ELSE' is always in 'min_lr' if it is a dict."""
         return cls.group_validator(v, field_name="min_lr")
 
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.LOSS
+
 
 class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.OneCycleLR`.
     """
 
-    max_lr: Union[PositiveFloat, Dict[str, PositiveFloat]]
+    max_lr: Union[PositiveFloat, Sequence[PositiveFloat], Dict[str, PositiveFloat]]
     total_steps: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["total_steps"]
     epochs: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["epochs"]
     steps_per_epoch: Optional[PositiveInt] = ONE_CYCLE_LR_DEFAULTS["steps_per_epoch"]
@@ -145,10 +181,10 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     anneal_strategy: AnnealingStrategy = ONE_CYCLE_LR_DEFAULTS["anneal_strategy"]
     cycle_momentum: bool = ONE_CYCLE_LR_DEFAULTS["cycle_momentum"]
     base_momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = ONE_CYCLE_LR_DEFAULTS["base_momentum"]
     max_momentum: Union[
-        NonNegativeFloat, Dict[str, NonNegativeFloat]
+        NonNegativeFloat, Sequence[NonNegativeFloat], Dict[str, NonNegativeFloat]
     ] = ONE_CYCLE_LR_DEFAULTS["max_momentum"]
     div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["div_factor"]
     final_div_factor: PositiveFloat = ONE_CYCLE_LR_DEFAULTS["final_div_factor"]
@@ -187,3 +223,22 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     def parameter_group_validator(cls, v, ctx):
         """Checks that 'ELSE' is always in a field if it is a dict."""
         return cls.group_validator(v, field_name=ctx.field_name)
+
+    def _check_optimizer_consistency(self, optimizer: Optimizer) -> None:
+        """
+        Checks if LR scheduler and optimizers are consistent.
+        """
+        super()._check_optimizer_consistency(optimizer)
+        if self.cycle_momentum:
+            if (
+                "momentum" not in optimizer.defaults
+                and "betas" not in optimizer.defaults
+            ):
+                raise ValueError(
+                    "If 'cycle_momentum' is True in OneCycleLR, the optimizer requires a momentum."
+                )
+
+    @classmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        return LRSchedulerType.STEP

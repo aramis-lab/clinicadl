@@ -49,6 +49,9 @@ def test_SupervisedModel(tmp_path):
     assert isinstance(out_batch, Batch)
     assert out_batch[0]["output"].shape == (1,)
 
+    # get optimizers
+    assert model.get_optimizers() == {"optimizer": model.optimizer}
+
     # eval
     model.eval()
     assert not network.training

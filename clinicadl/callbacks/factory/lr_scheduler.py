@@ -1,11 +1,16 @@
+from pathlib import Path
 from typing import Any, Optional, Union
 
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.optim.lr_schedulers.config.base import LRSchedulerConfig
-from clinicadl.optim.lr_schedulers.config.enum import ImplementedLRScheduler
+from clinicadl.optim.lr_schedulers.config import (
+    ImplementedLRScheduler,
+    LRSchedulerConfig,
+)
+from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 from .base import Callback
 
@@ -37,6 +42,20 @@ class LRScheduler(Callback):
     ----------
     scheduler : Union[str, ImplementedLRScheduler, LRSchedulerConfig, torch.optim.lr_scheduler.LRScheduler]
         The learning rate scheduler configuration or object. Can be:
+    optimizer : Optional[torch.optim.Optimizer], default=None
+        The optimizer associated to the LR scheduler. **Mandatory if a name or a config class
+        is passed to** ``scheduler``.
+    scheduler_type : Optional[LRSchedulerMode], default=None
+        The type of LR scheduler, among:
+
+        - ``"epoch-based"``: learning rate is updated at the end of the epoch (e.g. :py:class:`~torch.optim.lr_scheduler.LinearLR`);
+        - ``"loss-based"``: learning rate is updated at the end of the epoch according
+          to the validation loss (e.g. :py:class:`~torch.optim.lr_scheduler.ReduceLROnPlateau`);
+        - ``"step-based"``: learning rate is updated after each optimization step
+          (e.g. :py:class:`~torch.optim.lr_scheduler.OneCycleLR`).
+
+        **Mandatory if a raw LRScheduler is passed to** ``scheduler``. It will be ignore if a
+        config class is passed.
 
     **kwargs
         Additional keyword arguments passed to the scheduler config factory
@@ -73,95 +92,105 @@ class LRScheduler(Callback):
         scheduler = LRScheduler(torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=10))
     """
 
-    def __init__(self, scheduler: LRSchedulerType, **kwargs):
+    def __init__(
+        self,
+        scheduler: LRSchedulerType,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+        scheduler_type: Optional[LRSchedulerMode] = None,
+        **kwargs,
+    ):
         self.config: Optional[LRSchedulerConfig] = None
-        self.torch_scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
-        self.scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
+        self.scheduler: torch.optim.lr_scheduler.LRScheduler
+        self.scheduler_type: LRSchedulerType
+        self._initial_state: dict
 
-        if isinstance(scheduler, str):
-            scheduler = ImplementedLRScheduler(scheduler)
+        if isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
+            self.scheduler = scheduler
+            if not scheduler_type:
+                raise ValueError(
+                    "If you pass directly your own LRScheduler, you must must specify the type of scheduler via 'scheduler_type'."
+                )
+            self.scheduler_type = LRSchedulerMode(scheduler_type)
 
-        if isinstance(scheduler, ImplementedLRScheduler):
-            self.config = get_lr_scheduler_config(scheduler, **kwargs)
-
-        elif isinstance(scheduler, LRSchedulerConfig):
-            self.config = scheduler
-
-        elif isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
-            self.torch_scheduler = scheduler
         else:
-            raise ValueError(
-                f"Invalid scheduler type: {type(scheduler)}. "
-                f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
-            )
+            if isinstance(scheduler, str):
+                scheduler = ImplementedLRScheduler(scheduler)
 
-    def optimizers_equal(
-        self, opt1: torch.optim.Optimizer, opt2: torch.optim.Optimizer
-    ) -> bool:
-        """Check if two optimizers are equal."""
-        if type(opt1) != type(opt2):
-            return False
+            if isinstance(scheduler, ImplementedLRScheduler):
+                self.config = get_lr_scheduler_config(scheduler, **kwargs)
 
-        if len(opt1.param_groups) != len(opt2.param_groups):
-            return False
+            elif isinstance(scheduler, LRSchedulerConfig):
+                self.config = scheduler
 
-        for g1, g2 in zip(opt1.param_groups, opt2.param_groups):
-            # Comparer les hyperparamètres sauf les 'params' eux-mêmes
-            for key in g1:
-                if key == "params":
-                    continue
-                if g1[key] != g2.get(key):
-                    return False
-        return True
+            else:
+                raise ValueError(
+                    f"Invalid scheduler type: {type(scheduler)}. "
+                    f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
+                )
+
+            if not optimizer:
+                raise ValueError(
+                    "If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'."
+                )
+
+            self.scheduler = self.config.get_object(optimizer)
+            self.scheduler_type = self.config.scheduler_type()
+
+        self._initial_state = self.scheduler.state_dict()
 
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
-        Initialize the learning rate scheduler using the model's optimizer.
-
-        Parameters
-        ----------
-        config : _TrainingState
-            The training state, must include `model.optimizer`.
+        Checks the optimizer and resets the LR scheduler.
         """
+        optimizers = config.model.get_optimizers()
+        if self.scheduler.optimizer not in optimizers.values():
+            raise ClinicaDLConfigurationError(
+                f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not an optimizer returned by your ClinicaDLModel via the "
+                "method 'get_optimizers'. There is therefore a risk that this optimizer is not used during training."
+            )
 
-        if not hasattr(config.model, "optimizer"):
-            raise AttributeError("config.model must have an 'optimizer' attribute")
-
-        optimizer = config.model.optimizer
-        initial_lr = optimizer.param_groups[0].get("lr", None)
-
-        if initial_lr is None:
-            raise ValueError("Optimizer does not have a learning rate defined")
-
-        # Initialize scheduler depending on configuration
-
-        if self.config:
-            self.scheduler = self.config.get_object(config.model.optimizer)
-
-        elif self.torch_scheduler:
-            if not (
-                self.torch_scheduler.optimizer.defaults == optimizer.defaults
-                and isinstance(self.torch_scheduler.optimizer, type(optimizer))
-            ):
-                raise ValueError(
-                    f"The scheduler's optimizer you provided ({self.torch_scheduler.optimizer}) does not match "
-                    f"the model's optimizer ({optimizer})."
-                )
-            self.scheduler = self.torch_scheduler
-
-        else:
-            raise ValueError("Scheduler not properly initialized.")
+        self.scheduler.load_state_dict(self._initial_state)
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """
-        Step the learning rate scheduler after each training batch.
+        Step the learning rate scheduler after each training batch for
+        step-based schedulers.
         """
+        if self.scheduler_type == LRSchedulerMode.STEP:
+            self.scheduler.step()
 
-        if self.scheduler is None:
-            raise RuntimeError(
-                "Scheduler has not been initialized (call on_train_begin first)."
-            )
-        self.scheduler.step()
+    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+        """
+        Step the learning rate scheduler after each epoch for
+        epoch-based and loss-based schedulers.
+        """
+        if self.scheduler_type == LRSchedulerMode.EPOCH:
+            self.scheduler.step()
+        elif self.scheduler_type == LRSchedulerMode.LOSS:
+            val_loss = config.metrics.get_loss(epoch=config.epoch)
+            self.scheduler.step(val_loss)
+
+    def save_checkpoint(
+        self,
+        checkpoint_path: Path,
+        **kwargs,
+    ) -> None:
+        """To save the state of the LR scheduler."""
+        state = self.scheduler.state_dict()
+        torch.save(state, checkpoint_path)
+
+    def load_checkpoint(
+        self,
+        checkpoint_path: Path,
+        device: torch.device = torch.device("cpu"),
+        **kwargs,
+    ) -> None:
+        """To load a checkpoint saved with 'save_checkpoint'."""
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=device,
+        )
+        self.scheduler.load_state_dict(checkpoint)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -180,7 +209,7 @@ class LRScheduler(Callback):
             json_dict.update({"scheduler": scheduler})
             json_dict.update(config_dict)
 
-        if self.torch_scheduler:
-            json_dict.update(self.torch_scheduler.__dict__)
+        else:
+            json_dict.update(self.scheduler.__dict__)
 
         return json_dict

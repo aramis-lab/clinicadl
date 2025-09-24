@@ -1,4 +1,5 @@
-from typing import Set
+from abc import abstractmethod
+from collections.abc import Sequence
 
 import torch.optim as optim
 from pydantic import (
@@ -10,9 +11,17 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
+from .enum import LRSchedulerType
+from .utils import is_dict_type
+
 
 class LRSchedulerConfig(ObjectConfig):
     """Base config class for the LR scheduler."""
+
+    @classmethod
+    @abstractmethod
+    def scheduler_type(cls) -> LRSchedulerType:
+        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
 
     @classmethod
     def group_validator(cls, v, field_name: str):
@@ -62,6 +71,7 @@ class LRSchedulerConfig(ObjectConfig):
         torch.optim.lr_scheduler.LRScheduler
             The PyTorch LR Scheduler, associated to the optimizer.
         """
+        self._check_optimizer_consistency(optimizer)
         associated_class = self._get_class()
         config_dict = self.model_dump(exclude={"name"})
 
@@ -76,20 +86,25 @@ class LRSchedulerConfig(ObjectConfig):
 
         return associated_class(optimizer, **config_dict)
 
-    def get_all_groups(self) -> Set[str]:
+    def _check_optimizer_consistency(self, optimizer: Optimizer) -> None:
         """
-        Returns all parameter groups mentioned by the user in the fields.
-
-        Returns
-        -------
-        Set[str]
-            The groups.
+        Checks if LR scheduler and optimizers are consistent.
         """
-        for _, value in self:
-            if isinstance(value, dict):
-                return set(value.keys())  # all dict have the same keys
+        n_optimizer_groups = len(optimizer.param_groups)
 
-        return set()
+        for field_name, field in type(self).model_fields.items():
+            if is_dict_type(field.annotation):
+                value = getattr(self, field_name)
+
+                if isinstance(value, (Sequence, dict)):
+                    n_groups = len(value)
+
+                    if n_groups != n_optimizer_groups:
+                        raise ValueError(
+                            f"There are {n_optimizer_groups} parameter groups in the optimizer, "
+                            f"but {n_groups} groups in the {self._get_name()} for parameter '{field_name}'. "
+                            "Make sure that the parameter groups match between your optimizer and LR scheduler!"
+                        )
 
     @classmethod
     def _get_class(cls) -> type[optim.lr_scheduler.LRScheduler]:

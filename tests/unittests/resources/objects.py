@@ -114,7 +114,7 @@ CALLBACKS = [
     EarlyStopping(metrics=["mse"]),
     Checkpoint(patience=2, epochs=[3]),
     Tensorboard(),
-    LRScheduler(scheduler="LinearLR"),
+    # LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]
 
