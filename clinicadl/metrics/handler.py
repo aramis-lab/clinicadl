@@ -322,7 +322,7 @@ class MetricsHandler:
         float
             The value of the loss.
         """
-        return self.get_metric("loss", epoch)
+        return self.get_metric(LOSS, epoch)
 
     def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """

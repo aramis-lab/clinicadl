@@ -11,7 +11,10 @@ from clinicadl.optim.lr_schedulers.config import (
 )
 from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+)
 
 from .base import Callback
 
@@ -96,14 +99,15 @@ class LRScheduler(Callback):
     def __init__(
         self,
         scheduler: LRSchedulerType,
-        optimizer: Optional[torch.optim.Optimizer] = None,
+        optimizer_key: str = "optimizer",
         scheduler_type: Optional[LRSchedulerMode] = None,
         **kwargs,
     ):
         self.config: Optional[LRSchedulerConfig] = None
-        self.scheduler: torch.optim.lr_scheduler.LRScheduler
+        self.scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
+        self.optimizer_key = optimizer_key
         self.scheduler_type: LRSchedulerType
-        self._initial_state: dict
+        self._initial_state: Optional[dict] = None
 
         if isinstance(scheduler, torch.optim.lr_scheduler.LRScheduler):
             self.scheduler = scheduler
@@ -112,6 +116,7 @@ class LRScheduler(Callback):
                     "If you pass directly your own LRScheduler, you must must specify the type of scheduler via 'scheduler_type'."
                 )
             self.scheduler_type = LRSchedulerMode(scheduler_type)
+            self._initial_state = self.scheduler.state_dict()
 
         else:
             if isinstance(scheduler, str):
@@ -129,28 +134,30 @@ class LRScheduler(Callback):
                     f"Expected LRSchedulerConfig, ImplementedLRScheduler or torch.optim.lr_scheduler.LRScheduler"
                 )
 
-            if not optimizer:
-                raise ValueError(
-                    "If you pass a LRScheduler via a name or a config class, you must also pass the associated optimizer via 'optimizer'."
-                )
-
-            self.scheduler = self.config.get_object(optimizer)
             self.scheduler_type = self.config.scheduler_type()
-
-        self._initial_state = self.scheduler.state_dict()
 
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
-        Checks the optimizer and resets the LR scheduler.
+        Checks the optimizer_key and instantiates the LR scheduler.
         """
         optimizers = config.model.get_optimizers()
-        if self.scheduler.optimizer not in optimizers.values():
-            raise ClinicaDLConfigurationError(
-                f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not an optimizer returned by your ClinicaDLModel via the "
-                "method 'get_optimizers'. There is therefore a risk that this optimizer is not used during training."
-            )
+        try:
+            optimizer = optimizers[self.optimizer_key]
+        except KeyError as exc:
+            raise ClinicaDLArgumentError(
+                f"In LRScheduler, optimizer_key='{self.optimizer_key}' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                f"Optimizers are: {list(optimizers.keys())}"
+            ) from exc
 
-        self.scheduler.load_state_dict(self._initial_state)
+        if self.config:
+            self.scheduler = self.config.get_object(optimizer)
+        else:
+            if optimizer is not self.scheduler.optimizer:
+                raise ClinicaDLConfigurationError(
+                    f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not the same as "
+                    f"'{self.optimizer_key}' (returned by the 'get_optimizers' method of you ClinicaDLModel)."
+                )
+            self.scheduler.load_state_dict(self._initial_state)
 
     def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
         """
