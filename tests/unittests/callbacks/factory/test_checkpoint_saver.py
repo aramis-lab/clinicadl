@@ -27,6 +27,7 @@ def test_checkpoint_multiple_epochs(tmp_path):
     shutil.copytree(MAPS_DIR, tmp_path / "maps")
     MAPS = Maps(tmp_path / "maps")
     MAPS.load()
+    MAPS.training.splits[1].best_metrics["loss"].remove()
 
     optim = OPTIMIZER.get_object(network=NETWORK.get_object())
     callbacks = _CallbacksHandler(
@@ -45,6 +46,7 @@ def test_checkpoint_multiple_epochs(tmp_path):
         comp=COMP,
     )
     _ts.reset(deepcopy(SPLIT))
+    callbacks.on_train_begin(_ts)
     cs_callback.on_train_begin(_ts)
 
     assert _ts.split

@@ -157,6 +157,7 @@ def test_load(tmp_path):
         my_metric=CustomMetric(),
         mse=MSEMetricConfig(),
     )
+    metrics.init_metrics(MODEL)
     metrics.load(path=TSV_PATH / "validation.tsv")
     assert metrics._callable_metrics["loss"].get_buffer() is None
     excepted_df = pd.DataFrame.from_dict(
