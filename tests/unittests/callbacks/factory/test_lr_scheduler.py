@@ -187,6 +187,7 @@ def test_save_load_checkpoint(tmp_path):
     scheduler.save_checkpoint(tmp_path / "scheduler")
 
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
+    scheduler.on_train_begin(TRAINING_STATE)
     scheduler.load_checkpoint(tmp_path / "scheduler")
     scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
 
