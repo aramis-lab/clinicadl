@@ -280,7 +280,6 @@ class Trainer:
         self.callbacks.on_validation_end(config=self.config)
 
     def on_train_begin(self, split: Split) -> None:
-        self.model.train()
         self.reset(split)
 
         self._write_training_infos(split=split)

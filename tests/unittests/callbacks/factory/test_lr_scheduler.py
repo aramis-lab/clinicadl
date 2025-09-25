@@ -151,13 +151,13 @@ def test_save_load_checkpoint(tmp_path):
 
     optimizer.step()
     scheduler.scheduler.step()
-    scheduler.save_checkpoint(tmp_path / "scheduler.json")
+    scheduler.save_checkpoint(tmp_path / "scheduler")
 
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
-    scheduler.load_checkpoint(tmp_path / "scheduler.json")
+    scheduler.load_checkpoint(tmp_path / "scheduler")
     scheduler.scheduler.state_dict()["_last_lr"] = 0.0006
 
     net.to("cuda")
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
-    scheduler.load_checkpoint(tmp_path / "scheduler.json", device=torch.device("cuda"))
+    scheduler.load_checkpoint(tmp_path / "scheduler", device=torch.device("cuda"))
     scheduler.scheduler.state_dict()["_last_lr"] = 0.0006

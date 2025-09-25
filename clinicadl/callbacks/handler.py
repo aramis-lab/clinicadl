@@ -19,10 +19,10 @@ LOSS = "loss"
 PREFERRED_ORDER = [
     _TrainingLoss.__name__,
     LRScheduler.__name__,
-    _Monitor.__name__,
     _CheckpointSaver.__name__,
     Checkpoint.__name__,
     ModelSelection.__name__,
+    _Monitor.__name__,
     _Logger.__name__,
     MLflow.__name__,
     CodeCarbon.__name__,
@@ -96,7 +96,7 @@ class _CallbacksHandler:
 
             name = type(callback).__name__
 
-            if isinstance(callback, EarlyStopping):
+            if isinstance(callback, (EarlyStopping, LRScheduler)):
                 count = sum(k.startswith(name) for k in resolved)
                 unique_name = f"{name}{count + 1}" if name in resolved else name
                 resolved[unique_name] = callback
@@ -181,8 +181,10 @@ class _CallbacksHandler:
         }
         rest = {k: v for k, v in self.callbacks.items() if k not in early}
 
-        ordered = {name: rest.pop(name) for name in PREFERRED_ORDER if name in rest}
-        ordered.update(dict(sorted(early.items())))
+        ordered = dict(sorted(early.items()))
+        ordered.update(
+            {name: rest.pop(name) for name in PREFERRED_ORDER if name in rest}
+        )
         ordered.update(rest)
 
         self.callbacks = ordered

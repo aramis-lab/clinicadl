@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.dictionary.suffixes import PT
 from clinicadl.optim.lr_schedulers.config import (
     ImplementedLRScheduler,
     LRSchedulerConfig,
@@ -177,7 +178,7 @@ class LRScheduler(Callback):
     ) -> None:
         """To save the state of the LR scheduler."""
         state = self.scheduler.state_dict()
-        torch.save(state, checkpoint_path)
+        torch.save(state, checkpoint_path.with_suffix(PT))
 
     def load_checkpoint(
         self,
@@ -187,7 +188,7 @@ class LRScheduler(Callback):
     ) -> None:
         """To load a checkpoint saved with 'save_checkpoint'."""
         checkpoint = torch.load(
-            checkpoint_path,
+            checkpoint_path.with_suffix(PT),
             map_location=device,
         )
         self.scheduler.load_state_dict(checkpoint)

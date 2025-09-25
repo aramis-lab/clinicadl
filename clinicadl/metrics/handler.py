@@ -340,6 +340,36 @@ class MetricsHandler:
         if details_path:
             self._detailed_df.to_csv(details_path, sep=SEP, index=False)
 
+    def load(self, path: Path, details_path: Optional[Path] = None) -> None:
+        """
+        Loads a checkpoint DataFrame saved with :py:meth:`save`.
+
+        Parameters
+        ----------
+        path : Path
+            The path to the DataFrame with the aggregated results.
+        details_path: Optional[Path], default=None
+            The path to the DataFrame with the detailed results.
+            If ``None``, this DataFrame will not be loaded.
+        """
+        df = pd.read_csv(path, sep=SEP)
+
+        expected_columns = set(self.metrics.keys())
+        assert (
+            len(expected_columns.difference(df.columns)) == 0
+        ), f"Checkpoint in {str(path)} is not a valid metric file, some columns are missing: {expected_columns.difference(df.columns)}"
+        self.reset(reset_df=True)
+        self._df = df
+
+        if details_path:
+            detailed_df = pd.read_csv(details_path, sep=SEP)
+
+            expected_columns = expected_columns.union({PARTICIPANT_ID, SESSION_ID})
+            assert (
+                len(expected_columns.difference(detailed_df.columns)) == 0
+            ), f"Checkpoint in {str(path)} is not a valid metric details file, some columns are missing: {expected_columns.difference(detailed_df.columns)}"
+            self._detailed_df = detailed_df
+
     def write_json(self, json_path: Path) -> None:
         """
         Save the configuration to a JSON file.

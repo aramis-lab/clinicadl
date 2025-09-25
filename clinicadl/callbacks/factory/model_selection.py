@@ -2,8 +2,6 @@ import shutil
 from typing import Any, Union
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import CHECKPOINT, MODEL, OPTIMIZER
 from clinicadl.metrics.enum import Optimum
 
 from .base import Callback
@@ -120,10 +118,11 @@ class ModelSelection(Callback):
                     )
                 )
             ):
-                tmp_dir = config.maps.training.splits[config.split.index].tmp
+                tmp_dir = config.maps.training.splits[config.split.index].tmp.epochs[
+                    config.epoch
+                ]
 
                 shutil.copyfile(tmp_dir.model, metric_dir.model)
-                shutil.copyfile(tmp_dir.optimizer, metric_dir.optimizer)
 
     def to_dict(self) -> dict[str, Any]:
         """

@@ -76,10 +76,11 @@ class Checkpoint(Callback):
             epoch_dir = config.maps.training.splits[
                 config.split.index
             ].checkpoints.epochs[config.epoch]
-            tmp_dir = config.maps.training.splits[config.split.index].tmp
+            tmp_dir = config.maps.training.splits[config.split.index].tmp.epochs[
+                config.epoch
+            ]
 
             shutil.copyfile(tmp_dir.model, epoch_dir.model)
-            shutil.copyfile(tmp_dir.optimizer, epoch_dir.optimizer)
 
     def to_dict(self) -> dict[str, Any]:
         """

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
-from clinicadl.dictionary.suffixes import JSON, LOG, TSV, TXT
+from clinicadl.dictionary.suffixes import JSON, TSV, TXT
 from clinicadl.dictionary.words import (
     CAPS_DATASET,
     DATALOADER,
@@ -17,7 +17,7 @@ from clinicadl.dictionary.words import (
 from clinicadl.utils.typing import PathType
 
 from ...base import Directory
-from .best_metrics import TrainBestMetricDir
+from .best_metric import TrainBestMetricDir
 from .checkpoints import CheckpointsDir
 from .logs import LogsDir
 from .tmp import TmpDir
@@ -31,8 +31,7 @@ class TrainSplitDir(Directory):
 
         self.checkpoints = CheckpointsDir(parents_path=self.path)
         self.logs = LogsDir(parents_path=self.path)
-
-        self.tmp = TmpDir(parent_dir=self.path)
+        self.tmp = TmpDir(parents_path=self.path)
 
     def load(self):
         super().load()

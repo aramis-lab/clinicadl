@@ -4,11 +4,13 @@ from typing import Optional
 from torchsummary import summary
 
 from clinicadl.IO.maps.maps import Maps
+from clinicadl.IO.maps.training.splits import EpochTmpDir
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.split.split import Split
 from clinicadl.utils.computational.config import ComputationalConfig
+from clinicadl.utils.json import read_json, write_json
 
 from ..utils.config.base import ClinicaDLConfig
 
@@ -78,6 +80,11 @@ class _TrainingState(ClinicaDLConfig):
         self.epoch = 0
         self.batch = 0
 
+        # TODO:  temporary
+        self.maps.load()
+        if split.index not in self.maps.training.split_list:
+            self.maps.training._create_split(split.index)
+
     def write_torchsummary(self):
         """Write the model summary to a text file in the maps directory."""
         if self.split is None:
@@ -95,3 +102,23 @@ class _TrainingState(ClinicaDLConfig):
                     batch_size=self.n_batch,
                     device=self.comp.device.type,
                 )
+
+    def save_checkpoint(self, checkpoint_path: EpochTmpDir) -> None:
+        self.model.save_checkpoint(checkpoint_path.model)
+        checkpoint_path.metrics._create()
+        self.metrics.save(
+            path=checkpoint_path.metrics.validation,
+            details_path=checkpoint_path.metrics.validation_details,
+        )
+        write_json(checkpoint_path.stop, self.stop)
+
+    def load_checkpoint(self, checkpoint_path: EpochTmpDir) -> None:
+        self.maps.load()
+        self.reset(self.split)
+        self.model.load_checkpoint(checkpoint_path.model)
+        self.metrics.load(
+            path=checkpoint_path.metrics.validation,
+            details_path=checkpoint_path.metrics.validation_details,
+        )
+        self.stop = read_json(checkpoint_path.stop)
+        self.epoch = checkpoint_path.epoch + 1

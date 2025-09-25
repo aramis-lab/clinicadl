@@ -1,11 +1,15 @@
-from typing import Any
+from __future__ import annotations
 
-import torch
+from typing import TYPE_CHECKING, Any
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.dictionary.words import EPOCH, MODEL
+from clinicadl.dictionary.suffixes import PT
+from clinicadl.utils.names import camel_to_snake
 
 from .base import Callback
+
+if TYPE_CHECKING:
+    from ..handler import _CallbacksHandler
 
 
 class _CheckpointSaver(Callback):
@@ -47,7 +51,9 @@ class _CheckpointSaver(Callback):
                 "The split has no val_loader defined. Please run `get_dataloader()`"
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(
+        self, config: _TrainingState, callbacks: _CallbacksHandler, **kwargs
+    ) -> None:
         """
         Save the current model and optimizer state at the end of each epoch.
 
@@ -59,21 +65,18 @@ class _CheckpointSaver(Callback):
             return
         self._last_saved_epoch = config.epoch
 
-        model_weights = {
-            MODEL: config.model.network.state_dict(),
-            EPOCH: config.epoch,
-        }
         tmp_dir = config.maps.training.splits[config.split.index].tmp
-        tmp_dir._create(_exists_ok=True)
+        tmp_dir._create_epoch(config.epoch)
+        epoch_dir = tmp_dir.epochs[config.epoch]
 
-        torch.save(model_weights, tmp_dir.model)
+        config.save_checkpoint(epoch_dir)
 
-        optim_weights = {
-            MODEL: config.model.optimizer.state_dict(),
-            EPOCH: config.epoch,
-        }
+        for name, callback in callbacks.callbacks.items():
+            lowered_name = camel_to_snake(name)
+            callback_json = epoch_dir.callbacks / lowered_name
+            callback.save_checkpoint(callback_json)
 
-        torch.save(optim_weights, tmp_dir.optimizer)
+        tmp_dir.clear(except_epoch=config.epoch)
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         """

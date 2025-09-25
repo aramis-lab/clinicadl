@@ -1,10 +1,14 @@
+import shutil
+
 import pytest
 
 from clinicadl.callbacks.factory.checkpoint import Checkpoint
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
+from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.IO.maps import Maps
 
-from ...resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT
+from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
 GOOD_INPUTS = [
     (5, None),
@@ -16,7 +20,10 @@ GOOD_INPUTS = [
 
 
 @pytest.mark.parametrize("patience, epochs", GOOD_INPUTS)
-def test_good_checkpoint(patience, epochs):
+def test_good_checkpoint(tmp_path, patience, epochs):
+    shutil.copytree(MAPS_DIR, tmp_path / "maps")
+    MAPS = Maps(tmp_path / "maps")
+
     checkpoint = Checkpoint(patience=patience, epochs=epochs)
     _saver = _CheckpointSaver()
 
@@ -25,6 +32,7 @@ def test_good_checkpoint(patience, epochs):
     _ts = _TrainingState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
+    callbacks = _CallbacksHandler(metrics=METRICS_HANDLER, callbacks=[])
     _ts.reset(SPLIT)
 
     for epoch in range(OPTIM.epochs):
@@ -32,7 +40,7 @@ def test_good_checkpoint(patience, epochs):
         _saver.on_train_begin(_ts)
         _saver.on_epoch_begin(_ts)
 
-        _saver.on_epoch_end(_ts)
+        _saver.on_epoch_end(_ts, callbacks=callbacks)
         checkpoint.on_epoch_end(_ts)
 
         if (
@@ -46,8 +54,11 @@ def test_good_checkpoint(patience, epochs):
                 .checkpoints.epochs[epoch]
                 .exists()
             )
-            assert _ts.maps.training.splits[_ts.split.index].tmp.model.is_file()
-            assert _ts.maps.training.splits[_ts.split.index].tmp.optimizer.is_file()
+            assert (
+                _ts.maps.training.splits[_ts.split.index]
+                .tmp.epochs[epoch]
+                .model.is_file()
+            )
 
     _saver.on_train_end(_ts)
     checkpoint.on_train_end(_ts)
