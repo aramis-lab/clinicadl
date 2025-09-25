@@ -21,7 +21,7 @@ class LRSchedulerConfig(ObjectConfig):
     @classmethod
     @abstractmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
 
     @classmethod
     def group_validator(cls, v, field_name: str):

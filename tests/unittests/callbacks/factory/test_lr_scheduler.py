@@ -7,23 +7,12 @@ import pytest
 import torch
 from torch.optim.lr_scheduler import (
     ConstantLR,
-    ExponentialLR,
-    LinearLR,
-    MultiStepLR,
-    OneCycleLR,
-    PolynomialLR,
-    ReduceLROnPlateau,
     StepLR,
 )
 
 from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
 from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
-    ExponentialLRConfig,
-    LinearLRConfig,
-    MultiStepLRConfig,
-    OneCycleLRConfig,
-    PolynomialLRConfig,
     ReduceLROnPlateauConfig,
     StepLRConfig,
 )
@@ -61,6 +50,14 @@ def test__init__():
     # name
     scheduler_from_name = LRScheduler("ConstantLR")
     assert isinstance(scheduler_from_name.config, ConstantLRConfig)
+
+    # metric
+    with pytest.raises(
+        ClinicaDLConfigurationError,
+        match="If scheduler_type='metric-based', you must pass the name of the validation metric via 'metric'.",
+    ):
+        LRScheduler(scheduler=raw_scheduler, scheduler_type="metric-based")
+    LRScheduler(scheduler=raw_scheduler, scheduler_type="metric-based", metric="mse")
 
 
 def test_on_train_begin():
@@ -141,13 +138,13 @@ def test_on_train_begin():
 
 def test_steps_scheduler():
     TRAINING_STATE.metrics._df = pd.DataFrame(
-        {"epoch": [0], "mse": [1.0], "mae": [1.0], "loss": [0.5]}
+        {"epoch": [0], "mse": [1.1], "loss": [0.5]}
     )
     sched = StepLR(TRAINING_STATE.model.optimizer, step_size=1)
     epoch_scheduler = LRScheduler(StepLRConfig(step_size=1))
     step_scheduler = LRScheduler(sched, scheduler_type="step-based")
     metric_scheduler = LRScheduler(
-        ReduceLROnPlateauConfig(), scheduler_type="loss-based"
+        ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric="mse"
     )
 
     epoch_scheduler.on_train_begin(TRAINING_STATE)
@@ -173,7 +170,7 @@ def test_steps_scheduler():
 
     epoch_scheduler.scheduler.step.assert_called_once()
     step_scheduler.scheduler.step.assert_called_once()
-    metric_scheduler.scheduler.step.assert_called_once()
+    metric_scheduler.scheduler.step.assert_called_once_with(1.1)
 
 
 @pytest.mark.gpu

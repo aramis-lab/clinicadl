@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
+from clinicadl.losses import Loss
 from clinicadl.utils.device import DeviceType
 from clinicadl.utils.exceptions import NotInterpretableJson
 from clinicadl.utils.json import read_json, write_json
@@ -136,10 +137,35 @@ class ClinicaDLModel(ABC):
 
         All optimizers must be given a name.
 
+        This methods enables ClinicaDL to perform operations
+        on your optimizers, such as :torch:`learning rate scheduling <optim.html#how-to-adjust-learning-rate>`.
+
         Returns
         -------
         dict[str, optim.Optimizer]
             The optimizers and their names.
+        """
+
+    @abstractmethod
+    def get_loss_functions(self) -> dict[str, Loss]:
+        """
+        To retrieve loss functions used during training.
+
+        All loss functions must be given a name.
+
+        This method enables ClinicaDL to compute to compute losses
+        on the validation set.
+
+        .. important::
+            All loss functions must have a :torch:`PyTorch style <nn.html#loss-functions>`,
+            with an attribute named ``reduction`` that can be set to ``none`` in order to
+            compute the validation loss at the image level. Otherwise, the reduction is done
+            at the batch level, so image-level results are not accessible.
+
+        Returns
+        -------
+        dict[str, Loss]
+            The loss functions, as callable that returns a :py:class:`torch.Tensor`, and their names.
         """
 
     @abstractmethod

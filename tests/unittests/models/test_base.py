@@ -16,6 +16,9 @@ class CustomModel(ClinicaDLModel):
     def evaluation_step(self):
         pass
 
+    def get_loss_functions(self):
+        pass
+
     def get_optimizers(self):
         pass
 

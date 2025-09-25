@@ -12,7 +12,7 @@ from clinicadl.optim.lr_schedulers.config import *
         ({"step_size": 1}, "StepLR", StepLRConfig, "epoch-based"),
         ({"milestones": [1, 2]}, "MultiStepLR", MultiStepLRConfig, "epoch-based"),
         ({}, "PolynomialLR", PolynomialLRConfig, "epoch-based"),
-        ({}, "ReduceLROnPlateau", ReduceLROnPlateauConfig, "loss-based"),
+        ({}, "ReduceLROnPlateau", ReduceLROnPlateauConfig, "metric-based"),
         (
             {"max_lr": 1, "total_steps": 10},
             "OneCycleLR",

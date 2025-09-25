@@ -46,15 +46,15 @@ class LRScheduler(Callback):
     ----------
     scheduler : Union[str, ImplementedLRScheduler, LRSchedulerConfig, torch.optim.lr_scheduler.LRScheduler]
         The learning rate scheduler configuration or object. Can be:
-    optimizer : Optional[torch.optim.Optimizer], default=None
+    optimizer : str, default="optimizer"
         The optimizer associated to the LR scheduler. **Mandatory if a name or a config class
         is passed to** ``scheduler``.
     scheduler_type : Optional[LRSchedulerMode], default=None
         The type of LR scheduler, among:
 
         - ``"epoch-based"``: learning rate is updated at the end of the epoch (e.g. :py:class:`~torch.optim.lr_scheduler.LinearLR`);
-        - ``"loss-based"``: learning rate is updated at the end of the epoch according
-          to the validation loss (e.g. :py:class:`~torch.optim.lr_scheduler.ReduceLROnPlateau`);
+        - ``"metric-based"``: learning rate is updated at the end of the epoch according
+          to a validation metric (e.g. :py:class:`~torch.optim.lr_scheduler.ReduceLROnPlateau`);
         - ``"step-based"``: learning rate is updated after each optimization step
           (e.g. :py:class:`~torch.optim.lr_scheduler.OneCycleLR`).
 
@@ -101,6 +101,7 @@ class LRScheduler(Callback):
         scheduler: LRSchedulerType,
         optimizer_key: str = "optimizer",
         scheduler_type: Optional[LRSchedulerMode] = None,
+        metric: Optional[str] = None,
         **kwargs,
     ):
         self.config: Optional[LRSchedulerConfig] = None
@@ -136,6 +137,13 @@ class LRScheduler(Callback):
 
             self.scheduler_type = self.config.scheduler_type()
 
+        if self.scheduler_type == LRSchedulerMode.METRIC and not metric:
+            raise ClinicaDLConfigurationError(
+                f"If scheduler_type='{LRSchedulerMode.METRIC.value}', you must "
+                "pass the name of the validation metric via 'metric'."
+            )
+        self.metric = metric
+
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
         Checks the optimizer_key and instantiates the LR scheduler.
@@ -170,13 +178,13 @@ class LRScheduler(Callback):
     def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
         """
         Step the learning rate scheduler after each epoch for
-        epoch-based and loss-based schedulers.
+        epoch-based and metric-based schedulers.
         """
         if self.scheduler_type == LRSchedulerMode.EPOCH:
             self.scheduler.step()
-        elif self.scheduler_type == LRSchedulerMode.LOSS:
-            val_loss = config.metrics.get_loss(epoch=config.epoch)
-            self.scheduler.step(val_loss)
+        elif self.scheduler_type == LRSchedulerMode.METRIC:
+            val_metric = config.metrics.get_metric(self.metric, epoch=config.epoch)
+            self.scheduler.step(val_metric)
 
     def save_checkpoint(
         self,

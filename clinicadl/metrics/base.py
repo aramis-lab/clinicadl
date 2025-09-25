@@ -15,7 +15,6 @@ import torch
 from monai.metrics.metric import CumulativeIterationMetric
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.structures import DataPoint
 
 from .enum import Optimum
 

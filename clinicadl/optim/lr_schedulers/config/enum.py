@@ -26,7 +26,7 @@ class LRSchedulerType(str, Enum):
 
     STEP = "step-based"
     EPOCH = "epoch-based"
-    LOSS = "loss-based"
+    METRIC = "metric-based"
 
 
 class Mode(str, Enum):

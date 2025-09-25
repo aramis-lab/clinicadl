@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 import pandas as pd
 from pydantic import field_serializer
@@ -11,7 +10,6 @@ from clinicadl.data.dataloader import Batch
 from clinicadl.dictionary.utils import SEP
 from clinicadl.dictionary.words import (
     EPOCH,
-    LOSS,
     PARTICIPANT,
     PARTICIPANT_ID,
     SESSION,
@@ -19,14 +17,18 @@ from clinicadl.dictionary.words import (
 )
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig, get_metric_config
 from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 from .base import Metric
 from .types import MetricOrConfig
 
+if TYPE_CHECKING:
+    from clinicadl.models import ClinicaDLModel
+
 CUSTOM_METRIC = "Custom metric passed by the user"
 
 
-class _MetricProcessor(ClinicaDLConfig):
+class MetricsHandlerConfig(ClinicaDLConfig):
     """
     To check and convert metrics passed by the user.
     """
@@ -52,7 +54,7 @@ class _MetricProcessor(ClinicaDLConfig):
         return repr_
 
     @classmethod
-    def from_json(cls, json_path: Path, **kwargs) -> _MetricProcessor:
+    def from_json(cls, json_path: Path, **kwargs) -> MetricsHandlerConfig:
         """
         Reads the serialized config class from a JSON file.
         """
@@ -70,16 +72,18 @@ class _MetricProcessor(ClinicaDLConfig):
                         f"{name}=<your-custom-metric>"
                     )
 
-        return _MetricProcessor(metrics=dict_)
+        return MetricsHandlerConfig(metrics=dict_)
 
-    def get_callable_metrics(self) -> dict[str, Metric]:
+    def get_callable_metrics(self, model: ClinicaDLModel) -> dict[str, Metric]:
         """
         Gets the callable metrics.
         """
         callable_metrics: Dict[str, Metric] = {}
 
         for name, metric in self.metrics.items():
-            if isinstance(metric, MetricConfig):
+            if isinstance(metric, LossMetricConfig):
+                callable_metrics[name] = metric.get_object(model)
+            elif isinstance(metric, MetricConfig):
                 callable_metrics[name] = metric.get_object()
             else:
                 callable_metrics[name] = metric
@@ -116,9 +120,6 @@ class MetricsHandler:
 
     Parameters
     ----------
-    loss : Optional[LossMetricConfig], default=None
-        A loss to add to the metrics. It must be passed via
-        :py:class:`clinicadl.metrics.config.LossMetricConfig`.
     **metrics : MetricConfig
         Metrics to add to the MetricsHandler. They must be passed as
         :py:class:`clinicadl.metrics.config.MetricConfig` or :py:class:`clinicadl.metrics.Metric`.
@@ -126,21 +127,35 @@ class MetricsHandler:
 
     def __init__(
         self,
-        loss: Optional[LossMetricConfig] = None,
         **metrics: MetricOrConfig,
     ):
         if not metrics:
             metrics = {}
 
-        self._metrics_processor = _MetricProcessor(metrics=metrics)
-        self.metrics = deepcopy(self._metrics_processor.metrics)
-        self._callable_metrics = self._metrics_processor.get_callable_metrics()
-
-        if loss:
-            self._add_loss(loss)
+        self.config = MetricsHandlerConfig(metrics=metrics)
+        self._callable_metrics = None
+        self._model = None
 
         self._df = self._init_df()
         self._detailed_df = self._init_detailed_df()
+
+    def init_metrics(self, model: ClinicaDLModel) -> None:
+        """
+        Instantiates the metrics from their config classes.
+
+        Parameters
+        ----------
+        model : ClinicaDLModel
+            The model that contains the potential losses to compute
+            on the validation set.
+        """
+        self._callable_metrics = self.config.get_callable_metrics(model)
+        self._model = model
+
+    @property
+    def metrics(self):
+        """The metrics currently in the MetricsHandler."""
+        return self.config.metrics
 
     @property
     def df(self) -> pd.DataFrame:
@@ -175,7 +190,6 @@ class MetricsHandler:
 
     def add_metrics(
         self,
-        loss: Optional[LossMetricConfig] = None,
         **metrics: MetricOrConfig,
     ) -> None:
         """
@@ -183,25 +197,24 @@ class MetricsHandler:
 
         Parameters
         ----------
-        loss : Optional[LossMetricConfig], default=None
-            A loss to add to the metrics. It must be passed via
-            :py:class:`clinicadl.metrics.config.LossMetricConfig`.
         **metrics : MetricConfig
             Metrics to add to the MetricsHandler. They must be passed as
             :py:class:`clinicadl.metrics.config.MetricConfig` or :py:class:`clinicadl.metrics.Metric`.
         """
-        self._metrics_processor.add_metrics(metrics)
-        self.metrics = self._metrics_processor.metrics
-        self._callable_metrics = self._metrics_processor.get_callable_metrics()
+        self.config.add_metrics(metrics)
+        if self._callable_metrics is not None:
+            self._callable_metrics = self.config.get_callable_metrics(self._model)
 
-        if loss:
-            self._add_loss(loss=loss)
+        new_columns = self._df.columns.union(self.metrics.keys())
+        self._df = self._df.reindex(columns=new_columns, fill_value=pd.NA)
 
-        self._df = self._df.reindex(
-            columns=self._df.columns.union(self.metrics.keys()), fill_value=pd.NA
-        )
+        new_columns = (
+            self._detailed_df.columns.drop([PARTICIPANT_ID, SESSION_ID])
+            .union(self.metrics.keys())
+            .union([PARTICIPANT_ID, SESSION_ID])
+        )  # we want participant and session at the end
         self._detailed_df = self._detailed_df.reindex(
-            columns=self._detailed_df.columns.union(self.metrics.keys()),
+            columns=new_columns,
             fill_value=pd.NA,
         )
 
@@ -218,8 +231,9 @@ class MetricsHandler:
         --------
         :py:meth:`monai.metrics.Cumulative.reset`
         """
-        for metric in self._callable_metrics.values():
-            metric.reset()
+        if self._callable_metrics is not None:
+            for metric in self._callable_metrics.values():
+                metric.reset()
 
         if reset_df:
             self._df = self._init_df()
@@ -238,6 +252,11 @@ class MetricsHandler:
         --------
         :py:meth:`monai.metrics.Cumulative.aggregate`
         """
+        if self._callable_metrics is None:
+            raise ClinicaDLConfigurationError(
+                "First, call 'init_metrics' to instantiate the metrics."
+            )
+
         values = {}
         for name, metric in self._callable_metrics.items():
             values[name] = metric.aggregate()
@@ -265,6 +284,11 @@ class MetricsHandler:
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
         """
+        if self._callable_metrics is None:
+            raise ClinicaDLConfigurationError(
+                "First, call 'init_metrics' to instantiate the metrics."
+            )
+
         participants = batch.get_field(PARTICIPANT)
         sessions = batch.get_field(SESSION)
 
@@ -306,23 +330,6 @@ class MetricsHandler:
             return self.df.set_index(EPOCH).loc[epoch, metric]
         else:
             return self.df.iloc[-1][metric]
-
-    def get_loss(self, epoch: Optional[int] = None) -> float:
-        """
-        To get the value of the loss.
-
-        Parameters
-        ----------
-        epoch : Optional[int], default=None
-            The epoch for which the loss is wanted. If ``None``, the method will
-            return the last computed loss.
-
-        Returns
-        -------
-        float
-            The value of the loss.
-        """
-        return self.get_metric(LOSS, epoch)
 
     def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
@@ -374,21 +381,17 @@ class MetricsHandler:
         """
         Save the configuration to a JSON file.
 
-        .. note::
-            The loss metric is not saved in this file.
-
         Parameters
         ----------
         json_path : Path
             Destination file path.
         """
-        self._metrics_processor.write_json(json_path)
+        self.config.write_json(json_path)
 
     @classmethod
     def from_json(
         cls,
         json_path: Path,
-        loss: Optional[LossMetricConfig] = None,
         **metrics: MetricConfig,
     ) -> MetricsHandler:
         """
@@ -398,25 +401,9 @@ class MetricsHandler:
         ----------
         json_path : Path
             Path to the JSON file.
-        loss : Optional[LossMetricConfig], default=None
-            A loss to add to the metrics. Indeed, the loss is not save in the JSON file by
-            :py:meth:`write_json`.
         **metrics : MetricConfig
             Other metrics to add in the MetricsHandler. It is also a way to pass a custom
             metric that otherwise cannot be read in the JSON file.
         """
-        metrics_processor = _MetricProcessor.from_json(json_path, **metrics)
-        return cls(loss=loss, **metrics_processor.metrics)
-
-    def _add_loss(self, loss: LossMetricConfig) -> None:
-        """
-        To add the loss to the metrics.
-        """
-        if LOSS in self.metrics:
-            raise ValueError("You already passed a loss!")
-        if not isinstance(loss, LossMetricConfig):
-            raise ValueError(
-                f"Loss must be passed as a LossMetricConfig. Got {type(loss).__name__}"
-            )
-        self.metrics[LOSS] = loss
-        self._callable_metrics[LOSS] = loss.get_object()
+        metrics_processor = MetricsHandlerConfig.from_json(json_path, **metrics)
+        return cls(**metrics_processor.metrics)

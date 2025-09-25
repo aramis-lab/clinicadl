@@ -14,6 +14,11 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
 from clinicadl.metrics.config import LossMetricConfig, MSEMetricConfig
 from clinicadl.metrics.handler import MetricsHandler
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+)
+from tests.unittests.resources.objects import MODEL
 
 DATAPOINTS = [
     DataPoint(
@@ -44,20 +49,22 @@ class CustomMetric(Metric):
 
 
 def test_MetricsHandler():
+    MODEL.loss = BCELoss()
     metrics = MetricsHandler(
-        loss=LossMetricConfig(
-            loss_fn=BCELoss(),
+        my_loss=LossMetricConfig(
+            loss_key="loss",
         ),
         mse=MSEMetricConfig(),
         my_metric=CustomMetric(),
     )
 
+    metrics.init_metrics(MODEL)
     metrics(BATCH_1)
     expected_df = pd.DataFrame.from_dict(
         {
+            "my_loss": pd.Series([0.0, 100.0, 0.0], dtype=np.float32),
             "mse": pd.Series([0.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series([1.0, 0.0, 1.0], dtype=np.float32),
-            "loss": pd.Series([0.0, 100.0, 0.0], dtype=np.float32),
             "participant_id": [f"sub-{i}" for i in range(3)],
             "session_id": [f"ses-{i}" for i in range(3)],
         }
@@ -67,9 +74,11 @@ def test_MetricsHandler():
     metrics(BATCH_2)
     expected_df = pd.DataFrame.from_dict(
         {
+            "my_loss": pd.Series(
+                [0.0, 100.0, 0.0, 100.0, 100.0, 0.0], dtype=np.float32
+            ),
             "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series([1.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float32),
-            "loss": pd.Series([0.0, 100.0, 0.0, 100.0, 100.0, 0.0], dtype=np.float32),
             "participant_id": [f"sub-{i}" for i in range(6)],
             "session_id": [f"ses-{i}" for i in range(6)],
         }
@@ -79,28 +88,57 @@ def test_MetricsHandler():
     metrics.aggregate()
     expected_df = pd.DataFrame.from_dict(
         {
+            "my_loss": pd.Series([50.0], dtype=np.float64),
             "mse": pd.Series([0.5], dtype=np.float64),
             "my_metric": pd.Series([0.5], dtype=np.float64),
-            "loss": pd.Series([50.0], dtype=np.float64),
         }
     )
     pd.testing.assert_frame_equal(metrics.df, expected_df)
 
 
-def test_reset():
+def test_init_metrics():
+    MODEL.loss = BCELoss()
     metrics = MetricsHandler(
         loss=LossMetricConfig(
-            loss_fn=BCELoss(),
+            loss_key="loss_",
         ),
         mse=MSEMetricConfig(),
     )
+
+    with pytest.raises(
+        ClinicaDLArgumentError,
+        match="In LossMetricConfig, loss_key='loss_' but there is no such loss*",
+    ):
+        metrics.init_metrics(MODEL)
+
+    metrics = MetricsHandler(
+        loss=LossMetricConfig(
+            loss_key="loss",
+        ),
+        mse=MSEMetricConfig(),
+    )
+
+    with pytest.raises(
+        ClinicaDLConfigurationError,
+        match="First, call 'init_metrics' to instantiate the metrics.",
+    ):
+        metrics(BATCH_1)
+
+    metrics.init_metrics(MODEL)
+    assert len(metrics._callable_metrics) == 2
+
+
+def test_reset():
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+    )
+    metrics.init_metrics(MODEL)
 
     metrics(BATCH_1)
     metrics.aggregate()
     metrics.reset(reset_df=True)
     assert len(metrics.df) == 0
     assert len(metrics.detailed_df) == 0
-    metrics._callable_metrics["loss"].get_buffer() is None
     metrics._callable_metrics["mse"].get_buffer() is None
 
     metrics(BATCH_2)
@@ -108,7 +146,6 @@ def test_reset():
     metrics.reset()
     assert len(metrics.df) == 1
     assert len(metrics.detailed_df) == 3
-    metrics._callable_metrics["loss"].get_buffer() is None
     metrics._callable_metrics["mse"].get_buffer() is None
 
 
@@ -178,6 +215,8 @@ def test_epoch():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
     )
+    metrics.init_metrics(MODEL)
+
     metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
     metrics.reset()
@@ -220,16 +259,22 @@ def test_add_metrics():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
     )
+    metrics.init_metrics(MODEL)
     metrics(BATCH_1)
-    metrics.add_metrics(
-        loss=LossMetricConfig(loss_fn=BCELoss()), my_metric=CustomMetric()
-    )
+    metrics.aggregate()
+    metrics.add_metrics(my_metric=CustomMetric())
     metrics(BATCH_2)
+    metrics.aggregate()
     expected_df = pd.DataFrame.from_dict(
         {
-            "loss": pd.Series(
-                [np.nan, np.nan, np.nan, 100.0, 100.0, 0.0], dtype=np.float32
-            ),
+            "mse": pd.Series([0.33333, 0.66666], dtype=np.float64),
+            "my_metric": pd.Series([np.nan, 0.33333], dtype=np.float64),
+        }
+    )
+    pd.testing.assert_frame_equal(metrics.df, expected_df, rtol=1e-4)
+
+    expected_df = pd.DataFrame.from_dict(
+        {
             "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series(
                 [np.nan, np.nan, np.nan, 0.0, 0.0, 1.0], dtype=np.float32
@@ -244,31 +289,21 @@ def test_add_metrics():
 def test_get_metric():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
-        loss=LossMetricConfig(
-            loss_fn=BCELoss(),
-        ),
     )
+    metrics.init_metrics(MODEL)
     metrics(BATCH_1)
     metrics.aggregate(epoch=0)
     metrics.reset()
     metrics(BATCH_2)
     metrics.aggregate(epoch=1)
     assert np.isclose(metrics.get_metric("mse"), 0.66666, rtol=1e-4)
-    assert np.isclose(metrics.get_loss(), 66.666, rtol=1e-4)
     assert np.isclose(metrics.get_metric("mse", epoch=0), 0.33333, rtol=1e-4)
-    assert np.isclose(metrics.get_loss(epoch=0), 33.333, rtol=1e-4)
 
 
 def test_checks():
     with pytest.raises(ValidationError):
         MetricsHandler(
             mse=lambda x: x,
-        )
-    with pytest.raises(
-        ValueError, match="Loss must be passed as a LossMetricConfig. Got function"
-    ):
-        MetricsHandler(
-            loss=lambda x: x,
         )
 
     config = MetricsHandler(
@@ -279,21 +314,13 @@ def test_checks():
     with pytest.raises(ValidationError):
         config.add_metrics(my_metric=lambda x: x)
 
-    with pytest.raises(
-        ValueError,
-        match="Loss must be passed as a LossMetricConfig. Got MSEMetricConfig",
-    ):
-        config.add_metrics(loss=MSEMetricConfig())
-    config.add_metrics(loss=LossMetricConfig(loss_fn=BCELoss()))
-    with pytest.raises(ValueError, match="You already passed a loss!"):
-        config.add_metrics(loss=LossMetricConfig(loss_fn=BCELoss()))
-
 
 def test_save_df(tmp_path):
     metrics = MetricsHandler(
-        loss=LossMetricConfig(loss_fn=BCELoss()),
         mse=MSEMetricConfig(),
     )
+    metrics.init_metrics(MODEL)
+
     metrics(BATCH_1)
     metrics.aggregate()
     metrics.save(tmp_path / "df.tsv")
@@ -301,7 +328,6 @@ def test_save_df(tmp_path):
     expected_df = pd.DataFrame.from_dict(
         {
             "mse": pd.Series([0.3333333]),
-            "loss": pd.Series([33.33333]),
         }
     )
     pd.testing.assert_frame_equal(df, expected_df)
@@ -311,7 +337,6 @@ def test_save_df(tmp_path):
     expected_df = pd.DataFrame.from_dict(
         {
             "mse": pd.Series([0.0, 1.0, 0.0]),
-            "loss": pd.Series([0.0, 100.0, 0.0]),
             "participant_id": [f"sub-{i}" for i in range(3)],
             "session_id": [f"ses-{i}" for i in range(3)],
         }
@@ -321,7 +346,6 @@ def test_save_df(tmp_path):
 
 def test_read_write_json(tmp_path):
     metrics = MetricsHandler(
-        loss=LossMetricConfig(loss_fn=BCELoss()),
         mse=MSEMetricConfig(),
     )
     metrics.add_metrics(my_metric=CustomMetric())
@@ -354,4 +378,16 @@ def test_read_write_json(tmp_path):
     )
     assert isinstance(metrics.metrics["mse"], MSEMetricConfig)
     assert isinstance(metrics.metrics["my_metric"], CustomMetric)
-    assert isinstance(metrics.metrics["loss"], LossMetricConfig)
+
+
+def test_empty():
+    metrics = MetricsHandler()
+    metrics.init_metrics(MODEL)
+    metrics(BATCH_1)
+    empty_df = pd.DataFrame.from_dict(
+        {
+            "participant_id": [f"sub-{i}" for i in range(3)],
+            "session_id": [f"ses-{i}" for i in range(3)],
+        }
+    )
+    pd.testing.assert_frame_equal(metrics.detailed_df, empty_df)
