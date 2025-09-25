@@ -180,6 +180,7 @@ def test_save_load_checkpoint(tmp_path):
     net = NETWORK.get_object()
     optimizer = OPTIMIZER.get_object(net)
     scheduler = LRScheduler(StepLRConfig(step_size=1), optimizer=optimizer)
+    scheduler.on_train_begin(TRAINING_STATE)
 
     optimizer.step()
     scheduler.scheduler.step()
