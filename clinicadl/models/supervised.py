@@ -180,13 +180,13 @@ class SupervisedModel(ClinicaDLModel):
 
     def get_loss_functions(self) -> dict[str, Loss]:
         """
-        Returns the loss functions that will be computed
+        Returns the loss function, that will be computed
         on the validation set.
 
         Returns
         -------
         dict[str, Loss]
-            The loss function named 'loss'.
+            The loss function, named ``"loss"``.
         """
         return {"loss": self.loss}
 
@@ -197,7 +197,7 @@ class SupervisedModel(ClinicaDLModel):
         Returns
         -------
         dict[str, optim.Optimizer]
-            The optimizer named 'optimizer'.
+            The optimizer, named ``"optimizer"``.
         """
         return {"optimizer": self.optimizer}
 
