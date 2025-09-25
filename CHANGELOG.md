@@ -5,6 +5,26 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0rc2] – 2025-09-25
+
+## Fixed
+
+* Slice squeezing when getting the tensors from a `Batch`.
+
+### Changed
+
+* `Slice` extraction now accepts a TSV file as input,
+* `MetricsHandler` is adapted to new metrics.
+
+### New
+
+* Add `postprocessing` argument to `MetricConfig`,
+* LRScheduler callback to perform learning rate scheduling,
+* `get_field` in `Batch`,
+* `to` in `Batch`,
+* GPU and Multi-GPUs tests,
+* `ClinicaDLModel` to define the neural network and the training and evaluation logic,
+* Checkpoints saved during training.
 
 ## [2.0.0rc1] – 2025-07-24
 
