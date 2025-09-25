@@ -54,10 +54,12 @@ def test__init__():
     # metric
     with pytest.raises(
         ClinicaDLConfigurationError,
-        match="If scheduler_type='metric-based', you must pass the name of the validation metric via 'metric'.",
+        match="If scheduler_type='metric-based', you must pass the name of the validation metric via 'metric_name'.",
     ):
         LRScheduler(scheduler=raw_scheduler, scheduler_type="metric-based")
-    LRScheduler(scheduler=raw_scheduler, scheduler_type="metric-based", metric="mse")
+    LRScheduler(
+        scheduler=raw_scheduler, scheduler_type="metric-based", metric_name="mse"
+    )
 
 
 def test_on_train_begin():
@@ -67,13 +69,13 @@ def test_on_train_begin():
     scheduler = LRScheduler(
         scheduler=raw_scheduler,
         scheduler_type="epoch-based",
-        optimizer_key="optimizer_",
+        optimizer_name="optimizer_",
     )
     with pytest.raises(
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LRScheduler, optimizer_key='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
                 "Optimizers are: ['optimizer']"
             )
         ),
@@ -109,13 +111,13 @@ def test_on_train_begin():
     scheduler = LRScheduler(
         scheduler=raw_scheduler,
         scheduler_type="epoch-based",
-        optimizer_key="optimizer_",
+        optimizer_name="optimizer_",
     )
     with pytest.raises(
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LRScheduler, optimizer_key='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
                 "Optimizers are: ['optimizer']"
             )
         ),
@@ -144,7 +146,7 @@ def test_steps_scheduler():
     epoch_scheduler = LRScheduler(StepLRConfig(step_size=1))
     step_scheduler = LRScheduler(sched, scheduler_type="step-based")
     metric_scheduler = LRScheduler(
-        ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric="mse"
+        ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric_name="mse"
     )
 
     epoch_scheduler.on_train_begin(TRAINING_STATE)

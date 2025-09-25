@@ -99,14 +99,14 @@ class LRScheduler(Callback):
     def __init__(
         self,
         scheduler: LRSchedulerType,
-        optimizer_key: str = "optimizer",
+        optimizer_name: str = "optimizer",
         scheduler_type: Optional[LRSchedulerMode] = None,
-        metric: Optional[str] = None,
+        metric_name: Optional[str] = None,
         **kwargs,
     ):
         self.config: Optional[LRSchedulerConfig] = None
         self.scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None
-        self.optimizer_key = optimizer_key
+        self.optimizer_name = optimizer_name
         self.scheduler_type: LRSchedulerType
         self._initial_state: Optional[dict] = None
 
@@ -137,23 +137,23 @@ class LRScheduler(Callback):
 
             self.scheduler_type = self.config.scheduler_type()
 
-        if self.scheduler_type == LRSchedulerMode.METRIC and not metric:
+        if self.scheduler_type == LRSchedulerMode.METRIC and not metric_name:
             raise ClinicaDLConfigurationError(
                 f"If scheduler_type='{LRSchedulerMode.METRIC.value}', you must "
-                "pass the name of the validation metric via 'metric'."
+                "pass the name of the validation metric via 'metric_name'."
             )
-        self.metric = metric
+        self.metric_name = metric_name
 
     def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
         """
-        Checks the optimizer_key and instantiates the LR scheduler.
+        Checks the optimizer_name and instantiates the LR scheduler.
         """
         optimizers = config.model.get_optimizers()
         try:
-            optimizer = optimizers[self.optimizer_key]
+            optimizer = optimizers[self.optimizer_name]
         except KeyError as exc:
             raise ClinicaDLArgumentError(
-                f"In LRScheduler, optimizer_key='{self.optimizer_key}' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                f"In LRScheduler, optimizer_name='{self.optimizer_name}' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
                 f"Optimizers are: {list(optimizers.keys())}"
             ) from exc
 
@@ -163,7 +163,7 @@ class LRScheduler(Callback):
             if optimizer is not self.scheduler.optimizer:
                 raise ClinicaDLConfigurationError(
                     f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not the same as "
-                    f"'{self.optimizer_key}' (returned by the 'get_optimizers' method of you ClinicaDLModel)."
+                    f"'{self.optimizer_name}' (returned by the 'get_optimizers' method of you ClinicaDLModel)."
                 )
             self.scheduler.load_state_dict(self._initial_state)
 
@@ -183,7 +183,7 @@ class LRScheduler(Callback):
         if self.scheduler_type == LRSchedulerMode.EPOCH:
             self.scheduler.step()
         elif self.scheduler_type == LRSchedulerMode.METRIC:
-            val_metric = config.metrics.get_metric(self.metric, epoch=config.epoch)
+            val_metric = config.metrics.get_metric(self.metric_name, epoch=config.epoch)
             self.scheduler.step(val_metric)
 
     def save_checkpoint(

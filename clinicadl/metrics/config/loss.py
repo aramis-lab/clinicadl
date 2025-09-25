@@ -26,7 +26,7 @@ LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(LossMetric)
 class LossMetricConfig(MetricConfig, _GetNotNansConfig):
     """Special config class to use a loss function as a metric."""
 
-    loss_key: str = "loss"
+    loss_name: str = "loss"
 
     @staticmethod
     def optimum() -> Optimum:
@@ -50,10 +50,10 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
         """
         losses = model.get_loss_functions()
         try:
-            loss = losses[self.loss_key]
+            loss = losses[self.loss_name]
         except KeyError as exc:
             raise ClinicaDLArgumentError(
-                f"In LossMetricConfig, loss_key='{self.loss_key}' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
+                f"In LossMetricConfig, loss_name='{self.loss_name}' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
                 f"Losses are: {list(losses.keys())}"
             ) from exc
 
@@ -77,7 +77,7 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
             loss_reduction = getattr(loss, "reduction")
         except AttributeError as exc:
             raise ClinicaDLArgumentError(
-                f"The loss '{self.loss_key}' (returned by the 'get_loss_functions' method of you ClinicaDLModel) "
+                f"The loss '{self.loss_name}' (returned by the 'get_loss_functions' method of you ClinicaDLModel) "
                 "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level."
             ) from exc
 

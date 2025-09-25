@@ -52,7 +52,7 @@ def test_MetricsHandler():
     MODEL.loss = BCELoss()
     metrics = MetricsHandler(
         my_loss=LossMetricConfig(
-            loss_key="loss",
+            loss_name="loss",
         ),
         mse=MSEMetricConfig(),
         my_metric=CustomMetric(),
@@ -100,20 +100,20 @@ def test_init_metrics():
     MODEL.loss = BCELoss()
     metrics = MetricsHandler(
         loss=LossMetricConfig(
-            loss_key="loss_",
+            loss_name="loss_",
         ),
         mse=MSEMetricConfig(),
     )
 
     with pytest.raises(
         ClinicaDLArgumentError,
-        match="In LossMetricConfig, loss_key='loss_' but there is no such loss*",
+        match="In LossMetricConfig, loss_name='loss_' but there is no such loss*",
     ):
         metrics.init_metrics(MODEL)
 
     metrics = MetricsHandler(
         loss=LossMetricConfig(
-            loss_key="loss",
+            loss_name="loss",
         ),
         mse=MSEMetricConfig(),
     )

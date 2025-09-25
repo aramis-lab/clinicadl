@@ -148,7 +148,7 @@ class Trainer:
         model: ClinicaDLModel,
         callbacks: Optional[list[Callback]] = None,
         metrics: dict[str, MetricOrConfig] = {
-            "loss": LossMetricConfig(loss_key="loss")
+            "loss": LossMetricConfig(loss_name="loss")
         },
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),

@@ -15,12 +15,12 @@ from tests.unittests.resources.objects import MODEL
 
 
 def test_loss_metric():
-    config = LossMetricConfig(loss_key="loss_", reduction="mean")
+    config = LossMetricConfig(loss_name="loss_", reduction="mean")
     with pytest.raises(
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LossMetricConfig, loss_key='loss_' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
+                "In LossMetricConfig, loss_name='loss_' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
                 "Losses are: ['loss']"
             )
         ),
@@ -28,7 +28,7 @@ def test_loss_metric():
         config.get_object(MODEL)
 
     MODEL.loss = MSELoss(reduction="sum")
-    config = LossMetricConfig(loss_key="loss")
+    config = LossMetricConfig(loss_name="loss")
     assert isinstance(config.get_object(MODEL), MonaiMetricWrapper)
     assert isinstance(config.get_object(MODEL).metric, LossMetric)
     assert config.optimum() == "min"
@@ -52,7 +52,7 @@ def test_loss_metric():
     assert out.shape == (3,)
 
     MODEL.loss = lambda x: x
-    config = LossMetricConfig(loss_key="loss", reduction="mean", label_key=None)
+    config = LossMetricConfig(loss_name="loss", reduction="mean", label_key=None)
     with pytest.raises(
         ClinicaDLArgumentError,
         match=re.escape(
