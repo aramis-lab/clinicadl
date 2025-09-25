@@ -147,7 +147,9 @@ class Trainer:
         maps_path: PathType,
         model: ClinicaDLModel,
         callbacks: Optional[list[Callback]] = None,
-        metrics: Optional[dict[str, MetricOrConfig]] = None,
+        metrics: dict[str, MetricOrConfig] = {
+            "loss": LossMetricConfig(loss_key="loss")
+        },
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
@@ -156,9 +158,7 @@ class Trainer:
     ) -> None:
         maps = Maps(maps_path)
         if not resume:
-            train_metrics = MetricsHandler(
-                loss=LossMetricConfig(loss_fn=model.loss), **metrics
-            )
+            train_metrics = MetricsHandler(**metrics)
 
             self.callbacks = _CallbacksHandler(
                 metrics=train_metrics,
