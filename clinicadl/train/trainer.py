@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.IO.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
@@ -146,7 +147,9 @@ class Trainer:
         maps_path: PathType,
         model: ClinicaDLModel,
         callbacks: Optional[list[Callback]] = None,
-        metrics: Optional[dict[str, MetricOrConfig]] = None,
+        metrics: dict[str, MetricOrConfig] = {
+            "loss": LossMetricConfig(loss_name="loss")
+        },
         optim_config: OptimizationConfig = OptimizationConfig(),
         comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
@@ -155,9 +158,7 @@ class Trainer:
     ) -> None:
         maps = Maps(maps_path)
         if not resume:
-            train_metrics = MetricsHandler(
-                loss=LossMetricConfig(loss_fn=model.loss), **metrics
-            )
+            train_metrics = MetricsHandler(**metrics)
 
             self.callbacks = _CallbacksHandler(
                 metrics=train_metrics,
@@ -225,6 +226,7 @@ class Trainer:
             The data split containing training and validation DataLoaders.
         """
         self.model.train()
+        self.model.to(self.config.comp.device)
         split.train_dataset.train()
 
         # if resume:
@@ -236,6 +238,8 @@ class Trainer:
 
             for batch_idx, data in enumerate(split.train_loader):
                 self.on_batch_begin(batch_idx=batch_idx)
+
+                self._send_to_device(data)
 
                 with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
                     loss = self.model.forward_step(data=data, device=self.comp.device)
@@ -264,6 +268,7 @@ class Trainer:
         Evaluate the model on a validation or test dataset.
         """
         self.model.eval()
+        self.model.to(self.config.comp.device)
         split.val_dataset.eval()
 
         self.callbacks.on_validation_begin(config=self.config)
@@ -272,12 +277,23 @@ class Trainer:
 
         with torch.no_grad():
             for data in split.val_loader:
+                self._send_to_device(data)
                 output_batch = self.model.evaluation_step(data)
                 self.metrics(output_batch, epoch=self.config.epoch)
 
         self.metrics.aggregate(epoch=self.config.epoch)
 
         self.callbacks.on_validation_end(config=self.config)
+
+    def _send_to_device(self, data: BatchType) -> None:
+        """
+        Send the data to the right device.
+        """
+        if isinstance(data, Batch):
+            data.to(self.config.comp.device)
+        else:
+            for batch in data:
+                batch.to(self.config.comp.device)
 
     def on_train_begin(self, split: Split) -> None:
         self.reset(split)

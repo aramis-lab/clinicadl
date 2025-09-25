@@ -1,23 +1,17 @@
-import logging
-
 import monai.metrics as metrics
 import pytest
-import torch
 import torchio as tio
 from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
-from torch.nn import MSELoss
 
-from clinicadl.data.dataloader import Batch
-from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.config import get_metric_config
-from clinicadl.metrics.config.base import LossMetricConfig
 from clinicadl.metrics.config.classification import (
     AveragePrecisionMetricConfig,
     ConfusionMatrixMetricConfig,
     ROCAUCMetricConfig,
 )
 from clinicadl.metrics.config.enum import ConfusionMatrixMetricName
+from clinicadl.metrics.config.loss import LossMetricConfig
 from clinicadl.metrics.config.reconstruction import (
     MultiScaleSSIMMetricConfig,
     PSNRMetricConfig,
@@ -313,45 +307,6 @@ def test_check_spatial_dim():
         MultiScaleSSIMMetricConfig(kernel_size=(2, 3), spatial_dims=3)
 
 
-def test_loss_metric(caplog):
-    config = LossMetricConfig(loss_fn=lambda x: x, reduction="mean")
-    assert config.reduction == "mean"
-    assert isinstance(config.get_object(), MonaiMetricWrapper)
-    assert isinstance(config.get_object().metric, metrics.LossMetric)
-
-    batch = Batch(
-        [
-            DataPoint(
-                image=tio.ScalarImage(tensor=torch.ones(1, 1, 1, 1)),
-                label=float(i),
-                output=float(i + 1),
-                participant=i,
-                session=i,
-            )
-            for i in range(3)
-        ]
-    )
-    config = LossMetricConfig(loss_fn=MSELoss(reduction="none"), reduction="mean")
-    assert config.loss_fn.reduction == "none"
-    assert config.reduction == "mean"
-    metric = config.get_object()
-    out = metric(batch)
-    assert out.shape == (3,)
-
-    config = LossMetricConfig(loss_fn=MSELoss(reduction="mean"), reduction="mean")
-    assert config.loss_fn.reduction == "none"
-    assert config.reduction == "mean"
-
-    with caplog.at_level(logging.WARNING):
-        config = LossMetricConfig(loss_fn=MSELoss(reduction="sum"), reduction="mean")
-    assert (
-        "The loss (MSELoss) has 'sum' reduction, "
-        "whereas in the metric associated to the loss you passed 'mean' reduction."
-    ) in caplog.text
-    assert config.loss_fn.reduction == "none"
-    assert config.reduction == "mean"
-
-
 MANDATORY_ARGS = {
     "max_val": 1,
     "class_thresholds": (0.5, 0.5),
@@ -425,6 +380,7 @@ def test_get_object(config, expected_class):
         ("MeanIoU", MeanIoUConfig),
         ("SurfaceDiceMetric", SurfaceDiceMetricConfig),
         ("SurfaceDistanceMetric", SurfaceDistanceMetricConfig),
+        ("LossMetric", LossMetricConfig),
     ],
 )
 def test_get_metric_config(name, config):
@@ -446,7 +402,6 @@ def test_get_metric_config(name, config):
 @pytest.mark.parametrize(
     "config,optimum",
     [
-        (LossMetricConfig, "min"),
         (ROCAUCMetricConfig, "max"),
         (AveragePrecisionMetricConfig, "max"),
         (MultiScaleSSIMMetricConfig, "max"),

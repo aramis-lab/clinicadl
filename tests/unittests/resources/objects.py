@@ -95,7 +95,7 @@ MODEL = SupervisedModel(
 )
 
 METRICS_HANDLER = MetricsHandler(
-    loss=LossMetricConfig(loss_fn=LOSS.get_object()),
+    loss=LossMetricConfig(),
     **{"mae": MAEMetricConfig(), "mse": MSEMetricConfig()},
 )
 

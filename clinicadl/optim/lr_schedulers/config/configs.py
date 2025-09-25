@@ -53,7 +53,7 @@ class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -67,7 +67,7 @@ class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -83,7 +83,7 @@ class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -98,7 +98,7 @@ class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -121,7 +121,7 @@ class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -136,7 +136,7 @@ class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.EPOCH
 
 
@@ -164,8 +164,8 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
-        return LRSchedulerType.LOSS
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
+        return LRSchedulerType.METRIC
 
 
 class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
@@ -240,5 +240,5 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
-        """The type of LR scheduler (epoch-based, step-based, or loss-based)."""
+        """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
         return LRSchedulerType.STEP

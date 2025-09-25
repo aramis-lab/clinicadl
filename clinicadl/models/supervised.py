@@ -77,6 +77,11 @@ class SupervisedModel(ClinicaDLModel):
     loss : LossOrConfig
         The loss function, passed as a ``callable``, that returns a **1-item** :py:class:`~torch.Tensor`,
         or a :py:mod:`config class <clinicadl.losses.config>`.
+
+        .. important::
+            The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
+            with an attribute named ``reduction`` that can be set to ``none``.
+
     optimizer : OptimizerOrConfig
         The optimizer, passed as a :py:class:`torch.optim.Optimizer` or
         a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
@@ -173,16 +178,26 @@ class SupervisedModel(ClinicaDLModel):
 
         return batch
 
+    def get_loss_functions(self) -> dict[str, Loss]:
+        """
+        Returns the loss function, that will be computed
+        on the validation set.
+
+        Returns
+        -------
+        dict[str, Loss]
+            The loss function, named ``"loss"``.
+        """
+        return {"loss": self.loss}
+
     def get_optimizers(self) -> dict[str, optim.Optimizer]:
         """
-        To retrieve all optimizers used during training.
-
-        All optimizers must be given a name.
+        Returns the optimizer.
 
         Returns
         -------
         dict[str, optim.Optimizer]
-            The optimizers and their names.
+            The optimizer, named ``"optimizer"``.
         """
         return {"optimizer": self.optimizer}
 
