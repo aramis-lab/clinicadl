@@ -4,7 +4,6 @@
 ======================================
 
 .. automodule:: clinicadl.transforms.extraction
-   :no-index:
 
 .. currentmodule:: clinicadl.transforms.extraction
 

@@ -4,14 +4,13 @@
 ===========================================
 
 .. automodule:: clinicadl.optim.lr_schedulers.config
-   :no-index:
 
 .. currentmodule:: clinicadl.optim.lr_schedulers.config
 
 .. autosummary::
    :nosignatures:
    :toctree: ../generated/
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
     ConstantLRConfig
     ExponentialLRConfig

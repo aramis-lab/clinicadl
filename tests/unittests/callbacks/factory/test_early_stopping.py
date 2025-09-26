@@ -8,7 +8,7 @@ from clinicadl.callbacks.factory.early_stopping import (
     OneMetricEarlyStopping,
 )
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.IO.maps import Maps
+from clinicadl.io.maps import Maps
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 

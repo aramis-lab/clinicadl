@@ -4,14 +4,13 @@
 ================================
 
 .. automodule:: clinicadl.data.dataloader
-    :no-index:
 
 .. currentmodule:: clinicadl.data.dataloader
 
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/config_class.rst
+    :template: autosummary/object_config_class.rst
 
     DataLoaderConfig
 

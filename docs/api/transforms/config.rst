@@ -4,7 +4,6 @@
 ==================================
 
 .. automodule:: clinicadl.transforms.config
-   :no-index:
 
 .. currentmodule:: clinicadl.transforms.config
 
@@ -16,7 +15,7 @@ Pre-processing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: config_class/class.rst
+   :template: config_class/object_config_class.rst
 
    RescaleIntensityConfig
    ZNormalizationConfig
@@ -41,7 +40,7 @@ Augmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: config_class/class.rst
+   :template: config_class/object_config_class.rst
 
    OneOfConfig
    RandomMotionConfig
@@ -66,7 +65,7 @@ Post-processing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: config_class/class.rst
+   :template: config_class/object_config_class.rst
 
    ActivationsConfig
    AsDiscreteConfig

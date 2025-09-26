@@ -18,7 +18,7 @@ functions may not be enough to give full guidelines on their use.
 
    callbacks
    data
-   IO
+   io
    losses
    metrics
    models
@@ -26,16 +26,14 @@ functions may not be enough to give full guidelines on their use.
    optim
    split
    transforms
-
-   :template: class.rst
-   train.trainer.Trainer
+   train
 
 .. toctree::
    :hidden:
    
    callbacks
    data/index
-   io/index
+   io
    losses
    metrics
    models
@@ -43,4 +41,4 @@ functions may not be enough to give full guidelines on their use.
    optim/index
    split
    transforms/index
-   trainer
+   train

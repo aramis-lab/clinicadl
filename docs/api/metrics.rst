@@ -12,13 +12,20 @@
 
 .. currentmodule:: clinicadl.metrics.config
 
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/object_config_class.rst
+
+   LossMetricConfig
+
 Classification
 --------------
 
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
     ConfusionMatrixMetricConfig
     ROCAUCMetricConfig
@@ -30,7 +37,7 @@ Regression
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
     MSEMetricConfig
     MAEMetricConfig
@@ -42,7 +49,7 @@ Reconstruction
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: class.rst
+   :template: autosummary/object_config_class.rst
 
     PSNRMetricConfig
     SSIMMetricConfig
@@ -54,7 +61,7 @@ Segmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: class.rst
+   :template: autosummary/object_config_class.rst
 
     MeanIoUConfig
     DiceMetricConfig

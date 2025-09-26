@@ -8,7 +8,7 @@ from clinicadl.callbacks.factory.logger import _Logger
 from clinicadl.callbacks.factory.monitor import _Monitor
 from clinicadl.callbacks.factory.training_loss import _TrainingLoss
 from clinicadl.callbacks.handler import _CallbacksHandler
-from clinicadl.IO.maps.training.splits import TrainSplitDir
+from clinicadl.io.maps.training.splits import TrainSplitDir
 
 
 # ----------------------------

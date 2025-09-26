@@ -6,7 +6,7 @@ from clinicadl.callbacks.factory.checkpoint import Checkpoint
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.IO.maps import Maps
+from clinicadl.io.maps import Maps
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 

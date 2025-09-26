@@ -35,16 +35,16 @@ class Maps(Directory):
 
     Attributes
     ----------
-    training : :py:class:`~clinicadl.IO.maps.training.TrainingDir`
+    training : :py:class:`~clinicadl.io.maps.training.TrainingDir`
         Access to training-related files (data, splits, checkpoints).
-    predictions : :py:class:`~clinicadl.IO.maps.predictions.PredictionsDir`
+    predictions : :py:class:`~clinicadl.io.maps.predictions.PredictionsDir`
         Access to prediction results for test groups.
 
     Examples
     --------
     .. code-block:: python
 
-        from clinicadl.IO.maps import Maps
+        from clinicadl.io.maps import Maps
         maps = Maps("/path/to/maps_dir")
         maps.load()  # Load existing structure
 
@@ -102,7 +102,7 @@ class Maps(Directory):
         This method reads all subfolders (training, predictions, data splits, etc.)
         and reconstructs the directory tree as Python objects.
 
-        After loading, you can navigate through the :class:`~clinicadl.IO.maps.Maps` object to access all components.
+        After loading, you can navigate through the :class:`~clinicadl.io.maps.Maps` object to access all components.
 
         Directory Layout
         ----------------

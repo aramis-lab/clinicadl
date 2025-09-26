@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.readers import CapsReader
 from clinicadl.dictionary.words import LOSS, PARTICIPANT_ID
-from clinicadl.IO.maps.maps import Maps
+from clinicadl.io.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import MetricConfig

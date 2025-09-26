@@ -4,14 +4,13 @@
 ========================================
 
 .. automodule:: clinicadl.optim.optimizers.config
-   :no-index:
 
 .. currentmodule:: clinicadl.optim.optimizers.config
 
 .. autosummary::
    :nosignatures:
    :toctree: ../generated/
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
     AdadeltaConfig
     AdagradConfig

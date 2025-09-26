@@ -96,7 +96,7 @@ language = "en"
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
-    "backreferences_dir": Path("api", "generated"),  # where mini-galleries are stored
+    "backreferences_dir": Path("generated"),  # where mini-galleries are stored
     "doc_module": (
         "clinicadl",
     ),  # generate mini-galleries for all the objects in clinicadl

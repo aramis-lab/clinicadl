@@ -1,5 +1,5 @@
 from clinicadl.callbacks.handler import _CallbacksHandler
-from clinicadl.IO.maps.maps import Maps
+from clinicadl.io.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import SupervisedModel
 from clinicadl.optim.config import OptimizationConfig

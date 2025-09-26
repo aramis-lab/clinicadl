@@ -1,10 +1,9 @@
-.. _api_nn:
+.. _api_networks_nn:
 
 :mod:`clinicadl.networks.nn`
 ============================
 
 .. automodule:: clinicadl.networks.nn
-   :no-index:
 
 .. currentmodule:: clinicadl.networks.nn
 
