@@ -24,7 +24,7 @@ class Checkpoint(Callback):
 
     Notes
     -----
-    .. notes::
+    .. note::
         - The final epoch is always saved as a checkpoint.
         - If `patience` is greater than the total number of epochs, it will not save any intermediate checkpoints.
         - If a specific epoch is outside the range of total epochs, it will not raise an error but will not save a checkpoint for that epoch.

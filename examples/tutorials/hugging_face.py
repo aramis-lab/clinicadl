@@ -1,6 +1,6 @@
 """
 Using HuggingFace with ClinicaDL
-============================
+================================
 
 Here’s the workflow for using ClinicaDL with Hugging Face Hub
 """

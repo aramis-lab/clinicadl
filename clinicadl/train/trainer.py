@@ -13,7 +13,7 @@ from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.IO.maps.maps import Maps
+from clinicadl.io.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
@@ -37,7 +37,7 @@ class Trainer:
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
     It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.ClinicaDLModel`
-    and :py:class:`~clinicadl.IO.maps.maps.Maps`,
+    and :py:class:`~clinicadl.io.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
     The Trainer follows a callback-driven design pattern: it invokes callbacks at key stages

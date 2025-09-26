@@ -3,8 +3,8 @@ from typing import Optional
 
 from torchsummary import summary
 
-from clinicadl.IO.maps.maps import Maps
-from clinicadl.IO.maps.training.splits import EpochTmpDir
+from clinicadl.io.maps.maps import Maps
+from clinicadl.io.maps.training.splits import EpochTmpDir
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig

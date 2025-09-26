@@ -7,15 +7,15 @@ import pytest
 
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
-from clinicadl.IO.maps import Maps
-from clinicadl.IO.maps.training import TrainingDir
-from clinicadl.IO.maps.training.data.data import DataDir, DataTrainValDir
-from clinicadl.IO.maps.training.data.splits import DataSplitDir
-from clinicadl.IO.maps.training.splits.best_metric import TrainBestMetricDir
-from clinicadl.IO.maps.training.splits.checkpoints import CheckpointsDir
-from clinicadl.IO.maps.training.splits.logs import LogsDir
-from clinicadl.IO.maps.training.splits.splits import TrainSplitDir
-from clinicadl.IO.maps.training.splits.tmp import TmpDir
+from clinicadl.io.maps import Maps
+from clinicadl.io.maps.training import TrainingDir
+from clinicadl.io.maps.training.data.data import DataDir, DataTrainValDir
+from clinicadl.io.maps.training.data.splits import DataSplitDir
+from clinicadl.io.maps.training.splits.best_metric import TrainBestMetricDir
+from clinicadl.io.maps.training.splits.checkpoints import CheckpointsDir
+from clinicadl.io.maps.training.splits.logs import LogsDir
+from clinicadl.io.maps.training.splits.splits import TrainSplitDir
+from clinicadl.io.maps.training.splits.tmp import TmpDir
 from clinicadl.metrics.config.factory import MAEMetricConfig, MSEMetricConfig
 from clinicadl.split import Split
 from clinicadl.utils.exceptions import (

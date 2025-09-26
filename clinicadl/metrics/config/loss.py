@@ -24,7 +24,10 @@ LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(LossMetric)
 
 
 class LossMetricConfig(MetricConfig, _GetNotNansConfig):
-    """Special config class to use a loss function as a metric."""
+    """
+    Special config class to use a loss function as a metric. Useful to compute
+    your training losses on your validation set.
+    """
 
     loss_name: str = "loss"
 

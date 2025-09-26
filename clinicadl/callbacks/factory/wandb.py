@@ -21,7 +21,9 @@ class WandB(Callback):  # pragma: no cover
 
     Requirements
     ------------
+
         - The `wandb` package must be installed in your Python environment.
+
         You can install it with:
 
     .. code-block:: bash
@@ -29,6 +31,7 @@ class WandB(Callback):  # pragma: no cover
         pip install wandb
 
     .. note::
+
         - WandB supports local and cloud logging.
         - This callback is useful for reproducibility and experiment tracking.
 

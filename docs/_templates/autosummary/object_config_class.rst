@@ -4,6 +4,6 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-   :members:
+   :members: get_object
 
 .. include:: {{module}}.{{objname}}.examples

@@ -4,7 +4,7 @@ import pandas as pd
 
 from clinicadl.callbacks.factory.model_selection import ModelSelection
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.IO.maps import Maps
+from clinicadl.io.maps import Maps
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 

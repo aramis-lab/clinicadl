@@ -15,7 +15,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
-from clinicadl.IO.maps.maps import Maps
+from clinicadl.io.maps.maps import Maps
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics.config import (
     ConfusionMatrixMetricConfig,

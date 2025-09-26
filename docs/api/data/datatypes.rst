@@ -4,7 +4,6 @@
 ===============================
 
 .. automodule:: clinicadl.data.datatypes
-    :no-index:
     
 .. currentmodule:: clinicadl.data.datatypes
 

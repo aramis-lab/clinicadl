@@ -14,89 +14,12 @@
 
    Transforms
 
-:mod:`clinicadl.transforms.extraction`
---------------------------------------
-
-.. automodule:: clinicadl.transforms.extraction
-
-.. currentmodule:: clinicadl.transforms.extraction
-
 .. autosummary::
    :nosignatures:
-   :template: autosummary/config_class.rst
+   :template: module.rst
 
-   Image
-   Patch
-   Slice
-
-:mod:`clinicadl.transforms.config`
-----------------------------------
-
-.. automodule:: clinicadl.transforms.config
-
-.. currentmodule:: clinicadl.transforms.config
-
-
-Preprocessing
-^^^^^^^^^^^^^
-
-.. autosummary::
-   :nosignatures:
-   :template: autosummary/config_class.rst
-
-   RescaleIntensityConfig
-   ZNormalizationConfig
-   MaskConfig
-   ClampConfig
-   CropOrPadConfig
-   ToCanonicalConfig
-   ResizeConfig
-   ResampleConfig
-   EnsureShapeMultipleConfig
-   CropConfig
-   PadConfig
-   RemapLabelsConfig
-   OneHotConfig
-
-
-Augmentation
-^^^^^^^^^^^^
-
-.. autosummary::
-   :nosignatures:
-   :template: autosummary/config_class.rst
-
-   OneOfConfig
-   RandomMotionConfig
-   RandomGhostingConfig
-   RandomSpikeConfig
-   RandomBiasFieldConfig
-   RandomBlurConfig
-   RandomNoiseConfig
-   RandomSwapConfig
-   RandomGammaConfig
-   RandomFlipConfig
-   RandomAffineConfig
-   RandomElasticDeformationConfig
-   RandomAnisotropyConfig
-
-
-Post-processing
-^^^^^^^^^^^^^^^
-
-.. autosummary::
-   :nosignatures:
-   :template: autosummary/config_class.rst
-
-   ActivationsConfig
-   AsDiscreteConfig
-   KeepLargestConnectedComponentConfig
-   DistanceTransformEDTConfig
-   RemoveSmallObjectsConfig
-   LabelFilterConfig
-   FillHolesConfig
-   SobelGradientsConfig
-   FormatConfig
+   extraction
+   config
 
 .. toctree::
    :hidden:

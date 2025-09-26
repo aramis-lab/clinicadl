@@ -19,7 +19,7 @@ Classification / Segmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
    BCELossConfig
    BCEWithLogitsLossConfig
@@ -34,7 +34,7 @@ Regression / Reconstruction
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/object_config_class.rst
 
    MSELossConfig
    L1LossConfig

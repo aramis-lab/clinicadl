@@ -8,7 +8,7 @@ from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
 from clinicadl.callbacks.handler import _CallbacksHandler
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.IO.maps import Maps
+from clinicadl.io.maps import Maps
 
 from ...resources.objects import (
     COMP,
