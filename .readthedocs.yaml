@@ -11,14 +11,9 @@ build:
   tools:
     python: "3.11"
   jobs:
-    post_create_environment:
-      # Install Poetry 1.7
-      # TODO: Investigate why pipeline is broken with 1.8
-      - pip install poetry==1.7.1
-      # Do not use virtual environments
-      - poetry config virtualenvs.create false
-      # Install docs group of dependencies
-      - poetry install --with=docs
+    post_install:
+      - pip install poetry
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
 
 sphinx:
   configuration: docs/conf.py
