@@ -11,10 +11,8 @@ build:
   tools:
     python: "3.11"
   jobs:
-    post_create_environment:
-      - pip install poetry==1.7.1  # or a version you trust
-      - poetry config virtualenvs.create false
     post_install:
+      - pip install poetry
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
 
 sphinx:
