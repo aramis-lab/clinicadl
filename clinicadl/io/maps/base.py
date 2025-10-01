@@ -65,9 +65,14 @@ class Directory:
 
         self.path.mkdir(parents=True, exist_ok=exist_ok)
 
-        props = self._get_child_directories()
-        for value in props:
-            value.create(overwrite=overwrite, exist_ok=exist_ok)
+        dirs = self._get_child_directories()
+        for dir_ in dirs:
+            dir_.create(overwrite=overwrite, exist_ok=exist_ok)
+
+        paths = self._get_child_paths()
+        for path in paths:
+            if not path.suffix:
+                path.mkdir(exist_ok=True)
 
     def read(self) -> None:
         """
@@ -81,9 +86,9 @@ class Directory:
         if not self.path.exists():
             raise FileNotFoundError(f"Directory {str(self.path)} does not exist.")
 
-        props = self._get_child_directories()
-        for value in props:
-            value.read()
+        dirs = self._get_child_directories()
+        for dir_ in dirs:
+            dir_.read()
 
         paths = self._get_child_paths()
         for path in paths:
