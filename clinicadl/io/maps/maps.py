@@ -8,6 +8,7 @@ from clinicadl.dictionary.suffixes import JSON, LOG, TXT
 from clinicadl.dictionary.words import (
     ARCHITECTURE,
     ENVIRONMENT,
+    METRICS,
     MODEL,
     PREDICTIONS,
     SUMMARY,
@@ -31,6 +32,213 @@ class Maps(Directory):
 
     Typically, users only need to call the ``load()`` method to inspect or reuse
     an already trained model directory.
+
+    .. dropdown:: **maps_dir**
+        :icon: file-directory
+        :color: muted
+
+        .. dropdown:: architecture.log → ``maps.architecture_log``
+            :icon: file
+            :color: light
+
+            Details on the neural network architecture, provided by :py:meth:`ClinicaDLModel.write_architecture_log <clinicadl.models.ClinicaDLModel.write_architecture_log>`.
+
+        .. dropdown:: environment.txt → ``maps.environment_txt``
+            :icon: file
+            :color: light
+
+            The Python environment when the ``Maps`` was created.
+
+        .. dropdown:: metrics.json → ``maps.metrics_json``
+            :icon: file
+            :color: light
+
+            Details on all the :py:mod:`~clinicadl.metrics` mentioned in the ``.tsv`` DataFrames of the ``Maps`` directory.
+
+        .. dropdown:: model.json → ``maps.model_json``
+            :icon: file
+            :color: light
+
+            Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+
+        .. dropdown:: summary.log → ``maps.summary_log``
+            :icon: file
+            :color: light
+
+            Summary of the ``Maps`` directory.
+
+        .. dropdown:: torchsummary.txt → ``maps.torchsummary_txt``
+            :icon: file
+            :color: light
+
+            Summary of the neural network provided by `torchsummary <https://pypi.org/project/torch-summary/>`_ (image size after
+            each layer, number of parameters for each layer, etc.).
+
+        .. dropdown:: **training**
+            :icon: file-directory
+            :color: muted
+
+            .. dropdown:: callback.json → ``maps.training.callbacks_json``
+                :icon: file
+                :color: light
+
+                Details on the :py:mod:`~clinicadl.callbacks` used during training.
+
+            .. dropdown:: optimization.json → ``maps.training.optimization_json``
+                :icon: file
+                :color: light
+
+                Details on the :py:class:`optimization parameters <clinicadl.optim.OptimizationConfig>` used during
+                training.
+
+            .. dropdown:: **data**
+                :icon: file-directory
+                :color: muted
+
+                .. dropdown:: data.tsv → ``maps.training.data.data_tsv``
+                    :icon: file
+                    :color: light
+
+                    List of all (participant, session) pairs used for training.
+
+                .. dropdown:: **train**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: dataloader.json → ``maps.training.data.train.dataloader_json``
+                        :icon: file
+                        :color: light
+
+                        Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`.
+
+                    .. dropdown:: dataset.json → ``maps.training.data.train.dataset_json``
+                        :icon: file
+                        :color: light
+
+                        Details on the train :py:class:`dataset <clinicadl.data.datasets>`.
+
+                    .. dropdown:: **split-0**
+                        :icon: file-directory
+                        :color: muted
+
+                        .. dropdown:: data.tsv → ``maps.training.data.train.splits[0].data_tsv``
+                            :icon: file
+                            :color: light
+
+                            List of all (participant, session) pairs used for the train set of the split ``0``.
+
+                .. dropdown:: **validation**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: dataset.json → ``maps.training.data.validation.dataset_json``
+                        :icon: file
+                        :color: light
+
+                        Details on the validation :py:class:`dataset <clinicadl.data.datasets>`.
+
+                    .. dropdown:: **split-0**
+                        :icon: file-directory
+                        :color: muted
+
+                        .. dropdown:: data.tsv → ``maps.training.data.validation.splits[0].data_tsv``
+                            :icon: file
+                            :color: light
+
+                            List of all (participant, session) pairs used for the validation set of the split ``0``.
+
+            .. dropdown:: **split-0**
+                :icon: file-directory
+                :color: muted
+
+                .. dropdown:: computational.json → ``maps.training.splits[0].computational_json``
+                    :icon: file
+                    :color: light
+
+                    Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
+                    during training.
+
+                .. dropdown:: summary.log → ``maps.training.splits[0].summary_log``
+                    :icon: file
+                    :color: light
+
+                    Summary of the training on this split.
+
+                .. dropdown:: **best-model-loss**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: model.pth.tar → ``maps.training.splits[0].best_models["loss"].model``
+                        :icon: file
+                        :color: light
+
+                        The best model obtained with respect to the metric ``"loss"``. The content of the file is
+                        defined by :py:meth:`ClinicadlModel.save_checkpoint <clinicadl.models.ClinicadlModel.save_checkpoint>`
+                        (here only the weights of the neural networks are saved).
+
+                    .. dropdown:: **validation_metrics**
+                        :icon: file-directory
+                        :color: muted
+
+                        .. dropdown:: aggregated.tsv → ``maps.training.splits[0].best_models["loss"].validation_metrics.aggregated``
+                            :icon: file
+                            :color: light
+
+                            Validation metrics obtained with the best model with respect to the metric ``"loss"``, trained on the
+                            split ``0``.
+
+                        .. dropdown:: details.tsv → ``maps.training.splits[0].best_models["loss"].validation_metrics.details``
+                            :icon: file
+                            :color: light
+
+                            Validation metrics obtained for each image with the best model with respect to the metric ``"loss"``, trained on the
+                            split ``0``.
+
+                .. dropdown:: **checkpoints**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: **epoch-10**
+                        :icon: file-directory
+                        :color: muted
+
+                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].checkpoints.epochs[10].model``
+                            :icon: file
+                            :color: light
+
+                            The model at epoch ``10``. The content of the file is
+                            defined by :py:meth:`ClinicadlModel.save_checkpoint <clinicadl.models.ClinicadlModel.save_checkpoint>`
+                            (here only the weights of the neural networks are saved).
+
+                            To configure when are saved checkpoints, use :py:class:`clinicadl.callbacks.Checkpoint`.
+
+                .. dropdown:: **logs**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: training_loss.tsv → ``maps.training.splits[0].logs.training_loss``
+                        :icon: file
+                        :color: light
+
+                        Training loss for each batch seen during training.
+
+                    .. dropdown:: **tensorboard** → maps.training.splits[0].logs.tensorboard
+                        :icon: file-directory
+                        :color: muted
+
+                        Where `TensorBoard <https://docs.pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html>`_ files are saved.
+                        To configure ``TensorBoard``, use :py:class:`clinicadl.callbacks.TensorBoard`.
+
+                .. dropdown:: **tmp**
+                    :icon: file-directory
+                    :color: muted
+
+
+
+        .. dropdown:: **predictions**
+            :icon: file-directory
+            :color: muted
+
 
     Attributes
     ----------
@@ -82,6 +290,10 @@ class Maps(Directory):
     @property
     def model_json(self) -> Path:
         return (self.path / MODEL).with_suffix(JSON)
+
+    @property
+    def metrics_json(self) -> Path:
+        return (self.path / METRICS).with_suffix(JSON)
 
     @property
     def environment_txt(self) -> Path:
@@ -201,3 +413,68 @@ Maps.read.__doc__ = """
             - ``<metric>`` refers to the metric used to select the best model (e.g., ``loss``).
 
         """
+
+
+MAPS_DESCRIPTION = """
+    .. dropdown:: **maps_dir**
+        :icon: file-directory
+        :color: muted
+
+        .. dropdown:: architecture.log → ``maps.architecture_log``
+            :icon: file
+            :color: light
+
+            Details on the neural network architecture, provided by :py:meth:`ClinicaDLModel.write_architecture_log <clinicadl.models.ClinicaDLModel.write_architecture_log>`.
+
+        .. dropdown:: environment.txt → ``maps.environment_txt``
+            :icon: file
+            :color: light
+
+            The Python environment when the ``Maps`` was created.
+
+        .. dropdown:: model.json → ``maps.model_json``
+            :icon: file
+            :color: light
+
+            Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+
+        .. dropdown:: summary.log → ``maps.summary_log``
+            :icon: file
+            :color: light
+
+            Summary of the ``Maps`` directory.
+            Summary of the neural network provided by `torchsummary <https://pypi.org/project/torch-summary/>`_.
+
+        .. dropdown:: torchsummary.txt → ``maps.torchsummary_txt``
+            :icon: file
+            :color: light
+
+            Summary of the neural network provided by `torchsummary <https://pypi.org/project/torch-summary/>`_ (image size after
+            each layer, number of parameters for each layer, etc.).
+
+        .. dropdown:: **training**
+            :icon: file-directory
+            :color: muted
+
+            .. dropdown:: callback.json → ``maps.model_json``
+                :icon: file
+                :color: light
+
+                Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+
+            .. dropdown:: model.json → ``maps.model_json``
+                :icon: file
+                :color: light
+
+                Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+
+            .. dropdown:: model.json → ``maps.model_json``
+                :icon: file
+                :color: light
+
+                Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+
+        .. dropdown:: **predictions**
+            :icon: file-directory
+            :color: muted
+"""

@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import JSON, TXT
+from clinicadl.dictionary.suffixes import JSON, LOG
 from clinicadl.dictionary.words import (
     CHECKPOINTS,
     COMPUTATIONAL,
-    DATALOADER,
-    DATASET,
     LOGS,
     METRICS,
-    PERFORMANCE,
+    SUMMARY,
     TMP,
     VALIDATION,
 )
@@ -50,17 +48,9 @@ class TrainingSplitDir(BestModelsDir[BestEpochDir]):
         return self._tmp
 
     @property
-    def dataset_json(self) -> Path:
-        return (self.path / DATASET).with_suffix(JSON)
-
-    @property
-    def dataloader_json(self) -> Path:
-        return (self.path / DATALOADER).with_suffix(JSON)
-
-    @property
     def computational_json(self) -> Path:
         return (self.path / COMPUTATIONAL).with_suffix(JSON)
 
     @property
-    def performance_txt(self) -> Path:
-        return self.path / (PERFORMANCE + TXT)
+    def summary_log(self) -> Path:
+        return (self.path / SUMMARY).with_suffix(LOG)

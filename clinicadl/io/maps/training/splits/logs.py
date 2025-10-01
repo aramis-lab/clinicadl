@@ -12,19 +12,11 @@ from clinicadl.dictionary.words import (
 from ...base import Directory
 
 
-class TensorboardDir(Directory):
-    pass
-
-
 class LogsDir(Directory):
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._tensorboard = TensorboardDir(path=self.path / TENSORBOARD)
-
     @property
     def training_loss(self) -> Path:
         return (self.path / f"{TRAINING}_{LOSS}").with_suffix(TSV)
 
     @property
-    def tensorboard(self) -> TensorboardDir:
-        return self._tensorboard
+    def tensorboard(self) -> Path:
+        return self.path / TENSORBOARD

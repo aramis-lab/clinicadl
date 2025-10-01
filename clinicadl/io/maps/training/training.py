@@ -6,7 +6,6 @@ from clinicadl.dictionary.suffixes import JSON
 from clinicadl.dictionary.words import (
     CALLBACKS,
     DATA,
-    METRICS,
     OPTIMIZATION,
 )
 
@@ -25,10 +24,6 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
     @property
     def data(self) -> DataDir:
         return self._data
-
-    @property
-    def metrics_json(self) -> Path:
-        return (self.path / METRICS).with_suffix(JSON)
 
     @property
     def optimization_json(self) -> Path:

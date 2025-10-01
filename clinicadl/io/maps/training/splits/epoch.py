@@ -34,18 +34,10 @@ class BestEpochDir(EpochDir):
         return self._validation_metrics
 
 
-class CallbacksDir(Directory):
-    pass
-
-
 class EpochTmpDir(BestEpochDir):
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._callbacks = CallbacksDir(path=self.path / CALLBACKS)
-
     @property
-    def callbacks(self) -> CallbacksDir:
-        return self._callbacks
+    def callbacks(self) -> Path:
+        return self.path / CALLBACKS
 
     @property
     def stop(self) -> Path:
