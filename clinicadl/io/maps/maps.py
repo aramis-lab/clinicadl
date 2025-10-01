@@ -4,17 +4,16 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from clinicadl.data.datasets import CapsDataset
 from clinicadl.dictionary.suffixes import JSON, LOG, TXT
 from clinicadl.dictionary.words import (
     ARCHITECTURE,
     ENVIRONMENT,
     MODEL,
+    PREDICTIONS,
     SUMMARY,
-    TIME,
+    TORCH,
+    TRAINING,
 )
-from clinicadl.models import ClinicaDLModel
-from clinicadl.split.split import Split
 from clinicadl.utils.typing import PathType
 
 from .base import Directory
@@ -61,42 +60,85 @@ class Maps(Directory):
         >>> /path/to/maps_dir/predictions/testCNvsAD/split-0/best-loss/metrics.tsv
     """
 
-    def __init__(self, maps_path: PathType):
+    def __init__(self, path: PathType):
+        super().__init__(path)
+        self._training = TrainingDir(path=self.path / TRAINING)
+        self._predictions = PredictionsDir(path=self.path / PREDICTIONS)
+
+    @property
+    def training(self) -> TrainingDir:
+        """Directory containing the information on the training of the model."""
+        return self._training
+
+    @property
+    def predictions(self) -> PredictionsDir:
+        """Directory containing the information of predictions performed with the model."""
+        return self._predictions
+
+    @property
+    def architecture_log(self) -> Path:
+        return (self.path / ARCHITECTURE).with_suffix(LOG)
+
+    @property
+    def model_json(self) -> Path:
+        return (self.path / MODEL).with_suffix(JSON)
+
+    @property
+    def environment_txt(self) -> Path:
+        return (self.path / ENVIRONMENT).with_suffix(TXT)
+
+    @property
+    def summary_log(self) -> Path:
+        return (self.path / SUMMARY).with_suffix(LOG)
+
+    @property
+    def torchsummary_txt(self) -> Path:
+        return (self.path / (TORCH + SUMMARY)).with_suffix(TXT)
+
+    def create(self, overwrite: bool = False, exist_ok: bool = False) -> None:
         """
-        Initialize a Maps object with the given path.
+        Creates the directory if it does not already exist.
 
-        This does not read or create any directories — call `load()` to populate the structure.
+        Parameters
+        ----------
+        overwrite : bool, default=False
+            Whether to overwrite the current directory.
+        exists_ok : bool, default=False
+            If the file already exists and ``overwrite=False``, the function succeeds when ``exist_ok=True``.
         """
-        super().__init__(path=maps_path)
-
-        self.predictions = PredictionsDir(parents_path=self.path)
-        self.training = TrainingDir(parents_path=self.path)
-
-    def create(self, overwrite: bool = False) -> None:
-        """
-        Create the directory if it does not already exist or if overwrite is True.
-
-        Also create the training and prediction directories and write the environment.txt file.
-
-        """
-        super()._create(overwrite=overwrite)
-        self.predictions._create(overwrite=overwrite)
-        self.training._create(overwrite=overwrite)
+        super().create(overwrite=overwrite, exist_ok=exist_ok)
         self._write_environment_txt()
         self._create_summary_log()
 
-    def _create_training_split(self, split: Split) -> None:
-        """
-        Create a new split in the training directory:
-         - Create a new split directory
-         - Create the data.tsv files in the data directory of the new split
+    def _create_summary_log(self):
+        """Create a summary log file."""
 
-        """
-        self.training._create_split(num=split.index)
-        self.training.data._create(split=split)
+        summary = "==================== Summary Log ===================="
+        summary += "\n\n"
+        summary += (
+            f"Date              : {datetime.now().strftime('%d %b %Y, %H:%M:%S')}"
+        )
+        summary += "\n"
+        summary += f"Path              : {self.path.resolve()}"
+        summary += "\n"
 
-    def load(self) -> None:
-        """
+        with (self.summary_log).open(mode="w") as file:
+            file.write(summary)
+
+    def _write_environment_txt(self) -> None:
+        """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
+        try:
+            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
+                "utf-8"
+            )
+            with (self.environment_txt).open(mode="w") as file:
+                file.write(env_variables)
+        except subprocess.CalledProcessError:
+            with (self.environment_txt).open(mode="w") as file:
+                file.write("pip freeze")
+
+
+Maps.read.__doc__ = """
         Load the MAPS directory structure from disk.
 
         This method reads all subfolders (training, predictions, data splits, etc.)
@@ -159,56 +201,3 @@ class Maps(Directory):
             - ``<metric>`` refers to the metric used to select the best model (e.g., ``loss``).
 
         """
-
-        super().load()
-
-        self.predictions.load()
-        self.training.load()
-
-    @property
-    def architecture_log(self) -> Path:
-        return self.path / (ARCHITECTURE + LOG)
-
-    @property
-    def model_json(self) -> Path:
-        return self.path / (MODEL + JSON)
-
-    @property
-    def environment_txt(self) -> Path:
-        return self.path / (ENVIRONMENT + TXT)
-
-    @property
-    def summary_log(self) -> Path:
-        return self.path / (SUMMARY + LOG)
-
-    def _create_summary_log(self):
-        """Create a summary log file."""
-
-        summary = "==================== Summary Log ===================="
-        summary += "\n\n"
-        summary += (
-            f"Date              : {datetime.now().strftime('%d %b %Y, %H:%M:%S')}"
-        )
-        summary += "\n"
-        summary += f"Path              : {self.path.resolve()}"
-        summary += "\n"
-
-        with (self.summary_log).open(mode="w") as file:
-            file.write(summary)
-
-    def _add_lines_to_summary_log(self, line):
-        line += "\n"
-        with (self.summary_log).open(mode="a") as file:
-            file.write(line)
-
-    def _write_environment_txt(self) -> None:
-        """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
-        try:
-            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
-                "utf-8"
-            )
-            with (self.environment_txt).open(mode="w") as file:
-                file.write(env_variables)
-        except subprocess.CalledProcessError:
-            with (self.environment_txt).open(mode="w") as file:
-                file.write("pip freeze")

@@ -4,23 +4,27 @@ from pathlib import Path
 
 from clinicadl.dictionary.suffixes import TSV
 from clinicadl.dictionary.words import (
-    LOGS,
+    LOSS,
     TENSORBOARD,
     TRAINING,
 )
-from clinicadl.utils.typing import PathType
 
 from ...base import Directory
 
 
+class TensorboardDir(Directory):
+    pass
+
+
 class LogsDir(Directory):
-    def __init__(self, parents_path: PathType):
-        super().__init__(path=Path(parents_path) / LOGS)
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self._tensorboard = TensorboardDir(path=self.path / TENSORBOARD)
 
     @property
-    def training_tsv(self) -> Path:
-        return self.path / (TRAINING + TSV)
+    def training_loss(self) -> Path:
+        return (self.path / f"{TRAINING}_{LOSS}").with_suffix(TSV)
 
     @property
-    def tensorboard(self) -> Path:
-        return self.path / TENSORBOARD
+    def tensorboard(self) -> TensorboardDir:
+        return self._tensorboard
