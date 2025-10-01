@@ -66,7 +66,7 @@ class _CheckpointSaver(Callback):
         self._last_saved_epoch = config.epoch
 
         tmp_dir = config.maps.training.splits[config.split.index].tmp
-        tmp_dir._create_epoch(config.epoch)
+        tmp_dir.create_epoch(config.epoch)
         epoch_dir = tmp_dir.epochs[config.epoch]
 
         config.save_checkpoint(epoch_dir)

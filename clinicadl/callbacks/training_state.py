@@ -4,7 +4,7 @@ from typing import Optional
 from torchsummary import summary
 
 from clinicadl.io.maps.maps import Maps
-from clinicadl.io.maps.training.splits import EpochTmpDir
+from clinicadl.io.maps.training.splits.epoch import EpochTmpDir
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
@@ -81,9 +81,9 @@ class _TrainingState(ClinicaDLConfig):
         self.batch = 0
 
         # TODO:  temporary
-        self.maps.load()
-        if split.index not in self.maps.training.split_list:
-            self.maps.training._create_split(split.index)
+        self.maps.read()
+        if split.index not in self.maps.training.splits_list:
+            self.maps.training.create_split(split.index)
 
     def write_torchsummary(self):
         """Write the model summary to a text file in the maps directory."""
@@ -105,20 +105,18 @@ class _TrainingState(ClinicaDLConfig):
 
     def save_checkpoint(self, checkpoint_path: EpochTmpDir) -> None:
         self.model.save_checkpoint(checkpoint_path.model)
-        checkpoint_path.metrics._create()
         self.metrics.save(
-            path=checkpoint_path.metrics.validation,
-            details_path=checkpoint_path.metrics.validation_details,
+            path=checkpoint_path.validation_metrics.aggregated,
+            details_path=checkpoint_path.validation_metrics.details,
         )
         write_json(checkpoint_path.stop, self.stop)
 
-    def load_checkpoint(self, checkpoint_path: EpochTmpDir) -> None:
-        self.maps.load()
+    def load_checkpoint(self, checkpoint_path: EpochTmpDir, epoch: int) -> None:
         self.reset(self.split)
         self.model.load_checkpoint(checkpoint_path.model)
         self.metrics.load(
-            path=checkpoint_path.metrics.validation,
-            details_path=checkpoint_path.metrics.validation_details,
+            path=checkpoint_path.validation_metrics.aggregated,
+            details_path=checkpoint_path.validation_metrics.details,
         )
         self.stop = read_json(checkpoint_path.stop)
-        self.epoch = checkpoint_path.epoch + 1
+        self.epoch = epoch + 1

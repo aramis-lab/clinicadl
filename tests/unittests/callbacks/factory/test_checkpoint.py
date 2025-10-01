@@ -28,7 +28,7 @@ def test_good_checkpoint(tmp_path, patience, epochs):
     _saver = _CheckpointSaver()
 
     OPTIM.epochs = 8
-    MAPS.load()
+    MAPS.read()
     _ts = _TrainingState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )

@@ -19,12 +19,12 @@ def test_maps(tmp_path: Path):
 
     assert maps.architecture_log == (maps_path / "architecture.log")
     assert maps.model_json == (maps_path / "model.json")
+    assert maps.metrics_json == (maps_path / "metrics.json")
     assert maps.torchsummary_txt == (maps_path / "torchsummary.txt")
 
     # training
     assert (maps_path / "training").exists()
 
-    assert maps.training.metrics_json == (maps_path / "training" / "metrics.json")
     assert maps.training.optimization_json == (
         maps_path / "training" / "optimization.json"
     )
@@ -34,17 +34,11 @@ def test_maps(tmp_path: Path):
     maps.training.create_split(0)
     assert maps.training.splits_list == [0]
 
-    assert maps.training.splits[0].dataset_json == (
-        maps_path / "training" / "split-0" / "dataset.json"
-    )
-    assert maps.training.splits[0].dataloader_json == (
-        maps_path / "training" / "split-0" / "dataloader.json"
-    )
     assert maps.training.splits[0].computational_json == (
         maps_path / "training" / "split-0" / "computational.json"
     )
-    assert maps.training.splits[0].performance_txt == (
-        maps_path / "training" / "split-0" / "performance.txt"
+    assert maps.training.splits[0].summary_log == (
+        maps_path / "training" / "split-0" / "summary.log"
     )
 
     # training - split - validation_metrics
@@ -61,7 +55,7 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].logs.training_loss == (
         maps_path / "training" / "split-0" / "logs" / "training_loss.tsv"
     )
-    assert maps.training.splits[0].logs.tensorboard.path == (
+    assert maps.training.splits[0].logs.tensorboard == (
         maps_path / "training" / "split-0" / "logs" / "tensorboard"
     )
     assert (maps_path / "training" / "split-0" / "logs" / "tensorboard").exists()
@@ -82,7 +76,7 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].tmp.epochs_list == [0]
     assert (maps_path / "training" / "split-0" / "tmp" / "epoch-0").exists()
 
-    assert maps.training.splits[0].tmp.epochs[0].callbacks.path == (
+    assert maps.training.splits[0].tmp.epochs[0].callbacks == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "callbacks"
     )
     assert (
