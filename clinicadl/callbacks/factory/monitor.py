@@ -145,7 +145,7 @@ class _Monitor(Callback):
 
     def on_train_end(self, config: _TrainingState, **kwargs) -> None:
         self.all_phases.stop()
-        self.write_file(config.maps.training.splits[config.split.index].performance_txt)
+        self.write_file(config.maps.training.splits[config.split.index].summary_log)
 
     def write_file(self, file_txt: Path):
         """

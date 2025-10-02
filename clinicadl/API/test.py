@@ -10,7 +10,7 @@ from clinicadl.callbacks import (
     EarlyStopping,
     LRScheduler,
     ModelSelection,
-    Tensorboard,
+    TensorBoard,
 )
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets.caps_dataset import CapsDataset
@@ -91,7 +91,7 @@ callbacks = [
     ModelSelection(metrics=["mae"]),
     EarlyStopping(metrics=["mse"]),
     Checkpoint(patience=2, epochs=[3]),
-    Tensorboard(),
+    TensorBoard(),
     LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]

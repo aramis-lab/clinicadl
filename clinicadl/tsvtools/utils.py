@@ -18,27 +18,7 @@ from clinicadl.dictionary.words import (
 )
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
-logger = getLogger("clinicadl")
-
-
-def remove_non_empty_dir(dir_path: Path):
-    """
-    Remove a non-empty directory using only pathlib.
-
-    Parameters
-    ----------
-    dir_path : Path
-        Path to the directory to remove.
-    """
-    if dir_path.exists() and dir_path.is_dir():
-        for item in dir_path.iterdir():  # Iterate through directory contents
-            if item.is_dir():
-                remove_non_empty_dir(item)  # Recursively remove subdirectories
-            else:
-                item.unlink()  # Remove files
-        dir_path.rmdir()  # Remove the now-empty directory
-    else:
-        print(f"{dir_path} does not exist or is not a directory.")
+logger = getLogger("clinicadl.utils")
 
 
 def merged_tsv_reader(merged_tsv_path: Path) -> pd.DataFrame:

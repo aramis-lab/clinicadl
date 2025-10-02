@@ -1,4 +1,4 @@
-"""Config classes for :ref:`ClinicaDL neural networks <api_nn>`."""
+"""Config classes for :py:mod:`ClinicaDL neural networks <clinicadl.networks.nn>`."""
 
 from .base import ImplementedNetwork, NetworkConfig
 from .cnns import *

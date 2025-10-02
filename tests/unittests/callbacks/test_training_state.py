@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 
 from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.io.maps.training.splits import EpochTmpDir
+from clinicadl.io.maps.training.splits.epoch import EpochTmpDir
 
 from ..resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 

@@ -9,7 +9,7 @@ from clinicadl.callbacks import (
     EarlyStopping,
     LRScheduler,
     ModelSelection,
-    Tensorboard,
+    TensorBoard,
 )
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import DataLoaderConfig
@@ -100,7 +100,7 @@ METRICS_HANDLER = MetricsHandler(
 )
 
 SPLIT = Split(
-    index=1, split_dir=SPLIT_DIR, train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
+    index=0, split_dir=SPLIT_DIR, train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
 )
 
 mae = MonaiMetricWrapper(
@@ -115,7 +115,7 @@ CALLBACKS = [
     ModelSelection(metrics=["mae"]),
     EarlyStopping(metrics=["mse"]),
     Checkpoint(patience=2, epochs=[3]),
-    Tensorboard(),
+    TensorBoard(),
     # LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]
@@ -129,4 +129,4 @@ TRAINING_STATE = _TrainingState(
 )
 SPLIT.build_train_loader(dataloader_config=DATALOADER)
 SPLIT.build_val_loader(dataloader_config=DATALOADER)
-TRAINING_STATE.reset(SPLIT)
+# TRAINING_STATE.reset(SPLIT)

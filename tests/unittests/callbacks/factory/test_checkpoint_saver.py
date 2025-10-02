@@ -26,8 +26,8 @@ from ...resources.objects import (
 def test_checkpoint_multiple_epochs(tmp_path):
     shutil.copytree(MAPS_DIR, tmp_path / "maps")
     MAPS = Maps(tmp_path / "maps")
-    MAPS.load()
-    MAPS.training.splits[1].best_metrics["loss"].remove()
+    MAPS.read()
+    MAPS.training.splits[1].best_models["loss"].remove()
 
     optim = OPTIMIZER.get_object(network=NETWORK.get_object())
     callbacks = _CallbacksHandler(
@@ -81,7 +81,7 @@ def test_checkpoint_multiple_epochs(tmp_path):
 def test_bad_checkpoint(tmp_path):
     shutil.copytree(MAPS_DIR, tmp_path / "maps")
     MAPS = Maps(tmp_path / "maps")
-    MAPS.load()
+    MAPS.read()
 
     cs_callback = _CheckpointSaver()
 
