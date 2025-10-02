@@ -9,7 +9,7 @@ from clinicadl.callbacks.training_state import _TrainingState
 from .base import Callback
 
 
-class Tensorboard(Callback):
+class TensorBoard(Callback):
     """
     Callback to log metrics and optionally the model graph to TensorBoard during training.
 

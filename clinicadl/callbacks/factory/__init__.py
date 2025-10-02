@@ -5,5 +5,5 @@ from .early_stopping import EarlyStopping
 from .lr_scheduler import LRScheduler
 from .mlflow import MLflow
 from .model_selection import ModelSelection
-from .tensorboard import Tensorboard
+from .tensorboard import TensorBoard
 from .wandb import WandB

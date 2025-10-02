@@ -81,7 +81,7 @@ class Directory:
         Raises
         ------
         FileNotFoundError
-            If an expected directory is missing.
+            If an expected directory or file is missing.
         """
         if not self.path.exists():
             raise FileNotFoundError(f"Directory {str(self.path)} does not exist.")

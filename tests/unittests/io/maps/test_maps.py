@@ -1,11 +1,13 @@
 import shutil
 from pathlib import Path
 
+import pandas as pd
 import pytest
+import torch
 
 from clinicadl.io.maps import Maps
 
-REFERENCE_MAPS = Path(__file__).parents[1] / "resources" / "maps_example"
+REFERENCE_MAPS = Path(__file__).parents[2] / "resources" / "maps_example"
 
 
 def test_maps(tmp_path: Path):
@@ -272,3 +274,22 @@ def test_read(tmp_path):
     maps = Maps(tmp_path / "maps_bis")
     with pytest.raises(FileNotFoundError, match="Directory .* does not exist."):
         maps.read()
+
+
+def test_read_file(tmp_path):
+    maps_path = tmp_path / "maps"
+    shutil.copytree(REFERENCE_MAPS, maps_path)
+
+    maps = Maps(maps_path)
+    maps.read()
+
+    assert maps.read_file(maps.torchsummary_txt) == "test"
+    assert maps.read_file(maps.summary_log) == "test"
+    assert maps.read_file(maps.training.splits[0].tmp.epochs[0].stop)
+    assert maps.read_file(maps.metrics_json) == {"test": True}
+    pd.testing.assert_frame_equal(
+        maps.read_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
+    )
+    assert maps.read_file(
+        maps.training.splits[0].checkpoints.epochs[0].model
+    ) == torch.Tensor(1)

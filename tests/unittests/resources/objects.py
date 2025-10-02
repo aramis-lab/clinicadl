@@ -9,7 +9,7 @@ from clinicadl.callbacks import (
     EarlyStopping,
     LRScheduler,
     ModelSelection,
-    Tensorboard,
+    TensorBoard,
 )
 from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import DataLoaderConfig
@@ -115,7 +115,7 @@ CALLBACKS = [
     ModelSelection(metrics=["mae"]),
     EarlyStopping(metrics=["mse"]),
     Checkpoint(patience=2, epochs=[3]),
-    Tensorboard(),
+    TensorBoard(),
     # LRScheduler(scheduler="LinearLR"),
     # CodeCarbon(),
 ]

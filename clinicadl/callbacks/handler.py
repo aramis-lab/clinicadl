@@ -27,7 +27,7 @@ PREFERRED_ORDER = [
     MLflow.__name__,
     CodeCarbon.__name__,
     WandB.__name__,
-    Tensorboard.__name__,
+    TensorBoard.__name__,
 ]
 
 
