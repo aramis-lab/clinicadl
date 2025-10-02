@@ -31,11 +31,7 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
     - :py:meth:`save_checkpoint`: to save a checkpoint of the model;
     - :py:meth:`load_checkpoint`: to load a checkpoint of the model.
 
-    You can also overwrite:
-
-    - :py:meth:`write_architecture`;
-    - :py:meth:`write_torchsummary`;
-
+    You can also overwrite :py:meth:`write_architecture` and :py:meth:`write_torchsummary`
     to write descriptions of your neural network(s). If these two methods are not implemented,
     the associated files will remain empty.
 
@@ -265,8 +261,7 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
 
     def write_architecture(self, path: PathType) -> None:
         """
-        To store a summary of the neural network architecture
-        in a ``.log`` file.
+        To write the architecture of your neural network in a file.
 
         If this method is not implemented, the output file will be empty.
 
@@ -283,8 +278,8 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
         input_data: torch.Tensor,
     ) -> None:
         """
-        To write a summary of your neural network produced by
-        `torchinfo <https://github.com/TylerYep/torchinfo>`_.
+        To write a summary of your neural network, produced by
+        `torchinfo <https://github.com/TylerYep/torchinfo>`_ for example.
 
         If this method is not implemented, the output file will be empty.
 

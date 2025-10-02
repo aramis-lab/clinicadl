@@ -296,7 +296,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
 
     def write_architecture(self, path: PathType) -> None:
         """
-        Write the architecture of the model in a log file.
+        Writes the architecture of the neural network in a file.
 
         Parameters
         ----------
