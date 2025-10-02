@@ -17,6 +17,6 @@
     LRScheduler
     MLflow
     ModelSelection
-    Tensorboard
+    TensorBoard
     WandB
 

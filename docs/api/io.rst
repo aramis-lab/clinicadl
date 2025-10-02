@@ -10,6 +10,6 @@
 .. autosummary::
    :nosignatures:
    :toctree: ../generated/
-   :template: autosummary/class.rst
+   :template: autosummary/maps.rst
 
     Maps
