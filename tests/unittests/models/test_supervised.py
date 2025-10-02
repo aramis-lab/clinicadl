@@ -89,12 +89,29 @@ def test_SupervisedModel(tmp_path):
     )
 
     # architecture
-    new_model.write_architecture_log(tmp_path / "architecture.log")
+    new_model.write_architecture(tmp_path / "architecture.log")
     with open(tmp_path / "architecture.log", "r", encoding="utf-8") as f:
         content = f.read()
     assert (
         content
         == "Sequential(\n  (0): Flatten(start_dim=1, end_dim=-1)\n  (1): Linear(in_features=8, out_features=1, bias=True)\n)\n"
+    )
+
+    # summary
+    new_model.write_torchsummary(
+        tmp_path / "torchsummary.txt", input_data=torch.randn(1, 2, 2, 2)
+    )
+    with open(tmp_path / "torchsummary.txt", "r", encoding="utf-8") as f:
+        content = f.read()
+    assert content == (
+        "==========================================================================================\nLayer "
+        "(type:depth-idx)                   Output Shape              "
+        "Param #\n==========================================================================================\nSequential                               [1, 1]"
+        "                    --\n├─Flatten: 1-1                           [1, 8]                    --\n├─Linear: 1-2                            [1, 1]                    "
+        "9\n==========================================================================================\nTotal params: 9\nTrainable params: 9\nNon-trainable params: "
+        "0\nTotal mult-adds (Units.MEGABYTES): 0.00\n==========================================================================================\nInput size (MB): "
+        "0.00\nForward/backward pass size (MB): 0.00\nParams size (MB): 0.00\nEstimated Total Size (MB): "
+        "0.00\n==========================================================================================\n"
     )
 
 

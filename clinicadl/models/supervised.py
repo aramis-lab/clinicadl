@@ -36,7 +36,7 @@ class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
 
     This class checks the network, the loss and the optimizer,
     converts them if they are passed via config classes, and also
-    takes care of saving in JSON format.
+    takes care of saving in .json format.
     """
 
     network: ObjectOrConfig[nn.Module, NetworkConfig] = Field(
@@ -294,14 +294,45 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         if not only_network_weights:
             self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    def write_architecture_log(self, log_path: PathType) -> None:
+    def write_architecture(self, path: PathType) -> None:
         """
         Write the architecture of the model in a log file.
 
         Parameters
         ----------
-        log_path : PathType
-            The path to the log file.
+        path : PathType
+            The path to the ``.log`` file.
         """
-        with open(log_path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             print(self.network, file=f)
+
+    def write_torchsummary(
+        self,
+        path: PathType,
+        input_data: torch.Tensor,
+    ) -> None:
+        """
+        Writes a summary of the neural network produced by
+        `torchinfo <https://github.com/TylerYep/torchinfo>`_.
+
+        Parameters
+        ----------
+        path : PathType
+            The path to the ``.txt`` file where to write the summary.
+        input_data : torch.Tensor
+            Input data to pass to the neural network to build the summary.
+        """
+        from contextlib import redirect_stdout
+
+        from torchinfo import summary
+
+        with open(
+            path,
+            "w",
+            encoding="utf-8",
+        ) as f:
+            with redirect_stdout(f):
+                summary(
+                    self.network,
+                    input_data=input_data,
+                )

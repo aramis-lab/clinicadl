@@ -29,8 +29,15 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
     - :py:meth:`train`: to set the model in training mode;
     - :py:meth:`eval`: to set the model in evaluation mode;
     - :py:meth:`save_checkpoint`: to save a checkpoint of the model;
-    - :py:meth:`load_checkpoint`: to load a checkpoint of the model;
-    - :py:meth:`write_architecture_log`: to store a summary of the neural network architecture.
+    - :py:meth:`load_checkpoint`: to load a checkpoint of the model.
+
+    You can also overwrite:
+
+    - :py:meth:`write_architecture`;
+    - :py:meth:`write_torchsummary`;
+
+    to write descriptions of your neural network(s). If these two methods are not implemented,
+    the associated files will remain empty.
 
     .. tip::
         Since rewriting all these methods can be tedious, feel free to inherit from an existing ``ClinicaDLModel`` with shared logic,
@@ -256,14 +263,36 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
             Whether to load only the weights of the neural network.
         """
 
-    @abstractmethod
-    def write_architecture_log(self, log_path: PathType) -> None:
+    def write_architecture(self, path: PathType) -> None:
         """
         To store a summary of the neural network architecture
         in a ``.log`` file.
 
+        If this method is not implemented, the output file will be empty.
+
         Parameters
         ----------
-        log_path : PathType
-            The path to the log file.
+        path : PathType
+            The path to the ``.log`` file.
         """
+        raise NotImplementedError()
+
+    def write_torchsummary(
+        self,
+        path: PathType,
+        input_data: torch.Tensor,
+    ) -> None:
+        """
+        To write a summary of your neural network produced by
+        `torchinfo <https://github.com/TylerYep/torchinfo>`_.
+
+        If this method is not implemented, the output file will be empty.
+
+        Parameters
+        ----------
+        path : PathType
+            The path to the ``.txt`` file where to write the summary.
+        input_data : torch.Tensor
+            Input data to pass to the neural network to build the summary.
+        """
+        raise NotImplementedError()
