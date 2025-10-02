@@ -293,3 +293,6 @@ def test_read_file(tmp_path):
     assert maps.read_file(
         maps.training.splits[0].checkpoints.epochs[0].model
     ) == torch.Tensor(1)
+
+    with pytest.raises(IsADirectoryError, match=".* is not a file!"):
+        maps.read_file(maps.training.splits[0].tmp.epochs[0].callbacks)
