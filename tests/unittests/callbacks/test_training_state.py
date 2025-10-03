@@ -3,14 +3,14 @@ from copy import deepcopy
 import pandas as pd
 import torch
 
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.io.maps.training.splits.epoch import EpochTmpDir
+from clinicadl.train.trainer_state import TrainerState
 
 from ..resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
 
 def test_training_state():
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     assert _ts.maps == MAPS
@@ -41,7 +41,7 @@ def test_save_load_checkpoint(tmp_path):
     chkpt_path = EpochTmpDir(tmp_path, epoch=1)
     chkpt_path.path.mkdir()
 
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
 
@@ -64,7 +64,7 @@ def test_save_load_checkpoint(tmp_path):
     _ts.save_checkpoint(chkpt_path)
 
     MODEL.network = torch.nn.Linear(10, 10)
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS,
         metrics=METRICS_HANDLER,
         model=MODEL,

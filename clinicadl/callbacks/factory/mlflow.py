@@ -6,9 +6,9 @@ from typing import Union
 
 import pandas as pd
 
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PTH, TAR
 from clinicadl.dictionary.words import MODEL, OPTIMIZER
+from clinicadl.train.trainer_state import TrainerState
 
 from .base import Callback
 
@@ -71,7 +71,7 @@ class MLflow(Callback):
         """TO COMPLETE"""
         return find_spec("mlflow") is not None
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
         """Initialize MLflow experiment and start a new run."""
         self._mlflow.set_experiment(self.experiment_name)
         self.run = self._mlflow.start_run(run_name=self.run_name)
@@ -83,7 +83,7 @@ class MLflow(Callback):
                     if isinstance(v, (int, float, str)):
                         self._mlflow.log_param(k, v)
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         """
         Log all metrics from the current epoch to MLflow.
 
@@ -98,7 +98,7 @@ class MLflow(Callback):
                             metric_name, float(value), step=config.epoch
                         )
 
-    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_end(self, config: TrainerState, **kwargs) -> None:
         """
         Log the final model checkpoint and optimizer state as MLflow artifacts,
         then end the MLflow run.

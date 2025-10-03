@@ -11,7 +11,7 @@ from clinicadl.callbacks.factory.base import Callback, Tracker
 
 @pytest.fixture
 def fake_state():
-    """Minimal fake _TrainingState for testing callbacks."""
+    """Minimal fake TrainerState for testing callbacks."""
 
     class DummyState:
         def __init__(self):

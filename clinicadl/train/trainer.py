@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Optional, Union
 
+import pandas as pd
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 from torch.amp import GradScaler
@@ -10,9 +11,9 @@ from torch.amp.autocast_mode import autocast
 from torch.utils.data import DataLoader
 
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.data.datasets import CapsDataset
+from clinicadl.dictionary.utils import SEP
 from clinicadl.io.maps.maps import Maps
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
@@ -23,8 +24,12 @@ from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
+from clinicadl.train.trainer_state import TrainerState
 from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.utils.computational.config import ComputationalConfig
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.json import write_json
+from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
 
@@ -151,7 +156,6 @@ class Trainer:
             "loss": LossMetricConfig(loss_name="loss")
         },
         optim_config: OptimizationConfig = OptimizationConfig(),
-        comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
         resume: bool = False,
         seed: int = 123,
@@ -184,201 +188,41 @@ class Trainer:
             )
             model = ClinicaDLModel.from_json(maps.model_json)
 
-        self.config = _TrainingState(
-            maps=maps,
-            metrics=train_metrics,
-            model=model,
-            optim=optim_config,
-            comp=comp_config,
-        )
+        self._state: TrainerState = TrainerState(num_epochs=self._optim_config.epochs)
 
-        self.scaler = comp_config.get_scaler()
+        self._model: ClinicaDLModel = model
+        self._maps: Maps = maps
+        self._metrics_handler: MetricsHandler = metrics
+
+        self._optim_config: OptimizationConfig = optim_config
+
+        self._scaler: torch.amp.GradScaler = comp_config.get_scaler()
 
         seed_everything(seed=seed, deterministic=False, compensation="memory")
 
     @property
     def model(self):
-        return self.config.model
-
-    @property
-    def optim(self):
-        return self.config.optim
-
-    @property
-    def comp(self):
-        return self.config.comp
-
-    @property
-    def metrics(self):
-        return self.config.metrics
+        return self._model
 
     @property
     def maps(self):
-        return self.config.maps
+        return self._maps
 
-    def train(self, split: Split, resume: bool = False) -> None:
-        """
-        Run the training loop over the given data split.
+    @property
+    def metrics(self):
+        return self._metrics_handler.df
 
-        Parameters
-        ----------
-        split : Split
-            The data split containing training and validation DataLoaders.
-        """
-        self.model.train()
-        self.model.to(self.config.comp.device)
-        split.train_dataset.train()
+    @property
+    def detailed_metrics(self) -> pd.DataFrame:
+        return self._metrics_handler.detailed_df
 
-        # if resume:
-        self.on_train_begin(split)
+    @property
+    def optimization_config(self) -> OptimizationConfig:
+        return self._optim_config
 
-        while not self.config.stop:
-            self.on_epoch_begin()
-            split.train_loader.set_epoch(self.config.epoch)
-
-            for batch_idx, data in enumerate(split.train_loader):
-                self.on_batch_begin(batch_idx=batch_idx)
-
-                self._send_to_device(data)
-
-                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.model.forward_step(data=data, device=self.comp.device)
-
-                self.on_backward_begin()
-
-                self.model.optimization_step(loss, self.scaler)
-
-                self.scaler.update()
-
-                self.on_backward_end()
-
-                self.on_batch_end(loss=loss)
-
-            self.evaluate(split.val_loader)
-
-            self.on_epoch_end(split)
-
-        self.on_train_end(split)
-
-    def evaluate(
-        self,
-        split: Split,
-    ) -> None:
-        """
-        Evaluate the model on a validation or test dataset.
-        """
-        self.model.eval()
-        self.model.to(self.config.comp.device)
-        split.val_dataset.eval()
-
-        self.callbacks.on_validation_begin(config=self.config)
-
-        self.metrics.reset(reset_df=False)
-
-        with torch.no_grad():
-            for data in split.val_loader:
-                self._send_to_device(data)
-                output_batch = self.model.evaluation_step(data)
-                self.metrics(output_batch, epoch=self.config.epoch)
-
-        self.metrics.aggregate(epoch=self.config.epoch)
-
-        self.callbacks.on_validation_end(config=self.config)
-
-    def _send_to_device(self, data: BatchType) -> None:
-        """
-        Send the data to the right device.
-        """
-        if isinstance(data, Batch):
-            data.to(self.config.comp.device)
-        else:
-            for batch in data:
-                batch.to(self.config.comp.device)
-
-    def on_train_begin(self, split: Split) -> None:
-        self.reset(split)
-
-        self._write_training_infos(split=split)
-
-        self.callbacks.on_train_begin(config=self.config)
-
-    def on_epoch_begin(self) -> None:
-        self.callbacks.on_epoch_begin(config=self.config)
-
-    def on_batch_begin(self, batch_idx: int):
-        self.config.batch = batch_idx
-        self.callbacks.on_batch_begin(config=self.config)
-
-    def on_backward_begin(self):
-        self.callbacks.on_backward_begin(config=self.config)
-
-    def on_backward_end(self):
-        self.callbacks.on_backward_end(config=self.config)
-
-    def on_batch_end(self, loss: torch.Tensor):
-        self.callbacks.on_batch_end(config=self.config, loss=loss.item())
-
-    def on_epoch_end(self, split: Split) -> None:
-        self.callbacks.on_epoch_end(config=self.config)
-
-        if self.config.epoch == self.optim.epochs - 1:
-            self.config.stop = True
-
-        self.config.epoch += 1
-
-    def on_train_end(self, split: Split):
-        self.callbacks.on_train_end(config=self.config)
-        self.metrics.save(self.maps.training.splits[split.index].validation_metrics_tsv)
-
-        self._write_end_training_infos(split=split)
-
-    def reset(self, split: Optional[Split] = None):
-        if split:
-            self.config.reset(split=split)
-        self.metrics.reset(reset_df=True)
-
-    def predict(
-        self,
-        dataloader: DataLoader[CapsDataset],
-        split: int,
-        output_transforms: Optional[Union[Transforms, Postprocessing]] = None,
-        additional_metrics: Optional[
-            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
-        ] = None,
-        data_group: Optional[str] = None,
-    ):
-        """
-        Predict outputs for a dataset and optionally compute metrics.
-
-        Parameters
-        ----------
-        dataloader : DataLoader[CapsDataset]
-            DataLoader providing the dataset for prediction.
-        split : int
-            Index of the data split used for prediction.
-        output_transforms : Transforms or Postprocessing, optional
-            Optional transforms to apply to prediction outputs.
-        additional_metrics : list, optional
-            Additional metrics or losses to compute during prediction.
-        data_group : str, optional
-            Group label for the data, e.g., 'test', 'validation'.
-
-        Notes
-        -----
-        .. note::
-            Prediction results and metrics are saved to the configured maps directory.
-        """
-
-        # TODO : add transforms to output transforms
-
-        validator = Predictor(self.maps.path, self.model, self.comp)
-        validator.test(
-            dataloader=dataloader,
-            additionnal_metrics=additional_metrics,
-            split=split,
-            output_transforms=output_transforms,
-            data_group=data_group if data_group else "test",
-        )
+    @property
+    def state(self) -> TrainerState:
+        return self._state
 
     @classmethod
     def from_maps(cls, maps_path: PathType):
@@ -401,6 +245,228 @@ class Trainer:
             optim_config=optim_config,
             comp_config=comp_config,
             resume=True,
+        )
+
+    def reset(self):
+        self.state.reset()
+        self._metrics_handler.reset(reset_df=True)
+
+    def train(
+        self,
+        split: Split,
+        resume: bool = False,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        Run the training loop over the given data split.
+
+        Parameters
+        ----------
+        split : Split
+            The data split containing training and validation DataLoaders.
+        """
+        self._check_split(split)
+        self.model.train()  # reset model
+        self.model.to(computational.device)
+        split.train_loader.eval()
+        self.reset()
+        self._write_training_infos(split=split)
+
+        self._call_event("on_train_begin", split=split)
+
+        while not self.state.should_stop:
+            self.state.current_epoch += 1
+
+            self._call_event("on_epoch_begin")
+
+            split.train_loader.set_epoch(self.state.current_epoch)
+
+            for batch_idx, batch in enumerate(split.train_loader):
+                self.state.current_train_batch = batch_idx
+
+                self._send_to_device(batch)
+
+                self._call_event("on_forward_step_begin", batch=batch)
+
+                with autocast(
+                    device_type=computational.device.type,
+                    enabled=computational.amp,
+                ):
+                    loss = self.model.forward_step(batch=batch)
+
+                self._call_event("on_forward_step_end", batch=batch, loss=loss)
+
+                self._call_event("on_optimization_step_begin", loss=loss)
+
+                self.model.optimization_step(loss, self._scaler)
+                self.state.optim_step += 1
+                self._scaler.update()
+
+                self._call_event(
+                    "on_optimization_step_end",
+                    optimizers=self.model.get_optimizers(),
+                    grad_scaler=self._scaler,
+                )
+
+            self.evaluate(split.val_loader)
+
+            self._call_event("on_epoch_end")
+
+            if self.state.current_epoch == self.state.num_epochs:
+                self.state.should_stop = True
+
+        self._write_end_training_infos(split=split)
+
+        self._call_event("on_train_end")
+
+        self._
+
+    def evaluate(
+        self,
+        split: Split,
+        computational: ComputationalConfig = ComputationalConfig(),
+        metrics: Optional[dict[str, MetricOrConfig]] = None,
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self._check_split(split, only_val=True)
+        self.model.eval()
+        self.model.to(computational.device)
+        split.val_loader.dataset.eval()
+
+        if metrics:
+            self._metrics_handler.add_metrics(
+                **metrics
+            )  # no need to recompute the other ones
+
+        self._reset_validation()
+
+        self._call_event("on_evaluate_begin", split=split)
+
+        with torch.no_grad():
+            for batch_idx, batch in enumerate(split.val_loader):
+                self.state.current_val_batch = batch_idx
+
+                self._send_to_device(batch)
+
+                self._call_event("on_evaluation_step_begin", batch=batch)
+
+                output_batch = self.model.evaluation_step(
+                    batch
+                )  # amp during evaluation
+
+                metrics = self._metrics_handler(
+                    output_batch, epoch=self.state.current_epoch
+                )
+
+                self._call_event(
+                    "on_evaluation_step_end",
+                    batch=batch,
+                    output=output_batch,
+                    metrics=metrics,
+                )
+
+        self._metrics_handler.aggregate(epoch=self.state.current_epoch)
+
+        self._metrics_handler.save(
+            path=self.maps.training.splits[split.index].validation_metrics.aggregated,
+            details_path=self.maps.training.splits[
+                split.index
+            ].validation_metrics.aggregated,
+        )
+
+        self._call_event(
+            "on_evaluate_end",
+            metrics=self._metrics_handler.df,
+            detailed_metrics=self._metrics_handler.detailed_df,
+        )
+
+    def predict(
+        self,
+        dataloder: DataLoader,
+        model: str,
+        group_name: str,
+        computational: ComputationalConfig = ComputationalConfig(),
+        metrics: Optional[dict[str, MetricOrConfig]] = None,
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self.model.eval()
+        split, criterion = self._read_model_str(model)
+        # load the right model here
+        self.model.to(computational.device)
+        dataloder.dataset.eval()
+        self._check_group(group_name)
+
+        metrics_handler = MetricsHandler()  # no need to recompute the other ones
+
+        self._reset_prediction()
+
+        self._call_event("on_predict_begin")
+
+        with torch.no_grad():
+            for batch_idx, batch in enumerate(dataloder):
+                self.state.current_val_batch = batch_idx
+
+                self._send_to_device(batch)
+
+                self._call_event("on_evaluation_step_begin", batch=batch)
+
+                output_batch = self.model.evaluation_step(batch)
+
+                metrics = self._metrics_handler(
+                    output_batch, epoch=self.state.current_epoch
+                )
+
+                self._call_event(
+                    "on_evaluation_step_end",
+                    batch=batch,
+                    output=output_batch,
+                    metrics=metrics,
+                )
+
+        self._metrics_handler.aggregate(epoch=self.state.current_epoch)
+
+        self._metrics_handler.save(
+            path=self.maps.predictions.groups[group_name]
+            .splits[split]
+            .best_models[criterion]
+            .metrics.aggregated,
+            details_path=self.maps.predictions.groups[group_name]
+            .splits[split]
+            .best_models[criterion]
+            .metrics.details,
+        )
+
+        self._call_event(
+            "on_predict_end",
+            metrics=self._metrics_handler.df,
+            detailed_metrics=self._metrics_handler.detailed_df,
+        )
+
+    def _reset_validation(self) -> None:
+        self.state.reset_validation()
+        self._metrics_handler.reset(reset_df=False)
+
+    def _reset_prediction(self) -> None:
+        self.state.reset_prediction()
+        self._metrics_handler.reset(reset_df=True)
+
+    def _send_to_device(self, data: BatchType) -> None:
+        """
+        Send the data to the right device.
+        """
+        if isinstance(data, Batch):
+            data.to(self.computational_config.device)
+        else:
+            for batch in data:
+                batch.to(self.computational_config.device)
+
+    def _call_event(self, event: str, **kwargs):
+        self.callbacks.call_event(
+            event, model=self.model, maps=self.maps, state=self.state, **kwargs
         )
 
     def _write_training_infos(
@@ -455,3 +521,55 @@ class Trainer:
         self.maps._add_lines_to_summary_log("=" * 15)
 
         self.config.write_torchsummary()  # not working i don't know why
+
+    def _check_split(self, split: Split, only_val: bool = False) -> None:
+        if not only_val:
+            if split.train_loader is None:
+                raise ClinicaDLConfigurationError(
+                    "The split has no train_loader defined. Please run `get_dataloader()`"
+                )
+            self.state.num_train_batches = len(split.train_loader)
+        if split.val_loader is None:
+            raise ClinicaDLConfigurationError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        self.state.num_val_batches = len(split.val_loader)
+
+    def _check_group(self, group_name: str) -> None:
+        self.maps.predictions.create_group(group_name)
+
+    def _read_model_str(self, model: str) -> tuple[int, str]:
+        raise NotImplementedError()
+
+    def _save_checkpoint(self):
+        if self.state.current_epoch == self._last_saved_epoch:
+            return
+        self._last_saved_epoch = self.state.current_epoch
+
+        tmp_dir = self.maps.training.splits[self.state.split_idx].tmp
+        tmp_dir.read()
+        tmp_dir.create_epoch(self.state.current_epoch)
+        epoch_dir = tmp_dir.epochs[self.state.current_epoch]
+
+        # model
+        self.model.save_checkpoint(epoch_dir.model)
+
+        # metrics
+        self._metrics_handler.save(
+            path=epoch_dir.validation_metrics.aggregated,
+            details_path=epoch_dir.validation_metrics.details,
+        )
+
+        # trainer state
+        write_json(epoch_dir, self.state.state_dict())
+
+        # callbacks
+        for name, callback in self.callbacks.callbacks.items():
+            lowered_name = camel_to_snake(name)
+            callback_json = epoch_dir.callbacks / lowered_name
+            callback.save_checkpoint(callback_json)
+
+        # delete old epochs
+        for epoch in tmp_dir.epochs_list:
+            if epoch != self.state.current_epoch:
+                tmp_dir.epochs[epoch].remove()

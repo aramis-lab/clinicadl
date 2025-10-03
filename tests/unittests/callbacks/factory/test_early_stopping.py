@@ -7,8 +7,8 @@ from clinicadl.callbacks.factory.early_stopping import (
     EarlyStopping,
     OneMetricEarlyStopping,
 )
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.io.maps import Maps
+from clinicadl.train.trainer_state import TrainerState
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
@@ -69,7 +69,7 @@ def test_good_inputs(
         assert isinstance(oes_.check_finite, bool)
         assert isinstance(oes_, OneMetricEarlyStopping)
 
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     _ts.reset(SPLIT)
@@ -106,7 +106,7 @@ def test_bad_inputs(tmp_path):
 
     es = EarlyStopping(metrics=["mae"])
 
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     _ts.reset(SPLIT)
@@ -127,7 +127,7 @@ def test_load_save_checkpoint(tmp_path):
     shutil.copytree(MAPS_DIR, tmp_path / "maps")
     MAPS = Maps(tmp_path / "maps")
 
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     _ts.metrics._df = pd.DataFrame(

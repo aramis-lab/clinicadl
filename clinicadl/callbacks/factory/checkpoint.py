@@ -1,7 +1,7 @@
 import shutil
 from typing import Any, Optional
 
-from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.train.trainer_state import TrainerState
 
 from .base import Callback
 
@@ -58,7 +58,7 @@ class Checkpoint(Callback):
         self.epochs = epochs if epochs else []
         self.patience = patience
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         """
         Save the current model and optimizer state at the end of the require epochs.
         It needs to be called after the _CheckpointSaver callback so that the tmp files

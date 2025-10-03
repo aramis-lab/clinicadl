@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.io import Maps
 from clinicadl.metrics.handler import MetricsHandler
+from clinicadl.models import ClinicaDLModel
+from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
@@ -201,7 +203,9 @@ class _CallbacksHandler:
         """
         return list(self.callbacks.keys())
 
-    def _call_event(self, event: str, config: _TrainingState, **kwargs) -> None:
+    def call_event(
+        self, event: str, model: ClinicaDLModel, maps: Maps, **kwargs
+    ) -> None:
         """
         Call a specific event method on all callbacks.
 
@@ -217,37 +221,6 @@ class _CallbacksHandler:
             method = getattr(callback, event, None)
             if callable(method):
                 method(config=config, **kwargs)
-
-    # Event hooks
-    def on_train_begin(self, config: _TrainingState, **kwargs):
-        self._call_event("on_train_begin", config=config, **kwargs)
-
-    def on_train_end(self, config: _TrainingState, **kwargs):
-        self._call_event("on_train_end", config=config, **kwargs)
-
-    def on_epoch_begin(self, config: _TrainingState, **kwargs):
-        self._call_event("on_epoch_begin", config=config, **kwargs)
-
-    def on_epoch_end(self, config: _TrainingState, **kwargs):
-        self._call_event("on_epoch_end", config=config, **kwargs)
-
-    def on_batch_begin(self, config: _TrainingState, **kwargs):
-        self._call_event("on_batch_begin", config=config, **kwargs)
-
-    def on_batch_end(self, config: _TrainingState, **kwargs):
-        self._call_event("on_batch_end", config=config, **kwargs)
-
-    def on_backward_begin(self, config: _TrainingState, **kwargs):
-        self._call_event("on_backward_begin", config=config, **kwargs)
-
-    def on_backward_end(self, config: _TrainingState, **kwargs):
-        self._call_event("on_backward_end", config=config, **kwargs)
-
-    def on_validation_begin(self, config: _TrainingState, **kwargs):
-        self._call_event("on_validation_begin", config=config, **kwargs)
-
-    def on_validation_end(self, config: _TrainingState, **kwargs):
-        self._call_event("on_validation_end", config=config, **kwargs)
 
     def write_json(self, json_path: PathType) -> None:
         json_path = Path(json_path)

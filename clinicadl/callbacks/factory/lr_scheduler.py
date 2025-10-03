@@ -3,7 +3,6 @@ from typing import Any, Optional, Union
 
 import torch
 
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import PT
 from clinicadl.optim.lr_schedulers.config import (
     ImplementedLRScheduler,
@@ -11,6 +10,7 @@ from clinicadl.optim.lr_schedulers.config import (
 )
 from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
+from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
@@ -144,7 +144,7 @@ class LRScheduler(Callback):
             )
         self.metric_name = metric_name
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
         """
         Checks the optimizer_name and instantiates the LR scheduler.
         """
@@ -167,7 +167,7 @@ class LRScheduler(Callback):
                 )
             self.scheduler.load_state_dict(self._initial_state)
 
-    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_batch_end(self, config: TrainerState, **kwargs) -> None:
         """
         Step the learning rate scheduler after each training batch for
         step-based schedulers.
@@ -175,7 +175,7 @@ class LRScheduler(Callback):
         if self.scheduler_type == LRSchedulerMode.STEP:
             self.scheduler.step()
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         """
         Step the learning rate scheduler after each epoch for
         epoch-based and metric-based schedulers.

@@ -12,7 +12,7 @@ from clinicadl.io.maps.training.splits import TrainingSplitDir
 
 
 # ----------------------------
-# Fake _TrainingState
+# Fake TrainerState
 # ----------------------------
 class FakeState:
     def __init__(self):

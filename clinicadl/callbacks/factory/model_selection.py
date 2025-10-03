@@ -1,8 +1,8 @@
 import shutil
 from typing import Any, Union
 
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.metrics.enum import Optimum
+from clinicadl.train.trainer_state import TrainerState
 
 from .base import Callback
 
@@ -75,7 +75,7 @@ class ModelSelection(Callback):
         """
         self.metrics = metrics if isinstance(metrics, list) else [metrics]
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
         """
         Initialize storage structures for best metrics and create necessary folders.
         """
@@ -87,7 +87,7 @@ class ModelSelection(Callback):
             )
         # config.split.write_json(config.maps.training.splits[config.split.index].caps_dataset_json)
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         """
         At each epoch, check whether any metric has improved. If so, copy the current
         model and optimizer checkpoints into the best directory for that metric.
