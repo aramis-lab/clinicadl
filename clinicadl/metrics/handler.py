@@ -232,7 +232,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             except pd.errors.IntCastingNaNError:
                 pass
 
-    def __call__(self, batch: Batch, epoch: Optional[int] = None) -> None:
+    def __call__(self, batch: Batch, epoch: Optional[int] = None) -> pd.DataFrame:
         """
         Updates metrics with a new batch.
 
@@ -243,6 +243,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             by some metrics.
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            The metrics for all the images in the batch.
         """
         if self._metrics is None:
             raise ClinicaDLConfigurationError(
@@ -257,17 +262,21 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             values[name] = metric(batch)
 
         values = values | {PARTICIPANT_ID: participants, SESSION_ID: sessions}
+        to_return = pd.DataFrame(values)
+
         if epoch is not None:
             values[EPOCH] = epoch
-        new_df = pd.DataFrame(values)
+        to_add = pd.DataFrame(values)
 
-        self._detailed_df = pd.concat([self._detailed_df, new_df], ignore_index=True)
+        self._detailed_df = pd.concat([self._detailed_df, to_add], ignore_index=True)
 
         if epoch is not None:
             try:
                 self._detailed_df = self._detailed_df.astype({EPOCH: int})
             except pd.errors.IntCastingNaNError:
                 pass
+
+        return to_return
 
     def get_metric(self, metric: str, epoch: Optional[int] = None) -> float:
         """

@@ -66,7 +66,8 @@ def test_MetricsHandler():
     )
 
     metrics.init_metrics(MODEL)
-    metrics(BATCH_1)
+    output = metrics(BATCH_1)
+
     expected_df = pd.DataFrame.from_dict(
         {
             "my_loss": pd.Series([0.0, 100.0, 0.0], dtype=np.float32),
@@ -76,6 +77,7 @@ def test_MetricsHandler():
             "session_id": [f"ses-{i}" for i in range(3)],
         }
     )
+    pd.testing.assert_frame_equal(output, expected_df)
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_df)
 
     metrics(BATCH_2)
@@ -227,9 +229,16 @@ def test_epoch():
     metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
     metrics.reset()
-    metrics(BATCH_2, epoch=1)
+    output = metrics(BATCH_2, epoch=1)
     metrics.aggregate(epoch=1)
 
+    expected_output_df = pd.DataFrame.from_dict(
+        {
+            "mse": pd.Series([1.0, 1.0, 0.0], dtype=np.float32),
+            "participant_id": [f"sub-{i}" for i in range(3, 6)],
+            "session_id": [f"ses-{i}" for i in range(3, 6)],
+        }
+    )
     expected_detailed_df = pd.DataFrame.from_dict(
         {
             "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
@@ -244,6 +253,7 @@ def test_epoch():
             "epoch": [0, 1],
         }
     )
+    pd.testing.assert_frame_equal(output, expected_output_df)
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_detailed_df)
     pd.testing.assert_frame_equal(metrics.df, expected_df)
 
