@@ -15,6 +15,7 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
     _dir_type: type[DirType]
     _item_key: str
     _item_mapping: Callable[[str], ItemType] = staticmethod(lambda x: x)
+    _separator = "-"
 
     @property
     def _items_list(self) -> list[ItemType]:
@@ -27,7 +28,7 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
 
     def _find_item_dirs(self) -> None:
         items = [
-            x.name.split("-")[-1]
+            x.name.split(self._separator)[-1]
             for x in self.path.iterdir()
             if x.name.startswith(self._item_key)
         ]
@@ -42,7 +43,7 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         )
 
     def _item_path(self, item: str) -> Path:
-        return self.path / f"{self._item_key}-{item}"
+        return self.path / f"{self._item_key}{self._separator}{item}"
 
     def _create_item(
         self, item: ItemType, overwrite: bool = False, exist_ok: bool = False
@@ -54,7 +55,7 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
 
     @classmethod
     def _items_dict_private_name(cls) -> str:
-        return "_" + cls._item_key.replace("-", "_") + "s"
+        return "_" + cls._item_key + "s"
 
 
 class SplitsDir(CollectionOfDirs[DirType, int]):

@@ -4,10 +4,8 @@ from pathlib import Path
 
 from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.dictionary.words import (
-    BEST,
     DATA,
     DATASET,
-    FINAL,
     GROUP,
     METRICS,
     MODELS,
@@ -15,7 +13,7 @@ from clinicadl.dictionary.words import (
 
 from .base import Directory
 from .metrics import MetricsDir
-from .utils import BestModelsDir, CollectionOfDirs, SplitsDir
+from .utils import CollectionOfDirs
 
 
 class ModelDir(Directory):
@@ -28,29 +26,27 @@ class ModelDir(Directory):
         return self._metrics
 
 
-class BestModelsResultsDir(BestModelsDir[ModelDir]):
+class ModelsDir(CollectionOfDirs[ModelDir, str]):
     _dir_type = ModelDir
+    _item_key = ""
+    _separator = ""
 
-
-class ModelsDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
-        self._best_models = BestModelsResultsDir(path=self.path / f"{BEST}_{MODELS}")
-        self._final = ModelDir(path=self.path / FINAL)
+        self._models: dict[str, ModelDir] = {}
 
     @property
-    def best_models(self) -> BestModelsResultsDir:
-        return self._best_models
+    def models(self) -> dict[str, ModelDir]:
+        return self._models
 
     @property
-    def final(self) -> ModelDir:
-        return self._final
+    def models_list(self) -> list[int]:
+        return self._items_list
 
-    def _get_child_directories(self) -> list[Directory]:
-        """
-        Rewriting this method to make "best_models" and "final" optional.
-        """
-        return []
+    def create_model(
+        self, model: str, overwrite: bool = False, exist_ok: bool = False
+    ) -> None:
+        self._create_item(model, overwrite=overwrite, exist_ok=exist_ok)
 
 
 class GroupDir(Directory):

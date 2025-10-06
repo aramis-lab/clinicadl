@@ -400,51 +400,18 @@ class Maps(Directory):
                     Details on the :py:class:`dataset <clinicadl.data.datasets>` used
                     for the group ``"X"``.
 
-                .. dropdown:: **split-0**
+                .. dropdown:: **models**
                     :icon: file-directory
                     :color: muted
 
-                    Results of inference on the group ``"X"`` obtained with the models trained on split ``0`` (i.e.
-                    the models in ``maps_dir/training/split-0``).
+                    Results of inference on the group ``"X"`` obtained for different models.
 
-                    .. dropdown:: **models**
+                    .. dropdown:: **split-0_epoch-10**
                         :icon: file-directory
                         :color: muted
 
-                        .. dropdown:: **best_models*
-                            :icon: file-directory
-                            :color: muted
-
-                            .. dropdown:: **metric-loss**
-                                :icon: file-directory
-                                :color: muted
-
-                                Results obtained with the best model with respect to the metric ``"loss"`` (i.e.
-                                the model in ``maps_dir/training/split-0/best_models/metric-loss``).
-
-                                .. dropdown:: **metrics**
-                                    :icon: file-directory
-                                    :color: muted
-
-                                    Metrics on the group ``"X"``.
-
-                                    .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.aggregated``
-                                        :icon: file
-                                        :color: light
-
-                                        Aggregated metrics.
-
-                                    .. dropdown:: details.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.details``
-                                        :icon: file
-                                        :color: light
-
-                                        Metrics for each image.
-
-                        .. dropdown:: **final**
-                            :icon: file-directory
-                            :color: muted
-
-                            Results obtained with the final model (i.e. the model in ``maps_dir/training/split-0/final``).
+                        Results obtained with the model at epoch ``10``, trained on the split ``0```
+                        (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
 
                             .. dropdown:: **metrics**
                                 :icon: file-directory
@@ -452,17 +419,69 @@ class Maps(Directory):
 
                                 Metrics on the group ``"X"``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].models["split-0_epoch-10"].metrics.aggregated``
                                     :icon: file
                                     :color: light
 
                                     Aggregated metrics.
 
-                                .. dropdown:: details.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.details``
+                                .. dropdown:: details.tsv → ``maps.predictions.groups["X"].models["split-0_epoch-10"].metrics.details``
                                     :icon: file
                                     :color: light
 
                                     Metrics for each image.
+
+
+                    .. dropdown:: **split-0_final**
+                        :icon: file-directory
+                        :color: muted
+
+                        Results obtained with the final model trained on the split ``0```
+                        (i.e. the model in ``maps_dir/training/split-0/models/final``).
+
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
+
+                                Metrics on the group ``"X"``.
+
+                                .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].models["split-0_final"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
+
+                                    Aggregated metrics.
+
+                                .. dropdown:: details.tsv → ``maps.predictions.groups["X"].models["split-0_final"].metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Metrics for each image.
+
+                    .. dropdown:: **split-0_metric-loss**
+                        :icon: file-directory
+                        :color: muted
+
+                        Results obtained with the best model with respect to the metric ``"loss"``, trained on the split ``0```
+                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/metric-loss``).
+
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
+
+                                Metrics on the group ``"X"``.
+
+                                .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].models["split-0_metric-loss"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
+
+                                    Aggregated metrics.
+
+                                .. dropdown:: details.tsv → ``maps.predictions.groups["X"].models["split-0_metric-loss"].metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Metrics for each image.
+
 
     Examples
     --------
@@ -481,14 +500,14 @@ class Maps(Directory):
 
     .. code-block:: python
 
-        >>> maps.training.splits[0].checkpoints.epochs[10].model
-        PosixPath('maps_dir/training/split-0/checkpoints/epoch-10/model.pth.tar')
+        >>> maps.training.splits[0].models.checkpoints.epochs[10].model
+        PosixPath('maps_dir/training/split-0/models/checkpoints/epoch-10/model.pth.tar')
 
     To get the list of all saved checkpoints:
 
     .. code-block:: python
 
-        >>> maps.training.splits[0].checkpoints.epochs_list
+        >>> maps.training.splits[0].models.checkpoints.epochs_list
         [0, 5, 10]
     """
 
@@ -591,7 +610,7 @@ class Maps(Directory):
                     },
                 }
             }
-            >>> maps.read_file(maps.training.splits[0].checkpoints.epochs[0].model)
+            >>> maps.read_file(maps.training.splits[0].models.checkpoints.epochs[0].model)
             OrderedDict([('conv0.weight',
               tensor([[[[ 7.2531e-03,  5.7384e-03,  1.4988e-02,  ..., -3.1380e-02,
                          -2.2103e-02,  5.8432e-02],
