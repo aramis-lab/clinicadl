@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from abc import ABC
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import torch
@@ -10,7 +12,9 @@ from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.io import Maps
 from clinicadl.models import ClinicaDLModel
 from clinicadl.split import Split
-from clinicadl.train import TrainerState
+
+if TYPE_CHECKING:
+    from clinicadl.train import TrainerState
 
 
 class Callback(ABC):

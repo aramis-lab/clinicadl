@@ -23,6 +23,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.lr_schedulers.config import LinearLRConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split.split import Split
+from clinicadl.train.computational import ComputationalConfig
 
 # from clinicadl.callbacks import (
 #     Checkpoint,
@@ -33,7 +34,6 @@ from clinicadl.split.split import Split
 #     TensorBoard,
 # )
 from clinicadl.train.trainer_state import TrainerState
-from clinicadl.utils.computational.config import ComputationalConfig
 
 BIDS_DIR = Path(__file__).parents[1] / "resources" / "bids_example"
 CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"

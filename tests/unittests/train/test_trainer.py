@@ -3,8 +3,8 @@ from clinicadl.io.maps.maps import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import SupervisedModel
 from clinicadl.optim.config import OptimizationConfig
+from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer import Trainer
-from clinicadl.utils.computational.config import ComputationalConfig
 
 from ..resources.objects import (
     CALLBACKS,

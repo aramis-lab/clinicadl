@@ -26,11 +26,11 @@ def test_trainer_state():
         "split_idx": 1,
     }
     state.reset_prediction()
-    assert state.num_pred_batches == 0
-    assert state.num_train_batches == 1
+    assert state.current_pred_batch == 0
+    assert state.current_train_batch == 1
     state.reset_validation()
-    assert state.num_val_batches == 0
-    assert state.num_train_batches == 1
+    assert state.current_val_batch == 0
+    assert state.current_train_batch == 1
     state.reset()
     assert state.current_train_batch == 0
     assert state.current_pred_batch == 0

@@ -9,10 +9,17 @@
 
 .. autosummary::
    :nosignatures:
+   :toctree: ../generated/
+   :template: autosummary/config_class.rst
+
+   OptimizationConfig
+
+.. autosummary::
+   :nosignatures:
    :template: module.rst
 
-   optimizers
-   lr_schedulers
+   optimizers.config
+   lr_schedulers.config
 
 .. toctree::
    :hidden:

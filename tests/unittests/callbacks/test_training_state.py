@@ -3,7 +3,7 @@ from copy import deepcopy
 import pandas as pd
 import torch
 
-from clinicadl.io.maps.training.splits.epoch import EpochTmpDir
+from clinicadl.io.maps.training.splits.tmp import EpochTmpDir
 from clinicadl.train.trainer_state import TrainerState
 
 from ..resources.objects import COMP, MAPS, METRICS_HANDLER, MODEL, OPTIM, SPLIT

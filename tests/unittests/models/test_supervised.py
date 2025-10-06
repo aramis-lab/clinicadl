@@ -37,8 +37,15 @@ def test_SupervisedModel(tmp_path):
     loss = model.forward_step(BATCH)
     assert loss.shape == ()
 
+    scaler = torch.amp.GradScaler(device="cpu")
+
     # backward step
-    model.optimization_step(loss)
+    model.backward_step(loss, grad_scaler=scaler)
+    assert next(iter(network.parameters())).grad is not None
+    assert scaler._scale is not None
+
+    # optimization step
+    model.optimization_step()
     assert 0 in model.optimizer.state_dict()["state"]
 
     # evaluation step
@@ -60,26 +67,15 @@ def test_SupervisedModel(tmp_path):
     model.train()
     assert network.training
 
-    # write checkpoint
-    model.save_checkpoint(tmp_path / "weights.pt", only_network_weights=True)
-    model.save_checkpoint(tmp_path / "model_state.pt", only_network_weights=False)
+    # state_dict
+    state_dict = model.state_dict()
+
+    # write reaad json
+    model.to_json(tmp_path / "model.json")
+    new_model = SupervisedModel.from_json(tmp_path / "model.json", network=torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1)))
 
     # read checkpoint
-    network = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1))
-    loss = BCEWithLogitsLossConfig()
-    optimizer = AdamConfig()
-    new_model = SupervisedModel(network, loss, optimizer)
-
-    new_model.load_checkpoint(
-        tmp_path / "weights.pt", device="cpu", only_network_weights=True
-    )
-    torch.testing.assert_close(
-        next(iter(network.parameters())), next(iter(new_model.network.parameters()))
-    )
-
-    new_model.load_checkpoint(
-        tmp_path / "model_state.pt", device="cpu", only_network_weights=False
-    )
+    new_model.load_state_dict(state_dict)
     torch.testing.assert_close(
         next(iter(network.parameters())), next(iter(new_model.network.parameters()))
     )
@@ -89,30 +85,15 @@ def test_SupervisedModel(tmp_path):
     )
 
     # architecture
-    new_model.write_architecture(tmp_path / "architecture.log")
-    with open(tmp_path / "architecture.log", "r", encoding="utf-8") as f:
-        content = f.read()
+    archi = new_model.get_architecture()
     assert (
-        content
-        == "Sequential(\n  (0): Flatten(start_dim=1, end_dim=-1)\n  (1): Linear(in_features=8, out_features=1, bias=True)\n)\n"
+        archi
+        == "Sequential(\n  (0): Flatten(start_dim=1, end_dim=-1)\n  (1): Linear(in_features=8, out_features=1, bias=True)\n)"
     )
 
     # summary
-    new_model.write_torchsummary(
-        tmp_path / "torchsummary.txt", input_data=torch.randn(1, 2, 2, 2)
-    )
-    with open(tmp_path / "torchsummary.txt", "r", encoding="utf-8") as f:
-        content = f.read()
-    assert content == (
-        "==========================================================================================\nLayer "
-        "(type:depth-idx)                   Output Shape              "
-        "Param #\n==========================================================================================\nSequential                               [1, 1]"
-        "                    --\n├─Flatten: 1-1                           [1, 8]                    --\n├─Linear: 1-2                            [1, 1]                    "
-        "9\n==========================================================================================\nTotal params: 9\nTrainable params: 9\nNon-trainable params: "
-        "0\nTotal mult-adds (Units.MEGABYTES): 0.00\n==========================================================================================\nInput size (MB): "
-        "0.00\nForward/backward pass size (MB): 0.00\nParams size (MB): 0.00\nEstimated Total Size (MB): "
-        "0.00\n==========================================================================================\n"
-    )
+    summary_ = new_model.get_summary(input_data=torch.randn(1, 2, 2, 2))
+    assert "Total params: 9" in summary_
 
 
 @pytest.mark.gpu

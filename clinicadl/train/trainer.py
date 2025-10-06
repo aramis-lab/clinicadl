@@ -24,9 +24,9 @@ from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
+from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.transforms.handlers import Postprocessing, Transforms
-from clinicadl.utils.computational.config import ComputationalConfig
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.json import write_json
 from clinicadl.utils.names import camel_to_snake
@@ -157,8 +157,6 @@ class Trainer:
         },
         optim_config: OptimizationConfig = OptimizationConfig(),
         _overwrite: bool = False,
-        resume: bool = False,
-        seed: int = 123,
     ) -> None:
         maps = Maps(maps_path)
         if not resume:
@@ -265,9 +263,14 @@ class Trainer:
         split : Split
             The data split containing training and validation DataLoaders.
         """
+        # seed?
         self._check_split(split)
         self.model.train()  # reset model
-        self.model.to(computational.device)
+        self.model.to(
+            computational.device,
+            non_blocking=computational.non_blocking,
+            memory_format=torch.channels_last_3d,
+        )
         split.train_loader.eval()
         self.reset()
         self._write_training_infos(split=split)
@@ -281,7 +284,7 @@ class Trainer:
 
             split.train_loader.set_epoch(self.state.current_epoch)
 
-            for batch_idx, batch in enumerate(split.train_loader):
+            for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
 
                 self._send_to_device(batch)
@@ -296,19 +299,27 @@ class Trainer:
 
                 self._call_event("on_forward_step_end", batch=batch, loss=loss)
 
-                self._call_event("on_optimization_step_begin", loss=loss)
+                if batch_idx % self.optimization_config.accumulation_steps == 0:
+                    self._call_event("on_optimization_step_begin", loss=loss)
 
-                self.model.optimization_step(loss, self._scaler)
-                self.state.optim_step += 1
-                self._scaler.update()
+                    self.model.optimization_step(loss, self._scaler)
+                    self.state.optim_step += 1
 
-                self._call_event(
-                    "on_optimization_step_end",
-                    optimizers=self.model.get_optimizers(),
-                    grad_scaler=self._scaler,
-                )
+                    self._scaler.update()
+                    for optimizer in self.model.get_optimizers().values():
+                        optimizer.zero_grad(set_to_none=True)
 
-            self.evaluate(split.val_loader)
+                    self._call_event(
+                        "on_optimization_step_end",
+                        optimizers=self.model.get_optimizers(),
+                        grad_scaler=self._scaler,
+                    )
+
+            if (
+                self.state.current_epoch % self.optimization_config.evaluation_steps
+                == 0
+            ):
+                self.evaluate(split.val_loader)
 
             self._call_event("on_epoch_end")
 
@@ -319,7 +330,7 @@ class Trainer:
 
         self._call_event("on_train_end")
 
-        self._
+        self._clear_tmp()
 
     def evaluate(
         self,

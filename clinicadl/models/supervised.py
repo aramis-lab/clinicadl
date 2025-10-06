@@ -133,24 +133,36 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
 
         return loss
 
-    def optimization_step(
+    def backward_step(
         self,
         loss: torch.Tensor,
         grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
     ) -> None:
         """
-        Performs a classical optimization step using the loss returned by
-        :py:meth:`forward_step`.
+        Performs a classical gradient computation using the loss returned by :py:meth:`forward_step`.
 
         Parameters
         ----------
         loss : torch.Tensor
-            The loss(es) on which gradient will be computed.
+            The loss on which gradients will be computed.
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
-        self.optimizer.zero_grad(set_to_none=True)
         grad_scaler.scale(loss).backward()
+
+    def optimization_step(
+        self,
+        grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
+    ) -> None:
+        """
+        Performs a classical optimization step using the gradients accumulated in
+        :py:meth:`backward_step`.
+
+        Parameters
+        ----------
+        grad_scaler : GradScaler, default=GradScaler(enabled=False)
+            A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
+        """
         grad_scaler.step(self.optimizer)
 
     def evaluation_step(self, batch: Batch) -> Batch:
@@ -243,96 +255,73 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         """
         self.network.eval()
 
-    def save_checkpoint(
+    def state_dict(
         self,
-        checkpoint_path: PathType,
-        only_network_weights: bool = False,
-    ) -> None:
+    ) -> dict[str, Any]:
         """
         To save a checkpoint of the weights of the neural network,
-        and optionally a checkpoint of the state of the optimizer.
+        as well as the state of the optimizer.
 
-        Parameters
+        Returns
         ----------
-        checkpoint_path : PathType
-            The path to the checkpoint.
-        only_network_weights : bool, default=False
-            Whether to save only the weights of the neural network.
+        dict[str, Any]
+            A dictionary containing the states of the neural network(s) and
+            the optimizer(s).
         """
         state_dict = {"network_state_dict": self.network.state_dict()}
-        if not only_network_weights:
-            state_dict["optimizer_state_dict"] = self.optimizer.state_dict()
+        state_dict["optimizer_state_dict"] = self.optimizer.state_dict()
 
-        torch.save(state_dict, f=checkpoint_path)
+        return state_dict
 
-    def load_checkpoint(
+    def load_state_dict(
         self,
-        checkpoint_path: PathType,
-        device: DeviceType = torch.device("cpu"),
-        only_network_weights: bool = False,
+        state_dict: dict[str, Any],
     ) -> None:
         """
-        To load a checkpoint of the weights of the neural network,
-        and optionally of the state of the optimizer.
+        To load a checkpoint of the neural network and the optimizer.
 
         Parameters
         ----------
-        checkpoint_path : PathType
-            The path to the checkpoint.
-        device : DeviceType, default=torch.device("cpu")
-            On which device to load the checkpoint.
-        only_network_weights : bool, default=False
-            Whether to load only the weights of the neural network.
+        state_dict : dict[str, Any]
+            The state returned by :py:meth:`state_dict`.
         """
-        checkpoint = torch.load(
-            checkpoint_path,
-            weights_only=True,
-            map_location=device,
-        )
+        self.network.load_state_dict(state_dict["network_state_dict"])
+        self.optimizer.load_state_dict(state_dict["optimizer_state_dict"])
 
-        self.network.load_state_dict(checkpoint["network_state_dict"])
-        if not only_network_weights:
-            self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-    def write_architecture(self, path: PathType) -> None:
+    def get_architecture(self) -> str:
         """
-        Writes the architecture of the neural network in a file.
+        Returns the architecture of the neural network.
 
-        Parameters
-        ----------
-        path : PathType
-            The path to the ``.log`` file.
+        Returns
+        -------
+        str
+            The string representation of the architecture.
         """
-        with open(path, "w", encoding="utf-8") as f:
-            print(self.network, file=f)
+        return str(self.network)
 
-    def write_torchsummary(
+    def get_summary(
         self,
-        path: PathType,
         input_data: torch.Tensor,
-    ) -> None:
+    ) -> str:
         """
-        Writes a summary of the neural network produced by
+        Returns a summary of the neural network, produced by
         `torchinfo <https://github.com/TylerYep/torchinfo>`_.
 
         Parameters
         ----------
-        path : PathType
-            The path to the ``.txt`` file where to write the summary.
         input_data : torch.Tensor
             Input data to pass to the neural network to build the summary.
-        """
-        from contextlib import redirect_stdout
 
+        Returns
+        -------
+        str
+            The summary.
+        """
         from torchinfo import summary
 
-        with open(
-            path,
-            "w",
-            encoding="utf-8",
-        ) as f:
-            with redirect_stdout(f):
-                summary(
-                    self.network,
-                    input_data=input_data,
-                )
+        summary_ = summary(
+            self.network,
+            input_data=input_data,
+        )
+
+        return str(summary_)

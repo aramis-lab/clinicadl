@@ -7,7 +7,8 @@ from clinicadl.dictionary.words import (
     CALLBACKS,
     METRICS,
     MODEL,
-    STOP,
+    SCALER,
+    STATE,
     VALIDATION,
 )
 
@@ -16,13 +17,7 @@ from ...metrics import MetricsDir
 from ...utils import EpochsDir
 
 
-class EpochDir(Directory):
-    @property
-    def model(self) -> Path:
-        return (self.path / MODEL).with_suffix(PTH + TAR)
-
-
-class BestEpochDir(EpochDir):
+class EpochTmpDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
         self._validation_metrics = MetricsDir(
@@ -30,22 +25,24 @@ class BestEpochDir(EpochDir):
         )
 
     @property
-    def validation_metrics(self) -> MetricsDir:
-        return self._validation_metrics
-
-
-class EpochTmpDir(BestEpochDir):
-    @property
     def callbacks(self) -> Path:
         return self.path / CALLBACKS
 
     @property
-    def stop(self) -> Path:
-        return (self.path / STOP).with_suffix(JSON)
+    def validation_metrics(self) -> MetricsDir:
+        return self._validation_metrics
 
+    @property
+    def model(self) -> Path:
+        return (self.path / MODEL).with_suffix(PTH + TAR)
 
-class CheckpointsDir(EpochsDir[EpochDir]):
-    _dir_type = EpochDir
+    @property
+    def scaler(self) -> Path:
+        return (self.path / SCALER).with_suffix(JSON)
+
+    @property
+    def state(self) -> Path:
+        return (self.path / STATE).with_suffix(JSON)
 
 
 class TmpDir(EpochsDir[EpochTmpDir]):

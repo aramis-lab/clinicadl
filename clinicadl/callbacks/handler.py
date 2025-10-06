@@ -4,14 +4,12 @@ from typing import Dict, List, Optional
 from clinicadl.io import Maps
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.models import ClinicaDLModel
-from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
 from .config import get_callback_from_dict
 from .factory import *
 from .factory.base import Callback
-from .factory.checkpoint_saver import _CheckpointSaver
 from .factory.logger import _Logger
 from .factory.monitor import _Monitor
 from .factory.training_loss import _TrainingLoss
@@ -21,7 +19,6 @@ LOSS = "loss"
 PREFERRED_ORDER = [
     _TrainingLoss.__name__,
     LRScheduler.__name__,
-    _CheckpointSaver.__name__,
     Checkpoint.__name__,
     ModelSelection.__name__,
     _Monitor.__name__,

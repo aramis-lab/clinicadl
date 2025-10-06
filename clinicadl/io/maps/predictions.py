@@ -4,10 +4,13 @@ from pathlib import Path
 
 from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.dictionary.words import (
+    BEST,
     DATA,
     DATASET,
+    FINAL,
     GROUP,
     METRICS,
+    MODELS,
 )
 
 from .base import Directory
@@ -15,7 +18,7 @@ from .metrics import MetricsDir
 from .utils import BestModelsDir, CollectionOfDirs, SplitsDir
 
 
-class PredictionsMetrics(Directory):
+class ModelDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
         self._metrics = MetricsDir(path=self.path / METRICS)
@@ -25,12 +28,39 @@ class PredictionsMetrics(Directory):
         return self._metrics
 
 
-class PredictionsSplitDir(BestModelsDir[PredictionsMetrics]):
-    _dir_type = PredictionsMetrics
+class BestModelsResultsDir(BestModelsDir[ModelDir]):
+    _dir_type = ModelDir
 
 
-class GroupDir(SplitsDir[PredictionsSplitDir]):
-    _dir_type = PredictionsSplitDir
+class ModelsDir(Directory):
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self._best_models = BestModelsResultsDir(path=self.path / f"{BEST}_{MODELS}")
+        self._final = ModelDir(path=self.path / FINAL)
+
+    @property
+    def best_models(self) -> BestModelsResultsDir:
+        return self._best_models
+
+    @property
+    def final(self) -> ModelDir:
+        return self._final
+
+    def _get_child_directories(self) -> list[Directory]:
+        """
+        Rewriting this method to make "best_models" and "final" optional.
+        """
+        return []
+
+
+class GroupDir(Directory):
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self._models = ModelsDir(path=self.path / MODELS)
+
+    @property
+    def models(self) -> ModelsDir:
+        return self._models
 
     @property
     def dataset_json(self) -> Path:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generic, TypeVar
 
-from clinicadl.dictionary.words import BEST, EPOCH, MODEL, SPLIT
+from clinicadl.dictionary.words import EPOCH, METRIC, SPLIT
 
 from .base import Directory
 
@@ -102,15 +102,15 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
 
 
 class BestModelsDir(CollectionOfDirs[DirType, str]):
-    _item_key = f"{BEST}-{MODEL}"
+    _item_key = METRIC
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self._best_models: dict[str, DirType] = {}
+        self._metrics: dict[str, DirType] = {}
 
     @property
-    def best_models(self) -> dict[str, DirType]:
-        return self._best_models
+    def metrics(self) -> dict[str, DirType]:
+        return self._metrics
 
     @property
     def metrics_list(self) -> list[str]:

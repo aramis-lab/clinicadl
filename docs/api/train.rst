@@ -13,3 +13,8 @@
    :template: autosummary/class.rst
 
     Trainer
+
+   :template: autosummary/config_class.rst
+
+    TrainerState
+    ComputationalConfig

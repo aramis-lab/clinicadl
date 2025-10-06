@@ -15,9 +15,9 @@ from clinicadl.dictionary.words import (
     ENVIRONMENT,
     METRICS,
     MODEL,
+    NN,
     PREDICTIONS,
     SUMMARY,
-    TORCH,
     TRAINING,
 )
 from clinicadl.utils.json import read_json
@@ -53,7 +53,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Details on the neural network architecture, provided by :py:meth:`ClinicaDLModel.write_architecture_log <clinicadl.models.ClinicaDLModel.write_architecture_log>`.
+            Details on the neural network architecture, provided by :py:meth:`ClinicaDLModel.get_architecture <clinicadl.models.ClinicaDLModel.get_architecture>`.
 
         .. dropdown:: environment.txt → ``maps.environment_txt``
             :icon: file
@@ -79,12 +79,11 @@ class Maps(Directory):
 
             Summary of the ``Maps`` directory.
 
-        .. dropdown:: torchsummary.txt → ``maps.torchsummary_txt``
+        .. dropdown:: nn_summary.txt → ``maps.nn_summary_txt``
             :icon: file
             :color: light
 
-            Summary of the neural network provided by `torchsummary <https://pypi.org/project/torch-summary/>`_ (image size after
-            each layer, number of parameters for each layer, etc.).
+            Summary of the neural network provided by :py:meth:`ClinicaDLModel.get_summary <clinicadl.models.ClinicaDLModel.get_summary>`.
 
         .. dropdown:: **training**
             :icon: file-directory
@@ -190,58 +189,6 @@ class Maps(Directory):
 
                     Summary of the training of split ``0``.
 
-                .. dropdown:: **best-model-loss**
-                    :icon: file-directory
-                    :color: muted
-
-                    Training results for the best model obtained with respect to the metric ``"loss"``.
-
-                    .. dropdown:: model.pth.tar → ``maps.training.splits[0].best_models["loss"].model``
-                        :icon: file
-                        :color: light
-
-                        The best model obtained with respect to the metric ``"loss"``. The content of the file is
-                        defined by :py:meth:`ClinicaDLModel.save_checkpoint <clinicadl.models.ClinicaDLModel.save_checkpoint>`
-                        (here only the weights of the neural networks are saved).
-
-                    .. dropdown:: **validation_metrics**
-                        :icon: file-directory
-                        :color: muted
-
-                        Validation metrics obtained by the best model obtained with respect to the metric ``"loss"``.
-
-                        .. dropdown:: aggregated.tsv → ``maps.training.splits[0].best_models["loss"].validation_metrics.aggregated``
-                            :icon: file
-                            :color: light
-
-                            Aggregated validation metrics.
-
-                        .. dropdown:: details.tsv → ``maps.training.splits[0].best_models["loss"].validation_metrics.details``
-                            :icon: file
-                            :color: light
-
-                            Validation metrics for each image.
-
-                .. dropdown:: **checkpoints**
-                    :icon: file-directory
-                    :color: muted
-
-                    Checkpoints saved by the user with :py:class:`clinicadl.callbacks.Checkpoint`.
-
-                    .. dropdown:: **epoch-10**
-                        :icon: file-directory
-                        :color: muted
-
-                        Checkpoint at epoch ``10``.
-
-                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].checkpoints.epochs[10].model``
-                            :icon: file
-                            :color: light
-
-                            The model at epoch ``10``. The content of the file is
-                            defined by :py:meth:`ClinicaDLModel.save_checkpoint <clinicadl.models.ClinicaDLModel.save_checkpoint>`
-                            (here only the weights of the neural networks are saved).
-
                 .. dropdown:: **logs**
                     :icon: file-directory
                     :color: muted
@@ -261,6 +208,116 @@ class Maps(Directory):
                         Where `TensorBoard <https://docs.pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html>`_ files are saved.
                         To configure ``TensorBoard``, use :py:class:`clinicadl.callbacks.TensorBoard`.
 
+                .. dropdown:: **models**
+                    :icon: file-directory
+                    :color: muted
+
+                    .. dropdown:: **best-models**
+                        :icon: file-directory
+                        :color: muted
+
+                            Best models obtained with respect to the metrics monitored in :py:class:`~clinicadl.callbacks.Checkpoint`.
+
+                            .. dropdown:: **metric-loss**
+                                :icon: file-directory
+                                :color: muted
+
+                                Results for the best model obtained with respect to the metric ``"loss"``.
+
+                                .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.best_models.metric["loss"].model``
+                                    :icon: file
+                                    :color: light
+
+                                    The best model obtained with respect to the metric ``"loss"``. The content of the file is
+                                    defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+
+                                .. dropdown:: **validation_metrics**
+                                    :icon: file-directory
+                                    :color: muted
+
+                                    Validation metrics obtained by the best model obtained with respect to the metric ``"loss"``.
+
+                                    .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.best_models.metric["loss"].validation_metrics.aggregated``
+                                        :icon: file
+                                        :color: light
+
+                                        Aggregated validation metrics.
+
+                                    .. dropdown:: details.tsv → ``maps.training.splits[0].models.best_models.metric["loss"].validation_metrics.details``
+                                        :icon: file
+                                        :color: light
+
+                                        Validation metrics for each image.
+
+                    .. dropdown:: **checkpoints**
+                        :icon: file-directory
+                        :color: muted
+
+                            States of the model at the epochs defined in :py:class:`~clinicadl.callbacks.Checkpoint`.
+
+                            .. dropdown:: **epoch-10**
+                                :icon: file-directory
+                                :color: muted
+
+                                Results for the model at epoch ``10``.
+
+                                .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.checkpoints.epochs[10].model``
+                                    :icon: file
+                                    :color: light
+
+                                    The model at epoch ``10``. The content of the file is
+                                    defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+
+                                .. dropdown:: **validation_metrics**
+                                    :icon: file-directory
+                                    :color: muted
+
+                                    Validation metrics obtained by the model at epoch ``10``.
+
+                                    .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.aggregated``
+                                        :icon: file
+                                        :color: light
+
+                                        Aggregated validation metrics.
+
+                                    .. dropdown:: details.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.details``
+                                        :icon: file
+                                        :color: light
+
+                                        Validation metrics for each image.
+
+                    .. dropdown:: **final**
+                        :icon: file-directory
+                        :color: muted
+
+                            Results for the final model.
+
+                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.final.model``
+                                :icon: file
+                                :color: light
+
+                                The final model. The content of the file is
+                                defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+
+                            .. dropdown:: **validation_metrics**
+                                :icon: file-directory
+                                :color: muted
+
+                                Validation metrics obtained by the final model.
+
+                                .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.final.validation_metrics.aggregated``
+                                    :icon: file
+                                    :color: light
+
+                                    Aggregated validation metrics.
+
+                                .. dropdown:: details.tsv → ``maps.training.splits[0].models.final.validation_metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Validation metrics for each image.
+
+
                 .. dropdown:: **tmp**
                     :icon: file-directory
                     :color: muted
@@ -279,14 +336,19 @@ class Maps(Directory):
                             :color: light
 
                             The model at epoch ``15``. The content of the file is
-                            defined by :py:meth:`ClinicaDLModel.save_checkpoint <clinicadl.models.ClinicaDLModel.save_checkpoint>`.
+                            defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
 
-                        .. dropdown:: stop.json → ``maps.training.splits[0].tmp.epochs[15].stop_json``
+                        .. dropdown:: scaler.json → ``maps.training.splits[0].tmp.epochs[15].scaler``
                             :icon: file
                             :color: light
 
-                            This file only contains a boolean stating whether the training was about to stop when the error occurred
-                            (e.g. the :py:class:`early stopping <clinicadl.callbacks.EarlyStopping>` condition was met).
+                            The state of the `Gradient Scaler <https://docs.pytorch.org/docs/stable/amp.html#gradient-scaling>`_.
+
+                        .. dropdown:: state.json → ``maps.training.splits[0].tmp.epochs[15].state``
+                            :icon: file
+                            :color: light
+
+                            The :py:class:`state of the Trainer <clinicadl.train.TrainerState>`.
 
                         .. dropdown:: **callbacks** → maps.training.splits[0].tmp.epochs[15].callbacks
                             :icon: file-directory
@@ -345,30 +407,62 @@ class Maps(Directory):
                     Results of inference on the group ``"X"`` obtained with the models trained on split ``0`` (i.e.
                     the models in ``maps_dir/training/split-0``).
 
-                    .. dropdown:: **best-model-loss**
+                    .. dropdown:: **models**
                         :icon: file-directory
                         :color: muted
 
-                        Results obtained with the best model with respect to the metric ``"loss"`` (i.e.
-                        the model in ``maps_dir/training/split-0/best-model-loss``).
-
-                        .. dropdown:: **metrics**
+                        .. dropdown:: **best_models*
                             :icon: file-directory
                             :color: muted
 
-                            Metrics on the group ``"X"``.
+                            .. dropdown:: **metric-loss**
+                                :icon: file-directory
+                                :color: muted
 
-                            .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.aggregated``
-                                :icon: file
-                                :color: light
+                                Results obtained with the best model with respect to the metric ``"loss"`` (i.e.
+                                the model in ``maps_dir/training/split-0/best_models/metric-loss``).
 
-                                Aggregated metrics.
+                                .. dropdown:: **metrics**
+                                    :icon: file-directory
+                                    :color: muted
 
-                            .. dropdown:: details.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.details``
-                                :icon: file
-                                :color: light
+                                    Metrics on the group ``"X"``.
 
-                                Metrics for each image.
+                                    .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.aggregated``
+                                        :icon: file
+                                        :color: light
+
+                                        Aggregated metrics.
+
+                                    .. dropdown:: details.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.details``
+                                        :icon: file
+                                        :color: light
+
+                                        Metrics for each image.
+
+                        .. dropdown:: **final**
+                            :icon: file-directory
+                            :color: muted
+
+                            Results obtained with the final model (i.e. the model in ``maps_dir/training/split-0/final``).
+
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
+
+                                Metrics on the group ``"X"``.
+
+                                .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
+
+                                    Aggregated metrics.
+
+                                .. dropdown:: details.tsv → ``maps.predictions.groups["X"].splits[0].best_models["loss"].metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Metrics for each image.
 
     Examples
     --------
@@ -434,8 +528,8 @@ class Maps(Directory):
         return (self.path / SUMMARY).with_suffix(LOG)
 
     @property
-    def torchsummary_txt(self) -> Path:
-        return (self.path / (TORCH + SUMMARY)).with_suffix(TXT)
+    def nn_summary_txt(self) -> Path:
+        return (self.path / f"{NN}_{SUMMARY}").with_suffix(TXT)
 
     def create(self, overwrite: bool = False, exist_ok: bool = False) -> None:
         """
