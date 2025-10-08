@@ -11,7 +11,6 @@ from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.losses.types import Loss
 from clinicadl.utils.device import DeviceType
 from clinicadl.utils.objects import JsonReaderWriter
-from clinicadl.utils.typing import PathType
 
 
 class ClinicaDLModel(JsonReaderWriter, ABC):
@@ -24,6 +23,7 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
     - :py:meth:`backward_step`: defines the gradients computation logic;
     - :py:meth:`optimization_step`: defines the optimization logic;
     - :py:meth:`evaluation_step`: defines the evaluation logic;
+    - :py:meth:`prediction_step`: defines the prediction logic;
     - :py:meth:`get_optimizers`: to access the optimizers used for training;
     - :py:meth:`get_loss_functions`: to access the loss functions used during training;
     - :py:meth:`to`: to move the model on a specific device and/or cast the model to a specific datatype and/or memory format;
@@ -116,11 +116,41 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
     @abstractmethod
     def evaluation_step(self, batch: BatchType) -> Batch:
         """
-        Performs the evaluation step where a validation batch is passed through
+        Performs the evaluation step where a validation/test batch is passed through
         the neural network and an output batch is inferred.
 
         The output batch contains :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
         on which the :py:mod:`metrics <clinicadl.metrics>` will be computed.
+
+        .. note::
+            No need to send tensors to another device or to wrap your evaluation logic in the ``torch.no_grad()`` context manager,
+            ``ClinicaDL`` takes care of this.
+
+        Parameters
+        ----------
+        batch : BatchType
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
+            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
+            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+
+        Returns
+        -------
+        Batch
+            The output :py:class:`~clinicadl.data.dataloader.Batch`.
+
+            .. important::
+                Even if the input batch is a ``tuple`` of :py:class:`~clinicadl.data.dataloader.Batch`,
+                the output must be a single :py:class:`~clinicadl.data.dataloader.Batch`. Metrics will be
+                computed on each element of this output batch.
+        """
+
+    @abstractmethod
+    def prediction_step(self, batch: BatchType) -> Batch:
+        """
+        Performs inference on a batch.
+
+        As opposed to :py:meth:`evaluation_step`, no metrics will be computed on the outputs. This method is to
+        use the model for inference once it has been trained and tested.
 
         .. note::
             No need to send tensors to another device or to wrap your evaluation logic in the ``torch.no_grad()`` context manager,

@@ -53,6 +53,11 @@ def test_SupervisedModel(tmp_path):
     assert isinstance(out_batch, Batch)
     assert out_batch[0]["output"].shape == (1,)
 
+    # prediction step
+    out_batch = model.prediction_step(BATCH)
+    assert isinstance(out_batch, Batch)
+    assert out_batch[0]["output"].shape == (1,)
+
     # get losses
     assert model.get_loss_functions() == {"loss": model.loss}
 

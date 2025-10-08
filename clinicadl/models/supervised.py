@@ -115,9 +115,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         Parameters
         ----------
         batch : Batch
-            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
-            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
 
         Returns
         -------
@@ -173,9 +171,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         Parameters
         ----------
         batch : Batch
-            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
-            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
 
         Returns
         -------
@@ -187,6 +183,22 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         batch.add_field("output", outputs)
 
         return batch
+
+    def prediction_step(self, batch: Batch) -> Batch:
+        """
+        Performs a simple pass forward and saves the output. Exactly similar to :py:meth:`evaluation_step`.
+
+        Parameters
+        ----------
+        batch : Batch
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
+
+        Returns
+        -------
+        Batch
+            The output :py:class:`~clinicadl.data.dataloader.Batch`.
+        """
+        return self.evaluation_step(batch)
 
     def get_loss_functions(self) -> dict[str, Loss]:
         """
