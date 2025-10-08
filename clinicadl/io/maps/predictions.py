@@ -8,7 +8,7 @@ from clinicadl.dictionary.words import (
     DATASET,
     GROUP,
     METRICS,
-    MODELS,
+    RESULTS,
 )
 
 from .base import Directory
@@ -26,7 +26,7 @@ class ModelDir(Directory):
         return self._metrics
 
 
-class ModelsDir(CollectionOfDirs[ModelDir, str]):
+class ResultsDir(CollectionOfDirs[ModelDir, str]):
     _dir_type = ModelDir
     _item_key = ""
     _separator = ""
@@ -48,15 +48,19 @@ class ModelsDir(CollectionOfDirs[ModelDir, str]):
     ) -> None:
         self._create_item(model, overwrite=overwrite, exist_ok=exist_ok)
 
+    @classmethod
+    def _items_dict_private_name(cls) -> str:
+        return "_models"
+
 
 class GroupDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
-        self._models = ModelsDir(path=self.path / MODELS)
+        self._results = ResultsDir(path=self.path / RESULTS)
 
     @property
-    def models(self) -> ModelsDir:
-        return self._models
+    def results(self) -> ResultsDir:
+        return self._results
 
     @property
     def dataset_json(self) -> Path:

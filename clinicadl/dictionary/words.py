@@ -68,6 +68,7 @@ PREDICTIONS = "predictions"
 PREPROCESSING = "preprocessing"
 PROPORTION = "proportion"
 READER = "reader"
+RESULTS = "results"
 SAMPLE = "sample"
 SAMPLE_POSITION = SAMPLE + "_" + POSITION
 TYPE = "type"

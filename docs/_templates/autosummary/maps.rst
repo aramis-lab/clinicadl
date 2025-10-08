@@ -4,6 +4,6 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-   :members: create, read, remove, read_file
+   :members: create, read, remove, load_file, save_file
 
 .. include:: {{module}}.{{objname}}.examples

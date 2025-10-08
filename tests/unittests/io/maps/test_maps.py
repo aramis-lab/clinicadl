@@ -22,7 +22,7 @@ def test_maps(tmp_path: Path):
     assert maps.architecture_log == (maps_path / "architecture.log")
     assert maps.model_json == (maps_path / "model.json")
     assert maps.metrics_json == (maps_path / "metrics.json")
-    assert maps.torchsummary_txt == (maps_path / "torchsummary.txt")
+    assert maps.nn_summary_txt == (maps_path / "torchsummary.txt")
 
     # training
     assert (maps_path / "training").exists()

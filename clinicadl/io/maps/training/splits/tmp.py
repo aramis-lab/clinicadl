@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 from clinicadl.dictionary.suffixes import JSON, PTH, TAR
 from clinicadl.dictionary.words import (
@@ -47,3 +48,19 @@ class EpochTmpDir(Directory):
 
 class TmpDir(EpochsDir[EpochTmpDir]):
     _dir_type = EpochTmpDir
+
+    def clear(self, except_epoch: Optional[int] = None) -> None:
+        """
+        Clears the tmp directory by removing all epochs
+        except ``except_epoch``.
+
+        Parameters
+        ----------
+        except_epoch : Optional[int], default=None
+            The checkpoint to keep. If ``None``, the whole directory will be cleared.
+        """
+        self._find_item_dirs()
+        for epoch in self.epochs_list:
+            if epoch != except_epoch:
+                self.epochs[epoch].remove(non_empty_ok=True)
+        self._find_item_dirs()

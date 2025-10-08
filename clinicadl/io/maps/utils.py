@@ -27,11 +27,16 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         super().read()
 
     def _find_item_dirs(self) -> None:
-        items = [
-            x.name.split(self._separator)[-1]
-            for x in self.path.iterdir()
-            if x.name.startswith(self._item_key)
-        ]
+        if self._separator:
+            items = [
+                x.name.split(self._separator)[-1]
+                for x in self.path.iterdir()
+                if x.name.startswith(self._item_key)
+            ]
+        else:
+            items = [
+                x.name for x in self.path.iterdir() if x.name.startswith(self._item_key)
+            ]
         sub_dirs = {
             self._item_mapping(item): self._dir_type(self._item_path(item))
             for item in items
