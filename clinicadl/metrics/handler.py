@@ -138,7 +138,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         Create an empty DataFrame with a column for each metric,
         as well as columns "participant_id" and "session_id".
         """
-        columns = list(self.metrics.keys()) + [PARTICIPANT_ID, SESSION_ID]
+        columns = [PARTICIPANT_ID, SESSION_ID] + list(self.metrics.keys())
 
         return pd.DataFrame(columns=columns)
 
@@ -165,14 +165,10 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if self._metrics is not None:
             self._metrics = self.config.metrics.get_object(model=self._model)
 
-        new_columns = self._df.columns.union(self.metrics.keys())
+        new_columns = self._df.columns.join(self.metrics.keys())
         self._df = self._df.reindex(columns=new_columns, fill_value=pd.NA)
 
-        new_columns = (
-            self._detailed_df.columns.drop([PARTICIPANT_ID, SESSION_ID])
-            .union(self.metrics.keys())
-            .union([PARTICIPANT_ID, SESSION_ID])
-        )  # we want participant and session at the end
+        new_columns = self._detailed_df.columns.join(self.metrics.keys())
         self._detailed_df = self._detailed_df.reindex(
             columns=new_columns,
             fill_value=pd.NA,
@@ -199,7 +195,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             self._df = self._init_df()
             self._detailed_df = self._init_detailed_df()
 
-    def aggregate(self, epoch: Optional[int] = None) -> None:
+    def aggregate(
+        self,
+        epoch: Optional[int] = None,
+        metrics: Optional[Sequence[str]] = None,
+    ) -> None:
         """
         Aggregate and store metric results.
 
@@ -207,6 +207,13 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         ----------
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
+        metrics : Optional[Sequence[str]], default=None
+            Subset of metrics that must be computed.
+
+        Raises
+        ------
+        ValueError
+            If a metric mentioned in ``metrics`` does not match any metric in the ``MetricsHandler``.
 
         See Also
         --------
@@ -217,22 +224,36 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
                 "First, call 'init_metrics' to instantiate the metrics."
             )
 
-        values = {}
-        for name, metric in self._metrics.items():
-            values[name] = metric.aggregate()
-        if epoch is not None:
-            values[EPOCH] = epoch
+        to_compute = self._get_metrics_subest(metrics)
 
-        new_df = pd.DataFrame([values])
+        values = {
+            name: metric.aggregate()
+            for name, metric in self._metrics.items()
+            if name in to_compute
+        }
+
+        new_df = pd.DataFrame(values, index=[0])
+
+        if epoch is not None:
+            new_df.insert(loc=0, column=EPOCH, value=epoch)
+
         self._df = pd.concat([self._df, new_df], ignore_index=True)
 
         if epoch is not None:
+            self._df.insert(0, EPOCH, self._df.pop(EPOCH))  # ensure epoch first column
             try:
-                self._df = self._df.astype({EPOCH: int})
+                self._df = self._df.astype(
+                    {EPOCH: int}
+                )  # type may have been modified by concat
             except pd.errors.IntCastingNaNError:
                 pass
 
-    def __call__(self, batch: Batch, epoch: Optional[int] = None) -> pd.DataFrame:
+    def __call__(
+        self,
+        batch: Batch,
+        epoch: Optional[int] = None,
+        metrics: Optional[Sequence[str]] = None,
+    ) -> pd.DataFrame:
         """
         Updates metrics with a new batch.
 
@@ -243,40 +264,57 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             by some metrics.
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
+        metrics : Optional[Sequence[str]], default=None
+            Subset of metrics that must be computed.
 
         Returns
         -------
         pd.DataFrame
             The metrics for all the images in the batch.
+
+        Raises
+        ------
+        ValueError
+            If a metric mentioned in ``metrics`` does not match any metric in the ``MetricsHandler``.
         """
         if self._metrics is None:
             raise ClinicaDLConfigurationError(
                 "First, call 'init_metrics' to instantiate the metrics."
             )
 
+        to_compute = self._get_metrics_subest(metrics)
+
         participants = batch.get_field(PARTICIPANT)
         sessions = batch.get_field(SESSION)
+        values = {PARTICIPANT_ID: participants, SESSION_ID: sessions}
 
-        values = {}
-        for name, metric in self._metrics.items():
-            values[name] = metric(batch)
+        values.update(
+            {
+                name: metric(batch)
+                for name, metric in self._metrics.items()
+                if name in to_compute
+            }
+        )
 
-        values = values | {PARTICIPANT_ID: participants, SESSION_ID: sessions}
-        to_return = pd.DataFrame(values)
-
-        if epoch is not None:
-            values[EPOCH] = epoch
-        to_add = pd.DataFrame(values)
-
-        self._detailed_df = pd.concat([self._detailed_df, to_add], ignore_index=True)
+        new_df = pd.DataFrame(values)
 
         if epoch is not None:
+            new_df.insert(loc=0, column=EPOCH, value=epoch)
+
+        self._detailed_df = pd.concat([self._detailed_df, new_df], ignore_index=True)
+
+        if epoch is not None:
+            self._detailed_df.insert(
+                0, EPOCH, self._detailed_df.pop(EPOCH)
+            )  # ensure epoch first column
             try:
-                self._detailed_df = self._detailed_df.astype({EPOCH: int})
+                self._detailed_df = self._detailed_df.astype(
+                    {EPOCH: int}
+                )  # type may have been modified by concat
             except pd.errors.IntCastingNaNError:
                 pass
 
-        return to_return
+        return new_df
 
     def get_metric(self, metric: str, epoch: Optional[int] = None) -> float:
         """
@@ -316,6 +354,28 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if details_path:
             self._detailed_df.to_csv(details_path, sep=SEP, index=False)
 
+    def merge(self, path: Path, details_path: Optional[Path] = None) -> None:
+        """
+        Merges the current DataFrame(s) with the one(s) in the file(s) and
+        saves the result.
+
+        Parameters
+        ----------
+        path : Path
+            The path for the DataFrame with the aggregated results.
+        details_path: Optional[Path], default=None
+            The path for the DataFrame with the detailed results.
+            If ``None``, this DataFrame will not be saved.
+        """
+        old_df = pd.read_csv(path, sep=SEP)
+        new_df = pd.merge(old_df, self._df, how="outer")
+        new_df.to_csv(path, sep=SEP, index=False)
+
+        if details_path:
+            old_df = pd.read_csv(details_path, sep=SEP)
+            new_df = pd.merge(old_df, self._detailed_df, how="outer")
+            new_df.to_csv(details_path, sep=SEP, index=False)
+
     def load(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
         Loads a checkpoint DataFrame saved with :py:meth:`save`.
@@ -345,3 +405,17 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
                 len(expected_columns.difference(detailed_df.columns)) == 0
             ), f"Checkpoint in {str(path)} is not a valid metric details file, some columns are missing: {expected_columns.difference(detailed_df.columns)}"
             self._detailed_df = detailed_df
+
+    def _get_metrics_subest(self, metrics: Optional[Sequence[str]]) -> Sequence[str]:
+        """
+        Checks the list of metrics passed.
+        """
+        if metrics is None:
+            return self.metrics
+        for metric in metrics:
+            if metric not in self.metrics:
+                raise ValueError(
+                    f"'{metric}' does not match any metrics. Metrics are: {list(self.metrics.keys())}"
+                )
+
+        return metrics

@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -70,11 +71,11 @@ def test_MetricsHandler():
 
     expected_df = pd.DataFrame.from_dict(
         {
+            "participant_id": [f"sub-{i}" for i in range(3)],
+            "session_id": [f"ses-{i}" for i in range(3)],
             "my_loss": pd.Series([0.0, 100.0, 0.0], dtype=np.float32),
             "mse": pd.Series([0.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series([1.0, 0.0, 1.0], dtype=np.float32),
-            "participant_id": [f"sub-{i}" for i in range(3)],
-            "session_id": [f"ses-{i}" for i in range(3)],
         }
     )
     pd.testing.assert_frame_equal(output, expected_df)
@@ -83,13 +84,13 @@ def test_MetricsHandler():
     metrics(BATCH_2)
     expected_df = pd.DataFrame.from_dict(
         {
+            "participant_id": [f"sub-{i}" for i in range(6)],
+            "session_id": [f"ses-{i}" for i in range(6)],
             "my_loss": pd.Series(
                 [0.0, 100.0, 0.0, 100.0, 100.0, 0.0], dtype=np.float32
             ),
             "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series([1.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float32),
-            "participant_id": [f"sub-{i}" for i in range(6)],
-            "session_id": [f"ses-{i}" for i in range(6)],
         }
     )
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_df)
@@ -185,9 +186,6 @@ def test_load(tmp_path):
     expected_details = pd.DataFrame.from_dict(
         {
             "epoch": [0, 0, 1, 1, 2, 2],
-            "mse": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-            "my_metric": [1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
-            "loss": [2.0, 2.1, 2.2, 2.3, 2.4, 2.5],
             "participant_id": [
                 "sub-001",
                 "sub-002",
@@ -204,6 +202,9 @@ def test_load(tmp_path):
                 "ses-M000",
                 "ses-M000",
             ],
+            "mse": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+            "my_metric": [1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
+            "loss": [2.0, 2.1, 2.2, 2.3, 2.4, 2.5],
         }
     )
     pd.testing.assert_frame_equal(metrics.df, excepted_df)
@@ -220,44 +221,64 @@ def test_load(tmp_path):
         metrics.load(TSV_PATH / "validation_bad.tsv")
 
 
-def test_epoch():
+def test_metrics_subset():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
+        my_metric=CustomMetric(),
     )
     metrics.init_metrics(MODEL)
 
     metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
     metrics.reset()
-    output = metrics(BATCH_2, epoch=1)
-    metrics.aggregate(epoch=1)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'abc' does not match any metrics. Metrics are: ['mse', 'my_metric']"
+        ),
+    ):
+        output = metrics(BATCH_2, epoch=1, metrics=["abc"])
+
+    output = metrics(BATCH_2, epoch=1, metrics=["mse"])
+    metrics.aggregate(epoch=1, metrics=["mse"])
 
     expected_output_df = pd.DataFrame.from_dict(
         {
-            "mse": pd.Series([1.0, 1.0, 0.0], dtype=np.float32),
+            "epoch": [1, 1, 1],
             "participant_id": [f"sub-{i}" for i in range(3, 6)],
             "session_id": [f"ses-{i}" for i in range(3, 6)],
+            "mse": pd.Series([1.0, 1.0, 0.0], dtype=np.float32),
         }
     )
     expected_detailed_df = pd.DataFrame.from_dict(
         {
-            "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
+            "epoch": [0, 0, 0, 1, 1, 1],
             "participant_id": [f"sub-{i}" for i in range(6)],
             "session_id": [f"ses-{i}" for i in range(6)],
-            "epoch": [0, 0, 0, 1, 1, 1],
+            "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
+            "my_metric": pd.Series([1.0, 0.0, 1.0, -1, -1, -1], dtype=np.float32),
         }
     )
     expected_df = pd.DataFrame.from_dict(
         {
-            "mse": pd.Series([0.333333, 0.666666], dtype=np.float64),
             "epoch": [0, 1],
+            "mse": pd.Series([0.333333, 0.666666], dtype=np.float64),
+            "my_metric": pd.Series([0.666666, -1], dtype=np.float64),
         }
     )
     pd.testing.assert_frame_equal(output, expected_output_df)
-    pd.testing.assert_frame_equal(metrics.detailed_df, expected_detailed_df)
-    pd.testing.assert_frame_equal(metrics.df, expected_df)
+    pd.testing.assert_frame_equal(metrics.detailed_df.fillna(-1), expected_detailed_df)
+    pd.testing.assert_frame_equal(metrics.df.fillna(-1), expected_df)
 
-    metrics.reset(reset_df=True)
+
+def test_epochs():
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+    )
+    metrics.init_metrics(MODEL)
+
+    # test on epochs
     metrics(BATCH_1)
     metrics.aggregate()
     metrics.reset()
@@ -292,12 +313,12 @@ def test_add_metrics():
 
     expected_df = pd.DataFrame.from_dict(
         {
+            "participant_id": [f"sub-{i}" for i in range(6)],
+            "session_id": [f"ses-{i}" for i in range(6)],
             "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
             "my_metric": pd.Series(
                 [np.nan, np.nan, np.nan, 0.0, 0.0, 1.0], dtype=np.float32
             ),
-            "participant_id": [f"sub-{i}" for i in range(6)],
-            "session_id": [f"ses-{i}" for i in range(6)],
         }
     )
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_df)
@@ -332,18 +353,19 @@ def test_checks():
         config.add_metrics(my_metric=lambda x: x)
 
 
-def test_save_df(tmp_path):
+def test_save_and_merge_df(tmp_path):
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
     )
     metrics.init_metrics(MODEL)
 
-    metrics(BATCH_1)
-    metrics.aggregate()
+    metrics(BATCH_1, epoch=0)
+    metrics.aggregate(epoch=0)
     metrics.save(tmp_path / "df.tsv")
     df = pd.read_csv(tmp_path / "df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
+            "epoch": [0],
             "mse": pd.Series([0.3333333]),
         }
     )
@@ -353,9 +375,42 @@ def test_save_df(tmp_path):
     df = pd.read_csv(tmp_path / "detailed_df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
-            "mse": pd.Series([0.0, 1.0, 0.0]),
+            "epoch": [0, 0, 0],
             "participant_id": [f"sub-{i}" for i in range(3)],
             "session_id": [f"ses-{i}" for i in range(3)],
+            "mse": pd.Series([0.0, 1.0, 0.0]),
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df)
+
+    # merge
+    metrics = MetricsHandler(
+        my_metric=CustomMetric(),
+    )
+    metrics.init_metrics(MODEL)
+
+    metrics(BATCH_1, epoch=0)
+    metrics.aggregate(epoch=0)
+    metrics.merge(tmp_path / "df.tsv", details_path=tmp_path / "detailed_df.tsv")
+
+    df = pd.read_csv(tmp_path / "df.tsv", sep="\t")
+    expected_df = pd.DataFrame.from_dict(
+        {
+            "epoch": [0],
+            "mse": pd.Series([0.333333]),
+            "my_metric": pd.Series([0.666666]),
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df)
+
+    df = pd.read_csv(tmp_path / "detailed_df.tsv", sep="\t")
+    expected_df = pd.DataFrame.from_dict(
+        {
+            "epoch": [0, 0, 0],
+            "participant_id": [f"sub-{i}" for i in range(3)],
+            "session_id": [f"ses-{i}" for i in range(3)],
+            "mse": pd.Series([0.0, 1.0, 0.0]),
+            "my_metric": pd.Series([1.0, 0.0, 1.0]),
         }
     )
     pd.testing.assert_frame_equal(df, expected_df)
