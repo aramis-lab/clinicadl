@@ -233,8 +233,7 @@ class Maps(Directory):
                                 :icon: file
                                 :color: light
 
-                                The best model obtained with respect to the metric ``"mse"``. The content of the file is
-                                defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+                                The weights of the model.
 
                             .. dropdown:: **validation_metrics**
                                 :icon: file-directory
@@ -270,8 +269,7 @@ class Maps(Directory):
                                 :icon: file
                                 :color: light
 
-                                The model at epoch ``10``. The content of the file is
-                                defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+                                The weights of the model.
 
                             .. dropdown:: **validation_metrics**
                                 :icon: file-directory
@@ -301,8 +299,7 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            The final model. The content of the file is
-                            defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+                            The weights of the model.
 
                         .. dropdown:: **validation_metrics**
                             :icon: file-directory
@@ -339,8 +336,7 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            The model at epoch ``15``. The content of the file is
-                            defined by :py:meth:`ClinicaDLModel.state_dict <clinicadl.models.ClinicaDLModel.state_dict>`.
+                            The weights of the model.
 
                         .. dropdown:: scaler.json → ``maps.training.splits[0].tmp.epochs[15].scaler``
                             :icon: file

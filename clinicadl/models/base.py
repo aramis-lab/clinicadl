@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Union
 
 import torch
 import torch.optim as optim
@@ -9,32 +9,27 @@ from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
 from clinicadl.losses.types import Loss
-from clinicadl.utils.device import DeviceType
 from clinicadl.utils.objects import JsonReaderWriter
 
 
-class ClinicaDLModel(JsonReaderWriter, ABC):
+class ClinicaDLModel(JsonReaderWriter, ABC, torch.nn.Module):
     """
     The base model from which every model that works with ``ClinicaDL`` must inherit.
 
-    The following methods must be overwritten:
+    ``ClinicaDLModel`` inherits itself from :py:class:`torch.nn.Module`. So you can classically define
+    your neural networks in the ``__init__`` method (don't forget to call ``super().__init__()`` first!).
+
+    Besides, the following methods must be overwritten:
 
     - :py:meth:`forward_step`: defines the forward logic during training;
     - :py:meth:`backward_step`: defines the gradients computation logic;
     - :py:meth:`optimization_step`: defines the optimization logic;
     - :py:meth:`evaluation_step`: defines the evaluation logic;
     - :py:meth:`prediction_step`: defines the prediction logic;
-    - :py:meth:`get_optimizers`: to access the optimizers used for training;
-    - :py:meth:`get_loss_functions`: to access the loss functions used during training;
-    - :py:meth:`to`: to move the model on a specific device and/or cast the model to a specific datatype and/or memory format;
-    - :py:meth:`train`: to set the model in training mode;
-    - :py:meth:`eval`: to set the model in evaluation mode;
-    - :py:meth:`state_dict`: to get a checkpoint of the model;
-    - :py:meth:`load_state_dict`: to load a checkpoint of the model.
+    - :py:meth:`build_optimizers`: to build the optimizers used for training;
+    - :py:meth:`get_loss_functions`: to access the loss functions used during training.
 
-    You can also overwrite :py:meth:`get_architecture` and :py:meth:`get_summary`
-    to give descriptions of your neural network(s). If these two methods are not implemented,
-    the associated files in your :py:class:`MAPS directory <clinicadl.io.Maps>` will remain empty.
+    You can also overwrite :py:meth:`get_summary` to give a description of your neural network(s).
 
     .. tip::
         Since rewriting all these methods can be tedious, feel free to inherit from an existing ``ClinicaDLModel`` with shared logic,
@@ -97,6 +92,7 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
     @abstractmethod
     def optimization_step(
         self,
+        optimizers: dict[str, torch.optim.Optimizer],
         grad_scaler: GradScaler = GradScaler(enabled=False),
     ) -> None:
         """
@@ -109,6 +105,8 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
 
         Parameters
         ----------
+        optimizers : dict[str, torch.optim.Optimizer]
+            The optimizers, as defined in :py:meth:`build_optimizers`.
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
@@ -175,14 +173,11 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
         """
 
     @abstractmethod
-    def get_optimizers(self) -> dict[str, optim.Optimizer]:
+    def build_optimizers(self) -> dict[str, optim.Optimizer]:
         """
-        To retrieve all optimizers used during training.
+        To build optimizers that will be used during training.
 
         All optimizers must be given a name.
-
-        This methods enables ``ClinicaDL`` to perform operations
-        on your optimizers, such as :torch:`learning rate scheduling <optim.html#how-to-adjust-learning-rate>`.
 
         Returns
         -------
@@ -211,102 +206,6 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
             The loss functions and their names.
         """
 
-    @abstractmethod
-    def to(
-        self,
-        device: Optional[DeviceType] = None,
-        non_blocking: bool = False,
-        dtype: Optional[torch.dtype] = None,
-        memory_format: Optional[torch.memory_format] = None,
-    ) -> None:
-        """
-        To move the model on a specific device and/or cast
-        the model to a specific datatype and/or memory format.
-
-        Parameters
-        ----------
-        device : Optional[DeviceType], default=None
-            The desired device. If ``None``, the model will stay on the current device.
-        non_blocking : bool, default=False
-            "When ``non_blocking`` is set to ``True``, the function attempts to perform the
-            conversion asynchronously with respect to the host, if possible.
-            This asynchronous behavior applies to both pinned and pageable memory."
-            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
-        dtype : Optional[torch.dtype], default=None
-            The desired data type. If ``None``, the model will stay with the current dtype.
-        memory_format : Optional[torch.memory_format], default=None
-            The desired memory format. If ``None``, the model will stay with the current memory format.
-
-        See Also
-        --------
-        :py:meth:`torch.nn.Module.to`
-        """
-
-    @abstractmethod
-    def train(self) -> None:
-        """
-        To set the model in training mode.
-
-        See Also
-        --------
-        :py:meth:`torch.nn.Module.train`
-        """
-
-    @abstractmethod
-    def eval(self) -> None:
-        """
-        To set the model in evaluation mode.
-
-        See Also
-        --------
-        :py:meth:`torch.nn.Module.eval`
-        """
-
-    @abstractmethod
-    def state_dict(
-        self,
-    ) -> dict[str, Any]:
-        """
-        To save a checkpoint of the weights of the neural network(s),
-        as well as the state of the optimizer(s).
-
-        Returns
-        ----------
-        dict[str, Any]
-            A dictionary containing the states of the neural network(s) and
-            the optimizer(s).
-        """
-
-    @abstractmethod
-    def load_state_dict(
-        self,
-        state_dict: dict[str, Any],
-    ) -> None:
-        """
-        To load a checkpoint of the neural network(s) and the optimizer(s).
-
-        This method must define the logic to read an output of :py:meth:`state_dict`.
-
-        Parameters
-        ----------
-        state_dict : dict[str, Any]
-            The state returned by :py:meth:`state_dict`.
-        """
-
-    def get_architecture(self) -> str:
-        """
-        Returns the architecture of your neural network.
-
-        If this method is not implemented, the ``architecture.log`` file of your
-        :py:class:`MAPS directory <clinicadl.io.Maps>` will be empty.
-
-        Returns
-        -------
-        str
-            The string representation of the architecture.
-        """
-        raise NotImplementedError()
-
     def get_summary(
         self,
         input_data: torch.Tensor,
@@ -329,3 +228,11 @@ class ClinicaDLModel(JsonReaderWriter, ABC):
             The summary.
         """
         raise NotImplementedError()
+
+    def reset(self) -> None:
+        """
+        Resets the neural network(s) weights.
+        """
+        for layer in self.children():
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()

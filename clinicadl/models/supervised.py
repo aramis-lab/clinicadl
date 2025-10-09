@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
@@ -15,14 +15,11 @@ from clinicadl.networks.factory import get_network_from_dict
 from clinicadl.networks.types import NetworkOrConfig
 from clinicadl.optim.optimizers.config import OptimizerConfig
 from clinicadl.optim.optimizers.factory import get_optimizer_from_dict
-from clinicadl.optim.optimizers.types import OptimizerOrConfig
 from clinicadl.utils.config import (
     ObjectConfig,
     ObjectOrConfig,
 )
-from clinicadl.utils.device import DeviceType
 from clinicadl.utils.objects import HasConfig
-from clinicadl.utils.typing import PathType
 
 from .base import ClinicaDLModel
 
@@ -81,9 +78,8 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
             The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
             with an attribute named ``reduction`` that can be set to ``none``.
 
-    optimizer : OptimizerOrConfig
-        The optimizer, passed as a :py:class:`torch.optim.Optimizer` or
-        a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
+    optimizer : OptimizerConfig
+        The optimizer, passed as a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
 
     See Also
     --------
@@ -101,8 +97,9 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         self,
         network: NetworkOrConfig,
         loss: LossOrConfig,
-        optimizer: OptimizerOrConfig,
+        optimizer: OptimizerConfig,
     ):
+        super().__init__()
         self.config = self._config_type(network=network, loss=loss, optimizer=optimizer)
         self.network = self.config.network.get_object()
         self.loss = self.config.loss.get_object()
@@ -150,6 +147,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
 
     def optimization_step(
         self,
+        optimizers: dict[str, torch.optim.Optimizer],
         grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
     ) -> None:
         """
@@ -158,10 +156,12 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
 
         Parameters
         ----------
+        optimizers : dict[str, torch.optim.Optimizer]
+            The optimizers, as defined in :py:meth:`build_optimizers`.
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
-        grad_scaler.step(self.optimizer)
+        grad_scaler.step(optimizers["optimizer"])
 
     def evaluation_step(self, batch: Batch) -> Batch:
         """
@@ -212,104 +212,16 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         """
         return {"loss": self.loss}
 
-    def get_optimizers(self) -> dict[str, optim.Optimizer]:
+    def build_optimizers(self) -> dict[str, optim.Optimizer]:
         """
-        Returns the optimizer.
+        Returns a new instance of the optimizer.
 
         Returns
         -------
         dict[str, optim.Optimizer]
             The optimizer, named ``"optimizer"``.
         """
-        return {"optimizer": self.optimizer}
-
-    def to(
-        self,
-        device: Optional[DeviceType] = None,
-        non_blocking: bool = False,
-        dtype: Optional[torch.dtype] = None,
-        memory_format: Optional[torch.memory_format] = None,
-    ) -> None:
-        """
-        To move the model on a specific device and/or cast
-        the model to a specific datatype and/or memory format.
-
-        Parameters
-        ----------
-        device : Optional[DeviceType], default=None
-            The desired device. If ``None``, the model will stay on the current device.
-        non_blocking : bool, default=False
-            "When ``non_blocking`` is set to ``True``, the function attempts to perform the
-            conversion asynchronously with respect to the host, if possible.
-            This asynchronous behavior applies to both pinned and pageable memory."
-            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
-        dtype : Optional[torch.dtype], default=None
-            The desired data type. If ``None``, the model will stay with the current dtype.
-        memory_format : Optional[torch.memory_format], default=None
-            The desired memory format. If ``None``, the model will stay with the current memory format.
-        """
-        self.network.to(
-            device=device,
-            dtype=dtype,
-            non_blocking=non_blocking,
-            memory_format=memory_format,
-        )
-
-    def train(self) -> None:
-        """
-        Set the neural network in training mode.
-        """
-        self.network.train()
-
-    def eval(self) -> None:
-        """
-        Set the neural network in evaluation mode.
-        """
-        self.network.eval()
-
-    def state_dict(
-        self,
-    ) -> dict[str, Any]:
-        """
-        To save a checkpoint of the weights of the neural network,
-        as well as the state of the optimizer.
-
-        Returns
-        ----------
-        dict[str, Any]
-            A dictionary containing the states of the neural network(s) and
-            the optimizer(s).
-        """
-        state_dict = {"network_state_dict": self.network.state_dict()}
-        state_dict["optimizer_state_dict"] = self.optimizer.state_dict()
-
-        return state_dict
-
-    def load_state_dict(
-        self,
-        state_dict: dict[str, Any],
-    ) -> None:
-        """
-        To load a checkpoint of the neural network and the optimizer.
-
-        Parameters
-        ----------
-        state_dict : dict[str, Any]
-            The state returned by :py:meth:`state_dict`.
-        """
-        self.network.load_state_dict(state_dict["network_state_dict"])
-        self.optimizer.load_state_dict(state_dict["optimizer_state_dict"])
-
-    def get_architecture(self) -> str:
-        """
-        Returns the architecture of the neural network.
-
-        Returns
-        -------
-        str
-            The string representation of the architecture.
-        """
-        return str(self.network)
+        return {"optimizer": self._config.optimizer.get_object(network=self)}
 
     def get_summary(
         self,
