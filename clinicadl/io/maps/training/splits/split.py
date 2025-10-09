@@ -13,7 +13,7 @@ from clinicadl.dictionary.words import (
     VALIDATION,
 )
 
-from ...base import Directory
+from ....base import Directory
 from ...metrics import MetricsDir
 from .logs import LogsDir
 from .models import ModelsDir

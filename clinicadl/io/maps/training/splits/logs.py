@@ -9,7 +9,7 @@ from clinicadl.dictionary.words import (
     TRAINING,
 )
 
-from ...base import Directory
+from ....base import Directory
 
 
 class LogsDir(Directory):

@@ -17,15 +17,16 @@ from clinicadl.dictionary.words import (
     METRICS,
     MODEL,
     NN,
-    PREDICTIONS,
+    PREDICTION,
     SUMMARY,
+    TEST,
     TRAINING,
 )
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
-from .base import Directory
-from .predictions import PredictionsDir
+from ..base import Directory
+from .inference import PredictionDir, TestDir
 from .training import TrainingDir
 
 
@@ -35,8 +36,8 @@ class Maps(Directory):
 
     A ``MAPS`` directory is the core of ``ClinicaDL``'s experiment management. It contains
     all the outputs produced by a training phase (models, metrics, logs, etc.), as well as all
-    the hyperparameters used for training. Finally, it also contains the results of inferences
-    on test datasets.
+    the hyperparameters used for training. Finally, it also contains the results of test and inference
+    on new datasets.
 
     Given that a ``MAPS`` directory is quite large and can be tedious to handle, this class allows the user to
     easily access all the files stored in it.
@@ -90,7 +91,8 @@ class Maps(Directory):
             :icon: file-directory
             :color: muted
 
-            Information on the training phase: results, parameters, and data used.
+            Here are stored the outputs and the information related to :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` and
+            :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
 
             .. dropdown:: callback.json → ``maps.training.callbacks_json``
                 :icon: file
@@ -221,7 +223,7 @@ class Maps(Directory):
 
                         Best models obtained with respect to the metrics monitored in :py:class:`~clinicadl.callbacks.Checkpoint`.
 
-                        .. dropdown:: **metric-mse**
+                        .. dropdown:: **best-mse**
                             :icon: file-directory
                             :color: muted
 
@@ -395,38 +397,39 @@ class Maps(Directory):
 
                         Validation metrics for each image.
 
-        .. dropdown:: **predictions**
+        .. dropdown:: **test**
             :icon: file-directory
             :color: muted
 
-            Results of inferences done with :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
+            Results of :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
 
             .. dropdown:: **group-X**
                 :icon: file-directory
                 :color: muted
 
-                Inferences on the group ``"X"``.
+                Results of test on the group ``"X"``.
 
-                .. dropdown:: data.tsv → ``maps.predictions.groups["X"].data_tsv``
+                .. dropdown:: data.tsv → ``maps.test.groups["X"].data_tsv``
                     :icon: file
                     :color: light
 
                     List of all (participant, session) pairs in the group ``"X"``.
 
-                .. dropdown:: dataset.json → ``maps.predictions.groups["X"].dataset_json``
+                .. dropdown:: dataset.json → ``maps.test.groups["X"].dataset_json``
                     :icon: file
                     :color: light
 
                     Details on the :py:class:`dataset <clinicadl.data.datasets>` used
                     for the group ``"X"``.
 
-                .. dropdown:: **results**
+                .. dropdown:: **split-0**
                     :icon: file-directory
                     :color: muted
 
-                    Results of inference on the group ``"X"`` obtained with different models.
+                    Results of test on the group ``"X"`` obtained with models trained on split ``0``
+                    (i.e. the models in ``maps_dir/training/split-0/models``).
 
-                    .. dropdown:: **split-0_epoch-10**
+                    .. dropdown:: **epoch-10**
                         :icon: file-directory
                         :color: muted
 
@@ -439,20 +442,20 @@ class Maps(Directory):
 
                             Metrics on the group ``"X"``.
 
-                            .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].results.models["split-0_epoch-10"].metrics.aggregated``
+                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["epoch-10"].metrics.aggregated``
                                 :icon: file
                                 :color: light
 
                                 Aggregated metrics.
 
-                            .. dropdown:: details.tsv → ``maps.predictions.groups["X"].results.models["split-0_epoch-10"].metrics.details``
+                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["epoch-10"].metrics.details``
                                 :icon: file
                                 :color: light
 
                                 Metrics for each image.
 
 
-                    .. dropdown:: **split-0_final**
+                    .. dropdown:: **final**
                         :icon: file-directory
                         :color: muted
 
@@ -465,24 +468,24 @@ class Maps(Directory):
 
                             Metrics on the group ``"X"``.
 
-                            .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].results.models["split-0_final"].metrics.aggregated``
+                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["final"].metrics.aggregated``
                                 :icon: file
                                 :color: light
 
                                 Aggregated metrics.
 
-                            .. dropdown:: details.tsv → ``maps.predictions.groups["X"].results.models["split-0_final"].metrics.details``
+                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["final"].metrics.details``
                                 :icon: file
                                 :color: light
 
                                 Metrics for each image.
 
-                    .. dropdown:: **split-0_metric-mse**
+                    .. dropdown:: **best-mse**
                         :icon: file-directory
                         :color: muted
 
                         Results obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/metric-mse``).
+                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
 
                         .. dropdown:: **metrics**
                             :icon: file-directory
@@ -490,17 +493,107 @@ class Maps(Directory):
 
                             Metrics on the group ``"X"``.
 
-                            .. dropdown:: aggregated.tsv → ``maps.predictions.groups["X"].results.models["split-0_metric-mse"].metrics.aggregated``
+                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["best-mse"].metrics.aggregated``
                                 :icon: file
                                 :color: light
 
                                 Aggregated metrics.
 
-                            .. dropdown:: details.tsv → ``maps.predictions.groups["X"].results.models["split-0_metric-mse"].metrics.details``
+                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["best-mse"].metrics.details``
                                 :icon: file
                                 :color: light
 
                                 Metrics for each image.
+
+        .. dropdown:: **prediction**
+            :icon: file-directory
+            :color: muted
+
+            Results of :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
+
+            .. dropdown:: **group-X**
+                :icon: file-directory
+                :color: muted
+
+                Inferences on the group ``"X"``.
+
+                .. dropdown:: data.tsv → ``maps.prediction.groups["X"].data_tsv``
+                    :icon: file
+                    :color: light
+
+                    List of all (participant, session) pairs in the group ``"X"``.
+
+                .. dropdown:: dataset.json → ``maps.prediction.groups["X"].dataset_json``
+                    :icon: file
+                    :color: light
+
+                    Details on the :py:class:`dataset <clinicadl.data.datasets>` used
+                    for the group ``"X"``.
+
+                .. dropdown:: **split-0**
+                    :icon: file-directory
+                    :color: muted
+
+                    Inferences on the group ``"X"`` obtained with models trained on split ``0``
+                    (i.e. the models in ``maps_dir/training/split-0/models``).
+
+                    .. dropdown:: **epoch-10**
+                        :icon: file-directory
+                        :color: muted
+
+                        Inferences obtained with the model at epoch ``10``, trained on split ``0``
+                        (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
+
+                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["epoch-10"].output_tsv``
+                            :icon: file
+                            :color: light
+
+                            If outputs of the model are scalars, they will be stored in this DataFrame.
+
+                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["epoch-10"].caps_output
+                            :icon: file-directory
+                            :color: muted
+
+                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
+
+
+                    .. dropdown:: **final**
+                        :icon: file-directory
+                        :color: muted
+
+                        Inferences obtained with the final model trained on the split ``0``
+                        (i.e. the model in ``maps_dir/training/split-0/models/final``).
+
+                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["final"].output_tsv``
+                            :icon: file
+                            :color: light
+
+                            If outputs of the model are scalars, they will be stored in this DataFrame.
+
+                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["final"].caps_output
+                            :icon: file-directory
+                            :color: muted
+
+                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
+
+                    .. dropdown:: **best-mse**
+                        :icon: file-directory
+                        :color: muted
+
+                        Inferences obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
+                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
+
+                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["best-mse"].output_tsv``
+                            :icon: file
+                            :color: light
+
+                            If outputs of the model are scalars, they will be stored in this DataFrame.
+
+                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["best-mse"].caps_output
+                            :icon: file-directory
+                            :color: muted
+
+                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
 
 
     Examples
@@ -534,17 +627,23 @@ class Maps(Directory):
     def __init__(self, path: PathType):
         super().__init__(path)
         self._training = TrainingDir(path=self.path / TRAINING)
-        self._predictions = PredictionsDir(path=self.path / PREDICTIONS)
+        self._test = TestDir(path=self.path / TEST)
+        self._prediction = PredictionDir(path=self.path / PREDICTION)
 
     @property
     def training(self) -> TrainingDir:
-        """Directory containing the information on the training of the model."""
+        """Directory containing the information on trainings."""
         return self._training
 
     @property
-    def predictions(self) -> PredictionsDir:
-        """Directory containing the information of predictions performed with the model."""
-        return self._predictions
+    def test(self) -> TestDir:
+        """Directory containing the information of tests."""
+        return self._test
+
+    @property
+    def prediction(self) -> PredictionDir:
+        """Directory containing the information of predictions."""
+        return self._prediction
 
     @property
     def architecture_log(self) -> Path:

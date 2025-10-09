@@ -7,40 +7,26 @@ from clinicadl.dictionary.words import (
     DATA,
     DATASET,
     GROUP,
-    METRICS,
-    RESULTS,
+    MODELS,
 )
 
-from .base import Directory
-from .metrics import MetricsDir
-from .utils import CollectionOfDirs
+from ..utils import CollectionOfDirs, DirType, SplitsDir
 
 
-class ModelDir(Directory):
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._metrics = MetricsDir(path=self.path / METRICS)
-
-    @property
-    def metrics(self) -> MetricsDir:
-        return self._metrics
-
-
-class ResultsDir(CollectionOfDirs[ModelDir, str]):
-    _dir_type = ModelDir
+class InferenceSplitDir(CollectionOfDirs[DirType, str]):
     _item_key = ""
     _separator = ""
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self._models: dict[str, ModelDir] = {}
+        self._models: dict[str, DirType] = {}
 
     @property
-    def models(self) -> dict[str, ModelDir]:
+    def models(self) -> dict[str, DirType]:
         return self._models
 
     @property
-    def models_list(self) -> list[int]:
+    def models_list(self) -> list[str]:
         return self._items_list
 
     def create_model(
@@ -50,18 +36,10 @@ class ResultsDir(CollectionOfDirs[ModelDir, str]):
 
     @classmethod
     def _items_dict_private_name(cls) -> str:
-        return "_models"
+        return "_" + MODELS
 
 
-class GroupDir(Directory):
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._results = ResultsDir(path=self.path / RESULTS)
-
-    @property
-    def results(self) -> ResultsDir:
-        return self._results
-
+class InferenceGroupDir(SplitsDir[DirType]):
     @property
     def dataset_json(self) -> Path:
         return (self.path / DATASET).with_suffix(JSON)
@@ -71,20 +49,19 @@ class GroupDir(Directory):
         return (self.path / DATA).with_suffix(TSV)
 
 
-class PredictionsDir(CollectionOfDirs[GroupDir, str]):
-    _dir_type = GroupDir
+class InferenceDir(CollectionOfDirs[DirType, str]):
     _item_key = GROUP
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self._groups: dict[str, GroupDir] = {}
+        self._groups: dict[str, DirType] = {}
 
     @property
-    def groups(self) -> dict[str, GroupDir]:
+    def groups(self) -> dict[str, DirType]:
         return self._groups
 
     @property
-    def groups_list(self) -> list[int]:
+    def groups_list(self) -> list[str]:
         return self._items_list
 
     def create_group(

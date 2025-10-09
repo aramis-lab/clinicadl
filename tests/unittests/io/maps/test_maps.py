@@ -114,17 +114,35 @@ def test_maps(tmp_path: Path):
         / "aggregated.tsv"
     )
 
-    # training - split - best_models
-    maps.training.splits[0].create_metric("loss")
-    assert maps.training.splits[0].metrics_list == ["loss"]
-    assert (maps_path / "training" / "split-0" / "best-model-loss").exists()
-    assert maps.training.splits[0].best_models["loss"].model == (
-        maps_path / "training" / "split-0" / "best-model-loss" / "model.pth.tar"
+    # training - splits - models
+    assert (maps_path / "training" / "split-0" / "models").exists()
+
+    # training - splits - models - best_models
+    assert (maps_path / "training" / "split-0" / "models" / "best_models").exists()
+    maps.training.splits[0].models.best_models.create_metric("loss")
+    assert maps.training.splits[0].models.best_models.metrics_list == ["loss"]
+    assert (
+        maps_path / "training" / "split-0" / "models" / "best_models" / "best-loss"
+    ).exists()
+    assert maps.training.splits[0].models.best_models.metrics["loss"].model == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "best_models"
+        / "best-loss"
+        / "model.pth.tar"
     )
 
     # training - split - best_models - validation_metrics
     assert (
-        maps_path / "training" / "split-0" / "best-model-loss" / "validation_metrics"
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "best_models"
+        / "best-loss"
+        / "validation_metrics"
     ).exists()
     assert maps.training.splits[0].best_models[
         "loss"
@@ -132,7 +150,9 @@ def test_maps(tmp_path: Path):
         maps_path
         / "training"
         / "split-0"
-        / "best-model-loss"
+        / "models"
+        / "best_models"
+        / "best-loss"
         / "validation_metrics"
         / "aggregated.tsv"
     )
@@ -140,7 +160,91 @@ def test_maps(tmp_path: Path):
         maps_path
         / "training"
         / "split-0"
-        / "best-model-loss"
+        / "models"
+        / "best_models"
+        / "best-loss"
+        / "validation_metrics"
+        / "details.tsv"
+    )
+
+    # training - splits - models - checkpoints
+    assert (maps_path / "training" / "split-0" / "models" / "checkpoints").exists()
+    maps.training.splits[0].models.checkpoints.create_epoch(0)
+    assert maps.training.splits[0].models.checkpoints.epochs_list == [0]
+    assert (
+        maps_path / "training" / "split-0" / "models" / "checkpoints" / "epoch-0"
+    ).exists()
+
+    assert maps.training.splits[0].models.checkpoints.epochs[0].model == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "checkpoints"
+        / "epoch-0"
+        / "model.pth.tar"
+    )
+
+    # training - splits - models - best_models - validation_metrics
+    assert (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "checkpoints"
+        / "epoch-0"
+        / "validation_metrics"
+    ).exists()
+    assert maps.training.splits[0].models.checkpoints.epochs[
+        0
+    ].validation_metrics.aggregated == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "checkpoints"
+        / "epoch-0"
+        / "validation_metrics"
+        / "aggregated.tsv"
+    )
+    assert maps.training.splits[0].models.checkpoints.epochs[
+        0
+    ].validation_metrics.details == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "checkpoints"
+        / "epoch-0"
+        / "validation_metrics"
+        / "details.tsv"
+    )
+
+    # training - splits - models - final
+    assert (maps_path / "training" / "split-0" / "models" / "final").exists()
+    assert maps.training.splits[0].models.final.model == (
+        maps_path / "training" / "split-0" / "models" / "final" / "model.pth.tar"
+    )
+
+    # training - splits - models - final - validation_metrics
+    assert (
+        maps_path / "training" / "split-0" / "models" / "final" / "validation_metrics"
+    ).exists()
+    assert maps.training.splits[0].models.final.validation_metrics.aggregated == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "final"
+        / "validation_metrics"
+        / "aggregated.tsv"
+    )
+    assert maps.training.splits[0].models.final.validation_metrics.details == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "final"
         / "validation_metrics"
         / "details.tsv"
     )
@@ -177,57 +281,85 @@ def test_maps(tmp_path: Path):
         maps_path / "training" / "data" / "validation" / "split-0" / "data.tsv"
     )
 
-    # predictions
-    assert (maps_path / "predictions").exists()
+    # test
+    assert (maps_path / "test").exists()
 
-    maps.predictions.create_group("X")
-    assert maps.predictions.groups_list == ["X"]
-    assert (maps_path / "predictions" / "group-X").exists()
-    assert maps.predictions.groups["X"]
-    assert maps.predictions.groups["X"].data_tsv == (
-        maps_path / "predictions" / "group-X" / "data.tsv"
+    maps.test.create_group("X")
+    assert maps.test.groups_list == ["X"]
+    assert (maps_path / "test" / "group-X").exists()
+    assert maps.test.groups["X"]
+    assert maps.test.groups["X"].data_tsv == (
+        maps_path / "test" / "group-X" / "data.tsv"
     )
-    assert maps.predictions.groups["X"].dataset_json == (
-        maps_path / "predictions" / "group-X" / "dataset.json"
+    assert maps.test.groups["X"].dataset_json == (
+        maps_path / "test" / "group-X" / "dataset.json"
     )
 
-    # predictions - group - split
-    maps.predictions.groups["X"].create_split(0)
-    assert maps.predictions.groups["X"].splits_list == [0]
-    assert (maps_path / "predictions" / "group-X" / "split-0").exists()
+    # test - group - splits
+    maps.test.groups["X"].create_split(0)
+    assert maps.test.groups["X"].splits_list == [0]
+    assert (maps_path / "test" / "group-X" / "split-0").exists()
 
-    # predictions - group - split - best_models
-    maps.predictions.groups["X"].splits[0].create_metric("loss")
-    assert maps.predictions.groups["X"].splits[0].metrics_list == ["loss"]
+    # test - group - splits - model
+    maps.test.groups["X"].splits[0].create_model("best-loss")
+    assert maps.test.groups["X"].splits[0].models_list == ["best-loss"]
+    assert (maps_path / "test" / "group-X" / "split-0" / "best-loss").exists()
+
+    # test - group - splits - model - metrics
     assert (
-        maps_path
-        / "predictions"
-        / "group-X"
-        / "split-0"
-        / "best-model-loss"
-        / "metrics"
+        maps_path / "test" / "group-X" / "split-0" / "best-loss" / "metrics"
     ).exists()
-    assert maps.predictions.groups["X"].splits[0].best_models[
-        "loss"
-    ].metrics.aggregated == (
+    assert maps.test.groups["X"].splits[0].models["best-loss"].metrics.aggregated == (
         maps_path
-        / "predictions"
+        / "test"
         / "group-X"
         / "split-0"
-        / "best-model-loss"
+        / "best-loss"
         / "metrics"
         / "aggregated.tsv"
     )
-    assert maps.predictions.groups["X"].splits[0].best_models[
-        "loss"
-    ].metrics.details == (
+    assert maps.test.groups["X"].splits[0].models["best-loss"].metrics.details == (
         maps_path
-        / "predictions"
+        / "test"
         / "group-X"
         / "split-0"
-        / "best-model-loss"
+        / "best-loss"
         / "metrics"
         / "details.tsv"
+    )
+
+    # prediction
+    assert (maps_path / "prediction").exists()
+
+    maps.prediction.create_group("X")
+    assert maps.prediction.groups_list == ["X"]
+    assert (maps_path / "prediction" / "group-X").exists()
+    assert maps.prediction.groups["X"]
+    assert maps.prediction.groups["X"].data_tsv == (
+        maps_path / "prediction" / "group-X" / "data.tsv"
+    )
+    assert maps.prediction.groups["X"].dataset_json == (
+        maps_path / "prediction" / "group-X" / "dataset.json"
+    )
+
+    # prediction - group - splits
+    maps.prediction.groups["X"].create_split(0)
+    assert maps.prediction.groups["X"].splits_list == [0]
+    assert (maps_path / "prediction" / "group-X" / "split-0").exists()
+
+    # prediction - group - splits - model
+    maps.prediction.groups["X"].splits[0].create_model("best-loss")
+    assert maps.prediction.groups["X"].splits[0].models_list == ["best-loss"]
+    assert (maps_path / "prediction" / "group-X" / "split-0" / "best-loss").exists()
+
+    # prediction - group - splits - model - output_tsv
+    assert maps.prediction.groups["X"].splits[0].models["best-loss"].output_tsv == (
+        maps_path / "prediction" / "group-X" / "split-0" / "best-loss" / "output.tsv"
+    )
+
+    # prediction - group - splits - model - caps_output
+    assert maps.prediction.groups["X"].splits[0].models["best-loss"].caps_output == (
+        maps_path / "prediction" / "group-X" / "split-0" / "best-loss" / "caps_output"
     )
 
     with pytest.raises(
@@ -295,5 +427,60 @@ def test_read_file(tmp_path):
         torch.Tensor([0]),
     )
 
-    with pytest.raises(IsADirectoryError, match=".* is not a file!"):
-        maps.read_file(maps.training.splits[0].tmp.epochs[0].callbacks)
+    maps.save_file(
+        torch.Tensor(0),
+        maps.training.splits[0].models.checkpoints.epochs[0].model,
+        overwrite=True,
+    )
+    assert (
+        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model)
+        == torch.Tensor(1)
+    ).all()
+
+    with pytest.raises(IsADirectoryError, match=".* is not a valid file name!"):
+        maps.save_file("abc", maps.training.splits[0].tmp.epochs[0].callbacks)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'.abc' files are not supported. "
+            "The supported files in a MAPS directory are ['.json', '.log', '.txt', '.tsv', '.pth.tar']"
+        ),
+    ):
+        maps.save_file("abc", "abc.abc")
+
+
+def test_clear_tmp(tmp_path):
+    maps_path = tmp_path / "maps"
+    shutil.copytree(REFERENCE_MAPS, maps_path)
+
+    maps = Maps(maps_path)
+    maps.read()
+
+    maps.training.splits[0].tmp.create_epoch(1)
+    maps.training.splits[0].tmp.create_epoch(2)
+    maps.training.splits[0].tmp.clear()
+    assert not (maps_path / "training" / "split-0" / "tmp" / "epoch-1").exists()
+    assert not (maps_path / "training" / "split-0" / "tmp" / "epoch-2").exists()
+    maps.training.splits[0].tmp.create_epoch(1)
+    maps.training.splits[0].tmp.create_epoch(2)
+    maps.training.splits[0].tmp.clear(except_epoch=2)
+    assert not (maps_path / "training" / "split-0" / "tmp" / "epoch-1").exists()
+    assert (maps_path / "training" / "split-0" / "tmp" / "epoch-2").exists()
+    assert maps.training.splits[0].tmp.epochs_list == [2]
+
+
+def test_iterdir(tmp_path):
+    maps_path = tmp_path / "maps"
+    shutil.copytree(REFERENCE_MAPS, maps_path)
+
+    maps = Maps(maps_path)
+    maps.read()
+
+    maps.training.splits[0].tmp.create_epoch(1)
+    maps.training.splits[0].tmp.create_epoch(2)
+    gen = maps.training.splits[0].tmp.iterdir()
+    assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-0")
+    assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-1")
+    assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-2")
+    with pytest.raises(StopIteration):
+        next(gen)

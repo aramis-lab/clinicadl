@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.dictionary.words import EPOCH, METRIC, SPLIT
+from clinicadl.dictionary.words import BEST, EPOCH, METRICS, SPLIT
 
-from .base import Directory
+from ..base import Directory
 
 DirType = TypeVar("DirType", bound=Directory)
 ItemType = TypeVar("ItemType", int, str)
@@ -62,6 +62,17 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
     def _items_dict_private_name(cls) -> str:
         return "_" + cls._item_key + "s"
 
+    def iterdir(self) -> Generator[Directory, None, None]:
+        """
+        To iterate over the Directories of the collections.
+
+        Returns
+        -------
+        Generator[Directory, None, None]
+        """
+        for item in self._items_list:
+            yield getattr(self, self._items_dict_private_name())[item]
+
 
 class SplitsDir(CollectionOfDirs[DirType, int]):
     _item_key = SPLIT
@@ -108,7 +119,7 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
 
 
 class BestModelsDir(CollectionOfDirs[DirType, str]):
-    _item_key = METRIC
+    _item_key = BEST
 
     def __init__(self, path: Path):
         super().__init__(path)
@@ -126,3 +137,7 @@ class BestModelsDir(CollectionOfDirs[DirType, str]):
         self, metric: str, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(metric, overwrite=overwrite, exist_ok=exist_ok)
+
+    @classmethod
+    def _items_dict_private_name(cls) -> str:
+        return "_" + METRICS
