@@ -28,8 +28,12 @@ class ClinicaDLNetworksError(ClinicaDLException):
     """Base class for Networks exceptions."""
 
 
-class ClinicaDLDataLeakageError(ClinicaDLException):
+class DataLeakageError(ClinicaDLException):
     """Base class for data leakage exceptions."""
+
+    def __init__(self, participants: Sequence[str]):
+        error_msg = f"Data leakage detected, the following participants were seen during training or validation: {participants}"
+        super().__init__(error_msg)
 
 
 class ClinicaDLTSVError(ClinicaDLException):

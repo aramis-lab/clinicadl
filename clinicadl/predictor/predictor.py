@@ -27,7 +27,7 @@ from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
 from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.tsvtools.utils import tsv_to_df
-from clinicadl.utils.exceptions import ClinicaDLDataLeakageError
+from clinicadl.utils.exceptions import DataLeakageError
 from clinicadl.utils.typing import PathType
 
 

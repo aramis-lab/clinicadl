@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC
+from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence, Union
 
 import pandas as pd
 import torch
@@ -15,6 +16,32 @@ from clinicadl.split import Split
 
 if TYPE_CHECKING:
     from clinicadl.train import TrainerState
+
+
+class Events(str, Enum):
+    # Training
+    TRAIN_BEGIN = "on_train_begin"
+    TRAIN_END = "on_train_end"
+    EPOCH_BEGIN = "on_epoch_begin"
+    EPOCH_END = "on_epoch_end"
+    FORWARD_BEGIN = "on_forward_step_begin"
+    BACKWARD_BEGIN = "on_backward_step_begin"
+    BACKWARD_END = "on_backward_step_end"
+    OPTIM_STEP_BEGIN = "on_optimization_step_begin"
+    OPTIM_STEP_END = "on_optimization_step_end"
+    # Validation
+    VAL_BEGIN = "on_validation_begin"
+    VAL_END = "on_validation_end"
+    EVAL_BEGIN = "on_evaluation_step_begin"
+    EVAL_END = "on_evaluation_step_end"
+    # Test
+    TEST_BEGIN = "on_test_begin"
+    TEST_END = "on_test_end"
+    # Predict
+    PREDICT_BEGIN = "on_test_begin"
+    PREDICT_END = "on_test_end"
+    PREDICTION_BEGIN = "on_prediction_step_begin"
+    PREDICTIOn_END = "on_prediction_step_end"
 
 
 class Callback(ABC):
@@ -129,13 +156,20 @@ class Callback(ABC):
     ) -> None:
         """Called before processing each training batch."""
 
-    def on_forward_step_end(
+    def on_backward_step_begin(
         self,
         model: ClinicaDLModel,
         maps: Maps,
         state: TrainerState,
-        batch: BatchType,
-        loss: torch.Tensor,
+        loss: Union[torch.Tensor, Sequence[torch.Tensor]],
+    ) -> None:
+        """Called before processing each training batch."""
+
+    def on_backward_step_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
     ) -> None:
         """Called before processing each training batch."""
 
@@ -144,7 +178,7 @@ class Callback(ABC):
         model: ClinicaDLModel,
         maps: Maps,
         state: TrainerState,
-        loss: torch.Tensor,
+        optimizers: dict[str, torch.optim.Optimizer],
     ) -> None:
         """Called before the backward pass."""
 
@@ -160,12 +194,12 @@ class Callback(ABC):
 
     # Evaluate
 
-    def on_evaluate_begin(
+    def on_validation_begin(
         self, model: ClinicaDLModel, maps: Maps, state: TrainerState, split: Split
     ) -> None:
         """Called after the backward pass."""
 
-    def on_evaluate_end(
+    def on_validation_end(
         self,
         model: ClinicaDLModel,
         maps: Maps,
