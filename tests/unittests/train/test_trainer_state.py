@@ -69,7 +69,7 @@ def test_trainer_state():
     assert state.stage == "test"
     assert state.current_train_batch == 1
 
-    state.reset_train(split=Split(index=2, len_=3), num_epochs=5)
+    state.reset_training(split=Split(index=2, len_=3), num_epochs=5)
     assert state.current_train_batch == 0
     assert state.num_train_batches == 3
     assert state.current_val_batch == 0

@@ -81,7 +81,7 @@ class TrainerState(ClinicaDLConfig):
     optim_step: int = 0
     split_idx: Optional[int] = None
 
-    def reset_train(self, split: Split, num_epochs: int) -> None:
+    def reset_training(self, split: Split, num_epochs: int) -> None:
         """
         To reset the whole trainer state.
         """
