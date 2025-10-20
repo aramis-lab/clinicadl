@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +13,7 @@ from clinicadl.data.datasets import (
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.data.datatypes.preprocessing import PETLinear
 from clinicadl.split.splitter import SingleSplit
+from clinicadl.transforms.extraction import Patch
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -75,6 +77,16 @@ def test_single_split():
 
     with pytest.raises(FileNotFoundError, match="No configuration file found in*"):
         SingleSplit(CAPS_DIR / "splits" / "bad_split_2")
+
+    # eval dataset
+    caps_patch = deepcopy(CAPS)
+    caps_patch.extraction = Patch(patch_size=1, stride=1)
+    caps_patch.read_tensor_conversion()
+    split = SPLITTER.get_split(CAPS, eval_dataset=caps_patch)
+    assert len(split.train_dataset) == 4
+    assert len(split.val_dataset) == 2
+    assert split.train_dataset.extraction.extract_method == "image"
+    assert split.val_dataset.extraction.extract_method == "patch"
 
 
 def test_single_split_concat():

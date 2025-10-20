@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -10,8 +11,8 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.data.datatypes.preprocessing import PETLinear
 from clinicadl.split.splitter import KFold
+from clinicadl.transforms.extraction import Patch
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -92,6 +93,16 @@ def test_kfold():
     # errors
     with pytest.raises(FileNotFoundError, match="No such directory:*"):
         KFold(CAPS_DIR / "splits" / "bad_split" / "2_fold")
+
+    # eval dataset
+    caps_patch = deepcopy(CAPS)
+    caps_patch.extraction = Patch(patch_size=1, stride=1)
+    caps_patch.read_tensor_conversion()
+    split = next(iter(SPLITTER.get_splits(CAPS, eval_dataset=caps_patch)))
+    assert len(split.train_dataset) == 2
+    assert len(split.val_dataset) == 2
+    assert split.train_dataset.extraction.extract_method == "image"
+    assert split.val_dataset.extraction.extract_method == "patch"
 
 
 def test_kfold_concat():

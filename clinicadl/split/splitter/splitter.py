@@ -145,6 +145,7 @@ class Splitter(ABC):
     def _get_split(
         self,
         dataset: Dataset,
+        eval_dataset: Optional[Dataset] = None,
         split_id: int = 0,
     ) -> Split:
         """
@@ -155,7 +156,9 @@ class Splitter(ABC):
             index=split_id,
             split_dir=self.split_dir,
             train_dataset=dataset.subset(subjects_sessions.training),
-            val_dataset=dataset.subset(subjects_sessions.validation),
+            val_dataset=eval_dataset.subset(subjects_sessions.validation)
+            if eval_dataset
+            else dataset.subset(subjects_sessions.validation),
         )
 
     @abstractmethod
