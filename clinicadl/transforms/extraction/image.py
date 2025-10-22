@@ -37,9 +37,9 @@ class ImageSample(Sample):
     """
 
     @property
-    def _sample_index(self) -> int:
-        """The index of the sample. Equal to 1 here."""
-        return 1
+    def sample_position(self) -> None:
+        """The position of the sample."""
+        return None
 
 
 class Image(Extraction):
@@ -80,7 +80,9 @@ class Image(Extraction):
         IndexError
             If ``sample_index`` is not 0.
         """
-        extracted_datapoint = self._extract_datapoint_sample(data_point, sample_index)
+        extracted_datapoint, _ = self._extract_datapoint_sample(
+            data_point, sample_index
+        )
         sample = ImageSample(
             **extracted_datapoint,
             extraction=self.extract_method,
@@ -88,22 +90,6 @@ class Image(Extraction):
         sample.applied_transforms = extracted_datapoint.applied_transforms
 
         return sample
-
-    def num_samples_per_image(self, data_point: DataPoint) -> int:
-        """
-        Returns the number of elements per image. Since no extraction is performed, this method always returns 1.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            The DataPoint containing the image to perform extraction on.
-
-        Returns
-        -------
-        int
-            The number of elements per image, which is always 1 for full image extraction.
-        """
-        return 1
 
     def _extract_tensor_sample(
         self,
@@ -115,23 +101,9 @@ class Image(Extraction):
         """
         return image_tensor
 
-    def _get_sample_position(
-        self,
-        data_point: DataPoint,
-        sample_index: int,
-    ) -> int:
+    def _get_sample_positions(self, data_point: DataPoint) -> list[int]:
         """
-        To get the position of the sample in the image, which is always 0 here.
-
-        Raises
-        ------
-        IndexError
-            If ``sample_index`` is not 0.
+        Returns the positions of the samples in the image, which
+        is always [0] here.
         """
-        if sample_index != 0:
-            raise IndexError(
-                f"sample_index '{sample_index}' is out of range as there is only "
-                "1 sample in the image."
-            )
-
-        return 0
+        return [0]

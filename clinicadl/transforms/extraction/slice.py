@@ -62,8 +62,8 @@ class SliceSample(Sample):
     squeeze: bool
 
     @property
-    def _sample_index(self) -> int:
-        """The index of the sample. Equal to 'slice_position' here."""
+    def sample_position(self) -> int:
+        """The position of the sample."""
         return self.slice_position
 
 
@@ -266,8 +266,9 @@ class Slice(Extraction):
         IndexError
             If ``sample_index`` is greater or equal to the number of selected slices in the image.
         """
-        slice_position = self._get_sample_position(data_point, sample_index)
-        extracted_datapoint = self._extract_datapoint_sample(data_point, sample_index)
+        extracted_datapoint, slice_position = self._extract_datapoint_sample(
+            data_point, sample_index
+        )
         sample = SliceSample(
             **extracted_datapoint,
             extraction=self.extract_method,
@@ -279,35 +280,9 @@ class Slice(Extraction):
 
         return sample
 
-    def num_samples_per_image(self, data_point: DataPoint) -> int:
+    def _get_sample_positions(self, data_point: DataPoint) -> list[int]:
         """
-        Returns the number of slices that can be extracted from the input image tensor.
-
-        If ``slices``, ``discarded_slices`` and ``borders`` have not been passed, there is no
-        slice filtering, so the function will simply output the number of slices in the
-        image.
-
-        Parameters
-        ----------
-        data_point : DataPoint
-            The DataPoint containing the image to perform extraction on.
-
-        Returns
-        -------
-        int
-            The number of slices remaining after slice filtering.
-
-        Raises
-        ------
-        IndexError
-            If ``slices`` or ``discarded_slices`` mention slices that are not in the image.
-        """
-        return self._get_slice_selection(data_point).sum()
-
-    def _get_slice_selection(self, data_point: DataPoint) -> np.ndarray[bool]:
-        """
-        Returns the slices of an image that can be extracted, depending on ``slices``, ``tsv_path``,
-        ``discarded_slices`` and ``borders``.
+        Returns the positions of the selected slices in the image.
         """
         n_slices = data_point.image.tensor.size(self.slice_direction + 1)
         selection = np.ones(n_slices).astype(bool)
@@ -343,28 +318,7 @@ class Slice(Extraction):
                 selection[: self.borders[0]] = False
                 selection[n_slices - self.borders[1] :] = False
 
-        return selection
-
-    def _get_sample_position(self, data_point: DataPoint, sample_index: int) -> int:
-        """
-        Returns the position in the image of ``sample_index``. They may differ as
-        ``sample_index`` is the index among the selected slices.
-
-        Raises
-        ------
-        IndexError
-            If ``sample_index`` is greater or equal to the number of selected slices in the image.
-        """
-        selection = self._get_slice_selection(data_point)
-        slice_positions = np.arange(len(selection))[selection]
-
-        try:
-            return int(slice_positions[sample_index])
-        except IndexError as exc:
-            raise IndexError(
-                f"'sample_index' {sample_index} is out of range as there are only "
-                f"{len(slice_positions)} selected slices in the image."
-            ) from exc
+        return np.arange(len(selection))[selection]
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_position: int
