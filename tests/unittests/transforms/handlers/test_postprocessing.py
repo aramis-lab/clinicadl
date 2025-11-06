@@ -20,7 +20,7 @@ def test_check_transforms():
     transforms = Postprocessing(
         transforms=[AsDiscreteConfig(threshold=1), tio.RescaleIntensity()],
     )
-    assert [type(t) for t in transforms._transforms_processed] == [
+    assert [type(t) for t in transforms.transforms] == [
         MonaiTransformWrapper,
         tio.RescaleIntensity,
     ]
@@ -70,17 +70,11 @@ def test_serialization():
         ],
     )
     d = transforms.to_dict()
-    asdiscrete_ordered_dict = OrderedDict(
-        name="AsDiscrete",
-        include=None,
-        exclude=None,
-        argmax=False,
-        to_onehot=None,
-        threshold=1.0,
-        rounding=None,
-        dtype=torch.float32,
+
+    new_transforms = Postprocessing.from_dict(d)
+    assert isinstance(new_transforms, Postprocessing)
+    assert isinstance(
+        new_transforms.config.transforms.values[0].value, AsDiscreteConfig
     )
-    assert d["transforms"] == [
-        asdiscrete_ordered_dict,
-        "Custom transform passed by the user: 'Resample'",
-    ]
+    assert isinstance(new_transforms.config.transforms.values[1].value, tio.Resample)
+    assert new_transforms.config.transforms.values[0].value.threshold == 1

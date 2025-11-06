@@ -39,11 +39,6 @@ def test_args():
         Slice(tsv_path=BAD_SLICE_TSV_1)
 
 
-def test_extract_method():
-    slice = Slice(slices=[0, 1, 2])
-    assert slice.extract_method == "slice"
-
-
 def test_num_samples_per_image():
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(2, 5, 7, 3)
@@ -105,7 +100,7 @@ def test_extract_sample():
         image_path="abc.nii.gz",
         mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
-    extracted_data = slice.extract_sample(data_point, sample_index=3)
+    extracted_data = slice(data_point, sample_index=3)
     assert isinstance(extracted_data.image, tio.ScalarImage)
     assert (extracted_data.image.tensor == image_tensor[:, :, :, 5:6]).all()
     assert isinstance(extracted_data.label, tio.LabelMap)
@@ -118,16 +113,16 @@ def test_extract_sample():
 
     assert extracted_data.participant == "sub-000"
     assert extracted_data.session == "ses-M000"
-    assert extracted_data.image_path == "abc.nii.gz"
-    assert extracted_data.slice_position == 5
-    assert extracted_data.slice_direction == 2
-    assert extracted_data.sample_position == 5
+    assert extracted_data["image_path"] == "abc.nii.gz"
+    assert extracted_data["slice_direction"] == 2
+    assert extracted_data["sample_position"] == 5
+    assert extracted_data["sample_type"] == "slice"
 
     assert data_point.image.tensor.shape == (1, 5, 3, 7)
 
     # test transforms history
     transform = tio.Clamp(out_min=0, out_max=10)
-    sample = slice.extract_sample(transform(data_point), sample_index=0)
+    sample = slice(transform(data_point), sample_index=0)
     assert len(sample.get_applied_transforms()) == 1
     assert isinstance(sample.get_applied_transforms()[0], tio.Clamp)
 
@@ -138,23 +133,26 @@ def test_extract_sample():
         session="ses-M000",
         label=1,
     )
-    extracted_data = slice.extract_sample(data_point, sample_index=1)
+    extracted_data = slice(data_point, sample_index=1)
     assert extracted_data.label == 1
 
     with pytest.raises(IndexError):
-        slice.extract_sample(data_point, sample_index=4)
+        slice(data_point, sample_index=4)
 
     slice = Slice(slices=[2, 3])
     assert (
-        slice.extract_sample(data_point, sample_index=1).image.tensor
-        == image_tensor[:, 3:4]
+        slice(data_point, sample_index=1).image.tensor == image_tensor[:, 3:4]
     ).all()
 
     slice = Slice(discarded_slices=[0], slice_direction=1)
     assert (
-        slice.extract_sample(data_point, sample_index=0).image.tensor
-        == image_tensor[:, :, 1:2]
+        slice(data_point, sample_index=0).image.tensor == image_tensor[:, :, 1:2]
     ).all()
+
+    # generator
+    gen = slice(data_point)
+    list_sample_indices = [sample["sample_position"] for sample in gen]
+    assert list_sample_indices == [1, 2]
 
     # Test from FromTSV
     extractor = Slice(tsv_path=SLICE_TSV, slice_direction=2)
@@ -168,7 +166,7 @@ def test_extract_sample():
         mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
 
-    extracted_data = extractor.extract_sample(data_point, sample_index=0)
+    extracted_data = extractor(data_point, sample_index=0)
 
     assert isinstance(extracted_data.image, tio.ScalarImage)
     assert (extracted_data.image.tensor == image_tensor[:, :, :, 1:2]).all()
@@ -180,4 +178,4 @@ def test_extract_sample():
         ValueError,
         match="No slices found in TSV for participant=sub-000, session=ses-M001.",
     ):
-        extractor.extract_sample(data_point, sample_index=0)
+        extractor(data_point, sample_index=0)

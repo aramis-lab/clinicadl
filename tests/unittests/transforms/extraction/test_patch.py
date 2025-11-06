@@ -27,7 +27,7 @@ def test_valid_args(args):
     p = Patch(**args)
     for arg, value in args.items():
         if arg in {"patch_size", "overlap"}:
-            assert getattr(p, arg)[0] == value
+            assert getattr(p.config, arg)[0] == value
 
     for arg, value in args.items():
         if arg in {"patch_size", "overlap"}:
@@ -35,18 +35,13 @@ def test_valid_args(args):
 
     p = Patch(**args)
     for arg, value in args.items():
-        assert getattr(p, arg) == value
+        assert getattr(p.config, arg) == value
 
 
 @pytest.mark.parametrize("args", BAD_INPUTS)
 def test_bad_args(args):
     with pytest.raises((ValidationError, ValueError)):
         Patch(**args)
-
-
-def test_extract_method():
-    patch = Patch(patch_size=1)
-    assert patch.extract_method == "patch"
 
 
 def test_num_samples_per_image():
@@ -104,16 +99,11 @@ def test_extract_sample():
         mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
 
-    extracted_data_point = patch.extract_sample(data_point, sample_index=5)
+    extracted_data_point = patch(data_point, sample_index=5)
 
     expected, location = list(monai_patch(data_point.image.tensor.unsqueeze(0)))[5]
     assert isinstance(extracted_data_point.image, tio.ScalarImage)
     assert (extracted_data_point.image.tensor == expected.squeeze(0)).all()
-    assert (
-        extracted_data_point.patch_location
-        == extracted_data_point.sample_position
-        == location
-    )
 
     expected, location = list(monai_patch(data_point.label.tensor.unsqueeze(0)))[5]
     assert isinstance(extracted_data_point.label, tio.LabelMap)
@@ -128,38 +118,40 @@ def test_extract_sample():
 
     assert extracted_data_point.participant == "sub-000"
     assert extracted_data_point.session == "ses-M000"
-    assert extracted_data_point.image_path == "abc.nii.gz"
-    assert (
-        extracted_data_point.patch_location
-        == extracted_data_point.sample_position
-        == location
-    )
+    assert extracted_data_point["image_path"] == "abc.nii.gz"
+    assert extracted_data_point["sample_position"] == location
 
     assert data_point.image.tensor.shape == (1, 5, 7, 3)
 
     # test transforms history
     transform = tio.Clamp(out_min=0, out_max=10)
-    sample = patch.extract_sample(transform(data_point), sample_index=0)
+    sample = patch(transform(data_point), sample_index=0)
     assert len(sample.get_applied_transforms()) == 1
     assert isinstance(sample.get_applied_transforms()[0], tio.Clamp)
 
     # other tests
     patch = Patch(patch_size=(2, 3, 2), overlap=(0.5, 0.8, 0))
     monai_patch = SlidingWindowSplitter(patch_size=(2, 3, 2), overlap=(0.5, 0.8, 0))
-    extracted_data_point = patch.extract_sample(data_point, sample_index=2)
+    extracted_data_point = patch(data_point, sample_index=2)
     expected, location = list(monai_patch(data_point.image.tensor.unsqueeze(0)))[2]
     assert (extracted_data_point.image.tensor == expected.squeeze(0)).all()
-    assert extracted_data_point.patch_location == location
+    assert extracted_data_point["sample_position"] == location
 
     patch = Patch(patch_size=(2, 3, 2), overlap=(0.5, 0.8, 0), pad_mode=None)
     monai_patch = SlidingWindowSplitter(
         patch_size=(2, 3, 2), overlap=(0.5, 0.8, 0), pad_mode=None
     )
-    extracted_data_point = patch.extract_sample(data_point, sample_index=-1)
+    extracted_data_point = patch(data_point, sample_index=-1)
     expected, location = list(monai_patch(data_point.image.tensor.unsqueeze(0)))[-1]
     assert (extracted_data_point.image.tensor == expected.squeeze(0)).all()
-    assert extracted_data_point.patch_location == location
+    assert extracted_data_point["sample_position"] == location
 
     # errors
     with pytest.raises(IndexError):
-        patch.extract_sample(data_point, sample_index=25)
+        patch(data_point, sample_index=25)
+
+    # generator
+    patch = Patch(patch_size=(3, 3, 3), overlap=0, pad_mode=None)
+    gen = patch(data_point)
+    list_sample_indices = [sample["sample_position"] for sample in gen]
+    assert list_sample_indices == [(0, 0, 0), (0, 3, 0)]
