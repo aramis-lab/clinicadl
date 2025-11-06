@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-class TransformConfig(ObjectConfig):
+class TransformConfig(ObjectConfig["Transform"]):
     """Base config class for the transforms."""
 
     include: Optional[Sequence[str]] = None
@@ -40,18 +40,6 @@ class TransformConfig(ObjectConfig):
 
 class TorchioTransformConfig(TransformConfig):
     """Base config class for the transforms from TorchIO."""
-
-    def get_object(self) -> Transform:
-        """
-        Returns the transform associated to this configuration,
-        parametrized with the parameters passed by the user.
-
-        Returns
-        -------
-        Transform:
-            The associated transform.
-        """
-        return super().get_object()
 
     @classmethod
     def _get_class(cls) -> type[TorchioTransform]:

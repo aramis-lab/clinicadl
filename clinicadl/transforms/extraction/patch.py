@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 from enum import Enum
 from logging import getLogger
@@ -9,13 +11,14 @@ from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
     PositiveInt,
-    computed_field,
     field_validator,
 )
 
 from clinicadl.data.structures import DataPoint
+from clinicadl.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
+from clinicadl.utils.config import ObjectConfig
 
-from .base import Extraction, ExtractionMethod, Sample
+from .base import Extraction, ImplementedExtraction
 
 logger = getLogger("clinicadl.transforms.extraction.patch")
 
@@ -29,68 +32,9 @@ class PadMode(str, Enum):
     CIRCULAR = "circular"
 
 
-class PatchSample(Sample):
+class PatchConfig(ObjectConfig["Patch"]):
     """
-    Output of a CapsDataset when patch extraction is performed (i.e.
-    when :py:class:`~Patch` is used).
-
-    It is simply a :py:class:`~clinicadl.data.structures.DataPoint`, with
-    additional information on the patch extraction.
-
-    Attributes
-    ----------
-    image : torchio.ScalarImage
-        The patch, as a :py:class:`torchio.ScalarImage`.
-    label : Optional[Union[float, int, torchio.LabelMap]]
-        The label associated to the patch. Can be a ``float`` (regression),
-        an ``int`` (classification), a mask (as a :py:class:`torchio.LabelMap`; for segmentation)
-        or ``None`` if no label (reconstruction). If the label is a mask, patch extraction
-        was also performed on it.
-    participant : str
-        The participant concerned.
-    session : str
-        The session concerned.
-    preprocessing : Preprocessing
-        The proprocessing of the image (see :ref:`api_data_types`).
-    image_path : Union[str, Path]
-        The path to the image.
-    patch_location : Tuple[int, int, int]
-        The position of the patch in the image, which is defined as the position of its upper left voxel.
-    """
-
-    patch_location: Tuple[int, int, int]
-
-    @property
-    def sample_position(self) -> int:
-        """The position of the sample."""
-        return self.patch_location
-
-
-class Patch(Extraction):
-    """
-    Transform class to extract patches from an image.
-
-    The image is divided into smaller patches using a sliding window approach.
-
-    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
-
-    - ``patch_location``: tuple[int, int, int]
-        The position of the patch in the image, which is defined as the position of its upper left voxel.
-        The origin is defined at the upper left voxel of the image.
-
-    Parameters
-    ----------
-    patch_size : Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]]
-        The size of the patches. If a single value is passed, the same patch size will be used for the three
-        spatial dimensions.
-    overlap: Union[NonNegativeFloat, Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat], NonNegativeInt, Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]]
-        The amount of overlap between patches. It can be either a ``float`` in :math:`[0.0, 1.0)` that defines relative overlap, or a non-negative ``int`` that defines the
-        number of pixels overlapping. If a single value is passed, the same overlap will be used for the three spatial dimensions.
-    pad_mode : Optional[PadMode], default="constant"
-        A padding mode accepted by :py:func:`torch.nn.functional.pad`, i.e. one of ``"constant"``, ``"reflect"``, ``"replicate"`` or ``"circular"``.
-        If ``None``, no padding will be applied, so the patches that cross the border of the image will be dropped.
-    pad_value : float, default=0.0
-        The value for ``"constant"`` padding.
+    Config class for patch extraction.
     """
 
     patch_size: Tuple[PositiveInt, PositiveInt, PositiveInt]
@@ -101,34 +45,10 @@ class Patch(Extraction):
     pad_mode: Optional[PadMode]
     pad_value: float
 
-    def __init__(
-        self,
-        *,
-        patch_size: Union[PositiveInt, Tuple[PositiveInt, PositiveInt, PositiveInt]],
-        overlap: Union[
-            NonNegativeFloat,
-            Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
-            NonNegativeInt,
-            Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt],
-        ] = 0.0,
-        pad_mode: Optional[PadMode] = PadMode.CONSTANT,
-        pad_value: float = 0.0,
-    ) -> None:
-        super().__init__(
-            patch_size=self._ensure_tuple(patch_size),
-            overlap=self._ensure_tuple(overlap),
-            pad_mode=pad_mode,
-            pad_value=pad_value,
-        )
-
-    @computed_field
-    @property
-    def extract_method(self) -> str:
-        """The method to be used for the extraction process (Image, Patch, Slice)."""
-        return ExtractionMethod.PATCH.value
-
-    @staticmethod
+    @field_validator("patch_size", "overlap", mode="before")
+    @classmethod
     def _ensure_tuple(
+        cls,
         value: Any,
     ) -> tuple:
         """
@@ -149,59 +69,68 @@ class Patch(Extraction):
                 ), f"If 'overlap' is a float, it must be between 0 (included) and 1 (excluded). Got {v}"
         return value
 
-    def extract_sample(self, data_point: DataPoint, sample_index: int) -> PatchSample:
-        """
-        Extracts a patch from a DataPoint.
+    @classmethod
+    def _get_class(cls) -> type[Patch]:
+        """Returns the class associated to this config class."""
+        return Patch
 
-        Parameters
-        ----------
-        data_point : DataPoint
-            The DataPoint to perform extraction on.
-        sample_index : int
-            Index indicating the patch to extract.
 
-        Returns
-        -------
-        DataPoint
-            A new DataPoint object with the extracted patches for each image
-            present in the original ``data_point``. The patch extracted from an
-            image is accessible via the same name as was the image in the original
-            ``data_point``.
-            Additional information on the extraction is added.
+class Patch(Extraction[ObjectConfig]):
+    """
+    Transform class to extract patches from an image.
 
-        Raises
-        ------
-        IndexError
-            If ``sample_index`` is greater or equal to the number of patches in the images.
-        """
-        extracted_datapoint, sample_position = self._extract_datapoint_sample(
-            data_point, sample_index
+    The image is divided into smaller patches using a sliding window approach.
+
+    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
+
+    - ``patch_location``: tuple[int, int, int]
+        The position of the patch in the image, which is defined as the position of its upper left voxel.
+        The origin is defined at the upper left voxel of the image.
+
+    Parameters
+    ----------
+    patch_size : Union[int, Tuple[int, int, int]]
+        The size of the patches. If a single value is passed, the same patch size will be used for the three
+        spatial dimensions.
+    overlap: Union[float, Tuple[float, float, NonNegativeFloat], float, Tuple[int, int, int]]
+        The amount of overlap between patches. It can be either a ``float`` in :math:`[0.0, 1.0)` that defines relative overlap, or a non-negative ``int`` that defines the
+        number of pixels overlapping. If a single value is passed, the same overlap will be used for the three spatial dimensions.
+    pad_mode : Optional[PadMode], default="constant"
+        A padding mode accepted by :py:func:`torch.nn.functional.pad`, i.e. one of ``"constant"``, ``"reflect"``, ``"replicate"`` or ``"circular"``.
+        If ``None``, no padding will be applied, so the patches that cross the border of the image will be dropped.
+    pad_value : float, default=0.0
+        The value for ``"constant"`` padding.
+    """
+
+    config: PatchConfig
+    _config_type = PatchConfig
+
+    def __init__(
+        self,
+        *,
+        patch_size: Union[int, Tuple[int, int, int]],
+        overlap: Union[
+            float,
+            Tuple[float, float, float],
+            int,
+            Tuple[int, int, int],
+        ] = 0.0,
+        pad_mode: Optional[PadMode] = PadMode.CONSTANT,
+        pad_value: float = 0.0,
+    ) -> None:
+        self.config = PatchConfig(
+            patch_size=patch_size,
+            overlap=overlap,
+            pad_mode=pad_mode,
+            pad_value=pad_value,
         )
-        sample = PatchSample(
-            **extracted_datapoint,
-            extraction=self.extract_method,
-            patch_location=sample_position,
-        )
-        sample.applied_transforms = extracted_datapoint.applied_transforms
 
-        return sample
-
-    def _get_sample_positions(
-        self, data_point: DataPoint
-    ) -> list[tuple[int, int, int]]:
+    @property
+    def sample_type(self) -> str:
         """
-        Returns the positions of the patches in the image.
+        The type of the sample returned by this extraction, among {"image", "slice", "patch"}.
         """
-        spatial_shape = data_point.image.tensor.shape[1:]
-        padded_shape = self._get_padded_shape(spatial_shape)
-        return list(
-            iter_patch_position(
-                image_size=padded_shape,
-                patch_size=self.patch_size,
-                overlap=self.overlap,
-                padded=False,
-            )
-        )
+        return ImplementedExtraction.PATCH.value.lower()
 
     def _extract_tensor_sample(
         self, image_tensor: torch.Tensor, sample_position: tuple[int, int, int]
@@ -215,19 +144,45 @@ class Patch(Extraction):
         pad_size = self._calculate_pad_size(spatial_shape)
 
         # padding
-        if self.pad_mode and any(pad_size):
+        if self.config.pad_mode and any(pad_size):
             image_tensor = torch.nn.functional.pad(
                 image_tensor,
                 pad_size,
-                mode=self.pad_mode,
-                value=self.pad_value,
+                mode=self.config.pad_mode,
+                value=self.config.pad_value,
             )
 
         patch = self._get_patch(
-            image_tensor, location=sample_position, patch_size=self.patch_size
+            image_tensor, location=sample_position, patch_size=self.config.patch_size
         )
 
         return patch
+
+    def _get_sample_positions(
+        self, data_point: DataPoint
+    ) -> list[tuple[int, int, int]]:
+        """
+        Returns the positions of the patches in the image.
+        """
+        spatial_shape = data_point.image.tensor.shape[1:]
+        padded_shape = self._get_padded_shape(spatial_shape)
+        return list(
+            iter_patch_position(
+                image_size=padded_shape,
+                patch_size=self.config.patch_size,
+                overlap=self.config.overlap,
+                padded=False,
+            )
+        )
+
+    def _add_info(
+        self, data_point: DataPoint, sample_position: tuple[int, int, int]
+    ) -> None:
+        """
+        Adds relevant info in the datapoint.
+        """
+        data_point[SAMPLE_TYPE] = self.sample_type
+        data_point[SAMPLE_POSITION] = sample_position
 
     @staticmethod
     def _get_patch(
@@ -249,7 +204,7 @@ class Patch(Extraction):
         """
         Returns the padded shape from the original shape.
         """
-        if not self.pad_mode:
+        if not self.config.pad_mode:
             return spatial_shape
 
         pad_size = self._calculate_pad_size(spatial_shape)
@@ -267,11 +222,14 @@ class Patch(Extraction):
         """
         pad_size = [0] * 2 * len(spatial_shape)
 
-        if not self.pad_mode:
+        if not self.config.pad_mode:
             return pad_size
 
         for i, sh, ps, ov in zip(
-            range(1, len(pad_size), 2), spatial_shape, self.patch_size, self.overlap
+            range(1, len(pad_size), 2),
+            spatial_shape,
+            self.config.patch_size,
+            self.config.overlap,
         ):
             if isinstance(ov, float):
                 pad_size[i] = (ps - sh) % round(ps - (ps * ov))

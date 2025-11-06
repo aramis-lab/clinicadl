@@ -1,20 +1,41 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Sequence
 
 import torchio as tio
-from pydantic import field_serializer, model_validator
+from pydantic import Field, ValidationInfo, field_validator
 
-from ..types import TransformOrConfig
-from .base import TransformsHandler
+from clinicadl.transforms.config import TransformConfig
+from clinicadl.utils.config import ObjectConfig, SequenceOfObjects
+from clinicadl.utils.objects import HasConfig
+
+from ..factory import get_transform_from_dict
+from ..types import Transform, TransformOrConfig
+from .utils import get_transform_name
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
     from clinicadl.data.structures import DataPoint
 
 
-class Postprocessing(TransformsHandler):
+class PostprocessingConfig(ObjectConfig["Postprocessing"]):
+    transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
+        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+    )
+
+    @field_validator("transforms", mode="before")
+    @classmethod
+    def _handle_sequence(cls, v: Any, info: ValidationInfo) -> SequenceOfObjects:
+        return SequenceOfObjects.from_sequence(v, field_name=info.field_name)
+
+    @classmethod
+    def _get_class(cls) -> type[Postprocessing]:
+        """Returns the class associated to this config class."""
+        return Postprocessing
+
+
+class Postprocessing(HasConfig[PostprocessingConfig]):
     """
     A configuration class for applying transformations on the outputs of a network.
 
@@ -24,27 +45,16 @@ class Postprocessing(TransformsHandler):
         A list of transformations to apply on the outputs.
     """
 
-    transforms: list[TransformOrConfig] = []
-    _transforms_processed: tio.Compose = tio.Compose([])
+    _config_type = PostprocessingConfig
 
-    @model_validator(mode="after")
-    def _convert_transforms(self):
-        """
-        Converts the transform configs to actual transform objects.
-        """
-        super()._convert_transforms()
-        return self
-
-    @field_serializer("transforms")
-    @classmethod
-    def _serialize_transforms(
-        cls, transforms: list[TransformOrConfig]
-    ) -> list[Union[str, dict]]:
-        """
-        Handles serialization of transforms that are not passed via
-        TransformConfigs.
-        """
-        return super()._serialize_transforms(transforms)
+    def __init__(
+        self,
+        transforms: Sequence[TransformOrConfig] = [],
+    ):
+        self.config = PostprocessingConfig(
+            transforms=transforms,
+        )
+        self.transforms = tio.Compose(self.config.transforms.get_object())
 
     def __str__(self) -> str:
         """
@@ -52,9 +62,9 @@ class Postprocessing(TransformsHandler):
         """
         str_ = "Postprocessing:\n"
 
-        if self._transforms_processed.transforms:
-            for transform in self._transforms_processed.transforms:
-                str_ += f"  - {self._get_transform_name(transform)}\n"
+        if self.transforms.transforms:
+            for transform in self.transforms.transforms:
+                str_ += f"  - {get_transform_name(transform)}\n"
         else:
             str_ += "No transform applied.\n"
 
@@ -64,7 +74,7 @@ class Postprocessing(TransformsHandler):
         """
         Applies the transforms and returns the output.
         """
-        return self._transforms_processed(datapoint)
+        return self.transforms(datapoint)
 
     def batch_apply(self, batch: Batch) -> Batch:
         """

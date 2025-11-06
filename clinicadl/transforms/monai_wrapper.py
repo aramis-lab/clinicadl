@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import numbers
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import torch
 import torchio as tio
@@ -9,7 +11,8 @@ from monai.data import MetaTensor
 from monai.transforms import Transform as MonaiTransform
 from numpy import ndarray
 
-from clinicadl.data.structures import DataPoint
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
 
 
 class MonaiTransformWrapper:
