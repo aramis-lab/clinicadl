@@ -1,17 +1,5 @@
 from enum import Enum
 
-from clinicadl.utils.enum import BaseEnum
-
-
-class ClassificationLoss(str, BaseEnum):
-    """Losses that can be used only for classification."""
-
-    CROSS_ENTROPY = "CrossEntropyLoss"
-    NLL = "NLLLoss"
-    MULTI_MARGIN = "MultiMarginLoss"
-    BCE = "BCELoss"
-    BCE_LOGITS = "BCEWithLogitsLoss"
-
 
 class ImplementedLoss(str, Enum):
     """Implemented losses in ClinicaDL."""

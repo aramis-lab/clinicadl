@@ -1,7 +1,7 @@
 """Config classes for loss functions natively supported in ``ClinicaDL``. Based on
 :torch:`PyTorch loss functions <nn.html#loss-functions>`."""
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import torch
 from pydantic import (
@@ -13,7 +13,7 @@ from pydantic import (
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.factories import get_defaults_from
 
-from .enum import ImplementedLoss, Order, Reduction
+from .enum import Order, Reduction
 
 __all__ = [
     "LossConfig",
@@ -27,7 +27,6 @@ __all__ = [
     "SmoothL1LossConfig",
     "L1LossConfig",
     "MSELossConfig",
-    "get_loss_function_config",
 ]
 
 NLL_TORCH_DEFAULTS = get_defaults_from(torch.nn.NLLLoss)
@@ -42,7 +41,7 @@ L1_TORCH_DEFAULT = get_defaults_from(torch.nn.L1Loss)
 MSE_TORCH_DEFAULT = get_defaults_from(torch.nn.MSELoss)
 
 
-class LossConfig(ObjectConfig):
+class LossConfig(ObjectConfig[torch.nn.Module]):
     """Base config class for the loss function."""
 
     def get_object(self) -> torch.nn.Module:
@@ -210,32 +209,3 @@ class MSELossConfig(LossConfig):
     """
 
     reduction: Reduction = MSE_TORCH_DEFAULT["reduction"]
-
-
-def get_loss_function_config(
-    name: Union[str, ImplementedLoss], **kwargs: Any
-) -> LossConfig:
-    """
-    Factory function to get a loss function configuration object from its name
-    and parameters.
-
-    Parameters
-    ----------
-    name : Union[str, ImplementedLoss]
-        the name of the loss function. Check our documentation to know
-        available losses.
-    **kwargs : Any
-        any parameter of the loss function. Check our documentation on losses to
-        know these parameters.
-
-    Returns
-    -------
-    LossConfig
-        the config object. Default values will be returned for the parameters
-        not passed by the user.
-    """
-    loss = ImplementedLoss(name).value
-    config_name = f"{loss}Config"
-    config = globals()[config_name]
-
-    return config(**kwargs)

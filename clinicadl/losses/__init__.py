@@ -1,4 +1,4 @@
 """To create a criterion to minimize during training."""
 
-from .enum import ClassificationLoss, ImplementedLoss
+from .factory import get_loss_function_from_dict
 from .types import Loss, LossOrConfig
