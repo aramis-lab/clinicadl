@@ -36,7 +36,7 @@ class Custom(Preprocessing, CustomModality):
         Constructs the FileType for custom preprocessing.
         """
         return FileType(
-            pattern=f"{self.custom_suffix}/sub-*_ses-*_{self.custom_suffix}.nii*",
+            pattern=f"{self.name}/sub-*_ses-*_{self.custom_suffix}.nii*",
             description=f"Custom images with suffix '{self.custom_suffix}'",
         )
 
