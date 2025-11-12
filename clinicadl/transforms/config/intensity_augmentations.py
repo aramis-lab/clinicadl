@@ -12,7 +12,6 @@ from pydantic import (
 
 from clinicadl.utils.factories import get_defaults_from
 
-from ..types import Std
 from .base import TorchioTransformConfig
 from .enum import InterpolationMode, NumericalAxis
 
@@ -147,6 +146,21 @@ class RandomBiasFieldConfig(TorchioTransformConfig):
         if isinstance(v, tuple):
             cls._check_spatial_tuple(v, "coefficients")
         return v
+
+
+Std = Union[
+    NonNegativeFloat,
+    Tuple[NonNegativeFloat, NonNegativeFloat],
+    Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
+    Tuple[
+        NonNegativeFloat,
+        NonNegativeFloat,
+        NonNegativeFloat,
+        NonNegativeFloat,
+        NonNegativeFloat,
+        NonNegativeFloat,
+    ],
+]
 
 
 class RandomBlurConfig(TorchioTransformConfig):

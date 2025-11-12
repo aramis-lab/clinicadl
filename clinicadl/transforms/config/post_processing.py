@@ -1,4 +1,6 @@
-from typing import Callable, Optional, Sequence, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Optional, Sequence, Union
 
 import torch
 from monai import transforms
@@ -11,14 +13,16 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.dictionary.words import EXCLUDE, INCLUDE, NAME
+from clinicadl.dictionary.words import EXCLUDE, INCLUDE
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 from clinicadl.utils.factories import get_defaults_from
 
 from ..homemade import Format
-from ..types import Transform
 from .base import TransformConfig
 from .enum import Rounding, SobelPaddingMode
+
+if TYPE_CHECKING:
+    from ..types import Transform
 
 __all__ = [
     "ActivationsConfig",
@@ -59,7 +63,7 @@ class MonaiTransformConfig(TransformConfig):
             The associated transform.
         """
         monai_transform = self._get_class()(
-            **self.model_dump(exclude={NAME, INCLUDE, EXCLUDE})
+            **self.to_raw_dict(exclude={INCLUDE, EXCLUDE})
         )
         transform = MonaiTransformWrapper(
             monai_transform, include=self.include, exclude=self.exclude

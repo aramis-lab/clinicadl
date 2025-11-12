@@ -5,7 +5,6 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import (
     ActivationsConfig,
     PadConfig,
@@ -15,6 +14,7 @@ from clinicadl.transforms.config import (
     ZNormalizationConfig,
 )
 from clinicadl.transforms.extraction import Patch
+from clinicadl.transforms.handlers import Transforms
 
 
 def test_args():
