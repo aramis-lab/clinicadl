@@ -11,8 +11,11 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     ValidationError,
+    ValidationInfo,
     computed_field,
     field_serializer,
+    field_validator,
+    model_validator,
 )
 from pydantic.fields import ModelPrivateAttr
 from typing_extensions import Self
@@ -144,16 +147,7 @@ class ClinicaDLConfig(BaseModel):
         ClinicaDLConfig
             The config class.
         """
-        fields_in_dict = set(dict_)
-        expected_fields = set(cls.get_fields())
-
-        diff = expected_fields.difference(fields_in_dict)
-        if len(diff) > 0:
-            raise MissingFieldsError(fields=list(diff))
-
-        diff = fields_in_dict.difference(expected_fields)
-        if len(diff) > 0:
-            raise WrongFieldsError(fields=list(diff), object_name=cls._get_name())
+        dict_ = cls._check_dict(dict_)
 
         for field, value in dict_.items():
             if field not in kwargs:
@@ -219,6 +213,24 @@ class ClinicaDLConfig(BaseModel):
         return value
 
     @classmethod
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
+        """
+        Checks the input of :py:meth:`from_dict`.
+        """
+        fields_in_dict = set(dict_)
+        expected_fields = set(cls.get_fields())
+
+        diff = expected_fields.difference(fields_in_dict)
+        if len(diff) > 0:
+            raise MissingFieldsError(fields=list(diff))
+
+        diff = fields_in_dict.difference(expected_fields)
+        if len(diff) > 0:
+            raise WrongFieldsError(fields=list(diff), object_name=cls._get_name())
+
+        return dict_
+
+    @classmethod
     def _read_anything(
         cls, value: Any, field: str, reader: Optional[FieldReaderType] = None
     ) -> Any:
@@ -231,7 +243,7 @@ class ClinicaDLConfig(BaseModel):
                 return reader(value)
             except Exception as e:
                 raise CannotReadFieldError(
-                    field_name=field, object_name=cls._get_name()
+                    field_names=[field], object_name=cls._get_name()
                 ) from e
         else:
             return value
@@ -287,7 +299,7 @@ class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
         """The name of the class associated to this config class."""
         return self._get_name()
 
-    def get_object(self) -> T:
+    def get_object(self, **kwargs: Any) -> T:
         """
         Returns the object associated to this configuration,
         parametrized with the parameters passed by the user.
@@ -298,22 +310,28 @@ class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
             The parametrized object.
         """
         associated_class = self._get_class()
-        parameters = self._get_parameters()
+        parameters = self._get_parameters(**kwargs)
         return associated_class(**parameters)
 
     @classmethod
-    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
+        """
+        Checks the input of :py:meth:`from_dict`.
+        """
         dict_ = deepcopy(dict_)
         if NAME in dict_:
+            assert (
+                dict_[NAME] == cls._get_name()
+            ), f"The input dictionary is associated to {dict_[NAME]}, not to {cls._get_name()}."
             del dict_[NAME]
-        return super().from_dict(dict_, **kwargs)
+        return super()._check_dict(dict_)
 
     @classmethod
     @abstractmethod
     def _get_class(cls) -> type[T]:
         """Returns the class associated to this config class."""
 
-    def _get_parameters(self) -> dict[str, Any]:
+    def _get_parameters(self, **kwargs: Any) -> dict[str, Any]:
         """
         Gets the parameters of the class associated class.
         If some parameters has been passed via ``ObjectConfig``
@@ -325,7 +343,7 @@ class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
             if hasattr(value, "get_object") and callable(
                 get_object := getattr(value, "get_object")
             ):
-                params[field] = get_object()
+                params[field] = get_object(**kwargs)
             else:
                 params[field] = value
 
@@ -355,7 +373,7 @@ class ObjectOrConfig(BaseModel, Generic[T, TConfig]):
     def __init__(self, value: Union[T, TConfig]):
         super().__init__(value=value)
 
-    def get_object(self) -> T:
+    def get_object(self, **kwargs: Any) -> T:
         """
         Returns the object. If a config class was passed,
         it is converted to the underlying object.
@@ -366,13 +384,13 @@ class ObjectOrConfig(BaseModel, Generic[T, TConfig]):
             The parametrized object.
         """
         if isinstance(self.value, ObjectConfig):
-            return self.value.get_object()
+            return self.value.get_object(**kwargs)
         else:
             return self.value
 
     def to_raw(self) -> Union[T, TConfig]:
         """
-        Unwrap the value of the field.
+        Unwraps the value of the field.
 
         Returns
         -------
@@ -381,13 +399,13 @@ class ObjectOrConfig(BaseModel, Generic[T, TConfig]):
         """
         return self.value
 
-    def to_dict(self) -> Any:
+    def to_dict(self) -> Union[T, dict[str, Any]]:
         """
         To serialize the current field.
 
         Returns
         -------
-        Any
+        Union[T, dict[str, Any]]
             The serialized field.
         """
         return ClinicaDLConfig.serialize_anything(self.value)
@@ -468,7 +486,7 @@ class SequenceOfObjects(BaseModel, Generic[T, TConfig]):
             ]
         )
 
-    def get_object(self) -> list[T]:
+    def get_object(self, **kwargs: Any) -> list[T]:
         """
         Returns the list of objects. If config classes were passed,
         they are converted to the underlying object.
@@ -478,11 +496,11 @@ class SequenceOfObjects(BaseModel, Generic[T, TConfig]):
         list[T]
             The parametrized objects.
         """
-        return [obj.get_object() for obj in self.values]
+        return [obj.get_object(**kwargs) for obj in self.values]
 
     def to_raw(self) -> list[Union[T, TConfig]]:
         """
-        Unwrap the value of the field.
+        Unwraps the value of the field.
 
         Returns
         -------
@@ -491,13 +509,13 @@ class SequenceOfObjects(BaseModel, Generic[T, TConfig]):
         """
         return [value.to_raw() for value in self.values]
 
-    def to_dict(self) -> list[dict[str, Any]]:
+    def to_dict(self) -> list[Union[T, dict[str, Any]]]:
         """
         To serialize the current field.
 
         Returns
         -------
-        list[dict[str, Any]]
+        list[Union[T, dict[str, Any]]]
             The serialized sequence of objects/configs.
         """
         return [obj.to_dict() for obj in self.values]
@@ -551,6 +569,180 @@ class SequenceOfObjects(BaseModel, Generic[T, TConfig]):
             return cls([obj_reader(obj) for obj in serialized_objects])
 
         return list_reader
+
+
+class DictOfObjects(BaseModel, Generic[T, TConfig]):
+    """
+    To handle fields that are dictionaries of objects/configs.
+    """
+
+    values: dict[str, ObjectOrConfig[T, TConfig]]
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
+
+    def __init__(
+        self, values: dict[str, Union[Union[T, TConfig], ObjectOrConfig[T, TConfig]]]
+    ):
+        super().__init__(
+            values={
+                name: ObjectOrConfig(obj)
+                if not isinstance(obj, ObjectOrConfig)
+                else obj
+                for name, obj in values.items()
+            }
+        )
+
+    def get_object(self, **kwargs: Any) -> dict[str, T]:
+        """
+        Returns the dictionary of objects. If config classes were passed,
+        they are converted to the underlying object.
+
+        Returns
+        -------
+        dict[str, T]
+            The parametrized objects.
+        """
+        return {name: obj.get_object(**kwargs) for name, obj in self.values.items()}
+
+    def to_raw(self) -> dict[str, Union[T, TConfig]]:
+        """
+        Unwraps the value of the field.
+
+        Returns
+        -------
+        dict[str, Union[T, TConfig]]
+            The raw value of the field.
+        """
+        return {name: obj.to_raw() for name, obj in self.values.items()}
+
+    def to_dict(self) -> dict[str, Union[T, dict[str, Any]]]:
+        """
+        To serialize the current field.
+
+        Returns
+        -------
+        dict[str, dict[str, Union[T, dict[str, Any]]]]
+            The serialized dictionary of objects/configs.
+        """
+        return {name: obj.to_dict() for name, obj in self.values.items()}
+
+    @classmethod
+    def from_dict(cls, value: Any, field_name: str) -> Self:
+        """
+        Checks if the input is a sequence and build a ``DictOfObjects``.
+
+        Useful for pydantic field validators.
+
+        Parameters
+        ----------
+        value : Any
+            The field value.
+        field_name : str
+            The field name
+
+        Returns
+        -------
+            The instantiated object.
+        """
+        if isinstance(value, cls):
+            return value
+        if not isinstance(value, dict):
+            raise ValueError(f"'{field_name}' must be a dict. Got: {value}")
+        return cls(value)
+
+    @classmethod
+    def build_reader(
+        cls,
+        config_reader: Callable[[dict[str, Any]], TConfig],
+    ) -> Callable[[dict[str, Any]], Self]:
+        """
+        To build a reader to deserialize the dictionary of
+        serialized objects/configs.
+
+        Parameters
+        ----------
+        reader : Callable[[dict[str, Any]], TConfig]
+            The function to read the serialized config class.
+
+        Returns
+        -------
+        Callable[[dict[str, Any]], Self]
+            The reader to read the serialized dictionary of objects/configs.
+        """
+
+        def dict_reader(serialized_objects: dict[str, Any]) -> Self:
+            obj_reader = ObjectOrConfig.build_reader(config_reader)
+            return cls(
+                {name: obj_reader(obj) for name, obj in serialized_objects.items()}
+            )
+
+        return dict_reader
+
+
+class KwargsConfig(ObjectConfig):
+    """
+    Config class to handle kwargs.
+    It accepts only ONE field, which must be a :py:class:`DictOfObjects`.
+    """
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def _handle_dict(cls, v: Any, info: ValidationInfo) -> DictOfObjects:
+        return DictOfObjects.from_dict(v, field_name=info.field_name)
+
+    @model_validator(mode="after")
+    def _count_fields(self) -> Self:
+        """
+        Check that a the KwargsConfig contain only one field.
+        """
+        fields = self.get_fields()
+        assert (
+            len(fields) == 1
+        ), f"KwargsConfig should contain only one field, found {fields} here."
+
+        return self
+
+    @classmethod
+    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
+        dict_ = cls._check_dict(dict_)
+
+        main_field_name = list(dict_.keys())[0]  # only one field in KwargsConfig
+
+        values: dict = dict_[list(dict_.keys())[0]]
+        values.update(kwargs)
+
+        dict_[main_field_name] = values
+
+        try:
+            return super().from_dict(dict_)
+        except CannotReadFieldError as e:
+            wrong_metrics = cls._read_pydantic_error(e.error)
+            raise CannotReadFieldError(
+                field_names=wrong_metrics, object_name=cls._get_name()
+            ) from e
+
+    def to_raw_dict(self, exclude: Optional[Sequence[str]] = None) -> dict[str, Any]:
+        dict_ = super().to_raw_dict(exclude)
+        main_field_name = self.get_fields()[0]
+
+        return dict_[main_field_name]
+
+    @staticmethod
+    def _read_pydantic_error(error: ValidationError) -> list[str]:
+        """
+        To read a pydantic validation error and determine
+        what key of the dict is failing validation.
+        """
+        list_errors = error.errors()
+        wrong_keys = []
+        for e in list_errors:
+            key = e["loc"][2]
+            wrong_keys.append(key)
+
+        return list(set(wrong_keys))
 
 
 def _order_dict(model_or_field: Any) -> Any:

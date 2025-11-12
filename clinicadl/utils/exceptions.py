@@ -113,19 +113,22 @@ class CannotReadFieldError(ClinicaDLException):
     def __init__(
         self,
         object_name: str,
-        field_name: Optional[str] = None,
+        field_names: Optional[list[str]] = None,
         error: Optional[ValidationError] = None,
     ):
-        if field_name and not error:
-            self.field_name = field_name
-        elif error and not field_name:
-            self.field_name = set([f"{err['loc'][0]}" for err in error.errors()]).pop()
+        if field_names and not error:
+            self.field_names = field_names
+        elif error and not field_names:
+            self.field_names = sorted(
+                list(set([err["loc"][0] for err in error.errors()]))
+            )
         else:
-            raise ValueError("Pass either the field name of the pydantic error.")
+            raise ValueError("Pass either the field names OR the pydantic error.")
 
         self.object_name = object_name
+        self.error = error
         error_msg = (
-            f"{object_name} cannot read the field '{field_name}'. "
+            f"{object_name} cannot read the field(s) {field_names}. "
             f"Please pass this field via kwargs."
         )
         super().__init__(error_msg)
@@ -136,7 +139,7 @@ class CannotReadJsonFieldError(ClinicaDLException):
 
     def __init__(self, error: CannotReadFieldError, json_path: Path):
         error_msg = (
-            f"{error.object_name} cannot read '{error.field_name}' in {str(json_path)}\n"
+            f"{error.object_name} cannot read the field(s) {error.field_names} in {str(json_path)}\n"
             f"Please pass this field via kwargs."
         )
         super().__init__(error_msg)
