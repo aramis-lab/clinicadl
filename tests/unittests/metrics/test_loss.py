@@ -6,12 +6,29 @@ import torchio as tio
 from monai.metrics import LossMetric
 from torch.nn import MSELoss
 
-from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.config import LossMetricConfig
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from tests.unittests.resources.objects import MODEL
+
+
+class Batch(list):
+    def get_field(self, key: str, **kwargs):
+        return torch.Tensor([[data[key]] for data in self])
+
+
+class ClinicaDLModel:
+    def get_loss_functions(self):
+        return {"loss": MSELoss(reduction="sum")}
+
+
+class ClinicaDLModelBis:
+    def get_loss_functions(self):
+        return {"loss": lambda x: x}
+
+
+MODEL = ClinicaDLModel()
+MODEL_BIS = ClinicaDLModelBis()
 
 
 def test_loss_metric():
@@ -27,7 +44,6 @@ def test_loss_metric():
     ):
         config.get_object(MODEL)
 
-    MODEL.loss = MSELoss(reduction="sum")
     config = LossMetricConfig(loss_name="loss")
     assert isinstance(config.get_object(MODEL), MonaiMetricWrapper)
     assert isinstance(config.get_object(MODEL).metric, LossMetric)
@@ -51,7 +67,6 @@ def test_loss_metric():
     out = metric(batch)
     assert out.shape == (3,)
 
-    MODEL.loss = lambda x: x
     config = LossMetricConfig(loss_name="loss", reduction="mean", label_key=None)
     with pytest.raises(
         ClinicaDLArgumentError,
@@ -60,4 +75,4 @@ def test_loss_metric():
             "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level.",
         ),
     ):
-        config.get_object(MODEL)
+        config.get_object(MODEL_BIS)

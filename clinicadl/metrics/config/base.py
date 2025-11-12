@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from logging import getLogger
-from typing import Optional
+from typing import Any, Optional
 
 import monai.metrics
 from pydantic import field_validator
 
-from clinicadl.dictionary.words import LABEL, NAME, OUTPUT
+from clinicadl.dictionary.words import LABEL, OUTPUT
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 
@@ -18,14 +18,14 @@ __all__ = ["MetricConfig"]
 logger = getLogger("clinicadl.metrics")
 
 
-class MetricConfig(ObjectConfig):
+class MetricConfig(ObjectConfig[Metric]):
     """Base config class to configure metrics."""
 
     pred_key: str = OUTPUT
     label_key: Optional[str] = LABEL
     postprocessing: list[TransformOrConfig] = []
 
-    def get_object(self) -> Metric:
+    def get_object(self, **kwargs: Any) -> Metric:
         """
         Returns the metric associated to this configuration,
         parametrized with the parameters passed by the user.
@@ -36,7 +36,7 @@ class MetricConfig(ObjectConfig):
             The associated metric.
         """
         monai_metric = self._get_class()(
-            **self.model_dump(exclude={NAME, "pred_key", "label_key", "postprocessing"})
+            **self.to_raw_dict(exclude={"pred_key", "label_key", "postprocessing"})
         )
         metric = MonaiMetricWrapper(
             monai_metric,

@@ -7,16 +7,19 @@ Besides, we think our implementation facilitates the creation fo custom
 transforms by the user.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import torch
 from monai.metrics.metric import CumulativeIterationMetric
 
-from clinicadl.data.dataloader import Batch
-
 from .enum import Optimum
+
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import Batch
 
 TensorOrList = Union[torch.Tensor, Sequence[torch.Tensor]]
 

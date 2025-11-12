@@ -682,7 +682,7 @@ class DictOfObjects(BaseModel, Generic[T, TConfig]):
         return dict_reader
 
 
-class KwargsConfig(ObjectConfig):
+class KwargsConfig(ObjectConfig[T]):
     """
     Config class to handle kwargs.
     It accepts only ONE field, which must be a :py:class:`DictOfObjects`.
