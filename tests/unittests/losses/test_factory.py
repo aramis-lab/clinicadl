@@ -1,7 +1,7 @@
 import pytest
 
-from clinicadl.losses import get_loss_function_from_dict
 from clinicadl.losses.config import *
+from clinicadl.losses.factory import get_loss_function_from_dict
 
 
 @pytest.mark.parametrize(

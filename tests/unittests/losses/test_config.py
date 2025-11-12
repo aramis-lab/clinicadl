@@ -7,6 +7,7 @@ from clinicadl.losses.config import (
     BCEWithLogitsLossConfig,
     CrossEntropyLossConfig,
     HuberLossConfig,
+    ImplementedLoss,
     KLDivLossConfig,
     L1LossConfig,
     MSELossConfig,
@@ -14,7 +15,6 @@ from clinicadl.losses.config import (
     NLLLossConfig,
     SmoothL1LossConfig,
 )
-from clinicadl.losses.enum import ImplementedLoss
 
 BAD_INPUTS = [
     (

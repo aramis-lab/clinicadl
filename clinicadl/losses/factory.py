@@ -3,7 +3,6 @@ from typing import Any
 from clinicadl.utils.factories import factory_from_dict
 
 from .config import *
-from .enum import ImplementedLoss
 
 
 @factory_from_dict(
