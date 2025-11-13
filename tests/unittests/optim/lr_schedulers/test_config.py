@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
     ExponentialLRConfig,
+    ImplementedLRScheduler,
     LinearLRConfig,
     MultiStepLRConfig,
     OneCycleLRConfig,
@@ -334,3 +335,30 @@ def test_get_object(args, config, expected_class, optimizer, network):
         assert scheduler.min_lrs[0] == 0.1
         assert scheduler.min_lrs[1] == 0.01
         assert scheduler.min_lrs[2] == 0
+
+
+def test_name():
+    for name in ImplementedLRScheduler:
+        config = globals()[f"{name.value}Config"]
+    c = config(**MANDATORY_FIELDS)
+    assert c.name == name.value
+
+
+@pytest.mark.parametrize(
+    "config,type_",
+    [
+        (ConstantLRConfig, "epoch-based"),
+        (ExponentialLRConfig, "epoch-based"),
+        (LinearLRConfig, "epoch-based"),
+        (StepLRConfig, "epoch-based"),
+        (MultiStepLRConfig, "epoch-based"),
+        (PolynomialLRConfig, "epoch-based"),
+        (ReduceLROnPlateauConfig, "metric-based"),
+        (
+            OneCycleLRConfig,
+            "step-based",
+        ),
+    ],
+)
+def test_scheduler_type(config, type_):
+    assert config.scheduler_type() == type_
