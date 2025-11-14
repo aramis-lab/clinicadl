@@ -1,10 +1,15 @@
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from copy import deepcopy
+from typing import Any, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch.nn as nn
+from pydantic import PositiveInt, field_validator, model_validator
+
+from clinicadl.utils.factories import get_defaults_from
 
 from .cnn import CNN
-from .conv_encoder import ConvEncoder
+from .conv_decoder import ConvDecoderOptions
+from .conv_encoder import ConvEncoder, ConvEncoderOptions
 from .generator import Generator
 from .layers.utils import (
     ActivationParameters,
@@ -14,12 +19,13 @@ from .layers.utils import (
     UnpoolingLayer,
     UnpoolingMode,
 )
-from .mlp import MLP
+from .mlp import MLPOptions
 from .utils import (
     calculate_conv_out_shape,
     calculate_convtranspose_out_shape,
     calculate_pool_out_shape,
 )
+from .utils.config import NetworkConfig, _InShapeConfig
 
 
 class AutoEncoder(nn.Sequential):
@@ -49,11 +55,11 @@ class AutoEncoder(nn.Sequential):
         Dimensions of the input tensor (without batch dimension).
     latent_size : int
         Size of the latent vector.
-    conv_args : Dict[str, Any]
+    conv_args : dict[str, Any]
         The arguments for the convolutional part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.ConvEncoder`, except ``spatial_dims`` and ``in_channels``
         that are specified here via ``in_shape``. So, the only **mandatory argument is** ``channels``.
-    mlp_args : Optional[Dict[str, Any]], default=None
+    mlp_args : Optional[dict[str, Any]], default=None
         The arguments for the MLP part. The arguments are those accepted by
         :py:class:`~clinicadl.networks.nn.MLP`, except ``num_inputs`` that is inferred
         from the output of the convolutional part, and ``num_outputs`` that is equal to ``latent_size`` here.
@@ -175,90 +181,116 @@ class AutoEncoder(nn.Sequential):
         self,
         in_shape: Sequence[int],
         latent_size: int,
-        conv_args: Dict[str, Any],
-        mlp_args: Optional[Dict[str, Any]] = None,
+        conv_args: dict[str, Any],
+        mlp_args: Optional[dict[str, Any]] = None,
         out_channels: Optional[int] = None,
         output_act: Optional[ActivationParameters] = None,
         unpooling_mode: Union[str, UnpoolingMode] = UnpoolingMode.NEAREST,
     ) -> None:
         super().__init__()
-        self.in_shape = in_shape
-        self.latent_size = latent_size
-        self.out_channels = out_channels if out_channels else self.in_shape[0]
-        self._output_act = output_act
-        self.spatial_dims = len(in_shape[1:])
-        self.unpooling_mode = check_unpooling_mode(unpooling_mode, self.spatial_dims)
 
-        self.encoder = CNN(
-            in_shape=self.in_shape,
-            num_outputs=latent_size,
+        self.config = AutoEncoderConfig(
+            in_shape=in_shape,
+            latent_size=latent_size,
             conv_args=conv_args,
             mlp_args=mlp_args,
+            out_channels=out_channels,
+            output_act=output_act,
+            unpooling_mode=unpooling_mode,
+        )
+
+        self.encoder = CNN(
+            in_shape=self.config.in_shape,
+            num_outputs=self.config.latent_size,
+            conv_args=self.config.conv_args.to_raw_dict(),
+            mlp_args=self.config.mlp_args.to_raw_dict(),
         )
         inter_channels = (
-            conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
+            self.config.conv_args.channels[-1]
+            if len(self.config.conv_args.channels) > 0
+            else self.config.in_shape[0]
         )
         inter_shape = (inter_channels, *self.encoder.convolutions._final_size)
         self.decoder = Generator(
-            latent_size=latent_size,
+            latent_size=self.config.latent_size,
             start_shape=inter_shape,
-            conv_args=self._invert_conv_args(conv_args, self.encoder.convolutions),
-            mlp_args=self._invert_mlp_args(mlp_args, self.encoder.mlp),
+            conv_args=self._invert_conv_args(
+                self.config.conv_args, self.encoder.convolutions
+            ).to_raw_dict(),
+            mlp_args=self._invert_mlp_args(self.config.mlp_args).to_raw_dict(),
         )
 
     @classmethod
-    def _invert_mlp_args(cls, args: Dict[str, Any], mlp: MLP) -> Dict[str, Any]:
+    def _invert_mlp_args(
+        cls,
+        args: MLPOptions,
+    ) -> MLPOptions:
         """
         Inverts arguments passed for the MLP part of the encoder, to get the MLP part of
         the decoder.
         """
-        if args is None:
-            args = {}
-        args["hidden_dims"] = cls._invert_list_arg(mlp.hidden_dims)
+        args = deepcopy(args)
+        args.hidden_dims = cls._invert_list_arg(args.hidden_dims)
 
         return args
 
     def _invert_conv_args(
-        self, args: Dict[str, Any], conv: ConvEncoder
-    ) -> Dict[str, Any]:
+        self, encoder_args: ConvEncoderOptions, conv: ConvEncoder
+    ) -> ConvDecoderOptions:
         """
         Inverts arguments passed for the convolutional part of the encoder, to get the convolutional
         part of the decoder.
         """
-        if len(args["channels"]) == 0:
-            args["channels"] = []
-        else:
-            args["channels"] = self._invert_list_arg(conv.channels[:-1]) + [
-                self.out_channels
-            ]
-        args["kernel_size"] = self._invert_list_arg(conv.kernel_size)
-        args["stride"] = self._invert_list_arg(conv.stride)
-        args["dilation"] = self._invert_list_arg(conv.dilation)
-        args["padding"], args["output_padding"] = self._get_paddings_list(conv)
-
-        args["unpooling_indices"] = list(
-            (conv.n_layers - np.array(conv.pooling_indices) - 2).astype(int)
+        channels = (
+            self._invert_list_arg(encoder_args.channels[:-1])
+            + [self.config.out_channels]
+            if len(encoder_args.channels) > 0
+            else []
         )
-        args["unpooling"] = []
+
+        kernel_size = self._invert_list_arg(encoder_args.kernel_size)
+        stride = self._invert_list_arg(encoder_args.stride)
+        dilation = self._invert_list_arg(encoder_args.dilation)
+        padding, output_padding = self._get_paddings_list(conv)
+
+        unpooling_indices = list(
+            (
+                len(encoder_args.channels) - np.array(encoder_args.pooling_indices) - 2
+            ).astype(int)
+        )
+
+        unpooling = []
         sizes_before_pooling = [
             size
             for size, (layer_name, _) in zip(conv._size_details, conv.named_children())
             if "pool" in layer_name
         ]
-        for size, pooling in zip(sizes_before_pooling[::-1], conv.pooling[::-1]):
-            args["unpooling"].append(self._invert_pooling_layer(size, pooling))
+        for size, pooling in zip(
+            sizes_before_pooling[::-1], encoder_args.pooling[::-1]
+        ):
+            unpooling.append(self._invert_pooling_layer(size, pooling))
 
-        if "pooling" in args:
-            del args["pooling"]
-        if "pooling_indices" in args:
-            del args["pooling_indices"]
+        decoder_args = ConvDecoderOptions(
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            output_padding=output_padding,
+            dilation=dilation,
+            unpooling_indices=unpooling_indices,
+            unpooling=unpooling,
+            act=encoder_args.act,
+            norm=encoder_args.norm,
+            output_act=self.config.output_act,
+            dropout=encoder_args.dropout,
+            bias=encoder_args.bias,
+            adn_ordering=encoder_args.adn_ordering,
+        )
 
-        args["output_act"] = self._output_act if self._output_act else None
+        return decoder_args
 
-        return args
-
-    @classmethod
-    def _invert_list_arg(cls, arg: Union[Any, List[Any]]) -> Union[Any, List[Any]]:
+    @staticmethod
+    def _invert_list_arg(arg: Union[Any, list[Any]]) -> Union[Any, list[Any]]:
         """
         Reverses lists.
         """
@@ -272,7 +304,7 @@ class AutoEncoder(nn.Sequential):
         """
         Gets the unpooling layer.
         """
-        if self.unpooling_mode == UnpoolingMode.CONV_TRANS:
+        if self.config.unpooling_mode == UnpoolingMode.CONV_TRANS:
             return (
                 UnpoolingLayer.CONV_TRANS,
                 self._invert_pooling_with_convtranspose(size_before_pool, pooling),
@@ -280,7 +312,7 @@ class AutoEncoder(nn.Sequential):
         else:
             return (
                 UnpoolingLayer.UPSAMPLE,
-                {"size": size_before_pool, "mode": self.unpooling_mode},
+                {"size": size_before_pool, "mode": self.config.unpooling_mode},
             )
 
     @classmethod
@@ -288,7 +320,7 @@ class AutoEncoder(nn.Sequential):
         cls,
         size_before_pool: Sequence[int],
         pooling: SingleLayerPoolingParameters,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computes the arguments of the transposed convolution, based on the pooling layer.
         """
@@ -334,7 +366,7 @@ class AutoEncoder(nn.Sequential):
         return args
 
     @classmethod
-    def _get_paddings_list(cls, conv: ConvEncoder) -> List[Tuple[int, ...]]:
+    def _get_paddings_list(cls, conv: ConvEncoder) -> list[tuple[int, ...]]:
         """
         Finds output padding list.
         """
@@ -347,10 +379,10 @@ class AutoEncoder(nn.Sequential):
         ]
         for size, k, s, p, d in zip(
             size_before_convs,
-            conv.kernel_size,
-            conv.stride,
-            conv.padding,
-            conv.dilation,
+            conv.config.kernel_size,
+            conv.config.stride,
+            conv.config.padding,
+            conv.config.dilation,
         ):
             p, out_p = cls._find_convtranspose_paddings(
                 "conv", size, kernel_size=k, stride=s, padding=p, dilation=d
@@ -399,32 +431,71 @@ class AutoEncoder(nn.Sequential):
         return padding, tuple(int(s) for s in output_padding)
 
 
-def check_unpooling_mode(
-    unpooling_mode: Union[str, UnpoolingMode], dim: int
-) -> UnpoolingMode:
+AUTOENCODER_DEFAULTS = get_defaults_from(AutoEncoder)
+
+
+class AutoEncoderConfig(NetworkConfig, _InShapeConfig):
     """
-    Checks consistency between data shape and unpooling mode.
+    Config class for :py:class:`clinicadl.networks.nn.AutoEncoder`.
     """
-    unpooling_mode = UnpoolingMode(unpooling_mode)
-    if unpooling_mode == UnpoolingMode.LINEAR and dim != 1:
-        raise ValueError(
-            f"unpooling mode `linear` only works with 1D data (spatial dimensions). "
-            f"Got {dim}D data."
-        )
-    elif unpooling_mode == UnpoolingMode.BILINEAR and dim != 2:
-        raise ValueError(
-            f"unpooling mode `bilinear` only works with 2D data (spatial dimensions). "
-            f"Got {dim}D data."
-        )
-    elif unpooling_mode == UnpoolingMode.BICUBIC and dim != 2:
-        raise ValueError(
-            f"unpooling mode `bicubic` only works with 2D data (spatial dimensions). "
-            f"Got {dim}D data."
-        )
-    elif unpooling_mode == UnpoolingMode.TRILINEAR and dim != 3:
-        raise ValueError(
-            f"unpooling mode `trilinear` only works with 3D data (spatial dimensions). "
-            f"Got {dim}D data."
+
+    in_shape: Sequence[PositiveInt]
+    latent_size: PositiveInt
+    conv_args: ConvEncoderOptions
+    mlp_args: MLPOptions = AUTOENCODER_DEFAULTS["mlp_args"]
+    out_channels: Optional[PositiveInt] = AUTOENCODER_DEFAULTS["out_channels"]
+    output_act: Optional[ActivationParameters] = AUTOENCODER_DEFAULTS["output_act"]
+    unpooling_mode: UnpoolingMode = AUTOENCODER_DEFAULTS["unpooling_mode"]
+
+    @field_validator("mlp_args", mode="before")
+    @classmethod
+    def _handle_none_mlp_args(cls, v):
+        """
+        To accept None value for 'mlp_args'.
+        """
+        if v is None:
+            return MLPOptions(hidden_dims=[])
+        return v
+
+    @model_validator(mode="after")
+    def _check_dim(self):
+        _, *input_size = self.in_shape
+        spatial_dims = len(input_size)
+        self.conv_args._check_args_dim(spatial_dims)
+        self._check_unpooling_mode(self.unpooling_mode, spatial_dims)
+        self.__dict__["out_channels"] = (
+            self.out_channels if self.out_channels else self.in_shape[0]
         )
 
-    return unpooling_mode
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return AutoEncoder
+
+    @staticmethod
+    def _check_unpooling_mode(unpooling_mode: UnpoolingMode, dim: int) -> None:
+        """
+        Checks consistency between data shape and unpooling mode.
+        """
+        if unpooling_mode == UnpoolingMode.LINEAR and dim != 1:
+            raise ValueError(
+                f"unpooling mode `linear` only works with 1D data (spatial dimensions). "
+                f"Got {dim}D data."
+            )
+        elif unpooling_mode == UnpoolingMode.BILINEAR and dim != 2:
+            raise ValueError(
+                f"unpooling mode `bilinear` only works with 2D data (spatial dimensions). "
+                f"Got {dim}D data."
+            )
+        elif unpooling_mode == UnpoolingMode.BICUBIC and dim != 2:
+            raise ValueError(
+                f"unpooling mode `bicubic` only works with 2D data (spatial dimensions). "
+                f"Got {dim}D data."
+            )
+        elif unpooling_mode == UnpoolingMode.TRILINEAR and dim != 3:
+            raise ValueError(
+                f"unpooling mode `trilinear` only works with 3D data (spatial dimensions). "
+                f"Got {dim}D data."
+            )

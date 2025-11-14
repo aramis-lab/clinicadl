@@ -1,11 +1,15 @@
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
+
+import torch.nn as nn
+from pydantic import PositiveInt, model_validator
 
 from clinicadl.utils.factories import get_defaults_from
 
 from .layers.utils import ActivationParameters
-from .resnet import GeneralResNet, ResNet, ResNetBlockType
+from .resnet import GeneralResNet, ResNet, ResNetBlockType, ResNetConfig
+from .utils.config import NetworkConfig
 
-__all__ = ["SEResNet", "SEResNet50", "SEResNet101", "SEResNet152", "check_se_channels"]
+__all__ = ["SEResNet", "SEResNet50", "SEResNet101", "SEResNet152"]
 
 
 class SEResNet(GeneralResNet):
@@ -111,20 +115,15 @@ class SEResNet(GeneralResNet):
         se_reduction: int = 16,
         **kwargs: Any,
     ) -> None:
-        # get defaults from resnet
-        default_resnet_args = get_defaults_from(ResNet.__init__)
-        for arg, value in default_resnet_args.items():
-            if arg not in kwargs:
-                kwargs[arg] = value
-
-        check_se_channels(kwargs["n_features"], se_reduction)
-
-        super().__init__(
+        config = SEResNetConfig(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
             num_outputs=num_outputs,
             se_reduction=se_reduction,
             **kwargs,
+        )
+        super().__init__(
+            **config.to_raw_dict(),
         )
 
 
@@ -161,14 +160,15 @@ class SEResNet50(ResNet):
         num_outputs: Optional[int],
         output_act: Optional[ActivationParameters] = None,
     ) -> None:
+        config = SEResNet50Config(num_outputs=num_outputs, output_act=output_act)
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 4, 6, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
 
 
@@ -205,14 +205,15 @@ class SEResNet101(ResNet):
         num_outputs: Optional[int],
         output_act: Optional[ActivationParameters] = None,
     ) -> None:
+        config = SEResNet101Config(num_outputs=num_outputs, output_act=output_act)
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 4, 23, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
 
 
@@ -249,25 +250,80 @@ class SEResNet152(ResNet):
         num_outputs: Optional[int],
         output_act: Optional[ActivationParameters] = None,
     ) -> None:
+        config = SEResNet152Config(num_outputs=num_outputs, output_act=output_act)
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 8, 36, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
 
 
-def check_se_channels(n_features: Sequence[int], se_reduction: int) -> None:
+SE_RES_NET_DEFAULTS = get_defaults_from(SEResNet)
+SE_RES_NET_50_DEFAULTS = get_defaults_from(SEResNet50)
+SE_RES_NET_101_DEFAULTS = get_defaults_from(SEResNet101)
+SE_RES_NET_152_DEFAULTS = get_defaults_from(SEResNet152)
+
+
+class SEResNetConfig(ResNetConfig):
     """
-    Checks that the output of residual blocks always have a number of channels greater
-    than squeeze-excitation bottleneck reduction factor.
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet`.
     """
-    for n in n_features:
-        if n < se_reduction:
-            raise ValueError(
-                f"elements of n_features must be greater or equal to se_reduction. Got {n} in n_features "
-                f"and se_reduction={se_reduction}"
-            )
+
+    se_reduction: PositiveInt = SE_RES_NET_DEFAULTS["se_reduction"]
+
+    @model_validator(mode="after")
+    def _check_se_channels(self):
+        for n in self.n_features:
+            if n < self.se_reduction:
+                raise ValueError(
+                    f"elements of n_features must be greater or equal to se_reduction. Got {n} in n_features "
+                    f"and se_reduction={self.se_reduction}"
+                )
+
+        return self
+
+
+class SEResNet50Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet50`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_50_DEFAULTS["output_act"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return SEResNet50
+
+
+class SEResNet101Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet101`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_101_DEFAULTS["output_act"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return SEResNet101
+
+
+class SEResNet152Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.SEResNet152`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = SE_RES_NET_152_DEFAULTS["output_act"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return SEResNet152

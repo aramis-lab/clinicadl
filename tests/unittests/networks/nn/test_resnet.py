@@ -1,5 +1,6 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torchvision.models import resnet18, resnet34, resnet50, resnet101, resnet152
 
 from clinicadl.networks.nn import (
@@ -107,17 +108,28 @@ def test_resnet(
     )
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(act):
     batch_size = INPUT_2D.shape[0]
-    net = ResNet(
-        spatial_dims=len(INPUT_2D.shape[2:]),
-        in_channels=INPUT_2D.shape[1],
-        num_outputs=2,
-        n_features=(8, 16),
-        n_res_blocks=(2, 2),
-        act=act,
-    )
+    if act is None:
+        net = ResNet(
+            spatial_dims=len(INPUT_2D.shape[2:]),
+            in_channels=INPUT_2D.shape[1],
+            num_outputs=2,
+            n_features=(8, 16),
+            n_res_blocks=(2, 2),
+            output_act=act,
+        )
+    else:
+        net = ResNet(
+            spatial_dims=len(INPUT_2D.shape[2:]),
+            in_channels=INPUT_2D.shape[1],
+            num_outputs=2,
+            n_features=(8, 16),
+            n_res_blocks=(2, 2),
+            act=act,
+            output_act=act,
+        )
     assert net(INPUT_2D).shape == (batch_size, 2)
 
 
@@ -181,22 +193,44 @@ def test_literature(net, num_outputs, output_act, getter):
         (
             {
                 "bottleneck_reduction": 2,
-                "n_features": [3, 4, 4, 4],
+                "n_features": [3, 4],
                 "block_type": "bottleneck",
             },
             True,
         ),
-        ({"bottleneck_reduction": 2, "n_features": [2, 4, 4, 4]}, False),
-        ({"n_features": [2], "n_res_blocks": 2}, True),
-        ({"n_features": 2, "n_res_blocks": [2]}, True),
+        (
+            {
+                "bottleneck_reduction": 2,
+                "n_features": [4, 4],
+                "block_type": "bottleneck",
+            },
+            True,
+        ),
+        (
+            {
+                "bottleneck_reduction": 2,
+                "n_features": [4, 4],
+                "n_res_blocks": [2, 2],
+                "block_type": "bottleneck",
+            },
+            False,
+        ),
         ({"n_features": [2], "n_res_blocks": [2, 4]}, True),
-        ({"n_features": [2, 3], "n_res_blocks": [2, 4]}, False),
+        ({"n_features": [2, 4], "n_res_blocks": [2, 4]}, False),
+        ({"spatial_dims": 4}, True),
+        ({"in_channels": 0}, True),
+        ({"num_outputs": 0}, True),
+        ({"n_res_blocks": (2, 0, 2, 2)}, True),
+        ({"n_features": (2, 0, 2, 2)}, True),
+        ({"bottleneck_reduction": 0}, True),
+        ({"act": None}, True),
     ],
 )
 def test_checks(args, error):
-    args.update({"spatial_dims": 2, "in_channels": 2, "num_outputs": 1})
+    args_ = {"spatial_dims": 2, "in_channels": 2, "num_outputs": 1}
+    args_.update(args)
     if error:
-        with pytest.raises(ValueError):
-            ResNet(**args)
+        with pytest.raises(ValidationError):
+            ResNet(**args_)
     else:
-        _ = ResNet(**args)
+        _ = ResNet(**args_)

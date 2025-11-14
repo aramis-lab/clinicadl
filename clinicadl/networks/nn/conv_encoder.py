@@ -1,9 +1,21 @@
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, Optional, Sequence
 
 import numpy as np
 import torch.nn as nn
 from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer, get_pool_layer
+from pydantic import (
+    NonNegativeFloat,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
+
+from clinicadl.networks.nn.layers.utils import (
+    ActivationParameters,
+    ConvNormalizationParameters,
+)
+from clinicadl.utils.factories import get_defaults_from
 
 from .layers.utils import (
     ActFunction,
@@ -11,7 +23,6 @@ from .layers.utils import (
     ConvNormalizationParameters,
     ConvNormLayer,
     ConvParameters,
-    NormLayer,
     PoolingLayer,
     PoolingParameters,
     SingleLayerPoolingParameters,
@@ -24,6 +35,7 @@ from .utils import (
     check_pool_indices,
     ensure_list_of_tuples,
 )
+from .utils.config import NetworkConfig, _DropoutConfig, _SpatialDimsConfig
 
 
 class ConvEncoder(nn.Sequential):
@@ -193,50 +205,41 @@ class ConvEncoder(nn.Sequential):
     ) -> None:
         super().__init__()
 
+        self.config = ConvEncoderConfig(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            pooling=pooling,
+            pooling_indices=pooling_indices,
+            act=act,
+            output_act=output_act,
+            norm=norm,
+            dropout=dropout,
+            bias=bias,
+            adn_ordering=adn_ordering,
+        )
+
         self._current_size = _input_size
         self._size_details = [self._current_size] if _input_size else None
 
-        self.spatial_dims = spatial_dims
-        self.in_channels = in_channels
-        self.channels = channels
-        self.n_layers = len(self.channels)
-
-        self.kernel_size = ensure_list_of_tuples(
-            kernel_size, self.spatial_dims, self.n_layers, "kernel_size"
-        )
-        self.stride = ensure_list_of_tuples(
-            stride, self.spatial_dims, self.n_layers, "stride"
-        )
-        self.padding = ensure_list_of_tuples(
-            padding, self.spatial_dims, self.n_layers, "padding"
-        )
-        self.dilation = ensure_list_of_tuples(
-            dilation, self.spatial_dims, self.n_layers, "dilation"
-        )
-        self.pooling_indices = check_pool_indices(pooling_indices, self.n_layers)
-        self.pooling = check_pool_layers(pooling, pooling_indices=self.pooling_indices)
-        self.act = act
-        self.norm = check_norm_layer(norm)
-        if self.norm == NormLayer.LAYER:
-            raise ValueError("Layer normalization not implemented in ConvEncoder.")
-        self.dropout = dropout
-        self.bias = bias
-        self.adn_ordering = check_adn_ordering(adn_ordering)
-
         n_poolings = 0
-        if self.pooling and -1 in self.pooling_indices:
-            pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
+        if self.config.pooling and -1 in self.config.pooling_indices:
+            pooling_layer = self._get_pool_layer(self.config.pooling[n_poolings])
             self.add_module("init_pool", pooling_layer)
             n_poolings += 1
 
-        echannel = self.in_channels
+        echannel = self.config.in_channels
         for i, (c, k, s, p, d) in enumerate(
             zip(
-                self.channels,
-                self.kernel_size,
-                self.stride,
-                self.padding,
-                self.dilation,
+                self.config.channels,
+                self.config.kernel_size,
+                self.config.stride,
+                self.config.padding,
+                self.config.dilation,
             )
         ):
             conv_layer = self._get_conv_layer(
@@ -250,8 +253,8 @@ class ConvEncoder(nn.Sequential):
             )
             self.add_module(f"layer{i}", conv_layer)
             echannel = c  # use the output channel number as the input for the next loop
-            if self.pooling and i in self.pooling_indices:
-                pooling_layer = self._get_pool_layer(self.pooling[n_poolings])
+            if self.config.pooling and i in self.config.pooling_indices:
+                pooling_layer = self._get_pool_layer(self.config.pooling[n_poolings])
                 self.add_module(f"pool{i}", pooling_layer)
                 n_poolings += 1
 
@@ -265,7 +268,7 @@ class ConvEncoder(nn.Sequential):
         return self._current_size
 
     @_final_size.setter
-    def _final_size(self, fct: Callable[[Tuple[int, ...]], Tuple[int, ...]]):
+    def _final_size(self, fct: Callable[[tuple[int, ...]], tuple[int, ...]]):
         """
         Takes as input the function used to update the current image size.
         """
@@ -278,10 +281,10 @@ class ConvEncoder(nn.Sequential):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Tuple[int, ...],
-        stride: Tuple[int, ...],
-        padding: Tuple[int, ...],
-        dilation: Tuple[int, ...],
+        kernel_size: tuple[int, ...],
+        stride: tuple[int, ...],
+        padding: tuple[int, ...],
+        dilation: tuple[int, ...],
         is_last: bool,
     ) -> Convolution:
         """
@@ -293,25 +296,25 @@ class ConvEncoder(nn.Sequential):
 
         return Convolution(
             conv_only=is_last,
-            spatial_dims=self.spatial_dims,
+            spatial_dims=self.config.spatial_dims,
             in_channels=in_channels,
             out_channels=out_channels,
             strides=stride,
             kernel_size=kernel_size,
             padding=padding,
             dilation=dilation,
-            act=self.act,
-            norm=self.norm,
-            dropout=self.dropout,
-            bias=self.bias,
-            adn_ordering=self.adn_ordering,
+            act=self.config.act,
+            norm=self.config.norm,
+            dropout=self.config.dropout,
+            bias=self.config.bias,
+            adn_ordering=self.config.adn_ordering,
         )
 
     def _get_pool_layer(self, pooling: SingleLayerPoolingParameters) -> nn.Module:
         """
         Gets the parametrized pooling layer and updates the current output size.
         """
-        pool_layer = get_pool_layer(pooling, spatial_dims=self.spatial_dims)
+        pool_layer = get_pool_layer(pooling, spatial_dims=self.config.spatial_dims)
         old_size = self._final_size
         self._final_size = lambda size: calculate_pool_out_shape(
             pool_mode=pooling[0], in_shape=size, **pool_layer.__dict__
@@ -338,60 +341,145 @@ class ConvEncoder(nn.Sequential):
             )
 
 
-def check_pool_layers(
-    pooling: PoolingParameters, pooling_indices: Sequence[int]
-) -> List[SingleLayerPoolingParameters]:
+CONV_ENCODER_DEFAULTS = get_defaults_from(ConvEncoder)
+
+
+class _BaseConvOptions(_DropoutConfig):
     """
-    Checks pooling arguments.
+    Base config class for ConvEncoder and ConvDecoder options.
     """
-    if pooling is None:
+
+    channels: Sequence[PositiveInt]
+    kernel_size: ConvParameters
+    stride: ConvParameters
+    padding: ConvParameters
+    dilation: ConvParameters
+    norm: Optional[ConvNormalizationParameters]
+    adn_ordering: str
+
+    @field_validator("norm", mode="after")
+    @classmethod
+    def _norm_validator(cls, v):
+        return check_norm_layer(v)
+
+    @field_validator("adn_ordering")
+    @classmethod
+    def _adn_ordering_validator(cls, v):
+        return check_adn_ordering(v)
+
+    def _check_args_dim(self, dim: int) -> None:
+        n_layers = len(self.channels)
+        self.__dict__["kernel_size"] = ensure_list_of_tuples(
+            self.kernel_size, dim, n_layers, "kernel_size"
+        )
+        self.__dict__["stride"] = ensure_list_of_tuples(
+            self.stride, dim, n_layers, "stride"
+        )
+        self.__dict__["padding"] = ensure_list_of_tuples(
+            self.padding, dim, n_layers, "padding"
+        )
+        self.__dict__["dilation"] = ensure_list_of_tuples(
+            self.dilation, dim, n_layers, "dilation"
+        )
+
+    def _check_pool_indices(self, indices: Optional[Sequence[int]]) -> Sequence[int]:
+        return check_pool_indices(indices, n_layers=len(self.channels))
+
+
+class ConvEncoderOptions(_BaseConvOptions):
+    """
+    Config class for ConvEncoder when it is a submodule.
+    See for example: :py:class:`clinicadl.networks.nn.CNN`
+    """
+
+    channels: Sequence[PositiveInt]
+    kernel_size: ConvParameters = CONV_ENCODER_DEFAULTS["kernel_size"]
+    stride: ConvParameters = CONV_ENCODER_DEFAULTS["stride"]
+    padding: ConvParameters = CONV_ENCODER_DEFAULTS["padding"]
+    dilation: ConvParameters = CONV_ENCODER_DEFAULTS["dilation"]
+    pooling: Optional[PoolingParameters] = CONV_ENCODER_DEFAULTS["pooling"]
+    pooling_indices: Sequence[int] = CONV_ENCODER_DEFAULTS["pooling_indices"]
+    act: Optional[ActivationParameters] = CONV_ENCODER_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = CONV_ENCODER_DEFAULTS["output_act"]
+    norm: Optional[ConvNormalizationParameters] = CONV_ENCODER_DEFAULTS["norm"]
+    dropout: Optional[NonNegativeFloat] = CONV_ENCODER_DEFAULTS["dropout"]
+    bias: bool = CONV_ENCODER_DEFAULTS["bias"]
+    adn_ordering: str = CONV_ENCODER_DEFAULTS["adn_ordering"]
+
+    @field_validator("pooling_indices", mode="before")
+    @classmethod
+    def _handle_none_pooling_indices(cls, v):
+        return v or []
+
+    @model_validator(mode="after")
+    def check_pooling(self):
+        checked_indices = self._check_pool_indices(self.pooling_indices)
+        self.__dict__["pooling"] = self._check_pool_layers(
+            self.pooling, pooling_indices=checked_indices
+        )
+
+        return self
+
+    @classmethod
+    def _check_pool_layers(
+        cls, pooling: PoolingParameters, pooling_indices: Sequence[int]
+    ) -> list[SingleLayerPoolingParameters]:
+        """
+        Checks pooling arguments.
+        """
+        if isinstance(pooling, list):
+            for pool_layer in pooling:
+                cls._check_single_pool_layer(pool_layer)
+            if len(pooling) != len(pooling_indices):
+                raise ValueError(
+                    "If you pass a list for pooling, the size of that list must match "
+                    f"the size of pooling_indices. Got: pooling={pooling} and "
+                    f"pooling_indices={pooling_indices}"
+                )
+        elif isinstance(pooling, tuple):
+            cls._check_single_pool_layer(pooling)
+            pooling = [pooling] * len(pooling_indices)
+
         return pooling
-    if isinstance(pooling, list):
-        for pool_layer in pooling:
-            _check_single_pool_layer(pool_layer)
-        if len(pooling) != len(pooling_indices):
+
+    @staticmethod
+    def _check_single_pool_layer(pooling: SingleLayerPoolingParameters) -> None:
+        """
+        Checks pooling arguments for a single pooling layer.
+        """
+        pooling_type = pooling[0]
+        args = pooling[1]
+        if (
+            pooling_type == PoolingLayer.MAX or pooling_type == PoolingLayer.AVG
+        ) and "kernel_size" not in args:
             raise ValueError(
-                "If you pass a list for pooling, the size of that list must match "
-                f"the size of pooling_indices. Got: pooling={pooling} and "
-                f"pooling_indices={pooling_indices}"
+                f"For {pooling_type} pooling mode, `kernel_size` argument must be passed. "
+                f"Got {args}"
             )
-    elif isinstance(pooling, tuple):
-        _check_single_pool_layer(pooling)
-        pooling = [pooling] * len(pooling_indices)
-    else:
-        raise ValueError(
-            f"pooling can be either None, a double (string, dictionary) or a list of such doubles. Got {pooling}"
-        )
+        elif (
+            pooling_type == PoolingLayer.ADAPT_AVG
+            or pooling_type == PoolingLayer.ADAPT_MAX
+        ) and "output_size" not in args:
+            raise ValueError(
+                f"For {pooling_type} pooling mode, `output_size` argument must be passed. "
+                f"Got {args}"
+            )
 
-    return pooling
 
-
-def _check_single_pool_layer(pooling: SingleLayerPoolingParameters) -> None:
+class ConvEncoderConfig(NetworkConfig, ConvEncoderOptions, _SpatialDimsConfig):
     """
-    Checks pooling arguments for a single pooling layer.
+    Config class for :py:class:`clinicadl.networks.nn.ConvEncoder`.
     """
-    if not isinstance(pooling, tuple) or len(pooling) != 2:
-        raise ValueError(
-            "pooling must be a double (or a list of doubles) with first the type of pooling and then the parameters "
-            f"of the pooling layer in a dict. Got {pooling}"
-        )
-    pooling_type = PoolingLayer(pooling[0])
-    args = pooling[1]
-    if not isinstance(args, dict):
-        raise ValueError(
-            f"The arguments of the pooling layer must be passed in a dict. Got {args}"
-        )
-    if (
-        pooling_type == PoolingLayer.MAX or pooling_type == PoolingLayer.AVG
-    ) and "kernel_size" not in args:
-        raise ValueError(
-            f"For {pooling_type} pooling mode, `kernel_size` argument must be passed. "
-            f"Got {args}"
-        )
-    elif (
-        pooling_type == PoolingLayer.ADAPT_AVG or pooling_type == PoolingLayer.ADAPT_MAX
-    ) and "output_size" not in args:
-        raise ValueError(
-            f"For {pooling_type} pooling mode, `output_size` argument must be passed. "
-            f"Got {args}"
-        )
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+
+    @model_validator(mode="after")
+    def _check_dim(self):
+        self._check_args_dim(self.spatial_dims)
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ConvEncoder

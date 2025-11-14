@@ -1,11 +1,14 @@
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 import torch.nn as nn
+from pydantic import PositiveInt, field_validator, model_validator
 
-from .conv_encoder import ConvEncoder
-from .mlp import MLP
-from .utils import check_conv_args, check_mlp_args
+from clinicadl.utils.factories import get_defaults_from
+
+from .conv_encoder import ConvEncoder, ConvEncoderOptions
+from .mlp import MLP, MLPOptions
+from .utils.config import NetworkConfig, _InShapeConfig
 
 
 class CNN(nn.Sequential):
@@ -110,16 +113,19 @@ class CNN(nn.Sequential):
         self,
         in_shape: Sequence[int],
         num_outputs: int,
-        conv_args: Dict[str, Any],
-        mlp_args: Optional[Dict[str, Any]] = None,
+        conv_args: dict[str, Any],
+        mlp_args: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__()
-        check_conv_args(conv_args)
-        check_mlp_args(mlp_args)
-        self.in_shape = in_shape
-        self.num_outputs = num_outputs
 
-        in_channels, *input_size = in_shape
+        self.config = CNNConfig(
+            in_shape=in_shape,
+            num_outputs=num_outputs,
+            conv_args=conv_args,
+            mlp_args=mlp_args,
+        )
+
+        in_channels, *input_size = self.config.in_shape
         spatial_dims = len(input_size)
 
         self.convolutions = ConvEncoder(
@@ -130,13 +136,51 @@ class CNN(nn.Sequential):
         )
 
         n_channels = (
-            conv_args["channels"][-1] if len(conv_args["channels"]) > 0 else in_shape[0]
+            self.config.conv_args.channels[-1]
+            if len(self.config.conv_args.channels) > 0
+            else self.config.in_shape[0]
         )
         flatten_shape = int(np.prod(self.convolutions._final_size) * n_channels)
-        if mlp_args is None:
-            mlp_args = {"hidden_dims": []}
+
         self.mlp = MLP(
             num_inputs=flatten_shape,
-            num_outputs=num_outputs,
-            **mlp_args,
+            num_outputs=self.config.num_outputs,
+            **self.config.mlp_args.to_raw_dict(),
         )
+
+
+CNN_DEFAULTS = get_defaults_from(CNN)
+
+
+class CNNConfig(NetworkConfig, _InShapeConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.CNN`.
+    """
+
+    in_shape: Sequence[PositiveInt]
+    num_outputs: PositiveInt
+    conv_args: ConvEncoderOptions
+    mlp_args: MLPOptions = CNN_DEFAULTS["mlp_args"]
+
+    @field_validator("mlp_args", mode="before")
+    @classmethod
+    def _handle_none_mlp_args(cls, v):
+        """
+        To accept None value for 'mlp_args'.
+        """
+        if v is None:
+            return MLPOptions(hidden_dims=[])
+        return v
+
+    @model_validator(mode="after")
+    def _check_dim(self):
+        _, *input_size = self.in_shape
+        spatial_dims = len(input_size)
+        self.conv_args._check_args_dim(spatial_dims)
+
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return CNNConfig

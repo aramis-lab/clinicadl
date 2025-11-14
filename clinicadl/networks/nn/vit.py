@@ -11,6 +11,7 @@ import torch.nn as nn
 from monai.networks.blocks.pos_embed_utils import build_sincos_position_embedding
 from monai.networks.layers import Conv
 from monai.networks.layers.utils import get_act_layer
+from pydantic import NonNegativeFloat, PositiveInt, model_validator
 from torch.hub import load_state_dict_from_url
 from torchvision.models.vision_transformer import (
     ViT_B_16_Weights,
@@ -19,9 +20,16 @@ from torchvision.models.vision_transformer import (
     ViT_L_32_Weights,
 )
 
+from clinicadl.utils.factories import get_defaults_from
+
 from .layers.utils import ActFunction, ActivationParameters
 from .layers.vit import Encoder
 from .utils import ensure_tuple
+from .utils.config import (
+    NetworkConfig,
+    _DropoutConfig,
+    _InShapeConfig,
+)
 
 __all__ = [
     "ViT",
@@ -29,8 +37,6 @@ __all__ = [
     "ViTB32",
     "ViTL16",
     "ViTL32",
-    "check_embedding_dim",
-    "check_patch_size",
 ]
 
 
@@ -161,48 +167,68 @@ class ViT(nn.Module):
         dropout: Optional[float] = None,
     ) -> None:
         super().__init__()
-
-        self.in_channels, *self.img_size = in_shape
+        self.config = ViTConfig(
+            in_shape=in_shape,
+            patch_size=patch_size,
+            num_outputs=num_outputs,
+            embedding_dim=embedding_dim,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            mlp_dim=mlp_dim,
+            pos_embed_type=pos_embed_type,
+            output_act=output_act,
+            dropout=dropout,
+        )
+        self.in_channels, *self.img_size = self.config.in_shape
         self.spatial_dims = len(self.img_size)
-        self.patch_size = ensure_tuple(patch_size, self.spatial_dims, "patch_size")
 
-        check_embedding_dim(embedding_dim, num_heads)
-        check_patch_size(self.patch_size, self.img_size)
-        self.embedding_dim = embedding_dim
-        self.classification = True if num_outputs else False
-        dropout = dropout if dropout else 0.0
+        self.classification = True if self.config.num_outputs else False
+        dropout = self.config.dropout or 0.0
 
         self.conv_proj = Conv[Conv.CONV, self.spatial_dims](  # pylint: disable=not-callable
             in_channels=self.in_channels,
-            out_channels=self.embedding_dim,
-            kernel_size=self.patch_size,
-            stride=self.patch_size,
+            out_channels=self.config.embedding_dim,
+            kernel_size=self.config.patch_size,
+            stride=self.config.patch_size,
         )
         self.seq_length = int(
-            np.prod(np.array(self.img_size) // np.array(self.patch_size))
+            np.prod(np.array(self.img_size) // np.array(self.config.patch_size))
         )
 
         # Add a class token
         if self.classification:
-            self.class_token = nn.Parameter(torch.zeros(1, 1, self.embedding_dim))
+            self.class_token = nn.Parameter(
+                torch.zeros(1, 1, self.config.embedding_dim)
+            )
             self.seq_length += 1
 
-        pos_embedding = self._get_pos_embedding(pos_embed_type)
+        pos_embedding = self._get_pos_embedding(self.config.pos_embed_type)
         self.encoder = Encoder(
             self.seq_length,
-            num_layers,
-            num_heads,
-            self.embedding_dim,
-            mlp_dim,
+            self.config.num_layers,
+            self.config.num_heads,
+            self.config.embedding_dim,
+            self.config.mlp_dim,
             dropout=dropout,
             attention_dropout=dropout,
             pos_embedding=pos_embedding,
         )
 
         if self.classification:
-            self.class_token = nn.Parameter(torch.zeros(1, 1, embedding_dim))
+            self.class_token = nn.Parameter(
+                torch.zeros(1, 1, self.config.embedding_dim)
+            )
             self.fc = nn.Sequential(
-                OrderedDict([("out", nn.Linear(embedding_dim, num_outputs))])
+                OrderedDict(
+                    [
+                        (
+                            "out",
+                            nn.Linear(
+                                self.config.embedding_dim, self.config.num_outputs
+                            ),
+                        )
+                    ]
+                )
             )
             self.fc.output_act = get_act_layer(output_act) if output_act else None
         else:
@@ -231,7 +257,7 @@ class ViT(nn.Module):
         return x
 
     def _get_pos_embedding(
-        self, pos_embed_type: Optional[Union[str, PosEmbedType]]
+        self, pos_embed_type: Optional[PosEmbedType]
     ) -> Optional[nn.Parameter]:
         """
         Gets position embeddings. If `pos_embed_type` is "learnable", will return None as it will be handled
@@ -239,38 +265,26 @@ class ViT(nn.Module):
         """
         if pos_embed_type is None:
             pos_embed = nn.Parameter(
-                torch.zeros(1, self.seq_length, self.embedding_dim)
+                torch.zeros(1, self.seq_length, self.config.embedding_dim)
             )
             pos_embed.requires_grad = False
             return pos_embed
-
-        pos_embed_type = PosEmbedType(pos_embed_type)
 
         if pos_embed_type == PosEmbedType.LEARN:
             return None  # will be initialized inside the Encoder
 
         elif pos_embed_type == PosEmbedType.SINCOS:
-            if self.spatial_dims != 2 and self.spatial_dims != 3:
-                raise ValueError(
-                    f"{self.spatial_dims}D sincos position embedding not implemented"
-                )
-            elif self.spatial_dims == 2 and self.embedding_dim % 4:
-                raise ValueError(
-                    f"embedding_dim must be divisible by 4 for 2D sincos position embedding. Got embedding_dim={self.embedding_dim}"
-                )
-            elif self.spatial_dims == 3 and self.embedding_dim % 6:
-                raise ValueError(
-                    f"embedding_dim must be divisible by 6 for 3D sincos position embedding. Got embedding_dim={self.embedding_dim}"
-                )
             grid_size = []
-            for in_size, pa_size in zip(self.img_size, self.patch_size):
+            for in_size, pa_size in zip(self.img_size, self.config.patch_size):
                 grid_size.append(in_size // pa_size)
             pos_embed = build_sincos_position_embedding(
-                grid_size, self.embedding_dim, self.spatial_dims
+                grid_size, self.config.embedding_dim, self.spatial_dims
             )
             if self.classification:
                 pos_embed = torch.nn.Parameter(
-                    torch.cat([torch.zeros(1, 1, self.embedding_dim), pos_embed], dim=1)
+                    torch.cat(
+                        [torch.zeros(1, 1, self.config.embedding_dim), pos_embed], dim=1
+                    )
                 )  # add 0 for class token pos embedding
                 pos_embed.requires_grad = False
             return pos_embed
@@ -340,17 +354,20 @@ class ViTB16(ViT):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ViTB16Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             in_shape=(3, 224, 224),
             patch_size=16,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             embedding_dim=768,
             mlp_dim=3072,
             num_heads=12,
             num_layers=12,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ViT_B_16_Weights.DEFAULT.url)
 
 
@@ -394,17 +411,20 @@ class ViTB32(ViT):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ViTB32Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             in_shape=(3, 224, 224),
             patch_size=32,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             embedding_dim=768,
             mlp_dim=3072,
             num_heads=12,
             num_layers=12,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ViT_B_32_Weights.DEFAULT.url)
 
 
@@ -448,17 +468,20 @@ class ViTL16(ViT):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ViTL16Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             in_shape=(3, 224, 224),
             patch_size=16,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             embedding_dim=1024,
             mlp_dim=4096,
             num_heads=16,
             num_layers=24,
             output_act=output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ViT_L_16_Weights.DEFAULT.url)
 
 
@@ -502,41 +525,176 @@ class ViTL32(ViT):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ViTL32Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             in_shape=(3, 224, 224),
             patch_size=32,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             embedding_dim=1024,
             mlp_dim=4096,
             num_heads=16,
             num_layers=24,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ViT_L_32_Weights.DEFAULT.url)
 
 
-def check_embedding_dim(embedding_dim: int, num_heads: int) -> None:
+VIT_DEFAULTS = get_defaults_from(ViT)
+VIT_B_16_DEFAULTS = get_defaults_from(ViTB16)
+VIT_B_32_DEFAULTS = get_defaults_from(ViTB32)
+VIT_L_16_DEFAULTS = get_defaults_from(ViTL16)
+VIT_L_32_DEFAULTS = get_defaults_from(ViTL32)
+
+
+class ViTConfig(
+    NetworkConfig,
+    _InShapeConfig,
+    _DropoutConfig,
+):
     """
-    Checks consistency between embedding dimension and number of heads.
+    Config class for :py:class:`clinicadl.networks.nn.ViT`.
     """
-    if embedding_dim % num_heads != 0:
-        raise ValueError(
-            f"embedding_dim should be divisible by num_heads. Got embedding_dim={embedding_dim} "
-            f" and num_heads={num_heads}"
+
+    in_shape: Sequence[PositiveInt]
+    patch_size: Union[Sequence[PositiveInt], PositiveInt]
+    num_outputs: Optional[PositiveInt]
+    embedding_dim: PositiveInt = VIT_DEFAULTS["embedding_dim"]
+    num_layers: PositiveInt = VIT_DEFAULTS["num_layers"]
+    num_heads: PositiveInt = VIT_DEFAULTS["num_heads"]
+    mlp_dim: PositiveInt = VIT_DEFAULTS["mlp_dim"]
+    pos_embed_type: Optional[PosEmbedType] = VIT_DEFAULTS["pos_embed_type"]
+    output_act: Optional[ActivationParameters] = VIT_DEFAULTS["output_act"]
+    dropout: Optional[NonNegativeFloat] = VIT_DEFAULTS["dropout"]
+
+    @model_validator(mode="after")
+    def make_checks(self):
+        _, *img_size = self.in_shape
+        self.__dict__["patch_size"] = ensure_tuple(
+            self.patch_size, dim=len(img_size), name="patch_size"
+        )
+        self._check_patch_size(self.patch_size, img_size)
+        self._check_embedding_dim(self.embedding_dim, self.num_heads)
+        self._check_pos_embedding(
+            self.pos_embed_type, len(img_size), self.embedding_dim
         )
 
+        return self
 
-def check_patch_size(patch_size: Tuple[int, ...], img_size: Tuple[int, ...]) -> None:
-    """
-    Checks consistency between image size and patch size.
-    """
-    for i, p in zip(img_size, patch_size):
-        if i % p != 0:
+    @staticmethod
+    def _check_pos_embedding(
+        pos_embed_type: Optional[PosEmbedType],
+        spatial_dims: int,
+        embedding_dim: int,
+    ) -> Optional[nn.Parameter]:
+        """
+        Checks the type of positional embedding.
+        """
+        if pos_embed_type == PosEmbedType.SINCOS:
+            if spatial_dims != 2 and spatial_dims != 3:
+                raise ValueError(
+                    f"{spatial_dims}D sincos position embedding not implemented"
+                )
+            elif spatial_dims == 2 and embedding_dim % 4:
+                raise ValueError(
+                    f"embedding_dim must be divisible by 4 for 2D sincos position embedding. Got embedding_dim={embedding_dim}"
+                )
+            elif spatial_dims == 3 and embedding_dim % 6:
+                raise ValueError(
+                    f"embedding_dim must be divisible by 6 for 3D sincos position embedding. Got embedding_dim={embedding_dim}"
+                )
+
+    @staticmethod
+    def _check_embedding_dim(embedding_dim: int, num_heads: int) -> None:
+        """
+        Checks consistency between embedding dimension and number of heads.
+        """
+        if embedding_dim % num_heads != 0:
             raise ValueError(
-                f"img_size should be divisible by patch_size. Got img_size={img_size} "
-                f" and patch_size={patch_size}"
+                f"embedding_dim should be divisible by num_heads. Got embedding_dim={embedding_dim} "
+                f" and num_heads={num_heads}"
             )
+
+    @staticmethod
+    def _check_patch_size(
+        patch_size: Tuple[int, ...], img_size: Tuple[int, ...]
+    ) -> None:
+        """
+        Checks consistency between image size and patch size.
+        """
+        for i, p in zip(img_size, patch_size):
+            if i % p != 0:
+                raise ValueError(
+                    f"img_size should be divisible by patch_size. Got img_size={img_size} "
+                    f" and patch_size={patch_size}"
+                )
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ViT
+
+
+class ViTB16Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViTB16`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_16_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ViTB16
+
+
+class ViTB32Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViTB32`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_B_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_B_32_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ViTB32
+
+
+class ViTL16Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViTL16`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_16_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_16_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ViTL16
+
+
+class ViTL32Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ViTL32`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = VIT_L_32_DEFAULTS["output_act"]
+    pretrained: bool = VIT_L_32_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ViTL32
 
 
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:

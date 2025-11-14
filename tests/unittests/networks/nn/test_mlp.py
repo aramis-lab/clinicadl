@@ -1,9 +1,10 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torch.nn import ELU, Dropout, InstanceNorm1d, Linear
 
 from clinicadl.networks.nn import MLP
-from clinicadl.networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn.layers.utils import ActFunction, NormLayer
 
 
 @pytest.fixture
@@ -11,10 +12,35 @@ def input_tensor():
     return torch.randn(8, 10)
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(input_tensor, act):
     net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], act=act, output_act=act)
     assert net(input_tensor).shape == (8, 2)
+
+
+@pytest.mark.parametrize("norm", [norm for norm in NormLayer] + [None])
+def test_norms(input_tensor, norm):
+    if norm == "group":
+        norm = ("group", {"num_groups": 1})
+    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], norm=norm)
+    assert net(input_tensor).shape == (8, 2)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"num_inputs": 0},
+        {"hidden_dims": [0, 1]},
+        {"num_outputs": 0},
+        {"dropout": 1.1},
+        {"norm": "group"},
+    ],
+)
+def test_checks(args):
+    args_ = {"num_inputs": 1, "num_outputs": 1, "hidden_dims": 1}
+    args_.update(args)
+    with pytest.raises(ValidationError):
+        MLP(**args_)
 
 
 @pytest.mark.parametrize(
@@ -116,8 +142,3 @@ def test_adn_ordering(adn_ordering):
             getattr(net.hidden0.adn, letter)
         with pytest.raises(AttributeError):
             getattr(net.hidden1.adn, letter)
-
-
-def test_checks():
-    with pytest.raises(ValueError):
-        MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], norm="group")

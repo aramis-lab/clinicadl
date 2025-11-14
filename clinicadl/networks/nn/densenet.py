@@ -5,6 +5,7 @@ from typing import Any, Mapping, Optional, Sequence
 import torch.nn as nn
 from monai.networks.layers.utils import get_act_layer
 from monai.networks.nets import DenseNet as BaseDenseNet
+from pydantic import NonNegativeFloat, PositiveInt
 from torch.hub import load_state_dict_from_url
 from torchvision.models.densenet import (
     DenseNet121_Weights,
@@ -13,7 +14,14 @@ from torchvision.models.densenet import (
     DenseNet201_Weights,
 )
 
+from clinicadl.utils.factories import get_defaults_from
+
 from .layers.utils import ActivationParameters
+from .utils.config import (
+    NetworkConfig,
+    _DropoutConfig,
+    _SpatialDimsConfig,
+)
 
 __all__ = ["DenseNet", "DenseNet121", "DenseNet161", "DenseNet169", "DenseNet201"]
 
@@ -53,8 +61,7 @@ class DenseNet(nn.Sequential):
         have ``bottleneck_factor * growth_rate`` feature maps. Default is ``4``, as in the original paper.
     act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
-        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
-        If ``None``, no activation will be used.\n
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
         ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
@@ -161,26 +168,29 @@ class DenseNet(nn.Sequential):
         dropout: Optional[float] = None,
     ) -> None:
         super().__init__()
-        self.spatial_dims = spatial_dims
-        self.in_channels = in_channels
-        self.num_outputs = num_outputs
-        self.n_dense_layers = n_dense_layers
-        self.init_features = init_features
-        self.growth_rate = growth_rate
-        self.bottleneck_factor = bottleneck_factor
-        self.act = act
-        self.dropout = dropout
-
-        base_densenet = BaseDenseNet(
+        self.config = DenseNetConfig(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
-            out_channels=num_outputs if num_outputs else 1,
+            num_outputs=num_outputs,
+            n_dense_layers=n_dense_layers,
             init_features=init_features,
             growth_rate=growth_rate,
-            block_config=n_dense_layers,
-            bn_size=bottleneck_factor,
+            bottleneck_factor=bottleneck_factor,
             act=act,
-            dropout_prob=dropout if dropout else 0.0,
+            output_act=output_act,
+            dropout=dropout,
+        )
+
+        base_densenet = BaseDenseNet(
+            spatial_dims=self.config.spatial_dims,
+            in_channels=self.config.in_channels,
+            out_channels=self.config.num_outputs or 1,
+            init_features=self.config.init_features,
+            growth_rate=self.config.growth_rate,
+            block_config=self.config.n_dense_layers,
+            bn_size=self.config.bottleneck_factor,
+            act=self.config.act,
+            dropout_prob=self.config.dropout or 0.0,
         )
         self.features = base_densenet.features
         self.fc = base_densenet.class_layers if num_outputs else None
@@ -256,16 +266,19 @@ class DenseNet121(DenseNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = DenseNet121Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_dense_layers=(6, 12, 24, 16),
             growth_rate=32,
             init_features=64,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(DenseNet121_Weights.DEFAULT.url)
 
 
@@ -309,16 +322,19 @@ class DenseNet161(DenseNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = DenseNet161Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_dense_layers=(6, 12, 36, 24),
             growth_rate=48,
             init_features=96,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(DenseNet161_Weights.DEFAULT.url)
 
 
@@ -362,16 +378,19 @@ class DenseNet169(DenseNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = DenseNet169Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_dense_layers=(6, 12, 32, 32),
             growth_rate=32,
             init_features=64,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(DenseNet169_Weights.DEFAULT.url)
 
 
@@ -415,17 +434,113 @@ class DenseNet201(DenseNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = DenseNet201Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_dense_layers=(6, 12, 48, 32),
             growth_rate=32,
             init_features=64,
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(DenseNet201_Weights.DEFAULT.url)
+
+
+DENSE_NET_DEFAULTS = get_defaults_from(DenseNet)
+DENSE_NET_121_DEFAULTS = get_defaults_from(DenseNet121)
+DENSE_NET_161_DEFAULTS = get_defaults_from(DenseNet161)
+DENSE_NET_169_DEFAULTS = get_defaults_from(DenseNet169)
+DENSE_NET_201_DEFAULTS = get_defaults_from(DenseNet201)
+
+
+class DenseNetConfig(
+    NetworkConfig,
+    _SpatialDimsConfig,
+    _DropoutConfig,
+):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet`.
+    """
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    n_dense_layers: Sequence[PositiveInt] = DENSE_NET_DEFAULTS["n_dense_layers"]
+    init_features: PositiveInt = DENSE_NET_DEFAULTS["init_features"]
+    growth_rate: PositiveInt = DENSE_NET_DEFAULTS["growth_rate"]
+    bottleneck_factor: PositiveInt = DENSE_NET_DEFAULTS["bottleneck_factor"]
+    act: ActivationParameters = DENSE_NET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = DENSE_NET_DEFAULTS["output_act"]
+    dropout: Optional[NonNegativeFloat] = DENSE_NET_DEFAULTS["dropout"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return DenseNet
+
+
+class DenseNet121Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet121`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_121_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_121_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return DenseNet121
+
+
+class DenseNet161Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet161`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_161_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_161_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return DenseNet161
+
+
+class DenseNet169Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet169`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_169_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_169_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return DenseNet169
+
+
+class DenseNet201Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.DenseNet201`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = DENSE_NET_201_DEFAULTS["output_act"]
+    pretrained: bool = DENSE_NET_201_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return DenseNet201
 
 
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:

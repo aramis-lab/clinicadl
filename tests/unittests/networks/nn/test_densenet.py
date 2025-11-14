@@ -1,5 +1,6 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torchvision.models import densenet121, densenet161, densenet169, densenet201
 
 from clinicadl.networks.nn import (
@@ -78,16 +79,26 @@ def test_densenet(
     assert features.conv0.out_channels == init_features
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(act):
     batch_size = INPUT_2D.shape[0]
-    net = DenseNet(
-        spatial_dims=len(INPUT_2D.shape[2:]),
-        in_channels=INPUT_2D.shape[1],
-        n_dense_layers=(2, 2),
-        num_outputs=2,
-        act=act,
-    )
+    if act is None:
+        net = DenseNet(
+            spatial_dims=len(INPUT_2D.shape[2:]),
+            in_channels=INPUT_2D.shape[1],
+            n_dense_layers=(2, 2),
+            num_outputs=2,
+            output_act=act,
+        )
+    else:
+        net = DenseNet(
+            spatial_dims=len(INPUT_2D.shape[2:]),
+            in_channels=INPUT_2D.shape[1],
+            n_dense_layers=(2, 2),
+            num_outputs=2,
+            act=act,
+            output_act=act,
+        )
     assert net(INPUT_2D).shape == (batch_size, 2)
 
 
@@ -135,3 +146,24 @@ def test_literature(net, num_outputs, output_act, getter):
     gt = getter(weights="DEFAULT").features
     x = torch.randn(1, 3, 128, 128)
     assert (densenet(x) == gt(x)).all()
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"spatial_dims": 4},
+        {"in_channels": 0},
+        {"num_outputs": 0},
+        {"dropout": 1.1},
+        {"n_dense_layers": (0, 2)},
+        {"init_features": 0},
+        {"growth_rate": 0},
+        {"bottleneck_factor": 0},
+        {"act": None},
+    ],
+)
+def test_checks(args):
+    args_ = {"spatial_dims": 1, "in_channels": 1, "num_outputs": None}
+    args_.update(args)
+    with pytest.raises(ValidationError):
+        DenseNet(**args_)
