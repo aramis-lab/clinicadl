@@ -187,7 +187,7 @@ def _base_factory_from_json(
         name += "Config"
     obj: JsonReaderWriter = context[name]
 
-    return obj.from_json(dict_)
+    return obj.from_json(json_path)
 
 
 def _base_factory_from_dict(

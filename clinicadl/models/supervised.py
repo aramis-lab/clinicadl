@@ -1,30 +1,36 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from pydantic import Field, field_validator
 
-from clinicadl.data.dataloader import Batch
-from clinicadl.losses import Loss, LossOrConfig
-from clinicadl.losses.config import get_loss_function_config
-from clinicadl.networks import NetworkOrConfig
-from clinicadl.networks.config import get_network_config
-from clinicadl.optim.optimizers import OptimizerOrConfig
-from clinicadl.optim.optimizers.config import OptimizerConfig, get_optimizer_config
+from clinicadl.losses.config import LossConfig
+from clinicadl.losses.factory import get_loss_function_from_dict
+from clinicadl.losses.types import Loss, LossOrConfig
+from clinicadl.networks.config import NetworkConfig
+from clinicadl.networks.factory import get_network_from_dict
+from clinicadl.networks.types import NetworkOrConfig
+from clinicadl.optim.optimizers.config import OptimizerConfig
+from clinicadl.optim.optimizers.factory import get_optimizer_from_dict
+from clinicadl.optim.optimizers.types import OptimizerOrConfig
 from clinicadl.utils.config import (
-    ConfigsOrObjects,
-    FieldReadersType,
     ObjectConfig,
+    ObjectOrConfig,
 )
 from clinicadl.utils.device import DeviceType
+from clinicadl.utils.objects import HasConfig
 from clinicadl.utils.typing import PathType
 
 from .base import ClinicaDLModel
 
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import Batch
 
-class SupervisedModelConfig(ConfigsOrObjects):
+
+class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
     """
     Config class for SupervisedModel.
 
@@ -33,30 +39,23 @@ class SupervisedModelConfig(ConfigsOrObjects):
     takes care of saving in JSON format.
     """
 
-    network: NetworkOrConfig
-    loss: LossOrConfig
-    optimizer: OptimizerOrConfig
-    _FIELD_READERS: FieldReadersType = {
-        "network": get_network_config,
-        "loss": get_loss_function_config,
-        "optimizer": get_optimizer_config,
-    }
+    network: ObjectOrConfig[nn.Module, NetworkConfig] = Field(
+        reader=ObjectOrConfig.build_reader(get_network_from_dict)
+    )
+    loss: ObjectOrConfig[Loss, LossConfig] = Field(
+        reader=ObjectOrConfig.build_reader(get_loss_function_from_dict)
+    )
+    optimizer: ObjectOrConfig[optim.Optimizer, OptimizerConfig] = Field(
+        reader=ObjectOrConfig.build_reader(get_optimizer_from_dict)
+    )
 
-    def get_objects(self) -> dict[str, Any]:
+    @field_validator("network", "loss", "optimizer", mode="before")
+    @classmethod
+    def _handle_any_value(cls, v: Any) -> ObjectOrConfig:
         """
-        Gets field values, a convert them to the underlying objects
-        if they are config classes.
+        Converts a value to a ObjectOrConfig.
         """
-        dict_ = {}
-        for field, value in self:
-            if isinstance(value, OptimizerConfig):
-                dict_[field] = value.get_object(network=dict_["network"])
-            elif isinstance(value, ObjectConfig):
-                dict_[field] = value.get_object()
-            else:
-                dict_[field] = value
-
-        return dict_
+        return ObjectOrConfig.from_value(v)
 
     @classmethod
     def _get_class(cls) -> type[ClinicaDLModel]:
@@ -64,7 +63,7 @@ class SupervisedModelConfig(ConfigsOrObjects):
         return SupervisedModel
 
 
-class SupervisedModel(ClinicaDLModel):
+class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
     """
     A vanilla supervised model, for usual **classification**, **regression**,
     or **segmentation** task.
@@ -92,9 +91,11 @@ class SupervisedModel(ClinicaDLModel):
         For image reconstruction.
     """
 
+    _config_type = SupervisedModelConfig
+
     network: nn.Module
     loss: Loss
-    optimizer: torch.optim.Optimizer
+    optimizer: optim.Optimizer
 
     def __init__(
         self,
@@ -102,13 +103,10 @@ class SupervisedModel(ClinicaDLModel):
         loss: LossOrConfig,
         optimizer: OptimizerOrConfig,
     ):
-        self._config = SupervisedModelConfig(
-            network=network, loss=loss, optimizer=optimizer
-        )
-        objects = self._config.get_objects()
-        self.network = objects["network"]
-        self.loss = objects["loss"]
-        self.optimizer = objects["optimizer"]
+        self.config = self._config_type(network=network, loss=loss, optimizer=optimizer)
+        self.network = self.config.network.get_object()
+        self.loss = self.config.loss.get_object()
+        self.optimizer = self.config.optimizer.get_object(network=self.network)
 
     def forward_step(self, batch: Batch) -> torch.Tensor:
         """
@@ -307,40 +305,3 @@ class SupervisedModel(ClinicaDLModel):
         """
         with open(log_path, "w", encoding="utf-8") as f:
             print(self.network, file=f)
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Converts the model to a ``dict``.
-
-        Returns
-        -------
-        dict[str, Any]
-            The ``dict`` version of the model.
-        """
-        return self._config.to_dict()
-
-    @classmethod
-    def from_json(cls, json_path: PathType, **kwargs) -> SupervisedModel:
-        """
-        Creates a model from a ``JSON`` file saved with
-        :py:meth:`write_json`.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the ``JSON`` file.
-        kwargs : Any
-            To pass directly any argument that ``SupervisedModel``
-            will not be able to read in the ``JSON`` file. Useful when you don't
-            use config classes.
-
-        Returns
-        -------
-        SupervisedModel
-            The model instantiated from the input file.
-        """
-        config: SupervisedModelConfig = SupervisedModelConfig.from_json(
-            json_path, **kwargs
-        )
-
-        return cls(network=config.network, loss=config.loss, optimizer=config.optimizer)
