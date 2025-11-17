@@ -132,7 +132,7 @@ class CNN(nn.Sequential):
             in_channels=in_channels,
             spatial_dims=spatial_dims,
             _input_size=tuple(input_size),
-            **conv_args,
+            **self.config.conv_args.to_raw_dict(),
         )
 
         n_channels = (
@@ -183,4 +183,4 @@ class CNNConfig(NetworkConfig, _InShapeConfig):
     @classmethod
     def _get_class(cls) -> type[nn.Module]:
         """Returns the network associated to this config class."""
-        return CNNConfig
+        return CNN

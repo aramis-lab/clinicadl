@@ -31,7 +31,7 @@ MANDATORY_ARGS = {
         LossMetricConfig,
     ],
 )
-def test_get_transform_config(config):
+def test_get_metric_from_dict(config):
     c = config(**MANDATORY_ARGS)
     config_dict = c.to_dict()
     c = get_metric_from_dict(config_dict)

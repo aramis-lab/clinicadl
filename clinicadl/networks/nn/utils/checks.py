@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from ..layers.utils import (
     ConvParameters,
@@ -12,8 +12,6 @@ __all__ = [
     "ensure_list_of_tuples",
     "ensure_tuple",
     "check_norm_layer",
-    "check_conv_args",
-    "check_mlp_args",
     "check_pool_indices",
 ]
 
@@ -117,37 +115,6 @@ def check_adn_ordering(adn: str) -> str:
         raise ValueError(f"adn_ordering cannot contain duplicated letter. Got {adn}")
 
     return adn
-
-
-def check_conv_args(conv_args: Dict[str, Any]) -> None:
-    """
-    Checks that `conv_args` is a dict with at least the mandatory argument `channels`.
-    """
-    if not isinstance(conv_args, dict):
-        raise ValueError(
-            f"conv_args must be a dict with the arguments for the convolutional part. Got: {conv_args}"
-        )
-    if "channels" not in conv_args:
-        raise ValueError(
-            "channels is a mandatory argument for the convolutional part and must therefore be "
-            f"passed in conv_args. Got conv_args={conv_args}"
-        )
-
-
-def check_mlp_args(mlp_args: Optional[Dict[str, Any]]) -> None:
-    """
-    Checks that `mlp_args` is a dict with at least the mandatory argument `hidden_dims`.
-    """
-    if mlp_args is not None:
-        if not isinstance(mlp_args, dict):
-            raise ValueError(
-                f"mlp_args must be a dict with the arguments for the MLP part. Got: {mlp_args}"
-            )
-        if "hidden_dims" not in mlp_args:
-            raise ValueError(
-                "hidden_dims is a mandatory argument for the MLP part and must therefore be "
-                f"passed in mlp_args. Got mlp_args={mlp_args}"
-            )
 
 
 def check_pool_indices(

@@ -25,7 +25,7 @@ MANDATORY_FIELDS = {
         StepLRConfig,
     ],
 )
-def test_get_transform_config(config):
+def test_get_lr_scheduler_from_dict(config):
     c = config(**MANDATORY_FIELDS)
     config_dict = c.to_dict()
     c = get_lr_scheduler_from_dict(config_dict)

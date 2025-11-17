@@ -1,14 +1,49 @@
 from copy import deepcopy
 
 import pytest
-from pydantic import ValidationError
 
 import clinicadl.networks.nn as nets
 from clinicadl.networks.config import *
-from clinicadl.networks.nn.conv_decoder import ConvDecoderOptions
-from clinicadl.networks.nn.conv_encoder import ConvEncoderOptions
-from clinicadl.networks.nn.layers.utils import ActFunction
-from clinicadl.networks.nn.mlp import MLPOptions
+
+MANDATORY_ARGS = {
+    "MLP": {"num_inputs": 1, "num_outputs": 1, "hidden_dims": [1]},
+    "ConvEncoder": {"spatial_dims": 2, "in_channels": 1, "channels": [1, 2]},
+    "ConvDecoder": {"spatial_dims": 2, "in_channels": 1, "channels": [1, 2]},
+    "CNN": {"in_shape": (1, 3, 3), "num_outputs": 1, "conv_args": {"channels": [1]}},
+    "Generator": {
+        "latent_size": 1,
+        "start_shape": (1, 3, 3),
+        "conv_args": {"channels": [1]},
+    },
+    "AutoEncoder": {
+        "latent_size": 1,
+        "in_shape": (1, 3, 3),
+        "conv_args": {"channels": [1]},
+    },
+    "VAE": {"latent_size": 1, "in_shape": (1, 3, 3), "conv_args": {"channels": [1]}},
+    "UNet": {"spatial_dims": 2, "in_channels": 1, "out_channels": 1},
+    "AttentionUNet": {"spatial_dims": 2, "in_channels": 1, "out_channels": 1},
+    "DenseNet": {"spatial_dims": 2, "in_channels": 1, "num_outputs": 1},
+    "ResNet": {"spatial_dims": 2, "in_channels": 1, "num_outputs": 1},
+    "SEResNet": {"spatial_dims": 2, "in_channels": 1, "num_outputs": 1},
+    "ViT": {"in_shape": (1, 3, 3), "patch_size": 1, "num_outputs": 1},
+    "DenseNet121": {"num_outputs": None},
+    "DenseNet161": {"num_outputs": None},
+    "DenseNet169": {"num_outputs": None},
+    "DenseNet201": {"num_outputs": None},
+    "ResNet18": {"num_outputs": None},
+    "ResNet34": {"num_outputs": None},
+    "ResNet50": {"num_outputs": None},
+    "ResNet101": {"num_outputs": None},
+    "ResNet152": {"num_outputs": None},
+    "SEResNet50": {"num_outputs": None},
+    "SEResNet101": {"num_outputs": None},
+    "SEResNet152": {"num_outputs": None},
+    "ViTB16": {"num_outputs": None},
+    "ViTB32": {"num_outputs": None},
+    "ViTL16": {"num_outputs": None},
+    "ViTL32": {"num_outputs": None},
+}
 
 
 @pytest.mark.parametrize(
@@ -62,17 +97,17 @@ def test_get_object(config, network):
         net = config.get_object()
         assert isinstance(net, nets.AutoEncoder)
         assert net.encoder.mlp.out_channels == 1
-        assert net.encoder.mlp.hidden_dims == [5]
+        assert net.encoder.mlp.config.hidden_dims == [5]
         assert net.encoder.mlp.act == "relu"
-        assert net.encoder.mlp.norm == "batch"
-        assert net.in_shape == (1, 10, 10)
-        assert net.encoder.convolutions.channels == [1, 2]
-        assert net.encoder.convolutions.dropout == 0.2
-        assert net.encoder.convolutions.act == "prelu"
+        assert net.encoder.mlp.config.norm == "batch"
+        assert net.config.in_shape == (1, 10, 10)
+        assert net.encoder.convolutions.config.channels == [1, 2]
+        assert net.encoder.convolutions.config.dropout == 0.2
+        assert net.encoder.convolutions.config.act == "prelu"
 
 
 def test_name():
     for name in ImplementedNetwork:
         config = globals()[f"{name.value}Config"]
-    c = config(**MANDATORY_ARGS)
-    assert c.name == name.value
+        c = config(**MANDATORY_ARGS[name])
+        assert c.name == name.value

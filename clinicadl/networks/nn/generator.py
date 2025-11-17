@@ -145,7 +145,7 @@ class Generator(nn.Sequential):
             in_channels=inter_channels,
             spatial_dims=len(inter_size),
             _input_size=inter_size,
-            **conv_args,
+            **self.config.conv_args.to_raw_dict(),
         )
 
         n_channels = (

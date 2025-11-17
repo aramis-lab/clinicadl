@@ -219,4 +219,4 @@ class VAEConfig(AutoEncoderConfig):
     @classmethod
     def _get_class(cls) -> type[nn.Module]:
         """Returns the network associated to this config class."""
-        return VAEConfig
+        return VAE

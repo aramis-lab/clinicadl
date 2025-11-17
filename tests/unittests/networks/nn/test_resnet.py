@@ -194,6 +194,7 @@ def test_literature(net, num_outputs, output_act, getter):
             {
                 "bottleneck_reduction": 2,
                 "n_features": [3, 4],
+                "n_res_blocks": [2, 2],
                 "block_type": "bottleneck",
             },
             True,

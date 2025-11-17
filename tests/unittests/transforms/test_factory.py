@@ -60,7 +60,7 @@ MANDATORY_ARGS = {
         SobelGradientsConfig,
     ],
 )
-def test_get_transform_config(config):
+def test_get_transform_from_dict(config):
     c = config(**MANDATORY_ARGS)
     config_dict = c.to_dict()
     c = get_transform_from_dict(config_dict)

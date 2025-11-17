@@ -19,7 +19,7 @@ from clinicadl.losses.factory import get_loss_function_from_dict
         SmoothL1LossConfig,
     ],
 )
-def test_get_transform_config(config):
+def test_get_loss_function_from_dict(config):
     c = config()
     config_dict = c.to_dict()
     c = get_loss_function_from_dict(config_dict)

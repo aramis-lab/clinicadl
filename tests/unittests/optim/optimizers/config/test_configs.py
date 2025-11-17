@@ -245,5 +245,5 @@ def test_get_object(config, expected_class, network):
 def test_name():
     for name in ImplementedOptimizer:
         config = globals()[f"{name.value}Config"]
-    c = config()
-    assert c.name == name.value
+        c = config()
+        assert c.name == name.value

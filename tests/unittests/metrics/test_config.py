@@ -364,8 +364,8 @@ def test_get_object(config, expected_class):
 def test_name():
     for name in ImplementedMetric:
         config = globals()[f"{name.value}Config"]
-    c = config(**MANDATORY_ARGS)
-    assert c.name == name.value
+        c = config(**MANDATORY_ARGS)
+        assert c.name == name.value
 
 
 @pytest.mark.parametrize(

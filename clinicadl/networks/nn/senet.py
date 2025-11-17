@@ -286,6 +286,11 @@ class SEResNetConfig(ResNetConfig):
 
         return self
 
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return SEResNet
+
 
 class SEResNet50Config(NetworkConfig):
     """

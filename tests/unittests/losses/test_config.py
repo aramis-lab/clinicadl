@@ -170,5 +170,5 @@ def test_get_object(config, loss):
 def test_name():
     for name in ImplementedLoss:
         config = globals()[f"{name.value}Config"]
-    c = config()
-    assert c.name == name.value
+        c = config()
+        assert c.name == name.value
