@@ -1,17 +1,10 @@
-from logging import getLogger
-
-from pydantic import computed_field
-
-from ..enum import PreprocessingMethod
 from ..modalities import Flair
 from .base import _LinearPreprocessing
-
-logger = getLogger("clinicadl.data.datatypes.preprocessing.flair")
 
 
 class FlairLinear(_LinearPreprocessing, Flair):
     """
-    Configuration class to handle Fluid-Attenuated Inversion Recovery (FLAIR) MRI images,
+    :py:class:`DataType <clinicadl.data.datatypes.DataType>` to handle Fluid-Attenuated Inversion Recovery (FLAIR) MRI images
     preprocessed with `Clinica flair-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/>`_
     pipeline.
 
@@ -27,8 +20,6 @@ class FlairLinear(_LinearPreprocessing, Flair):
           in the :term:`CAPS` structure will be considered.
     """
 
-    @computed_field
     @property
-    def name(self) -> str:
-        """The preprocessing method."""
-        return PreprocessingMethod.FLAIR_LINEAR.value
+    def _pipeline_name(self) -> str:
+        return "flair-linear"

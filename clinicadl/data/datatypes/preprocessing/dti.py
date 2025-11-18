@@ -1,14 +1,9 @@
+import os
+import re
 from enum import Enum
-from logging import getLogger
+from typing import Pattern
 
-from pydantic import computed_field
-
-from ..enum import PreprocessingMethod
-from ..file_type import FileType
-from ..modalities import DWI
 from .base import Preprocessing
-
-logger = getLogger("clinicadl.data.datatypes.preprocessing.dti")
 
 
 class DTIMeasure(str, Enum):
@@ -27,9 +22,9 @@ class DTISpace(str, Enum):
     NORMALIZED = "normalized"
 
 
-class DWIDTI(Preprocessing, DWI):
+class DWIDTI(Preprocessing):
     """
-    Configuration class to handle Diffusion-Weighted MRI (DWI) images,
+    :py:class:`DataType <clinicadl.data.datatypes.DataType>` to handle Diffusion-Weighted MRI (DWI) images
     preprocessed with `Clinica dwi-dti <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DWI_DTI/>`_
     pipeline.
 
@@ -52,32 +47,26 @@ class DWIDTI(Preprocessing, DWI):
     measure: DTIMeasure
     space: DTISpace
 
-    @computed_field
     @property
-    def name(self) -> str:
-        """The preprocessing method."""
-        return PreprocessingMethod.DWI_DTI.value
+    def _pipeline_name(self) -> str:
+        return "dwi-dti"
 
-    def _get_caps_filetype(self) -> FileType:
-        """
-        Constructs the FileType for DWI_DTI preprocessing.
-        """
+    @property
+    def _filename(self) -> str:
+        return f"{self._pipeline_name}_{self.measure}_{self.space}"
+
+    def _get_pattern(self) -> Pattern:
         if self.space == DTISpace.NORMALIZED:
             folder = "normalized_space"
             space = "MNI152Lin"
         else:
             folder = "native_space"
-            space = "*"
+            space = ".*"
 
-        return FileType(
-            pattern=f"dwi/dti_based_processing/{folder}/sub-*_ses-*_space-{space}_{self.measure}.nii*",
-            description=f"DTI {self.measure} images in {self.space} space, preprocessed with Clinica's 'dwi-dti' pipeline",
-            needed_pipeline=self.name,
-        )
+        file_pattern = f"sub-.*_ses-.*_space-{space}_{self.measure}.nii.*"
+        pattern = os.path.join("dwi", "dti_based_processing", folder, file_pattern)
 
-    def _get_file_name(self) -> str:
-        """
-        Builds a suffix for files saving
-        information on this preprocessing.
-        """
-        return f"dwi-dti_{self.measure}_{self.space}"
+        return re.compile(pattern)
+
+    def _get_description(self) -> str:
+        return f"DTI {self.measure} images in {self.space} space, preprocessed with Clinica's '{self._pipeline_name}' pipeline"

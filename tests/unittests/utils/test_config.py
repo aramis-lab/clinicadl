@@ -9,6 +9,7 @@ from typing_extensions import Self
 
 from clinicadl.utils.config import (
     ClinicaDLConfig,
+    ConfigWithName,
     DictOfObjects,
     KwargsConfig,
     ObjectConfig,
@@ -30,6 +31,10 @@ class ConfigTest(ClinicaDLConfig):
 
 class ConfigTestBis(ConfigTest):
     pass
+
+
+class ConfigWithNameTest(ConfigWithName):
+    a: int = 0
 
 
 class ObjectTest:
@@ -377,6 +382,12 @@ def test_to_raw_dict():
     )
     d = kwargs.to_raw_dict()
     assert isinstance(d["a"], ObjectTest)
+
+
+def test_config_with_name(tmp_path):
+    c = ConfigWithNameTest(a=0)
+    assert c.name == "ConfigWithNameTest"
+    assert c.to_dict()["name"] == "ConfigWithNameTest"
 
 
 def test_kwargs_config(tmp_path):

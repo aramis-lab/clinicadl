@@ -282,15 +282,11 @@ class ClinicaDLConfig(BaseModel):
         return None
 
 
-T = TypeVar("T")
-
-
-class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
+class ConfigWithName(ClinicaDLConfig):
     """
-    Base config class associated to a Python object.
-
-    The user can then get the parametrized object with
-    the method :py:meth:`get_object`.
+    Config class with its name in a field.
+    Useful to recreate a specific config class if there is a
+    choice between multiple ones.
     """
 
     @computed_field
@@ -298,6 +294,31 @@ class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
     def name(self) -> str:
         """The name of the class associated to this config class."""
         return self._get_name()
+
+    @classmethod
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
+        """
+        Checks the input of :py:meth:`from_dict`.
+        """
+        dict_ = deepcopy(dict_)
+        if NAME in dict_:
+            assert (
+                dict_[NAME] == cls._get_name()
+            ), f"The input dictionary is associated to {dict_[NAME]}, not to {cls._get_name()}."
+            del dict_[NAME]
+        return super()._check_dict(dict_)
+
+
+T = TypeVar("T")
+
+
+class ObjectConfig(ConfigWithName, ABC, Generic[T]):
+    """
+    Base config class associated to a Python object.
+
+    The user can then get the parametrized object with
+    the method :py:meth:`get_object`.
+    """
 
     def get_object(self, **kwargs: Any) -> T:
         """
@@ -312,19 +333,6 @@ class ObjectConfig(ClinicaDLConfig, ABC, Generic[T]):
         associated_class = self._get_class()
         parameters = self._get_parameters(**kwargs)
         return associated_class(**parameters)
-
-    @classmethod
-    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
-        """
-        Checks the input of :py:meth:`from_dict`.
-        """
-        dict_ = deepcopy(dict_)
-        if NAME in dict_:
-            assert (
-                dict_[NAME] == cls._get_name()
-            ), f"The input dictionary is associated to {dict_[NAME]}, not to {cls._get_name()}."
-            del dict_[NAME]
-        return super()._check_dict(dict_)
 
     @classmethod
     @abstractmethod

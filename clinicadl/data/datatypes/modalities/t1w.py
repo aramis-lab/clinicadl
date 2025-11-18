@@ -1,17 +1,14 @@
-from pydantic import computed_field
-
-from ..enum import ImageModality
 from .base import Modality
+from .enum import ImageModality
 
 
 class T1w(Modality):
     """
-    Configuration to handle T1-weighted (T1w) images.
+    To handle T1-weighted (T1w) images.
     """
 
-    @computed_field
     @property
-    def modality(self) -> str:
+    def _modality(self) -> str:
         """
         The modality, always 'T1w' here.
         """

@@ -1,10 +1,8 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import computed_field
-
-from ..enum import ImageModality
 from .base import Modality
+from .enum import ImageModality
 
 
 class Tracer(str, Enum):
@@ -50,7 +48,7 @@ class ReconstructionMethod(str, Enum):
 
 class PET(Modality):
     """
-    Configuration to handle PET (Positron Emission Tomography) images.
+    To handle PET (Positron Emission Tomography) images.
 
     Parameters
     ----------
@@ -60,12 +58,11 @@ class PET(Modality):
         the method used to reconstruct the image.
     """
 
-    tracer: Tracer = Tracer.FDG
+    tracer: Tracer
     reconstruction: Optional[ReconstructionMethod] = None
 
-    @computed_field
     @property
-    def modality(self) -> str:
+    def _modality(self) -> str:
         """
         The modality, always 'pet' here.
         """
