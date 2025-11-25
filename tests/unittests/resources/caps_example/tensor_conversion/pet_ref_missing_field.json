@@ -1,5 +1,5 @@
 {
-    "tensors_location": "tensors/pet_ref_missing_field",
+    "conversion_name": "pet_ref_missing_field",
     "individual_masks": [],
     "common_masks": [],
     "also": {},

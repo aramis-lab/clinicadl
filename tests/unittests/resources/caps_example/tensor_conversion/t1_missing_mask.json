@@ -1,5 +1,5 @@
 {
-    "tensors_location": "tensors/t1_missing_mask",
+    "conversion_name": "t1_missing_mask",
     "datatype": {
         "name": "T1Linear",
         "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",

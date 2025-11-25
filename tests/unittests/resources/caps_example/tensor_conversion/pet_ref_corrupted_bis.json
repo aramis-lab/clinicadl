@@ -1,5 +1,5 @@
 {
-    "tensors_location": "tensors/pet_ref_corrupted_bis",
+    "conversion_name": "pet_ref_corrupted_bis",
     "datatype": {
         "name": "PETLinear",
         "pattern": "pet_linear/sub-.*_ses-.*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.*",

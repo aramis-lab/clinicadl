@@ -1,5 +1,5 @@
 {
-    "tensors_location": "tensors/default_pet-linear_18FAV45_pons2",
+    "conversion_name": "default_pet-linear_18FAV45_pons2",
     "datatype": {
         "name": "PETLinear",
         "pattern": "pet_linear/sub-.*_ses-.*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.*",
