@@ -187,6 +187,7 @@ class TensorConversion:
         -------
         TensorConversionInfo
             A data structure that contains the information on the tensor conversion:
+            - ``conversion_name``: the conversion name;
             - ``datatype``: the datatype of the data;
             - ``participants_sessions``: (participant, session) pairs converted;
             - ``individual_masks``: the individual masks present in the ``.pt`` files with the image;
