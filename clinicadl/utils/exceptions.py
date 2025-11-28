@@ -36,6 +36,10 @@ class ClinicaDLTSVError(ClinicaDLException):
     """Base class for tsv files exceptions."""
 
 
+class DataFrameError(ClinicaDLException):
+    """Base class for exceptions on the DataFrames."""
+
+
 class ClinicaDLBIDSError(ClinicaDLException):
     """Base class for tsv files exceptions."""
 
@@ -44,7 +48,7 @@ class ClinicaDLCAPSError(ClinicaDLException):
     """Base class for tsv files exceptions."""
 
 
-class ClinicaDLTensorConversionError(ClinicaDLException):
+class TensorConversionError(ClinicaDLException):
     """Base class for tsv files exceptions."""
 
 
@@ -137,9 +141,11 @@ class CannotReadFieldError(ClinicaDLException):
 class CannotReadJsonFieldError(ClinicaDLException):
     """When a field of a json cannot be read."""
 
-    def __init__(self, error: CannotReadFieldError, json_path: Path):
-        error_msg = (
-            f"{error.object_name} cannot read the field(s) {error.field_names} in {str(json_path)}\n"
-            f"Please pass this field via kwargs."
-        )
+    def __init__(
+        self, error: CannotReadFieldError, json_path: Path, mention_kwargs: bool = True
+    ):
+        self.error = error
+        error_msg = f"{error.object_name} cannot read the field(s) {error.field_names} in {str(json_path)}"
+        if mention_kwargs:
+            error_msg += "\nPlease pass this field via kwargs."
         super().__init__(error_msg)

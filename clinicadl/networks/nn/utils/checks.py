@@ -1,4 +1,5 @@
-from typing import List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import List, Optional, Tuple
 
 from ..layers.utils import (
     ConvParameters,
@@ -51,14 +52,14 @@ def ensure_tuple(
     """
     if isinstance(parameter, int):
         return (parameter,) * dim
-    elif isinstance(parameter, tuple):
+    elif isinstance(parameter, Sequence):
         if len(parameter) != dim:
             raise ValueError(
                 f"If a tuple is passed for {name}, its dimension must be {dim}. Got {parameter}"
             )
         return parameter
     else:
-        raise ValueError(f"{name} must be an int or a tuple. Got {name}")
+        raise ValueError(f"{name} must be an int or a tuple. Got {parameter}")
 
 
 def check_norm_layer(

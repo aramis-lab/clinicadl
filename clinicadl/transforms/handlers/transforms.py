@@ -49,7 +49,7 @@ class TransformsConfig(ObjectConfig["Transforms"]):
 
         Also converts the transform configs to actual transform objects.
         """
-        if isinstance(self.extraction, Image) and self.sample_transforms:
+        if isinstance(self.extraction, Image) and self.sample_transforms.values:
             logger.warning(
                 "You provided 'sample_transforms' but in the chosen configuration, image and sample are the same."
             )

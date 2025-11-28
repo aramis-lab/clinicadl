@@ -36,7 +36,6 @@ from clinicadl.utils.typing import PathType
 CONFIG = "Config"
 
 FieldReaderType = Callable[[dict[str, Any]], Any]
-FieldReadersType = dict[str, FieldReaderType]
 
 
 class ClinicaDLConfig(BaseModel):
@@ -88,7 +87,10 @@ class ClinicaDLConfig(BaseModel):
         dict[str, Any]
             The raw config class as a dict.
         """
-        d = self.__dict__.copy()
+        fields = self.get_fields()
+        d = {
+            field: value for field, value in self if field in fields
+        }  # do not take private fields
 
         if exclude:
             for name in exclude:
@@ -188,8 +190,8 @@ class ClinicaDLConfig(BaseModel):
         except CannotReadFieldError as exc:
             raise CannotReadJsonFieldError(exc, json_path) from exc
 
-    @staticmethod
-    def serialize_anything(value: Any) -> Any:
+    @classmethod
+    def serialize_anything(cls, value: Any) -> Any:
         """
         To serialize any object in ``ClinicaDL``.
         Serialization of an object can be customized with a method
@@ -209,6 +211,13 @@ class ClinicaDLConfig(BaseModel):
             to_dict = getattr(value, "to_dict")
             if callable(to_dict):
                 return _order_dict(to_dict())
+
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            serialized = []
+            for elem in value:
+                serialized.append(cls.serialize_anything(elem))
+
+            return serialized
 
         return value
 

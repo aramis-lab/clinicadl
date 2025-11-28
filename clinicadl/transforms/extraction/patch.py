@@ -92,7 +92,7 @@ class Patch(Extraction[ObjectConfig]):
     patch_size : Union[int, Tuple[int, int, int]]
         The size of the patches. If a single value is passed, the same patch size will be used for the three
         spatial dimensions.
-    overlap: Union[float, Tuple[float, float, NonNegativeFloat], float, Tuple[int, int, int]]
+    overlap: Union[float, Tuple[float, float, NonNegativeFloat], float, Tuple[int, int, int]], default=0.0
         The amount of overlap between patches. It can be either a ``float`` in :math:`[0.0, 1.0)` that defines relative overlap, or a non-negative ``int`` that defines the
         number of pixels overlapping. If a single value is passed, the same overlap will be used for the three spatial dimensions.
     pad_mode : Optional[PadMode], default="constant"

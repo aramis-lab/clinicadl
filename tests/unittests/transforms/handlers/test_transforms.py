@@ -44,7 +44,9 @@ def test_apply_transforms():
     mask_1 = torch.zeros(1, 14, 14, 14)
     mask_1[:, 2:12, 2:12, 2:12] = 1
     mask_1 = tio.LabelMap(tensor=mask_1, affine=affine)
-    data_point = DataPoint(image, label, mask_1=mask_1, participant="abc", session="0")
+    data_point = DataPoint(
+        image, label=label, mask_1=mask_1, participant="abc", session="0"
+    )
     transforms = Transforms(
         extraction=Patch(patch_size=4, overlap=0),
         image_transforms=[

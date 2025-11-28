@@ -16,7 +16,7 @@ from clinicadl.dictionary.words import (
     PARTICIPANT_ID,
     SESSION_ID,
 )
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLTSVError, DataFrameError
 
 logger = getLogger("clinicadl.utils")
 
@@ -305,16 +305,16 @@ def read_data(
 
     Raises
     ------
-    ValueError
+    TypeError
         If 'data' is not a str, a Path or a pandas DataFrame.
-    ClinicaDLTSVError
+    DataFrameError
         If the DataFrame is empty.
-    ClinicaDLTSVError
+    DataFrameError
         If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
-    ClinicaDLTSVError
+    DataFrameError
         If 'check_protected_names' is True and the dataframe contains columns named 'n_samples',
         'first_idx', 'last_idx' or 'dataset_id'.
-    ClinicaDLTSVError
+    DataFrameError
         If 'check_duplicates' is True and the dataframe contains duplicated (participant_id, session_id) pairs.
     """
     if isinstance(data, (str, Path)):
@@ -322,7 +322,7 @@ def read_data(
         data = pd.read_csv(data, sep="\t")
 
     elif not isinstance(data, pd.DataFrame):
-        raise ValueError(f"'data' must be a path or a DataFrame. Got: {data}")
+        raise TypeError(f"'data' must be a path or a DataFrame. Got: {data}")
 
     return check_df(data, check_protected_names, check_duplicates)
 
@@ -345,28 +345,28 @@ def check_df(
 
     Raises
     ------
-    ClinicaDLTSVError
+    DataFrameError
         If the DataFrame is empty.
-    ClinicaDLTSVError
+    DataFrameError
         If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
-    ClinicaDLTSVError
+    DataFrameError
         If 'check_protected_names' is True and the dataframe contains columns named 'n_samples',
         'first_idx', 'last_idx' or 'dataset_id'.
-    ClinicaDLTSVError
+    DataFrameError
         If 'check_duplicates' is True and the dataframe contains duplicated (participant_id, session_id) pairs.
     """
     if len(df) == 0:
-        raise ClinicaDLTSVError(f"The dataframe is empty!")
+        raise DataFrameError(f"The dataframe is empty!")
 
     if not {PARTICIPANT_ID, SESSION_ID}.issubset(set(df.columns.values)):
-        raise ClinicaDLTSVError(
+        raise DataFrameError(
             f"The dataframe is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
     if check_protected_names:
         protected_names = {N_SAMPLES, FIRST_INDEX, LAST_INDEX, DATASET_ID}
         if len(protected_names.intersection(set(df.columns.values))) > 0:
-            raise ClinicaDLTSVError(
+            raise DataFrameError(
                 f"The dataframe contains some protected column names. "
                 f"Please do not use names in {protected_names}"
             )
@@ -374,7 +374,7 @@ def check_df(
     if check_duplicates:
         duplicated_pairs = df[df[[PARTICIPANT_ID, SESSION_ID]].duplicated(keep=False)]
         if len(duplicated_pairs) > 0:
-            raise ClinicaDLTSVError(
+            raise DataFrameError(
                 f"The dataframe contains duplicated (participant, session) pairs:\n"
                 f"{duplicated_pairs}"
             )
