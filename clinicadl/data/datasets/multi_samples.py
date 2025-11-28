@@ -107,17 +107,6 @@ class MultiSamplesDataset(ClinicaDLDataset):
         if not self._has_len:
             self._count_samples()
 
-    def _get_sample_meta_data(self, idx: int) -> tuple[str, str, int]:
-        """
-        Retrieves metadata for a given index.
-        ``idx`` is the index of the sample in the dataset.
-        """
-        participant = self.get_sample_info(idx, PARTICIPANT_ID)
-        session = self.get_sample_info(idx, SESSION_ID)
-        row = self._get_rank_in_row(idx)
-
-        return participant, session, row
-
     def _get_rank_in_row(self, idx: int) -> int:
         """
         Determines the the rank of this sample in its row.
@@ -155,7 +144,7 @@ class MultiSamplesDataset(ClinicaDLDataset):
     def _count_samples(self) -> None:
         """
         Gets the number of samples for each image and puts
-        it in the DataFrame in the column 'n_samples'.
+        it in the metadata DataFrame in the column 'n_samples'.
         """
         raise NotImplementedError(
             "_count_samples must be implemented if there is no column named 'n_samples' in the metadata DataFrame."
