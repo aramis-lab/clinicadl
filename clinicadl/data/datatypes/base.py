@@ -1,9 +1,9 @@
 import os
 import re
 from abc import ABC
-from typing import Any, Optional, Pattern, Union
+from typing import Any, Optional, Pattern
 
-from pydantic import computed_field, field_validator
+from pydantic import computed_field, field_serializer, field_validator
 from typing_extensions import Self
 
 from clinicadl.dictionary.suffixes import JSON, TSV
@@ -17,7 +17,7 @@ class DataType(ConfigWithName, ABC):
     It defines the pattern that will be used by ``ClinicaDL`` to get the right files in the
     database.
 
-    As it is common to want to retrieve NIfTI files with a specific suffix in a
+    As it is common to want to retrieve :term:`NIfTI` files with a specific suffix in a
     specific folder, :py:meth:`from_folder_and_suffix` can help you easily create
     the wanted pattern.
 
@@ -74,7 +74,7 @@ class DataType(ConfigWithName, ABC):
         To create a ``DataType`` from a folder name and a file suffix.
 
         This method will automatically create the pattern to retrieve
-        the NIfTIs files like ``*/sub-*/ses-*/{folder}/sub-*_ses-*_{suffix}.nii*``,
+        the :term:`NIfTI` files like ``*/sub-*/ses-*/{folder}/sub-*_ses-*_{suffix}.nii*``,
         and return the associated ``DataType``.
 
         Parameters
@@ -83,7 +83,7 @@ class DataType(ConfigWithName, ABC):
             The name of the folder in ``sub-*/ses-*/`` where to look
             for the data.
         suffix : str
-            The suffix of the NIfTI files to consider. The suffix will also
+            The suffix of the ``NIfTI`` files to consider. The suffix will also
             be used for the ``key``.
         description : Optional[str], default=None
             A potential description of the data.
@@ -111,6 +111,13 @@ class DataType(ConfigWithName, ABC):
         if isinstance(value, str) and " " in value:
             raise ValueError(f"No space accepted in 'name'. Got {value}")
         return value
+
+    @field_serializer("pattern")
+    def _serialize_pattern(self, pattern: Pattern) -> str:
+        """
+        Serialize a pattern.
+        """
+        return pattern.pattern
 
     @property
     def tsv_filename(self) -> str:

@@ -1,12 +1,40 @@
 import copy
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 import torchio as tio
+from pydantic import field_validator
 
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
 
 from .label import LabelType
+
+
+class DataPointConfig(ClinicaDLConfig):
+    """To check ``DataPoint`` inputs."""
+
+    image: tio.ScalarImage
+    label: Optional[Union[int, float, OrderedDict[str, float], tio.LabelMap]]
+    participant: str
+    session: str
+
+    @field_validator("image", mode="before")
+    @classmethod
+    def _validate_image(cls, value: Any) -> Any:
+        """Loads the image if it is a path."""
+        if isinstance(value, (Path, str)):
+            return tio.ScalarImage(path=value)
+        return value
+
+    @field_validator("label", mode="before")
+    @classmethod
+    def _validate_label(cls, value: Any) -> Any:
+        """Loads the label if it is a path."""
+        if isinstance(value, (Path, str)):
+            return tio.LabelMap(path=value)
+        return value
 
 
 class DataPoint(tio.Subject):
@@ -18,8 +46,8 @@ class DataPoint(tio.Subject):
 
     A DataPoint has the following attributes:
         - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
-        - ``label``: the label. Either a scalar or a mask, as a :py:class:`torchio.LabelMap`;
-        - ``participant``: the id of the subject, as a ``str``;
+        - ``label``: the label. Either ``None``, a scalar, a dict of scalars, or a mask, as a :py:class:`torchio.LabelMap`;
+        - ``participant``: the id of the participant, as a ``str``;
         - ``session``: the id of the session, as a ``str``.
 
     You can easily access these elements using the attribute notation:
@@ -64,20 +92,20 @@ class DataPoint(tio.Subject):
     Parameters
     ----------
     image : Union[torchio.ScalarImage, PathType]
-        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
-    label : Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]]
+        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a file.
+    participant : str
+        The participant concerned.
+    session : str
+        The session concerned.
+    label : Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]], default=None
         The label associated to the image. Can be:
 
         - a ``float`` (regression);
         - a ``dictionary`` with ``strings`` for keys and ``floats`` for values (multi-output regression);
         - an ``int`` (classification, including multi-class classification),
-        - a mask, passed as a :py:class:`torchio.LabelMap` or a ``path`` to a NIfTI file, (segmentation);
+        - a mask, passed as a :py:class:`torchio.LabelMap` or a ``path`` to a file, (segmentation);
         - or ``None``, if no label (reconstruction).
 
-    participant : str
-        The participant concerned.
-    session : str
-        The session concerned.
     kwargs : Any
         Any other information to store in the DataPoint.
     """
@@ -90,24 +118,22 @@ class DataPoint(tio.Subject):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        label: Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]],
         participant: str,
         session: str,
+        label: Optional[
+            Union[float, int, dict[str, float], tio.LabelMap, PathType]
+        ] = None,
         **kwargs: Any,
     ) -> None:
-        if isinstance(image, (Path, str)):
-            image = tio.ScalarImage(path=image)
-
-        if isinstance(label, (Path, str)):
-            label = tio.LabelMap(path=label)
-
-        super().__init__(
+        config = DataPointConfig(
             image=image,
             label=label,
             participant=participant,
             session=session,
-            **kwargs,
         )
+        kwargs.update(config.to_raw_dict())
+
+        super().__init__(**kwargs)
 
     @property
     def shape(self):
@@ -270,7 +296,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType]
-            The image to add, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
+            The image to add, as a :py:class:`torchio.ScalarImage` or a ``path`` to a file.
         image_name : str
             The name that the image will take in the DataPoint.
 
@@ -301,7 +327,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         mask : Union[tio.LabelMap, PathType]
-            The mask to add, as a :py:class:`torchio.LabelMap` or a ``path`` to a NIfTI file.
+            The mask to add, as a :py:class:`torchio.LabelMap` or a ``path`` to a file.
         mask_name : str
             The name that the mask will take in the ``DataPoint``.
 

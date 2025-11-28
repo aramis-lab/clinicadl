@@ -1,3 +1,4 @@
+import json
 import re
 
 import pytest
@@ -6,7 +7,7 @@ from pydantic import ValidationError
 from clinicadl.data.datatypes import DataType
 
 
-def test_datatype():
+def test_datatype(tmp_path):
     data_type = DataType(
         pattern=".*/abc_.*", key="my_datatype", description="A description"
     )
@@ -40,3 +41,14 @@ def test_datatype():
     }
     for pattern, match in patterns.items():
         assert (data_type.pattern.match(pattern) is not None) == match
+
+    # json
+    data_type = DataType(
+        pattern=".*/abc_.*", key="my_datatype", description="A description"
+    )
+    with open(tmp_path / "datatype.json", "w") as f:
+        json.dump(data_type.to_dict(), f)
+    with open(tmp_path / "datatype.json", "r") as f:
+        dict_ = json.load(f)
+    data_type = DataType.from_dict(dict_)
+    assert data_type.pattern == re.compile(".*/abc_.*")

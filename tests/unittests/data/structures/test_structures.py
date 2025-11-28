@@ -37,7 +37,7 @@ def test_DataPoint():
     # first basic test
     data_point = DataPoint(
         image_path,
-        label,
+        label=label,
         participant="sub-000",
         session="ses-M000",
         mask_1=mask,
@@ -107,7 +107,6 @@ def test_DataPoint():
     # other tests
     data_point = DataPoint(
         image=image,
-        label=None,
         participant="sub-000",
         session="ses-M000",
     )
