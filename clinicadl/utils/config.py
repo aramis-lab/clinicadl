@@ -98,9 +98,8 @@ class ClinicaDLConfig(BaseModel):
 
         for name, value in d.items():
             if hasattr(value, "to_raw"):
-                to_raw_dict = getattr(value, "to_raw")
-                if callable(to_raw_dict):
-                    d[name] = to_raw_dict()
+                if callable(to_raw := getattr(value, "to_raw")):
+                    d[name] = to_raw()
 
         return d
 
@@ -208,8 +207,7 @@ class ClinicaDLConfig(BaseModel):
             The serialized field.
         """
         if hasattr(value, "to_dict"):
-            to_dict = getattr(value, "to_dict")
-            if callable(to_dict):
+            if callable(to_dict := getattr(value, "to_dict")):
                 return _order_dict(to_dict())
 
         if isinstance(value, Sequence) and not isinstance(value, str):
@@ -229,12 +227,10 @@ class ClinicaDLConfig(BaseModel):
         fields_in_dict = set(dict_)
         expected_fields = set(cls.get_fields())
 
-        diff = expected_fields.difference(fields_in_dict)
-        if len(diff) > 0:
-            raise MissingFieldsError(fields=list(diff))
+        if diff := list(expected_fields.difference(fields_in_dict)):
+            raise MissingFieldsError(fields=diff)
 
-        diff = fields_in_dict.difference(expected_fields)
-        if len(diff) > 0:
+        if diff := list(fields_in_dict.difference(expected_fields)):
             raise WrongFieldsError(fields=list(diff), object_name=cls._get_name())
 
         return dict_
@@ -254,8 +250,7 @@ class ClinicaDLConfig(BaseModel):
                 raise CannotReadFieldError(
                     field_names=[field], object_name=cls._get_name()
                 ) from e
-        else:
-            return value
+        return value
 
     @classmethod
     def _read_json(cls, json_path: PathType) -> dict[str, Any]:
@@ -402,8 +397,7 @@ class ObjectOrConfig(BaseModel, Generic[T, TConfig]):
         """
         if isinstance(self.value, ObjectConfig):
             return self.value.get_object(**kwargs)
-        else:
-            return self.value
+        return self.value
 
     def to_raw(self) -> Union[T, TConfig]:
         """
@@ -753,11 +747,9 @@ class KwargsConfig(ObjectConfig[T]):
         To read a pydantic validation error and determine
         what key of the dict is failing validation.
         """
-        list_errors = error.errors()
         wrong_keys = []
-        for e in list_errors:
-            key = e["loc"][2]
-            wrong_keys.append(key)
+        for e in error.errors():
+            wrong_keys.append(e["loc"][2])
 
         return list(set(wrong_keys))
 
