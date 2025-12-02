@@ -115,7 +115,7 @@ def test_get_object():
     assert dataloader.sampler.num_replicas == 1
     assert dataloader.sampler.rank == 0
     batch = next(iter(dataloader))
-    assert isinstance(batch, tuple)
+    assert isinstance(batch, (list, tuple))  # depends on the OS?
     assert batch[0][0].participant == "sub-100"
     assert batch[0][0].session == "ses-M000"
     assert batch[0].get_field("label") == torch.tensor([5.0])
@@ -174,7 +174,7 @@ def test_get_object():
     )
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
-    assert isinstance(batch, tuple)
+    assert isinstance(batch, (list, tuple))
     assert (batch[0].get_field("label") == torch.tensor([1.0, 10.0])).all()
     assert batch[1].get_field("label") == [None, None]
 
