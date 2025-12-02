@@ -4,12 +4,34 @@ import torch
 import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch, simple_collate_fn, tuple_collate_fn
+from clinicadl.data.datasets.output import Sample
+from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import DataPoint
 
 
 def test_init():
     with pytest.raises(ValueError, match="The batch is empty!"):
         Batch([])
+
+
+def test_typing():
+    datapoint = DataPoint(
+        image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
+        participant="abc",
+        session="abc",
+    )
+    batch = Batch([datapoint, datapoint])
+    assert batch[0].participant == "abc"
+
+    datapoint = Sample(
+        image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
+        participant="abc",
+        session="abc",
+        image_path="abc.nii.gz",
+        datatype=T1Linear(),
+    )
+    batch = Batch([datapoint, datapoint])
+    assert str(batch[0].image_path) == "abc.nii.gz"
 
 
 def test_get_field():
@@ -32,7 +54,7 @@ def test_get_field():
     # tensors and different shapes
     batch[-1] = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 6)),
-        label=torch.ones(1, 3, 4, 6),
+        label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 6)),
         participant="sub-1",
         session="ses-1",
     )
@@ -43,7 +65,7 @@ def test_get_field():
     assert isinstance(images[-1], tio.ScalarImage)
     assert isinstance(labels, list)
     assert isinstance(labels[0], tio.LabelMap)
-    assert labels[-1].size() == (1, 3, 4, 6)
+    assert labels[-1].shape == (1, 3, 4, 6)
 
     # numpy and list
     batch[0]["label"] = np.ones((1, 3, 4, 5)).tolist()
@@ -131,7 +153,7 @@ def test_to():
         [
             DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-                label=torch.randn(1, 3, 3, 3),
+                label=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
                 output=1,
                 abc=torch.randn(1, 3, 3, device=torch.device("cuda:0")),
                 participant=f"sub-{i}",

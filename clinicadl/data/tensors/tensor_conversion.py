@@ -38,6 +38,7 @@ from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
     TensorConversionError,
 )
+from clinicadl.utils.variables import SPACING_RTOL
 
 from ..datatypes import DataType
 from ..datatypes.factory import get_datatype_from_dict
@@ -250,7 +251,7 @@ class TensorConversion:
             Parallel(n_jobs=n_proc, require="sharedmem")(
                 delayed(self._transform_and_save_images)(participant, session)
                 for participant, session in tqdm(
-                    set(self.dataset.get_participant_session_couples()).difference(
+                    self.dataset.get_participant_session_couples().difference(
                         self._participants_sessions_converted
                     ),
                     desc=f"{now} - Converting images and potential image-specific masks",
@@ -318,7 +319,7 @@ class TensorConversion:
         self._compare_participants_sessions(conversion_info)
 
         # all checks passed, update current state
-        self._participants_sessions_converted = set(
+        self._participants_sessions_converted = (
             self.dataset.get_participant_session_couples()
         )
         self._masks_converted = set(
@@ -565,7 +566,9 @@ class TensorConversion:
         equal to the reference spacing.
         """
         spacing = tuple(float(s) for s in image.spacing)
-        if not np.isclose(spacing, self._ref_image_spacing.spacing, rtol=1e-3).all():
+        if not np.isclose(
+            spacing, self._ref_image_spacing.spacing, rtol=SPACING_RTOL
+        ).all():
             raise TensorConversionError(
                 "Different voxel spacings found in the dataset: "
                 f"for example, voxel spacing is {spacing} in {image.path}, "
@@ -817,7 +820,7 @@ class TensorConversion:
         """
         Checks that all (participant, session) have been converted.
         """
-        participants_session = set(self.dataset.get_participant_session_couples())
+        participants_session = self.dataset.get_participant_session_couples()
         not_converted = participants_session.difference(
             old_conversion.participants_sessions
         )
@@ -898,7 +901,7 @@ class TensorConversion:
         """
         To get an example of DataPoint.
         """
-        participant, session = self.dataset.get_participant_session_couples()[0]
+        participant, session = self.dataset.get_participant_session_couples().pop()
         return self._get_raw_images(participant, session)
 
     def _get_also(self, images: DataPoint) -> dict[str, AlsoType]:

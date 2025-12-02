@@ -8,6 +8,7 @@ from pydantic import field_validator
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
+from clinicadl.utils.variables import SPACING_RTOL
 
 from .label import LabelType
 
@@ -183,7 +184,7 @@ class DataPoint(tio.Subject):
         >>> datapoint.spacing
         (1.0, 1.0, 1.0)
         """
-        self.check_consistent_attribute("spacing", relative_tolerance=1e-3)
+        self.check_consistent_attribute("spacing", relative_tolerance=SPACING_RTOL)
         return tuple(float(s) for s in self.image.spacing)
 
     @property

@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 import torch
 import torchio as tio
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.device import DeviceType, check_device
 
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
 
-class Batch(list[DataPoint]):
+T = TypeVar("T", bound="DataPoint")
+
+
+class Batch(list[T]):
     """
     A batch container for :class:`~clinicadl.data.structures.DataPoint` objects.
 
@@ -33,7 +37,7 @@ class Batch(list[DataPoint]):
     _non_blocking: bool = False
     _channels_last: bool = False
 
-    def __init__(self, datapoints: list[DataPoint]):
+    def __init__(self, datapoints: Sequence[T]):
         super().__init__(datapoints)
 
         if len(self) == 0:
@@ -311,7 +315,7 @@ class Batch(list[DataPoint]):
             datapoint.update_attributes()
 
     @staticmethod
-    def _get_field(datapoint: DataPoint, field_name: str) -> Any:
+    def _get_field(datapoint: T, field_name: str) -> Any:
         """Returns the specified field."""
         try:
             return datapoint[field_name]
@@ -369,11 +373,11 @@ class Batch(list[DataPoint]):
 BatchType = Union[Batch, tuple[Batch, ...]]
 
 
-def simple_collate_fn(batch: list[DataPoint]) -> Batch:
+def simple_collate_fn(batch: Sequence[T]) -> Batch[T]:
     """For datasets that returns a single Sample."""
     return Batch(batch)
 
 
-def tuple_collate_fn(batch: list[tuple[DataPoint, ...]]) -> tuple[Batch, ...]:
+def tuple_collate_fn(batch: Sequence[tuple[T, ...]]) -> tuple[Batch[T], ...]:
     """For datasets that returns a tuple of Samples."""
     return tuple(Batch(data) for data in zip(*batch))

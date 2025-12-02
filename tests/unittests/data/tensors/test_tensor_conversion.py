@@ -70,8 +70,8 @@ class TensorDataset:
     def _tensor_conversion_json_dir(self) -> Path:
         return self.config.directory / "tensor_conversion"
 
-    def get_participant_session_couples(self) -> list[tuple[str, str]]:
-        return self.sub_ses
+    def get_participant_session_couples(self) -> set[tuple[str, str]]:
+        return set(self.sub_ses)
 
     def _get_image_path(self, participant: str, session: str) -> Path:
         pre_path = self.config.directory / "subjects" / participant / session

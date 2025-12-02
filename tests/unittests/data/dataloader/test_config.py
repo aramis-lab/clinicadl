@@ -16,9 +16,9 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import PadConfig
 from clinicadl.transforms.extraction import Slice
+from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.seed import pl_worker_init_function
 
 BAD_INPUTS = [
@@ -49,7 +49,7 @@ DATA["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
 
 CAPS = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     label="age",
@@ -58,7 +58,7 @@ CAPS = CapsDataset(
 )
 CAPS_WITHOUT_LABEL = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     data=DATA,
@@ -203,7 +203,7 @@ def test_workers():
 def test_train_eval():
     caps = CapsDataset(
         CAPS_DIR,
-        preprocessing=PETLinear(
+        datatype=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
         transforms=Transforms(augmentations=[PadConfig(padding=1)]),
@@ -222,7 +222,7 @@ def test_train_eval():
 def test_ddp():
     caps = CapsDataset(
         CAPS_DIR,
-        preprocessing=PETLinear(
+        datatype=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
         label="age",
@@ -339,7 +339,7 @@ def test_ddp():
     dataloader = iter(dataloader)
     batch = next(dataloader)
     assert len(batch) == 2
-    assert batch[0].session == "ses-M012"
+    assert batch[0].session == "ses-M000"
     assert batch[0].participant == "sub-100"
     assert batch[1].session == "ses-M099"
     assert batch[1].participant == "sub-999"
@@ -363,7 +363,7 @@ def test_ddp():
     )
     caps = CapsDataset(
         CAPS_DIR,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        datatype=T1Linear(use_uncropped_image=True),
         label="seg",
         data=sub_data,
         transforms=Transforms(extraction=Slice(slices=[0, 1])),
@@ -375,7 +375,7 @@ def test_ddp():
         batch_size=2,
         sampling_weights="age",
     )
-    torch.manual_seed(0)
+    torch.manual_seed(1)
 
     dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
     assert (dataloader.sampler.weights == torch.Tensor([0, 0, 1, 1])).all()
@@ -385,10 +385,10 @@ def test_ddp():
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-010"
-    assert batch[0].slice_position == 1
+    assert batch[0].sample_position == 0
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    assert batch[1].slice_position == 0
+    assert batch[1].sample_position == 0
     with pytest.raises(StopIteration):
         next(dataloader)
 
@@ -400,9 +400,24 @@ def test_ddp():
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
     assert batch[0].participant == "sub-010"
-    assert batch[0].slice_position == 0
+    assert batch[0].sample_position == 1
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
-    assert batch[1].slice_position == 1
+    assert batch[1].sample_position == 0
     with pytest.raises(StopIteration):
         next(dataloader)
+
+
+def test_serialize_deserialize(tmp_path):
+    dataloader_config = DataLoaderConfig(
+        batch_size=2,
+        shuffle=False,
+    )
+
+    d = dataloader_config.to_dict()
+    dataloader_config = DataLoaderConfig.from_dict(d)
+    assert dataloader_config.batch_size == 2
+
+    d = dataloader_config.to_json(tmp_path / "dataloader.json")
+    dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
+    assert dataloader_config.batch_size == 2

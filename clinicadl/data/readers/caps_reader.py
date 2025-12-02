@@ -184,7 +184,7 @@ class CapsReader(Reader):
         tensor_path = self.path_to_tensor(filepath, conversion_name=conversion_name)
         if check and not tensor_path.is_file():
             raise FileNotFoundError(
-                f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"
+                f"Could not find the .pt file for participant {participant}, session {session} and preprocessing {preprocessing}"
             )
 
         return tensor_path

@@ -1,4 +1,7 @@
-from typing import Iterator, Optional, overload
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Iterator, Optional, Union, overload
 
 from pydantic import NonNegativeInt, PositiveInt, model_validator
 from torch.utils.data import DataLoader as TorchDataLoader
@@ -8,16 +11,21 @@ from clinicadl.data.datasets import (
     PairedDataset,
     UnpairedDataset,
 )
-from clinicadl.data.datasets.types import Dataset, SimpleDataset, TupleDataset
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
+from ..datasets import ClinicaDLDataset
 from .batch import Batch, simple_collate_fn, tuple_collate_fn
+
+if TYPE_CHECKING:
+    from clinicadl.data.datasets.output import Sample
+
+TupleDataset = Union[PairedDataset, UnpairedDataset]
 
 
 class DataLoader(TorchDataLoader):
     """
-    Overwrites :py:class:`torch.utils.data.DataLoader` only to add a `set_epoch` method.
+    Overwrites :py:class:`torch.utils.data.DataLoader` only to add a ``:py:meth:set_epoch` method.
     """
 
     def set_epoch(self, epoch: int) -> None:
@@ -34,8 +42,10 @@ class DataLoader(TorchDataLoader):
         """
         if isinstance(self.sampler, DistributedSampler):
             self.sampler.set_epoch(epoch)
-        if isinstance(self.dataset, UnpairedDataset):
-            self.dataset.set_epoch(epoch)
+        if hasattr(self.dataset, "set_epoch") and callable(
+            set_epoch := getattr(self.dataset, "set_epoch")
+        ):
+            set_epoch(epoch)
 
 
 class _SimpleDataLoader(DataLoader):
@@ -43,7 +53,7 @@ class _SimpleDataLoader(DataLoader):
 
     def __iter__(
         self,
-    ) -> Iterator[Batch]:
+    ) -> Iterator[Batch[Sample]]:
         return super().__iter__()
 
 
@@ -52,7 +62,7 @@ class _TupleDataLoader(DataLoader):
 
     def __iter__(
         self,
-    ) -> Iterator[tuple[Batch, ...]]:
+    ) -> Iterator[tuple[Batch[Sample], ...]]:
         return super().__iter__()
 
 
@@ -136,16 +146,7 @@ class DataLoaderConfig(ClinicaDLConfig):
             )
         return self
 
-    @overload
-    def get_object(
-        self,
-        dataset: SimpleDataset,
-        dp_degree: Optional[int] = None,
-        rank: Optional[int] = None,
-    ) -> _SimpleDataLoader:
-        """:noindex:"""
-
-    @overload
+    @overload  # we need the most specific overload first
     def get_object(
         self,
         dataset: TupleDataset,
@@ -154,9 +155,18 @@ class DataLoaderConfig(ClinicaDLConfig):
     ) -> _TupleDataLoader:
         """:noindex:"""
 
+    @overload
     def get_object(
         self,
-        dataset: Dataset,
+        dataset: ClinicaDLDataset,
+        dp_degree: Optional[int] = None,
+        rank: Optional[int] = None,
+    ) -> _SimpleDataLoader:
+        """:noindex:"""
+
+    def get_object(
+        self,
+        dataset: ClinicaDLDataset,
         dp_degree: Optional[int] = None,
         rank: Optional[int] = None,
     ) -> DataLoader:
@@ -238,8 +248,8 @@ class DataLoaderConfig(ClinicaDLConfig):
             from clinicadl.data.dataloader import DataLoaderConfig
 
             caps_dataset = CapsDataset(
-                caps_directory="mycaps",
-                preprocessing=PETLinear(
+                directory="mycaps",
+                datatype=PETLinear(
                     tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
                 ),
                 data="mycaps/data.tsv",
@@ -255,9 +265,9 @@ class DataLoaderConfig(ClinicaDLConfig):
 
             >>> batch = next(iter(dataloader))
             >>> batch
-            [DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-             DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-             DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)]
+            [Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+             Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+             Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)]
 
         Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
 
@@ -271,12 +281,12 @@ class DataLoaderConfig(ClinicaDLConfig):
 
             >>> batch = next(iter(dataloader))
             >>> batch
-            ([DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)],
-             [DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1),
-              DataPoint(Keys: ('image', 'label', 'participant', 'session', 'image_path', 'preprocessing', 'extraction'); images: 1)])
+            ([Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)],
+             [Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
+              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)])
 
         We have a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.
         """
@@ -303,14 +313,14 @@ class DataLoaderConfig(ClinicaDLConfig):
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
             collate_fn=tuple_collate_fn
-            if isinstance(dataset, (PairedDataset, UnpairedDataset))
+            if isinstance(dataset[0], Sequence)
             else simple_collate_fn,
             **self.to_dict(exclude={"sampling_weights", "shuffle"}),
         )
 
     def _generate_sampler(
         self,
-        dataset: Dataset,
+        dataset: ClinicaDLDataset,
         dp_degree: int,
         rank: int,
     ) -> Sampler:
@@ -336,7 +346,7 @@ class DataLoaderConfig(ClinicaDLConfig):
         return sampler
 
     @staticmethod
-    def _get_weights(dataset: Dataset, weights_name: str) -> list[float]:
+    def _get_weights(dataset: ClinicaDLDataset, weights_name: str) -> list[float]:
         """
         Gets the list of weights from the column of the dataframe.
         """
