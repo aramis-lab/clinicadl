@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import torch
@@ -381,10 +382,12 @@ def test_get_participant_session_couples():
         datatype=T1Linear(use_uncropped_image=True),
         data=data,
     )
-    assert caps_dataset.get_participant_session_couples() == [
-        ("sub-000", "ses-M000"),
-        ("sub-000", "ses-M003"),
-    ]
+    assert caps_dataset.get_participant_session_couples() == set(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-000", "ses-M003"),
+        ]
+    )
 
 
 def test_describe(tmp_path):
@@ -422,7 +425,7 @@ def test_describe(tmp_path):
     caps_dataset.to_tensors(conversion_name="t1_", ignore_spacing=True)
     description = caps_dataset.describe()
     assert description["total_samples"] == 7
-    assert description["participant_session_pairs"] == [
+    assert sorted(description["participant_session_pairs"]) == [
         ("sub-000", "ses-M000"),
         ("sub-010", "ses-M003"),
         ("sub-010", "ses-M012"),
@@ -483,6 +486,7 @@ def test_get_sample_info():
     ):
         caps_dataset.get_sample_info(8, "age")
     caps_dataset.read_tensor_conversion("t1_transform")
+    print(caps_dataset.df)
     assert caps_dataset.get_sample_info(7, "age") == 1.0
     assert caps_dataset.get_sample_info(8, "age") == 2.0
 
@@ -759,6 +763,7 @@ def test_from_json_to_json(tmp_path):
     data_path = tmp_path / "data.tsv"
     data.to_csv(data_path, sep="\t", index=False)
 
+    data.loc[0, "age"] = np.nan
     caps_dataset = CapsDataset(
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
@@ -782,10 +787,12 @@ def test_from_json_to_json(tmp_path):
     assert len(caps_dataset.individual_masks) == 2
     assert len(caps_dataset.common_masks) == 1
     assert len(caps_dataset.columns) == 2
-    assert caps_dataset.get_participant_session_couples() == [
-        ("sub-000", "ses-M000"),
-        ("sub-010", "ses-M003"),
-    ]
+    assert caps_dataset.get_participant_session_couples() == set(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
     assert isinstance(caps_dataset.config.datatype, T1Linear)
     assert isinstance(
         caps_dataset.config.transforms.image_transforms.transforms[0], tio.Crop

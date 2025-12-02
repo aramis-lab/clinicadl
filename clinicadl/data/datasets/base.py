@@ -23,7 +23,9 @@ from clinicadl.dictionary.words import (
     IMAGE,
     LABEL,
     PARTICIPANT,
+    PARTICIPANT_ID,
     SESSION,
+    SESSION_ID,
 )
 from clinicadl.transforms.handlers import Transforms
 from clinicadl.tsvtools.utils import read_data
@@ -60,6 +62,7 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
     columns: dict[str, Optional[Callable[[pd.Series], pd.Series]]]
     masks: list[PathType]
 
+    # state
     df: Optional[pd.DataFrame] = Field(default=None, reader=_dataframe_from_dict)
 
     _individual_masks: list[PathType] = []
@@ -156,6 +159,8 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
         self._validate_columns(df)
         self._validate_masks()
         self._validate_label(df)
+
+        return self
 
     def _validate_columns(self, df: Optional[pd.DataFrame]) -> None:
         """
@@ -297,12 +302,11 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
 
     @property
     def _df(self) -> pd.DataFrame:
-        return self.__df
+        return self.config.df
 
     @_df.setter
     def _df(self, df: pd.DataFrame) -> None:
-        self.__df = df
-        self.config.df = df  # to make sure that the DataFrame in the config class is always synchronized
+        self.config.df = df
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -323,7 +327,9 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
 
         df = read_data(data)
 
-        return deepcopy(df)
+        return deepcopy(
+            df.sort_values(by=[PARTICIPANT_ID, SESSION_ID]).reset_index(drop=True)
+        )
 
     @abstractmethod
     def _create_df(self) -> pd.DataFrame:
@@ -425,9 +431,7 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
 
         # columns
         for col in self.columns:
-            datapoint[col] = self._get_participant_session_info(
-                participant, session, col
-            )
+            datapoint[col] = self._get_image_info(participant, session, col)
 
         return datapoint
 

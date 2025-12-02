@@ -86,13 +86,17 @@ class MultiSamplesDataset(ClinicaDLDataset):
         self._check_idx(idx)
         self._check_column(column)
 
-        row_idx = self._get_row_idx(idx)
-        row = self.df.iloc[row_idx]
+        image_idx = self._get_image_idx(idx)
+        row = self.df.iloc[image_idx]
 
-        return row.loc[column]
+        value = row.at[column]
+        try:
+            return value.item()  # e.g. convert np.int to int
+        except AttributeError:
+            return value
 
-    def get_participant_session_couples(self) -> list[tuple[str, str]]:
-        return list(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
+    def get_participant_session_couples(self) -> set[tuple[str, str]]:
+        return set(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
 
     def __len__(self) -> int:
         self._check_has_len()
@@ -107,31 +111,29 @@ class MultiSamplesDataset(ClinicaDLDataset):
         if not self._has_len:
             self._count_samples()
 
-    def _get_rank_in_row(self, idx: int) -> int:
+    def _get_index_in_image(self, idx: int) -> int:
         """
-        Determines the the rank of this sample in its row.
+        Determines the the index of this sample in its original image.
 
-        E.g.: if every row has 3 samples, then self._get_rank_in_row(4)=1,
-        because the first row contains samples 0, 1 and 2, and the second
-        row contains the samples 3, 4 and 5, so 4 is the 2nd sample
-        of its row.
+        E.g.: if every image has 3 samples, then self._get_index_in_image(4)=1,
+        because the first image contains samples 0, 1 and 2, and the second
+        image contains the samples 3, 4 and 5, so 4 is the 2nd sample
+        of its image.
         """
-        row_idx = self._get_row_idx(idx)
-        if row_idx > 0:
-            return idx - self.df[N_SAMPLES].cumsum().iloc[row_idx - 1]
+        image_idx = self._get_image_idx(idx)
+        if image_idx > 0:
+            return int(idx - self.df[N_SAMPLES].cumsum().iat[image_idx - 1])
 
         return idx
 
-    def _get_row_idx(self, idx: int) -> pd.Series:
+    def _get_image_idx(self, idx: int) -> int:
         """
-        Gets the row in the DataFrame corresponding to the index
+        Gets the image in the dataset corresponding to the index
         of the sample.
         """
         return bisect_right(self.df[N_SAMPLES].cumsum(), idx)
 
-    def _get_participant_session_info(
-        self, participant: str, session: str, column: str
-    ) -> Any:
+    def _get_image_info(self, participant: str, session: str, column: str) -> Any:
         """
         Returns the value of a column for a (participant, session).
         """
@@ -140,6 +142,18 @@ class MultiSamplesDataset(ClinicaDLDataset):
         return self.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
             (participant, session), column
         ]
+
+    def _get_indices_associated_to(
+        self, participant: str, session: str
+    ) -> tuple[int, int]:
+        """
+        Returns the value of the range of indices associated to the image.
+        """
+        cumsum = self.df.set_index([PARTICIPANT_ID, SESSION_ID])[N_SAMPLES].cumsum()
+        min_idx = cumsum.shift(1).fillna(0).at[(participant, session)]
+        max_idx = max(cumsum.at[(participant, session)] - 1, 0)
+
+        return int(min_idx), int(max_idx)
 
     def _count_samples(self) -> None:
         """

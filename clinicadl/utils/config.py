@@ -48,10 +48,6 @@ class ClinicaDLConfig(BaseModel):
         arbitrary_types_allowed=True,
     )
 
-    def __init__(self, **kwargs):
-        """Useless method but needed for the doc (typing)."""
-        super().__init__(**kwargs)
-
     @classmethod
     def get_fields(cls, computed: bool = False) -> list[str]:
         """

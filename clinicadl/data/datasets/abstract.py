@@ -107,14 +107,14 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
         )
 
     @abstractmethod
-    def get_participant_session_couples(self) -> list[tuple[str, str]]:
+    def get_participant_session_couples(self) -> set[tuple[str, str]]:
         """
         Retrieves all (participant, session) pairs in the dataset.
 
         Returns
         -------
-        list[tuple[str, str]]
-            The list of (participant, session).
+        set[tuple[str, str]]
+            The set of (participant, session).
         """
 
     @abstractmethod

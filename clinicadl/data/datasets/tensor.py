@@ -56,7 +56,6 @@ class TensorDataset(BaseDataset):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.__tensor_conversion: Optional[TensorConversionInfo] = None
 
     @property
     def converted(self) -> bool:
@@ -66,14 +65,13 @@ class TensorDataset(BaseDataset):
     @property
     def _tensor_conversion(self) -> Optional[TensorConversionInfo]:
         """Information on tensor conversion."""
-        return self.__tensor_conversion
+        return self.config.tensor_conversion
 
     @_tensor_conversion.setter
     def _tensor_conversion(
         self, tensor_conversion: Optional[TensorConversionInfo]
     ) -> None:
-        self.__tensor_conversion = tensor_conversion
-        self.config.tensor_conversion = tensor_conversion  # to make sure that the name in the config class is always synchronized
+        self.config.tensor_conversion = tensor_conversion
         if self._tensor_conversion:
             self._load_pt_masks()
             self._check_image_transforms()

@@ -49,6 +49,8 @@ class SampleConfig(ClinicaDLConfig):
                 self.sample_position, int
             ), f"if sample_type={SampleType.SLICE.value}, 'sample_position' must be an int corresponding to the position of the slice in the image"
 
+        return self
+
 
 class Sample(DataPoint, ABC):
     """

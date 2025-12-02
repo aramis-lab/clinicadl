@@ -67,7 +67,7 @@ class SamplerDataset(MultiSamplesDataset):
         """
         participant = self.get_sample_info(idx, PARTICIPANT_ID)
         session = self.get_sample_info(idx, SESSION_ID)
-        index_in_image = self._get_rank_in_row(idx)
+        index_in_image = self._get_index_in_image(idx)
 
         return participant, session, index_in_image
 

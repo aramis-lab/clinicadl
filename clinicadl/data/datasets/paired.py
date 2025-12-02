@@ -1,34 +1,82 @@
-# coding: utf8
 from __future__ import annotations
 
-from logging import getLogger
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
-from torch.utils.data import StackDataset
+from pydantic import field_validator
 
 from clinicadl.dictionary.words import (
-    FIRST_INDEX,
-    LAST_INDEX,
     PARTICIPANT_ID,
     SESSION_ID,
 )
-from clinicadl.transforms.extraction import Sample
-from clinicadl.utils.exceptions import ClinicaDLCAPSError
-from clinicadl.utils.typing import DataType
 
-from .caps_dataset import CapsDataset
-
-logger = getLogger("clinicadl.data.datasets.paired")
+from .collection import CollectionDataset, CollectionDatasetConfig
+from .multi_samples import MultiSamplesDataset
+from .output import Sample
 
 
-class PairedDataset(StackDataset):
+class PairedDatasetConfig(CollectionDatasetConfig):
     """
-    ``PairedDataset`` is a useful class to pair multiple :py:class:`~clinicadl.data.datasets.CapsDataset`
+    Config class for ``PairedDataset``.
+    """
+
+    @field_validator("datasets", mode="after")
+    @classmethod
+    def _check_n_datasets(
+        cls, datasets: Sequence[MultiSamplesDataset]
+    ) -> Sequence[MultiSamplesDataset]:
+        assert (
+            len(datasets) >= 2
+        ), f"{cls._get_name()} needs at least 2 datasets to join!"
+
+        return datasets
+
+    @field_validator("datasets", mode="after")
+    @classmethod
+    def _check_datasets(
+        cls, datasets: Sequence[MultiSamplesDataset]
+    ) -> Sequence[MultiSamplesDataset]:
+        """
+        Checks datasets consistency.
+        """
+        for i, dataset in enumerate(datasets):
+            df = dataset.df[[PARTICIPANT_ID, SESSION_ID]]
+
+            if df.duplicated().any():
+                raise ValueError(
+                    "Datasets passed to PairedDataset cannot contain duplicated (participant, session) pairs, "
+                    f"but some were founds in dataset {i}:\n {df[df.duplicated(keep=False)]}"
+                )
+
+            if i == 0:
+                ref_particpants_sessions = set(df.itertuples(index=False, name=None))
+            else:
+                particpants_sessions = set(df.itertuples(index=False, name=None))
+                difference = particpants_sessions.symmetric_difference(
+                    ref_particpants_sessions
+                )
+                if difference:
+                    raise ValueError(
+                        "To pair datasets, they must have exactly the same (participant, session) pairs. "
+                        f"Differences were found for between dataset 0 and dataset {i}:\n"
+                        f"{difference}"
+                    )
+
+        return datasets
+
+    @classmethod
+    def _get_class(cls) -> type[PairedDataset]:
+        """Returns the class associated to this config class."""
+        return PairedDataset
+
+
+class PairedDataset(CollectionDataset, MultiSamplesDataset):
+    """
+    A useful class to pair multiple :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`
     (e.g. different modalities). Pairing datasets means uniquely associating images across the datasets.
 
-    The keys of this association are the (participant, session) pairs present in the underlying ``CapsDatasets``. So, **all
+    The keys of this association are the (participant, session) pairs present in the underlying datasets. So, **all
     datasets must contain the same (participant, session) pairs**.
 
     Furthermore, for a (participant, session) pair, **all the datasets must have the same number of samples**:
@@ -39,26 +87,21 @@ class PairedDataset(StackDataset):
     A ``PairedDataset`` will return a tuple of :py:class:`~clinicadl.data.structures.DataPoint` (one for each underlying
     dataset).
 
-    To pair ``CapsDatasets``, you must **previously perform**
-    :py:func:`tensor conversion <clinicadl.data.datasets.CapsDataset.to_tensors>`.
-
     .. note::
         ``PairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset`.
 
     Parameters
     ----------
-    datasets : Iterable[CapsDataset]
-        List of :py:class:`~clinicadl.data.datasets.CapsDataset` to be paired.
+    datasets : Iterable[Union[MultiSamplesDataset, ConcatDataset]]
+        List of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset` to be paired.
 
     Raises
     ------
-    ClinicaDLCAPSError
-        If tensor conversion has not been performed for all the datasets before pairing.
-    ClinicaDLCAPSError
+    ValueError
         If the datasets contain duplicated (participant, session) pairs. This is an
         issue because it will prevent ``PairedDataset`` from finding a bijective mapping between
         the datasets.
-    ClinicaDLCAPSError
+    ValueError
         If there is a mismatch of (participant, session) pairs across the datasets. An error will
         also be raised if the number of samples per image is not the same across datasets.
 
@@ -94,11 +137,11 @@ class PairedDataset(StackDataset):
         from clinicadl.data.datatypes import PETLinear, T1Linear
 
         caps_t1 = CapsDataset(
-            "mycaps", preprocessing=T1Linear(use_uncropped_image=True), data=participants_sessions
+            "mycaps", datatype=T1Linear(use_uncropped_image=True), data=participants_sessions
         )
         caps_pet = CapsDataset(
             "mycaps",
-            preprocessing=PETLinear(
+            datatype=PETLinear(
                 use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
             ),
         )
@@ -125,227 +168,64 @@ class PairedDataset(StackDataset):
         ('sub-001', 'ses-M000')
     """
 
+    _config_type = PairedDatasetConfig
+
     def __init__(
         self,
-        datasets: Iterable[CapsDataset],
+        datasets: Iterable[MultiSamplesDataset],
     ):
-        assert len(datasets) >= 2, "PairedDataset needs at least 2 datasets to pair!"
-        self._check_conversion(datasets)
-        self._df = self._merge_dfs(list(datasets))
-        super().__init__(*datasets)
-        self.datasets: tuple[CapsDataset, ...]
-
-    @property
-    def df(self) -> pd.DataFrame:
-        """The result of the merger of the DataFrames of the underlying ``CapsDatasets``."""
-        return self._df
-
-    def eval(self) -> None:
-        """
-        Sets the datasets to evaluation mode.
-
-        It disables data augmentation in the transformation pipeline.
-        """
-        for dataset in self.datasets:
-            dataset.eval_mode = True
-
-    def train(self) -> None:
-        """
-        Sets the datasets to training mode.
-
-        It enables data augmentation in the transformation pipeline.
-        """
-        for dataset in self.datasets:
-            dataset.eval_mode = False
-
-    def subset(self, data: DataType) -> PairedDataset:
-        """
-        To get a subset of the ``PairedDataset`` from a list of (participant, session) pairs.
-
-        In practice, it will call :py:meth:`CapsDataset.subset <clinicadl.data.datasets.CapsDataset.subset>`
-        for all the datasets forming the ``PairedDataset``.
-
-        Parameters
-        ----------
-        data : DataType
-            A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of (participant, session)
-            pairs to extract. Please note that this list must be passed via two columns named ``"participant_id"``
-            and ``"session_id"`` (other columns won't be considered).
-
-        Returns
-        -------
-        PairedDataset
-            A subset of the original ``PairedDataset``, restricted to the (participant, session) pairs mentioned in ``data``.
-
-        Raises
-        ------
-        ClinicaDLTSVError
-            If the DataFrame associated to ``data`` does not contain the columns ``"participant_id"``
-            and ``"session_id"``.
-        ClinicaDLCAPSError
-            If no (participant, session) pairs mentioned in ``data`` are in the current ``PairedDataset``
-            (this would lead to an empty dataset).
-        """
-        return PairedDataset([dataset.subset(data) for dataset in self.datasets])
-
-    def describe(self) -> tuple[Dict[str, Any], ...]:
-        """
-        Returns a description of the ``CapsDatasets`` forming the ``PairedDataset``.
-
-        Returns
-        -------
-        tuple[Dict[str, Any], ...]
-            The descriptions returned by :py:meth:`CapsDataset.describe
-            <clinicadl.data.datasets.CapsDataset.describe>` for each
-            dataset forming the ``PairedDataset``.
-
-        Raises
-        ------
-        ClinicaDLCAPSError
-            See :py:meth:`CapsDataset.describe <clinicadl.data.datasets.CapsDataset.describe>`.
-        """
-        return tuple([dataset.describe() for dataset in self.datasets])
-
-    def get_sample_info(self, idx: int, column: str) -> Any:
-        """
-        Retrieves information on a given sample.
-
-        See :py:meth:`CapsDataset.get_sample_info <clinicadl.data.datasets.CapsDataset.get_sample_info>`
-        for more details.
-
-        Parameters
-        ----------
-        idx : int
-            The index of the sample in the ``PairedDataset``.
-        column : str
-            The information to look for, i.e. a column present in the DataFrame of at least one of the
-            dataset forming the ``PairedDataset``.
-
-        Returns
-        -------
-        Any
-            The information (e.g. the age, the sex, etc.)
-
-        Raises
-        ------
-        IndexError
-            If ``idx`` is not a non-negative integer, greater or equal to
-            the length of the dataset.
-        KeyError
-            If ``column`` is not in any DataFrame of the datasets forming the ``PairedDataset``.
-        """
-        self._check_idx(idx)
-
-        if column not in self._df.columns:
-            raise KeyError(
-                f"No column named '{column}' in any dataset of the PairedDataset. Present columns are: "
-                f"{list(self._df.columns)}"
-            )
-
-        row = self._df[(self._df[FIRST_INDEX] <= idx) & (idx <= self._df[LAST_INDEX])]
-
-        return row[column].iloc[0]
-
-    def get_participant_session_couples(self) -> list[Tuple[str, str]]:
-        """
-        Retrieves all (participant, session) pairs in the dataset.
-
-        Returns
-        -------
-        List[Tuple[str, str]]
-            The list of (participant, session).
-        """
-        return list(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
+        super().__init__(datasets=datasets)
+        self._mapping = self._map_datasets()
 
     def __getitem__(self, idx: int) -> tuple[Sample, ...]:
         """
-        Retrieves the samples at a given index.
+        Retrieves the collection of samples at a given index.
 
         Parameters
         ----------
         idx : int
-            Index of the sample in the dataset.
+            Index of the samples in the dataset.
 
         Returns
         -------
         tuple[Sample, ...]
             A structured output containing the processed data and metadata
-            for each dataset of the PairedDataset, as
+            from each dataset of the ``PairedDataset``, as a ``tuple`` of
             :py:class:`~clinicadl.transforms.extraction.Sample`.
+        """
+        participant = self.get_sample_info(idx, PARTICIPANT_ID)
+        session = self.get_sample_info(idx, SESSION_ID)
+        idx_in_image = self._get_index_in_image(idx)
 
-        Raises
-        ------
-        IndexError
-            If ``idx`` is not a non-negative integer, greater or equal to
-            the length of the dataset.
-        """
-        self._check_idx(idx)
-        return super().__getitem__(idx)
+        return tuple(
+            dataset[map_[(participant, session)][idx_in_image]]
+            for dataset, map_ in zip(self.datasets, self._mapping)
+        )
 
-    def _check_idx(self, idx: int) -> None:
+    def _map_datasets(self) -> tuple[dict[tuple[str, str], tuple[int, ...]], ...]:
         """
-        Checks that a sample index is valid.
+        For each dataset, indicates the indices associated to the (participant, session).
         """
-        if not isinstance(idx, int) or idx < 0:
-            raise IndexError(f"Index must be a non-negative integer, got {idx}.")
-        if idx >= len(self):
-            raise IndexError(
-                f"Index out of range, there are only {len(self)} samples in total in the dataset."
-            )
+        mapping = [dict() for _ in self.datasets]
+        for participant, session in self.get_participant_session_couples():
+            for dataset, map_ in zip(self.datasets, mapping):
+                min_idx, max_idx = dataset._get_indices_associated_to(
+                    participant, session
+                )
+                map_[(participant, session)] = tuple(range(min_idx, max_idx + 1))
+
+        return tuple(mapping)
 
     @staticmethod
-    def _check_conversion(datasets: Iterable[CapsDataset]) -> None:
-        """
-        Checks that tensor conversion has been performed before pairing.
-        """
-        for dataset in datasets:
-            if not dataset.converted:
-                raise ClinicaDLCAPSError(
-                    "Tensor conversion must be performed BEFORE pairing. Please call "
-                    "'to_tensors' or 'read_tensor_conversion' for each dataset."
-                )
-
-    @classmethod
-    def _merge_dfs(cls, datasets: list[CapsDataset]) -> pd.DataFrame:
-        """
-        Checks that consistency between dataframes and merge them.
-        """
-        # reorder all datasets
-        for i, dataset in enumerate(datasets):
-            df = dataset.df[[PARTICIPANT_ID, SESSION_ID]]
-            if df.duplicated().any():
-                raise ClinicaDLCAPSError(
-                    "Datasets passed to 'PairedDataset' cannot contain duplicated (participant, session) pairs, "
-                    f"but some were founds in dataset {i}:\n {df[df.duplicated(keep=False)]}"
-                )
-            dataset._df = dataset.df.sort_values(
-                [PARTICIPANT_ID, SESSION_ID]
-            ).reset_index(drop=True)
-            CapsDataset._map_indices_to_images(dataset.df)
-
-        # check (participant, session) pairs consistency
-        particpants_sessions = [
-            set(
-                dataset.df[[PARTICIPANT_ID, SESSION_ID]].itertuples(
-                    index=False, name=None
-                )
-            )
-            for dataset in datasets
-        ]
-        for i in range(len(datasets))[1:]:
-            if particpants_sessions[i] != particpants_sessions[0]:
-                difference = particpants_sessions[0].symmetric_difference(
-                    particpants_sessions[i]
-                )
-                raise ClinicaDLCAPSError(
-                    "To pair datasets, they must have exactly the same (participant, session) pairs. "
-                    f"Differences were found for between dataset 0 and dataset {i}:\n"
-                    f"{difference}"
-                )
-
-        # check consistency on other columns and merge
-        stacked: pd.DataFrame = pd.concat(
-            [dataset.df for dataset in datasets], keys=range(len(datasets))
+    def _merge_dfs(datasets: Sequence[MultiSamplesDataset]) -> pd.DataFrame:
+        # get a unique value per column
+        concat_df: pd.DataFrame = pd.concat(
+            [
+                dataset.df.set_index([PARTICIPANT_ID, SESSION_ID])
+                for dataset in datasets
+            ],
+            keys=range(len(datasets)),
+            axis=1,
         )
 
         def _resolve(group: pd.Series) -> Any:
@@ -355,15 +235,23 @@ class PairedDataset(StackDataset):
             elif len(values) == 1:
                 return values[0]
             else:
-                idx, column = group.name
-                raise ClinicaDLCAPSError(
-                    f"For ({datasets[0].df.loc[idx, PARTICIPANT_ID]}, {datasets[0].df.loc[idx, SESSION_ID]}), "
+                participant, session, column = group.name
+                raise RuntimeError(
+                    f"For ({participant}, {session}), "
                     f"different values found for '{column}' across the datasets forming the PairedDataset: {values}"
                 )
 
-        return (
-            stacked.stack(dropna=False)
-            .groupby(level=[1, 2], sort=False)
-            .apply(_resolve)
-            .unstack()
+        merged = (
+            concat_df.stack(dropna=False).T.apply(_resolve).unstack(2).reset_index()
         )
+
+        # correct column types
+        for column in merged:
+            for dataset in datasets:
+                try:
+                    t = dataset.df[column].dtype
+                except KeyError:
+                    continue
+                merged[column] = merged[column].astype(t)
+
+        return merged.sort_values([PARTICIPANT_ID, SESSION_ID])
