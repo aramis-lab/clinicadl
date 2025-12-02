@@ -79,15 +79,6 @@ class TensorDataset(BaseDataset):
             self._reset_conversion()
 
     @property
-    def _spacing(self) -> Optional[tuple[int, int, int]]:
-        """
-        Voxel spacing (if consistent across the dataset).
-        """
-        if self.converted:
-            return self._tensor_conversion.spacing
-        return None
-
-    @property
     def _initial_shape(self) -> Optional[tuple[int, int, int, int]]:
         if self.converted:
             return self._tensor_conversion.shape

@@ -20,6 +20,7 @@ from typing_extensions import Self
 
 from clinicadl.dictionary.words import (
     AFFINE,
+    DF,
     IMAGE,
     LABEL,
     PARTICIPANT,
@@ -458,7 +459,7 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
 
     @classmethod
     def _from_config(cls, config: BaseDatasetConfig) -> Self:
-        dataset = cls(**config.to_raw_dict(exclude=["df"]))
+        dataset = cls(**config.to_raw_dict(exclude=[DF]))
         dataset._df = config.df
 
         return dataset

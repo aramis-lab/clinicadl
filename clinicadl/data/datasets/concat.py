@@ -225,9 +225,6 @@ class ConcatDataset(CollectionDataset, MultiSamplesDataset):
 
         return dataset_idx, idx_in_dataset
 
-    def _count_samples(self) -> None:
-        pass
-
     @staticmethod
     def _merge_dfs(datasets: Sequence[MultiSamplesDataset]) -> pd.DataFrame:
         df: pd.DataFrame = pd.concat(
