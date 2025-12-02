@@ -163,11 +163,15 @@ def test_to():
         ]
     )
 
-    # no changes
-    batch_bis = batch.to()
-    assert batch_bis is batch
+    assert not batch._non_blocking
+    assert batch.device is None
+    assert not batch.channels_last
+    assert batch[0].label.device == torch.device("cpu")
+    assert batch[0]["abc"].device == torch.device("cpu")
+    assert batch.get_field("output").device == torch.device("cpu")
+    assert batch.get_field("label").stride() == (27, 27, 9, 3, 1)
+    assert batch.get_field("abc").stride() == (9, 9, 3, 1)
 
-    # changes
     with pytest.raises(
         ValueError,
         match="If 'device' is a str, it must be 'cpu', 'cuda' or 'cuda:<device-id>'.",
@@ -176,32 +180,22 @@ def test_to():
     batch.to("cuda", non_blocking=True)
     batch.to(torch.device("cuda:0"), non_blocking=True)
 
-    batch_gpu = batch.to(0, non_blocking=True, channels_last=True)
-    batch_cpu = batch.to("cpu")
+    batch.to(0, non_blocking=True, channels_last=True)
 
-    assert batch_gpu._non_blocking
-    assert batch_gpu.device == torch.device("cuda:0")
-    assert batch_gpu.channels_last
-    assert batch_gpu[0].label.tensor.device == torch.device("cuda:0")
-    assert batch_gpu[0]["abc"].device == torch.device("cuda:0")
-    assert batch_gpu.get_field("output").device == torch.device("cuda:0")
-    assert batch_gpu.get_field("label").stride() == (27, 1, 9, 3, 1)
-    assert batch_gpu.get_field("abc").stride() == (9, 1, 3, 1)
+    assert batch._non_blocking
+    assert batch.device == torch.device("cuda:0")
+    assert batch.channels_last
+    assert batch[0].label.tensor.device == torch.device("cpu")
+    assert batch[0]["abc"].device == torch.device("cpu")
+    assert batch.get_field("output").device == torch.device("cuda:0")
+    assert batch.get_field("label").stride() == (27, 1, 9, 3, 1)
+    assert batch.get_field("abc").stride() == (9, 1, 3, 1)
 
-    assert not batch_cpu._non_blocking
-    assert batch_cpu.device == torch.device("cpu")
-    assert not batch_cpu.channels_last
-    assert batch_cpu[0].label.device == torch.device("cpu")
-    assert batch_cpu[0]["abc"].device == torch.device("cpu")
-    assert batch_cpu.get_field("output").device == torch.device("cpu")
-    assert batch_cpu.get_field("label").stride() == (27, 27, 9, 3, 1)
-    assert batch_cpu.get_field("abc").stride() == (9, 9, 3, 1)
+    batch.to("cpu")
 
     assert not batch._non_blocking
-    assert batch.device is None
+    assert batch.device == torch.device("cpu")
     assert not batch.channels_last
-    assert batch[0].label.device == torch.device("cpu")
-    assert batch[0]["abc"].device == torch.device("cuda:0")
     assert batch.get_field("output").device == torch.device("cpu")
     assert batch.get_field("label").stride() == (27, 27, 9, 3, 1)
     assert batch.get_field("abc").stride() == (9, 9, 3, 1)
