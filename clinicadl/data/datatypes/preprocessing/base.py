@@ -1,9 +1,10 @@
 import abc
 import os
 import re
-from typing import Optional, Pattern, Self, Union
+from typing import Optional, Pattern, Union
 
 from pydantic import model_validator
+from typing_extensions import Self
 
 from ..base import DataType
 from ..modalities import Modality
