@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 from pydantic import model_validator
@@ -112,6 +112,13 @@ class SplitterConfig(ClinicaDLConfig, ABC):
                 "split directory."
             )
             raise FileNotFoundError(error_msg)
+
+    @classmethod
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
+        dict_.setdefault(
+            "split_dir", None
+        )  # to deceive the check (split_dir is not in the json)
+        return super()._check_dict(dict_)
 
 
 class Splitter(ABC):
