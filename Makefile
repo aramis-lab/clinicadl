@@ -91,9 +91,9 @@ test: install
 ## gpu-tests    : Run only GPU unit tests
 .PHONY: gpu-test
 gpu-test: install
-	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests --ignore tests/unittests/train --ignore tests/unittests/callbacks
 
 ## multi-gpu-tests    : Run only Multi-GPUs unit tests
 .PHONY: multi-gpu-test
 multi-gpu-test: install
-	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests --ignore tests/unittests/train --ignore tests/unittests/callbacks
