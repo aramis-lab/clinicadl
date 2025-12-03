@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 import torchio as tio
+from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 
@@ -134,6 +135,42 @@ def test_DataPoint():
     assert (data_point.affine == np.diag([1.3, 1.2, 1.1, 1])).all()
     assert data_point.spatial_shape == (3, 3, 3)
     assert data_point.shape == (1, 3, 3, 3)
+
+    data_point = DataPoint(
+        image=image,
+        label=1.0,
+        participant="sub-000",
+        session="ses-M000",
+    )
+    assert isinstance(data_point.label, float)
+    data_point = DataPoint(
+        image,
+        label=[0, 1, 2],
+        participant="sub-000",
+        session="ses-M00",
+    )
+    assert data_point.label == [0, 1, 2]
+    data_point = DataPoint(
+        image,
+        label=[0.0, 1, 2],
+        participant="sub-000",
+        session="ses-M00",
+    )
+    assert data_point.label == [0.0, 1.0, 2.0]
+    data_point = DataPoint(
+        image,
+        label=np.array([[0, 1], [0, 1]]),
+        participant="sub-000",
+        session="ses-M00",
+    )
+    assert (data_point.label == [[0, 1], [0, 1]]).all()
+    with pytest.raises(ValidationError):
+        data_point = DataPoint(
+            image,
+            label=torch.tensor([0, 1, 2]),
+            participant="sub-000",
+            session="ses-M00",
+        )
 
     # transforms history
     transform = tio.Clamp(out_min=0, out_max=1)

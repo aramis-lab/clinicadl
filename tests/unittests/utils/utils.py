@@ -4,6 +4,8 @@ from typing import Any
 
 from typing_extensions import Self
 
+from clinicadl.utils.json import read_json
+
 __all__ = ["Obj", "ObjA", "ObjConfig", "ObjAConfig", "ImplementedObj"]
 
 
@@ -17,7 +19,7 @@ class Obj:
 
     @classmethod
     def from_json(cls, json_path: Path) -> Self:
-        return cls(a=json_path["a"])
+        return cls(a=read_json(json_path)["a"])
 
 
 class ObjA(Obj):

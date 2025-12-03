@@ -1,15 +1,16 @@
 import re
 
+import numpy as np
 import pytest
 import torch
 import torchio as tio
-from monai.transforms import Activations, AsDiscrete
+from monai.transforms import Activations
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
-tensor = torch.tensor([[0, 2]])
-img = tensor.expand((1, 2, 2, 2))
+tensor = torch.tensor([[1, 1], [1, 0]]).float()
+img = torch.tensor([[[[1]], [[1]]], [[[1]], [[0]]]]).float()
 
 X = DataPoint(
     image=tio.ScalarImage(tensor=img),
@@ -24,50 +25,79 @@ X["exclude"] = 0.2
 
 
 def test_monai_wrapper():
-    as_discrete = Activations(softmax=True)
-
-    transform = MonaiTransformWrapper(as_discrete)
+    # only on images
+    transform = MonaiTransformWrapper(Activations(softmax=True))
     out = transform(X)
-    assert (out.mask.tensor == 1).all()
-    assert (out.image.tensor == 1).all()
-    assert not (out["array"] == 1).all()
-    assert not (out["tensor"] == 1).all()
+    torch.testing.assert_close(
+        out.mask.tensor,
+        torch.tensor([[[[0.5000]], [[0.7311]]], [[[0.5000]], [[0.2689]]]]),
+        rtol=1e-3,
+        atol=1e-3,
+    )
+    torch.testing.assert_close(
+        out.image.tensor,
+        torch.tensor([[[[0.5000]], [[0.7311]]], [[[0.5000]], [[0.2689]]]]),
+        rtol=1e-3,
+        atol=1e-3,
+    )
+    np.testing.assert_allclose(
+        out["array"],
+        tensor.numpy(),
+        rtol=1e-3,
+    )
+    torch.testing.assert_close(
+        out["tensor"],
+        tensor,
+        rtol=1e-3,
+        atol=1e-3,
+    )
     assert out.label == 0.2
 
+    # include
     transform = MonaiTransformWrapper(
-        as_discrete, include=["mask", "image", "array", "tensor", "label"]
+        Activations(softmax=True), include=["mask", "image", "array", "tensor", "label"]
     )
     out = transform(X)
-    assert (out.mask.tensor == 1).all()
-    assert (out.image.tensor == 1).all()
-    assert (out["array"] == 1).all()
-    assert (out["tensor"] == 1).all()
-    assert out["label"] == 1
+    assert isinstance(out["tensor"], torch.Tensor)
+    torch.testing.assert_close(
+        out["tensor"],
+        torch.tensor([[0.5000, 0.7311], [0.5000, 0.2689]]),
+        rtol=1e-3,
+        atol=1e-3,
+    )
+    assert isinstance(out["array"], np.ndarray)
+    np.testing.assert_allclose(
+        out["array"], np.array([[0.5000, 0.7311], [0.5000, 0.2689]]), rtol=1e-3
+    )
+    assert out.label == 1
     assert out["exclude"] == 0.2
 
-    transform = MonaiTransformWrapper(as_discrete, exclude=["mask"])
+    # exclude
+    transform = MonaiTransformWrapper(Activations(softmax=True), exclude=["mask"])
     out = transform(X)
-    assert not (out.mask.tensor == 1).all()
-    assert (out.image.tensor == 1).all()
-    assert not (out["array"] == 1).all()
-    assert not (out["tensor"] == 1).all()
-    assert out["label"] == 0.2
+    torch.testing.assert_close(
+        out.mask.tensor,
+        img,
+        rtol=1e-3,
+        atol=1e-3,
+    )
+    assert out.label == 0.2
 
-    one_hot = AsDiscrete(to_onehot=2, threshold=0.5)
-    transform = MonaiTransformWrapper(one_hot, include=["label"])
-    out = transform(X)
-    assert (out["label"] == torch.tensor([[1.0, 0.0]])).all()
-
+    # errors
     with pytest.raises(
         ValueError,
         match="You cannot pass both 'include' and 'exclude'.",
     ):
-        MonaiTransformWrapper(as_discrete, include=["image"], exclude=["label"])
+        MonaiTransformWrapper(
+            Activations(softmax=True), include=["image"], exclude=["label"]
+        )
 
-    transform = MonaiTransformWrapper(as_discrete, include=["participant"])
+    transform = MonaiTransformWrapper(
+        Activations(softmax=True), include=["participant"]
+    )
     with pytest.raises(
-        TypeError,
-        match="To apply 'Activations', 'participant' must be a torchio.Image*",
+        Exception,
+        match="An error occurred while transforming the field 'participant'.",
     ):
         transform(X)
 

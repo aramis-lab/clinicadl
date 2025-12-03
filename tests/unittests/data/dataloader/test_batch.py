@@ -80,19 +80,6 @@ def test_get_field():
     assert isinstance(labels[0], list)
     assert labels[-1] is None
 
-    # dict
-    batch[0]["label"] = {"A": 0.0, "B": 1.0}
-    batch[-1]["label"] = {"A": 2.0, "B": 3.0}
-    labels = batch.get_field("label")
-    torch.testing.assert_close(
-        labels, torch.tensor([[0.0, 1.0], [2.0, 3.0]], dtype=torch.float32)
-    )
-
-    batch[0]["label"] = {"A": 0, "B": "abc"}
-    labels = batch.get_field("label")
-    assert isinstance(labels, list)
-    assert isinstance(labels[0], dict)
-
     # homogeneous numerics
     batch[0]["label"] = 0
     batch[-1]["label"] = 1

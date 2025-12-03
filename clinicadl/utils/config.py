@@ -143,7 +143,7 @@ class ClinicaDLConfig(BaseModel):
         ClinicaDLConfig
             The config class.
         """
-        dict_ = cls._check_dict(dict_, kwargs)
+        dict_ = cls._check_dict(dict_)
 
         for field, value in dict_.items():
             if field not in kwargs:
@@ -215,24 +215,17 @@ class ClinicaDLConfig(BaseModel):
         return value
 
     @classmethod
-    def _check_dict(
-        cls, dict_: dict[str, Any], kwargs: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
         """
         Checks the input of :py:meth:`from_dict`.
         """
         fields_in_dict = set(dict_)
-        fields_in_kwargs = set(kwargs)
         expected_fields = set(cls.get_fields())
 
-        if diff := list(
-            expected_fields.difference(fields_in_dict.union(fields_in_kwargs))
-        ):
+        if diff := list(expected_fields.difference(fields_in_dict)):
             raise MissingFieldsError(fields=diff)
 
-        if diff := list(
-            fields_in_dict.union(fields_in_kwargs).difference(expected_fields)
-        ):
+        if diff := list(fields_in_dict.difference(expected_fields)):
             raise WrongFieldsError(fields=diff, object_name=cls._get_name())
 
         return dict_
@@ -301,9 +294,7 @@ class ConfigWithName(ClinicaDLConfig):
         return self._get_name()
 
     @classmethod
-    def _check_dict(
-        cls, dict_: dict[str, Any], kwargs: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
         """
         Checks the input of :py:meth:`from_dict`.
         """
@@ -313,7 +304,7 @@ class ConfigWithName(ClinicaDLConfig):
                 dict_[NAME] == cls._get_name()
             ), f"The input dictionary is associated to {dict_[NAME]}, not to {cls._get_name()}."
             del dict_[NAME]
-        return super()._check_dict(dict_, kwargs)
+        return super()._check_dict(dict_)
 
 
 T = TypeVar("T")
@@ -646,7 +637,7 @@ class DictOfObjects(BaseModel, Generic[T, TConfig]):
     @classmethod
     def from_dict(cls, value: Any, field_name: str) -> Self:
         """
-        Checks if the input is a sequence and build a ``DictOfObjects``.
+        Checks if the input is a dict and build a ``DictOfObjects``.
 
         Useful for pydantic field validators.
 
@@ -721,7 +712,7 @@ class KwargsConfig(ObjectConfig[T]):
 
     @classmethod
     def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
-        dict_ = cls._check_dict(dict_, kwargs)
+        dict_ = cls._check_dict(dict_)
 
         main_field_name = list(dict_.keys())[0]  # only one field in KwargsConfig
 

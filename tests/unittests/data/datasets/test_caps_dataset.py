@@ -706,7 +706,7 @@ def test__getitem__(tmp_path):
     )
     caps_dataset.read_tensor_conversion()
     out_sample = caps_dataset[0]
-    out_sample.label == {"age": 1.0, "diagnosis": 0}
+    out_sample.label == [1.0, 0.0]
 
     # additional info
     caps_dataset = CapsDataset(

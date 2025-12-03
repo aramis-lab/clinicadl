@@ -323,8 +323,6 @@ class Batch(list[T]):
 
         elif isinstance(value, np.ndarray):
             return torch.from_numpy(value)
-        elif isinstance(value, dict):
-            return cls._to_tensor(list(value.values()))
         elif isinstance(value, torch.Tensor):
             return value.clone()
         else:

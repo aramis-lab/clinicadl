@@ -1,5 +1,4 @@
-from collections import OrderedDict
-
+import numpy as np
 import pytest
 import torch
 import torchio as tio
@@ -29,7 +28,7 @@ def test_check_transforms():
 def test_apply():
     data_point = DataPoint(
         tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2))),
-        label=torch.tensor([0, 2]),
+        label=[0, 2],
         participant="abc",
         session="0",
     )
@@ -43,7 +42,7 @@ def test_apply():
     data_point = transforms.apply(data_point)
     assert data_point.image.tensor.min() == 0
     assert data_point.image.tensor.max() == 1
-    torch.testing.assert_close(data_point.label, torch.tensor([0.0, 1.0]))
+    np.testing.assert_allclose(data_point.label, torch.tensor([0.0, 1.0]))
 
     # batch
     data_point.image = (tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2))),)

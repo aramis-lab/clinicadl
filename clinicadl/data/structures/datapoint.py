@@ -1,23 +1,32 @@
 import copy
-from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
+import numpy as np
 import torchio as tio
+from numpy.typing import NDArray
 from pydantic import field_validator
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
 from clinicadl.utils.variables import SPACING_RTOL
 
-from .label import LabelType
+ArrayLikeInt = Union[Sequence[int], NDArray[np.integer]]
+ArrayLikeFloat = Union[Sequence[float], NDArray[np.floating]]
+LabelType = Union[
+    int,
+    ArrayLikeInt,
+    float,
+    ArrayLikeFloat,
+    tio.LabelMap,
+]
 
 
 class DataPointConfig(ClinicaDLConfig):
     """To check ``DataPoint`` inputs."""
 
     image: tio.ScalarImage
-    label: Optional[Union[int, float, OrderedDict[str, float], tio.LabelMap]]
+    label: Optional[LabelType]
     participant: str
     session: str
 
@@ -47,7 +56,7 @@ class DataPoint(tio.Subject):
 
     A DataPoint has the following attributes:
         - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
-        - ``label``: the label. Either ``None``, a scalar, a dict of scalars, or a mask, as a :py:class:`torchio.LabelMap`;
+        - ``label``: the label. Either ``None``, a scalar, a sequence of scalars, or a mask (as a :py:class:`torchio.LabelMap`);
         - ``participant``: the id of the participant, as a ``str``;
         - ``session``: the id of the session, as a ``str``.
 
@@ -98,12 +107,13 @@ class DataPoint(tio.Subject):
         The participant concerned.
     session : str
         The session concerned.
-    label : Optional[Union[float, int, dict[str, float], tio.LabelMap, PathType]], default=None
+    label : Optional[Union[int, float, ArrayLikeInt, ArrayLikeFloat, tio.LabelMap, PathType]], default=None
         The label associated to the image. Can be:
 
+        - an ``int`` (classification, including multi-class classification);
+        - a ``sequence`` or (:numpy:`ndarray`) of ``int`` (multi-label classification);
         - a ``float`` (regression);
-        - a ``dictionary`` with ``strings`` for keys and ``floats`` for values (multi-output regression);
-        - an ``int`` (classification, including multi-class classification),
+        - a ``sequence`` or (:numpy:`ndarray`) of ``float`` (multi-output regression);
         - a mask, passed as a :py:class:`torchio.LabelMap` or a ``path`` to a file, (segmentation);
         - or ``None``, if no label (reconstruction).
 
@@ -121,9 +131,7 @@ class DataPoint(tio.Subject):
         image: Union[tio.ScalarImage, PathType],
         participant: str,
         session: str,
-        label: Optional[
-            Union[float, int, dict[str, float], tio.LabelMap, PathType]
-        ] = None,
+        label: Optional[Union[LabelType, PathType]] = None,
         **kwargs: Any,
     ) -> None:
         config = DataPointConfig(
