@@ -47,6 +47,7 @@ MANDATORY_ARGS = {
         CapsDataset,
         ConcatDataset,
         PairedDataset,
+        UnpairedDataset,
     ],
 )
 def test_dataset_from_dict(dataset):

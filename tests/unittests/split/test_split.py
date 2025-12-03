@@ -14,7 +14,7 @@ CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
 TRAIN_DATASET = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         tracer="18FAV45",
         suvr_reference_region="pons2",
         use_uncropped_image=True,
@@ -23,36 +23,47 @@ TRAIN_DATASET = CapsDataset(
 )
 VAL_DATASET = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         tracer="18FAV45",
         suvr_reference_region="pons2",
         use_uncropped_image=True,
     ),
     data=DATA.iloc[6:],
 )
+TRAIN_DATASET.read_tensor_conversion()
+VAL_DATASET.read_tensor_conversion()
 
 
 def test_build_loaders():
     split = Split(
-        index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
+        index=0,
+        split_dir=CAPS_DIR / "splits" / "split",
+        train_dataset=TRAIN_DATASET,
+        val_dataset=VAL_DATASET,
     )
 
     config = DataLoaderConfig(batch_size=2)
+
+    with pytest.raises(
+        RuntimeError,
+        match="Call 'build_train_loader' before accessing the 'train_loader'.",
+    ):
+        split.train_loader
     split.build_train_loader(config, batch_size=1)
     assert split.train_loader.batch_size == 2
     assert split.train_loader.sampler.num_replicas == 1
 
-    config = DataLoaderConfig()
+    with pytest.raises(
+        RuntimeError, match="Call 'build_val_loader' before accessing the 'val_loader'."
+    ):
+        split.val_loader
     split.build_val_loader(config)
+    assert split.val_loader.batch_size == 2
     assert split.val_loader.sampler.num_replicas == 1
 
     split.parallelism(dp_degree=2, rank=0)
     assert split.train_loader.sampler.num_replicas == 2
     assert split.val_loader.sampler.num_replicas == 2
-
-    #####
-    split.reset()
-    split.parallelism(dp_degree=2, rank=1)
 
     split.build_train_loader(
         batch_size=2,
@@ -88,7 +99,10 @@ def test_build_loaders():
 )
 def test_workers():
     split = Split(
-        index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
+        index=0,
+        split_dir=CAPS_DIR / "splits" / "split",
+        train_dataset=TRAIN_DATASET,
+        val_dataset=VAL_DATASET,
     )
     split.build_train_loader(
         num_workers=1,
@@ -109,26 +123,31 @@ def test_workers():
     assert split.train_loader.persistent_workers
 
 
-def test_to_dict():
+def test_to_json_from_json(tmp_path):
     split = Split(
-        index=0, split_dir="abc", train_dataset=TRAIN_DATASET, val_dataset=VAL_DATASET
+        index=0,
+        split_dir=CAPS_DIR / "splits" / "split",
+        train_dataset=TRAIN_DATASET,
+        val_dataset=VAL_DATASET,
     )
     split.build_train_loader(batch_size=2)
     split.build_val_loader(num_workers=1)
-    dict_ = split.to_dict()
-    assert sorted(list(dict_.keys())) == sorted(
-        [
-            "index",
-            "split_dir",
-            "train_dataset",
-            "val_dataset",
-            "train_loader_config",
-            "val_loader_config",
-        ]
+    split.to_json(tmp_path / "split.json")
+    split = Split.from_json(tmp_path / "split.json")
+    assert split.index == 0
+    assert split.split_dir == CAPS_DIR / "splits" / "split"
+    assert split.train_dataset.config.datatype == PETLinear(
+        tracer="18FAV45",
+        suvr_reference_region="pons2",
+        use_uncropped_image=True,
     )
-    assert dict_["index"] == 0
-    assert dict_["split_dir"] == Path("abc")
-    assert dict_["train_dataset"]["total_samples"] == 6
-    assert dict_["val_dataset"]["total_samples"] == 2
-    assert dict_["train_loader_config"]["batch_size"] == 2
-    assert dict_["val_loader_config"]["num_workers"] == 1
+    assert split.val_loader.num_workers == 1
+
+    split = Split(
+        index=0,
+        split_dir=CAPS_DIR / "splits" / "split",
+        train_dataset=TRAIN_DATASET,
+        val_dataset=VAL_DATASET,
+    )
+    split.to_json(tmp_path / "split.json", overwrite=True)
+    split = Split.from_json(tmp_path / "split.json")

@@ -1,89 +1,135 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import NonNegativeInt, PositiveInt
+from pydantic import Field, NonNegativeInt, field_validator
+from typing_extensions import Self
 
 from clinicadl.data.dataloader import DataLoader, DataLoaderConfig
-from clinicadl.data.datasets.types import Dataset
-from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.data.datasets import ClinicaDLDataset
+from clinicadl.data.datasets.factory import get_dataset_from_dict
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.objects import HasConfig
 
 
-class Split(ClinicaDLConfig):
+def _read_dataloader(
+    serialized_loader: Optional[dict[str, Any]],
+) -> Optional[DataLoaderConfig]:
     """
-    Dataclass that contains a split.
-
-    More precisely, the dataclass will first contain the training and validation datasets, as well as
-    the split index and the split directory used to split the dataset.
-
-    Then, when :py:meth:`~Split.build_train_loader` and :py:meth:`~Split.build_val_loader` will be called,
-    the dataclass will also contain the training and validation :py:class:`~torch.utils.data.DataLoader`.
-
-    Finally, to instantiate Data Parallelism, that will distribute the training and validation sets
-    across devices, the user can use :py:meth:`~Split.parallelism`.
-
-    Attributes
-    ----------
-    index : NonNegativeInt
-        The index of the split.
-    split_dir : Path
-        Directory from which the split was built.
-    train_dataset : Dataset
-        The training set.
-    val_dataset : Dataset
-        The validation set.
-    train_loader : Optional[DataLoader]
-        The training PyTorch DataLoader. Will be None until :py:meth:`~Split.build_train_loader`
-        is called.
-    val_loader : Optional[DataLoader]
-        The validation PyTorch DataLoader. Will be None until :py:meth:`~Split.build_val_loader`
-        is called.
-
-    ..
-        train_loader_config : Optional[DataLoaderConfig]
-            A dataclass saving the parameters used when calling :py:meth:`~Split.build_train_loader`.
-            For reproducibility.
-        val_loader_config : Optional[DataLoaderConfig]
-            A dataclass saving the parameters used when calling :py:meth:`~Split.build_val_loader`.
-            For reproducibility.
+    To read the serialized dataloader, even if it is ``None``.
     """
+    if serialized_loader:
+        return DataLoaderConfig.from_dict(serialized_loader)
+    return serialized_loader
+
+
+class SplitConfig(ObjectConfig["Split"]):
+    """Config class for ``Split``."""
 
     index: NonNegativeInt
     split_dir: Path
-    train_dataset: Dataset
-    val_dataset: Dataset
-    train_loader: Optional[DataLoader] = None
-    val_loader: Optional[DataLoader] = None
-    train_loader_config: Optional[DataLoaderConfig] = None
-    val_loader_config: Optional[DataLoaderConfig] = None
-    _dp_degree: Optional[PositiveInt] = None
-    _rank: Optional[NonNegativeInt] = None
+    train_dataset: ClinicaDLDataset = Field(reader=get_dataset_from_dict)
+    val_dataset: ClinicaDLDataset = Field(reader=get_dataset_from_dict)
+    train_loader_config: Optional[DataLoaderConfig] = Field(
+        default=None, reader=_read_dataloader
+    )
+    val_loader_config: Optional[DataLoaderConfig] = Field(
+        default=None, reader=_read_dataloader
+    )
 
-    def to_dict(self) -> dict[str, Any]:
+    @field_validator("split_dir", mode="after")
+    @classmethod
+    def _check_split_dir(cls, v: Path) -> Path:
         """
-        Customized version of 'model_dump'.
+        Checks that the split dir exists.
+        """
+        assert v.exists(), f"'split_dir' ({str(v)}) doesn't exist"
 
-        Returns the serialized config class.
-        """
-        dict_ = super().model_dump(
-            exclude={"train_loader", "val_loader", "train_dataset", "val_dataset"}
+        return v
+
+    @classmethod
+    def _get_class(cls) -> type[Split]:
+        return Split
+
+
+class Split(HasConfig[SplitConfig]):
+    """
+    An object containing the relevant information on a split.
+
+    More precisely, the dataclass contain the training and validation datasets, as well as
+    the split index and the split directory used to split the dataset.
+
+    Then, when :py:meth:`~Split.build_train_loader` and :py:meth:`build_val_loader` will be called,
+    the training and validation :py:class:`~torch.utils.data.DataLoader` can be accessed.
+
+    Finally, to instantiate Data Parallelism, that will distribute the training and validation sets
+    across devices, the user can use :py:meth:`parallelism`.
+    """
+
+    _config_type = SplitConfig
+
+    def __init__(
+        self,
+        index: int,
+        split_dir: Path,
+        train_dataset: ClinicaDLDataset,
+        val_dataset: ClinicaDLDataset,
+    ):
+        self.config = self._config_type(
+            index=index,
+            split_dir=split_dir,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+        )
+        self._dp_degree: Optional[int] = None
+        self._rank: Optional[int] = None
+
+    @property
+    def index(self) -> int:
+        """The index of the split."""
+        return self.config.index
+
+    @property
+    def split_dir(self) -> Path:
+        """Directory from which the split was built."""
+        return self.config.split_dir
+
+    @property
+    def train_dataset(self) -> ClinicaDLDataset:
+        """The training set."""
+        return self.config.train_dataset
+
+    @property
+    def val_dataset(self) -> ClinicaDLDataset:
+        """The validation set."""
+        return self.config.val_dataset
+
+    @property
+    def train_loader(self) -> DataLoader:
+        """To access the training :py:class:`torch.utils.data.DataLoader`."""
+        if not self.config.train_loader_config:
+            raise RuntimeError(
+                "Call 'build_train_loader' before accessing the 'train_loader'."
+            )
+        return self.config.train_loader_config.get_object(
+            dataset=self.train_dataset,
+            dp_degree=self._dp_degree,
+            rank=self._rank,
         )
 
-        dict_["val_dataset"] = self.val_dataset.describe()
-        dict_["train_dataset"] = self.train_dataset.describe()
-
-        return dict_
-
-    def reset(self) -> None:
-        """
-        Resets the computed fields of the Split object
-        (``train_loader``, ``val_loader``, etc.).
-        """
-        self.train_loader = None
-        self.val_loader = None
-        self.train_loader_config = None
-        self.val_loader_config = None
-        self._dp_degree = None
-        self._rank = None
+    @property
+    def val_loader(self) -> DataLoader:
+        """To access the validation :py:class:`torch.utils.data.DataLoader`."""
+        if not self.config.val_loader_config:
+            raise RuntimeError(
+                "Call 'build_val_loader' before accessing the 'val_loader'."
+            )
+        return self.config.val_loader_config.get_object(
+            dataset=self.val_dataset,
+            dp_degree=self._dp_degree,
+            rank=self._rank,
+        )
 
     def parallelism(self, dp_degree: int, rank: int) -> None:
         """
@@ -102,20 +148,14 @@ class Split(ClinicaDLConfig):
         ValueError
             If ``rank`` is greater than ``dp_degree``.
         """
+        if rank >= dp_degree:
+            raise ValueError(
+                "'rank' must be strictly smaller than 'dp_degree'. Got "
+                f"dp_degree={dp_degree} and rank={rank}"
+            )
+
         self._dp_degree = dp_degree
         self._rank = rank
-        if self.train_loader_config:
-            self.train_loader = self.train_loader_config.get_object(
-                dataset=self.train_dataset,
-                dp_degree=self._dp_degree,
-                rank=self._rank,
-            )
-        if self.val_loader_config:
-            self.val_loader = self.val_loader_config.get_object(
-                dataset=self.val_dataset,
-                dp_degree=self._dp_degree,
-                rank=self._rank,
-            )
 
     def build_train_loader(
         self,
@@ -187,9 +227,9 @@ class Split(ClinicaDLConfig):
             be converted to float values.
         """
         if dataloader_config:
-            self.train_loader_config = dataloader_config
+            self.config.train_loader_config = dataloader_config
         else:
-            self.train_loader_config = DataLoaderConfig(
+            self.config.train_loader_config = DataLoaderConfig(
                 batch_size=batch_size,
                 sampling_weights=sampling_weights,
                 shuffle=shuffle,
@@ -199,11 +239,6 @@ class Split(ClinicaDLConfig):
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
             )
-        self.train_loader = self.train_loader_config.get_object(
-            dataset=self.train_dataset,
-            dp_degree=self._dp_degree,
-            rank=self._rank,
-        )
 
     def build_val_loader(
         self,
@@ -275,9 +310,9 @@ class Split(ClinicaDLConfig):
             be converted to float values.
         """
         if dataloader_config:
-            self.val_loader_config = dataloader_config
+            self.config.val_loader_config = dataloader_config
         else:
-            self.val_loader_config = DataLoaderConfig(
+            self.config.val_loader_config = DataLoaderConfig(
                 batch_size=batch_size,
                 sampling_weights=sampling_weights,
                 shuffle=shuffle,
@@ -287,8 +322,15 @@ class Split(ClinicaDLConfig):
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
             )
-        self.val_loader = self.val_loader_config.get_object(
-            dataset=self.val_dataset,
-            dp_degree=self._dp_degree,
-            rank=self._rank,
+
+    @classmethod
+    def _from_config(cls, config: SplitConfig) -> Self:
+        split = cls(
+            **config.to_raw_dict(exclude=["train_loader_config", "val_loader_config"])
         )
+        if config.train_loader_config:
+            split.build_train_loader(config.train_loader_config)
+        if config.val_loader_config:
+            split.build_val_loader(config.val_loader_config)
+
+        return split

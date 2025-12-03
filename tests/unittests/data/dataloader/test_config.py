@@ -418,6 +418,28 @@ def test_serialize_deserialize(tmp_path):
     dataloader_config = DataLoaderConfig.from_dict(d)
     assert dataloader_config.batch_size == 2
 
-    d = dataloader_config.to_json(tmp_path / "dataloader.json")
+    dataloader_config.to_json(tmp_path / "dataloader.json")
     dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
     assert dataloader_config.batch_size == 2
+
+
+def test_custom_dataset():
+    from ..datasets.utils import CustomClinicaDLDataset
+
+    data = pd.DataFrame.from_records(
+        [
+            ("sub-100", "ses-M000"),
+            ("sub-100", "ses-M012"),
+            ("sub-999", "ses-M099"),
+            ("sub-999", "ses-M999"),
+        ],
+        columns=["participant_id", "session_id"],
+    )
+    dataset = CustomClinicaDLDataset(data)
+    dataloader = DataLoaderConfig(
+        batch_size=2,
+        shuffle=False,
+    ).get_object(dataset)
+    batch = next(iter(dataloader))
+    assert (batch[0].participant, batch[0].session) == ("sub-100", "ses-M000")
+    assert (batch[1].participant, batch[1].session) == ("sub-100", "ses-M012")

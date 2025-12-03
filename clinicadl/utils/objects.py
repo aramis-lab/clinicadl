@@ -111,7 +111,7 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
         self.config.to_json(json_path, overwrite=overwrite)
 
     @classmethod
-    def from_json(cls, json_path: PathType, **kwargs: Any) -> Self:
+    def from_json(cls: type[Self], json_path: PathType, **kwargs: Any) -> Self:
         config = cls._config_type.from_json(json_path, **kwargs)
         return cls._from_config(config)
 
@@ -119,12 +119,12 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
         return self.config.to_dict()
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Self:
+    def from_dict(cls: type[Self], config_dict: dict[str, Any]) -> Self:
         config = cls._config_type.from_dict(config_dict)
         return cls._from_config(config)
 
     @classmethod
-    def _from_config(cls, config: Config) -> Self:
+    def _from_config(cls: type[Self], config: Config) -> Self:
         """To create the object from the associated config."""
         return cls(
             **config.to_raw_dict()

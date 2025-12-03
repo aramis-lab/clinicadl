@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Generator, List, Optional, Sequence
+from typing import Generator, Optional, Sequence
 
 from pydantic import PositiveInt, field_validator
 
-from clinicadl.data.datasets.types import Dataset
+from clinicadl.data.datasets import ClinicaDLDataset
 from clinicadl.dictionary.words import SPLIT
 from clinicadl.split.split import Split
 from clinicadl.split.splitter.splitter import (
@@ -25,7 +25,7 @@ class KFoldConfig(SplitterConfig):
 
     @field_validator("n_splits", mode="after")
     @classmethod
-    def n_splits_validator(cls, v: int) -> int:
+    def _n_splits_validator(cls, v: int) -> int:
         """Checks that 'n_splits' is greater than 2."""
         assert v >= 2, "'n_splits' must be at least 2."
         return v
@@ -64,14 +64,12 @@ class KFold(Splitter):
     To handle a K-Fold cross-validator.
 
     This object will read a split directory returned by :py:func:`~clinicadl.split.make_kfold`,
-    and can then be used to split any :py:class:`~clinicadl.data.datasets.CapsDataset` (or
-    :py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset`,
-    :py:class:`~clinicadl.data.datasets.UnpairedDataset`) using :py:meth:`~KFold.get_splits`,
+    and can then be used to split any :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` using :py:meth:`~KFold.get_splits`,
     provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
 
     Parameters
     ----------
-    split_dir : Path
+    split_dir : PathType
         The split directory, returned by :py:func:`~clinicadl.split.make_kfold`.
 
     Raises
@@ -84,15 +82,12 @@ class KFold(Splitter):
     :py:class:`~clinicadl.split.SingleSplit`
     """
 
-    @property
-    def _associated_config(self) -> type[KFoldConfig]:
-        """The config class associated to the splitter."""
-        return KFoldConfig
+    _config_type = KFoldConfig
 
     def get_splits(
         self,
-        dataset: Dataset,
-        eval_dataset: Optional[Dataset] = None,
+        dataset: ClinicaDLDataset,
+        eval_dataset: Optional[ClinicaDLDataset] = None,
         splits: Optional[Sequence[int]] = None,
     ) -> Generator[Split, None, None]:
         """
@@ -101,10 +96,9 @@ class KFold(Splitter):
 
         Parameters
         ----------
-        dataset : Dataset
-            The dataset to split. Can be a :py:class:`~clinicadl.data.datasets.CapsDataset`, :py:class:`~clinicadl.data.datasets.ConcatDataset`,
-            :py:class:`~clinicadl.data.datasets.PairedDataset`, or :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
-        eval_dataset : Optional[Dataset], default=None
+        dataset : ClinicaDLDataset
+            The :py:class:`~clinicadl.data.datasets.CapsDataset` to split.
+        eval_dataset : Optional[ClinicaDLDataset], default=None
             If not ``None``, it will be understood as the dataset from which the validation dataset should be created, and
             ``dataset`` will be the dataset from which the training dataset will be created (see examples). If ``None``, both
             training and validation datasets are built from ``dataset``.
@@ -144,7 +138,7 @@ class KFold(Splitter):
             dataset = datasets.CapsDataset(
                 "caps_dir",
                 data=df,
-                preprocessing=datatypes.PETLinear(
+                datatype=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
                 transforms=Transforms(extraction=extraction.Patch()),
@@ -175,7 +169,7 @@ class KFold(Splitter):
             eval_dataset = datasets.CapsDataset(
                 "caps_dir",
                 data=df,
-                preprocessing=datatypes.PETLinear(
+                datatype=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
             )
@@ -203,7 +197,7 @@ class KFold(Splitter):
                 split_id=split, dataset=dataset, eval_dataset=eval_dataset
             )
 
-    def _read_splits(self) -> List[SubjectsSessionsSplit]:
+    def _read_splits(self) -> list[SubjectsSessionsSplit]:
         """
         Load all splits in 'split_dir' from the tsv files.
         """

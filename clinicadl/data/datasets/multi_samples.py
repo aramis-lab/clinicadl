@@ -32,23 +32,6 @@ class MultiSamplesDataset(ClinicaDLDataset):
 
     @property
     def df(self) -> pd.DataFrame:
-        """
-        A DataFrame containing metadata on the images present in the dataset.
-
-        Each image must have its associated line in the DataFrame, which must contain at least the columns
-        "participant_id" and "session_id", with respectively the id (a string) of the participant and the session.
-
-        Example
-        -------
-        .. code-block:: text
-
-            participant_id  session_id   age   sex   diagnosis
-            sub-001         ses-M000     55.0  M     CN
-            sub-001         ses-M003     55.0  M     AD
-            sub-002         ses-M000     62.0  F     MCI
-            sub-002         ses-M003     62.0  F     AD
-            sub-003         ses-M000     67.0  F     CN
-        """
         return self._df
 
     @property

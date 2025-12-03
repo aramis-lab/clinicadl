@@ -10,11 +10,10 @@ from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.split.make_splits.utils import (
     extract_baseline,
     find_available_split_dir,
-    read_and_format_data,
     write_to_tsv,
 )
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.extraction import Slice
+from clinicadl.transforms.handlers import Transforms
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 FULL_DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -33,7 +32,7 @@ def sub_data(
 
 caps_t1 = CapsDataset(
     CAPS_DIR,
-    preprocessing=T1Linear(use_uncropped_image=True),
+    datatype=T1Linear(use_uncropped_image=True),
     label="age",
     columns=["age"],
     data=sub_data([("sub-000", "ses-M000"), ("sub-010", "ses-M003")]),
@@ -41,7 +40,7 @@ caps_t1 = CapsDataset(
 )
 caps_pet = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     label="age",
@@ -105,37 +104,6 @@ BASELINE_DF = pd.DataFrame(
         "age": [1, 1, 1],
     }
 )
-
-
-def test_read_and_format_data():
-    df = read_and_format_data(CAPS_DIR / "tsv" / "small_test_df.tsv")
-    assert set(df.columns) == {"participant_id", "session_id", "age", "diagnosis"}
-    assert len(df) == 3
-
-    df = read_and_format_data(CONCAT_DF)
-    assert set(df.columns) == {
-        "participant_id",
-        "session_id",
-        "dataset_id",
-        "n_samples",
-        "age",
-        "first_idx",
-        "last_idx",
-        "diagnosis",
-    }
-    assert len(df) == 3
-
-    df = read_and_format_data(UNPAIRED.df)
-    assert set(df.columns) == {
-        "participant_id",
-        "session_id",
-        "dataset_id",
-        "n_samples",
-        "age",
-        "category",
-        "diagnosis",
-    }
-    assert len(df) == 5
 
 
 def test_extract_baseline():

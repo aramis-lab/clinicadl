@@ -4,52 +4,13 @@ from typing import Optional
 import pandas as pd
 
 from clinicadl.dictionary.suffixes import TSV
-from clinicadl.dictionary.words import BASELINE, DATASET_ID, PARTICIPANT_ID, SESSION_ID
-from clinicadl.tsvtools.utils import read_data
-from clinicadl.utils.typing import DataType
+from clinicadl.dictionary.words import BASELINE, PARTICIPANT_ID, SESSION_ID
 
 __all__ = [
-    "read_and_format_data",
     "extract_baseline",
     "write_to_tsv",
     "find_available_split_dir",
 ]
-
-
-def read_and_format_data(data: DataType) -> pd.DataFrame:
-    """
-    Reads the input dataframe, passed directly as a dataframe or via a path, performs
-    checks on it, and formats it in a uniform way.
-
-    Parameters
-    ----------
-    data : Union[str, Path, pd.DataFrame]
-        The DataFrame, as a pandas DataFrame or a path.
-
-    Returns
-    -------
-    pd.DataFrame
-        The dataframe, read, checked and formatted.
-
-    Raises
-    ------
-    ValueError
-        If 'data' is not a str, a Path or a pandas DataFrame.
-    ClinicaDLTSVError
-        If the DataFrame is empty.
-    ClinicaDLTSVError
-        If the required columns ('participant_id', 'session_id') are not found in the DataFrame.
-    """
-    if (
-        isinstance(data, pd.DataFrame) and DATASET_ID in data.columns.names
-    ):  # for unpaired datasets
-        data = (
-            data.stack(DATASET_ID).reset_index(level=DATASET_ID).reset_index(drop=True)
-        )
-
-    df = read_data(data, check_duplicates=False, check_protected_names=False)
-
-    return df
 
 
 def extract_baseline(
