@@ -1,4 +1,5 @@
 {
+    "conversion_name": "pet_ref_missing_field",
     "individual_masks": [],
     "common_masks": [],
     "also": {},
@@ -9,6 +10,7 @@
         1.1
     ],
     "shape": [
+        1,
         1,
         1,
         1

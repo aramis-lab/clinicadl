@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 from torchvision.models import vit_b_16, vit_b_32, vit_l_16, vit_l_32
 
 from clinicadl.networks.nn import ViT, ViTB16, ViTB32, ViTL16, ViTL32
@@ -117,7 +118,7 @@ def test_vit(
     img_size = input_tensor.shape[2:]
     spatial_dims = len(img_size)
     if error:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             ViT(
                 in_shape=input_tensor.shape[1:],
                 patch_size=patch_size,
@@ -209,7 +210,7 @@ def test_vit(
             encoder[num_layers]
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(act):
     batch_size = INPUT_2D.shape[0]
     net = ViT(
@@ -242,17 +243,15 @@ def test_activation_parameters():
 
 
 @pytest.mark.parametrize(
-    "net,num_outputs,output_act,img_size,getter",
+    "net,num_outputs,output_act,getter",
     [
-        (ViTB16, 1, "sigmoid", (224, 224), vit_b_16),
-        (ViTB32, 2, None, (224, 224), vit_b_32),
-        (ViTL16, None, "sigmoid", (224, 224), vit_l_16),
-        (ViTL32, None, None, (224, 224), vit_l_32),
+        (ViTB16, 1, "sigmoid", vit_b_16),
+        (ViTB32, 2, None, vit_b_32),
+        (ViTL16, None, "sigmoid", vit_l_16),
+        (ViTL32, None, None, vit_l_32),
     ],
 )
-def test_get_vit(net, num_outputs, output_act, img_size, getter):
-    input_tensor = torch.randn(1, 3, *img_size)
-
+def test_literature(net, num_outputs, output_act, getter):
     vit = net(num_outputs=num_outputs, output_act=output_act, pretrained=False)
     if num_outputs:
         assert vit.fc.out.out_features == num_outputs
@@ -269,7 +268,31 @@ def test_get_vit(net, num_outputs, output_act, img_size, getter):
     gt.heads = torch.nn.Identity()
     x = torch.randn(1, 3, 224, 224)
 
-    vit = net(num_outputs=1, pretrained=True)
+    vit = net(pretrained=True, num_outputs=1)
     vit.fc = torch.nn.Identity()
     with torch.no_grad():
         assert (vit(x) == gt(x)).all()
+
+    if net is ViTB16:
+        vit = net(pretrained=True, num_outputs=None)
+        assert vit(x).shape == torch.Size([1, 196, 768])
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"in_shape": (1, 3, 0)},
+        {"patch_size": 0},
+        {"dropout": 1.1},
+        {"embedding_dim": 0},
+        {"num_layers": 0},
+        {"num_heads": 0},
+        {"mlp_dim": 0},
+        {"pos_embed_type": "abc"},
+    ],
+)
+def test_checks(args):
+    args_ = {"in_shape": (1, 16, 16, 16), "patch_size": 4, "num_outputs": None}
+    args_.update(args)
+    with pytest.raises(ValidationError):
+        ViT(**args_)

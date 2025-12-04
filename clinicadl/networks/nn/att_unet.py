@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from .layers.unet import AttentionUpBlock
-from .unet import UNet
+from .unet import UNet, UNetConfig
 
 
 class AttentionUNet(UNet):
@@ -34,8 +34,7 @@ class AttentionUNet(UNet):
         Default to ``(64, 128, 256, 512, 1024)``, as in the original UNet paper\\ :footcite:p:`Ronneberger2015`.
     act : ActivationParameters, default="relu"
         The activation function used, and optionally its arguments.
-        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
-        If ``None``, no activation will be used.\n
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
         ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
@@ -174,3 +173,14 @@ class AttentionUNet(UNet):
     @property
     def _decoding_block(self) -> type[nn.Module]:
         return AttentionUpBlock
+
+
+class AttentionUNetConfig(UNetConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.AttentionUNet`.
+    """
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return AttentionUNet

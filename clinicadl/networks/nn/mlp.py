@@ -1,10 +1,21 @@
 from collections import OrderedDict
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import torch.nn as nn
 from monai.networks.blocks import ADN
 from monai.networks.layers.utils import get_act_layer
 from monai.networks.nets import FullyConnectedNet as BaseMLP
+from pydantic import (
+    NonNegativeFloat,
+    PositiveInt,
+    field_validator,
+)
+
+from clinicadl.networks.nn.layers.utils import (
+    ActivationParameters,
+    NormalizationParameters,
+)
+from clinicadl.utils.factories import get_defaults_from
 
 from .layers.utils import (
     ActFunction,
@@ -13,6 +24,7 @@ from .layers.utils import (
     NormLayer,
 )
 from .utils import check_adn_ordering, check_norm_layer
+from .utils.config import NetworkConfig, _DropoutConfig
 
 
 class MLP(BaseMLP):
@@ -123,19 +135,27 @@ class MLP(BaseMLP):
         bias: bool = True,
         adn_ordering: str = "NDA",
     ) -> None:
-        self.norm = check_norm_layer(norm)
-        super().__init__(
-            in_channels=num_inputs,
-            out_channels=num_outputs,
-            hidden_channels=hidden_dims,
-            dropout=dropout,
+        self.config = MLPConfig(
+            num_inputs=num_inputs,
+            num_outputs=num_outputs,
+            hidden_dims=hidden_dims,
             act=act,
+            output_act=output_act,
+            norm=norm,
+            dropout=dropout,
             bias=bias,
-            adn_ordering=check_adn_ordering(adn_ordering),
+            adn_ordering=adn_ordering,
         )
-        self.num_inputs = num_inputs
-        self.num_outputs = num_outputs
-        self.hidden_dims = hidden_dims
+        super().__init__(
+            in_channels=self.config.num_inputs,
+            out_channels=self.config.num_outputs,
+            hidden_channels=self.config.hidden_dims,
+            dropout=self.config.dropout,
+            act=self.config.act,
+            bias=self.config.bias,
+            adn_ordering=self.config.adn_ordering,
+        )
+
         self.output = nn.Sequential(OrderedDict([("linear", self.output)]))
         self.output.output_act = get_act_layer(output_act) if output_act else None
         # renaming
@@ -150,10 +170,10 @@ class MLP(BaseMLP):
         """
         Gets the parametrized Linear layer + ADN block.
         """
-        if self.norm == NormLayer.LAYER:
+        if self.config.norm == NormLayer.LAYER:
             norm = ("layer", {"normalized_shape": num_outputs})
         else:
-            norm = self.norm
+            norm = self.config.norm
         seq = nn.Sequential(
             OrderedDict(
                 [
@@ -161,10 +181,10 @@ class MLP(BaseMLP):
                     (
                         "adn",
                         ADN(
-                            ordering=self.adn_ordering,
-                            act=self.act,
+                            ordering=self.config.adn_ordering,
+                            act=self.config.act,
                             norm=norm,
-                            dropout=self.dropout,
+                            dropout=self.config.dropout,
                             dropout_dim=1,
                             in_channels=num_outputs,
                         ),
@@ -173,3 +193,45 @@ class MLP(BaseMLP):
             )
         )
         return seq
+
+
+MLP_DEFAULTS = get_defaults_from(MLP)
+
+
+class MLPOptions(_DropoutConfig):
+    """
+    Config class for MLP when it is a submodule.
+    See for example: :py:class:`clinicadl.networks.nn.CNN`
+    """
+
+    hidden_dims: Sequence[PositiveInt]
+    act: Optional[ActivationParameters] = MLP_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = MLP_DEFAULTS["output_act"]
+    norm: Optional[NormalizationParameters] = MLP_DEFAULTS["norm"]
+    dropout: Optional[NonNegativeFloat] = MLP_DEFAULTS["dropout"]
+    bias: bool = MLP_DEFAULTS["bias"]
+    adn_ordering: str = MLP_DEFAULTS["adn_ordering"]
+
+    @field_validator("norm")
+    @classmethod
+    def _norm_validator(cls, v):
+        return check_norm_layer(v)
+
+    @field_validator("adn_ordering")
+    @classmethod
+    def _adn_ordering_validator(cls, v):
+        return check_adn_ordering(v)
+
+
+class MLPConfig(NetworkConfig, MLPOptions):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.MLP`.
+    """
+
+    num_inputs: PositiveInt
+    num_outputs: PositiveInt
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return MLP

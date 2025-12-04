@@ -3,9 +3,7 @@
 
 from .base import MetricConfig
 from .classification import *
-from .custom import CustomMetric
 from .enum import ImplementedMetric
-from .factory import get_metric_config
 from .loss import LossMetricConfig
 from .reconstruction import *
 from .regression import *

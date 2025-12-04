@@ -1,5 +1,6 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torch.nn import Flatten, Linear
 
 from clinicadl.networks.nn import MLP, ConvDecoder, Generator
@@ -41,20 +42,25 @@ def test_generator(input_tensor, start_shape, channels, mlp_args):
 
 
 @pytest.mark.parametrize(
-    "conv_args,mlp_args",
+    "args",
     [
-        (None, {"hidden_dims": [2]}),
-        ({"channels": [2]}, {}),
+        {"start_shape": (1, 3, 0)},
+        {"latent_size": 0},
+        {"conv_args": None},
+        {"conv_args": {"hidden_dims": [0, 1]}},
+        {"mlp_args": {}},
+        {"mlp_args": {"hidden_dims": [0, 1]}},
     ],
 )
-def test_checks(conv_args, mlp_args):
-    with pytest.raises(ValueError):
-        Generator(
-            latent_size=2,
-            start_shape=(1, 10, 10),
-            conv_args=conv_args,
-            mlp_args=mlp_args,
-        )
+def test_checks(args):
+    args_ = {
+        "start_shape": (1, 10, 10),
+        "latent_size": 2,
+        "conv_args": {"channels": [2]},
+    }
+    args_.update(args)
+    with pytest.raises(ValidationError):
+        Generator(**args_)
 
 
 def test_params():
@@ -63,5 +69,5 @@ def test_params():
     net = Generator(
         latent_size=2, start_shape=(1, 10, 10), conv_args=conv_args, mlp_args=mlp_args
     )
-    assert net.convolutions.act == "celu"
+    assert net.convolutions.config.act == "celu"
     assert net.mlp.act == "relu"

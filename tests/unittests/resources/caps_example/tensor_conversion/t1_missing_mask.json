@@ -1,13 +1,11 @@
 {
-    "preprocessing": {
-        "name": "t1-linear",
-        "use_uncropped_image": true,
-        "modality": "T1w",
-        "file_type": {
-            "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*",
-            "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
-            "needed_pipeline": "t1-linear"
-        }
+    "conversion_name": "t1_missing_mask",
+    "datatype": {
+        "name": "T1Linear",
+        "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",
+        "key": "t1-linear",
+        "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
+        "use_uncropped_image": true
     },
     "individual_masks": [],
     "common_masks": ["leftHemisphere.nii"],
@@ -19,6 +17,7 @@
         1.0
     ],
     "shape": [
+        1,
         3,
         3,
         3

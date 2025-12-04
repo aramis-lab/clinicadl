@@ -19,7 +19,7 @@ data = caps_path / "data.tsv"
 caps = datasets.CapsDataset(
     caps_path,
     data=data,
-    preprocessing=datatypes.PETLinear(
+    datatype=datatypes.PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
 )
@@ -48,6 +48,8 @@ caps.df
 #
 # Since we didn't pass ``conversion_name`` to ``to_tensors``, a default conversion name
 # was generated: ``"default_pet-linear_18FAV45_pons2"``
-utils.remove_tensors(caps_path, conversion_name="default_pet-linear_18FAV45_pons2")
+utils.remove_tensors(
+    caps_path / "tensor_conversion" / "default_pet-linear_18FAV45_pons2.json"
+)
 
 # %%

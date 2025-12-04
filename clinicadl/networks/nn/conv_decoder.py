@@ -3,7 +3,11 @@ from typing import Callable, List, Optional, Sequence, Tuple
 import torch.nn as nn
 from monai.networks.blocks import Convolution
 from monai.networks.layers.utils import get_act_layer
+from pydantic import NonNegativeFloat, PositiveInt, model_validator
 
+from clinicadl.utils.factories import get_defaults_from
+
+from .conv_encoder import _BaseConvOptions
 from .layers.unpool import get_unpool_layer
 from .layers.utils import (
     ActFunction,
@@ -11,7 +15,6 @@ from .layers.utils import (
     ConvNormalizationParameters,
     ConvNormLayer,
     ConvParameters,
-    NormLayer,
     SingleLayerUnpoolingParameters,
     UnpoolingLayer,
     UnpoolingParameters,
@@ -19,11 +22,9 @@ from .layers.utils import (
 from .utils import (
     calculate_convtranspose_out_shape,
     calculate_unpool_out_shape,
-    check_adn_ordering,
-    check_norm_layer,
-    check_pool_indices,
     ensure_list_of_tuples,
 )
+from .utils.config import NetworkConfig, _SpatialDimsConfig
 
 
 class ConvDecoder(nn.Sequential):
@@ -206,58 +207,46 @@ class ConvDecoder(nn.Sequential):
     ) -> None:
         super().__init__()
 
+        self.config = ConvDecoderConfig(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            output_padding=output_padding,
+            dilation=dilation,
+            unpooling=unpooling,
+            unpooling_indices=unpooling_indices,
+            act=act,
+            output_act=output_act,
+            norm=norm,
+            dropout=dropout,
+            bias=bias,
+            adn_ordering=adn_ordering,
+        )
+
         self._current_size = _input_size if _input_size else None
 
-        self.spatial_dims = spatial_dims
-        self.in_channels = in_channels
-        self.channels = channels
-        self.n_layers = len(self.channels)
-
-        self.kernel_size = ensure_list_of_tuples(
-            kernel_size, self.spatial_dims, self.n_layers, "kernel_size"
-        )
-        self.stride = ensure_list_of_tuples(
-            stride, self.spatial_dims, self.n_layers, "stride"
-        )
-        self.padding = ensure_list_of_tuples(
-            padding, self.spatial_dims, self.n_layers, "padding"
-        )
-        self.output_padding = ensure_list_of_tuples(
-            output_padding, self.spatial_dims, self.n_layers, "output_padding"
-        )
-        self.dilation = ensure_list_of_tuples(
-            dilation, self.spatial_dims, self.n_layers, "dilation"
-        )
-
-        self.unpooling_indices = check_pool_indices(unpooling_indices, self.n_layers)
-        self.unpooling = check_unpool_layers(
-            unpooling, unpooling_indices=self.unpooling_indices
-        )
-        self.act = act
-        self.norm = check_norm_layer(norm)
-        if self.norm == NormLayer.LAYER:
-            raise ValueError("Layer normalization not implemented in ConvDecoder.")
-        self.dropout = dropout
-        self.bias = bias
-        self.adn_ordering = check_adn_ordering(adn_ordering)
+        self.n_layers = len(self.config.channels)
 
         n_unpoolings = 0
-        if self.unpooling and -1 in self.unpooling_indices:
+        if self.config.unpooling and -1 in self.config.unpooling_indices:
             unpooling_layer = self._get_unpool_layer(
-                self.unpooling[n_unpoolings], n_channels=self.in_channels
+                self.config.unpooling[n_unpoolings], n_channels=self.config.in_channels
             )
             self.add_module("init_unpool", unpooling_layer)
             n_unpoolings += 1
 
-        echannel = self.in_channels
+        echannel = self.config.in_channels
         for i, (c, k, s, p, o_p, d) in enumerate(
             zip(
-                self.channels,
-                self.kernel_size,
-                self.stride,
-                self.padding,
-                self.output_padding,
-                self.dilation,
+                self.config.channels,
+                self.config.kernel_size,
+                self.config.stride,
+                self.config.padding,
+                self.config.output_padding,
+                self.config.dilation,
             )
         ):
             conv_layer = self._get_convtranspose_layer(
@@ -272,9 +261,9 @@ class ConvDecoder(nn.Sequential):
             )
             self.add_module(f"layer{i}", conv_layer)
             echannel = c  # use the output channel number as the input for the next loop
-            if self.unpooling and i in self.unpooling_indices:
+            if self.config.unpooling and i in self.config.unpooling_indices:
                 unpooling_layer = self._get_unpool_layer(
-                    self.unpooling[n_unpoolings], n_channels=c
+                    self.config.unpooling[n_unpoolings], n_channels=c
                 )
                 self.add_module(f"unpool{i}", unpooling_layer)
                 n_unpoolings += 1
@@ -317,7 +306,7 @@ class ConvDecoder(nn.Sequential):
         return Convolution(
             is_transposed=True,
             conv_only=is_last,
-            spatial_dims=self.spatial_dims,
+            spatial_dims=self.config.spatial_dims,
             in_channels=in_channels,
             out_channels=out_channels,
             strides=stride,
@@ -325,11 +314,11 @@ class ConvDecoder(nn.Sequential):
             padding=padding,
             output_padding=output_padding,
             dilation=dilation,
-            act=self.act,
-            norm=self.norm,
-            dropout=self.dropout,
-            bias=self.bias,
-            adn_ordering=self.adn_ordering,
+            act=self.config.act,
+            norm=self.config.norm,
+            dropout=self.config.dropout,
+            bias=self.config.bias,
+            adn_ordering=self.config.adn_ordering,
         )
 
     def _get_unpool_layer(
@@ -340,7 +329,7 @@ class ConvDecoder(nn.Sequential):
         """
         unpool_layer = get_unpool_layer(
             unpooling,
-            spatial_dims=self.spatial_dims,
+            spatial_dims=self.config.spatial_dims,
             in_channels=n_channels,
             out_channels=n_channels,
         )
@@ -352,46 +341,81 @@ class ConvDecoder(nn.Sequential):
         return unpool_layer
 
 
-def check_unpool_layers(
-    unpooling: UnpoolingParameters, unpooling_indices: Sequence[int]
-) -> List[SingleLayerUnpoolingParameters]:
+CONV_DECODER_DEFAULTS = get_defaults_from(ConvDecoder)
+
+
+class ConvDecoderOptions(_BaseConvOptions):
     """
-    Checks argument unpooling.
+    Config class for ConvDecoder when it is a submodule.
+    See for example: :py:class:`clinicadl.networks.nn.Generator`
     """
-    if unpooling is None:
+
+    channels: Sequence[PositiveInt]
+    kernel_size: ConvParameters = CONV_DECODER_DEFAULTS["kernel_size"]
+    stride: ConvParameters = CONV_DECODER_DEFAULTS["stride"]
+    padding: ConvParameters = CONV_DECODER_DEFAULTS["padding"]
+    output_padding: ConvParameters = CONV_DECODER_DEFAULTS["output_padding"]
+    dilation: ConvParameters = CONV_DECODER_DEFAULTS["dilation"]
+    unpooling: Optional[UnpoolingParameters] = CONV_DECODER_DEFAULTS["unpooling"]
+    unpooling_indices: Optional[Sequence[int]] = CONV_DECODER_DEFAULTS[
+        "unpooling_indices"
+    ]
+    act: Optional[ActivationParameters] = CONV_DECODER_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = CONV_DECODER_DEFAULTS["output_act"]
+    norm: Optional[ConvNormalizationParameters] = CONV_DECODER_DEFAULTS["norm"]
+    dropout: Optional[NonNegativeFloat] = CONV_DECODER_DEFAULTS["dropout"]
+    bias: bool = CONV_DECODER_DEFAULTS["bias"]
+    adn_ordering: str = CONV_DECODER_DEFAULTS["adn_ordering"]
+
+    @model_validator(mode="after")
+    def check_unpooling(self):
+        checked_indices = self._check_pool_indices(self.unpooling_indices)
+        self.__dict__["unpooling"] = self._check_unpool_layers(
+            self.unpooling, unpooling_indices=checked_indices
+        )
+
+        return self
+
+    def _check_args_dim(self, dim: int) -> None:
+        super()._check_args_dim(dim)
+        self.__dict__["output_padding"] = ensure_list_of_tuples(
+            self.output_padding, dim, len(self.channels), "output_padding"
+        )
+
+    @classmethod
+    def _check_unpool_layers(
+        cls, unpooling: UnpoolingParameters, unpooling_indices: Sequence[int]
+    ) -> List[SingleLayerUnpoolingParameters]:
+        """
+        Checks argument unpooling.
+        """
+        if isinstance(unpooling, list):
+            if len(unpooling) != len(unpooling_indices):
+                raise ValueError(
+                    "If you pass a list for unpooling, the size of that list must match "
+                    f"the size of unpooling_indices. Got: unpooling={unpooling} and "
+                    f"unpooling_indices={unpooling_indices}"
+                )
+        elif isinstance(unpooling, tuple):
+            unpooling = [unpooling] * len(unpooling_indices)
+
         return unpooling
-    if isinstance(unpooling, list):
-        for unpool_layer in unpooling:
-            _check_single_unpool_layer(unpool_layer)
-        if len(unpooling) != len(unpooling_indices):
-            raise ValueError(
-                "If you pass a list for unpooling, the size of that list must match "
-                f"the size of unpooling_indices. Got: unpooling={unpooling} and "
-                f"unpooling_indices={unpooling_indices}"
-            )
-    elif isinstance(unpooling, tuple):
-        _check_single_unpool_layer(unpooling)
-        unpooling = [unpooling] * len(unpooling_indices)
-    else:
-        raise ValueError(
-            f"unpooling can be either None, a double (string, dictionary) or a list of such doubles. Got {unpooling}"
-        )
-
-    return unpooling
 
 
-def _check_single_unpool_layer(unpooling: SingleLayerUnpoolingParameters) -> None:
+class ConvDecoderConfig(NetworkConfig, ConvDecoderOptions, _SpatialDimsConfig):
     """
-    Checks unpooling arguments for a single pooling layer.
+    Config class for :py:class:`clinicadl.networks.nn.ConvDecoder`.
     """
-    if not isinstance(unpooling, tuple) or len(unpooling) != 2:
-        raise ValueError(
-            "unpooling must be double (or a list of doubles) with first the type of unpooling and then the parameters of "
-            f"the unpooling layer in a dict. Got {unpooling}"
-        )
-    _ = UnpoolingLayer(unpooling[0])  # check unpooling mode
-    args = unpooling[1]
-    if not isinstance(args, dict):
-        raise ValueError(
-            f"The arguments of the unpooling layer must be passed in a dict. Got {args}"
-        )
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+
+    @model_validator(mode="after")
+    def check_dim(self):
+        self._check_args_dim(self.spatial_dims)
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ConvDecoder

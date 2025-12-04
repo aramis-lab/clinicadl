@@ -1,13 +1,10 @@
+import os
+import re
 from enum import Enum
-from logging import getLogger
+from typing import Pattern
 
-from pydantic import computed_field
-
-from ..enum import PreprocessingMethod
 from ..modalities import PET
 from .base import _LinearPreprocessing
-
-logger = getLogger("clinicadl.data.datatypes.preprocessing.pet")
 
 
 class SUVRReferenceRegion(str, Enum):
@@ -21,7 +18,7 @@ class SUVRReferenceRegion(str, Enum):
 
 class PETLinear(PET, _LinearPreprocessing):
     """
-    Configuration class to handle Positron Emission Tomography (PET) images,
+    :py:class:`DataType <clinicadl.data.datatypes.DataType>` to handle Positron Emission Tomography (PET) images
     preprocessed with `Clinica pet-linear <https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/>`_
     pipeline.
 
@@ -49,23 +46,25 @@ class PETLinear(PET, _LinearPreprocessing):
             ``pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_{desc-Crop}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
     """
 
-    suvr_reference_region: SUVRReferenceRegion = SUVRReferenceRegion.PONS
+    suvr_reference_region: SUVRReferenceRegion
 
-    @computed_field
     @property
-    def name(self) -> str:
-        """The preprocessing method."""
-        return PreprocessingMethod.PET_LINEAR.value
+    def _pipeline_name(self) -> str:
+        return "pet-linear"
+
+    @property
+    def _filename(self) -> str:
+        return (
+            f"{self._pipeline_name}_{self.tracer}_{self.suvr_reference_region}{'_' + self.reconstruction if self.reconstruction else ''}"
+            f"{'' if self.use_uncropped_image else '_cropped'}"
+        )
 
     def _get_description(self) -> str:
-        """
-        Constructs a description depending on the preprocessing parameters.
-        """
         description = f"PET images with tracer '{self.tracer}'"
         if self.reconstruction:
             description += f" and reconstruction method '{self.reconstruction}'"
         description += (
-            f", registered to MNI152NLin2009cSym space using Clinica's '{self.name}' pipeline "
+            f", registered to MNI152NLin2009cSym space using Clinica's '{self._pipeline_name}' pipeline "
             f"with SUVR reference region '{self.suvr_reference_region}'"
         )
         if not self.use_uncropped_image:
@@ -74,20 +73,10 @@ class PETLinear(PET, _LinearPreprocessing):
             )
         return description
 
-    def _get_file_pattern(self):
-        """
-        Constructs the file pattern depending on the parameters of 'pet-linear'.
-        """
+    def _get_pattern(self) -> Pattern:
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
         rec = f"_rec-{self.reconstruction}" if self.reconstruction else ""
-        return f"sub-*_ses-*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self.modality}.nii*"
+        file_pattern = f"sub-.*_ses-.*_trc-{self.tracer}{rec}_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_suvr-{self.suvr_reference_region}_{self._modality}.nii.*"
+        pattern = os.path.join(self._pipeline_name.replace("-", "_"), file_pattern)
 
-    def _get_file_name(self) -> str:
-        """
-        Builds a suffix for files saving
-        information on this preprocessing.
-        """
-        return (
-            f"pet-linear_{self.tracer}_{self.suvr_reference_region}{'_' + self.reconstruction if self.reconstruction else ''}"
-            f"{'' if self.use_uncropped_image else '_cropped'}"
-        )
+        return re.compile(pattern)

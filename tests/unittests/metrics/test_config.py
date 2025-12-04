@@ -1,17 +1,17 @@
 import monai.metrics as metrics
+import monai.transforms
 import pytest
 import torchio as tio
 from monai.metrics import ConfusionMatrixMetric
 from pydantic import ValidationError
 
-from clinicadl.metrics.config import get_metric_config
+from clinicadl.metrics.config import ImplementedMetric, LossMetricConfig, MetricConfig
 from clinicadl.metrics.config.classification import (
     AveragePrecisionMetricConfig,
     ConfusionMatrixMetricConfig,
     ROCAUCMetricConfig,
 )
 from clinicadl.metrics.config.enum import ConfusionMatrixMetricName
-from clinicadl.metrics.config.loss import LossMetricConfig
 from clinicadl.metrics.config.reconstruction import (
     MultiScaleSSIMMetricConfig,
     PSNRMetricConfig,
@@ -336,7 +336,7 @@ MANDATORY_ARGS = {
     ],
 )
 def test_get_object(config, expected_class):
-    c = config(**MANDATORY_ARGS)
+    c: MetricConfig = config(**MANDATORY_ARGS)
     transform_from_config = c.get_object()
     assert isinstance(transform_from_config, MonaiMetricWrapper)
     assert isinstance(transform_from_config.metric, expected_class)
@@ -345,58 +345,27 @@ def test_get_object(config, expected_class):
     assert len(transform_from_config.postprocessing.transforms) == 2
     assert isinstance(transform_from_config.postprocessing.transforms[0], tio.Crop)
     assert isinstance(
-        transform_from_config.postprocessing.transforms[1], AsDiscreteConfig
+        transform_from_config.postprocessing.transforms[1].transform,
+        monai.transforms.AsDiscrete,
     )
 
     c.label_key = None
     c.pred_key = "abc"
     transform_from_config = c.get_object()
+    assert isinstance(transform_from_config.postprocessing.transforms[0], tio.Crop)
     assert isinstance(
-        transform_from_config.postprocessing._transforms_processed[0], tio.Crop
-    )
-    assert isinstance(
-        transform_from_config.postprocessing._transforms_processed[1],
+        transform_from_config.postprocessing.transforms[1],
         MonaiTransformWrapper,
     )
     assert transform_from_config.label_key is None
     assert transform_from_config.pred_key == "abc"
 
 
-@pytest.mark.parametrize(
-    "name,config",
-    [
-        ("ConfusionMatrixMetric", ConfusionMatrixMetricConfig),
-        ("ROCAUCMetric", ROCAUCMetricConfig),
-        ("AveragePrecisionMetric", AveragePrecisionMetricConfig),
-        ("MultiScaleSSIMMetric", MultiScaleSSIMMetricConfig),
-        ("PSNRMetric", PSNRMetricConfig),
-        ("SSIMMetric", SSIMMetricConfig),
-        ("MAEMetric", MAEMetricConfig),
-        ("MSEMetric", MSEMetricConfig),
-        ("RMSEMetric", RMSEMetricConfig),
-        ("DiceMetric", DiceMetricConfig),
-        ("GeneralizedDiceScore", GeneralizedDiceScoreConfig),
-        ("HausdorffDistanceMetric", HausdorffDistanceMetricConfig),
-        ("MeanIoU", MeanIoUConfig),
-        ("SurfaceDiceMetric", SurfaceDiceMetricConfig),
-        ("SurfaceDistanceMetric", SurfaceDistanceMetricConfig),
-        ("LossMetric", LossMetricConfig),
-    ],
-)
-def test_get_metric_config(name, config):
-    c = get_metric_config(name, **MANDATORY_ARGS)
-
-    assert c.name == name
-    assert isinstance(c, config)
-
-    if name == "SSIMMetric":
-        config = get_metric_config("SSIMMetric", spatial_dims=2, data_range=1.5)
-        assert config.name == "SSIMMetric"
-        assert config.data_range == 1.5
-        assert config.win_size == 11
-
-        with pytest.raises(ValueError):
-            get_metric_config("abc")
+def test_name():
+    for name in ImplementedMetric:
+        config = globals()[f"{name.value}Config"]
+        c = config(**MANDATORY_ARGS)
+        assert c.name == name.value
 
 
 @pytest.mark.parametrize(

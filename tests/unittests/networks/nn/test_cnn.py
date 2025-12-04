@@ -1,5 +1,6 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torch.nn import Flatten, Linear, Softmax
 
 from clinicadl.networks.nn import CNN, MLP, ConvEncoder
@@ -40,15 +41,21 @@ def test_cnn(input_tensor, channels, mlp_args):
 
 
 @pytest.mark.parametrize(
-    "conv_args,mlp_args",
+    "args",
     [
-        (None, {"hidden_dims": [2]}),
-        ({"channels": [2]}, {}),
+        {"in_shape": (1, 3, 0)},
+        {"num_outputs": 0},
+        {"conv_args": None},
+        {"conv_args": {"hidden_dims": [0, 1]}},
+        {"mlp_args": {}},
+        {"mlp_args": {"hidden_dims": [0, 1]}},
     ],
 )
-def test_checks(conv_args, mlp_args):
-    with pytest.raises(ValueError):
-        CNN(in_shape=(1, 10, 10), num_outputs=2, conv_args=conv_args, mlp_args=mlp_args)
+def test_checks(args):
+    args_ = {"in_shape": (1, 10, 10), "num_outputs": 2, "conv_args": {"channels": [2]}}
+    args_.update(args)
+    with pytest.raises(ValidationError):
+        CNN(**args_)
 
 
 def test_params():
@@ -57,6 +64,6 @@ def test_params():
     net = CNN(
         in_shape=(1, 10, 10), num_outputs=2, conv_args=conv_args, mlp_args=mlp_args
     )
-    assert net.convolutions.act == "celu"
+    assert net.convolutions.config.act == "celu"
     assert net.mlp.act == "relu"
     assert isinstance(net.mlp.output.output_act, Softmax)

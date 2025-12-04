@@ -1,3 +1,5 @@
+import os
+import re
 from glob import glob
 from logging import getLogger
 from pathlib import Path
@@ -6,7 +8,7 @@ from typing import Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-from clinicadl.data.datatypes.enum import PreprocessingMethod
+from clinicadl.data.datatypes import DataType
 from clinicadl.data.datatypes.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
 from clinicadl.dictionary.suffixes import PT
@@ -97,27 +99,6 @@ class CapsReader(Reader):
         """
         return f"CAPS reader for {self.input_directory}"
 
-    def get_preprocessing_folder(
-        self, participant: str, session: str, preprocessing: PreprocessingMethod
-    ) -> Path:
-        """
-        Retrieves the folder path for a specific preprocessing step.
-
-        Args:
-            participant (str): ID of the participant.
-            session (str): ID of the session.
-            preprocessing (PreprocessingMethod): Preprocessing step for which the folder path is needed.
-
-        Returns
-        -------
-        Path
-            Path to the folder containing the preprocessing data.
-        """
-        preprocessing = PreprocessingMethod(preprocessing)
-        return self.get_session_path(participant=participant, session=session) / (
-            preprocessing.value
-        ).replace("-", "_")
-
     def get_participant_path(self, participant: str) -> Path:
         """
         Retrieves the path to the participant's directory.
@@ -203,13 +184,13 @@ class CapsReader(Reader):
         tensor_path = self.path_to_tensor(filepath, conversion_name=conversion_name)
         if check and not tensor_path.is_file():
             raise FileNotFoundError(
-                f"Could not find the .pt path for participant {participant}, session {session} and preprocessing {preprocessing}"
+                f"Could not find the .pt file for participant {participant}, session {session} and preprocessing {preprocessing}"
             )
 
         return tensor_path
 
     def get_image_path(
-        self, participant: str, session: str, preprocessing: Preprocessing
+        self, participant: str, session: str, datatype: DataType
     ) -> Path:
         """
         Retrieves the path to the image file for a given participant, session, and preprocessing.
@@ -233,23 +214,28 @@ class CapsReader(Reader):
         ClinicaDLCAPSError
             If more than one or no image file is found.
         """
-        file_pattern = preprocessing.file_type.pattern
-        file_pattern = file_pattern.replace("sub-*", participant)
-        file_pattern = file_pattern.replace("ses-*", session)
-        global_pattern = self.get_session_path(participant, session) / file_pattern
+        file_pattern = re.compile(os.path.join(".*", datatype.pattern.pattern))
+        participant_session_path = self.get_session_path(participant, session)
 
-        current_glob_found = glob(str(global_pattern))
-        error_msg = f"For ({participant} | {session}), an error occurred while trying to get {preprocessing}: "
-        if len(current_glob_found) > 1:  # e.g. a nii and a nii.gz file
+        files = [
+            f
+            for f in participant_session_path.rglob("*")
+            if file_pattern.match(str(f))
+            and participant in f.stem
+            and session in f.stem
+        ]
+
+        error_msg = f"For ({participant} | {session}), an error occurred while trying to get {datatype}: "
+        if len(files) > 1:  # e.g. a nii and a nii.gz file
             error_msg += "more than 1 file found:\n"
-            for found_file in current_glob_found:
+            for found_file in files:
                 error_msg += f"\t * {found_file}\n"
-            raise ClinicaDLCAPSError(error_msg)
-        elif len(current_glob_found) == 0:
+            raise RuntimeError(error_msg)
+        elif len(files) == 0:
             error_msg += "no file found"
-            raise ClinicaDLCAPSError(error_msg)
+            raise RuntimeError(error_msg)
         else:
-            return Path(current_glob_found[0])
+            return Path(files[0])
 
     def get_common_mask_path(self, mask_name: PathType) -> Path:
         """
@@ -378,6 +364,31 @@ class CapsReader(Reader):
         for participant, session in subjects_sessions:
             self.get_image_path(participant, session, preprocessing)
 
+    def get_all_participants_sessions(
+        self,
+    ) -> set[tuple[str, str]]:
+        """
+        Finds all the (participant, session).
+        """
+        participant_pattern = re.compile("sub-.*")
+        session_pattern = re.compile("ses-.*")
+        participants_sessions = set()
+
+        for folder in self.subject_directory.iterdir():
+            relative_path = folder.relative_to(self.subject_directory)
+            if participant_pattern.match(str(relative_path)):
+                participant = str(relative_path)
+
+                for sub_folder in folder.iterdir():
+                    relative_path = sub_folder.relative_to(folder)
+
+                    if session_pattern.match(str(relative_path)):
+                        session = str(relative_path)
+
+                        participants_sessions.add((participant, session))
+
+        return participants_sessions
+
     def get_participants_sessions(
         self,
         preprocessing: Preprocessing,
@@ -385,25 +396,21 @@ class CapsReader(Reader):
         """
         Finds all the (participant, session) for a specific preprocessing.
         """
-        pattern = (
-            self.subject_directory / "sub-*" / "ses-*" / preprocessing.file_type.pattern
-        )
-        files_found = glob(str(pattern))
-        if len(files_found) == 0:
-            raise ClinicaDLCAPSError("No image found for this preprocessing!")
+        participants_sessions = self.get_all_participants_sessions()
+        with_preprocessing = set()
+        for participant, session in participants_sessions:
+            try:
+                self.get_image_path(participant, session, preprocessing)
+            except RuntimeError:
+                continue
+            with_preprocessing.add((participant, session))
 
-        participants_sessions = set()
-        for file in files_found:
-            participant_session = (
-                Path(file).relative_to(self.subject_directory).parents[1]
-            )
-            participant = str(participant_session.parent)
-            session = participant_session.name
-            participants_sessions.add((participant, session))
+        if len(with_preprocessing) == 0:
+            raise RuntimeError("No image found for this preprocessing!")
 
         return (
             pd.DataFrame(
-                np.array(list(participants_sessions)),
+                np.array(list(with_preprocessing)),
                 columns=[PARTICIPANT_ID, SESSION_ID],
             )
             .sort_values([PARTICIPANT_ID, SESSION_ID])

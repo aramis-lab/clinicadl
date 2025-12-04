@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 
 import pandas as pd
@@ -10,8 +11,8 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.data.datatypes.preprocessing import PETLinear
 from clinicadl.split.splitter import KFold
+from clinicadl.transforms.extraction import Patch
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -20,7 +21,7 @@ SPLIT_DIR = CAPS_DIR / "splits" / "split" / "2_fold"
 
 CAPS = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         tracer="18FAV45",
         suvr_reference_region="pons2",
         use_uncropped_image=True,
@@ -29,7 +30,7 @@ CAPS = CapsDataset(
 )
 CAPS_T1 = CapsDataset(
     CAPS_DIR,
-    preprocessing=T1Linear(use_uncropped_image=True),
+    datatype=T1Linear(use_uncropped_image=True),
     data=pd.DataFrame.from_dict(
         {
             "participant_id": ["sub-000", "sub-010"],
@@ -39,7 +40,7 @@ CAPS_T1 = CapsDataset(
 )
 CAPS_PET = CapsDataset(
     CAPS_DIR,
-    preprocessing=PETLinear(
+    datatype=PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
     data=pd.DataFrame.from_dict(
@@ -93,6 +94,16 @@ def test_kfold():
     with pytest.raises(FileNotFoundError, match="No such directory:*"):
         KFold(CAPS_DIR / "splits" / "bad_split" / "2_fold")
 
+    # eval dataset
+    caps_patch = deepcopy(CAPS)
+    caps_patch.transforms.extraction = Patch(patch_size=1)
+    caps_patch.read_tensor_conversion()
+    split = next(iter(SPLITTER.get_splits(CAPS, eval_dataset=caps_patch)))
+    assert len(split.train_dataset) == 2
+    assert len(split.val_dataset) == 2
+    assert split.train_dataset.transforms.extraction.sample_type == "image"
+    assert split.val_dataset.transforms.extraction.sample_type == "patch"
+
 
 def test_kfold_concat():
     multimodal_dataset = ConcatDataset([CAPS_T1, CAPS_PET])
@@ -116,3 +127,13 @@ def test_kfold_unpaired():
     split = next(splits)
     assert len(split.train_dataset) == 1
     assert len(split.val_dataset) == 1
+
+
+def test_custom_dataset():
+    from ...data.datasets.utils import CustomClinicaDLDataset
+
+    custom = CustomClinicaDLDataset(CAPS.df)
+    splits = iter(SPLITTER.get_splits(custom))
+    split = next(splits)
+    assert len(split.train_dataset) == 2
+    assert len(split.val_dataset) == 2

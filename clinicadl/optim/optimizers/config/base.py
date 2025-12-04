@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Union
 
 import torch.nn as nn
 import torch.optim as optim
@@ -16,30 +15,8 @@ from .utils import (
     regroup_args_by_param_group,
 )
 
-__all__ = [
-    "ImplementedOptimizer",
-    "OptimizerConfig",
-]
 
-
-class ImplementedOptimizer(str, Enum):
-    """Implemented optimizers in ClinicaDL."""
-
-    ADADELTA = "Adadelta"
-    ADAGRAD = "Adagrad"
-    ADAM = "Adam"
-    RMS_PROP = "RMSprop"
-    SGD = "SGD"
-
-    @classmethod
-    def _missing_(cls, value):
-        raise ValueError(
-            f"{value} is not implemented. Implemented optimizers are: "
-            + ", ".join([repr(m.value) for m in cls])
-        )
-
-
-class OptimizerConfig(ObjectConfig):
+class OptimizerConfig(ObjectConfig[optim.Optimizer]):
     """Base config class for the optimizer."""
 
     freeze: Optional[Union[str, List[str]]] = None
@@ -66,7 +43,7 @@ class OptimizerConfig(ObjectConfig):
         for param in to_freeze:
             param.requires_grad = False
 
-        config_dict = self.model_dump(exclude={"name", "freeze"})
+        config_dict = self.to_raw_dict(exclude={"freeze"})
 
         # deal with parameter groups
         args_by_group, args_global = regroup_args_by_param_group(config_dict)

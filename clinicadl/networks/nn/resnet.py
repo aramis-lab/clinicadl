@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from monai.networks.layers.factories import Conv, Norm, Pool
 from monai.networks.layers.utils import get_act_layer
+from pydantic import PositiveInt, model_validator
 from torch.hub import load_state_dict_from_url
 from torchvision.models.resnet import (
     ResNet18_Weights,
@@ -17,22 +18,24 @@ from torchvision.models.resnet import (
     ResNet152_Weights,
 )
 
-from clinicadl.networks.nn.utils import ensure_tuple
+from clinicadl.utils.factories import get_defaults_from
 
 from .layers.resnet import ResNetBlock, ResNetBottleneck
 from .layers.senet import SEResNetBlock, SEResNetBottleneck
 from .layers.utils import ActivationParameters
+from .utils import ensure_tuple
+from .utils.config import (
+    NetworkConfig,
+    _SpatialDimsConfig,
+)
 
 __all__ = [
-    "GeneralResNet",
     "ResNet",
     "ResNet18",
     "ResNet34",
     "ResNet50",
     "ResNet101",
     "ResNet152",
-    "bottleneck_reduce",
-    "check_res_blocks",
 ]
 
 
@@ -62,25 +65,11 @@ class GeneralResNet(nn.Module):
         output_act: ActivationParameters,
     ) -> None:
         super().__init__()
-
+        self.squeeze_excitation = True if se_reduction else False
+        self.se_reduction = se_reduction
         self.spatial_dims = spatial_dims
-        self.in_channels = in_channels
-        self.num_outputs = num_outputs
-        self.block_type = block_type
-        check_res_blocks(n_res_blocks, n_features)
-        self.n_res_blocks = n_res_blocks
         self.n_features = n_features
         self.bottleneck_reduction = bottleneck_reduction
-        self.se_reduction = se_reduction
-        self.act = act
-        self.squeeze_excitation = True if se_reduction else False
-
-        self.init_conv_size = ensure_tuple(
-            init_conv_size, spatial_dims, "init_conv_size"
-        )
-        self.init_conv_stride = ensure_tuple(
-            init_conv_stride, spatial_dims, "init_conv_stride"
-        )
 
         block, in_planes = self._get_block(block_type)
 
@@ -95,9 +84,9 @@ class GeneralResNet(nn.Module):
         self.conv0 = conv_type(  # pylint: disable=not-callable
             in_channels,
             self.in_planes,
-            kernel_size=self.init_conv_size,
-            stride=self.init_conv_stride,
-            padding=tuple(k // 2 for k in self.init_conv_size),
+            kernel_size=init_conv_size,
+            stride=init_conv_stride,
+            padding=tuple(k // 2 for k in init_conv_size),
             bias=False,
         )
         self.norm0 = norm_type(self.in_planes)  # pylint: disable=not-callable
@@ -166,7 +155,7 @@ class GeneralResNet(nn.Module):
             else:
                 block = ResNetBlock
         elif block_type == ResNetBlockType.BOTTLENECK:
-            in_planes = bottleneck_reduce(self.n_features, self.bottleneck_reduction)
+            in_planes = self._bottleneck_reduce()
             if self.squeeze_excitation:
                 block = SEResNetBottleneck
                 block.reduction = self.se_reduction
@@ -259,6 +248,16 @@ class GeneralResNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(torch.as_tensor(m.bias), 0)
 
+    def _bottleneck_reduce(self) -> Sequence[int]:
+        """
+        Finds number of feature maps for the bottleneck layers.
+        """
+        reduced_features = []
+        for n in self.n_features:
+            reduced_features.append(n // self.bottleneck_reduction)
+
+        return reduced_features
+
 
 class ResNet(GeneralResNet):
     """
@@ -306,8 +305,7 @@ class ResNet(GeneralResNet):
         of feature maps in bottleneck layers (1x1 convolutions). Default to ``4``, as in the original paper.
     act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
-        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
-        If ``None``, no activation will be used.\n
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
         ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
@@ -429,7 +427,7 @@ class ResNet(GeneralResNet):
         act: ActivationParameters = ("relu", {"inplace": True}),
         output_act: Optional[ActivationParameters] = None,
     ) -> None:
-        super().__init__(
+        config = ResNetConfig(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
             num_outputs=num_outputs,
@@ -439,9 +437,12 @@ class ResNet(GeneralResNet):
             init_conv_size=init_conv_size,
             init_conv_stride=init_conv_stride,
             bottleneck_reduction=bottleneck_reduction,
-            se_reduction=None,
             act=act,
             output_act=output_act,
+        )
+        super().__init__(
+            se_reduction=None,
+            **config.to_raw_dict(),
         )
 
     def _load_weights(self, url: str) -> None:
@@ -493,16 +494,19 @@ class ResNet18(ResNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ResNet18Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(2, 2, 2, 2),
             block_type=ResNetBlockType.BASIC,
             n_features=(64, 128, 256, 512),
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ResNet18_Weights.DEFAULT.url)
 
 
@@ -546,16 +550,19 @@ class ResNet34(ResNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ResNet34Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 4, 6, 3),
             block_type=ResNetBlockType.BASIC,
             n_features=(64, 128, 256, 512),
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ResNet34_Weights.DEFAULT.url)
 
 
@@ -599,16 +606,19 @@ class ResNet50(ResNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ResNet50Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 4, 6, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ResNet50_Weights.DEFAULT.url)
 
 
@@ -652,16 +662,19 @@ class ResNet101(ResNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ResNet101Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 4, 23, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ResNet101_Weights.DEFAULT.url)
 
 
@@ -705,50 +718,172 @@ class ResNet152(ResNet):
         output_act: Optional[ActivationParameters] = None,
         pretrained: bool = False,
     ) -> None:
+        config = ResNet152Config(
+            num_outputs=num_outputs, output_act=output_act, pretrained=pretrained
+        )
         super().__init__(
             spatial_dims=2,
             in_channels=3,
-            num_outputs=num_outputs,
+            num_outputs=config.num_outputs,
             n_res_blocks=(3, 8, 36, 3),
             block_type=ResNetBlockType.BOTTLENECK,
             n_features=(256, 512, 1024, 2048),
-            output_act=output_act,
+            output_act=config.output_act,
         )
-        if pretrained:
+        if config.pretrained:
             self._load_weights(ResNet152_Weights.DEFAULT.url)
 
 
-def bottleneck_reduce(
-    n_features: Sequence[int], bottleneck_reduction: int
-) -> Sequence[int]:
-    """
-    Finds number of feature maps for the bottleneck layers.
-    """
-    reduced_features = []
-    for n in n_features:
-        if n % bottleneck_reduction != 0:
-            raise ValueError(
-                "All elements of n_features must be divisible by bottleneck_reduction. "
-                f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
-            )
-        reduced_features.append(n // bottleneck_reduction)
-
-    return reduced_features
+RES_NET_DEFAULTS = get_defaults_from(ResNet)
+RES_NET_18_DEFAULTS = get_defaults_from(ResNet18)
+RES_NET_34_DEFAULTS = get_defaults_from(ResNet34)
+RES_NET_50_DEFAULTS = get_defaults_from(ResNet50)
+RES_NET_101_DEFAULTS = get_defaults_from(ResNet101)
+RES_NET_152_DEFAULTS = get_defaults_from(ResNet152)
 
 
-def check_res_blocks(n_res_blocks: Sequence[int], n_features: Sequence[int]) -> None:
+class ResNetConfig(NetworkConfig, _SpatialDimsConfig):
     """
-    Checks consistency between `n_res_blocks` and `n_features`.
+    Config class for :py:class:`clinicadl.networks.nn.ResNet`.
     """
-    if not isinstance(n_res_blocks, Sequence):
-        raise ValueError(f"n_res_blocks must be a sequence, got {n_res_blocks}")
-    if not isinstance(n_features, Sequence):
-        raise ValueError(f"n_features must be a sequence, got {n_features}")
-    if len(n_features) != len(n_res_blocks):
-        raise ValueError(
-            f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
-            f"and n_res_blocks={n_res_blocks}"
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    num_outputs: Optional[PositiveInt]
+    block_type: ResNetBlockType = RES_NET_DEFAULTS["block_type"]
+    n_res_blocks: Sequence[PositiveInt] = RES_NET_DEFAULTS["n_res_blocks"]
+    n_features: Sequence[PositiveInt] = RES_NET_DEFAULTS["n_features"]
+    init_conv_size: Union[Sequence[PositiveInt], PositiveInt] = RES_NET_DEFAULTS[
+        "init_conv_size"
+    ]
+    init_conv_stride: Union[Sequence[PositiveInt], PositiveInt] = RES_NET_DEFAULTS[
+        "init_conv_stride"
+    ]
+    bottleneck_reduction: PositiveInt = RES_NET_DEFAULTS["bottleneck_reduction"]
+    act: ActivationParameters = RES_NET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = RES_NET_DEFAULTS["output_act"]
+
+    @model_validator(mode="after")
+    def make_checks(self):
+        self._check_res_blocks(self.n_res_blocks, self.n_features)
+        if self.block_type == ResNetBlockType.BOTTLENECK:
+            self._check_bottleneck_reduction(self.n_features, self.bottleneck_reduction)
+
+        self.__dict__["init_conv_size"] = ensure_tuple(
+            self.init_conv_size, self.spatial_dims, "init_conv_size"
         )
+        self.__dict__["init_conv_stride"] = ensure_tuple(
+            self.init_conv_stride, self.spatial_dims, "init_conv_stride"
+        )
+
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet
+
+    @staticmethod
+    def _check_bottleneck_reduction(
+        n_features: Sequence[int], bottleneck_reduction: int
+    ) -> Sequence[int]:
+        """
+        Checks bottleneck_reduction.
+        """
+        for n in n_features:
+            if n % bottleneck_reduction != 0:
+                raise ValueError(
+                    "All elements of n_features must be divisible by bottleneck_reduction. "
+                    f"Got {n} in n_features and bottleneck_reduction={bottleneck_reduction}"
+                )
+
+    @staticmethod
+    def _check_res_blocks(
+        n_res_blocks: Sequence[int], n_features: Sequence[int]
+    ) -> None:
+        """
+        Checks consistency between `n_res_blocks` and `n_features`.
+        """
+        if len(n_features) != len(n_res_blocks):
+            raise ValueError(
+                f"n_features and n_res_blocks must have the same length, got n_features={n_features} "
+                f"and n_res_blocks={n_res_blocks}"
+            )
+
+
+class ResNet18Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet18`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = RES_NET_18_DEFAULTS["output_act"]
+    pretrained: bool = RES_NET_18_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet18
+
+
+class ResNet34Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet34`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = RES_NET_34_DEFAULTS["output_act"]
+    pretrained: bool = RES_NET_34_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet34
+
+
+class ResNet50Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet50`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = RES_NET_50_DEFAULTS["output_act"]
+    pretrained: bool = RES_NET_50_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet50
+
+
+class ResNet101Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet101`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = RES_NET_101_DEFAULTS["output_act"]
+    pretrained: bool = RES_NET_101_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet101
+
+
+class ResNet152Config(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.ResNet152`.
+    """
+
+    num_outputs: Optional[PositiveInt]
+    output_act: Optional[ActivationParameters] = RES_NET_152_DEFAULTS["output_act"]
+    pretrained: bool = RES_NET_152_DEFAULTS["pretrained"]
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return ResNet152
 
 
 def _state_dict_adapter(state_dict: Mapping[str, Any]) -> Mapping[str, Any]:

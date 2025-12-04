@@ -15,7 +15,7 @@ from .enum import LRSchedulerType
 from .utils import is_dict_type
 
 
-class LRSchedulerConfig(ObjectConfig):
+class LRSchedulerConfig(ObjectConfig[LRScheduler]):
     """Base config class for the LR scheduler."""
 
     @classmethod
@@ -73,7 +73,7 @@ class LRSchedulerConfig(ObjectConfig):
         """
         self._check_optimizer_consistency(optimizer)
         associated_class = self._get_class()
-        config_dict = self.model_dump(exclude={"name"})
+        config_dict = self.to_raw_dict()
 
         # deal with parameter groups
         for arg, value in config_dict.items():

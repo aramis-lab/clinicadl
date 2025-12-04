@@ -1,10 +1,7 @@
-import numpy as np
 import pytest
 
 from clinicadl.networks.nn.utils.checks import (
     check_adn_ordering,
-    check_conv_args,
-    check_mlp_args,
     check_norm_layer,
     check_pool_indices,
     ensure_list_of_tuples,
@@ -112,31 +109,3 @@ def test_check_norm_layer(inputs, error):
             _ = check_norm_layer(inputs)
     else:
         assert check_norm_layer(inputs) == inputs
-
-
-@pytest.mark.parametrize(
-    "conv_args,error",
-    [(None, True), ({"kernel_size": 3}, True), ({"channels": [2]}, False)],
-)
-def test_check_conv_args(conv_args, error):
-    if error:
-        with pytest.raises(ValueError):
-            check_conv_args(conv_args)
-    else:
-        check_conv_args(conv_args)
-
-
-@pytest.mark.parametrize(
-    "mlp_args,error",
-    [
-        ({"act": "tanh"}, True),
-        ({"hidden_dims": [2]}, False),
-        (("hidden_dims", [2]), True),
-    ],
-)
-def test_check_mlp_args(mlp_args, error):
-    if error:
-        with pytest.raises(ValueError):
-            check_mlp_args(mlp_args)
-    else:
-        check_mlp_args(mlp_args)

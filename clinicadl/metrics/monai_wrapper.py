@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import torch
 from monai.metrics import CumulativeIterationMetric
 
-from clinicadl.data.dataloader import Batch
 from clinicadl.transforms.handlers import Postprocessing
-from clinicadl.transforms.types import TransformOrConfig
 
 from .base import Metric, TensorOrList
 from .enum import Optimum
+
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import Batch
+    from clinicadl.transforms.types import TransformOrConfig
 
 
 class MonaiMetricWrapper(Metric):

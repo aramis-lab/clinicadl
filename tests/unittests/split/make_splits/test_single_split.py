@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 
 from clinicadl.split.make_splits import make_split
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
 
 def remove_non_empty_dir(dir_path: Path):
@@ -191,9 +190,7 @@ def test_special_cases():
     )
 
     # not enough tries
-    with pytest.raises(
-        ClinicaDLConfigurationError, match="Unable to find a valid split after*"
-    ):
+    with pytest.raises(RuntimeError, match="Unable to find a valid split after*"):
         split_dir = make_split(
             DF,
             output_dir=TMP_DIR,

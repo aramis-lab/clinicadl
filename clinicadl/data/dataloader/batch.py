@@ -1,17 +1,20 @@
 from __future__ import annotations
 
-from copy import deepcopy
-from typing import Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 import torch
 import torchio as tio
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.device import DeviceType, check_device
 
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
 
-class Batch(list[DataPoint]):
+T = TypeVar("T", bound="DataPoint")
+
+
+class Batch(list[T]):
     """
     A batch container for :class:`~clinicadl.data.structures.DataPoint` objects.
 
@@ -33,7 +36,7 @@ class Batch(list[DataPoint]):
     _non_blocking: bool = False
     _channels_last: bool = False
 
-    def __init__(self, datapoints: list[DataPoint]):
+    def __init__(self, datapoints: Sequence[T]):
         super().__init__(datapoints)
 
         if len(self) == 0:
@@ -65,18 +68,19 @@ class Batch(list[DataPoint]):
         device: Optional[DeviceType] = None,
         non_blocking: bool = False,
         channels_last: Optional[bool] = None,
-    ) -> Batch:
+    ) -> None:
         """
-        Returns a copy of the ``Batch``, where :py:class:`Tensors <torch.Tensor>` are on the specified device
+        To send the :py:class:`Tensors <torch.Tensor>` in the ``Batch`` on the specified device
         and with the specified memory format.
 
-        .. note::
-            If ``device`` and ``channels_last`` are both ``None``, the original ``Batch`` will be returned.
+        .. important::
+            Nothing is applied to the ``Batch`` itself, which remains on CPU, but all the tensors obtained with :py:meth:`get_field`
+            will have the specified device and memory format.
 
         Parameters
         ----------
         device : Optional[DeviceType], default=None
-            The device where to send the ``Batch``. Can be:
+            The device where to send the ``Tensors``. Can be:
 
             - an ``int``: the device id;
             - ``"cuda"``;
@@ -96,11 +100,6 @@ class Batch(list[DataPoint]):
             If ``False``, the default contiguous memory format will be used.\n
             If ``None``, the current memory format will be kept.
 
-        Returns
-        -------
-        Batch
-            The copy of the input batch, on the specified device, and with the specified memory format.
-
         Examples
         --------
         .. code-block:: python
@@ -112,46 +111,31 @@ class Batch(list[DataPoint]):
             datapoint = ColinDataPoint()
             datapoint["tensor"] = torch.tensor([1])
             batch = Batch([datapoint, datapoint])
-            batch_gpu = batch.to("cuda", non_blocking=True, channels_last=True)
 
         .. code-block:: python
 
-            >>> batch_gpu.device
-            device(type='cuda')
-            >>> batch_gpu[0]["tensor"].device   # all the tensors inside are affected
-            device(type='cuda')
-            >>> batch_gpu.get_field("image").device   # get_field is affected
-            device(type='cuda')
-
-        .. code-block:: python
-
+            >>> batch.get_field("image").device   # get_field is affected
+            "cpu"
             >>> batch.get_field("image").stride()   # contiguous memory format (default)
             (7109137, 7109137, 39277, 181, 1)
-            >>> batch_gpu.get_field("image").stride()   # Channels-last memory format
+
+        .. code-block:: python
+
+            >>> batch.to("cuda", non_blocking=True, channels_last=True)
+            >>> batch.device
+            device(type='cuda')
+            >>> batch.get_field("image").device   # get_field is affected
+            device(type='cuda')
+            >>> batch.get_field("image").stride()   # Channels-last memory format
             (7109137, 1, 39277, 181, 1)
 
         """
-        if device is None and channels_last is None:
-            return self
-
-        batch = deepcopy(self)
-
         if device is not None:
-            batch._device = check_device(device)
-            batch._non_blocking = non_blocking
-
-            for datapoint in batch:
-                for name, value in datapoint.items():
-                    if isinstance(value, torch.Tensor):
-                        datapoint[name] = value.to(
-                            batch.device, non_blocking=non_blocking
-                        )
-                datapoint.update_attributes()
+            self._device = check_device(device)
+            self._non_blocking = non_blocking
 
         if channels_last is not None:
-            batch._channels_last = channels_last
-
-        return batch
+            self._channels_last = channels_last
 
     def get_field(
         self,
@@ -311,7 +295,7 @@ class Batch(list[DataPoint]):
             datapoint.update_attributes()
 
     @staticmethod
-    def _get_field(datapoint: DataPoint, field_name: str) -> Any:
+    def _get_field(datapoint: T, field_name: str) -> Any:
         """Returns the specified field."""
         try:
             return datapoint[field_name]
@@ -339,8 +323,6 @@ class Batch(list[DataPoint]):
 
         elif isinstance(value, np.ndarray):
             return torch.from_numpy(value)
-        elif isinstance(value, dict):
-            return cls._to_tensor(list(value.values()))
         elif isinstance(value, torch.Tensor):
             return value.clone()
         else:
@@ -369,11 +351,11 @@ class Batch(list[DataPoint]):
 BatchType = Union[Batch, tuple[Batch, ...]]
 
 
-def simple_collate_fn(batch: list[DataPoint]) -> Batch:
+def simple_collate_fn(batch: Sequence[T]) -> Batch[T]:
     """For datasets that returns a single Sample."""
     return Batch(batch)
 
 
-def tuple_collate_fn(batch: list[tuple[DataPoint, ...]]) -> tuple[Batch, ...]:
+def tuple_collate_fn(batch: Sequence[tuple[T, ...]]) -> tuple[Batch[T], ...]:
     """For datasets that returns a tuple of Samples."""
     return tuple(Batch(data) for data in zip(*batch))

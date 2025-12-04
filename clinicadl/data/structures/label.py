@@ -9,8 +9,6 @@ from clinicadl.dictionary.suffixes import PT
 from clinicadl.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
 
-LabelType = Optional[Union[int, float, dict[str, float], tio.LabelMap]]
-
 
 class Column(UserString):
     """
@@ -40,7 +38,7 @@ class Mask:
     If the mask is in a `.pt` file (e.g. `Mask("masks/mask.pt")`), it is expected
     to be a 4D tensor with the associated affine matrix, as saved by
     `clinicadl.TensorConversion._save_mask_as_tensor`.\n
-    If the mask is in a NIfTI file (e.g. `Mask("masks/mask.nii.gz")`), it is expected
+    If the mask is in a file (e.g. `Mask("masks/mask.nii.gz")`), it is expected
     to be a 3D image.
 
     Parameters
@@ -54,29 +52,62 @@ class Mask:
         if `mask` is passed as a path that does not match any file.
     """
 
-    def __init__(self, mask: PathType) -> None:
+    def __init__(self, mask: Union[str, PathType]) -> None:
         if isinstance(mask, Path):
             if not self._check_path(mask):
                 raise FileNotFoundError(
                     f"The mask has been passed as a Path object (got {mask}), but no such file exists."
                 )
-            self.is_common_mask = True
             self.path = Path(mask)
-            self.name = self.path.with_suffix(
-                ""
-            ).stem  # with_suffix to handle double extensions
 
         elif isinstance(mask, str):
             if self._check_path(mask):
-                self.is_common_mask = True
                 self.path = Path(mask)
-                self.name = self.path.with_suffix("").stem
             else:
-                self.is_common_mask = False
                 self.path = None
-                self.name = mask
 
+        self.name = self.get_mask_name(mask)
+        self.is_common_mask = self.is_file(mask)
         self._mask_img: Union[tio.LabelMap, None] = None  # lazy loading
+
+    @staticmethod
+    def get_mask_name(mask: Union[str, PathType]) -> str:
+        """
+        Returns the name of the mask.
+
+        If it is an individual mask, the suffix is returned. If it is a common mask,
+        the stem of the path is returned.
+
+        Parameters
+        ----------
+        mask : str
+            The mask.
+
+        Returns
+        -------
+        str
+            The name of the mask.
+        """
+        return (
+            Path(mask).with_suffix("").stem
+        )  # with_suffix to handle double extensions
+
+    @staticmethod
+    def is_file(mask: Union[str, PathType]) -> bool:
+        """
+        Determines if the input mask is a file or not.
+
+        Parameters
+        ----------
+        mask : str
+            The mask.
+
+        Returns
+        -------
+        bool
+            If it is a file (i.e. a common mask).
+        """
+        return bool(Path(mask).suffix)
 
     @staticmethod
     def _check_path(mask_path: PathType) -> bool:
@@ -93,7 +124,7 @@ class Mask:
     @classmethod
     def _load_mask(cls, path: Path) -> tio.LabelMap:
         """
-        Loads a mask (in nifti or .pt file) and return a TorchIO LabelMap.
+        Loads a mask (in a raw file or a .pt file) and return a TorchIO LabelMap.
         """
         if path.suffix == PT:
             mask_tensor, affine = cls._load_pt_mask(path)
@@ -112,7 +143,7 @@ class Mask:
 
     def _lazy_load_common_mask(self) -> tio.LabelMap:
         """
-        Gets or loads a common mask (in nifti or .pt file).
+        Gets or loads a common mask (in a raw file or a .pt file).
         """
         if self._mask_img is None:
             self._mask_img = self._load_mask(self.path)

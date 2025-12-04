@@ -3,7 +3,6 @@ from __future__ import annotations
 from pydantic import PositiveInt
 
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.typing import PathType
 
 
 class OptimizationConfig(ClinicaDLConfig):

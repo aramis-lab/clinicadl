@@ -1,17 +1,14 @@
-from pydantic import computed_field
-
-from ..enum import ImageModality
 from .base import Modality
+from .enum import ImageModality
 
 
 class Flair(Modality):
     """
-    Configuration to handle FLAIR (Fluid-Attenuated Inversion Recovery) images.
+    To handle FLAIR (Fluid-Attenuated Inversion Recovery) images.
     """
 
-    @computed_field
     @property
-    def modality(self) -> str:
+    def _modality(self) -> str:
         """
         The modality, always 'FLAIR' here.
         """

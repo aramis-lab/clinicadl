@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import torch
 import torch.nn as nn
 
-from .autoencoder import AutoEncoder
+from .autoencoder import AutoEncoder, AutoEncoderConfig
 from .layers.utils import ActivationParameters, UnpoolingMode
 
 
@@ -209,3 +209,14 @@ class VAE(nn.Module):
         Resets the output layer(s) of an MLP.
         """
         layer.linear.reset_parameters()
+
+
+class VAEConfig(AutoEncoderConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.VAE`.
+    """
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return VAE

@@ -1,27 +1,38 @@
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import torch
 import torchio as tio
+from pydantic import ValidationError
 
 from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datasets.output import Sample, Sample2D
 from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
 from clinicadl.data.structures import DataPoint, Mask
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.transforms.extraction import Patch, Slice
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLCAPSError,
-)
+from clinicadl.transforms.handlers import Transforms
+from clinicadl.utils.exceptions import CannotReadJsonFieldError
 
-caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-full_data = pd.read_csv(caps_dir / "tsv" / "labels.tsv", sep="\t")
+from .utils import subset_df
+
+CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
+DATAFRAME = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
 
 
-class CustomTransform(tio.Transform):
+class CustomImageTransform(tio.Transform):
+    def apply_transform(self, datapoint: DataPoint) -> DataPoint:
+        datapoint["coefficient"] = 0
+        datapoint["other_image"] = 0
+        datapoint["other_mask"] = 0
+
+        return datapoint
+
+
+class CustomSampleTransform(tio.Transform):
     def apply_transform(self, datapoint: DataPoint) -> DataPoint:
         assert "coefficient" in datapoint
         assert "other_image" in datapoint
@@ -31,9 +42,7 @@ class CustomTransform(tio.Transform):
 
 
 def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
-    data = full_data.set_index(["participant_id", "session_id"])
-    data = data.loc[participants_sessions]
-    return data.reset_index()
+    return subset_df(DATAFRAME, participants_sessions)
 
 
 def encode_diagnosis(x: pd.Series) -> pd.Series:
@@ -63,7 +72,7 @@ def test_good_caps_dataset():
     columns = {"age": None, "diagnosis": encode_diagnosis}
 
     caps_dataset = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing,
         transforms=transforms,
         data=data,
@@ -71,27 +80,27 @@ def test_good_caps_dataset():
         columns=columns,
         masks=masks,
     )
-    assert isinstance(caps_dataset.transforms._image_transforms_processed, tio.Compose)
-    assert len(caps_dataset.transforms._image_transforms_processed.transforms) == 1
+    assert isinstance(caps_dataset.config.transforms.image_transforms, tio.Compose)
+    assert len(caps_dataset.config.transforms.image_transforms.transforms) == 1
     assert isinstance(
-        caps_dataset.transforms._image_transforms_processed.transforms[0],
+        caps_dataset.config.transforms.image_transforms.transforms[0],
         tio.RescaleIntensity,
     )
 
-    assert isinstance(caps_dataset.transforms._sample_transforms_processed, tio.Compose)
-    assert len(caps_dataset.transforms._sample_transforms_processed.transforms) == 2
+    assert isinstance(caps_dataset.config.transforms.sample_transforms, tio.Compose)
+    assert len(caps_dataset.config.transforms.sample_transforms.transforms) == 2
     assert isinstance(
-        caps_dataset.transforms._sample_transforms_processed.transforms[0], tio.Pad
+        caps_dataset.config.transforms.sample_transforms.transforms[0], tio.Pad
     )
     assert isinstance(
-        caps_dataset.transforms._sample_transforms_processed.transforms[1],
+        caps_dataset.config.transforms.sample_transforms.transforms[1],
         tio.RemapLabels,
     )
 
-    assert isinstance(caps_dataset.transforms._augmentations_processed, tio.Compose)
-    assert len(caps_dataset.transforms._augmentations_processed.transforms) == 1
+    assert isinstance(caps_dataset.config.transforms.augmentations, tio.Compose)
+    assert len(caps_dataset.config.transforms.augmentations.transforms) == 1
     assert isinstance(
-        caps_dataset.transforms._augmentations_processed.transforms[0], tio.Crop
+        caps_dataset.config.transforms.augmentations.transforms[0], tio.Crop
     )
 
     assert (
@@ -106,7 +115,12 @@ def test_good_caps_dataset():
     assert caps_dataset.individual_masks[0].name == "brain"
     assert len(caps_dataset.common_masks) == 1
     assert caps_dataset.common_masks[0].name == "leftHippocampus"
-    assert caps_dataset.tensor_conversion.json is None
+
+    assert not caps_dataset.converted
+    assert caps_dataset._tensor_conversion is None
+    assert len(caps_dataset.transforms.image_transforms.transforms) == 1
+    assert caps_dataset._initial_shape is None
+    assert not caps_dataset._has_len
 
     caps_dataset.read_tensor_conversion(conversion_name="t1_masks")
     output = caps_dataset[0]
@@ -116,18 +130,24 @@ def test_good_caps_dataset():
         "brain",
         "leftHippocampus",
         "diagnosis",
-        "extraction",
-        "preprocessing",
+        "datatype",
         "image_path",
         "participant",
         "session",
+        "sample_type",
         "slice_direction",
-        "slice_position",
+        "sample_position",
         "squeeze",
     }
 
+    assert caps_dataset.converted
+    assert not caps_dataset._tensor_conversion.interrupted
+    assert len(caps_dataset.config.transforms.image_transforms.transforms) == 1
+    assert caps_dataset._initial_shape == (1, 3, 3, 3)
+    assert caps_dataset._has_len
 
-def test_checks():
+
+def test_checks(tmp_path):
     data = sub_data(
         [
             ("sub-000", "ses-M000"),
@@ -139,49 +159,48 @@ def test_checks():
 
     # check preprocessing
     preprocessing = PETLinear(tracer="18FAV45", suvr_reference_region="pons2")
-    with pytest.raises(ClinicaDLCAPSError):
+    with pytest.raises(RuntimeError):
         CapsDataset(
-            caps_dir,
+            CAPS_DIR,
             preprocessing,
             data,
         )
     preprocessing.use_uncropped_image = True
     CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing,
         data,
     )
 
     # check df
-    data_path = Path(caps_dir / "only_pets.tsv")
+    data_path = tmp_path / "only_pets.tsv"
     data.to_csv(data_path, sep="\t", index=False)
     with pytest.raises(FileNotFoundError):
         CapsDataset(
-            caps_dir,
+            CAPS_DIR,
             preprocessing,
-            caps_dir / "abc.tsv",
+            CAPS_DIR / "abc.tsv",
         )
-    with pytest.raises(ClinicaDLArgumentError):
+    with pytest.raises(ValidationError):
         CapsDataset(
-            caps_dir,
+            CAPS_DIR,
             preprocessing,
             data=[("sub-000", "ses-M000")],
         )
 
     caps_dataset = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         preprocessing,
-        caps_dir / "only_pets.tsv",
+        tmp_path / "only_pets.tsv",
     )
     assert (caps_dataset.df == data).all().all()
-    data_path.unlink()
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=None,
     )
-    tsv_path = caps_dir / "overview_t1-linear.tsv"
+    tsv_path = CAPS_DIR / "overview_t1-linear.tsv"
     tsv = pd.read_csv(tsv_path, sep="\t")
     assert (caps_dataset.df == data[["participant_id", "session_id"]]).all().all()
     assert (tsv == data[["participant_id", "session_id"]]).all().all()
@@ -189,57 +208,57 @@ def test_checks():
 
     # check label
     with pytest.raises(
-        ClinicaDLArgumentError, match="Got 'category' for 'label', but there is no*"
+        ValidationError, match="Got 'category' for 'label', but there is no*"
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             label="category",
         )
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValidationError,
         match="'category' was passed in 'label', but this column is not numeric!",
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             label="category",
             columns=["category"],
         )
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValidationError,
         match="You passed a list in 'label', and this list can only contain*",
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             label=["age", "brain"],
             columns=["age"],
             masks=["brain"],
         )
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValidationError,
         match="A segmentation mask must be specific to each image, but you passed*",
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             label="leftHippocampus",
             masks=["leftHippocampus.nii.gz"],
         )
 
     caps_dataset = CapsDataset(
-        caps_dir, T1Linear(use_uncropped_image=True), data=data, label=None
+        CAPS_DIR, datatype=T1Linear(use_uncropped_image=True), data=data, label=None
     )
     assert caps_dataset.label is None
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         label="age",
         columns=["age"],
@@ -247,17 +266,19 @@ def test_checks():
     assert caps_dataset.label == "age"
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         label=["age", "diagnosis"],
         columns={"age": None, "diagnosis": encode_diagnosis},
     )
     assert caps_dataset.label == ["age", "diagnosis"]
+    assert caps_dataset.df["diagnosis"].iloc[0] == 0
+    assert data["diagnosis"].iloc[0] == "CN"
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         label="brain",
         masks=["brain"],
@@ -266,10 +287,19 @@ def test_checks():
     assert caps_dataset.label.name == "brain"
 
     # columns
-    with pytest.raises(ClinicaDLArgumentError, match="A column cannot be named*"):
+    with pytest.raises(
+        ValidationError, match=r"You passed \['age'\] in 'columns', but 'data' is None."
+    ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
+            data=None,
+            columns=["age"],
+        )
+    with pytest.raises(ValidationError, match="A column cannot be named*"):
+        CapsDataset(
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             columns=["affine"],
         )
@@ -277,50 +307,48 @@ def test_checks():
         KeyError, match="'abc' was passed in 'columns', but there is no such column*"
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             columns=["abc"],
         )
 
     # masks
-    with pytest.raises(ClinicaDLArgumentError, match="'masks' should be a list*"):
+    with pytest.raises(ValidationError):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             masks="leftHippocampus.nii.gz",
         )
-    with pytest.raises(ClinicaDLArgumentError, match="Mask cannot be named*"):
+    with pytest.raises(ValidationError, match="Mask cannot be named*"):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             masks=["affine"],
         )
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValidationError,
         match="Conflict: 'age' has been passed in 'columns' AND 'masks'!",
     ):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             masks=["age"],
             columns=["age"],
         )
-    with pytest.raises(
-        ClinicaDLArgumentError, match="Duplicated mask names in 'masks'*"
-    ):
+    with pytest.raises(ValidationError, match="Duplicated mask names in 'masks'*"):
         CapsDataset(
-            caps_dir,
-            T1Linear(use_uncropped_image=True),
+            CAPS_DIR,
+            datatype=T1Linear(use_uncropped_image=True),
             data=data,
             masks=["leftHippocampus", "leftHippocampus.nii.gz"],
         )
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         masks=["leftHippocampus.nii.gz"],
     )
@@ -329,18 +357,16 @@ def test_checks():
     assert isinstance(caps_dataset.common_masks[0], Mask)
     assert (
         caps_dataset.common_masks[0].path
-        == caps_dir / "masks" / "leftHippocampus.nii.gz"
+        == CAPS_DIR / "masks" / "leftHippocampus.nii.gz"
     )
 
     # load also
-    caps_dataset = CapsDataset(caps_dir, preprocessing, data, columns=["age"])
-    with pytest.raises(ClinicaDLArgumentError, match="Cannot load the element 'age'*"):
+    caps_dataset = CapsDataset(CAPS_DIR, preprocessing, data, columns=["age"])
+    with pytest.raises(ValueError, match="Cannot load the element 'age'*"):
         caps_dataset.read_tensor_conversion(load_also=["age"])
 
-    caps_dataset = CapsDataset(caps_dir, preprocessing, data, masks=["brain"])
-    with pytest.raises(
-        ClinicaDLArgumentError, match="Cannot load the element 'brain'*"
-    ):
+    caps_dataset = CapsDataset(CAPS_DIR, preprocessing, data, masks=["brain"])
+    with pytest.raises(ValueError, match="Cannot load the element 'brain'*"):
         caps_dataset.read_tensor_conversion(load_also=["brain"])
 
 
@@ -352,25 +378,20 @@ def test_get_participant_session_couples():
         ]
     )
     caps_dataset = CapsDataset(
-        caps_dir,
-        T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
     )
-    assert caps_dataset.get_participant_session_couples() == [
-        ("sub-000", "ses-M000"),
-        ("sub-000", "ses-M003"),
-    ]
+    assert caps_dataset.get_participant_session_couples() == set(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-000", "ses-M003"),
+        ]
+    )
 
 
-def test_describe():
-    tmp_dir = Path(__file__).parents[2] / "resources" / "caps_tmp"
-
-    if tmp_dir.is_dir():
-        shutil.rmtree(tmp_dir)
-    shutil.copytree(caps_dir, tmp_dir)
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+def test_describe(tmp_path):
+    shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)
 
     data = sub_data(
         [
@@ -381,50 +402,50 @@ def test_describe():
     )
 
     caps_dataset = CapsDataset(
-        tmp_dir,
+        tmp_path,
         T1Linear(use_uncropped_image=True),
         data=data,
     )
     assert caps_dataset.describe()["total_samples"] == 3
 
     caps_dataset = CapsDataset(
-        tmp_dir,
+        tmp_path,
         T1Linear(use_uncropped_image=True),
         data=data,
         transforms=Transforms(extraction=Slice()),
     )
     with pytest.raises(
-        ClinicaDLCAPSError, match="Needs tensors to compute the length of the dataset*"
+        RuntimeError,
+        match=(
+            "The operation you are attempting to perform requires your data to be converted into tensors. "
+            "Please use 'to_tensors', or 'read_tensor_conversion' if the conversion has already been performed."
+        ),
     ):
         caps_dataset.describe()
     caps_dataset.to_tensors(conversion_name="t1_", ignore_spacing=True)
     description = caps_dataset.describe()
     assert description["total_samples"] == 7
-    assert description["participant_session_pairs"] == [
+    assert sorted(description["participant_session_pairs"]) == [
         ("sub-000", "ses-M000"),
         ("sub-010", "ses-M003"),
         ("sub-010", "ses-M012"),
     ]
-    assert description["preprocessing"] == {
-        "name": "t1-linear",
+    assert description["datatype"] == {
+        "name": "T1Linear",
+        "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",
+        "key": "t1-linear",
+        "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
         "use_uncropped_image": True,
-        "modality": "T1w",
-        "file_type": {
-            "pattern": "t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*",
-            "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
-            "needed_pipeline": "t1-linear",
-        },
     }
     assert description["extraction"] == {
+        "name": "Slice",
         "borders": None,
         "discarded_slices": None,
-        "extract_method": "slice",
         "slice_direction": 0,
         "slices": None,
         "squeeze": True,
         "tsv_path": None,
     }
-    shutil.rmtree(tmp_dir)
 
 
 def test_get_sample_info():
@@ -435,8 +456,8 @@ def test_get_sample_info():
         ]
     )
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=PETLinear(
+        CAPS_DIR,
+        datatype=PETLinear(
             tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
         ),
         data=data,
@@ -450,21 +471,22 @@ def test_get_sample_info():
         caps_dataset.get_sample_info(2, "age")
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         label="seg",
         masks=["seg"],
         transforms=Transforms(
-            extraction=Patch(patch_size=1, stride=1),
+            extraction=Patch(patch_size=1),
             image_transforms=[CropConfig(cropping=(0, 1, 0, 1, 0, 1))],
         ),
     )
     with pytest.raises(
-        ClinicaDLCAPSError, match="Needs tensors to compute the length of the dataset*"
+        RuntimeError, match="The operation you are attempting to perform requires*"
     ):
         caps_dataset.get_sample_info(8, "age")
     caps_dataset.read_tensor_conversion("t1_transform")
+    print(caps_dataset.df)
     assert caps_dataset.get_sample_info(7, "age") == 1.0
     assert caps_dataset.get_sample_info(8, "age") == 2.0
 
@@ -477,7 +499,7 @@ def test_train_eval():
         ]
     )
     caps_dataset = CapsDataset(
-        caps_dir,
+        CAPS_DIR,
         T1Linear(use_uncropped_image=True),
         data=data,
         transforms=Transforms(augmentations=[tio.RescaleIntensity()]),
@@ -496,15 +518,8 @@ def test_train_eval():
     assert out.image.tensor.max() == 1
 
 
-def test_subset():
-    tmp_dir = Path(__file__).parents[2] / "resources" / "caps_tmp"
-
-    if tmp_dir.is_dir():
-        shutil.rmtree(tmp_dir)
-    shutil.copytree(caps_dir, tmp_dir)
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_corrupted_bis.json").unlink()
-    Path(tmp_dir / "tensor_conversion" / "pet_ref_missing_field.json").unlink()
+def test_subset(tmp_path):
+    shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)
 
     data = sub_data(
         [
@@ -513,22 +528,20 @@ def test_subset():
         ]
     )
     caps_dataset = CapsDataset(
-        tmp_dir,
+        tmp_path,
         T1Linear(use_uncropped_image=True),
         transforms=Transforms(extraction=Slice(slices=[0, 1])),
         data=data,
     )
     caps_dataset.to_tensors(conversion_name="for_subset")
     subset = caps_dataset.subset(
-        sub_data(
-            [
-                ("sub-010", "ses-M003"),
-                (
-                    "sub-999",
-                    "ses-M099",
-                ),  # not in the dataset, this shouldn't raise an error
-            ]
-        )
+        [
+            ("sub-010", "ses-M003"),
+            (
+                "sub-999",
+                "ses-M099",
+            ),  # not in the dataset, this shouldn't raise an error
+        ]
     )
     assert isinstance(subset, CapsDataset)
     assert len(subset) == 2
@@ -536,8 +549,8 @@ def test_subset():
     assert subset[0].session == "ses-M003"
 
     with pytest.raises(
-        ClinicaDLCAPSError,
-        match=r"No \(participant, session\) pairs mentioned in 'data' are in the CapsDataset. This would lead to an empty dataset!",
+        RuntimeError,
+        match=r"No \(participant, session\) pairs are in the dataset. This would lead to an empty dataset!",
     ):
         caps_dataset.subset(
             sub_data(
@@ -547,10 +560,8 @@ def test_subset():
             )
         )
 
-    shutil.rmtree(tmp_dir)
 
-
-def test__getitem__():
+def test__getitem__(tmp_path):
     data = sub_data(
         [
             ("sub-000", "ses-M000"),
@@ -558,8 +569,8 @@ def test__getitem__():
         ]
     )
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         label="seg",
         masks=["brain", "seg", "leftHippocampus.nii.gz"],
@@ -578,13 +589,16 @@ def test__getitem__():
         ),
     )
 
-    with pytest.raises(ClinicaDLCAPSError, match="Cannot find tensor files.*"):
+    with pytest.raises(
+        RuntimeError,
+        match="The operation you are attempting to perform requires your data to be converted into tensors.*",
+    ):
         caps_dataset[0]
 
     caps_dataset.read_tensor_conversion(conversion_name="t1_masks")
 
     tensors = torch.load(
-        caps_dir
+        CAPS_DIR
         / "subjects"
         / "sub-000"
         / "ses-M000"
@@ -595,21 +609,22 @@ def test__getitem__():
         weights_only=True,
     )
     mask_tensor = torch.load(
-        caps_dir / "masks" / "tensors" / "t1_masks" / "leftHippocampus.pt",
+        CAPS_DIR / "masks" / "tensors" / "t1_masks" / "leftHippocampus.pt",
         weights_only=True,
     )
     out_sample = caps_dataset[0]
     assert out_sample["diagnosis"] == 0
     assert out_sample["age"] == 1
-    assert out_sample.preprocessing == T1Linear(use_uncropped_image=True)
-    assert out_sample.extraction == "slice"
-    assert out_sample.slice_position == 0
+    assert out_sample.datatype == T1Linear(use_uncropped_image=True)
+    assert out_sample.sample_type == "slice"
+    assert isinstance(out_sample, Sample2D)
+    assert out_sample.sample_position == 0
     assert out_sample.slice_direction == 0
     assert not out_sample.squeeze
     assert out_sample.participant == "sub-000"
     assert out_sample.session == "ses-M000"
     assert out_sample.image_path == (
-        caps_dir
+        CAPS_DIR
         / "subjects"
         / "sub-000"
         / "ses-M000"
@@ -621,7 +636,7 @@ def test__getitem__():
 
     assert (out_sample.affine == tensors["affine"]).all()
     assert out_sample.spatial_shape == (1, 2, 2)
-    assert out_sample.label.shape == (7, 1, 2, 2)
+    assert out_sample.label.shape == (1, 1, 2, 2)
 
     compose = tio.Compose(
         [
@@ -642,27 +657,38 @@ def test__getitem__():
 
     # check that image transform is not applied twice
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         transforms=Transforms(
             image_transforms=[CropConfig(cropping=(0, 1, 0, 1, 0, 1))]
         ),
     )
     caps_dataset.read_tensor_conversion("t1_transform")
+    assert len(caps_dataset.transforms.image_transforms.transforms) == 0
     out_sample = caps_dataset[0]
+    assert out_sample.sample_type == "image"
+    assert isinstance(out_sample, Sample)
+    assert out_sample.sample_position is None
     assert out_sample.shape == (1, 2, 2, 2)
+
+    caps_dataset.read_tensor_conversion(conversion_name="t1_masks")
+    assert len(caps_dataset.transforms.image_transforms.transforms) == 1
 
     # other label
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
+        transforms=Transforms(extraction=Patch(patch_size=3)),
         data=data,
         label="age",
         columns=["age"],
     )
     caps_dataset.read_tensor_conversion()
     out_sample = caps_dataset[0]
+    assert isinstance(out_sample, Sample)
+    assert out_sample.sample_type == "patch"
+    assert out_sample.sample_position == (0, 0, 0)
     assert out_sample.label == 1.0
     out_sample = caps_dataset[1]
     assert out_sample.label == 2.0
@@ -670,8 +696,8 @@ def test__getitem__():
         caps_dataset[2]
 
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=PETLinear(
+        CAPS_DIR,
+        datatype=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
         data=data,
@@ -680,15 +706,15 @@ def test__getitem__():
     )
     caps_dataset.read_tensor_conversion()
     out_sample = caps_dataset[0]
-    out_sample.label == {"age": 1.0, "diagnosis": 0}
+    out_sample.label == [1.0, 0.0]
 
     # additional info
     caps_dataset = CapsDataset(
-        caps_dir,
-        preprocessing=T1Linear(use_uncropped_image=True),
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
         data=data,
         transforms=Transforms(
-            sample_transforms=[CustomTransform()],
+            sample_transforms=[CustomSampleTransform()],
         ),
     )
     caps_dataset.read_tensor_conversion(
@@ -709,3 +735,139 @@ def test__getitem__():
     assert {"coefficient", "other_image", "other_mask"}.intersection(
         set(out_sample.keys())
     ) == set()
+
+    shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)
+    caps_dataset = CapsDataset(
+        tmp_path,
+        datatype=T1Linear(use_uncropped_image=True),
+        data=data,
+        transforms=Transforms(
+            image_transforms=[CustomImageTransform()],
+            sample_transforms=[CustomSampleTransform()],
+        ),
+    )
+    caps_dataset.to_tensors(conversion_name="new_conversion", save_transforms=True)
+    out_sample = caps_dataset[0]
+    assert {"coefficient", "other_image", "other_mask"}.difference(
+        set(out_sample.keys())
+    ) == set()
+
+
+def test_from_json_to_json(tmp_path):
+    data = sub_data(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    data_path = tmp_path / "data.tsv"
+    data.to_csv(data_path, sep="\t", index=False)
+
+    data.loc[0, "age"] = np.nan
+    caps_dataset = CapsDataset(
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
+        data=data,
+        label="seg",
+        masks=["brain", "seg", "leftHippocampus.nii.gz"],
+        columns=["age", "diagnosis"],
+        transforms=Transforms(
+            extraction=Slice(squeeze=False),
+            image_transforms=[
+                CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
+            ],
+            sample_transforms=[
+                CropConfig(cropping=(0, 1, 0, 0, 0, 1)),
+            ],
+        ),
+    )
+    caps_dataset.to_json(tmp_path / "dataset.json")
+    caps_dataset = CapsDataset.from_json(tmp_path / "dataset.json")
+    assert caps_dataset.label.name == "seg"
+    assert len(caps_dataset.individual_masks) == 2
+    assert len(caps_dataset.common_masks) == 1
+    assert len(caps_dataset.columns) == 2
+    assert caps_dataset.get_participant_session_couples() == set(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    assert isinstance(caps_dataset.config.datatype, T1Linear)
+    assert isinstance(
+        caps_dataset.config.transforms.image_transforms.transforms[0], tio.Crop
+    )
+    assert caps_dataset.config.directory == CAPS_DIR
+
+    # read conversion before
+    caps_dataset.read_tensor_conversion("t1_masks")
+    caps_dataset.to_json(tmp_path / "dataset.json", overwrite=True)
+    caps_dataset = CapsDataset.from_json(tmp_path / "dataset.json")
+    assert caps_dataset._tensor_conversion.conversion_name == "t1_masks"
+    assert caps_dataset._initial_shape == (1, 3, 3, 3)
+    assert caps_dataset.converted
+    assert len(caps_dataset.transforms.image_transforms.transforms) == 1
+    assert len(caps_dataset) == 4
+    assert caps_dataset[0].participant == "sub-000"
+    assert caps_dataset[1].session == "ses-M000"
+
+    # read conversion with transforms
+    caps_dataset.read_tensor_conversion("t1_transform")
+    caps_dataset.to_json(tmp_path / "dataset.json", overwrite=True)
+    caps_dataset = CapsDataset.from_json(tmp_path / "dataset.json")
+    assert len(caps_dataset.transforms.image_transforms.transforms) == 0
+
+    # to tensors before
+    shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)
+    caps_dataset = CapsDataset(
+        tmp_path,
+        datatype=T1Linear(use_uncropped_image=True),
+        data=data,
+        label="seg",
+        masks=["brain", "seg", "leftHippocampus.nii.gz"],
+        columns=["age", "diagnosis"],
+        transforms=Transforms(
+            extraction=Slice(squeeze=False),
+            image_transforms=[
+                CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
+            ],
+            sample_transforms=[
+                tio.Crop(cropping=(0, 1, 0, 0, 0, 1)),
+            ],
+        ),
+    )
+    caps_dataset.to_tensors(conversion_name="new_conversion", save_transforms=False)
+    caps_dataset.to_json(tmp_path / "dataset.json", overwrite=True)
+    caps_dataset = CapsDataset.from_json(
+        tmp_path / "dataset.json",
+        transforms=Transforms(
+            extraction=Slice(squeeze=False),
+            image_transforms=[
+                CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
+            ],
+            sample_transforms=[
+                tio.Crop(cropping=(0, 1, 0, 0, 0, 1)),
+            ],
+        ),
+    )
+    assert len(caps_dataset) == 4
+    assert caps_dataset[0].participant == "sub-000"
+    assert caps_dataset[1].session == "ses-M000"
+    assert caps_dataset._tensor_conversion.conversion_name == "new_conversion"
+
+    caps_dataset = CapsDataset(
+        CAPS_DIR,
+        datatype=T1Linear(use_uncropped_image=True),
+        data=data_path,
+        columns={"age": None, "diagnosis": encode_diagnosis},
+    )
+    caps_dataset.to_json(tmp_path / "dataset.json", overwrite=True)
+    with pytest.raises(
+        CannotReadJsonFieldError,
+        match=r"CapsDataset cannot read the field\(s\) \['columns'\] in .*",
+    ):
+        CapsDataset.from_json(tmp_path / "dataset.json")
+    caps_dataset = CapsDataset.from_json(
+        tmp_path / "dataset.json", columns={"age": None, "diagnosis": encode_diagnosis}
+    )
+    assert caps_dataset.df["diagnosis"].iloc[0] == 0

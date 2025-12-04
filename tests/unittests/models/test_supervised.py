@@ -1,5 +1,3 @@
-import json
-
 import pytest
 import torch
 import torchio as tio
@@ -7,10 +5,9 @@ import torchio as tio
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.losses.config import BCEWithLogitsLossConfig
-from clinicadl.models import ClinicaDLModel, SupervisedModel
+from clinicadl.models import SupervisedModel
 from clinicadl.networks.config import ConvEncoderConfig
 from clinicadl.optim.optimizers.config import AdamConfig
-from clinicadl.utils.exceptions import NotInterpretableJsonField
 
 BATCH = Batch(
     [
@@ -63,52 +60,16 @@ def test_SupervisedModel(tmp_path):
     model.train()
     assert network.training
 
-    # write json
-    model.write_json(tmp_path / "model.json")
-    with open(tmp_path / "model.json", "r") as f:
-        dict_ = json.load(f)
-    assert dict_ == {
-        "name": "SupervisedModel",
-        "network": "Custom network passed by the user: 'Sequential'",
-        "loss": {
-            "name": "BCEWithLogitsLoss",
-            "weight": None,
-            "reduction": "mean",
-            "pos_weight": None,
-        },
-        "optimizer": {
-            "name": "Adam",
-            "freeze": None,
-            "lr": 0.001,
-            "betas": [0.9, 0.999],
-            "eps": 1e-08,
-            "weight_decay": 0.0,
-            "amsgrad": False,
-            "foreach": None,
-            "maximize": False,
-            "capturable": False,
-            "differentiable": False,
-            "fused": None,
-        },
-    }
-
     # write checkpoint
     model.save_checkpoint(tmp_path / "weights.pt", only_network_weights=True)
     model.save_checkpoint(tmp_path / "model_state.pt", only_network_weights=False)
 
-    # from json
-    with pytest.raises(
-        NotInterpretableJsonField,
-        match=r"SupervisedModel cannot read the following fields in .*: 'network'",
-    ):
-        SupervisedModel.from_json(tmp_path / "model.json")
-    new_model: SupervisedModel = ClinicaDLModel.from_json(
-        tmp_path / "model.json",
-        network=torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1)),
-    )
-    assert isinstance(new_model, SupervisedModel)
-
     # read checkpoint
+    network = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1))
+    loss = BCEWithLogitsLossConfig()
+    optimizer = AdamConfig()
+    new_model = SupervisedModel(network, loss, optimizer)
+
     new_model.load_checkpoint(
         tmp_path / "weights.pt", device="cpu", only_network_weights=True
     )

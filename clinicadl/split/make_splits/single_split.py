@@ -22,13 +22,12 @@ from clinicadl.dictionary.words import (
     VALUE,
 )
 from clinicadl.split.splitter.single_split import SingleSplitConfig
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.typing import DataType, PathType
+from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (
     extract_baseline,
     find_available_split_dir,
-    read_and_format_data,
     write_to_tsv,
 )
 
@@ -36,7 +35,7 @@ logger = getLogger("clinicadl.split.make_splits.single_split")
 
 
 def make_split(
-    data: DataType,
+    data: DataFrameType,
     n_test: float = 0.2,
     output_dir: Optional[PathType] = None,
     subset_name: str = TEST,
@@ -108,7 +107,7 @@ def make_split(
         If the DataFrame does not contain the columns ``"participant_id"`` and ``"session_id"``.
     KeyError
         If the stratification columns mentioned via ``stratification`` cannot be found in the DataFrame.
-    ClinicaDLConfigurationError
+    RuntimeError
         If no good split was found after ``n_try_max`` tries.
 
     See Also
@@ -185,7 +184,7 @@ def make_split(
     3	sex	    M	    count	19.0	5.0
 
     """
-    df = read_and_format_data(data)
+    df = read_data(data, check_duplicates=False, check_protected_names=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent
@@ -263,7 +262,7 @@ def make_split(
                     break
 
         else:
-            raise ClinicaDLConfigurationError(
+            raise RuntimeError(
                 f"Unable to find a valid split after {n_try_max} attempts. "
                 "Consider lowering thresholds or removing some stratification variables."
             )
@@ -272,7 +271,7 @@ def make_split(
     write_to_tsv(
         train_df, split_dir, config._training_subset_name, df, longitudinal=True
     )
-    config.write_json()
+    config.to_json()
 
     return split_dir
 

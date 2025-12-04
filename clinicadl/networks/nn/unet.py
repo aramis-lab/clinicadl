@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 from typing import Optional, Sequence
 
 import torch
 import torch.nn as nn
 from monai.networks.blocks.convolutions import Convolution
 from monai.networks.layers.utils import get_act_layer
+from pydantic import NonNegativeFloat, PositiveInt, field_validator
+
+from clinicadl.networks.nn.layers.utils import ActivationParameters
+from clinicadl.utils.factories import get_defaults_from
 
 from .layers.unet import ConvBlock, DownBlock, UpBlock
 from .layers.utils import ActFunction, ActivationParameters
+from .utils.config import NetworkConfig, _DropoutConfig, _SpatialDimsConfig
 
 
 class UNet(nn.Module):
@@ -42,8 +49,7 @@ class UNet(nn.Module):
         Default to ``(64, 128, 256, 512, 1024)``, as in the original paper.
     act : ActivationParameters, default="relu"
         The activation function used, and optionally its arguments.
-        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
-        If ``None``, no activation will be used.\n
+        Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
         ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
         ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
@@ -160,46 +166,47 @@ class UNet(nn.Module):
         dropout: Optional[float] = None,
     ):
         super().__init__()
-        if not isinstance(channels, Sequence) or len(channels) < 2:
-            raise ValueError(
-                f"channels should be a sequence, whose length is no less than 2. Got {channels}"
-            )
-        self.spatial_dims = spatial_dims
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.channels = channels
-        self.act = act
-        self.dropout = dropout
-
-        self.doubleconv = ConvBlock(
+        self.config = UNetConfig(
             spatial_dims=spatial_dims,
             in_channels=in_channels,
-            out_channels=channels[0],
+            out_channels=out_channels,
+            channels=channels,
             act=act,
+            output_act=output_act,
             dropout=dropout,
+        )
+
+        self.doubleconv = ConvBlock(
+            spatial_dims=self.config.spatial_dims,
+            in_channels=self.config.in_channels,
+            out_channels=self.config.channels[0],
+            act=self.config.act,
+            dropout=self.config.dropout,
         )
         self._build_encoder()
         self._build_decoder()
         self.reduce_channels = Convolution(
-            spatial_dims=spatial_dims,
-            in_channels=channels[0],
-            out_channels=out_channels,
+            spatial_dims=self.config.spatial_dims,
+            in_channels=self.config.channels[0],
+            out_channels=self.config.out_channels,
             kernel_size=1,
             strides=1,
             padding=0,
             conv_only=True,
         )
-        self.output_act = get_act_layer(output_act) if output_act else None
+        self.output_act = (
+            get_act_layer(self.config.output_act) if self.config.output_act else None
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_history = [self.doubleconv(x)]
 
-        for i in range(1, len(self.channels)):
+        for i in range(1, len(self.config.channels)):
             x = self.get_submodule(f"down{i}")(x_history[-1])
             x_history.append(x)
 
         x_history.pop()  # the output of bottelneck is not used as a gating signal
-        for i in range(len(self.channels) - 1, 0, -1):
+        for i in range(len(self.config.channels) - 1, 0, -1):
             x = self.get_submodule(f"up{i}")(x, skip=x_history.pop())
 
         out = self.reduce_channels(x)
@@ -210,31 +217,64 @@ class UNet(nn.Module):
         return out
 
     def _build_encoder(self) -> None:
-        for i in range(1, len(self.channels)):
+        for i in range(1, len(self.config.channels)):
             self.add_module(
                 f"down{i}",
                 DownBlock(
-                    spatial_dims=self.spatial_dims,
-                    in_channels=self.channels[i - 1],
-                    out_channels=self.channels[i],
-                    act=self.act,
-                    dropout=self.dropout,
+                    spatial_dims=self.config.spatial_dims,
+                    in_channels=self.config.channels[i - 1],
+                    out_channels=self.config.channels[i],
+                    act=self.config.act,
+                    dropout=self.config.dropout,
                 ),
             )
 
     def _build_decoder(self):
-        for i in range(len(self.channels) - 1, 0, -1):
+        for i in range(len(self.config.channels) - 1, 0, -1):
             self.add_module(
                 f"up{i}",
                 self._decoding_block(
-                    spatial_dims=self.spatial_dims,
-                    in_channels=self.channels[i],
-                    out_channels=self.channels[i - 1],
-                    act=self.act,
-                    dropout=self.dropout,
+                    spatial_dims=self.config.spatial_dims,
+                    in_channels=self.config.channels[i],
+                    out_channels=self.config.channels[i - 1],
+                    act=self.config.act,
+                    dropout=self.config.dropout,
                 ),
             )
 
     @property
     def _decoding_block(self) -> type[nn.Module]:
         return UpBlock
+
+
+UNET_DEFAULTS = get_defaults_from(UNet)
+
+
+class UNetConfig(
+    NetworkConfig,
+    _SpatialDimsConfig,
+    _DropoutConfig,
+):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.UNet`.
+    """
+
+    spatial_dims: PositiveInt
+    in_channels: PositiveInt
+    out_channels: PositiveInt
+    channels: Sequence[PositiveInt] = UNET_DEFAULTS["channels"]
+    act: ActivationParameters = UNET_DEFAULTS["act"]
+    output_act: Optional[ActivationParameters] = UNET_DEFAULTS["output_act"]
+    dropout: Optional[NonNegativeFloat] = UNET_DEFAULTS["dropout"]
+
+    @field_validator("channels")
+    @classmethod
+    def _channels_validator(cls, v):
+        if isinstance(v, Sequence) and len(v) < 2:
+            raise ValueError(f"length of channels must be no less than 2. Got {v}")
+        return v
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return UNet

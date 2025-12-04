@@ -1,128 +1,80 @@
 import abc
+import os
+import re
+from typing import Optional, Pattern, Union
 
-from pydantic import computed_field
+from pydantic import model_validator
+from typing_extensions import Self
 
-from clinicadl.dictionary.suffixes import JSON, TSV
-from clinicadl.utils.config import ClinicaDLConfig
-
-from ..file_type import FileType
+from ..base import DataType
 from ..modalities import Modality
 
 
-class Preprocessing(ClinicaDLConfig, abc.ABC):
+class Preprocessing(DataType, abc.ABC):
     """
-    Abstract configuration class to model the preprocessing step.
-
-    This class should be inherited by all preprocessing methods to define specific
-    configurations for each preprocessing pipeline.
+    Abstract class to represent preprocessings.
     """
 
-    @computed_field
+    pattern: Optional[Union[str, Pattern]] = None  # None is only for initialization
+    key: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _init_pattern_and_description(self) -> Self:
+        """Computes the field values, AFTER initialization."""
+        self.__dict__["pattern"] = self._get_pattern()
+        self.__dict__["description"] = self._get_description()
+        self.__dict__["key"] = self._pipeline_name
+
+        return self
+
     @property
     @abc.abstractmethod
-    def name(self) -> str:
-        """The preprocessing method being applied (e.g., t1-linear, pet-linear)."""
-
-    @computed_field
-    @property
-    def file_type(self) -> FileType:
-        """
-        Returns the FileType associated with the preprocessed data.
-        This method delegates to the `_get_caps_filetype()`.
-        """
-        return self._get_caps_filetype()
-
-    @property
-    def tsv_filename(self) -> str:
-        """
-        Builds a filename for a tsv file saving
-        information on this preprocessing.
-        """
-        return "overview_" + self._get_file_name() + TSV
-
-    @property
-    def json_filename(self) -> str:
-        """
-        Builds a filename for a json file saving
-        information on this preprocessing.
-        """
-        return "default_" + self._get_file_name() + JSON
-
-    def __str__(self):
-        """
-        Provides a string representation of the preprocessing.
-        """
-        return self.file_type.description
+    def _pipeline_name(self) -> str:
+        """The preprocessing method being applied (e.g. "t1-linear", "pet-linear")."""
 
     @abc.abstractmethod
-    def _get_caps_filetype(self) -> FileType:
+    def _get_pattern(self) -> Pattern:
         """
-        Abstract method to obtain FileType details.
-
-        The specific implementation of this method should return a FileType
-        object based on the preprocessing pipeline and modality.
+        To obtain the file pattern associated to the preprocessing.
         """
 
     @abc.abstractmethod
-    def _get_file_name(self) -> str:
+    def _get_description(self) -> str:
         """
-        Builds a suffix for files saving
-        information on this preprocessing.
+        To obtain a description of the preprocessing.
         """
 
 
 class _LinearPreprocessing(Preprocessing, Modality):
     """
-    Base class for linear preprocessings (`t1-linear`, `flair-linear` or `pet-linear`).
+    Base class for linear preprocessings (``t1-linear``, ``flair-linear`` or ``pet-linear``).
 
-    If the `use_uncropped_image` is set to True, it uses the uncropped image pattern;
-    otherwise, it adds the `_desc-Crop` suffix to the pattern to select cropped images.
+    If the ``use_uncropped_image`` is set to ``True``, it uses the uncropped image pattern;
+    otherwise, it adds the ``_desc-Crop`` suffix to the pattern to select cropped images.
     """
 
     use_uncropped_image: bool = False
 
-    def _get_file_pattern(self) -> str:
-        """
-        Constructs the file pattern depending on the preprocessing parameters.
-        May be overwritten for some preprocessings.
-        """
+    @property
+    def _filename(self) -> str:
+        return f"{self._pipeline_name}{'' if self.use_uncropped_image else '_cropped'}"
+
+    def _get_pattern(self) -> Pattern:
         desc_crop = "" if self.use_uncropped_image else "_desc-Crop"
-        return f"sub-*_ses-*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self.modality}.nii*"
+        file_pattern = f"sub-.*_ses-.*_space-MNI152NLin2009cSym{desc_crop}_res-1x1x1_{self._modality}.nii.*"
+        pattern = os.path.join(self._pipeline_name.replace("-", "_"), file_pattern)
+
+        return re.compile(pattern)
 
     def _get_description(self) -> str:
-        """
-        Constructs a description depending on the preprocessing parameters.
-        May be overwritten for some preprocessings.
-        """
-        modality = self.modality
+        modality = self._modality
         if not modality.endswith("w"):
             modality = modality.upper()
 
-        description = f"{modality} images registered to MNI152NLin2009cSym space using Clinica's '{self.name}' pipeline"
+        description = f"{modality} images registered to MNI152NLin2009cSym space using Clinica's '{self._pipeline_name}' pipeline"
 
         if not self.use_uncropped_image:
             description += (
                 ", and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
             )
         return description
-
-    def _get_caps_filetype(self) -> FileType:
-        """
-        Base method to construct the FileType for linear preprocessings.
-        """
-        pattern = self._get_file_pattern()
-        pattern = self.name.replace("-", "_") + f"/{pattern}"
-        description = self._get_description()
-
-        return FileType(
-            pattern=pattern,
-            description=description,
-            needed_pipeline=self.name,
-        )
-
-    def _get_file_name(self) -> str:
-        """
-        Builds a suffix for files saving
-        information on this preprocessing.
-        """
-        return f"{self.name}{'' if self.use_uncropped_image else '_cropped'}"

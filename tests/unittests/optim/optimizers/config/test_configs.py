@@ -9,6 +9,7 @@ from clinicadl.optim.optimizers.config import (
     AdadeltaConfig,
     AdagradConfig,
     AdamConfig,
+    ImplementedOptimizer,
     RMSpropConfig,
     SGDConfig,
 )
@@ -239,3 +240,10 @@ def test_get_object(config, expected_class, network):
             assert param.requires_grad
         for param in network.dense1.parameters():
             assert param.requires_grad
+
+
+def test_name():
+    for name in ImplementedOptimizer:
+        config = globals()[f"{name.value}Config"]
+        c = config()
+        assert c.name == name.value

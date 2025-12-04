@@ -1,9 +1,9 @@
 import pytest
 import torch
+from pydantic import ValidationError
 
 from clinicadl.networks.nn import SEResNet, SEResNet50, SEResNet101, SEResNet152
 from clinicadl.networks.nn.layers.senet import SEResNetBlock, SEResNetBottleneck
-from clinicadl.networks.nn.layers.utils import ActFunction
 
 INPUT_1D = torch.randn(3, 1, 16)
 INPUT_2D = torch.randn(3, 2, 15, 16)
@@ -102,44 +102,6 @@ def test_seresnet(
     )
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
-def test_activations(act):
-    batch_size = INPUT_2D.shape[0]
-    net = SEResNet(
-        spatial_dims=len(INPUT_2D.shape[2:]),
-        in_channels=INPUT_2D.shape[1],
-        num_outputs=2,
-        n_features=(8, 16),
-        n_res_blocks=(2, 2),
-        act=act,
-        se_reduction=2,
-    )
-    assert net(INPUT_2D).shape == (batch_size, 2)
-
-
-def test_activation_parameters():
-    act = ("ELU", {"alpha": 0.1})
-    output_act = ("ELU", {"alpha": 0.2})
-    net = SEResNet(
-        spatial_dims=len(INPUT_2D.shape[2:]),
-        in_channels=INPUT_2D.shape[1],
-        num_outputs=2,
-        n_features=(8, 16),
-        n_res_blocks=(2, 2),
-        act=act,
-        output_act=output_act,
-        se_reduction=2,
-    )
-    assert isinstance(net.layer1[0].act1, torch.nn.ELU)
-    assert net.layer1[0].act1.alpha == 0.1
-    assert isinstance(net.layer2[1].act2, torch.nn.ELU)
-    assert net.layer2[1].act2.alpha == 0.1
-    assert isinstance(net.act0, torch.nn.ELU)
-    assert net.act0.alpha == 0.1
-    assert isinstance(net.fc.output_act, torch.nn.ELU)
-    assert net.fc.output_act.alpha == 0.2
-
-
 @pytest.mark.parametrize(
     "net,num_outputs,output_act",
     [
@@ -165,15 +127,28 @@ def test_literature(net, num_outputs, output_act):
             seresnet.fc.output_act
 
 
-def test_checks():
-    args = {
-        "spatial_dims": 2,
-        "in_channels": 2,
-        "num_outputs": 1,
-        "se_reduction": 10,
-        "n_features": [10, 9, 10, 10],
-    }
-    with pytest.raises(ValueError):
-        SEResNet(**args)
-    args["n_features"] = [10, 11, 10, 10]
-    _ = SEResNet(**args)
+@pytest.mark.parametrize(
+    "args,error",
+    [
+        (
+            {
+                "bottleneck_reduction": 2,
+                "n_features": [3, 4],
+                "se_reduction": 2,
+                "block_type": "bottleneck",
+            },
+            True,
+        ),
+        ({"n_features": [2], "n_res_blocks": [2, 4], "se_reduction": 2}, True),
+        ({"n_features": [2, 4], "n_res_blocks": [2, 4], "se_reduction": 3}, True),
+        ({"n_features": [2, 4], "n_res_blocks": [2, 4], "se_reduction": 2}, False),
+        ({"se_reduction": 0}, True),
+    ],
+)
+def test_checks(args, error):
+    args.update({"spatial_dims": 2, "in_channels": 2, "num_outputs": 1})
+    if error:
+        with pytest.raises(ValidationError):
+            SEResNet(**args)
+    else:
+        _ = SEResNet(**args)

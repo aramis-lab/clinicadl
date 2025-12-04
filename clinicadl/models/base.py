@@ -1,29 +1,20 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import torch
 import torch.optim as optim
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
-from clinicadl.losses import Loss
+from clinicadl.losses.types import Loss
 from clinicadl.utils.device import DeviceType
-from clinicadl.utils.exceptions import NotInterpretableJson
-from clinicadl.utils.json import read_json, write_json
+from clinicadl.utils.objects import JsonReaderWriter
 from clinicadl.utils.typing import PathType
 
 
-class ImplementedModel(str, Enum):
-    """Built-in ClinicaDLModels."""
-
-    SUPERVISED = "SupervisedModel"
-    RECONSTRUCTION = "ReconstructionModel"
-
-
-class ClinicaDLModel(ABC):
+class ClinicaDLModel(JsonReaderWriter, ABC):
     """
     The base model from which every model that works with ``ClinicaDL`` must inherit.
 
@@ -276,85 +267,3 @@ class ClinicaDLModel(ABC):
         log_path : PathType
             The path to the log file.
         """
-
-    def write_json(self, json_path: PathType) -> None:
-        """
-        Writes the parameters of the model in a ``JSON`` file.
-
-        Requires :py:meth:`to_dict` to be implemented.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the json file.
-        """
-        try:
-            to_write = self.to_dict()
-        except NotImplementedError:
-            to_write = f"Custom model passed by the user: {type(self).__name__}"
-
-        write_json(json_path, to_write)
-
-    @staticmethod
-    def from_json(json_path: PathType, **kwargs: Any) -> ClinicaDLModel:
-        """
-        Creates a model from a ``JSON`` file saved with
-        :py:meth:`write_json`.
-
-        Parameters
-        ----------
-        json_path : PathType
-            Path to the ``JSON`` file.
-        kwargs : Any
-            To pass directly any argument that ``ClinicaDLModel``
-            will not be able to read in the ``JSON`` file. Useful when you don't
-            use config classes.
-
-        Returns
-        -------
-        ClinicaDLModel
-            The model instantiated from the input file.
-        """
-        dict_ = read_json(json_path)
-
-        if not isinstance(dict_, dict):
-            raise NotInterpretableJson(json_path, "ClinicaDLModel")
-
-        try:
-            name = dict_["name"]
-        except KeyError as exc:
-            raise KeyError(
-                f"{str(json_path)} is not a valid json file for a ClinicaDLModel: it does not contain 'name'"
-            ) from exc
-
-        model = ImplementedModel(name).value
-
-        # pylint: disable=import-outside-toplevel
-        if model == ImplementedModel.SUPERVISED:
-            from .supervised import SupervisedModel
-
-            return SupervisedModel.from_json(json_path, **kwargs)
-        elif model == ImplementedModel.RECONSTRUCTION:
-            from .reconstruction import ReconstructionModel
-
-            return ReconstructionModel.from_json(json_path, **kwargs)
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Converts the model to a ``dict``.
-
-        This method must define the content of the dictionary that will
-        enable ``ClinicaDLModel`` to recreate the model with
-        the classmethod :py:meth:`from_dict`.
-
-        The dictionary must contain at least a field 'name' with the
-        type of ``ClinicaDLModel`` (e.g. "SupervisedModel").
-
-        Returns
-        -------
-        dict[str, Any]
-            The ``dict`` version of the model.
-        """
-        raise NotImplementedError(
-            "Overwrite 'to_dict' to serialize you model and save it."
-        )

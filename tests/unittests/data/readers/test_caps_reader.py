@@ -23,12 +23,6 @@ def test_good_caps_reader():
     assert caps_reader.input_directory == caps_dir
     assert caps_reader.subject_directory == caps_dir / "subjects"
 
-    # get_preprocessing_folder
-    assert (
-        caps_reader.get_preprocessing_folder("sub-000", "ses-M000", "t1-linear")
-        == subject_dir
-    )
-
     # get_participant_path
     assert (
         caps_reader.get_participant_path("sub-000") == caps_dir / "subjects" / "sub-000"
@@ -39,18 +33,19 @@ def test_good_caps_reader():
         caps_reader.path_to_tensor(
             subject_dir
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1W.nii.gz",
-            conversion_name="default",
+            conversion_name="default_t1-linear",
         )
         == subject_dir
         / "tensors"
-        / "default"
+        / "default_t1-linear"
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1W.pt"
     )
     assert (
         caps_reader.path_to_tensor(
-            caps_dir / "masks" / "leftHippocampus.nii", conversion_name="default"
+            caps_dir / "masks" / "leftHippocampus.nii",
+            conversion_name="default_t1-linear",
         )
-        == caps_dir / "masks" / "tensors" / "default" / "leftHippocampus.pt"
+        == caps_dir / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
     )
 
     # get_tensor_path
@@ -59,12 +54,12 @@ def test_good_caps_reader():
             "sub-000",
             "ses-M000",
             T1Linear(use_uncropped_image=True),
-            conversion_name="default",
+            conversion_name="default_t1-linear",
         )
         == caps_dir
         / subject_dir
         / "tensors"
-        / "default"
+        / "default_t1-linear"
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt"
     )
 
@@ -90,14 +85,14 @@ def test_good_caps_reader():
     )
     assert (
         caps_reader.get_common_mask_tensor_path(
-            "leftHippocampus.nii.gz", conversion_name="default"
+            "leftHippocampus.nii.gz", conversion_name="default_t1-linear"
         )
-        == caps_dir / "masks" / "tensors" / "default" / "leftHippocampus.pt"
+        == caps_dir / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
     )
     assert caps_reader.tensor_conversion_json_dir == caps_dir / "tensor_conversion"
 
     # check_preprocessing
-    with pytest.raises(ClinicaDLCAPSError):
+    with pytest.raises(RuntimeError):
         caps_reader.check_preprocessing(
             [("sub-000", "ses-M003")],
             PETLinear(
@@ -110,7 +105,7 @@ def test_good_caps_reader():
             tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
         ),
     )
-    with pytest.raises(ClinicaDLCAPSError):
+    with pytest.raises(RuntimeError):
         caps_reader.check_preprocessing(
             [("sub-666", "ses-M666")],
             FlairLinear(

@@ -6,18 +6,18 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from clinicadl.dictionary.words import FOLD, VALIDATION
 from clinicadl.split.splitter.kfold import KFoldConfig
-from clinicadl.utils.typing import DataType, PathType
+from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (
     extract_baseline,
     find_available_split_dir,
-    read_and_format_data,
     write_to_tsv,
 )
 
 
 def make_kfold(
-    data: DataType,
+    data: DataFrameType,
     n_splits: int = 5,
     output_dir: Optional[PathType] = None,
     subset_name: str = VALIDATION,
@@ -135,7 +135,7 @@ def make_kfold(
     >>> len(val_baseline)
     8
     """
-    df = read_and_format_data(data)
+    df = read_data(data, check_duplicates=False, check_protected_names=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent
@@ -180,7 +180,7 @@ def make_kfold(
             train_df, split_subdir, config._training_subset_name, df, longitudinal=True
         )
 
-    config.write_json()
+    config.to_json()
 
     return kfold_dir
 
@@ -210,7 +210,7 @@ def _validate_stratification(
         else:
             return None
 
-    if isinstance(stratification, List):
+    if isinstance(stratification, list):
         if len(stratification) > 1:
             raise ValueError(
                 f"Stratification can only be performed on a single column for K-Fold splitting. Got: {stratification}"

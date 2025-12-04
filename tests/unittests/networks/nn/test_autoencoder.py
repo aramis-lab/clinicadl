@@ -1,5 +1,6 @@
 import pytest
 import torch
+from pydantic import ValidationError
 from torch.nn import GELU, Sigmoid, Tanh
 
 from clinicadl.networks.nn import AutoEncoder
@@ -154,7 +155,7 @@ def test_invert_conv(kernel_size, stride, padding, dilation):
     assert output.shape == input_tensor.shape
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_out_activation(act):
     input_tensor = torch.randn(2, 1, 32, 32)
     net = AutoEncoder(
@@ -175,8 +176,8 @@ def test_params():
         output_act="tanh",
         out_channels=2,
     )
-    assert net.encoder.convolutions.act == "celu"
-    assert net.decoder.convolutions.act == "celu"
+    assert net.encoder.convolutions.config.act == "celu"
+    assert net.decoder.convolutions.config.act == "celu"
     assert net.encoder.mlp.act == "relu"
     assert net.decoder.mlp.act == "relu"
     assert isinstance(net.encoder.mlp.output.output_act, GELU)
@@ -186,30 +187,26 @@ def test_params():
 
 
 @pytest.mark.parametrize(
-    "in_shape,upsampling_mode,error",
+    "args,error",
     [
-        ((1, 10), "bilinear", True),
-        ((1, 10, 10), "linear", True),
-        ((1, 10, 10), "trilinear", True),
-        ((1, 10, 10, 10), "bicubic", True),
-        ((1, 10), "linear", False),
-        ((1, 10, 10), "bilinear", False),
-        ((1, 10, 10, 10), "trilinear", False),
+        ({"in_shape": (1, 10), "unpooling_mode": "bilinear"}, True),
+        ({"in_shape": (1, 10, 10), "unpooling_mode": "linear"}, True),
+        ({"in_shape": (1, 10, 10), "unpooling_mode": "trilinear"}, True),
+        ({"in_shape": (1, 10, 10, 10), "unpooling_mode": "bicubic"}, True),
+        ({"in_shape": (1, 10), "unpooling_mode": "linear"}, False),
+        ({"in_shape": (1, 10, 10), "unpooling_mode": "bilinear"}, False),
+        ({"in_shape": (1, 10, 10, 10), "unpooling_mode": "trilinear"}, False),
+        ({"in_shape": (1, 3, 0)}, True),
+        ({"conv_args": {"channels": [0, 1]}}, True),
+        ({"latent_size": 0}, True),
+        ({"out_channels": 0}, True),
     ],
 )
-def test_checks(in_shape, upsampling_mode, error):
+def test_checks(args, error):
+    args_ = {"in_shape": (1, 10, 10), "latent_size": 2, "conv_args": {"channels": [2]}}
+    args_.update(args)
     if error:
-        with pytest.raises(ValueError):
-            AutoEncoder(
-                in_shape=in_shape,
-                latent_size=3,
-                conv_args={"channels": []},
-                unpooling_mode=upsampling_mode,
-            )
+        with pytest.raises(ValidationError):
+            AutoEncoder(**args_)
     else:
-        AutoEncoder(
-            in_shape=in_shape,
-            latent_size=3,
-            conv_args={"channels": []},
-            unpooling_mode=upsampling_mode,
-        )
+        AutoEncoder(**args_)

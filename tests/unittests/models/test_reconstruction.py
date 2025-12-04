@@ -4,7 +4,7 @@ import torchio as tio
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.losses.config import MSELossConfig
-from clinicadl.models import ClinicaDLModel, ReconstructionModel
+from clinicadl.models import ReconstructionModel
 from clinicadl.networks.config import AutoEncoderConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 
@@ -37,10 +37,3 @@ def test_ReconstructionModel(tmp_path):
     # training step
     loss = model.forward_step(BATCH)
     assert loss.shape == ()
-
-    # json
-    model.write_json(tmp_path / "model.json")
-    new_model: ReconstructionModel = ClinicaDLModel.from_json(
-        tmp_path / "model.json",
-    )
-    assert isinstance(new_model, ReconstructionModel)

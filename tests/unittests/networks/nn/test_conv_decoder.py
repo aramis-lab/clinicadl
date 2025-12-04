@@ -3,7 +3,7 @@ import torch
 from torch.nn import ELU, ConvTranspose2d, Dropout, InstanceNorm2d, Upsample
 
 from clinicadl.networks.nn import ConvDecoder
-from clinicadl.networks.nn.layers.utils import ActFunction
+from clinicadl.networks.nn.layers.utils import ActFunction, ConvNormLayer
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def input_tensor():
     return torch.randn(2, 1, 8, 8)
 
 
-@pytest.mark.parametrize("act", [act for act in ActFunction])
+@pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(input_tensor, act):
     _, in_channels, *input_size = input_tensor.shape
     spatial_dims = len(input_size)
@@ -21,6 +21,23 @@ def test_activations(input_tensor, act):
         channels=[2, 4, 1],
         act=act,
         output_act=act,
+    )
+    output_shape = net(input_tensor).shape
+    assert len(output_shape) == 4 and output_shape[1] == 1
+
+
+@pytest.mark.parametrize("norm", [norm for norm in ConvNormLayer] + [None])
+def test_norms(input_tensor, norm):
+    _, in_channels, *input_size = input_tensor.shape
+    spatial_dims = len(input_size)
+
+    if norm == "group":
+        norm = ("group", {"num_groups": 1})
+    net = ConvDecoder(
+        spatial_dims=spatial_dims,
+        in_channels=in_channels,
+        channels=[2, 4, 1],
+        norm=norm,
     )
     output_shape = net(input_tensor).shape
     assert len(output_shape) == 4 and output_shape[1] == 1
@@ -166,7 +183,7 @@ def test_params(
                 assert name == "init_unpool"
             else:
                 assert name == f"unpool{idx}"
-            if net.unpooling[i][0] == "upsample":
+            if net.config.unpooling[i][0] == "upsample":
                 assert isinstance(layer, Upsample)
             else:
                 assert isinstance(layer, ConvTranspose2d)
@@ -334,6 +351,9 @@ def test_other_dimensions(input_tensor):
 @pytest.mark.parametrize(
     "kwargs",
     [
+        {"spatial_dims": 4},
+        {"in_channels": 0},
+        {"channels": [0, 1]},
         {"kernel_size": (3, 3, 3)},
         {"stride": [1, 1]},
         {"padding": [1, 1]},
@@ -342,17 +362,18 @@ def test_other_dimensions(input_tensor):
         {"unpooling": "upsample", "unpooling_indices": [0]},
         {"norm": "group"},
         {"norm": "layer"},
+        {"dropout": 1.1},
     ],
 )
 def test_checks(input_tensor, kwargs):
-    _, in_channels, *input_size = input_tensor.shape
-    spatial_dims = len(input_size)
-
+    if "channels" not in kwargs:
+        kwargs["channels"] = [2, 4, 1]
+    if "in_channels" not in kwargs:
+        kwargs["in_channels"] = 1
+    if "spatial_dims" not in kwargs:
+        kwargs["spatial_dims"] = 2
     with pytest.raises(ValueError):
         ConvDecoder(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            channels=[2, 4, 1],
             **kwargs,
         )
 

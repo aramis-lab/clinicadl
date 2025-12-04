@@ -1,5 +1,4 @@
 import pytest
-import torch
 import torch.nn as nn
 from pydantic import ValidationError
 
@@ -8,13 +7,13 @@ from clinicadl.losses.config import (
     BCEWithLogitsLossConfig,
     CrossEntropyLossConfig,
     HuberLossConfig,
+    ImplementedLoss,
     KLDivLossConfig,
     L1LossConfig,
     MSELossConfig,
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
-    get_loss_function_config,
 )
 
 BAD_INPUTS = [
@@ -168,38 +167,8 @@ def test_get_object(config, loss):
     assert isinstance(loss_from_config, loss)
 
 
-@pytest.mark.parametrize(
-    "name,config",
-    [
-        ("BCELoss", BCELossConfig),
-        ("BCEWithLogitsLoss", BCEWithLogitsLossConfig),
-        ("CrossEntropyLoss", CrossEntropyLossConfig),
-        ("HuberLoss", HuberLossConfig),
-        ("KLDivLoss", KLDivLossConfig),
-        ("L1Loss", L1LossConfig),
-        ("MSELoss", MSELossConfig),
-        ("MultiMarginLoss", MultiMarginLossConfig),
-        ("NLLLoss", NLLLossConfig),
-        ("SmoothL1Loss", SmoothL1LossConfig),
-    ],
-)
-def test_get_transform_config(name, config):
-    c = get_loss_function_config(name)
-    assert c.name == name
-    assert isinstance(c, config)
-    with pytest.raises(ValueError):
-        get_loss_function_config("abc")
-
-    if name == "NLLLoss":
-        config = get_loss_function_config("NLLLoss", weight=[1, 2])
-        assert config.name == "NLLLoss"
-        assert config.weight == [1, 2]
-        assert config.reduction == "mean"
-
-        assert (config.get_object().weight == torch.Tensor([1, 2])).all()
-    elif name == "BCEWithLogitsLoss":
-        config = get_loss_function_config("BCEWithLogitsLoss", pos_weight=[1, 2])
-        assert config.name == "BCEWithLogitsLoss"
-        assert config.pos_weight == [1, 2]
-        assert config.reduction == "mean"
-        assert (config.get_object().pos_weight == torch.Tensor([1, 2])).all()
+def test_name():
+    for name in ImplementedLoss:
+        config = globals()[f"{name.value}Config"]
+        c = config()
+        assert c.name == name.value

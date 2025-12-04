@@ -3,10 +3,13 @@ from typing import Any, Dict, Optional, Sequence
 import numpy as np
 import torch.nn as nn
 from monai.networks.layers.simplelayers import Reshape
+from pydantic import PositiveInt, field_validator, model_validator
 
-from .conv_decoder import ConvDecoder
-from .mlp import MLP
-from .utils import check_conv_args, check_mlp_args
+from clinicadl.utils.factories import get_defaults_from
+
+from .conv_decoder import ConvDecoder, ConvDecoderOptions
+from .mlp import MLP, MLPOptions
+from .utils.config import NetworkConfig
 
 
 class Generator(nn.Sequential):
@@ -120,32 +123,80 @@ class Generator(nn.Sequential):
         mlp_args: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__()
-        check_conv_args(conv_args)
-        check_mlp_args(mlp_args)
-        self.latent_size = latent_size
-        self.start_shape = start_shape
 
-        flatten_shape = int(np.prod(start_shape))
-        if mlp_args is None:
-            mlp_args = {"hidden_dims": []}
-        self.mlp = MLP(
-            num_inputs=latent_size,
-            num_outputs=flatten_shape,
-            **mlp_args,
+        self.config = GeneratorConfig(
+            latent_size=latent_size,
+            start_shape=start_shape,
+            conv_args=conv_args,
+            mlp_args=mlp_args,
         )
 
-        self.reshape = Reshape(*start_shape)
-        inter_channels, *inter_size = start_shape
+        flatten_shape = int(np.prod(self.config.start_shape))
+
+        self.mlp = MLP(
+            num_inputs=self.config.latent_size,
+            num_outputs=flatten_shape,
+            **self.config.mlp_args.to_raw_dict(),
+        )
+
+        self.reshape = Reshape(*self.config.start_shape)
+        inter_channels, *inter_size = self.config.start_shape
         self.convolutions = ConvDecoder(
             in_channels=inter_channels,
             spatial_dims=len(inter_size),
             _input_size=inter_size,
-            **conv_args,
+            **self.config.conv_args.to_raw_dict(),
         )
 
         n_channels = (
-            conv_args["channels"][-1]
-            if len(conv_args["channels"]) > 0
-            else start_shape[0]
+            self.config.conv_args.channels[-1]
+            if len(self.config.conv_args.channels) > 0
+            else self.config.start_shape[0]
         )
         self.output_shape = (n_channels, *self.convolutions._final_size)
+
+
+GENERATOR_DEFAULTS = get_defaults_from(Generator)
+
+
+class GeneratorConfig(NetworkConfig):
+    """
+    Config class for :py:class:`clinicadl.networks.nn.Generator`.
+    """
+
+    latent_size: PositiveInt
+    start_shape: Sequence[PositiveInt]
+    conv_args: ConvDecoderOptions
+    mlp_args: MLPOptions = GENERATOR_DEFAULTS["mlp_args"]
+
+    @field_validator("start_shape", mode="after")
+    @classmethod
+    def _start_shape_validator(cls, v):
+        """Checks that 'start_shape' corresponds to 1D, 2D or 3D images."""
+        assert (
+            2 <= len(v) <= 4
+        ), f"'start_shape' must be of length 2 (1D), 3 (2D image) or 4 (3D image). Don't forget the channel dimension. Got: {v}."
+        return v
+
+    @field_validator("mlp_args", mode="before")
+    @classmethod
+    def _handle_none_mlp_args(cls, v):
+        """
+        To accept None value for 'mlp_args'.
+        """
+        if v is None:
+            return MLPOptions(hidden_dims=[])
+        return v
+
+    @model_validator(mode="after")
+    def _check_dim(self):
+        _, *inter_size = self.start_shape
+        spatial_dims = len(inter_size)
+        self.conv_args._check_args_dim(spatial_dims)
+
+        return self
+
+    @classmethod
+    def _get_class(cls) -> type[nn.Module]:
+        """Returns the network associated to this config class."""
+        return Generator

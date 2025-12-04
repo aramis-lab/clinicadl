@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import torch
 import torchio as tio
@@ -20,7 +21,7 @@ PREDS = [[0, 1], [1, 0], [0, 1], [1, 0], [1, 0], [0, 1]]
 BATCH = [
     DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-        label=torch.tensor(gt),
+        label=np.array(gt),
         output=torch.tensor(pred),
         participant="abc",
         session="abc",
@@ -34,7 +35,7 @@ class CustomTestMetric(Metric):
 
     def _accumulate(self, batch):
         pred = torch.stack([datapoint["output"] for datapoint in batch])
-        gt = torch.stack([datapoint["label"] for datapoint in batch])
+        gt = torch.stack([torch.from_numpy(datapoint["label"]) for datapoint in batch])
         return (pred == gt).all(1)
 
     def _aggregate(self, data):
@@ -64,11 +65,13 @@ def metric_parallelism(rank):
     metric = CustomTestMetric()
     if rank == 0:
         assert rank == 0
-        metric(batches[0].to(rank))
-        metric(batches[2].to(rank))
+        batches[0].to(rank)
+        batches[2].to(rank)
+        metric(batches[0])
+        metric(batches[2])
     elif rank == 1:
         batches[1].to(rank)
-        metric(batches[1].to(rank))
+        metric(batches[1])
 
     assert metric.aggregate() == 0.5
 

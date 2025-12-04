@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import numpy as np
 import pytest
 import torch
@@ -7,7 +5,6 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms import Transforms
 from clinicadl.transforms.config import (
     ActivationsConfig,
     PadConfig,
@@ -16,7 +13,8 @@ from clinicadl.transforms.config import (
     ToCanonicalConfig,
     ZNormalizationConfig,
 )
-from clinicadl.transforms.extraction import Image, Patch
+from clinicadl.transforms.extraction import Patch
+from clinicadl.transforms.handlers import Transforms
 
 
 def test_args():
@@ -32,12 +30,11 @@ def test_check_transforms():
         sample_transforms=[tio.Resize((16, 16, 16))],
         augmentations=[tio.RandomAffine()],
     )
-    assert [type(t) for t in transforms._image_transforms_processed] == [
+    assert [type(t) for t in transforms.image_transforms] == [
         tio.ZNormalization,
         tio.Resize,
     ]
-    assert transforms.sample_transforms == []
-    assert transforms.extraction == Image()
+    assert transforms.sample_transforms.transforms == []
 
 
 def test_apply_transforms():
@@ -47,9 +44,11 @@ def test_apply_transforms():
     mask_1 = torch.zeros(1, 14, 14, 14)
     mask_1[:, 2:12, 2:12, 2:12] = 1
     mask_1 = tio.LabelMap(tensor=mask_1, affine=affine)
-    data_point = DataPoint(image, label, mask_1=mask_1, participant="abc", session="0")
+    data_point = DataPoint(
+        image, label=label, mask_1=mask_1, participant="abc", session="0"
+    )
     transforms = Transforms(
-        extraction=Patch(patch_size=4, stride=4),
+        extraction=Patch(patch_size=4, overlap=0),
         image_transforms=[
             tio.Crop(1),
             RescaleIntensityConfig(),
@@ -106,38 +105,24 @@ def test_str():
 
 def test_serialization():
     transforms = Transforms(
-        extraction=Patch(patch_size=4, stride=4),
+        extraction=Patch(patch_size=3),
         image_transforms=[
-            tio.Resize(12),
             ResizeConfig(target_shape=3),
         ],
         sample_transforms=[
-            tio.Resize(12),
-            ResizeConfig(target_shape=3),
+            tio.Resize(target_shape=3),
         ],
-        augmentations=[ToCanonicalConfig(), tio.ToCanonical()],
+        augmentations=[ToCanonicalConfig()],
     )
     d = transforms.to_dict()
-    resize_ordered_dict = OrderedDict(
-        name="Resize",
-        include=None,
-        exclude=None,
-        target_shape=3,
-        image_interpolation="linear",
-        label_interpolation="nearest",
+
+    new_transforms = Transforms.from_dict(d)
+    assert isinstance(new_transforms, Transforms)
+    assert isinstance(
+        new_transforms.config.image_transforms.values[0].value, ResizeConfig
     )
-    to_canonical_order_dict = OrderedDict(
-        name="ToCanonical", include=None, exclude=None
+    assert isinstance(
+        new_transforms.config.sample_transforms.values[0].value, tio.Resize
     )
-    assert d["image_transforms"] == [
-        "Custom transform passed by the user: 'Resize'",
-        resize_ordered_dict,
-    ]
-    assert d["sample_transforms"] == [
-        "Custom transform passed by the user: 'Resize'",
-        resize_ordered_dict,
-    ]
-    assert d["augmentations"] == [
-        to_canonical_order_dict,
-        "Custom transform passed by the user: 'ToCanonical'",
-    ]
+    assert isinstance(new_transforms.extraction, Patch)
+    assert new_transforms.extraction.config.patch_size == (3, 3, 3)

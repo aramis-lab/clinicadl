@@ -15,10 +15,18 @@ from clinicadl.metrics import Metric
 from clinicadl.metrics.config import LossMetricConfig, MSEMetricConfig
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.exceptions import (
+    CannotReadJsonFieldError,
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
 )
-from tests.unittests.resources.objects import MODEL
+
+
+class ClinicaDLModel:
+    def get_loss_functions(self):
+        return {"loss": BCELoss()}
+
+
+MODEL = ClinicaDLModel()
 
 DATAPOINTS = [
     DataPoint(
@@ -49,7 +57,6 @@ class CustomMetric(Metric):
 
 
 def test_MetricsHandler():
-    MODEL.loss = BCELoss()
     metrics = MetricsHandler(
         my_loss=LossMetricConfig(
             loss_name="loss",
@@ -97,7 +104,6 @@ def test_MetricsHandler():
 
 
 def test_init_metrics():
-    MODEL.loss = BCELoss()
     metrics = MetricsHandler(
         loss=LossMetricConfig(
             loss_name="loss_",
@@ -125,7 +131,7 @@ def test_init_metrics():
         metrics(BATCH_1)
 
     metrics.init_metrics(MODEL)
-    assert len(metrics._callable_metrics) == 2
+    assert len(metrics._metrics) == 2
 
 
 def test_reset():
@@ -139,14 +145,14 @@ def test_reset():
     metrics.reset(reset_df=True)
     assert len(metrics.df) == 0
     assert len(metrics.detailed_df) == 0
-    metrics._callable_metrics["mse"].get_buffer() is None
+    metrics._metrics["mse"].get_buffer() is None
 
     metrics(BATCH_2)
     metrics.aggregate()
     metrics.reset()
     assert len(metrics.df) == 1
     assert len(metrics.detailed_df) == 3
-    metrics._callable_metrics["mse"].get_buffer() is None
+    metrics._metrics["mse"].get_buffer() is None
 
 
 def test_load(tmp_path):
@@ -159,7 +165,7 @@ def test_load(tmp_path):
     )
     metrics.init_metrics(MODEL)
     metrics.load(path=TSV_PATH / "validation.tsv")
-    assert metrics._callable_metrics["loss"].get_buffer() is None
+    assert metrics._metrics["loss"].get_buffer() is None
     excepted_df = pd.DataFrame.from_dict(
         {
             "epoch": [0, 1, 2],
@@ -350,9 +356,10 @@ def test_read_write_json(tmp_path):
         mse=MSEMetricConfig(),
     )
     metrics.add_metrics(my_metric=CustomMetric())
-    metrics.write_json(tmp_path / "metrics.json")
+    metrics.to_json(tmp_path / "metrics.json")
 
     excepted_dict = {
+        "name": "MetricsHandler",
         "metrics": {
             "mse": {
                 "name": "MSEMetric",
@@ -362,20 +369,22 @@ def test_read_write_json(tmp_path):
                 "postprocessing": [],
                 "reduction": "mean",
             },
-            "my_metric": "Custom metric passed by the user: 'CustomMetric'",
-        }
+            "my_metric": "CustomMetric",
+        },
     }
     with open(tmp_path / "metrics.json", "r") as f:
         d = json.load(f)
     assert d == excepted_dict
 
-    with pytest.raises(ValueError, match="Custom metric found for 'my_metric' in*"):
+    with pytest.raises(
+        CannotReadJsonFieldError,
+        match="MetricsHandler cannot read the field\\(s\\) \\['my_metric'\\] in .*\nPlease pass this field via kwargs.",
+    ):
         MetricsHandler.from_json(json_path=tmp_path / "metrics.json")
 
     metrics = MetricsHandler.from_json(
         json_path=tmp_path / "metrics.json",
         my_metric=CustomMetric(),
-        loss=LossMetricConfig(loss_fn=BCELoss()),
     )
     assert isinstance(metrics.metrics["mse"], MSEMetricConfig)
     assert isinstance(metrics.metrics["my_metric"], CustomMetric)

@@ -10,7 +10,6 @@ from pydantic import (
 
 from clinicadl.utils.factories import get_defaults_from
 
-from ..types import SpatialRange
 from .base import TorchioTransformConfig
 from .enum import (
     AnatomicalAxis,
@@ -56,6 +55,14 @@ class RandomFlipConfig(TorchioTransformConfig):
         if isinstance(v, float) and not (0 <= v <= 1):
             raise ValueError("'flip_probability' must be between 0 and 1.")
         return v
+
+
+SpatialRange = Union[
+    NonNegativeFloat,
+    tuple[float, float],
+    Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
+    Tuple[float, float, float, float, float, float],
+]
 
 
 class RandomAffineConfig(TorchioTransformConfig):

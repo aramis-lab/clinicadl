@@ -1,7 +1,10 @@
 """To build a :py:class:`PyTorch Dataset <torch.utils.data.Dataset>`
 with your neuroimaging data."""
 
-from .caps_dataset import CapsDataset
+from .abstract import ClinicaDLDataset
+from .caps import CapsDataset
 from .concat import ConcatDataset
+from .multi_samples import MultiSamplesDataset
 from .paired import PairedDataset
+from .sampler import SamplerDataset
 from .unpaired import UnpairedDataset
