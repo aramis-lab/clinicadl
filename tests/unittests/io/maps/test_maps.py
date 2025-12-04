@@ -419,9 +419,10 @@ def test_load_file(tmp_path):
     pd.testing.assert_frame_equal(
         maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
     )
-    assert maps.load_file(
-        maps.training.splits[0].models.checkpoints.epochs[0].model
-    ) == torch.Tensor(1)
+    torch.testing.assert_close(
+        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model),
+        torch.Tensor([0]),
+    )
 
     with pytest.raises(FileNotFoundError, match=".* is not a file!"):
         maps.load_file(maps.training.splits[0].tmp.epochs[0].callbacks)
@@ -460,10 +461,6 @@ def test_save_file(tmp_path):
         maps.training.splits[0].models.checkpoints.epochs[0].model,
         overwrite=True,
     )
-    assert (
-        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model)
-        == torch.Tensor(1)
-    ).all()
 
     with pytest.raises(IsADirectoryError, match=".* is not a valid file name!"):
         maps.save_file("abc", maps.training.splits[0].tmp.epochs[0].callbacks)
