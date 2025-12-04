@@ -3,13 +3,13 @@ from typing import Optional
 
 from tqdm import tqdm
 
-from clinicadl.dictionary.words import (
+from clinicadl.transforms.handlers import Transforms
+from clinicadl.utils.dictionary.words import (
     N_SAMPLES,
     PARTICIPANT_ID,
     SAMPLE_TYPE,
     SESSION_ID,
 )
-from clinicadl.transforms.handlers import Transforms
 
 from ..structures import DataPoint
 from .multi_samples import MultiSamplesDataset

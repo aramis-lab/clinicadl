@@ -4,13 +4,13 @@ from typing import Generator, Optional, Sequence
 from pydantic import PositiveInt, field_validator
 
 from clinicadl.data.datasets import ClinicaDLDataset
-from clinicadl.dictionary.words import SPLIT
 from clinicadl.split.split import Split
 from clinicadl.split.splitter.splitter import (
     Splitter,
     SplitterConfig,
     SubjectsSessionsSplit,
 )
+from clinicadl.utils.dictionary.words import SPLIT
 
 
 class KFoldConfig(SplitterConfig):

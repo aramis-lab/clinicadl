@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections import OrderedDict
 from collections.abc import Sequence
 from copy import deepcopy
 from logging import getLogger
@@ -18,7 +17,9 @@ import torchio as tio
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self
 
-from clinicadl.dictionary.words import (
+from clinicadl.transforms.handlers import Transforms
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import (
     AFFINE,
     DF,
     IMAGE,
@@ -28,10 +29,8 @@ from clinicadl.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.transforms.handlers import Transforms
-from clinicadl.tsvtools.utils import read_data
-from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from ..datatypes import DataType

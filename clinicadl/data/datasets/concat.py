@@ -9,7 +9,7 @@ import pandas as pd
 from pydantic import model_validator
 from typing_extensions import Self
 
-from clinicadl.dictionary.words import DATASET_ID
+from clinicadl.utils.dictionary.words import DATASET_ID
 from clinicadl.utils.typing import DataFrameType
 from clinicadl.utils.variables import SPACING_RTOL
 

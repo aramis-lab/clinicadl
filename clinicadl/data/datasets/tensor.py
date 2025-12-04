@@ -12,7 +12,7 @@ import torchio as tio
 from pydantic import Field
 from typing_extensions import Self
 
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.words import (
     AFFINE,
     DF,
     IMAGE,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.suffixes import PTH, TAR
+from clinicadl.utils.dictionary.words import (
     BEST,
     CHECKPOINTS,
     FINAL,

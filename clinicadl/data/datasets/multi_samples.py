@@ -5,12 +5,12 @@ from typing import Any, Sequence, Union
 import pandas as pd
 from typing_extensions import Self
 
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.words import (
     N_SAMPLES,
     PARTICIPANT_ID,
     SESSION_ID,
 )
-from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
 from .abstract import ClinicaDLDataset

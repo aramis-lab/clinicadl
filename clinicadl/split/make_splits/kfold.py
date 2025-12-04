@@ -4,9 +4,9 @@ from typing import List, Optional, Union
 import pandas as pd
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from clinicadl.dictionary.words import FOLD, VALIDATION
 from clinicadl.split.splitter.kfold import KFoldConfig
-from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.dictionary.words import FOLD, VALIDATION
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (

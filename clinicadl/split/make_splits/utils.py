@@ -3,8 +3,8 @@ from typing import Optional
 
 import pandas as pd
 
-from clinicadl.dictionary.suffixes import TSV
-from clinicadl.dictionary.words import BASELINE, PARTICIPANT_ID, SESSION_ID
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.dictionary.words import BASELINE, PARTICIPANT_ID, SESSION_ID
 
 __all__ = [
     "extract_baseline",

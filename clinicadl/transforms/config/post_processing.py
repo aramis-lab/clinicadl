@@ -13,8 +13,8 @@ from pydantic import (
     model_validator,
 )
 
-from clinicadl.dictionary.words import EXCLUDE, INCLUDE
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
+from clinicadl.utils.dictionary.words import EXCLUDE, INCLUDE
 from clinicadl.utils.factories import get_defaults_from
 
 from ..homemade import Format

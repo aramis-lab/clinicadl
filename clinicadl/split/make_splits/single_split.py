@@ -7,7 +7,8 @@ import pandas as pd
 from scipy.stats import chisquare, ttest_ind
 from sklearn.model_selection import ShuffleSplit
 
-from clinicadl.dictionary.words import (
+from clinicadl.split.splitter.single_split import SingleSplitConfig
+from clinicadl.utils.dictionary.words import (
     AGE,
     COUNT,
     LABEL,
@@ -21,8 +22,7 @@ from clinicadl.dictionary.words import (
     TRAIN,
     VALUE,
 )
-from clinicadl.split.splitter.single_split import SingleSplitConfig
-from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (

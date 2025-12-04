@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pydantic import field_validator
 
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.words import (
     PARTICIPANT_ID,
     SESSION_ID,
 )

@@ -19,7 +19,7 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from clinicadl.dictionary.words import NAME, READER
+from clinicadl.utils.dictionary.words import NAME, READER
 from clinicadl.utils.exceptions import (
     CannotReadFieldError,
     CannotReadJsonFieldError,

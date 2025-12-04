@@ -6,9 +6,9 @@ from typing import Union
 
 import pandas as pd
 
-from clinicadl.dictionary.suffixes import PTH, TAR
-from clinicadl.dictionary.words import MODEL, OPTIMIZER
 from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.dictionary.suffixes import PTH, TAR
+from clinicadl.utils.dictionary.words import MODEL, OPTIMIZER
 
 from .base import Callback
 

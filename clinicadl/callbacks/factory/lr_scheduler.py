@@ -3,7 +3,6 @@ from typing import Any, Optional, Union
 
 import torch
 
-from clinicadl.dictionary.suffixes import PT
 from clinicadl.optim.lr_schedulers.config import (
     ImplementedLRScheduler,
     LRSchedulerConfig,
@@ -11,6 +10,7 @@ from clinicadl.optim.lr_schedulers.config import (
 from clinicadl.optim.lr_schedulers.config import LRSchedulerType as LRSchedulerMode
 from clinicadl.optim.lr_schedulers.config.factory import get_lr_scheduler_config
 from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,

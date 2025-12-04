@@ -15,8 +15,8 @@ from pydantic import (
 )
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
 
 from .base import Extraction, ImplementedExtraction
 
