@@ -290,9 +290,10 @@ def test_read_file(tmp_path):
     pd.testing.assert_frame_equal(
         maps.read_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
     )
-    assert maps.read_file(
-        maps.training.splits[0].checkpoints.epochs[0].model
-    ) == torch.Tensor(1)
+    torch.testing.assert_close(
+        maps.read_file(maps.training.splits[0].checkpoints.epochs[0].model),
+        torch.Tensor([0]),
+    )
 
     with pytest.raises(IsADirectoryError, match=".* is not a file!"):
         maps.read_file(maps.training.splits[0].tmp.epochs[0].callbacks)
