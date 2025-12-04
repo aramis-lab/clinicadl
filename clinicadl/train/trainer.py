@@ -13,8 +13,7 @@ from torch.amp.autocast_mode import autocast
 
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.data.dataloader import Batch, BatchType, DataLoader
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datasets.types import Dataset
+from clinicadl.data.datasets import CapsDataset, ClinicaDLDataset
 from clinicadl.dictionary.utils import SEP
 from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.io.maps.maps import Maps

@@ -3,8 +3,7 @@ from typing import Any, Optional
 
 from clinicadl.data.dataloader import DataLoader
 from clinicadl.split import Split
-
-from ..utils.config.base import ClinicaDLConfig
+from clinicadl.utils.config import ClinicaDLConfig
 
 
 class TrainerStage(str, Enum):

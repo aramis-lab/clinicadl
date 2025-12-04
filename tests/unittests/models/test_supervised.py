@@ -69,7 +69,7 @@ def test_SupervisedModel(tmp_path):
     # from json
     with pytest.raises(
         CannotReadJsonFieldError,
-        match=r"SupervisedModel cannot read the following fields in .*: 'network'",
+        match=r"SupervisedModel cannot read the field\(s\) \['network'\] in.*",
     ):
         SupervisedModel.from_json(tmp_path / "model.json")
     new_model: SupervisedModel = SupervisedModel.from_json(

@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 
@@ -22,7 +23,7 @@ def test_maps(tmp_path: Path):
     assert maps.architecture_log == (maps_path / "architecture.log")
     assert maps.model_json == (maps_path / "model.json")
     assert maps.metrics_json == (maps_path / "metrics.json")
-    assert maps.nn_summary_txt == (maps_path / "torchsummary.txt")
+    assert maps.nn_summary_txt == (maps_path / "nn_summary.txt")
 
     # training
     assert (maps_path / "training").exists()
@@ -32,7 +33,7 @@ def test_maps(tmp_path: Path):
     )
     assert maps.training.callbacks_json == (maps_path / "training" / "callbacks.json")
 
-    # training - split
+    # training - splits
     maps.training.create_split(0)
     assert maps.training.splits_list == [0]
 
@@ -43,7 +44,7 @@ def test_maps(tmp_path: Path):
         maps_path / "training" / "split-0" / "summary.log"
     )
 
-    # training - split - validation_metrics
+    # training - splits - validation_metrics
     assert (maps_path / "training" / "split-0" / "validation_metrics").exists()
     assert maps.training.splits[0].validation_metrics.aggregated == (
         maps_path / "training" / "split-0" / "validation_metrics" / "aggregated.tsv"
@@ -52,7 +53,7 @@ def test_maps(tmp_path: Path):
         maps_path / "training" / "split-0" / "validation_metrics" / "details.tsv"
     )
 
-    # training - split - logs
+    # training - splits - logs
     assert (maps_path / "training" / "split-0" / "logs").exists()
     assert maps.training.splits[0].logs.training_loss == (
         maps_path / "training" / "split-0" / "logs" / "training_loss.tsv"
@@ -62,17 +63,7 @@ def test_maps(tmp_path: Path):
     )
     assert (maps_path / "training" / "split-0" / "logs" / "tensorboard").exists()
 
-    # training - split - checkpoints
-    assert (maps_path / "training" / "split-0" / "checkpoints").exists()
-    maps.training.splits[0].checkpoints.create_epoch(0)
-    assert maps.training.splits[0].checkpoints.epochs_list == [0]
-    assert (maps_path / "training" / "split-0" / "checkpoints" / "epoch-0").exists()
-
-    assert maps.training.splits[0].checkpoints.epochs[0].model == (
-        maps_path / "training" / "split-0" / "checkpoints" / "epoch-0" / "model.pth.tar"
-    )
-
-    # training - split - tmp
+    # training - splits - tmp
     assert (maps_path / "training" / "split-0" / "tmp").exists()
     maps.training.splits[0].tmp.create_epoch(0)
     assert maps.training.splits[0].tmp.epochs_list == [0]
@@ -84,14 +75,17 @@ def test_maps(tmp_path: Path):
     assert (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "callbacks"
     ).exists()
-    assert maps.training.splits[0].tmp.epochs[0].stop == (
-        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "stop.json"
+    assert maps.training.splits[0].tmp.epochs[0].state == (
+        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "state.json"
+    )
+    assert maps.training.splits[0].tmp.epochs[0].scaler == (
+        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "scaler.json"
     )
     assert maps.training.splits[0].tmp.epochs[0].model == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "model.pth.tar"
     )
 
-    # training - split - tmp - validation_metrics
+    # training - splits - tmp - validation_metrics
     assert (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "validation_metrics"
     ).exists()
@@ -134,7 +128,7 @@ def test_maps(tmp_path: Path):
         / "model.pth.tar"
     )
 
-    # training - split - best_models - validation_metrics
+    # training - splits - models - best_models - validation_metrics
     assert (
         maps_path
         / "training"
@@ -144,7 +138,7 @@ def test_maps(tmp_path: Path):
         / "best-loss"
         / "validation_metrics"
     ).exists()
-    assert maps.training.splits[0].best_models[
+    assert maps.training.splits[0].models.best_models.metrics[
         "loss"
     ].validation_metrics.aggregated == (
         maps_path
@@ -156,7 +150,9 @@ def test_maps(tmp_path: Path):
         / "validation_metrics"
         / "aggregated.tsv"
     )
-    assert maps.training.splits[0].best_models["loss"].validation_metrics.details == (
+    assert maps.training.splits[0].models.best_models.metrics[
+        "loss"
+    ].validation_metrics.details == (
         maps_path
         / "training"
         / "split-0"
@@ -399,7 +395,9 @@ def test_read(tmp_path):
     maps = Maps(maps_path)
     maps.read()
 
-    maps.training.splits[0].best_models["loss"].validation_metrics.aggregated.unlink()
+    maps.training.splits[0].models.best_models.metrics[
+        "loss"
+    ].validation_metrics.aggregated.unlink()
     with pytest.raises(FileNotFoundError, match="A directory or a file is missing: .*"):
         maps.read()
 
@@ -408,23 +406,53 @@ def test_read(tmp_path):
         maps.read()
 
 
-def test_read_file(tmp_path):
+def test_load_file(tmp_path):
     maps_path = tmp_path / "maps"
     shutil.copytree(REFERENCE_MAPS, maps_path)
 
     maps = Maps(maps_path)
     maps.read()
 
-    assert maps.read_file(maps.torchsummary_txt) == "test"
-    assert maps.read_file(maps.summary_log) == "test"
-    assert maps.read_file(maps.training.splits[0].tmp.epochs[0].stop)
-    assert maps.read_file(maps.metrics_json) == {"test": True}
+    assert maps.load_file(maps.nn_summary_txt) == "test"
+    assert maps.load_file(maps.summary_log) == "test"
+    assert maps.load_file(maps.metrics_json) == {"test": True}
     pd.testing.assert_frame_equal(
-        maps.read_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
+        maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
     )
-    torch.testing.assert_close(
-        maps.read_file(maps.training.splits[0].checkpoints.epochs[0].model),
-        torch.Tensor([0]),
+    assert maps.load_file(
+        maps.training.splits[0].models.checkpoints.epochs[0].model
+    ) == torch.Tensor(1)
+
+    with pytest.raises(FileNotFoundError, match=".* is not a file!"):
+        maps.load_file(maps.training.splits[0].tmp.epochs[0].callbacks)
+
+
+def test_save_file(tmp_path):
+    maps_path = tmp_path / "maps"
+    shutil.copytree(REFERENCE_MAPS, maps_path)
+
+    maps = Maps(maps_path)
+    maps.read()
+
+    with pytest.raises(
+        FileExistsError, match=".* exists! To overwrite it, pass overwrite=True."
+    ):
+        maps.save_file("abc", maps.nn_summary_txt)
+
+    maps.save_file("abc", maps.nn_summary_txt, overwrite=True)
+    assert maps.load_file(maps.nn_summary_txt) == "abc"
+
+    maps.save_file("abc", maps.summary_log, overwrite=True)
+    assert maps.load_file(maps.summary_log) == "abc"
+
+    maps.save_file({"abc": True}, maps.metrics_json, overwrite=True)
+    assert maps.load_file(maps.metrics_json) == {"abc": True}
+
+    maps.save_file(
+        pd.DataFrame({"X": [0], "Z": [0]}), maps.training.data.data_tsv, overwrite=True
+    )
+    pd.testing.assert_frame_equal(
+        maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"X": [0], "Z": [0]})
     )
 
     maps.save_file(

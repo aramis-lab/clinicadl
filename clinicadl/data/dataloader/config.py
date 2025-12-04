@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 TupleDataset = Union[PairedDataset, UnpairedDataset]
 
 
-class DataLoader(TorchDataLoader[Dataset]):
+class DataLoader(TorchDataLoader):
     """
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a ``:py:meth:set_epoch` method.
     """

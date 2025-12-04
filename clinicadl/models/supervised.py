@@ -221,7 +221,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         dict[str, optim.Optimizer]
             The optimizer, named ``"optimizer"``.
         """
-        return {"optimizer": self._config.optimizer.get_object(network=self)}
+        return {"optimizer": self.config.optimizer.get_object(network=self)}
 
     def get_summary(
         self,
