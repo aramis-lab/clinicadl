@@ -6,7 +6,7 @@ from pathlib import Path
 import psutil
 import torch
 
-from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.train.trainer_state import TrainerState
 
 from .base import Callback
 
@@ -114,36 +114,36 @@ class _Monitor(Callback):
         self.forward_phase = PhaseMonitor()
         self.backward_phase = PhaseMonitor()
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
         self.all_phases.start()
 
-    def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_begin(self, config: TrainerState, **kwargs) -> None:
         self.loading_phase.start()
 
-    def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_batch_begin(self, config: TrainerState, **kwargs) -> None:
         self.loading_phase.stop()
 
         self.training_phase.start()
         self.forward_phase.start()
 
-    def on_backward_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_backward_begin(self, config: TrainerState, **kwargs) -> None:
         self.forward_phase.stop()
         self.backward_phase.start()
 
-    def on_backward_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_backward_end(self, config: TrainerState, **kwargs) -> None:
         self.backward_phase.stop()
 
-    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_batch_end(self, config: TrainerState, **kwargs) -> None:
         self.training_phase.stop()
         self.loading_phase.start()
 
-    def on_validation_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_validation_begin(self, config: TrainerState, **kwargs) -> None:
         self.validation_phase.start()
 
-    def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_validation_end(self, config: TrainerState, **kwargs) -> None:
         self.validation_phase.stop()
 
-    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_end(self, config: TrainerState, **kwargs) -> None:
         self.all_phases.stop()
         self.write_file(config.maps.training.splits[config.split.index].summary_log)
 

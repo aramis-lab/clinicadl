@@ -43,7 +43,7 @@ napoleon_use_admonition_for_references = True
 napoleon_use_admonition_for_notes = True
 napoleon_numpy_docstring = True
 
-napoleon_custom_sections = [("Returns", "params_style")]
+napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_style")]
 
 
 templates_path = ["_templates"]

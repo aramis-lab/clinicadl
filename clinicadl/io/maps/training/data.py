@@ -11,7 +11,7 @@ from clinicadl.dictionary.words import (
     VALIDATION,
 )
 
-from ..base import Directory
+from ...base import Directory
 from ..utils import SplitsDir
 
 

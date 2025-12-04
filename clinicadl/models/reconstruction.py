@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from clinicadl.utils.objects import HasConfig
+
 from .base import ClinicaDLModel
 from .supervised import SupervisedModel, SupervisedModelConfig
 
@@ -22,7 +24,7 @@ class ReconstructionModelConfig(SupervisedModelConfig):
         return ReconstructionModel
 
 
-class ReconstructionModel(SupervisedModel):
+class ReconstructionModel(SupervisedModel, HasConfig[ReconstructionModelConfig]):
     """
     A vanilla reconstruction model, to work with simple AutoEncoders like
     :py:class:`~clinicadl.networks.nn.AutoEncoder`.
@@ -37,13 +39,17 @@ class ReconstructionModel(SupervisedModel):
     loss : LossOrConfig
         The reconstruction loss function, passed as a ``callable``, that returns a **1-item** :py:class:`~torch.Tensor`,
         or a :py:mod:`config class <clinicadl.losses.config>`.
-    optimizer : OptimizerOrConfig
-        The optimizer, passed as a :py:class:`torch.optim.Optimizer` or
-        a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
+
+        .. important::
+            The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
+            with an attribute named ``reduction`` that can be set to ``none``.
+
+    optimizer : OptimizerConfig
+        The optimizer, passed as a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
 
     See Also
     --------
-    :py:class:`~clinicadl.model.SupervisedModel`
+    :py:class:`~clinicadl.models.SupervisedModel`
         For supervised training.
     """
 

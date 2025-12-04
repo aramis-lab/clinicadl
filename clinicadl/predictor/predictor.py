@@ -22,12 +22,12 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig
 from clinicadl.models import ClinicaDLModel
+from clinicadl.train.computational import ComputationalConfig
 from clinicadl.transforms.extraction import Sample
 from clinicadl.transforms.extraction.image import ImageSample
 from clinicadl.transforms.handlers import Postprocessing, Transforms
 from clinicadl.tsvtools.utils import tsv_to_df
-from clinicadl.utils.computational.config import ComputationalConfig
-from clinicadl.utils.exceptions import ClinicaDLDataLeakageError
+from clinicadl.utils.exceptions import DataLeakageError
 from clinicadl.utils.typing import PathType
 
 
@@ -268,3 +268,48 @@ class Predictor:
             print(
                 "The inference is done on a different dataset than for training so we are not able to define if there is data leakage or not."
             )
+
+
+# from trainer
+# def predict(
+#     self,
+#     dataloader: DataLoader[Dataset],
+#     split: int,
+#     output_transforms: Optional[Union[Transforms, Postprocessing]] = None,
+#     additional_metrics: Optional[
+#         list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
+#     ] = None,
+#     data_group: Optional[str] = None,
+# ):
+#     """
+#     Predict outputs for a dataset and optionally compute metrics.
+
+#     Parameters
+#     ----------
+#     dataloader : DataLoader[CapsDataset]
+#         DataLoader providing the dataset for prediction.
+#     split : int
+#         Index of the data split used for prediction.
+#     output_transforms : Transforms or Postprocessing, optional
+#         Optional transforms to apply to prediction outputs.
+#     additional_metrics : list, optional
+#         Additional metrics or losses to compute during prediction.
+#     data_group : str, optional
+#         Group label for the data, e.g., 'test', 'validation'.
+
+#     Notes
+#     -----
+#     .. note::
+#         Prediction results and metrics are saved to the configured maps directory.
+#     """
+
+#     # TODO : add transforms to output transforms
+
+#     validator = Predictor(self.maps.path, self.model, self.comp)
+#     validator.test(
+#         dataloader=dataloader,
+#         additionnal_metrics=additional_metrics,
+#         split=split,
+#         output_transforms=output_transforms,
+#         data_group=data_group if data_group else "test",
+#     )

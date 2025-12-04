@@ -4,40 +4,39 @@ from pathlib import Path
 
 from clinicadl.dictionary.suffixes import JSON, LOG
 from clinicadl.dictionary.words import (
-    CHECKPOINTS,
     COMPUTATIONAL,
     LOGS,
     METRICS,
+    MODELS,
     SUMMARY,
     TMP,
     VALIDATION,
 )
 
+from ....base import Directory
 from ...metrics import MetricsDir
-from ...utils import BestModelsDir
-from .epoch import BestEpochDir, CheckpointsDir, TmpDir
 from .logs import LogsDir
+from .models import ModelsDir
+from .tmp import TmpDir
 
 
-class TrainingSplitDir(BestModelsDir[BestEpochDir]):
-    _dir_type = BestEpochDir
-
+class TrainingSplitDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
+        self._models = ModelsDir(path=self.path / MODELS)
         self._validation_metrics = MetricsDir(
             path=self.path / f"{VALIDATION}_{METRICS}"
         )
-        self._checkpoints = CheckpointsDir(path=self.path / CHECKPOINTS)
         self._logs = LogsDir(path=self.path / LOGS)
         self._tmp = TmpDir(path=self.path / TMP)
 
     @property
-    def validation_metrics(self) -> MetricsDir:
-        return self._validation_metrics
+    def models(self) -> ModelsDir:
+        return self._models
 
     @property
-    def checkpoints(self) -> CheckpointsDir:
-        return self._checkpoints
+    def validation_metrics(self) -> MetricsDir:
+        return self._validation_metrics
 
     @property
     def logs(self) -> LogsDir:

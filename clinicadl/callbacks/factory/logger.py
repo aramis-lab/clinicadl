@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from clinicadl.callbacks.training_state import _TrainingState
+from clinicadl.train.trainer_state import TrainerState
 
 from .base import Callback
 
@@ -122,14 +122,14 @@ class _Logger(Callback):
         self.logger = setup_logging(verbose=verbose)
         self.train_progress_bar = None
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
         self.logger.info("Beginning of the training for split %s", config.split.index)
         self.logger.info("Training on %s", config.comp.device)
 
-    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_end(self, config: TrainerState, **kwargs) -> None:
         self.logger.info("End of the training")
 
-    def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_begin(self, config: TrainerState, **kwargs) -> None:
         train_loader = config.split.train_loader
         rank = kwargs.pop("rank", -1)
         if train_loader is not None and (rank == 0 or rank == -1):
@@ -140,14 +140,14 @@ class _Logger(Callback):
                 desc=f"{now} - Training of epoch {config.epoch}/{config.optim.epochs - 1}",
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         if self.train_progress_bar is not None:
             self.train_progress_bar.close()
 
-    def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
+    def on_batch_begin(self, config: TrainerState, **kwargs) -> None:
         self.logger.debug("Beginning of batch %d", config.batch)
 
-    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_batch_end(self, config: TrainerState, **kwargs) -> None:
         self.logger.debug("Batch %d completed", config.batch)
 
         if self.train_progress_bar is not None:

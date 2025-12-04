@@ -3,15 +3,6 @@ from pathlib import Path
 import pandas as pd
 from monai.metrics.regression import MAEMetric
 
-from clinicadl.callbacks import (
-    Checkpoint,
-    CodeCarbon,
-    EarlyStopping,
-    LRScheduler,
-    ModelSelection,
-    TensorBoard,
-)
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
@@ -32,7 +23,17 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.optim.lr_schedulers.config import LinearLRConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split.split import Split
-from clinicadl.utils.computational.config import ComputationalConfig
+from clinicadl.train.computational import ComputationalConfig
+
+# from clinicadl.callbacks import (
+#     Checkpoint,
+#     CodeCarbon,
+#     EarlyStopping,
+#     LRScheduler,
+#     ModelSelection,
+#     TensorBoard,
+# )
+from clinicadl.train.trainer_state import TrainerState
 
 BIDS_DIR = Path(__file__).parents[1] / "resources" / "bids_example"
 CAPS_DIR = Path(__file__).parents[1] / "resources" / "caps_example"
@@ -110,17 +111,17 @@ mse = MSEMetricConfig()
 matrix = ConfusionMatrixMetricConfig(metric_name="tpr")
 
 METRICS = {"mae": mae, "mse": mse, "matrix": matrix}
-CALLBACKS = [
-    EarlyStopping(metrics=["mae", "loss"]),
-    ModelSelection(metrics=["mae"]),
-    EarlyStopping(metrics=["mse"]),
-    Checkpoint(patience=2, epochs=[3]),
-    TensorBoard(),
-    # LRScheduler(scheduler="LinearLR"),
-    # CodeCarbon(),
-]
+# CALLBACKS = [
+#     EarlyStopping(metrics=["mae", "loss"]),
+#     ModelSelection(metrics=["mae"]),
+#     EarlyStopping(metrics=["mse"]),
+#     Checkpoint(patience=2, epochs=[3]),
+#     TensorBoard(),
+#     # LRScheduler(scheduler="LinearLR"),
+#     # CodeCarbon(),
+# ]
 
-TRAINING_STATE = _TrainingState(
+TRAINING_STATE = TrainerState(
     maps=MAPS,
     metrics=METRICS_HANDLER,
     model=MODEL,

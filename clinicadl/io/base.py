@@ -56,23 +56,9 @@ class Directory:
         exist_ok : bool, default=False
             If the file already exists and ``overwrite=False``, the function succeeds when ``exist_ok=True``.
         """
-        if self.path.exists() and not (exist_ok or overwrite):
-            raise FileExistsError(
-                f"Directory {str(self.path)} already exists. If it's ok, pass exist_ok=True. To overwrite it, pass overwrite=True."
-            )
-        elif self.path.exists() and overwrite:
-            self.remove(non_empty_ok=True)
+        self._create_itself(overwrite=overwrite, exist_ok=exist_ok)
 
-        self.path.mkdir(parents=True, exist_ok=exist_ok)
-
-        dirs = self._get_child_directories()
-        for dir_ in dirs:
-            dir_.create(overwrite=overwrite, exist_ok=exist_ok)
-
-        paths = self._get_child_paths()
-        for path in paths:
-            if not path.suffix:
-                path.mkdir(exist_ok=True)
+        self._create_subdirs(overwrite=overwrite, exist_ok=exist_ok)
 
     def read(self) -> None:
         """
@@ -96,6 +82,32 @@ class Directory:
                 raise FileNotFoundError(
                     f"A directory or a file is missing: {str(path)}"
                 )
+
+    def _create_itself(self, overwrite: bool, exist_ok: bool) -> None:
+        """
+        Creates the current directory.
+        """
+        if self.path.exists() and not (exist_ok or overwrite):
+            raise FileExistsError(
+                f"Directory {str(self.path)} already exists. If it's ok, pass exist_ok=True. To overwrite it, pass overwrite=True."
+            )
+        elif self.path.exists() and overwrite:
+            self.remove(non_empty_ok=True)
+
+        self.path.mkdir(parents=True, exist_ok=exist_ok)
+
+    def _create_subdirs(self, overwrite: bool, exist_ok: bool) -> None:
+        """
+        Create child Directories.
+        """
+        dirs = self._get_child_directories()
+        for dir_ in dirs:
+            dir_.create(overwrite=overwrite, exist_ok=exist_ok)
+
+        paths = self._get_child_paths()
+        for path in paths:
+            if not path.suffix:
+                path.mkdir(exist_ok=True)
 
     def _get_child_directories(self) -> list[Directory]:
         """

@@ -3,8 +3,8 @@ import shutil
 import pandas as pd
 
 from clinicadl.callbacks.factory.model_selection import ModelSelection
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.io.maps import Maps
+from clinicadl.train.trainer_state import TrainerState
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
@@ -24,7 +24,7 @@ def test_good_inputs(tmp_path):
     MAPS = Maps(tmp_path / "maps")
 
     ms_callback = ModelSelection(metrics=["mae"])
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     _ts.reset(SPLIT)

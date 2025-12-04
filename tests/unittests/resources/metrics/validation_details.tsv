@@ -1,7 +1,7 @@
-epoch	mse	my_metric	loss	participant_id	session_id
-0	0.0	1.0	2.0	sub-001	ses-M000
-0	0.1	1.1	2.1	sub-002	ses-M000
-1	0.2	1.2	2.2	sub-001	ses-M000
-1	0.3	1.3	2.3	sub-002	ses-M000
-2	0.4	1.4	2.4	sub-001	ses-M000
-2	0.5	1.5	2.5	sub-002	ses-M000
+epoch	participant_id	session_id	mse	my_metric	loss
+0	sub-001	ses-M000	0.0	1.0	2.0
+0	sub-002	ses-M000	0.1	1.1	2.1
+1	sub-001	ses-M000	0.2	1.2	2.2
+1	sub-002	ses-M000	0.3	1.3	2.3
+2	sub-001	ses-M000	0.4	1.4	2.4
+2	sub-002	ses-M000	0.5	1.5	2.5

@@ -5,8 +5,8 @@ import pytest
 from clinicadl.callbacks.factory.checkpoint import Checkpoint
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.handler import _CallbacksHandler
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.io.maps import Maps
+from clinicadl.train.trainer_state import TrainerState
 
 from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
 
@@ -29,7 +29,7 @@ def test_good_checkpoint(tmp_path, patience, epochs):
 
     OPTIM.epochs = 8
     MAPS.read()
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
     )
     callbacks = _CallbacksHandler(metrics=METRICS_HANDLER, callbacks=[])

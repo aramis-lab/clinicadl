@@ -1,19 +1,23 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Optional, Union
 
+import pandas as pd
 import torch
 from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
 from torch.amp import GradScaler
 from torch.amp.autocast_mode import autocast
-from torch.utils.data import DataLoader
 
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
-from clinicadl.callbacks.training_state import _TrainingState
-from clinicadl.data.dataloader import Batch, BatchType
-from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.dataloader import Batch, BatchType, DataLoader
+from clinicadl.data.datasets import CapsDataset, ClinicaDLDataset
+from clinicadl.dictionary.utils import SEP
+from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.io.maps.maps import Maps
+from clinicadl.io.maps.training.splits.models import ModelDir
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
@@ -23,8 +27,12 @@ from clinicadl.models import ClinicaDLModel
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
+from clinicadl.train.computational import ComputationalConfig
+from clinicadl.train.trainer_state import TrainerStage, TrainerState
 from clinicadl.transforms.handlers import Postprocessing, Transforms
-from clinicadl.utils.computational.config import ComputationalConfig
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError, DataLeakageError
+from clinicadl.utils.json import write_json
+from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.seed import seed_everything
 from clinicadl.utils.typing import PathType
 
@@ -74,72 +82,6 @@ class Trainer:
         Random seed for reproducibility.
         Defaults to 123.
 
-    Examples
-    --------
-    .. code-block:: python
-
-        preprocessing_t1 = T1Linear()
-        transforms_image = Transforms()
-
-        dataset_t1_image = CapsDataset(
-            caps_directory=caps_directory,
-            data=sub_ses_t1,
-            preprocessing=preprocessing_t1,
-            transforms=transforms_image,
-            label="diagnosis",
-        )
-        dataset_t1_image.to_tensors(json_name="test_bis_im.json", n_proc=2)
-        splitter = KFold(fold_dir)
-
-        optim_config = OptimizationConfig(epochs=2)
-        comp_config = ComputationalConfig(gpu=False)
-        dataloader_config = DataLoaderConfig(batch_size=3)
-
-        model = ClinicaDLModel(
-            network=get_network_config(
-                ImplementedNetwork.RESNET, num_outputs=1, spatial_dims=3, in_channels=1
-            ),
-            loss = MSELossConfig(),
-            optimizer=AdamConfig(),
-        )
-
-        metrics = {
-            "mae": MAEMetric(),
-            "mse": MSEMetricConfig(),
-            "matrix": ConfusionMatrixMetricConfig(metric_name=["tpr", "fpr"]
-            }
-
-        callbacks = [
-            EarlyStopping(metrics=["mae", "loss"]),
-            ModelSelection(metrics=["mae"]),
-            EarlyStopping(metrics=["mse"]),
-            CodeCarbon(),
-        ]
-
-        trainer = Trainer(
-            maps_path,
-            model=model,
-            comp_config=comp_config,
-            optim_config=optim_config,
-            callbacks=callbacks,
-            metrics=metrics,
-            _overwrite=True,
-        )
-
-        for split in splitter.get_splits(dataset=dataset_t1_image):
-            split.build_train_loader(dataloader_config)
-            split.build_val_loader(dataloader_config)
-
-            trainer.train(split)
-
-    Notes
-    -----
-    .. note:
-        - Training utilizes automatic mixed precision (AMP) if enabled in :py:class:`~clinicadl.utils.computational.config.ComputationalConfig`.
-        - The callback system provides hooks to extend training behavior without altering core code.
-        - The :py:class:`~clinicadl.train.trainer.Trainer`: expects datasets and models compatible with ClinicaDL interfaces.
-        - Metrics can be dynamically updated during evaluation and training.
-
     """
 
     def __init__(
@@ -151,10 +93,7 @@ class Trainer:
             "loss": LossMetricConfig(loss_name="loss")
         },
         optim_config: OptimizationConfig = OptimizationConfig(),
-        comp_config: ComputationalConfig = ComputationalConfig(),
         _overwrite: bool = False,
-        resume: bool = False,
-        seed: int = 123,
     ) -> None:
         maps = Maps(maps_path)
         if not resume:
@@ -184,212 +123,46 @@ class Trainer:
             )
             model = ClinicaDLModel.from_json(maps.model_json)
 
-        self.config = _TrainingState(
-            maps=maps,
-            metrics=train_metrics,
-            model=model,
-            optim=optim_config,
-            comp=comp_config,
-        )
+        self._state: TrainerState = TrainerState(num_epochs=self._optim_config.epochs)
 
-        self.scaler = comp_config.get_scaler()
+        self._model: ClinicaDLModel = model
+        self._maps: Maps = maps
+        self._metrics_handler: MetricsHandler = MetricsHandler(**metrics)
+        self._metrics_handler.init_metrics(self._model)
+
+        self._optim_config: OptimizationConfig = optim_config
 
         seed_everything(seed=seed, deterministic=False, compensation="memory")
 
     @property
     def model(self):
-        return self.config.model
-
-    @property
-    def optim(self):
-        return self.config.optim
-
-    @property
-    def comp(self):
-        return self.config.comp
-
-    @property
-    def metrics(self):
-        return self.config.metrics
+        return self._model
 
     @property
     def maps(self):
-        return self.config.maps
+        return self._maps
 
-    def train(self, split: Split, resume: bool = False) -> None:
-        """
-        Run the training loop over the given data split.
+    @property
+    def metrics(self):
+        return list(self._metrics_handler.metrics.keys())
 
-        Parameters
-        ----------
-        split : Split
-            The data split containing training and validation DataLoaders.
-        """
-        self.model.train()
-        self.model.to(self.config.comp.device)
-        split.train_dataset.train()
+    @property
+    def optimization_config(self) -> OptimizationConfig:
+        return self._optim_config
 
-        # if resume:
-        self.on_train_begin(split)
-
-        while not self.config.stop:
-            self.on_epoch_begin()
-            split.train_loader.set_epoch(self.config.epoch)
-
-            for batch_idx, data in enumerate(split.train_loader):
-                self.on_batch_begin(batch_idx=batch_idx)
-
-                self._send_to_device(data)
-
-                with autocast(device_type=self.comp.device.type, enabled=self.comp.amp):
-                    loss = self.model.forward_step(data=data, device=self.comp.device)
-
-                self.on_backward_begin()
-
-                self.model.optimization_step(loss, self.scaler)
-
-                self.scaler.update()
-
-                self.on_backward_end()
-
-                self.on_batch_end(loss=loss)
-
-            self.evaluate(split.val_loader)
-
-            self.on_epoch_end(split)
-
-        self.on_train_end(split)
-
-    def evaluate(
-        self,
-        split: Split,
-    ) -> None:
-        """
-        Evaluate the model on a validation or test dataset.
-        """
-        self.model.eval()
-        self.model.to(self.config.comp.device)
-        split.val_dataset.eval()
-
-        self.callbacks.on_validation_begin(config=self.config)
-
-        self.metrics.reset(reset_df=False)
-
-        with torch.no_grad():
-            for data in split.val_loader:
-                self._send_to_device(data)
-                output_batch = self.model.evaluation_step(data)
-                self.metrics(output_batch, epoch=self.config.epoch)
-
-        self.metrics.aggregate(epoch=self.config.epoch)
-
-        self.callbacks.on_validation_end(config=self.config)
-
-    def _send_to_device(self, data: BatchType) -> None:
-        """
-        Send the data to the right device.
-        """
-        if isinstance(data, Batch):
-            data.to(self.config.comp.device)
-        else:
-            for batch in data:
-                batch.to(self.config.comp.device)
-
-    def on_train_begin(self, split: Split) -> None:
-        self.reset(split)
-
-        self._write_training_infos(split=split)
-
-        self.callbacks.on_train_begin(config=self.config)
-
-    def on_epoch_begin(self) -> None:
-        self.callbacks.on_epoch_begin(config=self.config)
-
-    def on_batch_begin(self, batch_idx: int):
-        self.config.batch = batch_idx
-        self.callbacks.on_batch_begin(config=self.config)
-
-    def on_backward_begin(self):
-        self.callbacks.on_backward_begin(config=self.config)
-
-    def on_backward_end(self):
-        self.callbacks.on_backward_end(config=self.config)
-
-    def on_batch_end(self, loss: torch.Tensor):
-        self.callbacks.on_batch_end(config=self.config, loss=loss.item())
-
-    def on_epoch_end(self, split: Split) -> None:
-        self.callbacks.on_epoch_end(config=self.config)
-
-        if self.config.epoch == self.optim.epochs - 1:
-            self.config.stop = True
-
-        self.config.epoch += 1
-
-    def on_train_end(self, split: Split):
-        self.callbacks.on_train_end(config=self.config)
-        self.metrics.save(self.maps.training.splits[split.index].validation_metrics_tsv)
-
-        self._write_end_training_infos(split=split)
-
-    def reset(self, split: Optional[Split] = None):
-        if split:
-            self.config.reset(split=split)
-        self.metrics.reset(reset_df=True)
-
-    def predict(
-        self,
-        dataloader: DataLoader[CapsDataset],
-        split: int,
-        output_transforms: Optional[Union[Transforms, Postprocessing]] = None,
-        additional_metrics: Optional[
-            list[Union[MetricConfig, MonaiMetric, LossMetricConfig, LossConfig, Loss]]
-        ] = None,
-        data_group: Optional[str] = None,
-    ):
-        """
-        Predict outputs for a dataset and optionally compute metrics.
-
-        Parameters
-        ----------
-        dataloader : DataLoader[CapsDataset]
-            DataLoader providing the dataset for prediction.
-        split : int
-            Index of the data split used for prediction.
-        output_transforms : Transforms or Postprocessing, optional
-            Optional transforms to apply to prediction outputs.
-        additional_metrics : list, optional
-            Additional metrics or losses to compute during prediction.
-        data_group : str, optional
-            Group label for the data, e.g., 'test', 'validation'.
-
-        Notes
-        -----
-        .. note::
-            Prediction results and metrics are saved to the configured maps directory.
-        """
-
-        # TODO : add transforms to output transforms
-
-        validator = Predictor(self.maps.path, self.model, self.comp)
-        validator.test(
-            dataloader=dataloader,
-            additionnal_metrics=additional_metrics,
-            split=split,
-            output_transforms=output_transforms,
-            data_group=data_group if data_group else "test",
-        )
+    @property
+    def state(self) -> TrainerState:
+        return self._state
 
     @classmethod
     def from_maps(cls, maps_path: PathType):
         maps = Maps(maps_path)
-        maps.load()
+        maps.read()
 
         model = ClinicaDLModel.from_json(maps.model_json)
-        comp_config = ComputationalConfig.from_json(maps.training.computational_json)
         optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
+        metrics = MetricsHandler.from_json(maps.metrics_json)
         callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
-        metrics = MetricsHandler.from_json(maps.training.metrics_json)
 
         # TODO : check seed ?
 
@@ -399,9 +172,329 @@ class Trainer:
             callbacks=callbacks,
             metrics=metrics,  # type: ignore
             optim_config=optim_config,
-            comp_config=comp_config,
-            resume=True,
         )
+
+    def reset(self):
+        self.state = TrainerState()
+        self._metrics_handler.reset(reset_df=True)
+
+    def add_metrics(self, metrics: dict[str, MetricOrConfig]):
+        self._metrics_handler.add_metrics(**metrics)
+
+    def train(
+        self,
+        split: Split,
+        resume: bool = False,
+        computational: ComputationalConfig = ComputationalConfig(),
+        reset: bool = True,
+    ) -> None:
+        """
+        Run the training loop over the given data split.
+
+        Parameters
+        ----------
+        split : Split
+            The data split containing training and validation DataLoaders.
+        """
+        # seed?
+        self.maps.read()
+        self._check_split(split)
+        self.model.train()  # reset model
+        self.model.to(
+            computational.device,
+            non_blocking=computational.non_blocking,
+            memory_format=torch.channels_last_3d,
+        )
+        split.train_loader.eval()
+        self.reset()
+        scaler = computational.get_scaler()
+        self._write_training_infos(split=split)
+
+        self._call_event("on_train_begin", split=split)
+
+        while not self.state.should_stop:
+            self.state.current_epoch += 1
+
+            self._call_event("on_epoch_begin")
+
+            split.train_loader.set_epoch(self.state.current_epoch)
+
+            for batch_idx, batch in enumerate(split.train_loader, start=1):
+                self.state.current_train_batch = batch_idx
+
+                self._send_to_device(batch)
+
+                self._call_event("on_forward_step_begin", batch=batch)
+
+                with autocast(
+                    device_type=computational.device.type,
+                    enabled=computational.amp,
+                ):
+                    loss = self.model.forward_step(batch=batch)
+
+                self._call_event("on_backward_step_begin", loss=loss)
+
+                self.model.backward_step(loss, grad_scaler=scaler)
+
+                self._call_event("on_backward_step_end")
+
+                if batch_idx % self.optimization_config.accumulation_steps == 0:
+                    self._call_event(
+                        "on_optimization_step_begin",
+                        optimizers=self.model.get_optimizers(),
+                    )
+
+                    self.model.optimization_step(grad_scaler=scaler)
+                    self.state.optim_step += 1
+
+                    scaler.update()
+                    for optimizer in self.model.get_optimizers().values():
+                        optimizer.zero_grad(set_to_none=True)
+
+                    self._call_event(
+                        "on_optimization_step_end",
+                        optimizers=self.model.get_optimizers(),
+                        grad_scaler=scaler,
+                    )
+
+            if (
+                self.state.current_epoch % self.optimization_config.evaluation_steps
+                == 0
+            ):
+                self._validate(split)
+
+                self._metrics_handler.save(
+                    path=self.maps.training.splits[
+                        split.index
+                    ].validation_metrics.aggregated,
+                    details_path=self.maps.training.splits[
+                        split.index
+                    ].validation_metrics.aggregated,
+                )
+
+            self._call_event("on_epoch_end")
+
+            self._save_checkpoint()
+
+            if self.state.current_epoch == self.state.num_epochs:
+                self.state.should_stop = True
+
+        self._write_end_training_infos(split=split)
+
+        self._call_event("on_train_end")
+
+        self.maps.training.splits[split.index].tmp.clear()
+
+    def validate(
+        self,
+        split: Split,
+        model_checkpoint: str,
+        metrics: Optional[Sequence[str]] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self.maps.read()
+        self._check_split(split, only_val=True)
+        self._check_metrics(metrics)
+
+        checkpoint_path = self._read_checkpoint_name(model_checkpoint)
+        self._load_model_checkpoint(checkpoint_path.model)
+
+        self.model.to(computational.device, non_blocking=computational.non_blocking)
+
+        self._validate(split, metrics=metrics)
+
+        self._metrics_handler.merge(
+            path=checkpoint_path.validation_metrics.aggregated,
+            details_path=checkpoint_path.validation_metrics.aggregated,
+        )
+
+    def test(
+        self,
+        dataloader: DataLoader,
+        model_checkpoint: str,
+        group_name: str,
+        metrics: Optional[Sequence[str]] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
+        self.maps.read()
+        self._check_leakage(dataloader)
+        self._check_metrics(metrics)
+        self._check_group(group_name)
+
+        checkpoint_path = self._read_checkpoint_name(model_checkpoint)
+        self._load_model_checkpoint(checkpoint_path.model)
+
+        self.maps.predictions.groups[group_name].results.create_model(model)
+
+        self._reset_test()
+
+        self._call_event("on_test_begin")
+
+        self._evaluation_loop(dataloader)
+
+        self._call_event(
+            "on_test_end",
+            metrics=self._metrics_handler.df,
+            detailed_metrics=self._metrics_handler.detailed_df,
+        )
+
+        self._metrics_handler.save(
+            path=self.maps.predictions.groups[group_name]
+            .results.models[model]
+            .metrics.aggregated,
+            details_path=self.maps.predictions.groups[group_name]
+            .results.models[model]
+            .metrics.details,
+        )
+
+    def predict(
+        self,
+        dataloader: DataLoader,
+        model_checkpoint: str,
+        group_name: str,
+        metrics: Optional[Sequence[str]] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        Predict
+        """
+        self.maps.read()
+
+    def _validate(self, split: Split, metrics: Optional[Sequence[str]] = None) -> None:
+        self._reset_validation()
+
+        self._call_event("on_validation_begin", split=split)
+
+        self._evaluation_loop(split.val_loader, metrics=metrics)
+
+        self._call_event(
+            "on_validation_end",
+            metrics=self._metrics_handler.df,
+            detailed_metrics=self._metrics_handler.detailed_df,
+        )
+
+    def _evaluation_loop(
+        self, dataloader: DataLoader, metrics: Optional[Sequence[str]] = None
+    ) -> None:
+        self.model.eval()
+        dataloader.dataset.eval()
+
+        with torch.no_grad():
+            for batch_idx, batch in enumerate(dataloader):
+                self.state.current_val_batch = batch_idx
+
+                self._send_to_device(batch)
+
+                self._call_event("on_evaluation_step_begin", batch=batch)
+
+                output_batch = self.model.evaluation_step(
+                    batch
+                )  # amp during evaluation?
+
+                metrics = self._metrics_handler(
+                    output_batch, epoch=self.state.current_epoch, metrics=metrics
+                )
+
+                self._call_event(
+                    "on_evaluation_step_end",
+                    batch=batch,
+                    output=output_batch,
+                    metrics=metrics,
+                )
+
+        self._metrics_handler.aggregate(epoch=self.state.current_epoch, metrics=metrics)
+
+    def _reset_resume(self) -> None:
+        self.state.current_train_batch = 0
+        self.state.current_val_batch = 0
+        self.state.stage = TrainerStage.TRAIN
+
+    def _reset_train(self, split: Split, num_epochs: int) -> None:
+        self.state.reset_training(split=split, num_epochs=num_epochs)
+        self._metrics_handler.reset(reset_df=True)
+
+    def _reset_validation(self, split: Split) -> None:
+        self.state.reset_validation(split=split)
+        self._metrics_handler.reset(reset_df=False)
+
+    def _reset_validate(self, split: Split) -> None:
+        self.state.reset_validation(split=split)
+        self._metrics_handler.reset(reset_df=True)
+
+    def _reset_test(self, dataloader: DataLoader) -> None:
+        self.state.reset_test(dataloader=dataloader)
+        self._metrics_handler.reset(reset_df=True)
+
+    def _reset_prediction(self, dataloader: DataLoader) -> None:
+        self.state.reset_test(dataloader=dataloader)
+
+    def _check_metrics(self, metrics: Optional[Sequence[str]]) -> None:
+        if metric is not None:
+            for metric in metrics:
+                if metric not in self._metrics_handler.metrics:
+                    raise ValueError(
+                        f"'{metric}' does not match any metrics. Metrics defined are: {self.metrics} "
+                        "Use 'add_metrics' to define new metrics."
+                    )
+
+    def _check_leakage(self, dataloader: DataLoader) -> None:
+        training_data = self.maps.load_file(self.maps.training.data.data_tsv)
+        training_participants = set(training_data[PARTICIPANT_ID])
+        dataset: Dataset = dataloader.dataset
+        new_participants = set(zip(*dataset.get_participant_session_couples())[0])
+        if len(training_participants.intersection(new_participants)) > 0:
+            raise DataLeakageError(
+                participants=training_participants.intersection(new_participants)
+            )
+
+    def _get_all_models(
+        self, split_idx: int, final: bool, checkpoints: bool
+    ) -> list[ModelDir]:
+        models_path = self.maps.training.splits[split_idx].models
+
+        all_models = list(models_path.best_models.iterdir())
+
+        if final:
+            all_models.append(models_path.final)
+
+        if checkpoints:
+            all_models.extend(models_path.checkpoints.iterdir())
+
+    @staticmethod
+    def _model_to(model: torch.nn.Module, comp_config: ComputationalConfig) -> None:
+        model.to(device=comp_config.device, non_blocking=comp_config.non_blocking)
+        if comp_config.channels_last:
+            try:
+                model.to(torch.channels_last)
+            except RuntimeError:
+                model.to(torch.channels_last_3d)
+
+    @staticmethod
+    def _batch_to(data: BatchType) -> None:
+        """
+        Send the data to the right device.
+        """
+        if isinstance(data, Batch):
+            data.to(self.computational_config.device)
+        else:
+            for batch in data:
+                batch.to(self.computational_config.device)
+
+    def _call_event(self, event: str, **kwargs):
+        self.callbacks.call_event(
+            event, model=self.model, maps=self.maps, state=self.state, **kwargs
+        )
+
+    def _load_model_checkpoint(self, model_path: Path) -> None:
+        self.model.to("cpu")  # load weights on cpu
+        state_dict = self.maps.load_file(model_path)
+        self.model.load_state_dict(state_dict)
 
     def _write_training_infos(
         self,
@@ -455,3 +548,69 @@ class Trainer:
         self.maps._add_lines_to_summary_log("=" * 15)
 
         self.config.write_torchsummary()  # not working i don't know why
+
+    def _check_split(self, split: Split, only_val: bool = False) -> None:
+        if not only_val:
+            if split.train_loader is None:
+                raise ClinicaDLConfigurationError(
+                    "The split has no train_loader defined. Please run `get_dataloader()`"
+                )
+            self.state.num_train_batches = len(split.train_loader)
+        if split.val_loader is None:
+            raise ClinicaDLConfigurationError(
+                "The split has no train_loader defined. Please run `get_dataloader()`"
+            )
+        self.state.num_val_batches = len(split.val_loader)
+
+    def _check_group(self, group_name: str) -> None:
+        self.maps.predictions.create_group(group_name)
+
+    def _read_checkpoint_name(self, checkpoint_name: str) -> ModelDir:
+        pattern = re.compile(r"^split-\d+_(?:final|metric-[a-z-]+|epoch-\d+)$")
+        assert bool(re.match(pattern, checkpoint_name))
+
+        split, checkpoint_name = checkpoint_name.split("_")
+        split_idx = int(split.split("-")[-1])
+        models_dir = self.maps.training.splits[split_idx].models
+
+        if checkpoint_name == "final":
+            return models_dir.final
+        elif checkpoint_name.startswith("metric"):
+            metric = checkpoint_name.split("-")[-1]
+            return models_dir.best_models.metrics[metric]
+        elif checkpoint_name.startswith("epoch"):
+            epoch = int(checkpoint_name.split("-")[-1])
+            return models_dir.checkpoints.epochs[epoch]
+
+    def _save_checkpoint(self):
+        if self.state.current_epoch == self._last_saved_epoch:
+            return
+        self._last_saved_epoch = self.state.current_epoch
+
+        tmp_dir = self.maps.training.splits[self.state.split_idx].tmp
+        tmp_dir.read()
+        tmp_dir.create_epoch(self.state.current_epoch)
+        epoch_dir = tmp_dir.epochs[self.state.current_epoch]
+
+        # model
+        self.model.save_checkpoint(epoch_dir.model)
+
+        # metrics
+        self._metrics_handler.save(
+            path=epoch_dir.validation_metrics.aggregated,
+            details_path=epoch_dir.validation_metrics.details,
+        )
+
+        # trainer state
+        write_json(epoch_dir, self.state.state_dict())
+
+        # callbacks
+        for name, callback in self.callbacks.callbacks.items():
+            lowered_name = camel_to_snake(name)
+            callback_json = epoch_dir.callbacks / lowered_name
+            callback.save_checkpoint(callback_json)
+
+        # delete old epochs
+        for epoch in tmp_dir.epochs_list:
+            if epoch != self.state.current_epoch:
+                tmp_dir.epochs[epoch].remove()

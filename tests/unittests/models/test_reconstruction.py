@@ -26,7 +26,7 @@ BATCH = Batch(
 )
 
 
-def test_ReconstructionModel(tmp_path):
+def test_ReconstructionModel():
     network = AutoEncoderConfig(
         in_shape=(1, 5, 5, 5), latent_size=1, conv_args={"channels": [1]}
     )

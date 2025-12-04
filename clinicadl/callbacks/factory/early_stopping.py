@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.dictionary.suffixes import JSON
+from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.json import read_json, write_json
 
 from .base import Callback
@@ -94,13 +94,13 @@ class OneMetricEarlyStopping(Callback):
 
         self.num_bad_epochs = 0
 
-    def should_stop_training(self, config: _TrainingState) -> bool:
+    def should_stop_training(self, config: TrainerState) -> bool:
         """
         Check if training should stop at the end of an epoch.
 
         Parameters
         ----------
-        config : _TrainingState
+        config : TrainerState
             Current training state, must contain metrics DataFrame.
 
         Returns
@@ -316,7 +316,7 @@ class EarlyStopping(Callback):
                 )
             )
 
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
         """
         Called at the end of each epoch.
 

@@ -7,8 +7,8 @@ import pytest
 from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
 from clinicadl.callbacks.handler import _CallbacksHandler
-from clinicadl.callbacks.training_state import _TrainingState
 from clinicadl.io.maps import Maps
+from clinicadl.train.trainer_state import TrainerState
 
 from ...resources.objects import (
     COMP,
@@ -38,7 +38,7 @@ def test_checkpoint_multiple_epochs(tmp_path):
         ],
     )
     cs_callback = _CheckpointSaver()
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=deepcopy(MAPS),
         metrics=METRICS_HANDLER,
         model=MODEL,
@@ -85,7 +85,7 @@ def test_bad_checkpoint(tmp_path):
 
     cs_callback = _CheckpointSaver()
 
-    _ts = _TrainingState(
+    _ts = TrainerState(
         maps=deepcopy(MAPS),
         metrics=METRICS_HANDLER,
         model=MODEL,

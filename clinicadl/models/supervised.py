@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.nn as nn
@@ -15,14 +15,11 @@ from clinicadl.networks.factory import get_network_from_dict
 from clinicadl.networks.types import NetworkOrConfig
 from clinicadl.optim.optimizers.config import OptimizerConfig
 from clinicadl.optim.optimizers.factory import get_optimizer_from_dict
-from clinicadl.optim.optimizers.types import OptimizerOrConfig
 from clinicadl.utils.config import (
     ObjectConfig,
     ObjectOrConfig,
 )
-from clinicadl.utils.device import DeviceType
 from clinicadl.utils.objects import HasConfig
-from clinicadl.utils.typing import PathType
 
 from .base import ClinicaDLModel
 
@@ -36,7 +33,7 @@ class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
 
     This class checks the network, the loss and the optimizer,
     converts them if they are passed via config classes, and also
-    takes care of saving in JSON format.
+    takes care of saving in .json format.
     """
 
     network: ObjectOrConfig[nn.Module, NetworkConfig] = Field(
@@ -81,9 +78,8 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
             The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
             with an attribute named ``reduction`` that can be set to ``none``.
 
-    optimizer : OptimizerOrConfig
-        The optimizer, passed as a :py:class:`torch.optim.Optimizer` or
-        a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
+    optimizer : OptimizerConfig
+        The optimizer, passed as a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
 
     See Also
     --------
@@ -101,8 +97,9 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         self,
         network: NetworkOrConfig,
         loss: LossOrConfig,
-        optimizer: OptimizerOrConfig,
+        optimizer: OptimizerConfig,
     ):
+        super().__init__()
         self.config = self._config_type(network=network, loss=loss, optimizer=optimizer)
         self.network = self.config.network.get_object()
         self.loss = self.config.loss.get_object()
@@ -115,9 +112,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         Parameters
         ----------
         batch : Batch
-            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
-            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
 
         Returns
         -------
@@ -133,25 +128,40 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
 
         return loss
 
-    def optimization_step(
+    def backward_step(
         self,
         loss: torch.Tensor,
         grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
     ) -> None:
         """
-        Performs a classical optimization step using the loss returned by
-        :py:meth:`forward_step`.
+        Performs a classical gradient computation using the loss returned by :py:meth:`forward_step`.
 
         Parameters
         ----------
         loss : torch.Tensor
-            The loss(es) on which gradient will be computed.
+            The loss on which gradients will be computed.
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
-        self.optimizer.zero_grad(set_to_none=True)
         grad_scaler.scale(loss).backward()
-        grad_scaler.step(self.optimizer)
+
+    def optimization_step(
+        self,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
+    ) -> None:
+        """
+        Performs a classical optimization step using the gradients accumulated in
+        :py:meth:`backward_step`.
+
+        Parameters
+        ----------
+        optimizers : dict[str, torch.optim.Optimizer]
+            The optimizers, as defined in :py:meth:`build_optimizers`.
+        grad_scaler : GradScaler, default=GradScaler(enabled=False)
+            A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
+        """
+        grad_scaler.step(optimizers["optimizer"])
 
     def evaluation_step(self, batch: Batch) -> Batch:
         """
@@ -161,9 +171,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         Parameters
         ----------
         batch : Batch
-            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
-            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
 
         Returns
         -------
@@ -175,6 +183,22 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         batch.add_field("output", outputs)
 
         return batch
+
+    def prediction_step(self, batch: Batch) -> Batch:
+        """
+        Performs a simple pass forward and saves the output. Exactly similar to :py:meth:`evaluation_step`.
+
+        Parameters
+        ----------
+        batch : Batch
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
+
+        Returns
+        -------
+        Batch
+            The output :py:class:`~clinicadl.data.dataloader.Batch`.
+        """
+        return self.evaluation_step(batch)
 
     def get_loss_functions(self) -> dict[str, Loss]:
         """
@@ -188,120 +212,40 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         """
         return {"loss": self.loss}
 
-    def get_optimizers(self) -> dict[str, optim.Optimizer]:
+    def build_optimizers(self) -> dict[str, optim.Optimizer]:
         """
-        Returns the optimizer.
+        Returns a new instance of the optimizer.
 
         Returns
         -------
         dict[str, optim.Optimizer]
             The optimizer, named ``"optimizer"``.
         """
-        return {"optimizer": self.optimizer}
+        return {"optimizer": self.config.optimizer.get_object(network=self)}
 
-    def to(
+    def get_summary(
         self,
-        device: Optional[DeviceType] = None,
-        non_blocking: bool = False,
-        dtype: Optional[torch.dtype] = None,
-        memory_format: Optional[torch.memory_format] = None,
-    ) -> None:
+        input_data: torch.Tensor,
+    ) -> str:
         """
-        To move the model on a specific device and/or cast
-        the model to a specific datatype and/or memory format.
+        Returns a summary of the neural network, produced by
+        `torchinfo <https://github.com/TylerYep/torchinfo>`_.
 
         Parameters
         ----------
-        device : Optional[DeviceType], default=None
-            The desired device. If ``None``, the model will stay on the current device.
-        non_blocking : bool, default=False
-            "When ``non_blocking`` is set to ``True``, the function attempts to perform the
-            conversion asynchronously with respect to the host, if possible.
-            This asynchronous behavior applies to both pinned and pageable memory."
-            (see :torch:`PyTorch documentation <generated/torch.Tensor.to.html>`)
-        dtype : Optional[torch.dtype], default=None
-            The desired data type. If ``None``, the model will stay with the current dtype.
-        memory_format : Optional[torch.memory_format], default=None
-            The desired memory format. If ``None``, the model will stay with the current memory format.
+        input_data : torch.Tensor
+            Input data to pass to the neural network to build the summary.
+
+        Returns
+        -------
+        str
+            The summary.
         """
-        self.network.to(
-            device=device,
-            dtype=dtype,
-            non_blocking=non_blocking,
-            memory_format=memory_format,
+        from torchinfo import summary
+
+        summary_ = summary(
+            self.network,
+            input_data=input_data,
         )
 
-    def train(self) -> None:
-        """
-        Set the neural network in training mode.
-        """
-        self.network.train()
-
-    def eval(self) -> None:
-        """
-        Set the neural network in evaluation mode.
-        """
-        self.network.eval()
-
-    def save_checkpoint(
-        self,
-        checkpoint_path: PathType,
-        only_network_weights: bool = False,
-    ) -> None:
-        """
-        To save a checkpoint of the weights of the neural network,
-        and optionally a checkpoint of the state of the optimizer.
-
-        Parameters
-        ----------
-        checkpoint_path : PathType
-            The path to the checkpoint.
-        only_network_weights : bool, default=False
-            Whether to save only the weights of the neural network.
-        """
-        state_dict = {"network_state_dict": self.network.state_dict()}
-        if not only_network_weights:
-            state_dict["optimizer_state_dict"] = self.optimizer.state_dict()
-
-        torch.save(state_dict, f=checkpoint_path)
-
-    def load_checkpoint(
-        self,
-        checkpoint_path: PathType,
-        device: DeviceType = torch.device("cpu"),
-        only_network_weights: bool = False,
-    ) -> None:
-        """
-        To load a checkpoint of the weights of the neural network,
-        and optionally of the state of the optimizer.
-
-        Parameters
-        ----------
-        checkpoint_path : PathType
-            The path to the checkpoint.
-        device : DeviceType, default=torch.device("cpu")
-            On which device to load the checkpoint.
-        only_network_weights : bool, default=False
-            Whether to load only the weights of the neural network.
-        """
-        checkpoint = torch.load(
-            checkpoint_path,
-            weights_only=True,
-            map_location=device,
-        )
-
-        self.network.load_state_dict(checkpoint["network_state_dict"])
-        if not only_network_weights:
-            self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-    def write_architecture_log(self, log_path: PathType) -> None:
-        """
-        Write the architecture of the model in a log file.
-
-        Parameters
-        ----------
-        log_path : PathType
-            The path to the log file.
-        """
-        with open(log_path, "w", encoding="utf-8") as f:
-            print(self.network, file=f)
+        return str(summary_)

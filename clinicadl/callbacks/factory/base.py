@@ -1,9 +1,47 @@
+from __future__ import annotations
+
 from abc import ABC
+from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Sequence, Union
 
-from ..training_state import _TrainingState
+import pandas as pd
+import torch
+
+from clinicadl.data.dataloader import Batch, BatchType
+from clinicadl.io import Maps
+from clinicadl.models import ClinicaDLModel
+from clinicadl.split import Split
+
+if TYPE_CHECKING:
+    from clinicadl.train import TrainerState
+
+
+class Events(str, Enum):
+    # Training
+    TRAIN_BEGIN = "on_train_begin"
+    TRAIN_END = "on_train_end"
+    EPOCH_BEGIN = "on_epoch_begin"
+    EPOCH_END = "on_epoch_end"
+    FORWARD_BEGIN = "on_forward_step_begin"
+    BACKWARD_BEGIN = "on_backward_step_begin"
+    BACKWARD_END = "on_backward_step_end"
+    OPTIM_STEP_BEGIN = "on_optimization_step_begin"
+    OPTIM_STEP_END = "on_optimization_step_end"
+    # Validation
+    VAL_BEGIN = "on_validation_begin"
+    VAL_END = "on_validation_end"
+    EVAL_BEGIN = "on_evaluation_step_begin"
+    EVAL_END = "on_evaluation_step_end"
+    # Test
+    TEST_BEGIN = "on_test_begin"
+    TEST_END = "on_test_end"
+    # Predict
+    PREDICT_BEGIN = "on_test_begin"
+    PREDICT_END = "on_test_end"
+    PREDICTION_BEGIN = "on_prediction_step_begin"
+    PREDICTIOn_END = "on_prediction_step_end"
 
 
 class Callback(ABC):
@@ -15,8 +53,26 @@ class Callback(ABC):
     the desired methods to implement custom behavior (e.g., logging, early stopping,
     checkpointing, etc.).
 
-    All methods receive a `_TrainingState` object and optional keyword arguments containing
+    All methods receive a `TrainerState` object and optional keyword arguments containing
     context-specific information.
+
+    Callbacks allow you to define actions to perform
+    such as logging, saving checkpoints, or early stopping.
+
+    Some default callbacks are already included in the training loop, but you can also add
+    your own by passing them to the :py:class:`~clinicadl.train.trainer.Trainer` via the ``callbacks`` argument:
+
+    .. code-block:: python
+
+        trainer = Trainer(..., callbacks=[MyCustomCallback(), AnotherCallback()])
+
+    Each callback should inherit from the :py:class:`~clinicadl.callbacks.factory.base.Callback` class
+    and implement the appropriate event methods, such as: ``on_train_start``, ``on_epoch_end``,
+    ``on_validation_end``, etc.
+
+    Callbacks should capture NON-ESSENTIAL logic
+
+    This makes it easy to customize training behavior without modifying the core training logic.
 
     Examples
     --------
@@ -27,7 +83,7 @@ class Callback(ABC):
         from clinicadl.callbacks import Callback
 
         class PrintLossCallback(Callback):
-            def on_batch_end(self, config: _TrainingState, **kwargs):
+            def on_batch_end(self, config: TrainerState, **kwargs):
                 print(f"Loss: {config.current_loss:.4f}")
 
     Using callbacks in a training loop:
@@ -70,37 +126,110 @@ class Callback(ABC):
     def __init__(self):
         """Initialize the callback."""
 
-    def on_train_begin(self, config: _TrainingState, **kwargs) -> None:
-        """Called once at the beginning of training."""
+    # Train
 
-    def on_train_end(self, config: _TrainingState, **kwargs) -> None:
-        """Called once at the end of training."""
-
-    def on_epoch_begin(self, config: _TrainingState, **kwargs) -> None:
-        """Called at the beginning of each epoch."""
-
-    def on_epoch_end(self, config: _TrainingState, **kwargs) -> None:
-        """Called at the end of each epoch."""
-
-    def on_batch_begin(self, config: _TrainingState, **kwargs) -> None:
-        """Called before processing each training batch."""
-
-    def on_batch_end(self, config: _TrainingState, **kwargs) -> None:
-        """Called after processing each training batch."""
-
-    def on_backward_begin(self, config: _TrainingState, **kwargs) -> None:
-        """Called before the backward pass."""
-
-    def on_backward_end(self, config: _TrainingState, **kwargs) -> None:
+    def on_train_begin(
+        self, model: ClinicaDLModel, maps: Maps, state: TrainerState, split: Split
+    ) -> None:
         """Called after the backward pass."""
 
-    def on_validation_begin(self, config: _TrainingState, **kwargs) -> None:
-        """Called before the validation loop starts."""
+    def on_train_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        """Called after the backward pass."""
 
-    def on_validation_end(self, config: _TrainingState, **kwargs) -> None:
-        """Called after the validation loop ends."""
+    def on_epoch_begin(
+        self, model: ClinicaDLModel, maps: Maps, state: TrainerState
+    ) -> None:
+        """Called once at the beginning of training."""
 
-    def save_checkpoint(self, checkpoint_path: Path, **kwargs) -> None:
+    def on_epoch_end(
+        self, model: ClinicaDLModel, maps: Maps, state: TrainerState
+    ) -> None:
+        """Called once at the beginning of training."""
+
+    def on_forward_step_begin(
+        self, model: ClinicaDLModel, maps: Maps, state: TrainerState, batch: BatchType
+    ) -> None:
+        """Called before processing each training batch."""
+
+    def on_backward_step_begin(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        loss: Union[torch.Tensor, Sequence[torch.Tensor]],
+    ) -> None:
+        """Called before processing each training batch."""
+
+    def on_backward_step_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        """Called before processing each training batch."""
+
+    def on_optimization_step_begin(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        optimizers: dict[str, torch.optim.Optimizer],
+    ) -> None:
+        """Called before the backward pass."""
+
+    def on_optimization_step_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
+    ) -> None:
+        """Called after the backward pass."""
+
+    # Evaluate
+
+    def on_validation_begin(
+        self, model: ClinicaDLModel, maps: Maps, state: TrainerState, split: Split
+    ) -> None:
+        """Called after the backward pass."""
+
+    def on_validation_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        metrics: pd.DataFrame,
+        detailed_metrics: pd.DataFrame,
+    ) -> None:
+        """Called after the backward pass."""
+
+    def on_evaluation_step_begin(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        batch: BatchType,
+    ) -> None:
+        """"""
+
+    def on_evaluation_step_end(
+        self,
+        model: ClinicaDLModel,
+        maps: Maps,
+        state: TrainerState,
+        batch: BatchType,
+        output: Batch,
+        metrics: pd.DataFrame,
+    ) -> None:
+        """"""
+
+    def state_dict(self, checkpoint_path: Path, **kwargs) -> None:
         """To save a checkpoint of the callback state."""
 
     def load_checkpoint(self, checkpoint_path: Path, **kwargs) -> None:

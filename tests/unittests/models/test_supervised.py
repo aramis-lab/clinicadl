@@ -8,6 +8,7 @@ from clinicadl.losses.config import BCEWithLogitsLossConfig
 from clinicadl.models import SupervisedModel
 from clinicadl.networks.config import ConvEncoderConfig
 from clinicadl.optim.optimizers.config import AdamConfig
+from clinicadl.utils.exceptions import CannotReadJsonFieldError
 
 BATCH = Batch(
     [
@@ -32,90 +33,58 @@ def test_SupervisedModel(tmp_path):
     loss = BCEWithLogitsLossConfig()
     optimizer = AdamConfig()
     model = SupervisedModel(network, loss, optimizer)
+    optimizers = model.build_optimizers()
 
     # forward step
     loss = model.forward_step(BATCH)
     assert loss.shape == ()
 
+    scaler = torch.amp.GradScaler(device="cpu")
+
     # backward step
-    model.optimization_step(loss)
-    assert 0 in model.optimizer.state_dict()["state"]
+    model.backward_step(loss, grad_scaler=scaler)
+    assert next(iter(network.parameters())).grad is not None
+    assert scaler._scale is not None
+
+    # optimization step
+    model.optimization_step(optimizers, scaler)
+    assert 0 in optimizers["optimizer"].state_dict()["state"]
 
     # evaluation step
     out_batch = model.evaluation_step(BATCH)
     assert isinstance(out_batch, Batch)
     assert out_batch[0]["output"].shape == (1,)
 
+    # prediction step
+    out_batch = model.prediction_step(BATCH)
+    assert isinstance(out_batch, Batch)
+    assert out_batch[0]["output"].shape == (1,)
+
     # get losses
     assert model.get_loss_functions() == {"loss": model.loss}
 
-    # get optimizers
-    assert model.get_optimizers() == {"optimizer": model.optimizer}
+    # write json
+    model.to_json(tmp_path / "model.json")
 
-    # eval
-    model.eval()
-    assert not network.training
-
-    # train
-    model.train()
-    assert network.training
-
-    # write checkpoint
-    model.save_checkpoint(tmp_path / "weights.pt", only_network_weights=True)
-    model.save_checkpoint(tmp_path / "model_state.pt", only_network_weights=False)
-
-    # read checkpoint
-    network = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1))
-    loss = BCEWithLogitsLossConfig()
-    optimizer = AdamConfig()
-    new_model = SupervisedModel(network, loss, optimizer)
-
-    new_model.load_checkpoint(
-        tmp_path / "weights.pt", device="cpu", only_network_weights=True
+    # from json
+    with pytest.raises(
+        CannotReadJsonFieldError,
+        match=r"SupervisedModel cannot read the field\(s\) \['network'\] in.*",
+    ):
+        SupervisedModel.from_json(tmp_path / "model.json")
+    new_model: SupervisedModel = SupervisedModel.from_json(
+        tmp_path / "model.json",
+        network=torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1)),
     )
-    torch.testing.assert_close(
-        next(iter(network.parameters())), next(iter(new_model.network.parameters()))
-    )
+    assert isinstance(new_model, SupervisedModel)
 
-    new_model.load_checkpoint(
-        tmp_path / "model_state.pt", device="cpu", only_network_weights=False
-    )
-    torch.testing.assert_close(
-        next(iter(network.parameters())), next(iter(new_model.network.parameters()))
-    )
-    torch.testing.assert_close(
-        model.optimizer.state_dict()["state"][0]["exp_avg"],
-        new_model.optimizer.state_dict()["state"][0]["exp_avg"],
-    )
+    # summary
+    summary_ = new_model.get_summary(input_data=torch.randn(1, 2, 2, 2))
+    assert "Total params: 9" in summary_
 
-    # architecture
-    new_model.write_architecture_log(tmp_path / "architecture.log")
-    with open(tmp_path / "architecture.log", "r", encoding="utf-8") as f:
-        content = f.read()
-    assert (
-        content
-        == "Sequential(\n  (0): Flatten(start_dim=1, end_dim=-1)\n  (1): Linear(in_features=8, out_features=1, bias=True)\n)\n"
-    )
-
-
-@pytest.mark.gpu
-def test_gpu():
+    # network as config
     network = ConvEncoderConfig(spatial_dims=3, in_channels=1, channels=[2])
-    loss = BCEWithLogitsLossConfig()
+    loss = torch.nn.BCEWithLogitsLoss()
     optimizer = AdamConfig()
     model = SupervisedModel(network, loss, optimizer)
-
-    param = next(iter(model.network.parameters()))
-    param.stride() == (27, 27, 9, 3, 1)
-    param.dtype == torch.float32
-    param.device == torch.device("cpu")
-    model.to(
-        device="cuda",
-        memory_format=torch.channels_last_3d,
-        dtype=torch.float16,
-        non_blocking=True,
-    )
-    param = next(iter(model.network.parameters()))
-    param.stride() == (27, 1, 9, 3, 1)
-    param.dtype == torch.float16
-    param.device == torch.device("cuda:0")
+    optimizers = model.build_optimizers()

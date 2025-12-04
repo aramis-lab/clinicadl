@@ -5,7 +5,7 @@ from pathlib import Path
 from clinicadl.dictionary.suffixes import TSV
 from clinicadl.dictionary.words import AGGREGATED, DETAILS
 
-from .base import Directory
+from ..base import Directory
 
 
 class MetricsDir(Directory):

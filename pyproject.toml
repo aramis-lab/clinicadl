@@ -48,7 +48,7 @@ monai = "^1.5.0"
 matplotlib =  "^3.9"
 ipykernel = { version = "^6", optional = true }
 notebook = { version = "^7", optional = true }
-torchsummary = "^1.5.1"
+torchinfo = "^1.8.0"
 psutil = "7"
 
 [tool.poetry.extras]
