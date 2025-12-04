@@ -97,7 +97,8 @@ def test_get_object():
     torch.manual_seed(0)
     assert isinstance(dataloader.sampler, WeightedRandomSampler)
     torch.testing.assert_close(
-        dataloader.sampler.weights, torch.Tensor([0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0])
+        dataloader.sampler.weights,
+        torch.tensor([0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0], dtype=torch.float64),
     )
     assert dataloader.sampler.num_samples == 7
     assert dataloader.sampler.replacement
@@ -378,7 +379,9 @@ def test_ddp():
     torch.manual_seed(1)
 
     dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
-    torch.testing.assert_close(dataloader.sampler.weights, torch.Tensor([0, 0, 1, 1]))
+    torch.testing.assert_close(
+        dataloader.sampler.weights, torch.tensor([0, 0, 1, 1], dtype=torch.float64)
+    )
     assert dataloader.sampler.num_samples == 2
     dataloader = iter(dataloader)
     batch = next(dataloader)
@@ -393,7 +396,9 @@ def test_ddp():
         next(dataloader)
 
     dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
-    torch.testing.assert_close(dataloader.sampler.weights, torch.Tensor([0, 0, 1, 1]))
+    torch.testing.assert_close(
+        dataloader.sampler.weights, torch.tensor([0, 0, 1, 1], dtype=torch.float64)
+    )
     assert dataloader.sampler.num_samples == 2
     dataloader = iter(dataloader)
     batch = next(dataloader)
