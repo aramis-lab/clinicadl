@@ -17,13 +17,13 @@ from pydantic import (
 from typing_extensions import Self
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import (
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import (
     SAMPLE_POSITION,
     SAMPLE_TYPE,
     SLICE_DIRECTION,
     SQUEEZE,
 )
-from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.typing import PathType

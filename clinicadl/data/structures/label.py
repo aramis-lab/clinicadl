@@ -5,8 +5,8 @@ from typing import Optional, Union
 import torch
 import torchio as tio
 
-from clinicadl.dictionary.suffixes import PT
-from clinicadl.dictionary.words import AFFINE, MASK
+from clinicadl.utils.dictionary.suffixes import PT
+from clinicadl.utils.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
 
 

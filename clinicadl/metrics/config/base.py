@@ -5,9 +5,9 @@ from typing import Any, Optional
 import monai.metrics
 from pydantic import field_validator
 
-from clinicadl.dictionary.words import LABEL, OUTPUT
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+from clinicadl.utils.dictionary.words import LABEL, OUTPUT
 
 from ..base import Metric
 from ..enum import Optimum

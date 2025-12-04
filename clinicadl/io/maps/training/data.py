@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import JSON, TSV
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.suffixes import JSON, TSV
+from clinicadl.utils.dictionary.words import (
     DATA,
     DATALOADER,
     DATASET,

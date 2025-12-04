@@ -6,8 +6,8 @@ from typing import Any, Optional, Pattern
 from pydantic import computed_field, field_serializer, field_validator
 from typing_extensions import Self
 
-from clinicadl.dictionary.suffixes import JSON, TSV
 from clinicadl.utils.config import ConfigWithName
+from clinicadl.utils.dictionary.suffixes import JSON, TSV
 
 
 class DataType(ConfigWithName, ABC):

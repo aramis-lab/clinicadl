@@ -4,7 +4,7 @@ from inspect import signature
 from pathlib import Path
 from typing import Any, Callable, Dict, List, TypeVar
 
-from clinicadl.dictionary.words import NAME
+from clinicadl.utils.dictionary.words import NAME
 
 from .exceptions import (
     MissingFieldsError,

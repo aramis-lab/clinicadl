@@ -9,9 +9,9 @@ import pandas as pd
 from torch import load as torch_load
 from torch import save as torch_save
 
-from clinicadl.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
-from clinicadl.dictionary.utils import SEP
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
+from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
     ENVIRONMENT,
     METRICS,

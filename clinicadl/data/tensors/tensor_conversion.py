@@ -19,8 +19,12 @@ from pydantic import (
 from tqdm import tqdm
 from typing_extensions import Self
 
-from clinicadl.dictionary.suffixes import JSON
-from clinicadl.dictionary.words import (
+from clinicadl.transforms.config import TransformConfig
+from clinicadl.transforms.factory import get_transform_from_dict
+from clinicadl.transforms.types import Transform
+from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.dictionary.suffixes import JSON
+from clinicadl.utils.dictionary.words import (
     AFFINE,
     IMAGE,
     LABEL,
@@ -30,10 +34,6 @@ from clinicadl.dictionary.words import (
     TENSOR_CONVERSION,
     TENSORS,
 )
-from clinicadl.transforms.config import TransformConfig
-from clinicadl.transforms.factory import get_transform_from_dict
-from clinicadl.transforms.types import Transform
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
     TensorConversionError,

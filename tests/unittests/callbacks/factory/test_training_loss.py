@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from clinicadl.callbacks.factory.training_loss import _TrainingLoss
-from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
+from clinicadl.utils.dictionary.words import BATCH, EPOCH, LOSS
 
 # -----------------------
 # Fake training state

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import TSV
-from clinicadl.dictionary.words import CAPS, OUTPUT
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.dictionary.words import CAPS, OUTPUT
 
 from ...base import Directory
 from .base import InferenceDir, InferenceGroupDir, InferenceSplitDir

@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Optional
 import pandas as pd
 from pydantic import Field
 
-from clinicadl.dictionary.utils import SEP
-from clinicadl.dictionary.words import (
+from clinicadl.utils.config import DictOfObjects, KwargsConfig
+from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.words import (
     EPOCH,
     PARTICIPANT,
     PARTICIPANT_ID,
     SESSION,
     SESSION_ID,
 )
-from clinicadl.utils.config import DictOfObjects, KwargsConfig
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.objects import HasConfig
 

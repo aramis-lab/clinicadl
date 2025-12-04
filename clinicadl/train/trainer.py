@@ -14,8 +14,6 @@ from torch.amp.autocast_mode import autocast
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.data.dataloader import Batch, BatchType, DataLoader
 from clinicadl.data.datasets import CapsDataset, ClinicaDLDataset
-from clinicadl.dictionary.utils import SEP
-from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.io.maps.maps import Maps
 from clinicadl.io.maps.training.splits.models import ModelDir
 from clinicadl.losses.config import LossConfig
@@ -30,6 +28,8 @@ from clinicadl.split.split import Split
 from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerStage, TrainerState
 from clinicadl.transforms.handlers import Postprocessing, Transforms
+from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError, DataLeakageError
 from clinicadl.utils.json import write_json
 from clinicadl.utils.names import camel_to_snake

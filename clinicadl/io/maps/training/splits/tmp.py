@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from clinicadl.dictionary.suffixes import JSON, PTH, TAR
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.suffixes import JSON, PTH, TAR
+from clinicadl.utils.dictionary.words import (
     CALLBACKS,
     METRICS,
     MODEL,

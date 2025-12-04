@@ -11,7 +11,7 @@ from typing import (
 import pandas as pd
 
 from clinicadl.transforms.handlers import Transforms
-from clinicadl.tsvtools.utils import read_data
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from ..datatypes import DataType

@@ -1,8 +1,0 @@
-[Classification]
-loss = "MultiMarginLoss"
-
-[Regression]
-loss = "SmoothL1Loss"
-
-[Reconstruction]
-loss = "VAEBernoulliLoss"

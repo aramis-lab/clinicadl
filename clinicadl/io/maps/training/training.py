@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import JSON
-from clinicadl.dictionary.words import (
+from clinicadl.utils.dictionary.suffixes import JSON
+from clinicadl.utils.dictionary.words import (
     CALLBACKS,
     DATA,
     OPTIMIZATION,

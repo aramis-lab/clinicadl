@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.dictionary.suffixes import TSV
-from clinicadl.dictionary.words import BATCH, EPOCH, LOSS
 from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.dictionary.words import BATCH, EPOCH, LOSS
 
 from .base import Callback
 

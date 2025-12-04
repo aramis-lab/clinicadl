@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.dictionary.words import BEST, EPOCH, METRICS, SPLIT
+from clinicadl.utils.dictionary.words import BEST, EPOCH, METRICS, SPLIT
 
 from ..base import Directory
 

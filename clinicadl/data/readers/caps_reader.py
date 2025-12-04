@@ -11,13 +11,18 @@ import pandas as pd
 from clinicadl.data.datatypes import DataType
 from clinicadl.data.datatypes.preprocessing import Preprocessing
 from clinicadl.data.readers.reader import Reader
-from clinicadl.dictionary.suffixes import PT
-from clinicadl.dictionary.words import PARTICIPANT_ID, SESSION_ID, SUBJECTS, TENSORS
-from clinicadl.tsvtools.utils import df_to_tsv
+from clinicadl.utils.dictionary.suffixes import PT
+from clinicadl.utils.dictionary.words import (
+    PARTICIPANT_ID,
+    SESSION_ID,
+    SUBJECTS,
+    TENSORS,
+)
 from clinicadl.utils.exceptions import (
     ClinicaDLCAPSError,
     ClinicaDLConfigurationError,
 )
+from clinicadl.utils.tsvtools import df_to_tsv
 from clinicadl.utils.typing import PathType
 
 logger = getLogger("clinicadl.data.readers.caps_reader")

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from clinicadl.dictionary.suffixes import PT
+from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.path import remove_extension
 
 

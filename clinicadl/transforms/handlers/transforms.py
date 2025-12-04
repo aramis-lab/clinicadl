@@ -7,10 +7,10 @@ import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from clinicadl.data.structures import DataPoint
-from clinicadl.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.utils.config import ObjectConfig, SequenceOfObjects
+from clinicadl.utils.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
 from clinicadl.utils.objects import HasConfig
 
 from ..extraction import get_extraction_from_dict

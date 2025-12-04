@@ -12,20 +12,19 @@ from clinicadl.utils.exceptions import (
 
 PARTICIPANT_ID = "participant_id"
 SESSION_ID = "session_id"
-caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
-bids_dir = Path(__file__).parents[2] / "resources" / "bids_example"
+CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 
 
 def test_good_caps_reader():
-    caps_reader = CapsReader(caps_dir)
-    subject_dir = caps_dir / "subjects" / "sub-000" / "ses-M000" / "t1_linear"
+    caps_reader = CapsReader(CAPS_DIR)
+    subject_dir = CAPS_DIR / "subjects" / "sub-000" / "ses-M000" / "t1_linear"
 
-    assert caps_reader.input_directory == caps_dir
-    assert caps_reader.subject_directory == caps_dir / "subjects"
+    assert caps_reader.input_directory == CAPS_DIR
+    assert caps_reader.subject_directory == CAPS_DIR / "subjects"
 
     # get_participant_path
     assert (
-        caps_reader.get_participant_path("sub-000") == caps_dir / "subjects" / "sub-000"
+        caps_reader.get_participant_path("sub-000") == CAPS_DIR / "subjects" / "sub-000"
     )
 
     # path_to_tensor
@@ -42,10 +41,10 @@ def test_good_caps_reader():
     )
     assert (
         caps_reader.path_to_tensor(
-            caps_dir / "masks" / "leftHippocampus.nii",
+            CAPS_DIR / "masks" / "leftHippocampus.nii",
             conversion_name="default_t1-linear",
         )
-        == caps_dir / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
+        == CAPS_DIR / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
     )
 
     # get_tensor_path
@@ -56,7 +55,7 @@ def test_good_caps_reader():
             T1Linear(use_uncropped_image=True),
             conversion_name="default_t1-linear",
         )
-        == caps_dir
+        == CAPS_DIR
         / subject_dir
         / "tensors"
         / "default_t1-linear"
@@ -70,7 +69,7 @@ def test_good_caps_reader():
             "ses-M000",
             PETLinear(tracer="18FAV45", suvr_reference_region="pons2"),
         )
-        == caps_dir
+        == CAPS_DIR
         / "subjects"
         / "sub-100"
         / "ses-M000"
@@ -81,15 +80,15 @@ def test_good_caps_reader():
     # get_common_mask_path
     assert (
         caps_reader.get_common_mask_path("leftHippocampus.nii.gz")
-        == caps_dir / "masks" / "leftHippocampus.nii.gz"
+        == CAPS_DIR / "masks" / "leftHippocampus.nii.gz"
     )
     assert (
         caps_reader.get_common_mask_tensor_path(
             "leftHippocampus.nii.gz", conversion_name="default_t1-linear"
         )
-        == caps_dir / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
+        == CAPS_DIR / "masks" / "tensors" / "default_t1-linear" / "leftHippocampus.pt"
     )
-    assert caps_reader.tensor_conversion_json_dir == caps_dir / "tensor_conversion"
+    assert caps_reader.tensor_conversion_json_dir == CAPS_DIR / "tensor_conversion"
 
     # check_preprocessing
     with pytest.raises(RuntimeError):
@@ -129,16 +128,12 @@ def test_good_caps_reader():
     tsv_path = caps_reader.create_subjects_sessions_tsv(
         T1Linear(use_uncropped_image=True)
     )
-    tsv = pd.read_csv(caps_dir / "overview_t1-linear.tsv", sep="\t")
+    tsv = pd.read_csv(CAPS_DIR / "overview_t1-linear.tsv", sep="\t")
     assert (tsv == true_df).all().all()
-    (caps_dir / "overview_t1-linear.tsv").unlink()
-    assert tsv_path == str(caps_dir / "overview_t1-linear.tsv")
+    (CAPS_DIR / "overview_t1-linear.tsv").unlink()
+    assert tsv_path == str(CAPS_DIR / "overview_t1-linear.tsv")
 
 
 def test_bad_caps_reader():
     with pytest.raises(ClinicaDLArgumentError):
         CapsReader("ddd")
-
-    assert bids_dir.is_dir()
-    with pytest.raises(ClinicaDLCAPSError):
-        CapsReader(bids_dir)

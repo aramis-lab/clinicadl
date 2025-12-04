@@ -9,10 +9,10 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 from clinicadl.data.datasets import ClinicaDLDataset
-from clinicadl.dictionary.suffixes import JSON, TSV
-from clinicadl.dictionary.words import BASELINE, TRAIN
 from clinicadl.split.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.dictionary.suffixes import JSON, TSV
+from clinicadl.utils.dictionary.words import BASELINE, TRAIN
 from clinicadl.utils.typing import PathType
 
 

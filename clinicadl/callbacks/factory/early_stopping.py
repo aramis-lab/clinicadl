@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from clinicadl.dictionary.suffixes import JSON
 from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.json import read_json, write_json
 
 from .base import Callback

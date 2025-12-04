@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.dictionary.words import METRICS
+from clinicadl.utils.dictionary.words import METRICS
 
 from ...base import Directory
 from ..metrics import MetricsDir
