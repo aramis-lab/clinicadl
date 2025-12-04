@@ -65,11 +65,13 @@ def metric_parallelism(rank):
     metric = CustomTestMetric()
     if rank == 0:
         assert rank == 0
-        metric(batches[0].to(rank))
-        metric(batches[2].to(rank))
+        batches[0].to(rank)
+        batches[2].to(rank)
+        metric(batches[0])
+        metric(batches[2])
     elif rank == 1:
         batches[1].to(rank)
-        metric(batches[1].to(rank))
+        metric(batches[1])
 
     assert metric.aggregate() == 0.5
 
