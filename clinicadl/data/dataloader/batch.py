@@ -11,6 +11,8 @@ from clinicadl.utils.device import DeviceType, check_device
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
+BatchType = Union["Batch", Sequence["Batch"], dict[Any, "Batch"]]
+
 T = TypeVar("T", bound="DataPoint")
 
 
@@ -346,16 +348,3 @@ class Batch(list[T]):
                 return torch.channels_last_3d
         else:
             return torch.contiguous_format
-
-
-BatchType = Union[Batch, tuple[Batch, ...]]
-
-
-def simple_collate_fn(batch: Sequence[T]) -> Batch[T]:
-    """For datasets that returns a single Sample."""
-    return Batch(batch)
-
-
-def tuple_collate_fn(batch: Sequence[tuple[T, ...]]) -> tuple[Batch[T], ...]:
-    """For datasets that returns a tuple of Samples."""
-    return tuple(Batch(data) for data in zip(*batch))

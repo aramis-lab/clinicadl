@@ -1,43 +1,86 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Union, overload
 
-import torch
 import torch.nn as nn
 
+from clinicadl.data.dataloader import Batch
+from clinicadl.data.structures import DataPoint
+from clinicadl.utils.objects import JsonReaderWriter
 
-class Inferer(ABC):
-    """
-    Base class for inference.
 
-    The only method to overwrite is :py:meth:`__call__`.
+class Inferer(JsonReaderWriter, ABC):
     """
+    Abstract class for ``Inferers``, which define how an image is passed in a neural network during
+    inference.
+
+    The only method to override is :py:meth:`__call__`.
+
+    See Also
+    --------
+    clinicadl.infer.PatchesToImage
+        To feed 3D patches into the neural network and merge the outputs in a 3D image.
+    clinicadl.infer.SlicesToImage
+        To feed 2D slices into the neural network and merge the outputs in a 3D image.
+    clinicadl.infer.PatchesToScalars
+        To feed 3D patches into the neural network and fuse the resulting scalar outputs.
+    clinicadl.infer.SlicesToScalars
+        To feed 2D slices into the neural network and fuse the resulting scalar outputs.
+    """
+
+    @overload
+    def __call__(
+        self,
+        x: Union[DataPoint, Sequence[DataPoint]],
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> DataPoint:
+        ...
+
+    @overload
+    def __call__(
+        self,
+        x: Union[Batch, Sequence[Batch]],
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Batch:
+        ...
 
     @abstractmethod
     def __call__(
-        self, x: torch.Tensor, network: nn.Module, *args: Any, **kwargs: Any
-    ) -> torch.Tensor:
+        self,
+        x: Union[DataPoint, Sequence[DataPoint], Batch, Sequence[Batch]],
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[DataPoint, Batch]:
         """
         Defines the inference logic.
 
+        If the input is a :py:class:`~clinicadl.data.structures.DataPoint` or a sequence of ``DataPoint``
+        (e.g. the output of a :py:class:`~clinicadl.data.datasets.PairedDataset`), a unique ``DataPoint``
+        must be returned.
+
+        If the input is a :py:class:`~clinicadl.data.dataloader.Batch` or a sequence of ``Batch``,
+        a unique ``Batch`` must be returned.
+
         Parameters
         ----------
-        x : torch.Tensor
-            The input image(s). Can be a single 3D image (CHWD) or a batch (NCHWD).
+        x : Union[DataPoint, Sequence[DataPoint], Batch, Sequence[Batch]]
+            The input image(s). Can be a :py:class:`~clinicadl.data.structures.DataPoint`
+            a :py:class:`~clinicadl.data.dataloader.Batch` of images, or a sequence of either.
         network : nn.Module
             The neural network.
+        args : Any
+            Optional args to be passed to ``network``.
+        kwargs : Any
+            Optional keyword args to be passed to ``network``.
 
         Returns
         -------
-        torch.Tensor
-            The raw output of the neural network.
+        Union[DataPoint, Batch]
+            A data structure containing the inference output. If ``DataPoint(s)`` were passed, a unique
+            output ``DataPoint`` is returned; if ``Batches(s)`` were passed, a unique ``Batch`` is returned.
         """
-
-    @staticmethod
-    def _check_input(x: torch.Tensor) -> None:
-        """
-        Checks that the input is 4D or 5D tensor.
-        """
-        if len(x.shape) not in {4, 5}:
-            raise ValueError(
-                f"Input 'x' must be a single 3D images (4D tensor) or a batch (5D tensor). Got shape: {x.shape}"
-            )

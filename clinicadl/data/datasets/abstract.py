@@ -144,7 +144,9 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
         """
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Union[Sample, Sequence[Sample]]:
+    def __getitem__(
+        self, idx: int
+    ) -> Union[Sample, Sequence[Sample], dict[Any, Sample]]:
         """
         Retrieves the sample at a given index.
 
@@ -155,9 +157,9 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
 
         Returns
         -------
-        Union[Sample, Sequence[Sample]]
+        Union[Sample, Sequence[Sample], dict[Any, Sample]]
             A structured output containing the processed data and metadata, as a
-            :py:class:`~clinicadl.data.datasets.output.Sample`, or a sequence
+            :py:class:`~clinicadl.data.datasets.output.Sample`, or a sequence or dictionary
             of such outputs.
         """
 
