@@ -1,26 +1,21 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Iterator, Optional, Union, overload
+from typing import Any, Optional
 
-from pydantic import NonNegativeInt, PositiveInt, model_validator
+from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import DistributedSampler, Sampler, WeightedRandomSampler
 
 from clinicadl.data.datasets import (
-    PairedDataset,
     UnpairedDataset,
 )
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
 from ..datasets import ClinicaDLDataset
-from .batch import Batch, simple_collate_fn, tuple_collate_fn
-
-if TYPE_CHECKING:
-    from clinicadl.data.datasets.output import Sample
-
-TupleDataset = Union[PairedDataset, UnpairedDataset]
+from .collate import CollateFn, ToBatch, ToBatches
+from .collate.factory import get_collate_from_dict
 
 
 class DataLoader(TorchDataLoader):
@@ -48,22 +43,13 @@ class DataLoader(TorchDataLoader):
             set_epoch(epoch)
 
 
-class _SimpleDataLoader(DataLoader):
-    """To type the iterator."""
-
-    def __iter__(
-        self,
-    ) -> Iterator[Batch[Sample]]:
-        return super().__iter__()
-
-
-class _TupleDataLoader(DataLoader):
-    """To type the iterator."""
-
-    def __iter__(
-        self,
-    ) -> Iterator[tuple[Batch[Sample], ...]]:
-        return super().__iter__()
+def _read_collate(serialized_collate: Any) -> Any:
+    """
+    To read the field 'collate_fn'.
+    """
+    if isinstance(serialized_collate, dict):
+        return get_collate_from_dict(serialized_collate)
+    return serialized_collate
 
 
 class DataLoaderConfig(ClinicaDLConfig):
@@ -109,6 +95,8 @@ class DataLoaderConfig(ClinicaDLConfig):
     persistent_workers : bool, default=False
         Whether to maintain the worker processes alive at the end of an epoch.
         Can't be passed if ``num_workers=0``.
+    collate_fn : Optional[CollateFn], default=None
+        To customize the way samples are collated into batches. See :py:mod:`clinicadl.data.dataloader.collate`.
 
     Raises
     ------
@@ -130,6 +118,7 @@ class DataLoaderConfig(ClinicaDLConfig):
     drop_last: bool = False
     prefetch_factor: Optional[NonNegativeInt] = None
     persistent_workers: bool = False
+    collate_fn: Optional[CollateFn] = Field(default=None, reader=_read_collate)
 
     @model_validator(mode="after")
     def _validate_worker_parameters(self):
@@ -145,24 +134,6 @@ class DataLoaderConfig(ClinicaDLConfig):
                 f"persistent_workers={self.persistent_workers} and num_workers={self.num_workers}"
             )
         return self
-
-    @overload  # we need the most specific overload first
-    def get_object(
-        self,
-        dataset: TupleDataset,
-        dp_degree: Optional[int] = None,
-        rank: Optional[int] = None,
-    ) -> _TupleDataLoader:
-        """:noindex:"""
-
-    @overload
-    def get_object(
-        self,
-        dataset: ClinicaDLDataset,
-        dp_degree: Optional[int] = None,
-        rank: Optional[int] = None,
-    ) -> _SimpleDataLoader:
-        """:noindex:"""
 
     def get_object(
         self,
@@ -288,7 +259,8 @@ class DataLoaderConfig(ClinicaDLConfig):
               Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
               Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)])
 
-        We have a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.
+        Because, the default behavior is to use :py:class:`~clinicadl.data.dataloader.ToBatches` to collate batches,
+        we obtain here a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.
         """
         if (rank is not None and dp_degree is None) or (
             dp_degree is not None and rank is None
@@ -308,14 +280,20 @@ class DataLoaderConfig(ClinicaDLConfig):
                 f"dp_degree={dp_degree} and rank={rank}"
             )
 
+        if self.collate_fn:
+            collate_fn = self.collate_fn
+        else:
+            if isinstance(dataset[0], Sequence):
+                collate_fn = ToBatches()
+            else:
+                collate_fn = ToBatch()
+
         return DataLoader(
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
-            collate_fn=tuple_collate_fn
-            if isinstance(dataset[0], Sequence)
-            else simple_collate_fn,
-            **self.to_dict(exclude={"sampling_weights", "shuffle"}),
+            collate_fn=collate_fn,
+            **self.to_dict(exclude={"sampling_weights", "shuffle", "collate_fn"}),
         )
 
     def _generate_sampler(

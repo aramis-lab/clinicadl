@@ -11,6 +11,10 @@ from pydantic import ValidationError
 from clinicadl.data.structures import DataPoint
 
 
+class SubDataPoint(DataPoint):
+    pass
+
+
 def test_DataPoint():
     caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
     affine = np.diag([1.3, 1.2, 1.1, 1])
@@ -98,7 +102,9 @@ def test_DataPoint():
     assert len(data_point.get_images_dict(intensity_only=False, exclude="image")) == 6
 
     # test copy
+    data_point = SubDataPoint(**data_point)
     c = copy(data_point)
+    assert isinstance(c, SubDataPoint)
     assert isinstance(c.image, tio.ScalarImage)
     assert isinstance(c.label, tio.LabelMap)
     assert c.participant == "sub-000"
@@ -177,3 +183,5 @@ def test_DataPoint():
     transformed_datapoint = transform(data_point)
     assert len(transformed_datapoint.get_applied_transforms()) == 1
     assert isinstance(transformed_datapoint.get_applied_transforms()[0], tio.Clamp)
+
+    # da

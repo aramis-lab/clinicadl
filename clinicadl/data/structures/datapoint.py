@@ -1,6 +1,5 @@
-import copy
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import torchio as tio
@@ -243,7 +242,7 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint.get_images()
         [ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)]
@@ -285,7 +284,7 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint.get_images_dict()
         {'image': ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)}
@@ -311,7 +310,7 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint
         ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
@@ -342,7 +341,7 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint
         ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
@@ -373,7 +372,7 @@ class DataPoint(tio.Subject):
 
         Examples
         --------
-        >>> from clinicadl.data.structures import ColinDataPoint
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> from torchio import RescaleIntensity
         >>> datapoint = ColinDataPoint()
         >>> transform = RescaleIntensity()
@@ -390,27 +389,3 @@ class DataPoint(tio.Subject):
         See :py:meth:`torchio.Subject.plot` for more details.
         """
         super().plot(**kwargs)
-
-    def __copy__(self):
-        return _subject_copy_helper(self, DataPoint)
-
-
-def _subject_copy_helper(
-    old_obj: DataPoint,
-    new_subj_cls: Callable[[Dict[str, Any]], DataPoint],
-):
-    """
-    Adapted from torchio.data.subject._subject_copy_helper to work
-    with DataPoint.
-    """
-    result_dict = {}
-    for key, value in old_obj.items():
-        if isinstance(value, tio.Image):
-            value = copy.copy(value)
-        else:
-            value = copy.deepcopy(value)
-        result_dict[key] = value
-
-    new = new_subj_cls(**result_dict)
-    new.applied_transforms = old_obj.applied_transforms[:]
-    return new

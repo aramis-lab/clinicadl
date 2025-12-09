@@ -10,7 +10,7 @@ from typing_extensions import Self
 from clinicadl.utils.objects import JsonReaderWriter
 from clinicadl.utils.typing import DataFrameType
 
-from .output import Sample
+from ..structures import Sample
 
 
 class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sample]]]):

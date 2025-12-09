@@ -232,11 +232,11 @@ def test__getitem__():
     assert paired[0][0].participant == "sub-000"
     assert paired[0][0].session == "ses-M000"
     assert paired[0][0].sample_type == "slice"
-    assert paired[0][0].datatype == T1Linear(use_uncropped_image=True)
+    assert paired[0][0].datatype[0] == T1Linear(use_uncropped_image=True)
     assert paired[0][1].participant == "sub-000"
     assert paired[0][1].session == "ses-M000"
     assert paired[0][1].sample_type == "image"
-    assert paired[0][1].datatype == PETLinear(
+    assert paired[0][1].datatype[0] == PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     )
 

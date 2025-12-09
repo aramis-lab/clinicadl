@@ -3,10 +3,9 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data.dataloader.batch import Batch, simple_collate_fn, tuple_collate_fn
-from clinicadl.data.datasets.output import Sample
+from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datatypes import T1Linear
-from clinicadl.data.structures import DataPoint
+from clinicadl.data.structures import DataPoint, Sample
 
 
 def test_init():
@@ -31,7 +30,7 @@ def test_typing():
         datatype=T1Linear(),
     )
     batch = Batch([datapoint, datapoint])
-    assert str(batch[0].image_path) == "abc.nii.gz"
+    assert str(batch[0].image_path[0]) == "abc.nii.gz"
 
 
 def test_get_field():
@@ -212,33 +211,3 @@ def test_add_field():
         match="'values' must have the same length as the batch. Got 3 values, whereas the batch has only 2 elements",
     ):
         batch.add_field("bcd", [1, 2, 3])
-
-
-def test_simple_collate_fn():
-    list_samples = [
-        DataPoint(
-            image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-            label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
-            participant=f"sub-{i}",
-            session=f"ses-{i}",
-        )
-        for i in range(2)
-    ]
-    out = simple_collate_fn(list_samples)
-    assert isinstance(out, Batch)
-
-
-def test_tuple_collate_fn():
-    list_samples = [
-        DataPoint(
-            image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-            label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
-            participant=f"sub-{i}",
-            session=f"ses-{i}",
-        )
-        for i in range(2)
-    ]
-    out = tuple_collate_fn(list(zip(list_samples, list_samples)))
-    assert isinstance(out, tuple)
-    assert len(out) == 2
-    assert isinstance(out[0], Batch)

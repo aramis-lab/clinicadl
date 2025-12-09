@@ -11,9 +11,9 @@ from clinicadl.utils.dictionary.words import (
     SESSION_ID,
 )
 
+from ..structures import Sample
 from .collection import CollectionDataset, CollectionDatasetConfig
 from .multi_samples import MultiSamplesDataset
-from .output import Sample
 
 
 class UnpairedDatasetConfig(CollectionDatasetConfig):
