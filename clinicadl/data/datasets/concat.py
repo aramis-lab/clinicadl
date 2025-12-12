@@ -13,9 +13,9 @@ from clinicadl.utils.dictionary.words import DATASET_ID
 from clinicadl.utils.typing import DataFrameType
 from clinicadl.utils.variables import SPACING_RTOL
 
+from ..structures import Sample, Sample2D
 from .collection import CollectionDataset, CollectionDatasetConfig
 from .multi_samples import MultiSamplesDataset
-from .output import Sample, Sample2D
 
 
 class ConcatDatasetConfig(CollectionDatasetConfig):

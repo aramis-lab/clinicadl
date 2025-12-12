@@ -324,10 +324,10 @@ def test_custom():
     assert (
         unpaired[0][0].participant,
         unpaired[0][0].session,
-        str(unpaired[0][0].image_path),
+        str(unpaired[0][0].image_path[0]),
     ) == ("sub-010", "ses-M003", "6")
     assert (
         unpaired[0][1].participant,
         unpaired[0][1].session,
-        str(unpaired[0][1].image_path),
+        str(unpaired[0][1].image_path[0]),
     ) == ("sub-010", "ses-M012", "2")

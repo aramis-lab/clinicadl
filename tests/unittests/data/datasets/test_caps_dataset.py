@@ -9,9 +9,8 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datasets.output import Sample, Sample2D
 from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
-from clinicadl.data.structures import DataPoint, Mask
+from clinicadl.data.structures import DataPoint, Mask, Sample, Sample2D
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.transforms.extraction import Patch, Slice
 from clinicadl.transforms.handlers import Transforms
@@ -615,7 +614,7 @@ def test__getitem__(tmp_path):
     out_sample = caps_dataset[0]
     assert out_sample["diagnosis"] == 0
     assert out_sample["age"] == 1
-    assert out_sample.datatype == T1Linear(use_uncropped_image=True)
+    assert out_sample.datatype[0] == T1Linear(use_uncropped_image=True)
     assert out_sample.sample_type == "slice"
     assert isinstance(out_sample, Sample2D)
     assert out_sample.sample_position == 0
@@ -623,7 +622,7 @@ def test__getitem__(tmp_path):
     assert not out_sample.squeeze
     assert out_sample.participant == "sub-000"
     assert out_sample.session == "ses-M000"
-    assert out_sample.image_path == (
+    assert out_sample.image_path[0] == (
         CAPS_DIR
         / "subjects"
         / "sub-000"
@@ -777,7 +776,7 @@ def test_from_json_to_json(tmp_path):
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
             ],
             sample_transforms=[
-                CropConfig(cropping=(0, 1, 0, 0, 0, 1)),
+                PadConfig(padding=(0, 0, 0, 0, 0, 1)),
             ],
         ),
     )
@@ -832,7 +831,7 @@ def test_from_json_to_json(tmp_path):
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
             ],
             sample_transforms=[
-                tio.Crop(cropping=(0, 1, 0, 0, 0, 1)),
+                tio.Pad(padding=(0, 0, 0, 0, 0, 1)),
             ],
         ),
     )
@@ -846,7 +845,7 @@ def test_from_json_to_json(tmp_path):
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
             ],
             sample_transforms=[
-                tio.Crop(cropping=(0, 1, 0, 0, 0, 1)),
+                tio.Pad(padding=(0, 0, 0, 0, 0, 1)),
             ],
         ),
     )

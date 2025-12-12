@@ -35,8 +35,7 @@ from clinicadl.utils.typing import DataFrameType, PathType
 
 from ..datatypes import DataType
 from ..datatypes.factory import get_datatype_from_dict
-from ..structures import Column, DataPoint, Mask
-from .output import Sample
+from ..structures import Column, DataPoint, Mask, Sample
 from .sampler import SamplerDataset
 
 logger = getLogger("clinicadl.data.datasets.base")

@@ -12,8 +12,8 @@ from clinicadl.utils.dictionary.words import (
 )
 
 from ..structures import DataPoint
+from ..structures.sample import Sample, Sample2D, SampleType
 from .multi_samples import MultiSamplesDataset
-from .output import Sample, Sample2D, SampleType
 
 
 class SamplerDataset(MultiSamplesDataset):

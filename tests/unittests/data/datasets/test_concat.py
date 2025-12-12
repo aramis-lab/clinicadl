@@ -5,11 +5,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import pytest
-import torch
-import torchio as tio
 
 from clinicadl.data.datasets import CapsDataset, ConcatDataset, MultiSamplesDataset
-from clinicadl.data.datasets.output import Sample
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.transforms.extraction import Image, Slice
 from clinicadl.transforms.handlers import Transforms
@@ -181,9 +178,9 @@ def test_subset():
     )
     assert len((subset)) == 5
     assert subset[0].session == "ses-M003"
-    assert "T1w" in str(subset[0].image_path)
+    assert "T1w" in str(subset[0].image_path[0])
     assert subset[4].session == "ses-M099"
-    assert "pet" in str(subset[4].image_path)
+    assert "pet" in str(subset[4].image_path[0])
     pd.testing.assert_frame_equal(
         subset.df.fillna(-1),
         pd.DataFrame(
@@ -348,4 +345,4 @@ def test_custom_dataset():
     concat.train()
     assert not dataset.evaluation
 
-    assert str(concat[8].image_path) == "2"
+    assert str(concat[8].image_path[0]) == "2"

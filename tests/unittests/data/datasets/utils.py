@@ -6,8 +6,8 @@ import torch
 import torchio as tio
 
 from clinicadl.data.datasets import ClinicaDLDataset, MultiSamplesDataset
-from clinicadl.data.datasets.output import Sample
 from clinicadl.data.datatypes import T1Linear
+from clinicadl.data.structures import Sample
 
 
 def subset_df(

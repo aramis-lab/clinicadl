@@ -104,7 +104,7 @@ class Batch(list[T]):
         --------
         .. code-block:: python
 
-            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.structures.examples import ColinDataPoint
             from clinicadl.data.dataloader import Batch
             import torch
 
@@ -177,7 +177,7 @@ class Batch(list[T]):
         --------
         .. code-block:: python
 
-            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.structures.examples import ColinDataPoint
             from clinicadl.data.dataloader import Batch
 
             datapoint = ColinDataPoint()
@@ -265,7 +265,7 @@ class Batch(list[T]):
         --------
         .. code-block:: python
 
-            from clinicadl.data.structures import ColinDataPoint
+            from clinicadl.data.structures.examples import ColinDataPoint
             from clinicadl.data.dataloader import Batch
 
             datapoint = ColinDataPoint()

@@ -7,7 +7,7 @@ import torch
 from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import DataLoaderConfig, MergeBatches, ToBatch, ToBatches
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datasets import (
     CapsDataset,
@@ -28,6 +28,7 @@ BAD_INPUTS = [
     {"prefetch_factor": 1},
     {"num_workers": 0, "persistent_workers": True},
     {"persistent_workers": True},
+    {"collate_fn": lambda x: x},
 ]
 GOOD_INPUTS = [
     {
@@ -41,6 +42,7 @@ GOOD_INPUTS = [
         "persistent_workers": True,
     },
     {"sampling_weights": None, "num_workers": 1},
+    {"collate_fn": ToBatch()},
 ]
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
@@ -122,9 +124,7 @@ def test_get_object():
     assert batch[0].get_field("label") == torch.tensor([5.0])
     assert batch[1].get_field("label") == [None]
 
-    dataloader_config = DataLoaderConfig(
-        shuffle=False,
-    )
+    dataloader_config = DataLoaderConfig(shuffle=False, collate_fn=ToBatch())
     dataloader = dataloader_config.get_object(ConcatDataset([CAPS, CAPS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert not dataloader.sampler.shuffle
@@ -170,20 +170,21 @@ def test_get_object():
         dataloader_config.get_object(CAPS, rank=2, dp_degree=2)
 
     # tets other datasets
-    dataloader = DataLoaderConfig(batch_size=2).get_object(
+    dataloader = DataLoaderConfig(batch_size=2, collate_fn=ToBatches()).get_object(
         UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL])
     )
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
+    assert len(batch[0]) == 2
     assert (batch[0].get_field("label") == torch.tensor([1.0, 10.0])).all()
     assert batch[1].get_field("label") == [None, None]
 
-    dataloader = DataLoaderConfig(batch_size=5, shuffle=True).get_object(
-        ConcatDataset([CAPS, CAPS_WITHOUT_LABEL])
-    )
+    dataloader = DataLoaderConfig(
+        batch_size=5, shuffle=True, collate_fn=MergeBatches()
+    ).get_object(PairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
     batch = next(iter(dataloader))
-    assert batch.get_field("label") == [5.0, 1.0, None, 10.0, 1.0]
+    assert len(batch) == 5
 
 
 @pytest.mark.skipif(
@@ -426,6 +427,15 @@ def test_serialize_deserialize(tmp_path):
     dataloader_config.to_json(tmp_path / "dataloader.json")
     dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
     assert dataloader_config.batch_size == 2
+
+    dataloader_config = DataLoaderConfig(
+        batch_size=2,
+        shuffle=False,
+        collate_fn=MergeBatches(),
+    )
+    dataloader_config.to_json(tmp_path / "dataloader.json", overwrite=True)
+    dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
+    assert isinstance(dataloader_config.collate_fn, MergeBatches)
 
 
 def test_custom_dataset():

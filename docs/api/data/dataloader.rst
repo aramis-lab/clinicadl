@@ -16,3 +16,20 @@
 
     :template: autosummary/class.rst
     Batch
+
+Collate functions
+-----------------
+
+.. automodule:: clinicadl.data.dataloader.collate
+
+.. currentmodule:: clinicadl.data.dataloader.collate
+
+.. autosummary::
+    :toctree: ../generated/
+    :nosignatures:
+    :template: autosummary/class.rst
+
+    CollateFn
+    ToBatch
+    ToBatches
+    MergeBatches

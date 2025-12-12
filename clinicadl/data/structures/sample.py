@@ -1,18 +1,18 @@
 from abc import ABC
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
 import torchio as tio
-from pydantic import NonNegativeInt, model_validator
+from pydantic import NonNegativeInt, field_validator, model_validator
 from typing_extensions import Self
 
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.typing import PathType
 
 from ..datatypes import DataType
-from ..structures.datapoint import DataPoint
+from .datapoint import DataPoint, DataPointConfig
 
 
 class SampleType(str, Enum):
@@ -23,15 +23,52 @@ class SampleType(str, Enum):
     SLICE = "slice"
 
 
-class SampleConfig(ClinicaDLConfig):
+class SampleConfig(DataPointConfig):
     """To check ``Sample`` inputs."""
 
-    datatype: DataType
-    image_path: Path
+    datatype: tuple[DataType, ...]
+    image_path: tuple[Path, ...]
     sample_type: SampleType
     sample_position: Optional[
         Union[NonNegativeInt, tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]]
     ]
+
+    @field_validator("datatype", mode="before")
+    @classmethod
+    def _validate_tuple(cls, value: Any) -> Self:
+        """To accept a single value for 'datatype'."""
+        if not isinstance(value, Sequence):
+            return (value,)
+        return value
+
+    @field_validator("image_path", mode="before")
+    @classmethod
+    def _validate_path(cls, value: Any) -> Self:
+        """To accept str and a single value for 'image_path'."""
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            return tuple(Path(v) for v in value)
+        return (Path(value),)
+
+    @model_validator(mode="after")
+    def _validate_image_channels(self) -> Self:
+        """
+        To validate the number of channels in the image.
+        """
+        if len(self.datatype) == 1:
+            self.__dict__["datatype"] = self.datatype * self.image.num_channels
+        elif self.image.num_channels != len(self.datatype):
+            raise ValueError(
+                f"'datatype' has {len(self.datatype)} value(s) but there are {self.image.num_channels} channel(s) in the image."
+            )
+
+        if len(self.image_path) == 1:
+            self.__dict__["image_path"] = self.image_path * self.image.num_channels
+        elif self.image.num_channels != len(self.image_path):
+            raise ValueError(
+                f"'image_path' has {len(self.image_path)} value(s) but there are {self.image.num_channels} channel(s) in the image."
+            )
+
+        return self
 
     @model_validator(mode="after")
     def _validate_sample_position(self) -> Self:
@@ -58,6 +95,9 @@ class Sample(DataPoint, ABC):
 
     It is a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`, with additional attributes.
 
+    Consistency of voxel spacings and spatial shapes of the different images inside the ``Sample``
+    will be checked, unless ``check_consistency=False``.
+
     Attributes
     ----------
     image : torchio.ScalarImage
@@ -66,10 +106,14 @@ class Sample(DataPoint, ABC):
         The id of the participant.
     session : str
         The id of the session.
-    datatype : DataType
-        The :py:class:`type of data <clinicadl.data.datatypes>`.
-    image_path : Path
-        The path to the image.
+    datatype : tuple[DataType, ...]
+        The :py:class:`~clinicadl.data.datatypes.DataType`. If they are multiple images in ``image``
+        (i.e. multiple channels), the :py:class:`~clinicadl.data.datatypes.DataType` of each of them
+        is expected.
+    image_path : tuple[Path, ...]
+        The path to the image. If they are multiple images in ``image``
+        (i.e. multiple channels), the path of each of them
+        is expected.
     sample_type : SampleType
         The type of the sample, among {"image", "slice", "patch"}.
     sample_position : Optional[Union[int, tuple[int, int, int]]]
@@ -83,8 +127,8 @@ class Sample(DataPoint, ABC):
         The label. Either ``None``, a scalar, a dict of scalars, or a mask, as a :py:class:`torchio.LabelMap`.
     """
 
-    datatype: DataType
-    image_path: Path
+    datatype: tuple[DataType, ...]
+    image_path: tuple[Path, ...]
     sample_type: SampleType
     sample_position: Optional[Union[int, tuple[int, int, int]]] = None
 
@@ -93,32 +137,51 @@ class Sample(DataPoint, ABC):
         image: Union[tio.ScalarImage, PathType],
         participant: str,
         session: str,
-        datatype: DataType,
-        image_path: Path,
+        datatype: Union[DataType, tuple[DataType, ...]],
+        image_path: Union[Path, tuple[Path, ...]],
         sample_type: SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
         label: Optional[
             Union[float, int, dict[str, float], tio.LabelMap, PathType]
         ] = None,
+        check_consistency: bool = True,
         **kwargs: Any,
     ):
         config = SampleConfig(
+            image=image,
+            participant=participant,
+            session=session,
+            label=label,
             datatype=datatype,
             image_path=image_path,
             sample_type=sample_type,
             sample_position=sample_position,
         )
         kwargs.update(config.to_raw_dict())
-        super().__init__(
-            image=image, participant=participant, session=session, label=label, **kwargs
-        )
+        super().__init__(**kwargs)
+        if check_consistency:
+            _ = self.spatial_shape
+            _ = self.spacing
 
 
-class SliceSampleConfig(ClinicaDLConfig):
+class SliceSampleConfig(SampleConfig):
     """To check ``SliceSample`` inputs."""
 
+    sample_type: SampleType = SampleType.SLICE
     slice_direction: SliceDirection
     squeeze: bool
+
+    @model_validator(mode="after")
+    def _validate_slice(self) -> Self:
+        """
+        To validate that it is indeed a slice.
+        """
+        assert self.image.spatial_shape[self.slice_direction] == 1, (
+            f"The dimension along 'slice_direction' should be 1. But here got slice_direction={self.slice_direction} "
+            f"and spatial_shape of {self.image.spatial_shape}"
+        )
+
+        return self
 
 
 class Sample2D(Sample):
@@ -153,22 +216,19 @@ class Sample2D(Sample):
         label: Optional[
             Union[float, int, dict[str, float], tio.LabelMap, PathType]
         ] = None,
+        check_consistency: bool = True,
         **kwargs: Any,
     ):
         config = SliceSampleConfig(
-            slice_direction=slice_direction,
-            squeeze=squeeze,
-        )
-        super().__init__(
             image=image,
             participant=participant,
             session=session,
             label=label,
             datatype=datatype,
             image_path=image_path,
-            sample_type=SampleType.SLICE,
             sample_position=sample_position,
-            slice_direction=config.slice_direction,
-            squeeze=config.squeeze,
-            **kwargs,
+            slice_direction=slice_direction,
+            squeeze=squeeze,
         )
+        kwargs.update(config.to_raw_dict())
+        super().__init__(**kwargs, check_consistency=check_consistency)

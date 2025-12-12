@@ -13,4 +13,8 @@
     :template: autosummary/class.rst
 
     DataPoint
+    Sample
+    Sample2D
     ColinDataPoint
+    ColinSample
+    ColinSample2D
