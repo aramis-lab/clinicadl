@@ -36,19 +36,24 @@ def test_simple_inferer():
     torch.testing.assert_close(out["output"].sum(), torch.tensor(1.0))
     assert out is sample
 
+    network.to(dtype=torch.half)
     batch = Batch([sample, deepcopy(sample)])
     with torch.no_grad():
         out = inferer(
             batch,
             network,
+            input_dtype=torch.half,
         )
     assert str(out[0].image_path[0]) == "abc.nii.gz"
     assert out[0]["output"].shape == (2,)
-    torch.testing.assert_close(out[0]["output"].sum(), torch.tensor(1.0))
+    torch.testing.assert_close(
+        out[0]["output"].sum(), torch.tensor(1.0, dtype=torch.half)
+    )
     assert out[0] is sample
 
     # output format
     network = nn.Identity()
+    network.to(dtype=torch.float)
 
     sample["label"] = tio.LabelMap(
         tensor=torch.randint(0, 2, (2, 3, 3, 3)), affine=np.diag([1.2, 1.1, 1, 1])
@@ -69,6 +74,7 @@ def test_simple_inferer():
             network,
         )
     assert str(out[0].image_path[0]) == "abc.nii.gz"
+    assert isinstance(out[0]["output"], tio.LabelMap)
     assert out[0]["output"].shape == (2, 3, 3, 3)
 
     sample["label"] = None
@@ -79,6 +85,19 @@ def test_simple_inferer():
         )
     assert isinstance(out["output"], tio.ScalarImage)
     assert out["output"].shape == (2, 3, 3, 3)
+
+
+def test_from_to_dict():
+    inferer = SimpleInferer(
+        postprocessing=[ActivationsConfig(softmax=True, include=["output"])],
+        postprocessing_on_cpu=True,
+    )
+    new_inferer = SimpleInferer.from_dict(inferer.to_dict())
+    assert new_inferer.config.postprocessing_on_cpu
+    assert isinstance(
+        new_inferer.config.postprocessing.config.transforms.values[0].value,
+        ActivationsConfig,
+    )
 
 
 @pytest.mark.gpu

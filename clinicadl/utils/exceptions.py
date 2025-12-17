@@ -136,7 +136,7 @@ class CannotReadFieldError(ClinicaDLException):
         self.object_name = object_name
         self.error = error
         error_msg = (
-            f"{object_name} cannot read the field(s) {field_names}. "
+            f"{object_name} cannot read the field(s) {self.field_names}. "
             f"Please pass this field via kwargs."
         )
         super().__init__(error_msg)
