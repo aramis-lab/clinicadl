@@ -23,11 +23,35 @@ class SimpleInferer(Inferer):
     For classical inference, i.e. when the whole images are passed
     in the neural network and the raw outputs are returned (with a potential
     postprocessing).
+
+    Parameters
+    ----------
+
+    Examples
+    --------
+
+    .. code-block::
+
+        import torch
+        from clinicadl.infer import SimpleInferer
+        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.networks.nn import ConvEncoder
+        from clinicadl.transforms.config import ActivationsConfig
+
+        net = ConvEncoder(spatial_dims=3, in_channels=1, channels=[2, 4])
+        datapoint = ColinDataPoint()
+
+    .. code-block::
+
+        inferer = SimpleInferer()
+        with torch.no_grad():
+            out = inferer(datapoint, net)
+
     """
 
     def __init__(
         self,
-        postprocessing: Optional[Sequence[TransformOrConfig]],
+        postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
     ):
         if not postprocessing:
@@ -68,7 +92,7 @@ class SimpleInferer(Inferer):
 
         self._add_output(x, output)
 
-        if self.postprocessing_on_cpu:
+        if self.postprocessing_on_cpu and self.postprocessing:
             x.to(device="cpu")
 
         return self._postprocess(x)
