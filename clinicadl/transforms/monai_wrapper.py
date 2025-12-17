@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -12,6 +12,8 @@ from monai.transforms import Transform as MonaiTransform
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
+
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
 class MonaiTransformWrapper:
@@ -59,7 +61,7 @@ class MonaiTransformWrapper:
     def __repr__(self):
         return f"{self.__class__.__name__}(transform={repr(self.transform)}, include={self.include})"
 
-    def __call__(self, datapoint: DataPoint) -> DataPoint:
+    def __call__(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transform to the fields in 'include'.
         """

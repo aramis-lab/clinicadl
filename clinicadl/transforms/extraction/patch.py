@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from enum import Enum
 from logging import getLogger
-from typing import Any, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
 
 import torch
 from monai.data.utils import iter_patch_position
@@ -14,11 +14,14 @@ from pydantic import (
     field_validator,
 )
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
 
 from .base import Extraction, ImplementedExtraction
+
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
+
 
 logger = getLogger("clinicadl.transforms.extraction.patch")
 

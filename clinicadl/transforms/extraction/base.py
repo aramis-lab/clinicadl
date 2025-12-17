@@ -4,13 +4,17 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
-from typing import Any, Generator, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Generator, Optional, TypeVar, Union, overload
 
 import torch
 import torchio as tio
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.objects import Config, HasConfig
+
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
+
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 logger = getLogger("clinicadl.transforms.extraction.base")
 
@@ -36,18 +40,18 @@ class Extraction(HasConfig[Config], ABC):
         """
 
     @overload
-    def __call__(self, data_point: DataPoint, sample_index: int) -> DataPoint:
+    def __call__(self, data_point: DataPointT, sample_index: int) -> DataPointT:
         ...
 
     @overload
     def __call__(
-        self, data_point: DataPoint, sample_index: None
-    ) -> Generator[DataPoint, None, None]:
+        self, data_point: DataPointT, sample_index: None
+    ) -> Generator[DataPointT, None, None]:
         ...
 
     def __call__(
-        self, data_point: DataPoint, sample_index: Optional[int] = None
-    ) -> Union[DataPoint, Generator[DataPoint, None, None]]:
+        self, data_point: DataPointT, sample_index: Optional[int] = None
+    ) -> Union[DataPointT, Generator[DataPointT, None, None]]:
         """
         Extracts samples from a :py:class:`~clinicadl.data.structures.DataPoint` object and returns a generator,
         or extracts a single sample and returns a ``DataPoint``.
@@ -94,8 +98,8 @@ class Extraction(HasConfig[Config], ABC):
         return len(self._get_sample_positions(data_point))
 
     def _samples_generator(
-        self, data_point: DataPoint
-    ) -> Generator[DataPoint, None, None]:
+        self, data_point: DataPointT
+    ) -> Generator[DataPointT, None, None]:
         """
         Returns all the samples via a generator.
         """
@@ -103,8 +107,8 @@ class Extraction(HasConfig[Config], ABC):
             yield self._extract_datapoint_from_position(data_point, sample_position)
 
     def _extract_datapoint_from_index(
-        self, data_point: DataPoint, sample_index: int
-    ) -> DataPoint:
+        self, data_point: DataPointT, sample_index: int
+    ) -> DataPointT:
         """
         Extracts a sample from a datapoint (i.e. performs extraction on all
         the images and masks of the DataPoint), given the index of the sample.
@@ -125,8 +129,8 @@ class Extraction(HasConfig[Config], ABC):
         return self._extract_datapoint_from_position(data_point, sample_position)
 
     def _extract_datapoint_from_position(
-        self, data_point: DataPoint, sample_position: Any
-    ) -> DataPoint:
+        self, data_point: DataPointT, sample_position: Any
+    ) -> DataPointT:
         """
         Extracts a sample from a datapoint (i.e. performs extraction on all
         the images and masks of the DataPoint), given the position of the sample.

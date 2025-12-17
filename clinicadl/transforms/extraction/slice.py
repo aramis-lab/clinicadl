@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,6 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import (
     SAMPLE_POSITION,
@@ -29,6 +28,9 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, ImplementedExtraction
+
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
 
 logger = getLogger("clinicadl.extraction.slice")
 

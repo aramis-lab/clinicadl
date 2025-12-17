@@ -6,6 +6,7 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.config import AsDiscreteConfig
 from clinicadl.transforms.handlers import Postprocessing
@@ -48,8 +49,8 @@ def test_apply():
     np.testing.assert_allclose(out_data_point.label, torch.tensor([0.0, 1.0]))
 
     # batch
-    data_point.image = (tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2))),)
-    batch = [data_point, deepcopy(data_point)]
+    data_point.image = tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2)))
+    batch = Batch([data_point, deepcopy(data_point)])
     batch = transforms.batch_apply(batch)
     assert batch[0] is data_point
     assert batch[0].image.tensor.max() == 1
