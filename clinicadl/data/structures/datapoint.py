@@ -51,7 +51,7 @@ class DataPoint(tio.Subject):
     Data structure that gathers an image, the associated label, and any other relevant information
     associated to the image.
 
-    It inherits from :py:class:`torchio.Subject`.
+    It inherits from :py:class:`torchio.Subject`, which inherits itself from Python's ``dict``.
 
     A DataPoint has the following attributes:
         - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
@@ -72,16 +72,18 @@ class DataPoint(tio.Subject):
         >>> datapoint.session
         'ses-M000'
 
-    Besides, a ``DataPoint`` is dictionary-like object. So, you can easily add a key-value pair
-    to it:
+    However, **use the attribute notation only to access an attribute**.
+    To modify, add, or delete a field, use the standard dictionary syntax:
 
     .. code-block:: python
 
         >>> datapoint["age"] = 55
-        >>> datapoint["age"]    # the attribute notation won't work here
+        >>> datapoint["age"]
+        55
+        >>> datapoint.age
         55
 
-    However, to add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
+    To add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
     and :py:func:`~add_mask`.
 
     To get all the images in your DataPoint, you can use :py:func:`get_images` or :py:func:`get_images_dict`.
