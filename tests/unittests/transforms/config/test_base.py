@@ -16,11 +16,14 @@ X = tio.Subject(
 )
 
 
-def test_include_exlude():
+def test_include_exlude_copy():
     with pytest.raises(ValidationError):
         RandomMotionConfig(include=["a"], exclude=["b"])
-    c = RandomMotionConfig(exclude=["b"])
+    c = RandomMotionConfig(exclude=["b"], copy=False)
+    assert not c.copy_
+    assert "copy" in c.to_dict()
     assert c.get_object().exclude == ["b"]
+    assert not c.get_object().copy
     c = RandomMotionConfig(include=["a"])
     assert c.get_object().include == ["a"]
 

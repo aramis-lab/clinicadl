@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 import pytest
 import torch
@@ -35,21 +37,36 @@ def test_apply():
     transforms = Postprocessing(
         transforms=[
             AsDiscreteConfig(threshold=1, include=["label"]),
-            tio.RescaleIntensity(),
+            tio.RescaleIntensity(copy=False),
         ],
     )
 
-    data_point = transforms.apply(data_point)
-    assert data_point.image.tensor.min() == 0
-    assert data_point.image.tensor.max() == 1
-    np.testing.assert_allclose(data_point.label, torch.tensor([0.0, 1.0]))
+    out_data_point = transforms.apply(data_point)
+    assert out_data_point is data_point
+    assert out_data_point.image.tensor.min() == 0
+    assert out_data_point.image.tensor.max() == 1
+    np.testing.assert_allclose(out_data_point.label, torch.tensor([0.0, 1.0]))
 
     # batch
     data_point.image = (tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2))),)
-    batch = [data_point, data_point]
+    batch = [data_point, deepcopy(data_point)]
     batch = transforms.batch_apply(batch)
+    assert batch[0] is data_point
     assert batch[0].image.tensor.max() == 1
     assert batch[1].image.tensor.max() == 1
+
+    # copy
+    transforms = Postprocessing(
+        transforms=[
+            AsDiscreteConfig(threshold=1, include=["label"]),
+            tio.RescaleIntensity(copy=True),
+        ],
+    )
+    out_data_point = transforms.apply(data_point)
+    assert out_data_point is not data_point
+    batch = [data_point, deepcopy(data_point)]
+    batch = transforms.batch_apply(batch)
+    assert batch[0] is not data_point
 
 
 def test_str():

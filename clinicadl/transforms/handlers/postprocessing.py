@@ -54,7 +54,9 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
         self.config = PostprocessingConfig(
             transforms=transforms,
         )
-        self.transforms = tio.Compose(self.config.transforms.get_object())
+        self.transforms = tio.Compose(
+            self.config.transforms.get_object(), copy=False
+        )  # copy is specified in the transforms
 
     def __str__(self) -> str:
         """
@@ -92,7 +94,6 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
         Batch
             The transformed batch.
         """
-        batch = deepcopy(batch)
         for i, datapoint in enumerate(batch):
             batch[i] = self.apply(datapoint)
 

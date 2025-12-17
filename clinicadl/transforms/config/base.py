@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Union
 
 from pydantic import (
+    Field,
     NonNegativeFloat,
     NonNegativeInt,
     field_validator,
@@ -29,6 +30,13 @@ class TransformConfig(ObjectConfig["Transform"]):
 
     include: Optional[Sequence[str]] = None
     exclude: Optional[Sequence[str]] = None
+    copy_: bool = Field(default=False, alias="copy")
+
+    def get_object(self, **kwargs: Any) -> Transform:
+        associated_class = self._get_class()
+        return associated_class(
+            **self.to_dict(exclude=["name"])
+        )  # to_dict to have the alias here
 
     @model_validator(mode="after")
     def check_include_exclude(self):

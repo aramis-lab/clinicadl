@@ -37,6 +37,7 @@ def test_extract_sample():
         mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
     extracted_data_point = image_extractor(data_point, sample_index=0)
+    assert extracted_data_point is data_point
     assert isinstance(extracted_data_point.image, tio.ScalarImage)
     assert (extracted_data_point.image.tensor == image_tensor).all()
     assert isinstance(extracted_data_point.label, tio.LabelMap)

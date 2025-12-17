@@ -153,9 +153,15 @@ class Transforms(HasConfig[TransformsConfig]):
             augmentations=augmentations,
         )
         self.extraction = self.config.extraction
-        self.image_transforms = tio.Compose(self.config.image_transforms.get_object())
-        self.sample_transforms = tio.Compose(self.config.sample_transforms.get_object())
-        self.augmentations = tio.Compose(self.config.augmentations.get_object())
+        self.image_transforms = tio.Compose(
+            self.config.image_transforms.get_object(), copy=False
+        )  # copy is specified in the transforms
+        self.sample_transforms = tio.Compose(
+            self.config.sample_transforms.get_object(), copy=False
+        )
+        self.augmentations = tio.Compose(
+            self.config.augmentations.get_object(), copy=False
+        )
 
     def __str__(self) -> str:
         """

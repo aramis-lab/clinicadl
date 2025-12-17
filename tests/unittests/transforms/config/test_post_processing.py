@@ -270,9 +270,10 @@ def test_good_inputs(args: dict, configs):
     ],
 )
 def test_get_object(args, config, transform):
-    c = config(**args)
+    c = config(**args, copy=True)
     transform_from_config = c.get_object()
     assert isinstance(transform_from_config, MonaiTransformWrapper)
     assert isinstance(transform_from_config.transform, transform)
     output = transform_from_config(X)
     assert isinstance(output, DataPoint)
+    assert output is not X

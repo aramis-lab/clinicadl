@@ -50,7 +50,7 @@ def test_apply_transforms():
     transforms = Transforms(
         extraction=Patch(patch_size=4, overlap=0),
         image_transforms=[
-            tio.Crop(1),
+            tio.Crop(1, copy=False),
             RescaleIntensityConfig(),
         ],
         sample_transforms=[
@@ -62,7 +62,8 @@ def test_apply_transforms():
         ],
     )
 
-    data_point = transforms.apply_image_transforms(data_point)
+    out = transforms.apply_image_transforms(data_point)
+    assert out is data_point
     assert data_point.image.tensor.min() == 0
     assert data_point.image.tensor.max() == 1
     assert data_point.image.tensor.shape == (1, 12, 12, 12)
@@ -78,18 +79,20 @@ def test_apply_transforms():
     assert (tio_sample.label.tensor == data_point.label.tensor[:, :4, :4, :4]).all()
     assert (tio_sample.mask_1.tensor == patch_mask).all()
 
-    tio_sample = transforms.apply_sample_transforms(tio_sample)
+    out = transforms.apply_sample_transforms(tio_sample)
+    assert out is tio_sample
     assert tio_sample.image.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.label.tensor.shape == (1, 6, 6, 6)
     assert tio_sample.mask_1.tensor.shape == (1, 6, 6, 6)
     assert (tio_sample.image.tensor == 1).all()
 
-    tio_sample = transforms.apply_augmentations(tio_sample)
-    assert (tio_sample.image.tensor[:, :2, :2, :2] == 0.0).all()
-    assert (tio_sample.image.tensor[:, 5:, 5:, 5:] == 0.0).all()
-    assert np.isclose(tio_sample.image.affine, affine).all()
-    assert np.isclose(tio_sample.label.affine, affine).all()
-    assert np.isclose(tio_sample.mask_1.affine, affine).all()
+    out = transforms.apply_augmentations(tio_sample)
+    assert out is not tio_sample
+    assert (out.image.tensor[:, :2, :2, :2] == 0.0).all()
+    assert (out.image.tensor[:, 5:, 5:, 5:] == 0.0).all()
+    assert np.isclose(out.image.affine, affine).all()
+    assert np.isclose(out.label.affine, affine).all()
+    assert np.isclose(out.mask_1.affine, affine).all()
 
 
 def test_str():

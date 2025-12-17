@@ -1,4 +1,5 @@
 import re
+from copy import deepcopy
 
 import numpy as np
 import pytest
@@ -26,7 +27,7 @@ X["exclude"] = 0.2
 
 def test_monai_wrapper():
     # only on images
-    transform = MonaiTransformWrapper(Activations(softmax=True))
+    transform = MonaiTransformWrapper(Activations(softmax=True), copy=True)
     out = transform(X)
     torch.testing.assert_close(
         out.mask.tensor,
@@ -55,7 +56,9 @@ def test_monai_wrapper():
 
     # include
     transform = MonaiTransformWrapper(
-        Activations(softmax=True), include=["mask", "image", "array", "tensor", "label"]
+        Activations(softmax=True),
+        include=["mask", "image", "array", "tensor", "label"],
+        copy=True,
     )
     out = transform(X)
     assert isinstance(out["tensor"], torch.Tensor)
@@ -73,7 +76,9 @@ def test_monai_wrapper():
     assert out["exclude"] == 0.2
 
     # exclude
-    transform = MonaiTransformWrapper(Activations(softmax=True), exclude=["mask"])
+    transform = MonaiTransformWrapper(
+        Activations(softmax=True), exclude=["mask"], copy=True
+    )
     out = transform(X)
     torch.testing.assert_close(
         out.mask.tensor,
@@ -82,6 +87,19 @@ def test_monai_wrapper():
         atol=1e-3,
     )
     assert out.label == 0.2
+
+    # copy
+    transform = MonaiTransformWrapper(Activations(softmax=True), copy=True)
+    assert transform(X) is not X
+    x_ = deepcopy(X)
+    transform = MonaiTransformWrapper(Activations(softmax=True))
+    assert (out := transform(x_)) is x_
+    torch.testing.assert_close(
+        out.image.tensor,
+        torch.tensor([[[[0.5000]], [[0.7311]]], [[[0.5000]], [[0.2689]]]]),
+        rtol=1e-3,
+        atol=1e-3,
+    )
 
     # errors
     with pytest.raises(
@@ -93,7 +111,7 @@ def test_monai_wrapper():
         )
 
     transform = MonaiTransformWrapper(
-        Activations(softmax=True), include=["participant"]
+        Activations(softmax=True), include=["participant"], copy=True
     )
     with pytest.raises(
         Exception,

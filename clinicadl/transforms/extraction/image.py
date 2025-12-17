@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
+from typing import Any
 
 import torch
 
@@ -41,6 +42,13 @@ class Image(Extraction[ImageConfig]):
         The type of the sample returned by this extraction, among {"image", "slice", "patch"}.
         """
         return ImplementedExtraction.IMAGE.value.lower()
+
+    def _extract_datapoint_from_position(
+        self, data_point: DataPoint, sample_position: Any
+    ) -> DataPoint:
+        self._add_info(data_point, sample_position)
+
+        return data_point
 
     def _extract_tensor_sample(
         self,
