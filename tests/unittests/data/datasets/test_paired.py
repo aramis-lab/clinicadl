@@ -108,7 +108,6 @@ def test_df():
     caps_pet.read_tensor_conversion()
 
     paired = PairedDataset([caps_t1, caps_pet])
-    print(paired.df)
     pd.testing.assert_frame_equal(
         paired.df.fillna(-1),
         pd.DataFrame(

@@ -100,5 +100,4 @@ def test_saved_load_checkpoint(tmp_path):
 
     new_loss = _TrainingLoss()
     new_loss.load_checkpoint(tmp_path / "training_loss")
-    print(new_loss.df)
     pd.testing.assert_frame_equal(new_loss.df, loss.df.astype({"loss": float}))

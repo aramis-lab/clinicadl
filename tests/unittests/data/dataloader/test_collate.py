@@ -35,7 +35,6 @@ SAMPLE_1_BIS = Sample(
 SAMPLE_2 = copy(SAMPLE_1)
 SAMPLE_2["participant"] = str(2)
 SAMPLE_2["session"] = str(2)
-SAMPLE_2.update_attributes()
 
 
 def test_to_batch():
@@ -81,7 +80,6 @@ def test_merge_batches():
     ###
     sample = copy(SAMPLE_1_BIS)
     sample["label"] = None
-    sample.update_attributes()
     batch = collate([(SAMPLE_1, sample), (SAMPLE_1, sample)])
     assert batch[0].label.shape == (1, 3, 3, 3)
 
@@ -111,7 +109,6 @@ def test_merge_batches():
     sample["image"] = tio.ScalarImage(
         tensor=torch.randn(2, 3, 3, 3), affine=np.diag([1.2, 1.1, 1, 1])
     )
-    sample.update_attributes()
     with pytest.raises(
         RuntimeError, match="Trying to concatenate images with different voxel spacing!"
     ):

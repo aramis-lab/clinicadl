@@ -17,7 +17,6 @@ from clinicadl.data.datatypes.factory import get_datatype_from_dict
 def test_get_datatype_from_dict(args, datatype):
     c = datatype(**args)
     dict_ = c.to_dict()
-    print(dict_)
     c = get_datatype_from_dict(dict_)
     assert isinstance(c, datatype)
 

@@ -406,7 +406,7 @@ def test_to_tensors(tmp_path):
             ["sub-010", "ses-M003"],
         ]
     )
-    print(conversion_info)
+
     #       check files
     assert (
         tmp_path
