@@ -102,3 +102,15 @@ def test_gpu():
             network,
         )
     assert out is batch
+    assert out.device == torch.device("cuda")
+
+    inferer = SimpleInferer(
+        postprocessing=[ActivationsConfig(softmax=True, include=["output"])],
+        postprocessing_on_cpu=True,
+    )
+    with torch.no_grad():
+        out = inferer(
+            batch,
+            network,
+        )
+    assert out.device == torch.device("cpu")

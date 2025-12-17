@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Sequence, TypeVar, Union, overload
+from typing import Any, Optional, Sequence, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
@@ -25,17 +25,22 @@ class SimpleInferer(Inferer):
     postprocessing).
     """
 
-    def __init__(self, postprocessing: Sequence[TransformOrConfig]):
+    def __init__(
+        self,
+        postprocessing: Optional[Sequence[TransformOrConfig]],
+        postprocessing_on_cpu: bool = False,
+    ):
         if not postprocessing:
             postprocessing = []
         self.postprocessing = Postprocessing(postprocessing)
+        self.postprocessing_on_cpu = postprocessing_on_cpu
 
     @overload
     def __call__(
         self,
         x: DataPointT,
         network: nn.Module,
-        *args: Any,
+        input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
     ) -> DataPointT:
         ...
@@ -45,7 +50,7 @@ class SimpleInferer(Inferer):
         self,
         x: Batch[DataPointT],
         network: nn.Module,
-        *args: Any,
+        input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
     ) -> Batch[DataPointT]:
         ...
@@ -54,14 +59,17 @@ class SimpleInferer(Inferer):
         self,
         x: Union[DataPointT, Batch[DataPointT]],
         network: nn.Module,
-        *args: Any,
+        input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
     ) -> Union[DataPointT, Batch[DataPointT]]:
         tensor = self._get_input_tensor(x)
 
-        output = network(tensor, *args, **kwargs)
+        output = network(tensor, **kwargs)
 
         self._add_output(x, output)
+
+        if self.postprocessing_on_cpu:
+            x.to(device="cpu")
 
         return self._postprocess(x)
 

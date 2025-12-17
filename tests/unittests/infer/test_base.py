@@ -13,12 +13,12 @@ class MyInferer(Inferer):
     def __call__(
         self,
         x,
-        network: nn.Module,
-        *args,
+        network,
+        input_dtype=None,
         **kwargs,
     ):
-        image = self._get_input_tensor(x)
-        output = network(image, *args, **kwargs)
+        image = self._get_input_tensor(x, input_dtype=torch.half)
+        output = network(image, **kwargs)
         if isinstance(x, list):
             for x_, out_ in zip(x, output):
                 x_["output"] = out_
@@ -36,6 +36,8 @@ def test_inferer():
         session="abc",
     )
     network = nn.Sequential(nn.Flatten(), nn.Linear(3**3, 1))
+    network.to(dtype=torch.half)
+
     with torch.no_grad():
         out = inferer(
             sample,
