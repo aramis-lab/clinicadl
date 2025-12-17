@@ -115,6 +115,7 @@ def test_gpu():
         )
     assert out.device == torch.device("cpu")
 
+    batch.to("cuda")
     inferer = SimpleInferer(
         postprocessing_on_cpu=True,
     )

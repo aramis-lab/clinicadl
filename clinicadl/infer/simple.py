@@ -92,7 +92,7 @@ class SimpleInferer(Inferer):
 
         self._add_output(x, output)
 
-        if self.postprocessing_on_cpu and self.postprocessing:
+        if self.postprocessing_on_cpu and self.postprocessing.transforms:
             x.to(device="cpu")
 
         return self._postprocess(x)
